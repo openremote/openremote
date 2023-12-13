@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
@@ -40,6 +41,10 @@ import java.util.Optional;
 @SuppressWarnings({"rawtypes", "unchecked"})
 @AttributeInfoValid
 public class AttributeEvent extends SharedEvent implements AttributeInfo {
+
+    public static class View {
+        public class Enhanced {}
+    }
 
     protected AttributeRef ref;
     protected Object value;
@@ -93,12 +98,25 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(attributeRef, value, 0L);
     }
 
-    @JsonCreator
     public AttributeEvent(AttributeRef ref, Object value, long timestamp) {
         super(timestamp);
         Objects.requireNonNull(ref);
         this.ref = ref;
         this.value = value;
+    }
+
+    @JsonCreator
+    @Deprecated
+    // This allows backwards compatibility with old attribute event structure
+    protected AttributeEvent(AttributeState attributeState, AttributeRef ref, Object value, long timestamp) {
+        super(timestamp);
+        if (attributeState != null) {
+            this.ref = attributeState.getRef();
+            this.value = attributeState.getValue().orElse(null);
+        } else {
+            this.ref = ref;
+            this.value = value;
+        }
     }
 
     public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, long valueTimestamp, Object oldValue, long oldValueTimestamp) {
@@ -125,10 +143,17 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return new AttributeState(ref, value);
     }
 
+    @Override
+    public long getTimestamp() {
+        return super.getTimestamp();
+    }
+
+    @JsonView(View.Enhanced.class)
     public Optional<Object> getOldValue() {
         return Optional.ofNullable(oldValue);
     }
 
+    @JsonView(View.Enhanced.class)
     public long getOldValueTimestamp() {
         return oldValueTimestamp;
     }
@@ -166,6 +191,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return oldValueTimestamp - getTimestamp() > 0;
     }
 
+    @JsonView(View.Enhanced.class)
     @Override
     public String getParentId() {
         return parentId;
@@ -176,6 +202,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
+    @JsonView(View.Enhanced.class)
     @Override
     public String[] getPath() {
         return path;
@@ -186,11 +213,13 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return new String[]{getRef().getName()};
     }
 
+    @JsonView(View.Enhanced.class)
     @Override
     public String getAssetName() {
         return assetName;
     }
 
+    @JsonView(View.Enhanced.class)
     @Override
     public String getAssetType() {
         return assetType;
@@ -201,12 +230,13 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return assetClass;
     }
 
+    @JsonView(View.Enhanced.class)
     @Override
     public Date getCreatedOn() {
         return createdOn;
     }
 
-    @JsonIgnore
+    @JsonView(View.Enhanced.class)
     @Override
     public ValueDescriptor getType() {
         return valueType;

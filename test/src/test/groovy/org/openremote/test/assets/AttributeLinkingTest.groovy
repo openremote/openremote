@@ -89,13 +89,13 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         def buttonPressed = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
         )
-        assetProcessingService.sendAttributeEvent(buttonPressed, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonPressed)
         Thread.sleep(200)
         advancePseudoClock(1, TimeUnit.SECONDS, container)
         def buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
         )
-        assetProcessingService.sendAttributeEvent(buttonReleased, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonReleased)
 
         then: "the linked attribute value should be toggled on"
         conditions.eventually {
@@ -107,13 +107,13 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         buttonPressed = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
         )
-        assetProcessingService.sendAttributeEvent(buttonPressed, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonPressed)
         Thread.sleep(200)
         advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
         )
-        assetProcessingService.sendAttributeEvent(buttonReleased, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonReleased)
 
         then: "the linked attribute value should be toggled off"
         conditions.eventually {
@@ -124,12 +124,12 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         def buttonLongPressed = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "LONG_PRESSED")
         )
-        assetProcessingService.sendAttributeEvent(buttonLongPressed, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonLongPressed)
         advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
         )
-        assetProcessingService.sendAttributeEvent(buttonReleased, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonReleased)
 
         then: "the linked attribute value should not have changed and the system has settled down"
         conditions.eventually {
@@ -150,7 +150,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         buttonPressed = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
         )
-        assetProcessingService.sendAttributeEvent(buttonPressed, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonPressed)
 
         then: "the counter should increment"
         conditions.eventually {
@@ -162,7 +162,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
         )
-        assetProcessingService.sendAttributeEvent(buttonReleased, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(buttonReleased)
 
         then: "the counter should decrement"
         conditions.eventually {
@@ -205,7 +205,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         */
 
         when: "the array attribute is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "array", ValueUtil.parse("[{\"prop1\": true, \"prop2\": \"a\"},{\"prop1\": false, \"prop2\": \"b\"}]").orElse(null)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "array", ValueUtil.parse("[{\"prop1\": true, \"prop2\": \"a\"},{\"prop1\": false, \"prop2\": \"b\"}]").orElse(null)))
 
         then: "the linked attribute on the other asset should contain the value from the json path"
         conditions.eventually {
@@ -214,7 +214,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         }
 
         when: "the crossRealm attribute is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "crossRealm", "Test"), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "crossRealm", "Test"))
 
         then: "the source attribute should be updated"
         conditions.eventually {

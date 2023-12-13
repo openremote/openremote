@@ -132,7 +132,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def attributeEvent = new AttributeEvent(asset.id,
             "readWriteTargetTemp",
             19.5)
-        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {

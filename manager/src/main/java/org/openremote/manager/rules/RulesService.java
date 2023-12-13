@@ -477,6 +477,15 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 realmRulesEngine.stop();
                 realmEngines.remove(realm.getName());
             }
+
+            // Remove any asset rules engines for assets in this realm
+            assetEngines.values().removeIf(engine -> {
+                boolean remove = engine.getId().getRealm().map(r -> r.equals(realm.getName())).orElse(false);
+                if (remove) {
+                    engine.stop();
+                }
+                return remove;
+            });
         } else {
             // Create realm rules engines for this realm if it has any rulesets
             rulesetStorageService
@@ -514,18 +523,23 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     }
                     return false;
                 });
-//            case UPDATE -> {
-//                boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
-//                AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
-//                AttributeMap currentAttributes = asset.getAttributes();
-//
-//                List<Attribute<?>> oldStateAttributes = oldAttributes
-//                    .stream()
-//                    .filter(RulesService::isRuleState).toList();
-//
-//                List<Attribute<?>> newStateAttributes = currentAttributes
-//                    .stream()
-//                    .filter(RulesService::isRuleState).toList();
+            case UPDATE -> {
+                boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
+
+                // Attribute changes will be published to the client event bus - if anything else has changed then we need to reload
+                if (!attributesChanged) {
+
+                }
+                AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
+                AttributeMap currentAttributes = asset.getAttributes();
+
+                List<Attribute<?>> oldStateAttributes = oldAttributes
+                    .stream()
+                    .filter(RulesService::isRuleState).toList();
+
+                List<Attribute<?>> newStateAttributes = currentAttributes
+                    .stream()
+                    .filter(RulesService::isRuleState).toList();
 //
 //                // Just retract all old attributes rather than compare every value that might cause asset state to mutate
 //                oldStateAttributes.forEach(attribute -> {
@@ -536,11 +550,11 @@ public class RulesService extends RouteBuilder implements ContainerService {
 //
 //                // Insert new states for new or changed attributes
 //                newStateAttributes.forEach(attribute -> {
-//                    AttributeEvent attributeEvent = new AttributeEvent(asset, attribute, null, attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L), a);
+//                    AttributeEvent attributeEvent = new AttributeEvent(asset, attribute, null, attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
 //                    LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + attributeEvent);
 //                    updateAttributeEvent(attributeEvent);
 //                });
-//            }
+            }
         }
     }
 

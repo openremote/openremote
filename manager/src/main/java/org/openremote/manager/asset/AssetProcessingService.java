@@ -341,6 +341,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     /**
      * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
      */
+    public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        sendAttributeEvent(attributeEvent, null);
+    }
+
+    /**
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
+     */
     public void sendAttributeEvent(AttributeEvent attributeEvent, Object source) {
         attributeEvent.setSource(source);
 

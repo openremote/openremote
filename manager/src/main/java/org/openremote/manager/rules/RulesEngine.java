@@ -321,7 +321,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        LOG.info("Starting");
+        LOG.info("Starting: " + id);
         running = true;
         trackLocationPredicates(true);
 
@@ -362,7 +362,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
         running = false;
-        LOG.info("Stopping");
+        LOG.info("Stopping: " + id);
         if (fireTimer != null) {
             fireTimer.cancel(true);
             fireTimer = null;

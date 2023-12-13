@@ -75,7 +75,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
 
         when: "The on/off attribute of the parent asset is written to"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true), getClass().getSimpleName()
+                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
         )
 
         then: "the parent asset attribute should be updated"
@@ -121,7 +121,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
 
         when: "The on/off attribute of the parent asset is written to"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, false), getClass().getSimpleName()
+                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, false)
         )
 
         then: "the parent asset attribute should be updated"

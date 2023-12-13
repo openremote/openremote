@@ -293,7 +293,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         )
 
         and: "the console location is set to the apartment"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -317,7 +317,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
         def outsideLocation = new GeoJSONPoint(0d, 0d)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, outsideLocation), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, outsideLocation))
 
         then: "the apartment lights should be switched off"
         conditions.eventually {
@@ -367,7 +367,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         def lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -375,7 +375,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d)), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d)))
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
@@ -385,7 +385,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the console sends a location update with a new location but still outside the geofence"
         def timestamp = assetStorageService.find(consoleRegistration.id, true).getAttribute(Asset.LOCATION).flatMap{it.getTimestamp()}.orElse(timerService.getCurrentTimeMillis())
         def attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(10d, 10d), timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
@@ -412,7 +412,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -421,7 +421,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
@@ -430,7 +430,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -442,7 +442,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
@@ -471,7 +471,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {
@@ -493,7 +493,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {
@@ -517,7 +517,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {
@@ -900,7 +900,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the webhook attribute is changing"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(thingId, "webhookAttribute", "test_message"))
 
         then: "the webhook attribute should have been updated"
         conditions.eventually {
@@ -911,7 +911,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "The mock server has received a successful response"
         conditions.eventually {
-            assert mockServer.successCount == 2
+            assert mockServer.successCount == 1
             assert mockServer.failureCount == 0
         }
     }

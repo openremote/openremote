@@ -73,6 +73,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINE;
 import static java.util.stream.Collectors.groupingBy;
@@ -1413,29 +1414,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     ));
             }
             case UPDATE -> {
+                boolean nonAttributeChange = persistenceEvent.getPropertyNames().size() > 1 || !persistenceEvent.hasPropertyChanged("attributes");
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
+                LOG.finest(() -> "Asset updated: " + persistenceEvent);
 
-//                String[] updatedProperties = Arrays.stream(persistenceEvent.getPropertyNames()).filter(propertyName -> {
-//                    Object oldValue = persistenceEvent.getPreviousState(propertyName);
-//                    Object newValue = persistenceEvent.getCurrentState(propertyName);
-//                    return !Objects.deepEquals(oldValue, newValue);
-//                }).toArray(String[]::new);
-
-                // Fully load the asset
-                Asset<?> loadedAsset = find(new AssetQuery().ids(asset.getId()));
-                if (loadedAsset == null) {
-                    return;
-                }
-                LOG.finest("Asset updated: " + persistenceEvent);
                 clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, persistenceEvent.getPropertyNames().toArray(String[]::new))
+                    new AssetEvent(AssetEvent.Cause.UPDATE, asset, persistenceEvent.getPropertyNames().toArray(String[]::new))
                 );
 
-                // Did any attributes change if so raise attribute events on the event bus
-                if (attributesChanged) {
-                    AttributeMap oldAttributes = persistenceEvent.getPreviousState("attributes");
-                    AttributeMap newAttributes = persistenceEvent.getCurrentState("attributes");
+                AttributeMap oldAttributes = attributesChanged ? persistenceEvent.getPreviousState("attributes") : asset.getAttributes();
+                AttributeMap newAttributes = attributesChanged ? persistenceEvent.getCurrentState("attributes") : asset.getAttributes();
 
+                // Publish events for deleted attributes
+                if (attributesChanged) {
                     // Get removed attributes and raise an attribute event with deleted flag in attribute state
                     oldAttributes.stream()
                         .filter(oldAttribute ->
@@ -1447,23 +1438,31 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                                 new AttributeEvent(asset, obsoleteAttribute, getClass().getName(), null, timerService.getCurrentTimeMillis(), null, 0L)
                                     .setDeleted(true)
                             ));
-
-                    // Get new or modified attributes
-                    getAddedOrModifiedAttributes(oldAttributes.values(),
-                        newAttributes.values())
-                        .forEach(newOrModifiedAttribute -> {
-                            Optional<Attribute<?>> oldAttribute = oldAttributes.get(newOrModifiedAttribute.getName());
-                            clientEventService.publishEvent(new AttributeEvent(
-                                asset,
-                                newOrModifiedAttribute,
-                                getClass().getSimpleName(),
-                                newOrModifiedAttribute.getValue().orElse(null),
-                                newOrModifiedAttribute.getTimestamp().orElse(0L),
-                                oldAttribute.flatMap(Attribute::getValue).orElse(null),
-                                oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
-                            ));
-                        });
                 }
+
+                Stream<Attribute<?>> attributeStream;
+
+                if (nonAttributeChange) {
+                    // If something other than attributes has changed then treat as if attributes changed as path etc could have changed
+                    attributeStream = newAttributes.values().stream();
+                } else {
+                    // Get new or modified attributes
+                    attributeStream = getAddedOrModifiedAttributes(oldAttributes.values(), newAttributes.values());
+                }
+
+                attributeStream
+                    .forEach(newOrModifiedAttribute -> {
+                        Optional<Attribute<?>> oldAttribute = oldAttributes.get(newOrModifiedAttribute.getName());
+                        clientEventService.publishEvent(new AttributeEvent(
+                            asset,
+                            newOrModifiedAttribute,
+                            getClass().getSimpleName(),
+                            newOrModifiedAttribute.getValue().orElse(null),
+                            newOrModifiedAttribute.getTimestamp().orElse(0L),
+                            oldAttribute.flatMap(Attribute::getValue).orElse(null),
+                            oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
+                        ));
+                    });
             }
             case DELETE -> {
                 if (LOG.isLoggable(Level.FINEST)) {

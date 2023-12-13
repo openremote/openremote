@@ -19,8 +19,6 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.asset.Asset;
-
 import java.util.Date;
 
 public interface AssetInfo {

@@ -38,13 +38,13 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                 managerTestSetup.apartment1LivingroomId,
                 "targetTemperature",
                 startTemperature
-        ), getClass().getSimpleName())
+        ))
 
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerTestSetup.apartment1Bedroom1Id,
                 "targetTemperature",
                 0
-        ), getClass().getSimpleName())
+        ))
 
         when: "a valid node collection is added"
         String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text

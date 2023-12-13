@@ -65,7 +65,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
         def lightsOffEvent = new AttributeEvent(
                 managerTestSetup.apartment2Id, "allLightsOffSwitch", true
         )
-        assetProcessingService.sendAttributeEvent(lightsOffEvent, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(lightsOffEvent)
 
         then: "the room lights in the apartment should be off"
         conditions.eventually {
@@ -82,7 +82,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         and: "we turn the light on again in a room"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true), getClass().getSimpleName()
+                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true)
         )
 
         then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"

@@ -89,7 +89,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
             managerTestSetup.apartment2LivingroomId, "presenceDetected", true
         )
-        assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
         then: "the engines in scope should have fired"
         conditions.eventually {
@@ -342,7 +342,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
             managerTestSetup.apartment2LivingroomId, "presenceDetected", true
         )
-        assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
         then: "the rules engines should have executed at least one more time"
         conditions.eventually {

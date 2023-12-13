@@ -197,7 +197,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset updated it's includeForecastSolarService to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, true), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, true))
 
         then: "it should be present present in the calculationFutures"
         conditions.eventually {
@@ -210,7 +210,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset updated it's setActualValueWithForecast to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.name, true), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.name, true))
 
         then: "it power should be updated too"
         conditions.eventually {
@@ -219,7 +219,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset updated it's includeForecastSolarService to false"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, false), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, false))
 
         then: "it shouldn't be present present in the calculationFutures"
         conditions.eventually {

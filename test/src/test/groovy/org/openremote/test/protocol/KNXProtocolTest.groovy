@@ -130,7 +130,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         
         when: "change light1ToggleOnOff value to 'true'"
         def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", true)
-        assetProcessingService.sendAttributeEvent(switchChange, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(switchChange)
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
@@ -139,7 +139,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
         when: "change light1ToggleOnOff value to 'false'"
         switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", false)
-        assetProcessingService.sendAttributeEvent(switchChange, getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(switchChange)
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {

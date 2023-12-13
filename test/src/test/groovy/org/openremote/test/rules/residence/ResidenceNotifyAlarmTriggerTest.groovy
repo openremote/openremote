@@ -170,7 +170,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         when: "the alarm is enabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerTestSetup.apartment1Id, "alarmEnabled", true
-        ), getClass().getSimpleName())
+        ))
 
         then: "that value should be stored"
         conditions.eventually {

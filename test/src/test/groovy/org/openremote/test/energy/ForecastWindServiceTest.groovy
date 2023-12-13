@@ -710,7 +710,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         }
 
         when: "an asset updated it's includeForecastWindService to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, true), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, true))
 
         then: "it should be present present in the calculationFutures"
         conditions.eventually {
@@ -723,7 +723,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         }
 
         when: "an asset updated it's setActualValueWithForecast to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.name, true), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.name, true))
 
         then: "it power should be updated too"
         conditions.eventually {
@@ -732,7 +732,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         }
 
         when: "an asset updated it's includeForecastWindService to false"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, false), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, false))
 
         then: "it shouldn't be present present in the calculationFutures"
         conditions.eventually {
@@ -758,10 +758,10 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         }
 
         when: "an asset updated it's location to have a value"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset3.getId(), Asset.LOCATION.name, new GeoJSONPoint(9.195275, 48.787418)), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset3.getId(), Asset.LOCATION.name, new GeoJSONPoint(9.195275, 48.787418)))
 
         and: "trigger the service by setting includeForecastWindService to true again "
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset3.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, true), getClass().getSimpleName())
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset3.getId(), ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.name, true))
 
         then: "it should be present present in the calculationFutures"
         conditions.eventually {

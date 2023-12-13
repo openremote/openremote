@@ -24,6 +24,8 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -1068,7 +1070,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             sb.append("</table>");
         } else if (isJson) {
             try {
-                return ValueUtil.JSON.writeValueAsString(assetStates);
+                ValueUtil.JSON.writerWithView(AttributeEvent.View.Enhanced.class).writeValueAsString(assetStates);
             } catch (Exception e) {
                 LOG.warning(e.getMessage());
             }
