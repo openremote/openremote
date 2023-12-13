@@ -216,6 +216,9 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
                     minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
                 }
+                case "Forecast" -> {
+                    detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
+                }
                 default -> {
                     return null;
                 }
@@ -389,7 +392,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
             }else if(detectionMethod.config.getClass().getSimpleName().equals("Forecast")){
                 DatapointPeriod predictedPeriod = assetPredictedDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
-                valueDatapoints = assetPredictedDatapointService.queryDatapoints(attributeRef.getId(),attributeRef.getName(), new AssetDatapointAllQuery(predictedPeriod.getOldest(), period.getLatest()));
+                valueDatapoints = assetPredictedDatapointService.queryDatapoints(attributeRef.getId(),attributeRef.getName(), new AssetDatapointAllQuery(period.getOldest(), period.getLatest()+ (period.getLatest()-period.getOldest())));
             }
             for (ValueDatapoint<?> datapoint: valueDatapoints) {
                 Optional<AttributeAnomaly> anomaly = Arrays.stream(anomalies).filter(a -> a.getTimestamp().getTime() == datapoint.getTimestamp()).findFirst();
