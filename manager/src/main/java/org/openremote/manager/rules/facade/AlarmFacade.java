@@ -34,8 +34,8 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
             source = Source.ASSET_RULESET;
             sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));
         }
-        String realm = rulesEngineId.getRealm().orElseThrow();
-        SentAlarm result = alarmService.sendAlarm(alarm, source, sourceId, realm);
+        alarm.setRealm(rulesEngineId.getRealm().orElseThrow());
+        SentAlarm result = alarmService.sendAlarm(alarm, source, sourceId);
         Long id = result.getId();
         if(id != null){
             if(userId != null && !userId.isEmpty()){

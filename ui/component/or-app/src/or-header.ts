@@ -16,7 +16,7 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Realm} from "@openremote/model";
+import {AlarmStatus, Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 
@@ -349,6 +349,11 @@ export class OrHeader extends LitElement {
     @state()
     private _drawerOpened = false;
 
+    @state()
+    alarmButton = 'bell-outline';
+
+    private intervalId?: number;
+
     public _onRealmSelect(realm: string) {
         this.store.dispatch(updateRealm(realm));
     }
@@ -358,6 +363,20 @@ export class OrHeader extends LitElement {
             this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
         }
         return super.shouldUpdate(changedProperties);
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.intervalId = window.setInterval(() => {
+            this._getAlarmButton().then(() => this.updateComplete);
+        }, 1500);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.intervalId) {
+            window.clearInterval(this.intervalId);
+        }
     }
 
     protected render() {
@@ -386,6 +405,11 @@ export class OrHeader extends LitElement {
                         </div>
                     </nav>
                     <div id="desktop-right">
+                        <div id="alarm-btn">
+                            <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
+                                <or-icon icon="${this.alarmButton}"></or-icon>
+                            </a>
+                        </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
                         ${secondaryItems ? getContentWithMenuTemplate(html`
                             <button id="menu-btn-desktop" class="menu-btn" title="Menu"><or-icon icon="dots-vertical"></or-icon></button>
@@ -456,6 +480,19 @@ export class OrHeader extends LitElement {
         }
 
         return realmTemplate;
+    }
+
+    protected async _getAlarmButton() {
+        let newAlarms= false;
+        if(manager.isRestrictedUser()){
+            // TODO Filter alarms by linked assets
+        }
+        if(manager.hasRole("read:alarms") || manager.hasRole("write:alarms")){
+            const response = await manager.rest.api.AlarmResource.getOpenAlarms();
+            let open = response.data.filter((alarm) => alarm.status === AlarmStatus.OPEN);
+            newAlarms = (open.length > 0);
+        }
+        this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
     }
 
     protected _onSecondaryMenuSelect(value: string) {

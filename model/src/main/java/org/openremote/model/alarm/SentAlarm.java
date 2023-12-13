@@ -53,7 +53,7 @@ public class SentAlarm {
     protected Date acknowledgedOn;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "LAST_MODIFIED", updatable = true, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
 
     @Column(name= "ASSIGNEE_ID")
