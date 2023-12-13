@@ -130,6 +130,10 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return Optional.ofNullable(oldValue);
     }
 
+    public <U> Optional<U> getOldValue(Class<U> valueType) {
+        return ValueUtil.getValueCoerced(oldValue, valueType);
+    }
+
     public long getOldValueTimestamp() {
         return oldValueTimestamp;
     }
