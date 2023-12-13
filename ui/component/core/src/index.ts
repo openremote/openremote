@@ -58,6 +58,7 @@ export enum OREvent {
     ONLINE = "ONLINE",
     OFFLINE = "OFFLINE",
     CONNECTING = "CONNECTING",
+    RECONNECT_FAILED = "RECONNECT_FAILED",
     CONSOLE_INIT = "CONSOLE_INIT",
     CONSOLE_READY = "CONSOLE_READY",
     TRANSLATE_INIT = "TRANSLATE_INIT",
@@ -594,6 +595,7 @@ export class Manager implements EventProviderFactory {
                         timeout = Math.min(timeoutMax, Math.round(timeout * 1.2)); // gradually increase the timer
                         console.log(`Trying again in ${timeout} milliseconds...`)
                         this._authReconnectTimeout = window.setTimeout(reconnectAuthFunc, timeout);
+                        this._emitEvent(OREvent.RECONNECT_FAILED);
                     }
 
                 }).catch((e) => {
@@ -725,6 +727,9 @@ export class Manager implements EventProviderFactory {
                 break;
             case EventProviderStatus.CONNECTING:
                 this._emitEvent(OREvent.CONNECTING);
+                break;
+            case EventProviderStatus.RECONNECT_FAILED:
+                this._emitEvent(OREvent.RECONNECT_FAILED);
                 break;
         }
     }
@@ -1133,9 +1138,6 @@ export class Manager implements EventProviderFactory {
     // When authentication service status changes; in most cases a failed token refresh.
     // Always go OFFLINE if 'failed', only go back ONLINE when all EventProviders are also connected.
     protected _setAuthDisconnected(disconnected: boolean, force = false) {
-        /*if(disconnected) {
-            this._runAuthReconnectTimer();
-        }*/
         if(this._authDisconnected !== disconnected || force) {
             console.debug(`Authentication status changed: ${disconnected ? 'DISCONNECTED' : 'CONNECTED'}`);
             if(disconnected) {

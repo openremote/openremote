@@ -19,7 +19,8 @@ import {
 export enum EventProviderStatus {
     DISCONNECTED = "DISCONNECTED",
     CONNECTED = "CONNECTED",
-    CONNECTING = "CONNECTING"
+    CONNECTING = "CONNECTING",
+    RECONNECT_FAILED = "RECONNECT_FAILED"
 }
 
 export interface EventProvider {
@@ -572,9 +573,11 @@ abstract class EventProviderImpl implements EventProvider {
 
             this.connect().then(connected => {
                 if (!connected) {
+                    this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
                     this._scheduleReconnect();
                 }
             }).catch(error => {
+                this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
                 this._scheduleReconnect();
             });
         }, this._reconnectDelayMillis);
