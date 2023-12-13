@@ -20,6 +20,8 @@
 package org.openremote.manager.anomalyDetection;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.lang3.ArrayUtils;
+import org.codehaus.groovy.runtime.ArrayUtil;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.alarm.AlarmService;
@@ -150,7 +152,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 // loop through all attributes with an anomaly detection meta item and add them to the watch list.
                 (asset.getAttributes().stream().filter(attr -> attr.hasMeta(ANOMALYDETECTION) && attr.hasMeta(STORE_DATA_POINTS))).forEach(
                         attribute -> {
-                                anomalyDetectionAttributes.put(asset.getId() + "$" + attribute.getName(),new AnomalyAttribute(asset,attribute));
+                            anomalyDetectionAttributes.put(asset.getId() + "$" + attribute.getName(),new AnomalyAttribute(asset,attribute));
                         }
                 );
                 break;
@@ -181,14 +183,14 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
     protected List<Asset<?>> getAnomalyDetectionAssets() {
         return assetStorageService.findAll(
-            new AssetQuery().attributes(
-                new AttributePredicate().meta(
-                    new NameValuePredicate(
-                            ANOMALYDETECTION,
-                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
-                    )
+                new AssetQuery().attributes(
+                        new AttributePredicate().meta(
+                                new NameValuePredicate(
+                                        ANOMALYDETECTION,
+                                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
+                                )
+                        )
                 )
-            )
         );
     }
 
@@ -204,33 +206,20 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         DetectionMethod detectionMethod;
         long timespan = 0;
         int minimumDatapoints = 0;
-        if(anomalyDetectionConfiguration != null) {
-            switch (anomalyDetectionConfiguration.getClass().getSimpleName()) {
-                case "Global" ->{
-                    detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfiguration);
-                    timespan = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
-                    minimumDatapoints = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
-                }
-                case "Change" -> {
-                    detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
-                    timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
-                    minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
-                }
-                case "Forecast" -> {
-                    detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
-                }
-                default -> {
-                    return null;
-                }
-            }
-        }else{
-            return null;
-        }
-            DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
-            if(period.getLatest() == null)return vdaa;
-            if(period.getLatest() - period.getOldest() > timespan){
-                ValueDatapoint<?>[] datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() -  timespan*5, period.getLatest()));
-                List<AssetAnomalyDatapoint> assetAnomalyDatapoints = new ArrayList<>();
+        ValueDatapoint<?>[] datapoints;
+        List<AssetAnomalyDatapoint> assetAnomalyDatapoints = new ArrayList<>();
+        if(anomalyDetectionConfiguration == null) return null;
+        String type = anomalyDetectionConfiguration.getClass().getSimpleName();
+        switch (type) {
+            case "Global" ->{
+                detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfiguration);
+                timespan = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
+                minimumDatapoints = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
+
+                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
+                if(period.getLatest() == null)return vdaa;
+                if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
                 for (ValueDatapoint<?> dp : datapoints) {
                     AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
                     point.anomalyType = AnomalyType.Unchecked;
@@ -238,41 +227,87 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     point.setValue(dp.getValue());
                     assetAnomalyDatapoints.add(point);
                 }
-                //check if there are enough datapoints to draw at least 2 limits
-                if(datapoints.length < minimumDatapoints+ 2) return new ValueDatapoint<?>[1][datapoints.length];
-                ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[4][datapoints.length - minimumDatapoints+1];
-                List<ValueDatapoint<?>> anomalyDatapoints = new ArrayList<>();
-
-                int index =0;
-                long finalTimespan = timespan;
-                for(int i = datapoints.length - minimumDatapoints; i >= 0; i--){
-                    ValueDatapoint<?> dp = datapoints[i];
-                    if(detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
-                        double[] values = detectionMethod.GetLimits(datapoints[i]);
-                        valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
-                        valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
-                        if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
-                            anomalyDatapoints.add(datapoints[i]);
-                        }
-                    }else if( detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())){
-                        double[] values = detectionMethod.GetLimits(datapoints[i]);
-                        valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
-                        valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
-                        if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
-                            anomalyDatapoints.add(datapoints[i]);
-                        }
-                    }
-                    index++;
-
-                }
-                valueDatapoints[3] = new ValueDatapoint[anomalyDatapoints.size()];
-                for(int i = 0; i < valueDatapoints[3].length; i++){
-                    valueDatapoints[3][i] = anomalyDatapoints.get(i);
-                }
-                valueDatapoints[2] = datapoints;
-                return valueDatapoints;
             }
-        return new ValueDatapoint<?>[1][0];
+            case "Change" -> {
+                detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
+                timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
+                minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
+
+                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
+                if(period.getLatest() == null)return vdaa;
+                if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
+                for (ValueDatapoint<?> dp : datapoints) {
+                    AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
+                    point.anomalyType = AnomalyType.Unchecked;
+                    point.setTimestamp(dp.getTimestamp());
+                    point.setValue(dp.getValue());
+                    assetAnomalyDatapoints.add(point);
+                }
+            }
+            case "Forecast" -> {
+                detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
+                timespan = 1000*60*20;
+                minimumDatapoints = 1;
+
+                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
+                if(period.getLatest() == null)return vdaa;
+                if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+                datapoints = ArrayUtils.addAll( assetPredictedDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest(), period.getLatest() + timespan*5)),
+                                                assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest())));
+                for (ValueDatapoint<?> dp : datapoints) {
+                    if(dp.getTimestamp() > period.getLatest()){
+                        AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
+                        point.anomalyType = AnomalyType.Unchecked;
+                        point.setTimestamp(dp.getTimestamp());
+                        point.setValue(dp.getValue());
+                        assetAnomalyDatapoints.add(point);
+                    }
+                }
+            }
+            default -> {
+                return null;
+            }
+        }
+
+        //check if there are enough datapoints to draw at least 2 limits
+        if(datapoints.length < minimumDatapoints+ 2) return new ValueDatapoint<?>[1][datapoints.length];
+        ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[4][datapoints.length - minimumDatapoints+1];
+        List<ValueDatapoint<?>> anomalyDatapoints = new ArrayList<>();
+
+
+        int index =0;
+        long finalTimespan = timespan;
+        for(int i = datapoints.length - minimumDatapoints; i >= 0; i--){
+            ValueDatapoint<?> dp = datapoints[i];
+            if(detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
+                double[] values = detectionMethod.GetLimits(datapoints[i]);
+                valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
+                valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
+                if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
+                    anomalyDatapoints.add(datapoints[i]);
+                }
+            }else if(type.equals("Global") || type.equals("Change")){
+                if(detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
+                    double[] values = detectionMethod.GetLimits(datapoints[i]);
+                    valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
+                    valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
+                    if ((double) datapoints[i].getValue() < values[0] || (double) datapoints[i].getValue() > values[1]) {
+                        anomalyDatapoints.add(datapoints[i]);
+                    }
+                }
+            }else if(type.equals("Forecast")){
+                detectionMethod.UpdateData(assetAnomalyDatapoints);
+            }
+            index++;
+
+        }
+        valueDatapoints[3] = new ValueDatapoint[anomalyDatapoints.size()];
+        for(int i = 0; i < valueDatapoints[3].length; i++){
+            valueDatapoints[3][i] = anomalyDatapoints.get(i);
+        }
+        valueDatapoints[2] = datapoints;
+        return valueDatapoints;
     }
 
     protected void onAttributeChange(AttributeEvent event) {
@@ -355,15 +390,16 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
                                 message = message.replace("%ASSET_ID%",attributeRef.getId());
                                 message = message.replace("%ATTRIBUTE_NAME%",attributeRef.getName());
-                                Alarm alarm = new Alarm(method.config.name, message, method.config.alarm.getSeverity());
+
+                                Alarm alarm = new Alarm(method.config.name, message, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
                                 SentAlarm sentAlarm = alarmService.sendAlarm(alarm);
                                 alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
                             }
                         }
-                    }else if(anomalyCount == 0){
-                        anomalyType = AnomalyType.Unchecked;
-                    }
+                }else if(anomalyCount == 0){
+                    anomalyType = AnomalyType.Unchecked;
                 }
+            }
             if(anomalyCount > 1) anomalyType = AnomalyType.Multiple;
             return  anomalyType;
         }

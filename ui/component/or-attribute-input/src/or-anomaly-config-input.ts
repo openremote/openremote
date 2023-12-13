@@ -315,6 +315,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
         if(newConfig && newConfig.methods && newConfig.methods[0]){
             newConfig.methods.forEach(method =>{
                 if ( !method.type || !method.deviation || method.onOff === undefined || method.alarmOnOff === undefined || !method.alarm  || (method.alarmOnOff? !method.alarm!.severity:false) || !method.name || method.name === "") valid = false;
+                method.alarm!.realm = manager.getRealm();
                 if(method.type === "global"){
                     if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationGlobal).timespan as string)|| (method as AnomalyDetectionConfigurationGlobal).timespan === "" || !((method as AnomalyDetectionConfigurationGlobal).minimumDatapoints))valid = false
                 }else if(method.type === "change"){

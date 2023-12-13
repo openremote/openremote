@@ -84,25 +84,33 @@ export class OrAnomalyConfigChart extends OrChart {
                 console.error("Failed to get assets requested in settings", e);
             }
 
-            if(this.anomalyConfig.type === "global" || this.anomalyConfig.type === "change"){
-                timespan =  moment.duration((this.anomalyConfig as AnomalyDetectionConfigurationGlobal | AnomalyDetectionConfigurationChange).timespan).asMilliseconds()
-            }
-            this.datapointQuery = {
-                type: "all",
-                fromTimestamp: Date.now()- timespan * 5,
-                toTimestamp: Date.now()
-            }
+
         }
 
-        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider)) {
             this._loading = false
             return;
         }
         this._loading = true;
 
-        this.timespan = timespan * 5
-        this._startOfPeriod = Date.now() - this.timespan.valueOf();
-        this._endOfPeriod = Date.now();
+        this._startOfPeriod = 0;
+        this._endOfPeriod = 0;
+        if(this.anomalyConfig.type === "global" || this.anomalyConfig.type === "change"){
+            timespan =  moment.duration((this.anomalyConfig as AnomalyDetectionConfigurationGlobal | AnomalyDetectionConfigurationChange).timespan).asMilliseconds()
+            this._startOfPeriod = Date.now() - timespan * 5;
+            this._endOfPeriod = Date.now();
+        }else if(this.anomalyConfig.type === "forecast"){
+            timespan = 1000*60*20;
+            this._startOfPeriod = Date.now() - timespan * 2;
+            this._endOfPeriod = Date.now() + timespan;
+        }
+
+        this.datapointQuery = {
+            type: "all",
+            fromTimestamp: Date.now()- timespan * 5,
+            toTimestamp: Date.now()
+        }
+
 
         const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours);
@@ -171,12 +179,14 @@ export class OrAnomalyConfigChart extends OrChart {
             backgroundColor: DefaultColor4 + "80",
             label: "min",
             pointRadius: 0,
+            animation: false,
             fill: false,
             data: [],
         };
         let anomalyDataset: ChartDataset<"line", ScatterDataPoint[]> ={
             pointStyle: "cross",
             label: "anomalies",
+            animation: false,
             pointRadius :10,
             pointRotation: 45,
             pointBorderWidth: 2,
@@ -191,6 +201,7 @@ export class OrAnomalyConfigChart extends OrChart {
             borderColor: DefaultColor4 + "80",
             backgroundColor: DefaultColor4 + "80",
             label: "max",
+            animation: false,
             pointRadius: 0,
             fill: "-1",
             data: [],
@@ -199,7 +210,13 @@ export class OrAnomalyConfigChart extends OrChart {
             borderColor: "#2844cc",
             backgroundColor: "#2844cc",
             label: "data",
+            animation: false,
             pointRadius: 2,
+            segment:{
+                borderDash: (ctx => {
+                    return  ctx.p0.parsed.x > Date.now()? [2, 4] : undefined
+                })
+            },
             fill: false,
             data: [],
         };

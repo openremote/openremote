@@ -14,18 +14,22 @@ public class AlarmConfig implements Serializable {
     protected Alarm.Severity severity;
     protected String assigneeId;
     protected String content;
+    protected String realm;
 
     @JsonCreator
     public AlarmConfig(@JsonProperty("severity") Alarm.Severity severity,
                        @JsonProperty("content") String content,
-                       @JsonProperty("assigneeId") String assigneeId) {
+                       @JsonProperty("assigneeId") String assigneeId,
+                       @JsonProperty("realm") String realm) {
         this.severity = severity;
         this.assigneeId = assigneeId;
         this.content = content;
+        this.realm = realm;
     }
 
     public String getAssigneeId() { return this.assigneeId; }
     public String getContent() { return this.content; }
+    public String getRealm() { return this.realm; }
 
     public Alarm.Severity getSeverity() { return this.severity; }
 

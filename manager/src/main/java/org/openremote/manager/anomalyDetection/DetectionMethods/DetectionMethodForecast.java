@@ -29,7 +29,7 @@ public class DetectionMethodForecast extends DetectionMethod{
                         (timestamp - predictedPoints.get(i).getTimestamp())
                         +
                         (double)predictedPoints.get(i).getValue();
-                return !(predictedValue -  config.deviation > (double) value) && !(predictedValue + config.deviation < (double) value);
+                return !(predictedValue -  config.deviation > (double)value) && !(predictedValue + config.deviation < (double) value);
             }
         }
         return true;
@@ -38,7 +38,7 @@ public class DetectionMethodForecast extends DetectionMethod{
     @Override
     public boolean checkRecentDataSaved(long latestTimestamp) {
         if(predictedPoints.isEmpty())return false;
-        if( latestTimestamp < predictedPoints.get(0).getTimestamp()){
+        if(latestTimestamp > predictedPoints.get(predictedPoints.size() -1).getTimestamp()  && latestTimestamp < predictedPoints.get(0).getTimestamp()){
             return true;
         }
         return false;
@@ -63,9 +63,9 @@ public class DetectionMethodForecast extends DetectionMethod{
                                 (datapoint.getTimestamp() - predictedPoints.get(i).getTimestamp())
                                 +
                                 (double)predictedPoints.get(i).getValue();
-                return new double[]{(predictedValue - predictedValue * ((double) 100 / config.deviation)), (predictedValue + predictedValue * ((double) 100 / config.deviation))};
+                return new double[]{predictedValue - config.deviation, predictedValue + config.deviation};
             }
         }
-        return new double[0];
+        return new double[2];
     }
 }
