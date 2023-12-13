@@ -16,6 +16,7 @@ import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
+import {pageOfflineProvider} from "./page-offline";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -297,7 +298,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         // If either page or 'offline'-status is changed, it should update to the correct page,
         // by appending the page to the HTML content
-        if (changedProps.has("_page") || changedProps.has("_offline")) {
+        if (changedProps.has("_page") || changedProps.has("_offline") || changedProps.has("_showOfflineFallback")) {
             if (this._mainElem) {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
@@ -337,10 +338,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
-                else if(!offlinePage && showOfflineFallback && this.appConfig?.offlinePage) {
+                else if(!offlinePage && showOfflineFallback) {
                     console.log("Showing offline page fallback!");
                     (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
-                    const newOfflinePage = this.appConfig.offlinePage.pageCreator();
+                    const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
                     newOfflinePage.id = "offline-page";
                     this._mainElem.appendChild(newOfflinePage);
                 }
