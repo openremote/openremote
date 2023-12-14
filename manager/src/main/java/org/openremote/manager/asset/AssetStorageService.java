@@ -151,8 +151,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  return false;
              }
 
-             // Superuser can get events for any asset in any realm
-             if (auth != null && auth.isSuperUser()) {
+             // Internal subscribers and superusers can get events for any asset in any realm
+             if (subscription.isInternal() || (auth != null && auth.isSuperUser())) {
                  return true;
              }
 
@@ -161,6 +161,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  filter = new AssetFilter<>();
                  subscription.setFilter(filter);
              }
+
+             filter.setInternal(subscription.isInternal());
 
              requestRealm = filter.getRealm() != null ? filter.getRealm() : requestRealm;
              boolean isAnonymous = auth == null;

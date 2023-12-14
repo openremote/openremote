@@ -47,6 +47,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     protected List<String> attributeNames;
     protected boolean publicEvents;
     protected boolean restrictedEvents;
+    protected boolean internal;
 
     public AssetFilter() {
     }
@@ -156,6 +157,14 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return this;
     }
 
+    public boolean isInternal() {
+        return internal;
+    }
+
+    public void setInternal(boolean internal) {
+        this.internal = internal;
+    }
+
     @Override
     public String getFilterType() {
         return FILTER_TYPE;
@@ -166,6 +175,13 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     public T apply(T event) {
 
         MetaItemDescriptor<?> filterAttributesBy = null;
+
+        // Non internal subscribers of attribute events only get value updates so make sure the value has changed
+        if (!internal && event instanceof AttributeEvent attributeEvent) {
+            if (attributeEvent.valueChanged()) {
+                return null;
+            }
+        }
 
         if (restrictedEvents) {
             if (event instanceof AttributeEvent attributeEvent) {

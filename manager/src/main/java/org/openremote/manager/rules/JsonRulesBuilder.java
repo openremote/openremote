@@ -1070,7 +1070,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             sb.append("</table>");
         } else if (isJson) {
             try {
-                ValueUtil.JSON.writerWithView(AttributeEvent.View.Enhanced.class).writeValueAsString(assetStates);
+                ValueUtil.JSON.writerWithView(AttributeEvent.Enhanced.class).writeValueAsString(assetStates);
             } catch (Exception e) {
                 LOG.warning(e.getMessage());
             }

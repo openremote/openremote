@@ -42,9 +42,13 @@ import java.util.Optional;
 @AttributeInfoValid
 public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
-    public static class View {
-        public class Enhanced {}
+    static {
+        // Set the default view for serialisation
+        ValueUtil.JSON.setConfig(ValueUtil.JSON.getSerializationConfig().withView(Basic.class));
     }
+
+    protected interface Basic {}
+    public interface Enhanced {}
 
     protected AttributeRef ref;
     protected Object value;
@@ -53,23 +57,23 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     protected Object source;
     @JsonIgnore
     protected String realm;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected String parentId;
     @JsonIgnore
     protected ValueDescriptor<?> valueType;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected Object oldValue;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected long oldValueTimestamp;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected String[] path;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected String assetName;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected String assetType;
     @JsonIgnore
     protected Class<? extends Asset> assetClass;
-    @JsonIgnore
+    @JsonView(Enhanced.class)
     protected Date createdOn;
     @JsonIgnore
     protected MetaMap meta;
@@ -148,12 +152,10 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return super.getTimestamp();
     }
 
-    @JsonView(View.Enhanced.class)
     public Optional<Object> getOldValue() {
         return Optional.ofNullable(oldValue);
     }
 
-    @JsonView(View.Enhanced.class)
     public long getOldValueTimestamp() {
         return oldValueTimestamp;
     }
@@ -191,7 +193,6 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return oldValueTimestamp - getTimestamp() > 0;
     }
 
-    @JsonView(View.Enhanced.class)
     @Override
     public String getParentId() {
         return parentId;
@@ -202,7 +203,6 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
-    @JsonView(View.Enhanced.class)
     @Override
     public String[] getPath() {
         return path;
@@ -213,13 +213,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return new String[]{getRef().getName()};
     }
 
-    @JsonView(View.Enhanced.class)
     @Override
     public String getAssetName() {
         return assetName;
     }
 
-    @JsonView(View.Enhanced.class)
     @Override
     public String getAssetType() {
         return assetType;
@@ -230,13 +228,12 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return assetClass;
     }
 
-    @JsonView(View.Enhanced.class)
     @Override
     public Date getCreatedOn() {
         return createdOn;
     }
 
-    @JsonView(View.Enhanced.class)
+    @JsonView(Enhanced.class)
     @Override
     public ValueDescriptor getType() {
         return valueType;
@@ -284,20 +281,13 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     /**
-     * Compares entity identifier, attribute name, value, and timestamp.
-     */
-    public boolean matches(AttributeEvent event) {
-        return matches(event, false);
-    }
-
-    /**
      * Compares entity identifier, attribute name, value, source, and optional timestamp.
      */
-    public boolean matches(AttributeEvent event, boolean ignoreTimestamp) {
+    public boolean matches(AttributeEvent event) {
         return getId().equals(event.getId())
             && getName().equals(event.getName())
-            && getValue().equals(event.getValue())
-            && (ignoreTimestamp || getTimestamp() == event.getTimestamp());
+            && isDeleted() == event.isDeleted()
+            && getTimestamp() == event.getTimestamp();
     }
 
     @Override
@@ -308,6 +298,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         if (result == 0)
             result = Long.compare(getTimestamp(), that.getTimestamp());
         return result;
+    }
+
+    public boolean valueChanged() {
+        // Just use the timestamp for performance
+        return oldValueTimestamp != getTimestamp();
     }
 
     /**

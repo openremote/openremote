@@ -579,13 +579,13 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         !attributeEventObjectNode.has("meta")
 
         when: "the attribute event is serialized with the enhanced view"
-        def attributeEventStr2 = ValueUtil.JSON.writerWithView(AttributeEvent.View.Enhanced.class).writeValueAsString(attributeEvent)
+        def attributeEventStr2 = ValueUtil.JSON.writerWithView(AttributeEvent.Enhanced.class).writeValueAsString(attributeEvent)
 
         then: "it should look as expected"
         def attributeEventObjectNode2 = ValueUtil.parse(attributeEventStr2, ObjectNode.class).get()
         attributeEventObjectNode2.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode2.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
-        attributeEventObjectNode2.get("timestamp").asLong() == 1234
+        attributeEventObjectNode2.get("timestamp").asLong() == createdDate.getTime()
         attributeEventObjectNode2.get("value").isTextual()
         attributeEventObjectNode2.get("value").asText() == "#3264C8"
         attributeEventObjectNode2.get("deleted").asBoolean()
