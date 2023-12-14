@@ -188,7 +188,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Add pending internal subscriptions
         if (pendingInternalSubscriptions != null && !pendingInternalSubscriptions.isEmpty()) {
             pendingInternalSubscriptions.forEach(subscription ->
-                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription));
+                doInternalSubscription(INTERNAL_SESSION_KEY, subscription));
         }
 
         pendingInternalSubscriptions = null;
@@ -412,10 +412,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     /**
      * Make an internal subscription to {@link SharedEvent}s sent on the client event bus
      */
-    public <T extends SharedEvent> String addInternalSubscription(Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) {
+    public <T extends SharedEvent> String addInternalSubscription(Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) throws IllegalStateException {
         return addInternalSubscription(Integer.toString(Objects.hash(eventClass, filter, eventConsumer)), eventClass, filter, eventConsumer);
     }
-    public <T extends SharedEvent> String addInternalSubscription(String subscriptionId, Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) {
+    public <T extends SharedEvent> String addInternalSubscription(String subscriptionId, Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) throws IllegalStateException {
 
         EventSubscription<T> subscription = new EventSubscription<T>(eventClass, filter, subscriptionId, eventConsumer);
         if (eventSubscriptions == null) {
@@ -425,9 +425,17 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             }
             pendingInternalSubscriptions.add(subscription);
         } else {
-            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, subscription);
+            doInternalSubscription(INTERNAL_SESSION_KEY, subscription);
         }
         return subscriptionId;
+    }
+
+    protected void doInternalSubscription(String sessionKey, EventSubscription<?> eventSubscription) throws IllegalStateException {
+        if (!authorizeEventSubscription(null, null, eventSubscription)) {
+            LOG.log(WARNING, () -> "Internal subscription failed: " + eventSubscription);
+            throw new IllegalStateException("Internal subscription failed");
+        }
+        eventSubscriptions.createOrUpdate(sessionKey, eventSubscription);
     }
 
     public void cancelInternalSubscription(String sessionId) {
