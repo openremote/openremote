@@ -58,6 +58,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
+import static java.util.logging.Level.FINE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -311,12 +312,16 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
     }
 
     protected void onAttributeChange(AttributeEvent event) {
+        long startMillis = System.currentTimeMillis();
         //only handle events coming from attributes in the with anomaly detection
         AnomalyType anomalyType = AnomalyType.Unchecked;
         if(anomalyDetectionAttributes.containsKey(event.getAssetId() + "$" + event.getAttributeName())){
             AnomalyAttribute anomalyAttribute = anomalyDetectionAttributes.get(event.getAssetId() + "$" + event.getAttributeName());
             anomalyType = anomalyAttribute.validateDatapoint(event.getValue(), event.getTimestamp());
             assetAnomalyDatapointService.updateValue(anomalyAttribute.getId(), anomalyAttribute.getName(),anomalyType, event.timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), anomalyAttribute);
+        }
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Attribute Anomaly detection took " + (System.currentTimeMillis() - startMillis) + "ms");
         }
     }
 

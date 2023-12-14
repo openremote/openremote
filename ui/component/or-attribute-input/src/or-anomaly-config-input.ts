@@ -99,11 +99,11 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                     type: "integer"
                 },
 
-            timespan: {
-                title:`${i18next.t("anomalyDetection.minimumTimespan")}`,
-                pattern:"^P(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(\\d+H)?(\\d+M)?(\\d+S)?)?$",
-                type: "string"
-            },
+                timespan: {
+                    title:`${i18next.t("anomalyDetection.minimumTimespan")}`,
+                    pattern:"^P(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(\\d+H)?(\\d+M)?(\\d+S)?)?$",
+                    type: "string"
+                },
                 minimumDatapoints: {
                     title:`${i18next.t("anomalyDetection.minimumDatapoints")}`,
                     type: "integer"
@@ -154,10 +154,10 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
         }
         const onCollapseToggled = (expanded: boolean) => {
             this.expanded = expanded;
-                if(expanded){
-                    this.updateBool = !this.updateBool
-                    this.draw();
-                }
+            if(expanded){
+                this.updateBool = !this.updateBool
+                this.draw();
+            }
         }
         const doLoad = async (con: AnomalyDetectionConfigObject) => {
             if (jsonFormsInput.value) {
@@ -170,88 +170,94 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
         this.requestUpdate();
         return html`
             <style>
-                    .test {
-                        display: flex;
-                        flex-direction: column;
-                        width: 100%;
-                    }
-                    .item{
-                        display: flex;
-                        width: 100%;
-                    }
-                </style>
-                <div class="test">
-                    <or-collapsible-panel style="width: 100%" .onChange="${onCollapseToggled}">
-                        <div slot="header">
+                .test {
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .item{
+                    display: flex;
+                    width: 100%;
+                }
+            </style>
+            <div class="test">
+                <or-collapsible-panel style="width: 100%" .onChange="${onCollapseToggled}">
+                    <div slot="header">
                             <span>
                             ${i18next.t("anomalyDetection.")}
                             </span>
-                        </div>
-                        <div slot="header-description" style="display: flex; flex-direction: row-reverse; width: 100%">
-                            <or-mwc-input type="button" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input>
-                        </div>
-                        
-                        <div class="test" slot="content">
-                            <div style="display: flex; padding: 0 16pt; margin-left: 10pt">
-                                ${this.anomalyDetectionConfigObject.methods.map((m) => {
-            const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
-            return html`
-                                <div .style="z-index: 10; margin:0 2pt; border-top-right-radius:4pt; border-top-left-radius:4pt; border-color:lightgray; border-style:solid; border-width:thin; ${i === this.selectedIndex ? "border-bottom-color: white;": "border-bottom-style: none;"}">
-                                    <or-mwc-input type="button" .label="${m.name}" @or-mwc-input-changed="${() =>{ this.selectedIndex = i;this.updateBool=!this.updateBool; this.draw(); this.requestUpdate();}}" ></or-mwc-input>
-                                </div>
-                            `
-        })}
-                                <or-mwc-input type="button" label="${i18next.t("anomalyDetection.addMethod")}" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod();}}" ></or-mwc-input>
-                            </div >
-                            ${this.selectedIndex == -1? html`
-                                <p style="padding-left:16pt ">${i18next.t("anomalyDetection.noMethodsCreated")}</p>
-                            `: html`
-                                <div style="margin: 16pt; padding: 16pt; margin-top: -1px; border-style: solid; border-color: lightgray; border-width: thin; border-radius: 4pt;">
+                    </div>
+                    <div slot="header-description" style="display: flex; flex-direction: row-reverse; width: 100%">
+                        <or-mwc-input type="button" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input>
+                    </div>
+
+                    <div class="test" slot="content">
+                        <div style="display: flex; padding: 0 16pt; margin-left: 10pt">
+                            ${this.anomalyDetectionConfigObject.methods.map((m) => {
+                                const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
+                                return html`
+                                    <div .style="z-index: 10; margin:0 2pt; border-top-right-radius:4pt; border-top-left-radius:4pt; border-color:lightgray; border-style:solid; border-width:thin; ${i === this.selectedIndex ? "border-bottom-color: white;": "border-bottom-style: none;"}">
+                                        <or-mwc-input type="button" .label="${m.name}" @or-mwc-input-changed="${() =>{ this.selectedIndex = i;this.updateBool=!this.updateBool; this.draw(); this.requestUpdate();}}" ></or-mwc-input>
+                                    </div>
+                                `
+                            })}
+                            <or-mwc-input type="button" label="${i18next.t("anomalyDetection.addMethod")}" icon="plus" @or-mwc-input-changed="${() =>{this.addMethod();}}" ></or-mwc-input>
+                        </div >
+                        ${this.selectedIndex == -1? html`
+                            <p style="padding-left:16pt ">${i18next.t("anomalyDetection.noMethodsCreated")}</p>
+                        `: html`
+                            <div style="margin: 16pt; padding: 16pt; margin-top: -1px; border-style: solid; border-color: lightgray; border-width: thin; border-radius: 4pt;">
                                 <div style="display: flex;  justify-content: space-between; width: 100%">
                                     <div class="item" style="justify-content: left">
-                                    <or-mwc-input .label="${i18next.t("name")}" type="text" .value="${this.anomalyDetectionConfigObject!.methods![this.selectedIndex].name!}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"name")}"></or-mwc-input>
+                                        <or-mwc-input .label="${i18next.t("name")}" type="text" .value="${this.anomalyDetectionConfigObject!.methods![this.selectedIndex].name!}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"name")}"></or-mwc-input>
                                     </div>
-                                   
+
                                     <div class="item" style="justify-content: right">
-                                    <or-mwc-input .style="visibility: ${this.selectedIndex == -1? 'hidden':'visible'};" type="button" icon="close-circle" @or-mwc-input-changed="${() =>{ this.removeMethod(this.selectedIndex); this.requestUpdate();}}" ></or-mwc-input>
+                                        <or-mwc-input .style="visibility: ${this.selectedIndex == -1? 'hidden':'visible'};" type="button" icon="close-circle" @or-mwc-input-changed="${() =>{ this.removeMethod(this.selectedIndex); this.requestUpdate();}}" ></or-mwc-input>
                                     </div>
                                 </div>
                                 <div .style="visibility: ${this.selectedIndex == -1? 'hidden':'visible'};" class="test" slot="content" >
                                     <div style="display: flex; justify-content: space-between; flex-direction: row;">
                                         <div style="width: 45%">
                                             <p>${i18next.t("anomalyDetection.detectionMethod")}</p>
-                                        <or-json-forms  .renderers="${StandardRenderers}" ${ref(jsonFormsInput)}
-                                        .disabled="${false}" .readonly="${false}" .label="Config"
-                                        .schema="${this.anomalyDetectionConfigObject.methods![this.selectedIndex].type === "forecast"? schemaForecast : schemaChangeGlobal}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
-                                        .onChange="${onChanged}" .props="test" .minimal="${true}"></or-json-forms>
-                                    </div>
-                                    <div style="width: 45%;  display: flex; flex-direction: column;">
-                                        <p>${i18next.t("alarm.")}</p>
-                                        <or-mwc-input .readonly="${!this.anomalyDetectionConfigObject.methods[this.selectedIndex].onOff}" type="checkbox" label="Active" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].onOff? this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarmOnOff: false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarmOnOff")}"></or-mwc-input>
-                                        <or-mwc-input .required="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarmOnOff}" style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.severity:""}" type="select" .options="${["LOW","MEDIUM","HIGH"]}" label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.severity")}"></or-mwc-input>
-                                        <or-mwc-input style="padding-top: 10px;" .label="${i18next.t("alarm.assignee")}" placeholder=" " type="select"
-                              .options="${options.map((obj) => obj.label) || undefined}"
-                              .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm!.assigneeId ? options.filter((obj) => obj.value === this.anomalyDetectionConfigObject!.methods![this.selectedIndex].alarm!.assigneeId).map((obj) => obj.label)[0] : ""}"
-                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                  e.detail.value = options.filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0]
-                                this.updateProperty(e,"alarm.assigneeId");
-                            }}"></or-mwc-input>
-                                        <or-mwc-input style="padding-top: 10px;" .value="${this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content?this.anomalyDetectionConfigObject.methods[this.selectedIndex].alarm?.content:"%AssetId%\n%AttributeName%"}" type="textarea"  label="${i18next.t("alarm.content")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.content")}"></or-mwc-input>
-                                    </div>
+                                            <or-json-forms  .renderers="${StandardRenderers}" ${ref(jsonFormsInput)}
+                                                            .disabled="${false}" .readonly="${false}" .label="Config"
+                                                            .schema="${this.anomalyDetectionConfigObject.methods![this.selectedIndex].type === "forecast"? schemaForecast : schemaChangeGlobal}" label="Anomaly Detection Json forms" .uischema="${uiSchema}"
+                                                            .onChange="${onChanged}" .props="test" .minimal="${true}"></or-json-forms>
+                                        </div>
+                                        <div style="width: 45%;  display: flex; flex-direction: column;">
+                                            <p>${i18next.t("alarm.")}</p>
+                                            ${this.anomalyDetectionConfigObject.methods.map((m) => {
+                                                const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
+                                                if(i === this.selectedIndex) return html`
+                                                        <or-mwc-input .readonly="${m.onOff}" type="checkbox" label="Active" .value="${m.onOff? m.alarmOnOff: false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarmOnOff")}"></or-mwc-input>
+                                            <or-mwc-input .required="${m.alarmOnOff}" style="padding-top: 10px;" .value="${m.alarm?.severity?m.alarm?.severity:""}" type="select" .options="${["LOW","MEDIUM","HIGH"]}" label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.severity")}"></or-mwc-input>
+                                            <or-mwc-input style="padding-top: 10px;" .label="${i18next.t("alarm.assignee")}" placeholder=" " type="select"
+                                                          .options="${options.map((obj) => obj.label) || undefined}"
+                                                          .value="${m.alarm!.assigneeId ? options.filter((obj) => obj.value === this.anomalyDetectionConfigObject!.methods![this.selectedIndex].alarm!.assigneeId).map((obj) => obj.label)[0] : ""}"
+                                                          @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                    e.detail.value = options.filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0]
+                                                    this.updateProperty(e,"alarm.assigneeId");
+                                                }}"></or-mwc-input>
+                                            <or-mwc-input style="padding-top: 10px;" .value="${m.alarm?.content?m.alarm?.content:"%AssetId%\n%AttributeName%"}" type="textarea"  label="${i18next.t("alarm.content")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.content")}"></or-mwc-input>
+                                `
+                                            })}
+                                            
+                                        </div>
                                     </div>
                                     <or-anomaly-config-chart style="display: flex; width: auto;"
-                                        .timePresetKey="${this.updateBool}" 
-                                                             .panelName="${this.selectedIndex}" 
-                                                             .anomalyConfig="${this.anomalyDetectionConfigObject ? this.anomalyDetectionConfigObject.methods![this.selectedIndex] : undefined}" .attributeRef="${attributeRef}" 
+                                                             .timePresetKey="${this.updateBool}"
+                                                             .panelName="${this.selectedIndex}"
+                                                             .anomalyConfig="${this.anomalyDetectionConfigObject ? this.anomalyDetectionConfigObject.methods![this.selectedIndex] : undefined}" .attributeRef="${attributeRef}"
                                                              .canRefresh="${this.expanded}">
                                     </or-anomaly-config-chart>
                                 </div>
                             </div>
-                            `}
-                        </div>
-                    </or-collapsible-panel>
-                </div>
-                `
+                        `}
+                    </div>
+                </or-collapsible-panel>
+            </div>
+        `
     }
     protected addMethod() {
         if(this.anomalyDetectionConfigObject){
@@ -262,6 +268,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
             con = {name:"Method "+ (this.anomalyDetectionConfigObject.methods!.length +1 ),type:"global", onOff:false, deviation:10, minimumDatapoints:19, timespan:"PT20M", alarm:{content:"%ASSET_ID%\n%ATTRIBUTE_NAME%", assigneeId:undefined},alarmOnOff:false }
             this.anomalyDetectionConfigObject.methods![i] = con;
             this.selectedIndex = i;
+            this.updateBool = !this.updateBool;
             this.draw();
         }
     }
@@ -269,6 +276,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
         if(this.anomalyDetectionConfigObject){
             this.anomalyDetectionConfigObject.methods?.splice(index,1);
             this.selectedIndex--;
+            this.updateBool = !this.updateBool;
             this.draw();
         }
     }

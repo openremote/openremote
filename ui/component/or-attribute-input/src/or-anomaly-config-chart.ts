@@ -62,6 +62,19 @@ export class OrAnomalyConfigChart extends OrChart {
         if(this.anomalyConfig.onOff == undefined || !this.anomalyConfig.type || !this.anomalyConfig.deviation){
             return;
         }
+        if(this.anomalyConfig.type==="global"){
+            if((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan === "" || !(this.anomalyConfig as AnomalyDetectionConfigurationGlobal).timespan
+                || !(this.anomalyConfig as AnomalyDetectionConfigurationGlobal).minimumDatapoints ||!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((this.anomalyConfig as AnomalyDetectionConfigurationGlobal).timespan as string)){
+                this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
+                return
+            }
+        }else if(this.anomalyConfig.type==="change"){
+            if((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan === "" || !(this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan
+                || !(this.anomalyConfig as AnomalyDetectionConfigurationChange).minimumDatapoints || !/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan as string)){
+                this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
+                return
+            }
+        }
         if(this.attributeRef){
             this._loading = true
             const query = {

@@ -38,7 +38,7 @@ public class DetectionMethodForecast extends DetectionMethod{
     @Override
     public boolean checkRecentDataSaved(long latestTimestamp) {
         if(predictedPoints.isEmpty())return false;
-        if(latestTimestamp > predictedPoints.get(predictedPoints.size() -1).getTimestamp()  && latestTimestamp < predictedPoints.get(0).getTimestamp()){
+        if(latestTimestamp >= predictedPoints.get(predictedPoints.size() -1).getTimestamp()  && latestTimestamp <= predictedPoints.get(0).getTimestamp()){
             return true;
         }
         return false;
@@ -54,7 +54,7 @@ public class DetectionMethodForecast extends DetectionMethod{
     @Override
     public double[] GetLimits(ValueDatapoint<?> datapoint) {
         for(int i = 1; i < predictedPoints.size(); i++){
-            if((double)predictedPoints.get(i).getTimestamp() < datapoint.getTimestamp()){
+            if((double)predictedPoints.get(i).getTimestamp() <= datapoint.getTimestamp()){
                 double predictedValue =
                         ((double)predictedPoints.get(i-1).getValue() - (double)predictedPoints.get(i).getValue())
                                 /
