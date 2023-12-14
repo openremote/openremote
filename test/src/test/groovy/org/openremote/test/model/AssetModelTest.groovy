@@ -571,11 +571,11 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         attributeEventObjectNode.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
         attributeEventObjectNode.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode.has("realm")
         attributeEventObjectNode.get("value").isTextual()
         attributeEventObjectNode.get("value").asText() == "#3264C8"
         attributeEventObjectNode.get("deleted").asBoolean()
         !attributeEventObjectNode.has("source")
-        !attributeEventObjectNode.has("realm")
         !attributeEventObjectNode.has("meta")
 
         when: "the attribute event is serialized with the enhanced view"
@@ -586,11 +586,11 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         attributeEventObjectNode2.get("ref").get("id").asText() == asset2.id
         attributeEventObjectNode2.get("ref").get("name").asText() == LightAsset.COLOUR_RGB.name
         attributeEventObjectNode2.get("timestamp").asLong() == createdDate.getTime()
+        attributeEventObjectNode2.has("realm")
         attributeEventObjectNode2.get("value").isTextual()
         attributeEventObjectNode2.get("value").asText() == "#3264C8"
         attributeEventObjectNode2.get("deleted").asBoolean()
         !attributeEventObjectNode2.has("source")
-        !attributeEventObjectNode2.has("realm")
         !attributeEventObjectNode2.has("meta")
     }
 }
