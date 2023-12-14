@@ -293,6 +293,9 @@ services:
       # Web server port used to host metrics endpoint
       OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
 
+      # Set the number of concurrent attribute event processors
+      OR_ATTRIBUTE_EVENT_THREADS:
+
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS = 30

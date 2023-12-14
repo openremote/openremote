@@ -178,7 +178,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         // Non internal subscribers of attribute events only get value updates so make sure the value has changed
         if (!internal && event instanceof AttributeEvent attributeEvent) {
-            if (attributeEvent.valueChanged()) {
+            if (!attributeEvent.valueChanged()) {
                 return null;
             }
         }

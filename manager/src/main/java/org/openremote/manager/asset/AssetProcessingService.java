@@ -437,7 +437,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
             } else {
                 if (enrichedEvent.isOutdated()) {
-                    LOG.log(System.Logger.Level.TRACE, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
+                    LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
                     // Generate an event for this so internal subscribers can act on it if needed
                     clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
                 } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
