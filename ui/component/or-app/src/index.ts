@@ -427,7 +427,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             }
         } else if(event === OREvent.ONLINE) {
             if(this._offline) {
+                console.log("Back online!");
                 showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
+                this._showOfflineFallback = false;
                 this._store.dispatch((setOffline(false)))
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
