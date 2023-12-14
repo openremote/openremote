@@ -27,6 +27,7 @@ import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
@@ -48,7 +49,9 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         ValueUtil.JSON.setConfig(ValueUtil.JSON.getSerializationConfig().withView(Basic.class));
     }
 
+    @TsIgnore
     protected interface Basic {}
+    @TsIgnore
     public interface Enhanced {}
 
     protected AttributeRef ref;
@@ -56,7 +59,6 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     protected boolean deleted;
     @JsonIgnore
     protected Object source;
-    @JsonIgnore
     protected String realm;
     @JsonView(Enhanced.class)
     protected String parentId;
