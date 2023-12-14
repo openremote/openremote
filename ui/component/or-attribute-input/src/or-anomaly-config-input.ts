@@ -230,7 +230,7 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                                             ${this.anomalyDetectionConfigObject.methods.map((m) => {
                                                 const i = this.anomalyDetectionConfigObject!.methods?.indexOf(this.anomalyDetectionConfigObject!.methods?.find(x => x === m)!)!;
                                                 if(i === this.selectedIndex) return html`
-                                                        <or-mwc-input .readonly="${m.onOff}" type="checkbox" label="Active" .value="${m.onOff? m.alarmOnOff: false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarmOnOff")}"></or-mwc-input>
+                                                        <or-mwc-input .readonly="${!m.onOff}" type="checkbox" label="Active" .value="${m.onOff? m.alarmOnOff: false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarmOnOff")}"></or-mwc-input>
                                             <or-mwc-input .required="${m.alarmOnOff}" style="padding-top: 10px;" .value="${m.alarm?.severity?m.alarm?.severity:""}" type="select" .options="${["LOW","MEDIUM","HIGH"]}" label="${i18next.t("alarm.severity")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"alarm.severity")}"></or-mwc-input>
                                             <or-mwc-input style="padding-top: 10px;" .label="${i18next.t("alarm.assignee")}" placeholder=" " type="select"
                                                           .options="${options.map((obj) => obj.label) || undefined}"
@@ -325,9 +325,27 @@ export class OrAnomalyConfigChart extends translate(i18next)(LitElement) {
                 if ( !method.type || !method.deviation || method.onOff === undefined || method.alarmOnOff === undefined || !method.alarm  || (method.alarmOnOff? !method.alarm!.severity:false) || !method.name || method.name === "") valid = false;
                 method.alarm!.realm = manager.getRealm();
                 if(method.type === "global"){
-                    if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationGlobal).timespan as string)|| (method as AnomalyDetectionConfigurationGlobal).timespan === "" || !((method as AnomalyDetectionConfigurationGlobal).minimumDatapoints))valid = false
+                    if(!(method as AnomalyDetectionConfigurationGlobal).timespan || (method as AnomalyDetectionConfigurationGlobal).timespan === ""){
+                        (method as AnomalyDetectionConfigurationGlobal).timespan = "";
+                        valid= false;
+                    }else if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationGlobal).timespan as string)){
+                        valid = false;
+                    }
+                    if(!((method as AnomalyDetectionConfigurationGlobal).minimumDatapoints)){
+                        (method as AnomalyDetectionConfigurationGlobal).minimumDatapoints = 0
+                        valid = false;
+                    }
                 }else if(method.type === "change"){
-                    if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationChange).timespan as string)|| (method as AnomalyDetectionConfigurationChange).timespan === "" || !((method as AnomalyDetectionConfigurationChange).minimumDatapoints))valid = false
+                    if(!(method as AnomalyDetectionConfigurationChange).timespan || (method as AnomalyDetectionConfigurationChange).timespan === ""){
+                        (method as AnomalyDetectionConfigurationChange).timespan = "";
+                        valid= false;
+                    }else if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationChange).timespan as string)){
+                        valid = false;
+                    }
+                    if(!((method as AnomalyDetectionConfigurationChange).minimumDatapoints)){
+                        (method as AnomalyDetectionConfigurationChange).minimumDatapoints = 0
+                        valid = false;
+                    }
                 }
             })
             if (!Util.objectsEqual(newConfig, this.anomalyDetectionConfigObject)) {

@@ -399,6 +399,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                                 Alarm alarm = new Alarm(method.config.name, message, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
                                 SentAlarm sentAlarm = alarmService.sendAlarm(alarm);
                                 alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
+                                alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())) ,alarm.getRealm(),sentAlarm.getId());
                             }
                         }
                 }else if(anomalyCount == 0){
@@ -415,15 +416,18 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             if(period.getLatest() == null) return datapoints;
 
 
+
             AttributeAnomaly[] anomalies = new AttributeAnomaly[0];
             ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
             if(detectionMethod.config.getClass().getSimpleName().equals("Global")||detectionMethod.config.getClass().getSimpleName().equals("Change")){
                 long maxTimespan = 0;
                 int maxMinimumDatapoints = 0;
                 if(detectionMethod.config.getClass().getSimpleName().equals("Global")){
+                    if(((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
                 }else if(detectionMethod.config.getClass().getSimpleName().equals("Change")){
+                    if(((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
                 }

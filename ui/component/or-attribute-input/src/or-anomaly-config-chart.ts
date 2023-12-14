@@ -216,7 +216,7 @@ export class OrAnomalyConfigChart extends OrChart {
             label: "max",
             animation: false,
             pointRadius: 0,
-            fill: "-1",
+            fill: 3,
             data: [],
         };
         let dataset: ChartDataset<"line", ScatterDataPoint[]> = {
@@ -245,8 +245,23 @@ export class OrAnomalyConfigChart extends OrChart {
                 }
                 dataset.data = response.data[2].filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
                 anomalyDataset.data = response.data[3].filter(value => value !== null) as ScatterDataPoint[];
+                let limitSectionCount = 0;
+                while(response.data[1].length > 1) {
+                    let minimaxdata = response.data[1].slice(response.data[1].findIndex(d => d !== null),response.data[1].length);
+                    let index = minimaxdata.findIndex(d => d === null);
+                    minimaxdata = minimaxdata.slice(0,index=== -1? minimaxdata.length:index);
+                    maxData.data = minimaxdata.filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
+                    datasets.push(JSON.parse(JSON.stringify(maxData)));
+                    response.data[1] =  response.data[1].splice(response.data[1].findIndex(d => d !== null) + minimaxdata.length, response.data[1].length);
+                    limitSectionCount++
+                }
+                let i = 1
+                datasets.forEach(ds =>{
+                    ds.fill = limitSectionCount +i
+                    i++;
+                })
                 datasets.push(dataset);
-                datasets.push(anomalyDataset);
+
                 while(response.data[0].length > 1){
                     let minimindata = response.data[0].slice(response.data[0].findIndex(d => d !== null),response.data[0].length);
                     let index = minimindata.findIndex(d => d === null);
@@ -254,15 +269,8 @@ export class OrAnomalyConfigChart extends OrChart {
                     minData.data = minimindata.filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
                     datasets.push(JSON.parse(JSON.stringify(minData)));
                     response.data[0] = response.data[0].splice(response.data[0].findIndex(d => d !== null) + minimindata.length, response.data[0].length);
-
-                    let minimaxdata = response.data[1].slice(response.data[1].findIndex(d => d !== null),response.data[1].length);
-                    index = minimaxdata.findIndex(d => d === null);
-                    minimaxdata = minimaxdata.slice(0,index=== -1? minimaxdata.length:index);
-                    maxData.data = minimaxdata.filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
-                    datasets.push(JSON.parse(JSON.stringify(maxData)));
-                    response.data[1] =  response.data[1].splice(response.data[1].findIndex(d => d !== null) + minimaxdata.length, response.data[1].length);
                 }
-
+                datasets.push(anomalyDataset);
             }else if(response.status === 204){
                 this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
             }
