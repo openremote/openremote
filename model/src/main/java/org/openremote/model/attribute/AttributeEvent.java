@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
@@ -234,6 +235,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @JsonView(Enhanced.class)
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     @Override
     public ValueDescriptor getType() {
         return valueType;

@@ -768,10 +768,8 @@ Resources:
                   - /etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf
 
     Properties:
-      InstanceType:
-        Ref: InstanceType
-      KeyName:
-        "developers"
+      InstanceType: !Ref InstanceType
+      KeyName: "developers"
       ImageId: !Ref ImageId
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
