@@ -240,41 +240,32 @@ export const mapAssetCardStyle = css`
 
 export const mapAssetLegendStyle = css`
             :host {
-                --internal-or-map-asset-card-header-color: var(--or-map-asset-card-header-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
-                --internal-or-map-asset-card-header-text-color: var(--or-map-asset-card-header-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-                --internal-or-map-asset-card-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
                 --internal-or-map-asset-card-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-                --internal-or-map-asset-card-background-text-color: var(--or-map-asset-card-background-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-                --internal-or-map-asset-card-separator-color: var(--or-map-asset-card-separator-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
-                
+                --internal-or-map-asset-card-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
+              
                 display: block;
             }
-
-            #card-container {
+  
+            #legend {
                 display: flex;
                 flex-direction: column;
-                height: 100%;
                 background-color: var(--internal-or-map-asset-card-background-color);
                 -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
                 -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
                 box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);  
             }
             
-            #header {
+            #legend-title {
                 height: var(--internal-or-map-asset-card-header-height);
                 background-color: var(--internal-or-map-asset-card-header-color);
                 line-height: var(--internal-or-map-asset-card-header-height);
                 border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-                text-align: center;
                 color: var(--internal-or-map-asset-card-header-text-color);
-                --or-icon-fill: var(--internal-or-map-asset-card-header-text-color);
-                --or-icon-width: 20px;
-                --or-icon-height: 20px;
                 z-index: 99999;
-            }
-
-            #header > or-icon {
-                margin-right: 5px;
+                padding-left: 10px;
+                padding-right: 10px;
+                display: flex;
+                justify-content: space-between;
             }
             
             #title {
