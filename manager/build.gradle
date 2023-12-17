@@ -123,10 +123,22 @@ publishing {
 
     repositories {
         maven {
-            name = 'myRepo'
-            url = layout.buildDirectory.dir("repo")
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
 }
 
 // Output version.properties file
