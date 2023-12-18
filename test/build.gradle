@@ -121,7 +121,6 @@ publishing {
     }
 
     repositories {
-        mavenCentral()
         maven {
             if (!version.endsWith('-LOCAL')) {
                 credentials {
