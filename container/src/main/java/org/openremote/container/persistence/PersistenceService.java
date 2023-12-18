@@ -48,6 +48,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
+import org.openremote.model.attribute.AttributeAnomaly;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
@@ -348,6 +349,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Asset.class.getName());
         entityClasses.add(UserAssetLink.class.getName());
         entityClasses.add(AssetDatapoint.class.getName());
+        entityClasses.add(AttributeAnomaly.class.getName());
         entityClasses.add(SentNotification.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
         entityClasses.add(Realm.class.getName());

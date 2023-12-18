@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.anomalyDetection;
 
+import com.google.api.client.util.DateTime;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.groovy.runtime.ArrayUtil;
@@ -318,7 +319,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         if(anomalyDetectionAttributes.containsKey(event.getAssetId() + "$" + event.getAttributeName())){
             AnomalyAttribute anomalyAttribute = anomalyDetectionAttributes.get(event.getAssetId() + "$" + event.getAttributeName());
             anomalyType = anomalyAttribute.validateDatapoint(event.getValue(), event.getTimestamp());
-            assetAnomalyDatapointService.updateValue(anomalyAttribute.getId(), anomalyAttribute.getName(),anomalyType, event.timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), anomalyAttribute);
         }
         if (LOG.isLoggable(FINE)) {
             LOG.fine("Attribute Anomaly detection took " + (System.currentTimeMillis() - startMillis) + "ms");
@@ -395,11 +395,27 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
                                 message = message.replace("%ASSET_ID%",attributeRef.getId());
                                 message = message.replace("%ATTRIBUTE_NAME%",attributeRef.getName());
-
-                                Alarm alarm = new Alarm(method.config.name, message, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
-                                SentAlarm sentAlarm = alarmService.sendAlarm(alarm);
-                                alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
-                                alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())) ,alarm.getRealm(),sentAlarm.getId());
+                                Optional<SentAlarm> existingAlarm = alarmService.getAlarmsByAssetId(attributeRef.getId()).stream().filter(a -> a.getStatus() == Alarm.Status.OPEN
+                                        && Objects.equals(a.getSourceId(), attributeRef.getName() + "$" + method.config.name)).findFirst();
+                                long alarmId = 0;
+                                if(existingAlarm.isEmpty()){
+                                    //create new alarm
+                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly at " + new Date(timestamp), message, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
+                                    SentAlarm sentAlarm = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, attributeRef.getName() + "$" + method.config.name);
+                                    alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
+                                    alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())) ,alarm.getRealm(),sentAlarm.getId());
+                                    alarmId  = sentAlarm.getId();
+                                }else{
+                                    //update alarm
+                                    SentAlarm alarm = existingAlarm.get();
+                                    alarm.setContent(alarm.getContent() + "\n" + message);
+                                    alarm.setLastModified(new Date(timestamp));
+                                    alarm.setTitle(method.config.name+ " Detected "+(assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId() + 1)) +
+                                            " anomalies between " + alarm.getCreatedOn() +" and " + alarm.getLastModified());
+                                    alarmService.updateAlarm(alarm.getId(),alarm);
+                                    alarmId  = alarm.getId();
+                                }
+                                assetAnomalyDatapointService.updateValue(attributeRef.getId(), attributeRef.getName(), anomalyType, new Date(timestamp).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), alarmId);
                             }
                         }
                 }else if(anomalyCount == 0){

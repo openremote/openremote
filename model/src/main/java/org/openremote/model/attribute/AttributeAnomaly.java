@@ -54,9 +54,9 @@ public class AttributeAnomaly implements Serializable {
 
     @Column(name = "ANOMALY_TYPE", updatable = false, nullable = false, columnDefinition = "ANOMALY_TYPE")
     protected AnomalyType anomalyType;
-    @Column(name = "DATA", columnDefinition = "jsonb", nullable = false)
-    @JdbcTypeCode(SqlTypes.JSON)
-    protected Object data;
+
+    @Column(name = "ALARM_ID")
+    protected Long alarmId;
 
 
     public AttributeAnomaly() {
