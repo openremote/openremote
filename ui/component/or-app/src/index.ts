@@ -123,6 +123,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 overflow: auto;
             }
             
+            .no-scroll {
+                overflow: hidden;
+            }
+
             main > * {
                 display: flex;
                 flex: 1;
