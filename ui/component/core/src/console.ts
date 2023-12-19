@@ -6,9 +6,12 @@ import {Deferred} from "./util";
 // No ES6 module support in platform lib
 let platform = require('platform');
 
-export interface ProviderMessage {
+export interface ProviderAction {
     provider: string;
     action: string;
+}
+
+export interface ProviderMessage extends ProviderAction{
     data?: any;
     [x: string]: any;
 }
@@ -39,6 +42,7 @@ export class Console {
     protected _initialised: boolean = false;
     protected _initialiseInProgress: boolean = false;
     protected _pendingProviderPromises: { [name: string]: [Deferred<any>, number] } = {};
+    protected _providerMessageListeners: { [name: string]: (msg: ProviderMessage) => void } = {};
     protected _pendingProviderEnables: string[] = [];
     protected _enableCompleteCallback: (() => void) | null;
     protected _registrationTimer: number | null = null;
@@ -367,6 +371,14 @@ export class Console {
         }
     }
 
+    public addProviderMessageListener(providerAction: ProviderAction, listener: (msg: ProviderMessage) => void) {
+        this._providerMessageListeners[providerAction.provider + providerAction.action] = listener;
+    }
+
+    public removeProviderMessageListener(providerAction: ProviderAction) {
+        delete this._providerMessageListeners[providerAction.provider + providerAction.action];
+    }
+
     protected _postNativeShellMessage(jsonMessage: any) {
         if (this.shellAndroid) {
             // @ts-ignore
@@ -507,6 +519,11 @@ export class Console {
             window.clearTimeout(deferredAndTimeout[1]);
             delete this._pendingProviderPromises[name + action];
             deferredAndTimeout[0].resolve(msgJson);
+        }
+
+        let listener = this._providerMessageListeners[name + action];
+        if (listener) {
+            listener(msgJson);
         }
     }
 
