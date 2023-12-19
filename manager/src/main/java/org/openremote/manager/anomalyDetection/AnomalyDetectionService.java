@@ -410,7 +410,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                                     SentAlarm alarm = existingAlarm.get();
                                     alarm.setContent(alarm.getContent() + "\n" + message);
                                     alarm.setLastModified(new Date(timestamp));
-                                    alarm.setTitle(method.config.name+ " Detected "+(assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId() + 1)) +
+                                    alarm.setTitle(method.config.name+ " Detected "+(assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId())+ 1) +
                                             " anomalies between " + alarm.getCreatedOn() +" and " + alarm.getLastModified());
                                     alarmService.updateAlarm(alarm.getId(),alarm);
                                     alarmId  = alarm.getId();
