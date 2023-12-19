@@ -676,7 +676,10 @@
   "configuration": {
     "" : "Weergave",
     "main": "Algemeen",
-    "realmStyling": "REALM STIJL",
+    "realmStyling": "Realm stijl",
+    "managerConfigNotFound": "Kon bestand met manager configuratie niet vinden.",
+    "mapSettingsNotFound": "Kon bestand met kaart configuratie niet vinden.",
+    "tryAgain": "Probeer opnieuw",
     "addRealmCustomization" : "Voeg realm stijl toe",
     "realmTitle": "Manager app titel",
     "defaultLanguage": "Standaard taal",

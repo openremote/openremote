@@ -8,9 +8,9 @@ import { customElement, query, queryAll } from "lit/decorators.js";
 import {AttributeInputSettings} from "../settings/attribute-input-settings";
 import { when } from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
-import {OrAttributeInput, OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {throttle} from "lodash";
 import {Util} from "@openremote/core";
+import "@openremote/or-attribute-input";
 
 export interface AttributeInputWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];

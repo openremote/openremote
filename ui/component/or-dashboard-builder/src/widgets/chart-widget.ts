@@ -10,6 +10,7 @@ import {WidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {ChartSettings} from "../settings/chart-settings";
 import {WidgetSettings} from "../util/widget-settings";
+import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
