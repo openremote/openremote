@@ -498,7 +498,7 @@ jobs:
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
         shell: bash
         run: |
-          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -P$MAVEN_PASSWORD"
+          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
