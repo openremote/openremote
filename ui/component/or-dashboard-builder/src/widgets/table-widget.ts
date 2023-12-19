@@ -9,6 +9,7 @@ import {OrMwcTableRowClickEvent, TableColumn, TableRow, TableConfig} from "@open
 import {i18next} from "@openremote/or-translate";
 import {Util} from "@openremote/core";
 import {Asset, AssetModelUtil} from "@openremote/model";
+import "@openremote/or-mwc-components/or-mwc-table";
 
 export interface TableWidgetConfig extends WidgetConfig {
     assetType?: string
