@@ -1,7 +1,6 @@
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
-import org.openremote.model.datapoint.AssetAnomalyDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 
@@ -17,7 +16,6 @@ public class DetectionMethodChange extends DetectionMethod {
 
     public DetectionMethodChange(AnomalyDetectionConfiguration config){
         super(config);
-        anomalyType = AttributeAnomaly.AnomalyType.ContextualOutlier;
     }
 
     public boolean validateDatapoint(Object value, long timestamp) {
@@ -59,14 +57,11 @@ public class DetectionMethodChange extends DetectionMethod {
     }
 
     @Override
-    public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
+    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
         if(datapoints.size() < ((AnomalyDetectionConfiguration.Change)config).minimumDatapoints) return false;
         smallestIncrease = Double.MAX_VALUE;
         biggestIncrease = -100000000;
         for(int i = 1; i < datapoints.size(); i++){
-            if(datapoints.get(i).anomalyType == AttributeAnomaly.AnomalyType.Unchecked || datapoints.get(i).anomalyType == AttributeAnomaly.AnomalyType.Valid) {
-
-            }
             double increase = (double)datapoints.get(i-1).getValue() - (double)datapoints.get(i).getValue();
             long timestamp = datapoints.get(i).getTimestamp();
 

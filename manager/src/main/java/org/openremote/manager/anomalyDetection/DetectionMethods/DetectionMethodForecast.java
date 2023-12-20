@@ -1,7 +1,6 @@
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
-import org.openremote.model.datapoint.AssetAnomalyDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 
@@ -10,11 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DetectionMethodForecast extends DetectionMethod{
-    private List<AssetAnomalyDatapoint> predictedPoints;
+    private List<ValueDatapoint<?>> predictedPoints;
     public DetectionMethodForecast(AnomalyDetectionConfiguration config){
         super(config);
         predictedPoints = new ArrayList<>();
-        anomalyType = AttributeAnomaly.AnomalyType.ContextualOutlier;
     }
 
     @Override
@@ -45,7 +43,7 @@ public class DetectionMethodForecast extends DetectionMethod{
     }
 
     @Override
-    public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
+    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
         if(datapoints.isEmpty())return false;
         predictedPoints = datapoints;
         return true;

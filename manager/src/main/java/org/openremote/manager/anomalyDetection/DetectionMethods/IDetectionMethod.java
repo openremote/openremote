@@ -1,6 +1,5 @@
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
-import org.openremote.model.datapoint.AssetAnomalyDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
         /**Update needsNewData based on needs method */
         boolean checkRecentDataSaved(long latestTimestamp);
         /**Update saved values used to calculate Limits */
-        boolean UpdateData(List<AssetAnomalyDatapoint> datapoints);
+        boolean UpdateData(List<ValueDatapoint<?>> datapoints);
         double[] GetLimits(ValueDatapoint<?> datapoint);
     }
 

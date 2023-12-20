@@ -49,7 +49,6 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
-import  org.openremote.model.attribute.AttributeAnomaly.AnomalyType;
 
 
 import java.time.Duration;
@@ -209,63 +208,38 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         long timespan = 0;
         int minimumDatapoints = 0;
         ValueDatapoint<?>[] datapoints;
-        List<AssetAnomalyDatapoint> assetAnomalyDatapoints = new ArrayList<>();
+        List<ValueDatapoint<?>> assetAnomalyDatapoints = new ArrayList<>();
         if(anomalyDetectionConfiguration == null) return null;
         String type = anomalyDetectionConfiguration.getClass().getSimpleName();
+        DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
         switch (type) {
             case "Global" ->{
                 detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfiguration);
                 timespan = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
                 minimumDatapoints = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
 
-                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
                 if(period.getLatest() == null)return vdaa;
                 if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
                 datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
-                for (ValueDatapoint<?> dp : datapoints) {
-                    AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
-                    point.anomalyType = AnomalyType.Unchecked;
-                    point.setTimestamp(dp.getTimestamp());
-                    point.setValue(dp.getValue());
-                    assetAnomalyDatapoints.add(point);
-                }
             }
             case "Change" -> {
                 detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
                 timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
                 minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
 
-                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
                 if(period.getLatest() == null)return vdaa;
                 if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
                 datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
-                for (ValueDatapoint<?> dp : datapoints) {
-                    AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
-                    point.anomalyType = AnomalyType.Unchecked;
-                    point.setTimestamp(dp.getTimestamp());
-                    point.setValue(dp.getValue());
-                    assetAnomalyDatapoints.add(point);
-                }
             }
             case "Forecast" -> {
                 detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
                 timespan = 1000*60*20;
                 minimumDatapoints = 1;
 
-                DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
                 if(period.getLatest() == null)return vdaa;
                 if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
                 datapoints = ArrayUtils.addAll( assetPredictedDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest(), period.getLatest() + timespan*5)),
                                                 assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest())));
-                for (ValueDatapoint<?> dp : datapoints) {
-                    if(dp.getTimestamp() > period.getLatest()){
-                        AssetAnomalyDatapoint point = new AssetAnomalyDatapoint();
-                        point.anomalyType = AnomalyType.Unchecked;
-                        point.setTimestamp(dp.getTimestamp());
-                        point.setValue(dp.getValue());
-                        assetAnomalyDatapoints.add(point);
-                    }
-                }
             }
             default -> {
                 return null;
@@ -290,7 +264,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     anomalyDatapoints.add(datapoints[i]);
                 }
             }else if(type.equals("Global") || type.equals("Change")){
-                if(detectionMethod.UpdateData(assetAnomalyDatapoints.stream().filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
+                if(detectionMethod.UpdateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
                     double[] values = detectionMethod.GetLimits(datapoints[i]);
                     valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
                     valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
@@ -299,7 +273,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     }
                 }
             }else if(type.equals("Forecast")){
-                detectionMethod.UpdateData(assetAnomalyDatapoints);
+                detectionMethod.UpdateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > period.getLatest()).toList());
             }
             index++;
 
@@ -315,10 +289,9 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
     protected void onAttributeChange(AttributeEvent event) {
         long startMillis = System.currentTimeMillis();
         //only handle events coming from attributes in the with anomaly detection
-        AnomalyType anomalyType = AnomalyType.Unchecked;
         if(anomalyDetectionAttributes.containsKey(event.getAssetId() + "$" + event.getAttributeName())){
             AnomalyAttribute anomalyAttribute = anomalyDetectionAttributes.get(event.getAssetId() + "$" + event.getAttributeName());
-            anomalyType = anomalyAttribute.validateDatapoint(event.getValue(), event.getTimestamp());
+            anomalyAttribute.validateDatapoint(event.getValue(), event.getTimestamp());
         }
         if (LOG.isLoggable(FINE)) {
             LOG.fine("Attribute Anomaly detection took " + (System.currentTimeMillis() - startMillis) + "ms");
@@ -374,64 +347,57 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             return attributeRef;
         }
 
-        public AnomalyType validateDatapoint(Optional<Object> value, long timestamp){
-            AnomalyType anomalyType = AnomalyType.Valid;
-            int anomalyCount = 0;
+        public boolean validateDatapoint(Optional<Object> value, long timestamp){
+            boolean valid = true;
 
             for (DetectionMethod method: detectionMethods) {
-                if(value.isPresent() && method.config.onOff){
-                    List<AssetAnomalyDatapoint> datapoints = new ArrayList<>();
+                if(value.isPresent() && method.config.onOff) {
+                    List<ValueDatapoint<?>> datapoints = new ArrayList<>();
                     boolean enoughData = true;
-                    if(!method.checkRecentDataSaved(timestamp)) {
+                    if (!method.checkRecentDataSaved(timestamp)) {
                         datapoints = GetDatapoints(method);
                         enoughData = method.UpdateData(datapoints);
                     }
-                    if(enoughData)
-                        if (!method.validateDatapoint(value.get(),timestamp)) {
-                            anomalyCount++;
-                            anomalyType = method.anomalyType;
-                            if(method.config.alarmOnOff && method.config.alarm.getSeverity() != null){
+                    if (enoughData)
+                        if (!method.validateDatapoint(value.get(), timestamp)) {
+                            valid = false;
+                            if (method.config.alarmOnOff && method.config.alarm.getSeverity() != null) {
                                 String message = method.config.alarm.getContent();
 
-                                message = message.replace("%ASSET_ID%",attributeRef.getId());
-                                message = message.replace("%ATTRIBUTE_NAME%",attributeRef.getName());
+                                message = message.replace("%ASSET_ID%", attributeRef.getId());
+                                message = message.replace("%ATTRIBUTE_NAME%", attributeRef.getName());
                                 Optional<SentAlarm> existingAlarm = alarmService.getAlarmsByAssetId(attributeRef.getId()).stream().filter(a -> a.getStatus() == Alarm.Status.OPEN
                                         && Objects.equals(a.getSourceId(), attributeRef.getName() + "$" + method.config.name)).findFirst();
                                 long alarmId = 0;
-                                if(existingAlarm.isEmpty()){
+                                if (existingAlarm.isEmpty()) {
                                     //create new alarm
-                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly at " + new Date(timestamp), message+ "\n1: "+ timestamp, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
+                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly", message + "\n1: " + new Date(timestamp), method.config.alarm.getSeverity(), method.config.alarm.getAssigneeId(), method.config.alarm.getRealm());
                                     SentAlarm sentAlarm = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, attributeRef.getName() + "$" + method.config.name);
-                                    alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
-                                    alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())) ,alarm.getRealm(),sentAlarm.getId());
-                                    alarmId  = sentAlarm.getId();
-                                }else{
+                                    alarmService.assignUser(sentAlarm.getId(), method.config.alarm.getAssigneeId());
+                                    alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())), alarm.getRealm(), sentAlarm.getId());
+                                    alarmId = sentAlarm.getId();
+                                } else {
                                     //update alarm
                                     SentAlarm alarm = existingAlarm.get();
-                                    long count = (assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId())+ 1);
-                                    alarm.setContent(alarm.getContent() + "\n"+ count + ": "+ timestamp);
+                                    long count = (assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId()) + 1);
+                                    alarm.setContent(alarm.getContent() + "\n" + count + ": " + new Date(timestamp));
                                     alarm.setLastModified(new Date(timestamp));
-                                    alarm.setTitle(method.config.name+ " Detected "+ count +" anomalies");
-                                    alarmService.updateAlarm(alarm.getId(),alarm);
-                                    alarmId  = alarm.getId();
+                                    alarm.setTitle(method.config.name + " Detected " + count + " anomalies");
+                                    alarmService.updateAlarm(alarm.getId(), alarm);
+                                    alarmId = alarm.getId();
                                 }
-                                assetAnomalyDatapointService.updateValue(attributeRef.getId(), attributeRef.getName(), anomalyType, new Date(timestamp).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), alarmId);
+                                assetAnomalyDatapointService.updateValue(attributeRef.getId(), attributeRef.getName(), method.config.name, new Date(timestamp).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(), alarmId);
                             }
                         }
-                }else if(anomalyCount == 0){
-                    anomalyType = AnomalyType.Unchecked;
                 }
             }
-            if(anomalyCount > 1) anomalyType = AnomalyType.Multiple;
-            return  anomalyType;
+            return  valid;
         }
 
-        public List<AssetAnomalyDatapoint> GetDatapoints(DetectionMethod detectionMethod){
+        public List<ValueDatapoint<?>> GetDatapoints(DetectionMethod detectionMethod){
             DatapointPeriod period = assetDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
-            List<AssetAnomalyDatapoint> datapoints = new ArrayList<>();
+            List<ValueDatapoint<?>> datapoints = new ArrayList<>();
             if(period.getLatest() == null) return datapoints;
-
-
 
             AttributeAnomaly[] anomalies = new AttributeAnomaly[0];
             ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
@@ -441,11 +407,9 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 if(detectionMethod.config.getClass().getSimpleName().equals("Global")){
                     if(((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
-                    if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
                 }else if(detectionMethod.config.getClass().getSimpleName().equals("Change")){
                     if(((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
-                    if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints > maxMinimumDatapoints) maxMinimumDatapoints =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
                 }
                 if(period.getLatest() - period.getOldest() < maxTimespan)return datapoints;
                 anomalies = assetAnomalyDatapointService.getAnommalies(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
@@ -455,18 +419,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 DatapointPeriod predictedPeriod = assetPredictedDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
                 valueDatapoints = assetPredictedDatapointService.queryDatapoints(attributeRef.getId(),attributeRef.getName(), new AssetDatapointAllQuery(period.getOldest(), period.getLatest()+ (period.getLatest()-period.getOldest())));
             }
-            for (ValueDatapoint<?> datapoint: valueDatapoints) {
-                Optional<AttributeAnomaly> anomaly = Arrays.stream(anomalies).filter(a -> a.getTimestamp().getTime() == datapoint.getTimestamp()).findFirst();
-                if(anomaly.isPresent()){
-                    datapoints.add(new AssetAnomalyDatapoint(attributeRef,datapoint.getValue(),datapoint.getTimestamp(),anomaly.get().getAnomalyType()));
-                }else{
-                    datapoints.add(new AssetAnomalyDatapoint(attributeRef,datapoint.getValue(),datapoint.getTimestamp(),AnomalyType.Unchecked));
-                }
-            }
-            return datapoints;
-        }
-        public void UpdateAnomalyDatapoint(String assetId, String attributeName, AnomalyType type, LocalDateTime timestamp){
-            assetAnomalyDatapointService.updateValue(assetId, attributeName, type, timestamp, null);
+            return Arrays.stream(valueDatapoints).toList();
         }
     }
 }

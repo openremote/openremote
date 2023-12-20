@@ -52,8 +52,9 @@ public class AttributeAnomaly implements Serializable {
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP")
     protected Date timestamp;
 
-    @Column(name = "ANOMALY_TYPE", updatable = false, nullable = false, columnDefinition = "ANOMALY_TYPE")
-    protected AnomalyType anomalyType;
+    @Id
+    @Column(name = "METHOD_NAME", nullable = false)
+    protected String methodName;
 
     @Column(name = "ALARM_ID")
     protected Long alarmId;
@@ -61,14 +62,12 @@ public class AttributeAnomaly implements Serializable {
 
     public AttributeAnomaly() {
     }
-    public AttributeAnomaly(String assetId, String attributeName, Date timestamp, int anomalyType) {
+    public AttributeAnomaly(String assetId, String attributeName, Date timestamp, String methodName) {
 
         this.assetId = assetId;
         this.attributeName = attributeName;
         this.timestamp = timestamp;
-        if(anomalyType < AnomalyType.values().length && anomalyType >= 0){
-            this.anomalyType = AnomalyType.values()[anomalyType];
-        }
+        this.methodName = methodName;
     }
 
     public String getAssetId() {
@@ -82,8 +81,8 @@ public class AttributeAnomaly implements Serializable {
     public Date getTimestamp() {
         return timestamp;
     }
-    public AnomalyType getAnomalyType(){
-        return anomalyType;
+    public String getMethodName(){
+        return methodName;
     }
 
     @Override
@@ -91,7 +90,7 @@ public class AttributeAnomaly implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AttributeAnomaly that = (AttributeAnomaly) o;
-        return assetId.equals(that.assetId) && attributeName.equals(that.attributeName) && timestamp == that.timestamp && anomalyType.equals(that.anomalyType);
+        return assetId.equals(that.assetId) && attributeName.equals(that.attributeName) && timestamp == that.timestamp && methodName.equals(that.methodName);
     }
 
     @Override
@@ -109,7 +108,7 @@ public class AttributeAnomaly implements Serializable {
             '}';
     }
 
-    public enum AnomalyType{
+  /*  public enum AnomalyType{
         Unchecked,
         Valid,
         Multiple,
@@ -117,7 +116,7 @@ public class AttributeAnomaly implements Serializable {
         ContextualOutlier,
         IrregularInterval
 
-    }
+    }*/
 }
 
 

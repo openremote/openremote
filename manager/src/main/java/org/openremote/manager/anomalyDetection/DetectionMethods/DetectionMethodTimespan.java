@@ -1,7 +1,6 @@
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
-import org.openremote.model.datapoint.AssetAnomalyDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 
@@ -16,7 +15,6 @@ public class DetectionMethodTimespan extends DetectionMethod{
 
     public DetectionMethodTimespan(AnomalyDetectionConfiguration config){
         super(config);
-        anomalyType = AttributeAnomaly.AnomalyType.IrregularInterval;
     }
 
     @Override
@@ -54,7 +52,7 @@ public class DetectionMethodTimespan extends DetectionMethod{
     }
 
     @Override
-    public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
+    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
 
         if(datapoints.size() <((AnomalyDetectionConfiguration.Timespan)config).minimumDatapoints) return false;
         shortestTimespan = datapoints.get(0).getTimestamp();

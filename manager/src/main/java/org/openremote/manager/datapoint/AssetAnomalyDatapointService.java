@@ -169,7 +169,7 @@ public class AssetAnomalyDatapointService implements ContainerService {
 
                         String query;
                         try {
-                            query = "select * from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? and anomaly_type != 1 and anomaly_type != 0 order by timestamp desc";
+                            query = "select * from " + getDatapointTableName() + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? order by timestamp desc";
                         } catch (IllegalStateException ise) {
                             getLogger().log(Level.WARNING, ise.getMessage());
                             throw ise;
@@ -193,8 +193,8 @@ public class AssetAnomalyDatapointService implements ContainerService {
                                         String assetId = rs.getString("entity_id");
                                         String attributeName = rs.getString("attribute_name");
                                         Date timestamp = rs.getTimestamp("timestamp");
-                                        int anomalyType = rs.getInt("anomaly_type");
-                                        result.add(new AttributeAnomaly(assetId,attributeName,timestamp,anomalyType));
+                                        String methodName = rs.getString("method_name");
+                                        result.add(new AttributeAnomaly(assetId,attributeName,timestamp,methodName));
                                     }
                                 }
                                 return result.toArray(new AttributeAnomaly[0]);
@@ -204,16 +204,16 @@ public class AssetAnomalyDatapointService implements ContainerService {
                 })
         );
     }
-    public void updateValue(String assetId, String attributeName, AttributeAnomaly.AnomalyType anomalyType, LocalDateTime timestamp, Long alarmId) {
+    public void updateValue(String assetId, String attributeName, String methodName, LocalDateTime timestamp, Long alarmId) {
         persistenceService.doTransaction(em ->
                 em.unwrap(Session.class).doWork(connection -> {
 
-                    getLogger().finest("Storing anomaly datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", anomalyType=" + anomalyType);
+                    getLogger().finest("Storing anomaly datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", methodName=" + methodName);
                     PreparedStatement st;
 
                     try {
                         st = getUpsertPreparedStatement(connection);
-                        setUpsertValues(st, assetId, attributeName, anomalyType.ordinal(), timestamp, alarmId);
+                        setUpsertValues(st, assetId, attributeName, methodName, timestamp, alarmId);
                         st.executeUpdate();
                     } catch (Exception e) {
                         String msg = "Failed to insert/update data point: ";
@@ -224,16 +224,16 @@ public class AssetAnomalyDatapointService implements ContainerService {
     }
 
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {
-        return connection.prepareStatement("INSERT INTO " + getDatapointTableName() + " (entity_id, attribute_name, anomaly_type, timestamp, alarm_id) " +
+        return connection.prepareStatement("INSERT INTO " + getDatapointTableName() + " (entity_id, attribute_name, method_name, timestamp, alarm_id) " +
                 "VALUES (?, ?, ?, ?, ?) " +
-                "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE " +
-                "SET anomaly_type = excluded.anomaly_type");
+                "ON CONFLICT (entity_id, attribute_name, method_name, timestamp) DO UPDATE " +
+                "SET alarm_id = excluded.alarm_id");
     }
 
-    protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, Integer anomalyType, LocalDateTime timestamp, Long alarmId) throws Exception {
+    protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, String methodName, LocalDateTime timestamp, Long alarmId) throws Exception {
         st.setString(1, assetId);
         st.setString(2, attributeName);
-        st.setInt(3, anomalyType);
+        st.setString(3, methodName);
         st.setObject(4, timestamp);
         st.setLong(5, alarmId);
     }

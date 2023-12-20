@@ -1,7 +1,6 @@
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
-import org.openremote.model.datapoint.AssetAnomalyDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 
@@ -16,7 +15,6 @@ public class DetectionMethodGlobal extends DetectionMethod {
 
     public DetectionMethodGlobal(AnomalyDetectionConfiguration config){
         super(config);
-        anomalyType = AttributeAnomaly.AnomalyType.GlobalOutlier;
     }
 
 
@@ -56,12 +54,11 @@ public class DetectionMethodGlobal extends DetectionMethod {
         return !needsNewData;
     }
 
-    public boolean UpdateData(List<AssetAnomalyDatapoint> datapoints) {
+    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
         if(datapoints.isEmpty() || datapoints.size() < ((AnomalyDetectionConfiguration.Global)config).minimumDatapoints) return false;
         minValue = Double.MAX_VALUE;
         maxValue = (double)datapoints.get(0).getValue();
-        for (AssetAnomalyDatapoint dtapoint : datapoints) {
-            if(dtapoint.anomalyType == AttributeAnomaly.AnomalyType.Unchecked || dtapoint.anomalyType == AttributeAnomaly.AnomalyType.Valid){
+        for (ValueDatapoint dtapoint : datapoints) {
                 if((double)dtapoint.getValue() <= minValue){
                     minValue = (double)dtapoint.getValue();
                     minValueTimestamp = dtapoint.getTimestamp();
@@ -70,7 +67,6 @@ public class DetectionMethodGlobal extends DetectionMethod {
                     maxValue = (double)dtapoint.getValue();
                     maxValueTimestamp = dtapoint.getTimestamp();
                 }
-            }
         }
         return true;
     }
