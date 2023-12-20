@@ -158,7 +158,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
-        MeterRegistry meterRegistry = container.getMeterRegistry();
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -275,7 +274,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         */
         // All user authorisation checks MUST have been carried out before events reach this queue
         from(ATTRIBUTE_EVENT_QUEUE)
-            .routeId("AttributeEventProcessor")
+            .routeId("AttributeEvent-Router")
             .doTry()
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
@@ -305,7 +304,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             String camelRouteURI = getEventProcessingRouteURI(processorCount);
 
             from(camelRouteURI)
-                .routeId("AttributeEventProcessor" + processorCount)
+                .routeId("AttributeEvent-Processor" + processorCount)
                 .doTry()
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
