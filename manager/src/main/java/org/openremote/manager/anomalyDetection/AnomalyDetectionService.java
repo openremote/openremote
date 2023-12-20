@@ -400,7 +400,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                                 long alarmId = 0;
                                 if(existingAlarm.isEmpty()){
                                     //create new alarm
-                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly at " + new Date(timestamp), message, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
+                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly at " + new Date(timestamp), message+ "\n1: "+ timestamp, method.config.alarm.getSeverity(),method.config.alarm.getAssigneeId(),method.config.alarm.getRealm());
                                     SentAlarm sentAlarm = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, attributeRef.getName() + "$" + method.config.name);
                                     alarmService.assignUser(sentAlarm.getId(),method.config.alarm.getAssigneeId());
                                     alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())) ,alarm.getRealm(),sentAlarm.getId());
@@ -408,10 +408,10 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                                 }else{
                                     //update alarm
                                     SentAlarm alarm = existingAlarm.get();
-                                    alarm.setContent(alarm.getContent() + "\n" + message);
+                                    long count = (assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId())+ 1);
+                                    alarm.setContent(alarm.getContent() + "\n"+ count + ": "+ timestamp);
                                     alarm.setLastModified(new Date(timestamp));
-                                    alarm.setTitle(method.config.name+ " Detected "+(assetAnomalyDatapointService.countAnomaliesInAlarm(alarm.getId())+ 1) +
-                                            " anomalies between " + alarm.getCreatedOn() +" and " + alarm.getLastModified());
+                                    alarm.setTitle(method.config.name+ " Detected "+ count +" anomalies");
                                     alarmService.updateAlarm(alarm.getId(),alarm);
                                     alarmId  = alarm.getId();
                                 }
