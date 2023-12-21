@@ -87,6 +87,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
     protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventProcessor";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
+
+    public static final String ATTRIBUTE_PROCESSOR_ROUTE_PREFIX = "AttributeEvent-Processor";
     final protected List<AttributeEventInterceptor> eventInterceptors = new ArrayList<>();
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
@@ -304,7 +306,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             String camelRouteURI = getEventProcessingRouteURI(processorCount);
 
             from(camelRouteURI)
-                .routeId("AttributeEvent-Processor" + processorCount)
+                .routeId(ATTRIBUTE_PROCESSOR_ROUTE_PREFIX + processorCount)
                 .doTry()
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);

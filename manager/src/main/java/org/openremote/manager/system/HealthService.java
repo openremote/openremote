@@ -31,6 +31,7 @@ import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.spi.RoutePolicy;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.MapAccess;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -163,12 +164,22 @@ public class HealthService implements ContainerService {
 
                 @Override
                 public Tags getTags(Route route) {
+                    // We combine AttributeEvent processor routes
+                    if (route.getId().startsWith(AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX)) {
+                        return Tags.of(
+                            ROUTE_ID_TAG, AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX);
+                    }
                     return Tags.of(
                         ROUTE_ID_TAG, route.getId());
                 }
 
                 @Override
                 public Tags getExchangeStatusTags(Route route) {
+                    // We combine AttributeEvent processor routes
+                    if (route.getId().startsWith(AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX)) {
+                        return Tags.of(
+                            ROUTE_ID_TAG, AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX);
+                    }
                     return Tags.of(
                         ROUTE_ID_TAG, route.getId());
                 }
