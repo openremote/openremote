@@ -37,7 +37,7 @@ public interface AssetPredictedDatapointResource {
      * not have datapoint storage enabled.
      */
     @POST
-    @Path("{assetId}/attribute/{attributeName}")
+    @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
@@ -46,7 +46,7 @@ public interface AssetPredictedDatapointResource {
                                                AssetDatapointQuery query);
 
     @PUT
-    @Path("{assetId}/attribute/{attributeName}")
+    @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     void writePredictedDatapoints(@BeanParam RequestParams requestParams,
                                   @PathParam("assetId") String assetId,
