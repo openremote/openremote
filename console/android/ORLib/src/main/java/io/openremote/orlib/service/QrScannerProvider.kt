@@ -76,8 +76,15 @@ class QrScannerProvider(val context: Context) {
         )
     }
 
-    fun startScanner(activity: Activity) {
+    fun startScanner(activity: Activity, callback: ScannerCallback?) {
         val intent = Intent(activity, QrScannerActivity::class.java)
         activity.startActivityForResult(intent, REQUEST_SCAN_QR)
+        callback?.accept(
+            hashMapOf(
+                "action" to "SCAN_QR",
+                "provider" to "qr",
+                "success" to true
+            )
+        )
     }
 }

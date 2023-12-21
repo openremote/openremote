@@ -510,13 +510,23 @@ open class OrMainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == QrScannerProvider.REQUEST_SCAN_QR) {
-            val qrResult = data?.getStringExtra("result")
+            val response = when (resultCode) {
+                RESULT_OK -> {
+                    val qrResult = data?.getStringExtra("result")
 
-            val response = hashMapOf(
-                "action" to "SCAN_QR",
-                "provider" to "qr",
-                "data" to hashMapOf("result" to qrResult)
-            )
+                    hashMapOf(
+                        "action" to "SCAN_RESULT",
+                        "provider" to "qr",
+                        "data" to hashMapOf("result" to qrResult)
+                    )
+                }
+
+                else -> hashMapOf(
+                    "action" to "SCAN_RESULT",
+                    "provider" to "qr",
+                    "data" to hashMapOf("result" to "FAILED")
+                )
+            }
             notifyClient(response)
         }
     }
@@ -845,7 +855,12 @@ open class OrMainActivity : Activity() {
                 }
 
                 action.equals("SCAN_QR", ignoreCase = true) -> {
-                    qrScannerProvider?.startScanner(this@OrMainActivity)
+                    qrScannerProvider?.startScanner(this@OrMainActivity, object :
+                        QrScannerProvider.ScannerCallback {
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
             }
         }

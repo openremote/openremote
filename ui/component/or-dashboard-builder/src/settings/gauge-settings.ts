@@ -4,7 +4,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import {i18next} from "@openremote/or-translate";
 import {GaugeWidgetConfig} from "../widgets/gauge-widget";
 import {AttributesSelectEvent} from "../panels/attributes-panel";
-import {Attribute, AttributeRef} from "@openremote/model";
+import {Attribute} from "@openremote/model";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {ThresholdChangeEvent} from "../panels/thresholds-panel";
 import "../panels/thresholds-panel";
@@ -23,7 +23,7 @@ export class GaugeSettings extends WidgetSettings {
             <div>
                 <!-- Attribute selection -->
                 <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${false}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
@@ -32,15 +32,15 @@ export class GaugeSettings extends WidgetSettings {
                 <settings-panel displayName="${i18next.t('values')}" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div style="display: flex; gap: 8px;">
-                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widgetConfig.max}" .value="${this.widgetConfig.min}"
+                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widgetConfig.max}" .value="${this.widgetConfig.min}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('min', ev)}"
                             ></or-mwc-input>
-                            <or-mwc-input type="${InputType.NUMBER}" label="${i18next.t('max')}" .min="${this.widgetConfig.min}" .value="${this.widgetConfig.max}"
+                            <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('max')}" .min="${this.widgetConfig.min}" .value="${this.widgetConfig.max}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onMinMaxValueChange('max', ev)}"
                             ></or-mwc-input>
                         </div>
                         <div>
-                            <or-mwc-input type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}" .min="${0}"
+                            <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${this.widgetConfig.decimals}" label="${i18next.t('decimals')}" .min="${0}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onDecimalsChange(ev)}"
                             ></or-mwc-input>
                         </div>

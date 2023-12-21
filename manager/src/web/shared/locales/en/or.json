@@ -676,7 +676,10 @@
   "configuration": {
     "" : "Appearance",
     "main": "Main",
-    "realmStyling": "REALM STYLING",
+    "realmStyling": "Realm styling",
+    "managerConfigNotFound": "Manager configuration file could not be found.",
+    "mapSettingsNotFound": "Map configuration file could not be found.",
+    "tryAgain": "Try again",
     "addRealmCustomization" : "Add Realm Style",
     "realmTitle": "Manager app title",
     "defaultLanguage": "Default language",
