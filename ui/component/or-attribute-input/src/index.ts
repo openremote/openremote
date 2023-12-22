@@ -293,16 +293,16 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             if(!value){
                 value ={methods:[
                     {
-                        type: null,
+                        type: "global",
                         name: "Method 1",
-                        onOff: false,
-                        deviation: null,
+                        onOff: true,
+                        deviation: 10,
                         alarm: {
-                            content: "%ASSET_ID%\n%ATTRIBUTE_NAME%"
+                            content: "%ASSET_NAME%\n%ATTRIBUTE_NAME%\n%METHOD_TYPE%"
                         },
                         alarmOnOff: false,
-                        minimumDatapoints: null,
-                        timespan: null
+                        minimumDatapoints: 2,
+                        timespan: "PT20M"
                     }]}
             }
             return html`

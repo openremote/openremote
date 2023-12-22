@@ -207,8 +207,8 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         DetectionMethod detectionMethod;
         long timespan = 0;
         int minimumDatapoints = 0;
+        long now = new Date().getTime();
         ValueDatapoint<?>[] datapoints;
-        List<ValueDatapoint<?>> assetAnomalyDatapoints = new ArrayList<>();
         if(anomalyDetectionConfiguration == null) return null;
         String type = anomalyDetectionConfiguration.getClass().getSimpleName();
         DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
@@ -220,7 +220,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
                 if(period.getLatest() == null)return vdaa;
                 if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
-                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
+                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(now - timespan*6, now));
             }
             case "Change" -> {
                 detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
@@ -229,7 +229,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
                 if(period.getLatest() == null)return vdaa;
                 if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
-                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest()));
+                datapoints = assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(now - timespan*6, now));
             }
             case "Forecast" -> {
                 detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
@@ -363,15 +363,23 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                             valid = false;
                             if (method.config.alarmOnOff && method.config.alarm.getSeverity() != null) {
                                 String message = method.config.alarm.getContent();
-
-                                message = message.replace("%ASSET_ID%", attributeRef.getId());
+                                if(message.contains("%ASSET_ID%")){
+                                    String name = assetStorageService.find(attributeRef.getId()).getName();
+                                    message = message.replace("%ASSET_NAME%", name);
+                                }
                                 message = message.replace("%ATTRIBUTE_NAME%", attributeRef.getName());
+                                message = message.replace("%METHOD_TYPE%", method.config.getClass().getSimpleName());
                                 Optional<SentAlarm> existingAlarm = alarmService.getAlarmsByAssetId(attributeRef.getId()).stream().filter(a -> a.getStatus() == Alarm.Status.OPEN
                                         && Objects.equals(a.getSourceId(), attributeRef.getName() + "$" + method.config.name)).findFirst();
                                 long alarmId = 0;
                                 if (existingAlarm.isEmpty()) {
                                     //create new alarm
-                                    Alarm alarm = new Alarm(method.config.name + " Detected 1 anomaly", message + "\n1: " + new Date(timestamp), method.config.alarm.getSeverity(), method.config.alarm.getAssigneeId(), method.config.alarm.getRealm());
+                                    Alarm alarm = new Alarm(
+                                            method.config.name + " Detected 1 anomaly",
+                                            message + "\n1: " + new Date(timestamp),
+                                            method.config.alarm.getSeverity(),
+                                            method.config.alarm.getAssigneeId(),
+                                            method.config.alarm.getRealm());
                                     SentAlarm sentAlarm = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, attributeRef.getName() + "$" + method.config.name);
                                     alarmService.assignUser(sentAlarm.getId(), method.config.alarm.getAssigneeId());
                                     alarmService.linkAssets(new ArrayList<>(Collections.singletonList(attributeRef.getId())), alarm.getRealm(), sentAlarm.getId());
@@ -403,7 +411,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
             if(detectionMethod.config.getClass().getSimpleName().equals("Global")||detectionMethod.config.getClass().getSimpleName().equals("Change")){
                 long maxTimespan = 0;
-                int maxMinimumDatapoints = 0;
                 if(detectionMethod.config.getClass().getSimpleName().equals("Global")){
                     if(((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();

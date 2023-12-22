@@ -242,6 +242,8 @@ export class OrAnomalyConfigChart extends OrChart {
                 }else if(response.data.length === 1){
                     this.errorMessage = i18next.t("anomalyDetection.notEnoughDatapointsSaved");
                     return datasets;
+                }else if(response.data.length === 4 && response.data[1].findIndex(dp => dp != null)=== -1){
+                    this.errorMessage = i18next.t("anomalyDetection.notEnoughDatapointsSavedForLimits");
                 }
                 dataset.data = response.data[2].filter(value => value !== null && value !== undefined) as ScatterDataPoint[];
                 anomalyDataset.data = response.data[3].filter(value => value !== null) as ScatterDataPoint[];
