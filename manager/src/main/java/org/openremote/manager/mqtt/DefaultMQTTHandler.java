@@ -19,23 +19,30 @@
  */
 package org.openremote.manager.mqtt;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import net.minidev.json.JSONObject;
 import org.apache.activemq.artemis.api.core.SimpleString;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
@@ -50,6 +57,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -90,6 +98,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
+    public static final String ATTRIBUTE_VALUES_WRITE_TOPIC = "writeattributevalues";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
     // An authorisation cache for publishing
@@ -97,6 +106,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
         .maximumSize(100000)
         .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
         .build();
+
+    protected AssetStorageService assetStorageService;
+    protected AssetProcessingService assetProcessingService;
 
     @Override
     public int getPriority() {
@@ -107,6 +119,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
+        assetStorageService = container.getService(AssetStorageService.class);
+        assetProcessingService = container.getService(AssetProcessingService.class);
+
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -185,7 +200,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic);
+        return isAttributeTopic(topic) || isAssetTopic(topic) || isAttributeValueWriteTopic(topic) || isAttributeValueMultipleWriteTopic(topic);
     }
 
     @Override
@@ -314,7 +329,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 return false;
             }
         } else {
-            return false;
+            if (isAttributeValueMultipleWriteTopic(topic)) {
+                if (topic.getTokens().size() != 4 || !Pattern.matches(ASSET_ID_REGEXP, topicTokenIndexToString(topic, 3))) {
+                    LOG.finer("Publish mulitple attribute values topic should be {realm}/{clientId}/writeattributevalues/{assetId}: topic=" + topic + ", connection=" + mqttBrokerService.connectionToString(connection));
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
 
         String cacheKey = getConnectionIDString(connection);
@@ -327,9 +349,12 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         // We don't know the value at this point so just use a null value for authorization (value type will be handled
         // when the event is processed)
-        if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
-            LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
-            return false;
+        //SUGGEST RELOCATE THIS TO THE ACTUAL PUBLISH ROUTINE??
+        if (isAttributeValueWriteTopic(topic)) {        // must skip this for "multi write", as it can write to any attribute.  Authorization must be handled there.
+            if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+                LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+                return false;
+            }
         }
 
         // Add to cache
@@ -418,23 +443,64 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public Set<String> getPublishListenerTopics() {
         return Set.of(
-            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
+            TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUE_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD,
+                TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTE_VALUES_WRITE_TOPIC + "/" + TOKEN_MULTI_LEVEL_WILDCARD
         );
     }
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-        List<String> topicTokens = topic.getTokens();
         String payloadContent = body.toString(StandardCharsets.UTF_8);
-        Object value = ValueUtil.parse(payloadContent).orElse(null);
-        AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
-        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        LOG.finer("Publishing to client inbound queue: " + attributeEvent);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .withBody(attributeEvent)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
+        if (isAttributeValueMultipleWriteTopic(topic)) {
+            Asset<?> asset = assetStorageService.find(topicTokenIndexToString(topic, 3));       // {AttributeName} is omitted for MultipleWrite
+            if (asset == null) {
+                LOG.log(Level.INFO, "WriteAttributeValues: Asset ID " + topicTokenIndexToString(topic, 3) + " could not be found");
+            } else {
+                JsonNode payload;
+                try {
+                    payload = ValueUtil.parse(payloadContent, JsonNode.class).orElse(null);
+                } catch (Exception e) {
+                    LOG.log(Level.INFO, "Failed to parse JSON string: " + payloadContent, e);
+                    return;
+                }
+
+/*  TODO: Attribute permissions need to be handled.  Unfortunately, this method here does break the OpenRemote Asset
+    cache to reduce database lookups--as the Attribute(s) being written to are not included in the MQTT "connection".
+                if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topic.getTokens(), null))) {
+                    LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+                    return false;
+                }
+*/
+
+                AttributeMap attributes = asset.getAttributes();
+                assert payload != null;
+                Iterator<Map.Entry<String, JsonNode>> payloadIterator = payload.fields();
+                payloadIterator.forEachRemaining(payloadAttribute -> {
+                    if (attributes.has(payloadAttribute.getKey())) {
+//                        if (checkAuthorizeEventWrite()) {
+                            AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), payloadAttribute.getKey(), payloadAttribute.getValue());
+                            LOG.finer("WriteAttributeValues: Update \"" + payloadAttribute.getKey() + "\" with \"" + payloadAttribute.getValue().toString() + "\"");
+                            assetProcessingService.sendAttributeEvent(attributeEvent);
+//                        } else {
+//                            LOG.finer("WriteAttributeValues: Forbidden to update \"" + payloadAttribute.getKey() + "\"");
+//                        }
+                    } else {
+                        LOG.finer("WriteAttributeValues: Attribute \"" + payloadAttribute.getKey() + "\" not found!");
+                    }
+                });
+            }
+        } else {
+            List<String> topicTokens = topic.getTokens();
+            Object value = ValueUtil.parse(payloadContent).orElse(null);
+            AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
+            Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
+            LOG.finer("Publishing to client inbound queue: " + attributeEvent);
+            messageBrokerService.getFluentProducerTemplate()
+                    .withHeaders(headers)
+                    .withBody(attributeEvent)
+                    .to(CLIENT_INBOUND_QUEUE)
+                    .asyncSend();
+        }
     }
 
     @Override
@@ -596,6 +662,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     protected static boolean isAttributeValueWriteTopic(Topic topic) {
         return ATTRIBUTE_VALUE_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
+    }
+    
+    protected static boolean isAttributeValueMultipleWriteTopic(Topic topic) {
+        return ATTRIBUTE_VALUES_WRITE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
     protected static boolean isAssetTopic(Topic topic) {
