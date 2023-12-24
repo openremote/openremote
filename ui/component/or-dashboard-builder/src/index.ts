@@ -28,6 +28,7 @@ import {IntervalSelectEvent, intervalToMillis} from "./controls/dashboard-refres
 import {ImageWidget} from "./widgets/image-widget";
 import {KpiWidget} from "./widgets/kpi-widget";
 import {MapWidget} from "./widgets/map-widget";
+import {SessionWidget} from "./widgets/session-widget";
 
 // language=CSS
 const styling = css`
@@ -212,6 +213,7 @@ export function registerWidgetTypes() {
     widgetTypes.set("image", ImageWidget.getManifest());
     widgetTypes.set("kpi", KpiWidget.getManifest());
     widgetTypes.set("map", MapWidget.getManifest());
+    widgetTypes.set("session", SessionWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")
