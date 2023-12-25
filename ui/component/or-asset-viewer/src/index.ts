@@ -999,7 +999,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
         }
     } catch (e) {
         success = false;
-        showSnackbar(undefined, i18next.t(isUpdate ? "saveAssetFailed" : "createAssetFailed"), i18next.t("dismiss"));
+        showSnackbar(undefined, (isUpdate ? "saveAssetFailed" : "createAssetFailed"), "dismiss");
         console.error("Failed to save asset", e);
     }
 

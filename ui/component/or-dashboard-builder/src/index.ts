@@ -504,17 +504,17 @@ export class OrDashboardBuilder extends LitElement {
                     this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
                     this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
                     this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
-                    showSnackbar(undefined, i18next.t('dashboard.saveSuccessful'));
+                    showSnackbar(undefined, "dashboard.saveSuccessful");
                 }
             }).catch((reason) => {
                 console.error(reason);
-                showSnackbar(undefined, i18next.t('errorOccurred'));
+                showSnackbar(undefined, "errorOccurred");
             }).finally(() => {
                 this.isLoading = false;
             })
         } else {
             console.error("The selected dashboard could not be found..");
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         }
     }
 

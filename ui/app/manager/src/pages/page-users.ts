@@ -257,7 +257,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         if (!response.data) {
             showSnackbar(undefined, errorMsg, "dismiss");
-            console.error(errorMsg + ": response = " + response.statusText);
+            console.error(i18next.t(errorMsg) + ": response = " + response.statusText);
             return false;
         }
 
@@ -298,19 +298,19 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
 
-        if (!this.responseAndStateOK(stateChecker, roleResponse, i18next.t("loadFailedRoles"))) {
+        if (!this.responseAndStateOK(stateChecker, roleResponse, "loadFailedRoles")) {
             return;
         }
 
         const realmResponse = await manager.rest.api.RealmResource.get(manager.displayRealm);
 
-        if (!this.responseAndStateOK(stateChecker, realmResponse, i18next.t("loadFailedRoles"))) {
+        if (!this.responseAndStateOK(stateChecker, realmResponse, "loadFailedRoles")) {
             return;
         }
 
         const usersResponse = await manager.rest.api.UserResource.query({realmPredicate: {name: manager.displayRealm}} as UserQuery);
 
-        if (!this.responseAndStateOK(stateChecker, usersResponse, i18next.t("loadFailedUsers"))) {
+        if (!this.responseAndStateOK(stateChecker, usersResponse, "loadFailedUsers")) {
             return;
         }
 
@@ -585,12 +585,12 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         // Load users assigned roles
         const userRolesResponse = await (manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
-        if (!this.responseAndStateOK(() => true, userRolesResponse, i18next.t("loadFailedUserInfo"))) {
+        if (!this.responseAndStateOK(() => true, userRolesResponse, "loadFailedUserInfo")) {
             return;
         }
 
         const userRealmRolesResponse = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, user.id);
-        if (!this.responseAndStateOK(() => true, userRolesResponse, i18next.t("loadFailedUserInfo"))) {
+        if (!this.responseAndStateOK(() => true, userRolesResponse, "loadFailedUserInfo")) {
             return;
         }
 
@@ -598,7 +598,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             realm: manager.displayRealm,
             userId: user.id
         });
-        if (!this.responseAndStateOK(() => true, userAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
+        if (!this.responseAndStateOK(() => true, userAssetLinksResponse, "loadFailedUserInfo")) {
             return;
         }
 
@@ -768,7 +768,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected async getSessionLoader(user: UserModel): Promise<TemplateResult> {
         const userSessionsResponse = await (manager.rest.api.UserResource.getUserSessions(manager.displayRealm, user.id));
 
-        if (!this.responseAndStateOK(() => userSessionsResponse.status === 200, userSessionsResponse, i18next.t("loadFailedUserInfo"))) {
+        if (!this.responseAndStateOK(() => userSessionsResponse.status === 200, userSessionsResponse, "loadFailedUserInfo")) {
             return html``;
         }
 
