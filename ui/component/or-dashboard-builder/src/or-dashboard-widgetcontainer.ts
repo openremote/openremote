@@ -143,9 +143,7 @@ export class OrDashboardWidgetContainer extends LitElement {
                 <div style="flex: 1; max-height: ${showHeader ? 'calc(100% - 36px)' : '100%'};">
                     ${when((!this.error && !this.loading), () => html`
                         ${this.orWidget}
-                    `, () => html`
-                        ${this.error ? html`${this.error}` : html`${i18next.t('loading')}`}
-                    `)}
+                    `, () => html`<or-translate value="${this.error ? this.error : "loading"}"></or-translate>`)}
                 </div>
             </div>
         `

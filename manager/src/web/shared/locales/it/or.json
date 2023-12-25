@@ -227,10 +227,12 @@
   "realmRules": "Regno",
   "globalRules": "Globale",
   "recipients": "Destinatari",
-  "JSON": "Quando-Poi",
-  "FLOW": "Flusso",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "Quando-Poi",
+    "FLOW": "Flusso",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "Manager del gateway",
   "connectionDetails": "DETTAGLI DELLA CONNESSIONE",
   "secured": "Assicurato",

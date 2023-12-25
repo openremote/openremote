@@ -92,7 +92,7 @@ export class OrConfPanel extends LitElement {
             <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
                 ${when(availableRealms.length > 0, () => html`
-                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" .label="${type === 'mapconfig' ? i18next.t('configuration.addMapCustomization') : i18next.t('configuration.addRealmCustomization')}" icon="plus"
+                    <or-mwc-input id="btn-add-realm" .type="${InputType.BUTTON}" label="${type === 'mapconfig' ? 'configuration.addMapCustomization' : 'configuration.addRealmCustomization'}" icon="plus"
                                   @click="${() => this._showAddingRealmDialog()}"
                     ></or-mwc-input>
                 `)}
@@ -145,12 +145,12 @@ export class OrConfPanel extends LitElement {
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             },
             {
                 default: true,
                 actionName: "ok",
-                content: i18next.t("ok"),
+                content: "ok",
                 action: () => {
                     if (this._addedRealm) {
                         let realms = this.getRealmsProperty(this.config);

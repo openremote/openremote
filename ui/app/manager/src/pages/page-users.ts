@@ -256,7 +256,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         if (!response.data) {
-            showSnackbar(undefined, errorMsg, i18next.t("dismiss"));
+            showSnackbar(undefined, errorMsg, "dismiss");
             console.error(errorMsg + ": response = " + response.statusText);
             return false;
         }
@@ -327,7 +327,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         let result = false;
 
         if ((this._registrationEmailAsUsername && !user.serviceAccount) ? !user.email : !user.username) {
-            showSnackbar(undefined, i18next.t((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), i18next.t("dismiss"));
+            showSnackbar(undefined, ((this._registrationEmailAsUsername && !user.serviceAccount) ? "noEmailSet" : "noUsernameSet"), "dismiss");
             return false;
         }
 
@@ -359,9 +359,9 @@ export class PageUsers extends Page<AppStateKeyed> {
             if (isAxiosError(e)) {
                 console.error((isUpdate ? "save user failed" : "create user failed") + ": response = " + e.response.statusText);
                 if (e.response.status === 400) {
-                    showSnackbar(undefined, i18next.t(isUpdate ? "saveUserFailed" : "createUserFailed"), i18next.t("dismiss"));
+                    showSnackbar(undefined, (isUpdate ? "saveUserFailed" : "createUserFailed"), "dismiss");
                 } else if (e.response.status === 403) {
-                    showSnackbar(undefined, i18next.t('userAlreadyExists'))
+                    showSnackbar(undefined, "userAlreadyExists")
                 }
             }
             result = false;
@@ -654,7 +654,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 {
                     default: true,
                     actionName: "cancel",
-                    content: i18next.t("cancel"),
+                    content: "cancel",
                     action: () => {
                         user.userAssetLinks = user.previousAssetLinks;
                         user.previousAssetLinks = undefined;
@@ -663,7 +663,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 },
                 {
                     actionName: "ok",
-                    content: i18next.t("ok"),
+                    content: "ok",
                     action: () => {
                         openBtn.disabled = false;
                         this.onUserChanged(suffix);
@@ -774,7 +774,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         const cols = [i18next.t("address"), i18next.t("since"), ""];
         const rows = userSessionsResponse.data.map((session) => {
-            return [session.remoteAddress, new Date(session.startTimeMillis), html`<or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t("disconnect")}" @or-mwc-input-changed="${() => {this.disconnectSession(user, session)}}"></or-mwc-input>`]
+            return [session.remoteAddress, new Date(session.startTimeMillis), html`<or-mwc-input .type="${InputType.BUTTON}" label="disconnect" @or-mwc-input-changed="${() => {this.disconnectSession(user, session)}}"></or-mwc-input>`]
         });
         if (rows.length < 1){
             return html`<or-mwc-table .rows="${[['This user has no active MQTT sessions',null]]}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"></or-mwc-table>`;
@@ -987,7 +987,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           this._saveUserPromise = this._createUpdateUser(user, user.id ? 'update' : 'create').then((result) => {
                                               // Return to the users page on successful user create/update
                                               if (result) {                                              
-                                                  showSnackbar(undefined, i18next.t("saveUserSucceeded"));
+                                                  showSnackbar(undefined, "saveUserSucceeded");
                                                   this.reset();
                                               }
                                           }).catch((ex) => {
@@ -1049,9 +1049,9 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     protected disconnectSession(user: UserModel, session: UserSession) {
         this._sessionLoader = manager.rest.api.UserResource.disconnectUserSession(manager.displayRealm, session.ID)
-            .then(() => showSnackbar(undefined, i18next.t("userDisconnected")))
+            .then(() => showSnackbar(undefined, "userDisconnected"))
             .catch((e) => {
-                showSnackbar(undefined, i18next.t("userDisconnectFailed"));
+                showSnackbar(undefined, "userDisconnectFailed");
                 console.error("Failed to disconnect user", e);
             })
             .then(() =>this.getSessionLoader(user));

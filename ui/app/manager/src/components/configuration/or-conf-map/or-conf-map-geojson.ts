@@ -1,6 +1,5 @@
 import { GeoJsonConfig } from "@openremote/model";
 import {DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { i18next } from "@openremote/or-translate";
 import { html, LitElement } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
@@ -38,11 +37,11 @@ export class OrConfMapGeoJson extends LitElement {
         const actions: DialogAction[] = [
             {
                 actionName: "close",
-                content: i18next.t("close")
+                content: "close"
             },
             {
                 actionName: "ok",
-                content: i18next.t("update"),
+                content: "update",
                 disabled: !this._jsonValid,
                 action: () => {
                     this.geoJson = this.parseGeoJson(this._aceEditorValue); // update with new value
@@ -69,7 +68,7 @@ export class OrConfMapGeoJson extends LitElement {
             </style>
         `
         return html`
-            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this.openJsonEditor()}}"></or-mwc-input>
+            <or-mwc-input type="button" label="geoJson" outlined icon="pencil" @click="${() => {this.openJsonEditor()}}"></or-mwc-input>
             <or-mwc-dialog id="geojson-modal" .heading="${heading}" .content="${content}" .actions="${actions}" .styles="${styles}" .dismissAction="${null}"></or-mwc-dialog>
         `
     }

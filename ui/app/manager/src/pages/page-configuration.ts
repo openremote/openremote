@@ -249,7 +249,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ${i18next.t("appearance")}
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" .label="${i18next.t("save")}"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
                                               @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
@@ -262,7 +262,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             `, () => html`
                                 <div class="notFound-container">
                                     <span>${i18next.t('configuration.managerConfigNotFound')}</span>
-                                    <or-mwc-input type="${InputType.BUTTON}" label="${i18next.t('configuration.tryAgain')}"
+                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
                                                       this.managerConfiguration = val;
                                                   }).catch(e => console.error(e))}"
@@ -278,7 +278,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                             `, () => html`
                                 <div class="notFound-container">
                                     <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
-                                    <or-mwc-input type="${InputType.BUTTON}" label="${i18next.t('configuration.tryAgain')}"
+                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
                                                       this.mapConfig = val;
                                                   }).catch(e => console.error(e))}"

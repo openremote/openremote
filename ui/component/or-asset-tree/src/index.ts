@@ -545,7 +545,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       style="margin-top: 10px;"
                                       disabled></or-mwc-input>
                         <div style="margin-top: 10px;">
-                            <or-mwc-input style="float:left;" type="${InputType.BUTTON}" .label="${i18next.t("filter.clear")}" @or-mwc-input-changed="${() => {
+                            <or-mwc-input style="float:left;" type="${InputType.BUTTON}" label="filter.clear" @or-mwc-input-changed="${() => {
                                 // Wipe the current value and hide the clear button
                                 this._filterInput.value = undefined;
 
@@ -561,7 +561,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                 // Call filtering
                                 this._doFiltering();
                             }}"></or-mwc-input>
-                            <or-mwc-input style="float: right;" type="${InputType.BUTTON}" .label="${i18next.t("filter.action")}" raised @or-mwc-input-changed="${() => {
+                            <or-mwc-input style="float: right;" type="${InputType.BUTTON}" label="filter.action" raised @or-mwc-input-changed="${() => {
                                 this._filterFromSettings();
                             }}"></or-mwc-input>
                         </div>
@@ -1235,7 +1235,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
        } catch (e) {
             this._filter.assetType.forEach((assetT: string) => {
                 if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
-                    showSnackbar(undefined, i18next.t('filter.assetTypeDoesNotExist'), i18next.t("dismiss"));
+                    showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
                 }
             });
             foundAssetIds = [];
@@ -1392,11 +1392,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             .setActions([
                     {
                         actionName: "cancel",
-                        content: i18next.t("cancel")
+                        content: "cancel"
                     },
                     {
                         actionName: "add",
-                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" disabled></or-mwc-input>`,
+                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
                         action: () => {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;

@@ -189,9 +189,9 @@ export class PageGateway extends Page<AppStateKeyed>  {
                         <or-mwc-input .label="${i18next.t("disabled")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.disabled : false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", e.detail.value)}"></or-mwc-input>
                     </div>
                     <div id="buttons">
-                        <or-mwc-input .label="${i18next.t("reset")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-mwc-input>                
-                        <or-mwc-input .label="${i18next.t("delete")}" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-mwc-input>                
-                        <or-mwc-input .label="${i18next.t("save")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>                
+                        <or-mwc-input label="reset" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-mwc-input>                
+                        <or-mwc-input label="delete" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-mwc-input>                
+                        <or-mwc-input label="save" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>                
                     </div>
                 </or-panel>
             </div>

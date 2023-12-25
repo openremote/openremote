@@ -126,7 +126,7 @@ export class OrRuleTriggerQuery extends LitElement {
 
     render() {
         const modalActions: DialogAction[] = [
-            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t('close')}"></or-mwc-input>`, action: () => {} }
+            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="close"></or-mwc-input>`, action: () => {} }
         ];
         const onMapModalOpen = () => {
             const dialog: OrMwcDialog = this.shadowRoot!.getElementById("map-modal") as OrMwcDialog;
@@ -153,7 +153,7 @@ export class OrRuleTriggerQuery extends LitElement {
                         <or-mwc-input class="min-width width" type="${InputType.NUMBER}" .value="${this.condition.sun?.offsetMins}" label="${i18next.t('offsetInMinutes')}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => { this.setOffset(ev.detail.value) }}">
                         </or-mwc-input>
-                        <or-mwc-input type="${InputType.BUTTON}" class="min-width" @or-mwc-input-changed="${onMapModalOpen}" label="${i18next.t('location')}"></or-mwc-input>
+                        <or-mwc-input type="${InputType.BUTTON}" class="min-width" @or-mwc-input-changed="${onMapModalOpen}" label="location"></or-mwc-input>
                         <or-mwc-dialog id="map-modal" heading="${i18next.t('pickLocation')}" .actions="${modalActions}"></or-mwc-dialog>
                     `}
                 ` : undefined}
