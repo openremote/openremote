@@ -10,6 +10,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetDatapoint
+import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery
 import org.openremote.model.geo.GeoJSONPoint
@@ -68,17 +69,17 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
         when: "datapoints are added to the asset"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
-                [
-                        new Pair<>(50d, dateTime.minusMinutes(25)),
-                        new Pair<>(40d, dateTime.minusMinutes(20)),
-                        new Pair<>(30d, dateTime.minusMinutes(15)),
-                        new Pair<>(20d, dateTime.minusMinutes(10)),
-                        new Pair<>(10d, dateTime.minusMinutes(5)),
-                ]
+            [
+                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 50d),
+                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 40d),
+                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 30d),
+                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 20d),
+                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 10d),
+            ]
         )
 
         then: "datapoints should exist"
-        def allDatapoints = new ArrayList<AssetDatapoint>()
+        def allDatapoints = new ArrayList<ValueDatapoint>()
         conditions.eventually {
             allDatapoints = assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), attributeName))
             assert allDatapoints.size() == 5
@@ -122,15 +123,15 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
         and: "datapoints are added that have a spike in value, it should be included in any downsample"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
-                [
-                        // placing them in a random order to verify order that is returned with the query
-                        new Pair<>(25d, dateTime.minusMinutes(10)),
-                        new Pair<>(30d, dateTime.minusMinutes(5)),
-                        new Pair<>(10d, dateTime.minusMinutes(30)),
-                        new Pair<>(90d, dateTime.minusMinutes(20)),
-                        new Pair<>(15d, dateTime.minusMinutes(25)),
-                        new Pair<>(20d, dateTime.minusMinutes(15)),
-                ]
+            [
+                // placing them in a random order to verify order that is returned with the query
+                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 25d),
+                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 30d),
+                new ValueDatapoint<>(dateTime.minusMinutes(30).toDate(), 10d),
+                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 90d),
+                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 15d),
+                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 20d),
+            ]
         )
 
         then: "the spike should be present as the 2nd value"
