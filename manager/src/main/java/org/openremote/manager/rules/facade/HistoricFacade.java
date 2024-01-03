@@ -42,6 +42,6 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
 
     @Override
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, AssetDatapointQuery query) {
-        return assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(), query);
+        return assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(), query).toArray(ValueDatapoint[]::new);
     }
 }
