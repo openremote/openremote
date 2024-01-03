@@ -2,7 +2,6 @@ import {OrWidget} from "./or-widget";
 import {Asset, AssetQuery, Attribute, AttributeRef} from "@openremote/model";
 import { state } from "lit/decorators.js";
 import manager from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {WidgetConfig} from "./widget-config";
 import {WidgetSettings} from "./widget-settings";
@@ -101,7 +100,7 @@ async function fetchAssets(assetQuery: AssetQuery) {
         assets = response.data;
     }).catch((reason) => {
         console.error(reason);
-        showSnackbar(undefined, i18next.t('errorOccurred'));
+        showSnackbar(undefined, "errorOccurred");
     });
     return assets;
 }

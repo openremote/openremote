@@ -2,7 +2,6 @@ import {css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {TableWidgetConfig} from "../widgets/table-widget";
-import {i18next} from "@openremote/or-translate";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 
@@ -37,7 +36,7 @@ export class TableSettings extends AssetWidgetSettings {
         return html`
             <div>
                 <!-- Asset type, assets, and attribute picker -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <div style="padding-bottom: 12px;">
                         <assettypes-panel .assetType="${this.widgetConfig.assetType}" .config="${config}"
                                           .assetIds="${this.widgetConfig.assetIds}" .attributeNames="${this.widgetConfig.attributeNames}"
@@ -49,10 +48,10 @@ export class TableSettings extends AssetWidgetSettings {
                 </settings-panel>
                 
                 <!-- Table settings like amount of rows -->
-                <settings-panel displayName="${i18next.t('dashboard.tableSettings')}" expanded="${true}">
+                <settings-panel displayName="dashboard.tableSettings" expanded="${true}">
                     <div style="padding-bottom: 12px;">
                         <div class="customMwcInputContainer">
-                            <span style="min-width: 180px">${i18next.t('dashboard.numberOfRows')}</span>
+                            <span style="min-width: 180px"><or-translate value="dashboard.numberOfRows"></or-translate></span>
                             <or-mwc-input type="${InputType.SELECT}" .options="${[10, 25, 100]}" .value="${this.widgetConfig.tableSize}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTableSizeSelect(ev)}"
                             ></or-mwc-input>

@@ -651,7 +651,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.timePresetOptions && this.timePresetKey ? html`
                                     ${this.timestampControls ? html`
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeframe ? i18next.t('Custom') : i18next.t(this.timePresetKey)}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePresetKey}"></or-mwc-input>`,
                                                 Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timePresetKey,
                                                 (value: string | string[]) => {
@@ -666,7 +666,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <!-- Button that opens custom time selection -->
                                         <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
                                     ` : html`
-                                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePresetKey}" disabled="true"></or-mwc-input>
                                     `}
                                 ` : undefined}
                             </div>
@@ -689,7 +689,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 </div>
                             ` : undefined}
                             ${this.attributeControls ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                             ` : undefined}
                         </div>
                         ${cache(this.showLegend ? html`
@@ -919,10 +919,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             `)
             .setActions([{
                 actionName: "cancel",
-                content: i18next.t('cancel')
+                content: "cancel"
             }, {
                 actionName: "ok",
-                content: i18next.t('ok'),
+                content: "ok",
                 action: () => {
                     if(this.timePresetOptions && startRef.value?.value && endRef.value?.value) {
                         this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];

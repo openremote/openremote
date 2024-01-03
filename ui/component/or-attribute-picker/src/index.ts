@@ -151,11 +151,11 @@ export class OrAttributePicker extends OrMwcDialog {
         this.actions = [
             {
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             },
             {
                 actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" label="${i18next.t("add")}"
+                content: html`<or-mwc-input id="add-btn" class="button" label="add"
                                             .type="${InputType.BUTTON}" ?disabled="${!this.selectedAttributes.length}"
                                             @or-mwc-input-changed="${(ev: Event) => { if (!this.selectedAttributes.length) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`,
                 action: () => {

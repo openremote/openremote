@@ -82,7 +82,7 @@ export async function showOkCancelDialog(title: string, content: string | Templa
                 [
                     {
                         actionName: "cancel",
-                        content: i18next.t("cancel"),
+                        content: "cancel",
                         default: true,
                         action: () => deferred.resolve(false)
                     },

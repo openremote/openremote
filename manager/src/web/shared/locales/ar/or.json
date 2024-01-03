@@ -214,10 +214,12 @@
   "realmRules": "إضافة شرط داخل هذا النطاق",
   "globalRules": "الإجرائات العامة",
   "recipients": "المستلمين",
-  "JSON": "عندما-بعد",
-  "FLOW": "المخطط التدفقي",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "عندما-بعد",
+    "FLOW": "المخطط التدفقي",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "إدارة الإتصال الداخلي ",
   "connectionDetails": "معلومات الإتصال",
   "secured": "محمي",

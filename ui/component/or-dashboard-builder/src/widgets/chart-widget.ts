@@ -1,7 +1,6 @@
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
 import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
@@ -188,7 +187,7 @@ export class ChartWidget extends OrAssetWidget {
             }, () => {
                 return html`
                     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span>${i18next.t('noAttributesConnected')}</span>
+                        <span><or-translate value="noAttributesConnected"></or-translate></span>
                     </div>
                 `
             })}

@@ -7,7 +7,6 @@ import {css, CSSResult, html, PropertyValues, TemplateResult, unsafeCSS } from "
 import {OrAssetWidget} from "../util/or-asset-widget";
 import {ImageSettings} from "../settings/image-settings";
 import { when } from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
 import { styleMap } from "lit/directives/style-map.js";
 
@@ -172,7 +171,7 @@ export class ImageWidget extends OrAssetWidget {
                         </div>
                     </div>
                 `, () => html`
-                    <span>${i18next.t('dashboard.noImageSelected')}</span>
+                    <span><or-translate value="dashboard.noImageSelected"></or-translate></span>
                 `)}
             </div>
         `;
