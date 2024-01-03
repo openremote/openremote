@@ -257,7 +257,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         if (!response.data) {
             showSnackbar(undefined, errorMsg, "dismiss");
-            console.error(i18next.t(errorMsg) + ": response = " + response.statusText);
+            console.error(errorMsg + ": response = " + response.statusText);
             return false;
         }
 
