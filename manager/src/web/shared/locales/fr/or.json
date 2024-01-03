@@ -231,10 +231,12 @@
   "realmRules": "Realm",
   "globalRules": "Global",
   "recipients": "Destinataires",
-  "JSON": "Si-Alors",
-  "FLOW": "Flux",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "Si-Alors",
+    "FLOW": "Flux",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "Interconnexion du Manager",
   "connectionDetails": "DÉTAILS DE CONNEXION",
   "secured": "Sécurisé",

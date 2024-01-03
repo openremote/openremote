@@ -120,11 +120,11 @@ export class OrMwcSnackbar extends LitElement {
                  @MDCSnackbar:closed="${(ev: MDCSnackbarCloseEvent) => this.onClose(ev.detail.reason)}">
                 <div class="mdc-snackbar__surface" role="status" aria-relevant="additions">
                     <div class="mdc-snackbar__label" aria-atomic="false">
-                        ${this.text}
+                        <or-translate value="${this.text}"></or-translate>
                     </div>
                     ${!this.buttonText ? html`` : html`
                         <div class="mdc-snackbar__actions" aria-atomic="true">
-                            <or-mwc-input type="button" class="mdc-button mdc-snackbar__action" .label="${this.buttonText}">                                
+                            <or-mwc-input type="button" class="mdc-button mdc-snackbar__action" label="${this.buttonText}">                                
                             </or-mwc-input>
                         </div>
                     `};

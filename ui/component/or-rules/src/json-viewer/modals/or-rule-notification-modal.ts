@@ -107,14 +107,14 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         const notificationPickerModalActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
                 action: (dialog) => {
                   
                 }
             },
             {
                 actionName: "",
-                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}" @or-mwc-input-changed="${this.checkForm}"></or-mwc-input>`
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="ok" @or-mwc-input-changed="${this.checkForm}"></or-mwc-input>`
             }
         ];
        
@@ -127,7 +127,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         };
 
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("message")}" @or-mwc-input-changed="${notificationPickerModalOpen}"></or-mwc-input>
+            <or-mwc-input .type="${InputType.BUTTON}" label="message" @or-mwc-input-changed="${notificationPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="notification-modal" heading="${this.title}" .actions="${notificationPickerModalActions}"></or-mwc-dialog>
             <slot class="notification-form-slot"></slot>
         `

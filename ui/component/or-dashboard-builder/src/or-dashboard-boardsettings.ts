@@ -77,7 +77,7 @@ export class OrDashboardBoardsettings extends LitElement {
 
                 <!-- Permissions panel, to set who can view/edit the selected dashboard -->
                 ${when(this.showPerms, () => html`
-                    <settings-panel displayName="${i18next.t('permissions')}" expanded="${true}">
+                    <settings-panel displayName="permissions" expanded="${true}">
                         <div>
                             <div style="margin-bottom: 24px;">
                                 <div class="label">
@@ -109,12 +109,12 @@ export class OrDashboardBoardsettings extends LitElement {
                 `)}
 
                 <!-- Layout panel, with options such as 'amount of columns' -->
-                <settings-panel displayName="${i18next.t('layout')}" expanded="${true}">
+                <settings-panel displayName="layout" expanded="${true}">
                     <div>
                         
                         <!-- Number of Columns control -->
                         <div style="margin-bottom: 24px; display: flex; align-items: center;">
-                            <span style="min-width: 180px;">${i18next.t("dashboard.numberOfColumns")}</span>
+                            <span style="min-width: 180px;"><or-translate value="dashboard.numberOfColumns"></or-translate></span>
                             <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.columns}" min="1" max="24" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                 if (this.dashboard.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
                                     this.dashboard.template.columns = event.detail.value as number;
@@ -135,7 +135,7 @@ export class OrDashboardBoardsettings extends LitElement {
                         
                         <!-- Max Screen Width control-->
                         <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="min-width: 150px;">${i18next.t('dashboard.maxScreenWidth')}</span>
+                            <span style="min-width: 150px;"><or-translate value="dashboard.maxScreenWidth"></or-translate></span>
                             <div>
                                 <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
@@ -151,7 +151,7 @@ export class OrDashboardBoardsettings extends LitElement {
                         
                         <!-- "Set to mobile" preset button, for ease of use -->
                         <div>
-                            <or-mwc-input type="${InputType.BUTTON}" comfortable label="${i18next.t('dashboard.setToMobilePreset')}"
+                            <or-mwc-input type="${InputType.BUTTON}" comfortable label="dashboard.setToMobilePreset"
                                           @or-mwc-input-changed="${() => {
                                               this.setToMobilePreset();
                                           }}">
@@ -161,10 +161,10 @@ export class OrDashboardBoardsettings extends LitElement {
                 </settings-panel>
 
                 <!-- Data management options -->
-                <settings-panel displayName="${i18next.t('dashboard.dataManagement')}" expanded="${true}">
+                <settings-panel displayName="dashboard.dataManagement" expanded="${true}">
                     <div>
                         <div class="label">
-                            <span>${i18next.t('dashboard.defaultRefreshInterval')}</span>
+                            <span><or-translate value="dashboard.defaultRefreshInterval"></or-translate></span>
                         </div>
                         <or-mwc-input type="${InputType.SELECT}" comfortable .options="${refreshIntervalOptions.map(o => o.value)}" style="width: 100%;"
                                       .value="${`dashboard.interval.${this.dashboard.template.refreshInterval?.toLowerCase() || `off`}`}"
@@ -182,8 +182,8 @@ export class OrDashboardBoardsettings extends LitElement {
         } else {
             return html`
                 <div style="padding: 24px;">
-                    <span>${i18next.t('errorOccurred')}</span><br/>
-                    <span>${i18next.t('noDashboardFound')}</span>
+                    <span><or-translate value="errorOccurred"></or-translate></span><br/>
+                    <span><or-translate value="noDashboardFound"></or-translate></span>
                 </div>
             `
         }

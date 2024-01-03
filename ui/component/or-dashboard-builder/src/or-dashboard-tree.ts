@@ -95,7 +95,7 @@ export class OrDashboardTree extends LitElement {
                 this.dashboards = result.data;
             }).catch(reason => {
                 console.error(reason);
-                showSnackbar(undefined, i18next.t("errorOccurred"));
+                showSnackbar(undefined, "errorOccurred");
             });
     }
 
@@ -126,9 +126,9 @@ export class OrDashboardTree extends LitElement {
         }).catch(e => {
             console.error(e);
             if (isAxiosError(e) && e.response?.status === 404) {
-                showSnackbar(undefined, i18next.t("noDashboardFound"));
+                showSnackbar(undefined, "noDashboardFound");
             } else {
-                showSnackbar(undefined, i18next.t("errorOccurred"));
+                showSnackbar(undefined, "errorOccurred");
             }
         });
     }
@@ -139,7 +139,7 @@ export class OrDashboardTree extends LitElement {
                 this.getAllDashboards();
             }).catch(reason => {
                 console.error(reason);
-                showSnackbar(undefined, i18next.t("errorOccurred"));
+                showSnackbar(undefined, "errorOccurred");
             });
         }
     }
@@ -192,7 +192,7 @@ export class OrDashboardTree extends LitElement {
         return html`
             <div id="menu-header">
                 <div id="title-container">
-                    <span id="title">${i18next.t("insights")}</span>
+                    <span id="title"><or-translate value="insights"></or-translate></span>
                 </div>
                 
                 <!-- Controls header -->
@@ -231,7 +231,9 @@ export class OrDashboardTree extends LitElement {
                     ${dashboardItems.map((items, index) => {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
-                                <span style="font-weight: 500; padding-left: 14px; color: #000000;">${(index === 0 ? i18next.t("dashboard.myDashboards") : i18next.t("dashboard.createdByOthers"))}</span>
+                                <span style="font-weight: 500; padding-left: 14px; color: #000000;">
+                                    <or-translate value="${(index === 0 ? "dashboard.myDashboards" : "dashboard.createdByOthers")}"></or-translate>
+                                 </span>
                                 <div id="list-container" style="overflow: hidden;">
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {

@@ -347,7 +347,7 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
         .setActions([
                 {
                     actionName: "cancel",
-                    content: i18next.t("cancel")
+                    content: "cancel"
                 },
                 {
                     default: true,
@@ -359,7 +359,7 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                             updateCallback(data);
                         }
                     },
-                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" .label="${i18next.t("update")}"></or-mwc-input>`
+                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" label="update"></or-mwc-input>`
                 }
             ])
         .setHeading(title)

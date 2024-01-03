@@ -54,7 +54,7 @@ export class ChartSettings extends WidgetSettings {
                 <span>${asset.name}</span>
                 <span style="font-size:14px; color:grey;">${attributeLabel}</span>
                 ${when(isOnRightAxis, () => html`
-                    <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;">(${i18next.t('right')})</span>
+                    <span style="position: absolute; right: 0; margin-bottom: 16px; font-size:14px; color:grey;"><or-translate value="right"></or-translate></span>
                 `)}
             `
         }
@@ -68,7 +68,7 @@ export class ChartSettings extends WidgetSettings {
         return html`
             <div>
                 <!-- Attribute selection -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" multi="${true}" onlyDataAttrs="${true}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       .attributeLabelCallback="${attributeLabelCallback}" .attributeActionCallback="${attributeActionCallback}"
                                       @attribute-action="${(ev: AttributeActionEvent) => this.onAttributeAction(ev)}"
@@ -77,7 +77,7 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Display options -->
-                <settings-panel displayName="${i18next.t('display')}" expanded="${true}">
+                <settings-panel displayName="display" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
                         <!-- Timeframe -->
                         <div>
@@ -89,13 +89,13 @@ export class ChartSettings extends WidgetSettings {
                         <!-- Y Min/max options -->
                         <div>
                             <div class="switch-container">
-                                <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
+                                <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.showTimestampControls}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimestampControlsToggle(ev)}"
                                 ></or-mwc-input>
                             </div>
                             <div class="switch-container">
-                                <span>${i18next.t('dashboard.showLegend')}</span>
+                                <span><or-translate value="dashboard.showLegend"></or-translate></span>
                                 <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showLegend}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLegendToggle(ev)}"
                                 ></or-mwc-input>
@@ -105,14 +105,14 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Axis configuration -->
-                <settings-panel displayName="${i18next.t('dashboard.axisConfig')}" expanded="${true}">
+                <settings-panel displayName="dashboard.axisConfig" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 16px;">
 
                         <!-- Left axis configuration -->
                         <div>
                             ${when(isMultiAxis, () => html`
                                 <div style="margin-bottom: 8px;">
-                                    <span>${i18next.t('dashboard.leftAxis')}</span>
+                                    <span><or-translate value="dashboard.leftAxis"></or-translate></span>
                                 </div>
                             `)}
                             <div style="display: flex;">
@@ -148,7 +148,7 @@ export class ChartSettings extends WidgetSettings {
                             return html`
                                 <div>
                                     <div style="margin-bottom: 8px;">
-                                        <span>${i18next.t('dashboard.rightAxis')}</span>
+                                        <span><or-translate value="dashboard.rightAxis"></or-translate></span>
                                     </div>
                                     <div style="display: flex;">
                                         ${rightMax !== undefined ? html`
@@ -183,7 +183,7 @@ export class ChartSettings extends WidgetSettings {
                 </settings-panel>
 
                 <!-- Data sampling options -->
-                <settings-panel displayName="${i18next.t('dataSampling')}" expanded="${true}">
+                <settings-panel displayName="dataSampling" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" style="width: 100%" .options="${Array.from(this.samplingOptions.keys())}" .value="${samplingValue}"
