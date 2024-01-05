@@ -405,11 +405,11 @@ export class PageRoles extends Page<AppStateKeyed> {
                                     ${readonly ? html`` : html`
                                     <div class="row" style="margin-bottom: 0;">
                                         ${role.id ? html`
-                                        <or-mwc-input .label="${i18next.t(" delete ")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t(" save ")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
                                         ` : html`
-                                        <or-mwc-input .label="${i18next.t(" cancel ")}" .type="${InputType.BUTTON}" @click="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
-                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t(" create ")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
+                                        <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @click="${() => { this._compositeRoles.splice(-1, 1); this._compositeRoles = [...this._compositeRoles] }}"></or-mwc-input>
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>
                                         `}
                                     </div>
                                     `}

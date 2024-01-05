@@ -234,7 +234,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         if(!this.ruleset) return html``;
 
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @or-mwc-input-changed="${() => this.showDialog()}"></or-mwc-input>
+            <or-mwc-input outlined .type="${InputType.BUTTON}" label="${this.timeLabel()}" @or-mwc-input-changed="${() => this.showDialog()}"></or-mwc-input>
         `;
     }
 
@@ -267,7 +267,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             .setActions([
                 {
                     actionName: "cancel",
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
+                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
                     action: () => {
                         this._dialog = undefined;
                     }
@@ -275,7 +275,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 {
                     actionName: "ok",
                     default: true,
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-mwc-input>`,
+                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="apply"></or-mwc-input>`,
                     action: () => {
                         if (this.ruleset && this.ruleset.meta) {
                             if (this.getValidityType() === "validityAlways") {

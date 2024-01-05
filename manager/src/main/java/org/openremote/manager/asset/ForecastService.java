@@ -35,13 +35,12 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.datapoint.Datapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.MetaItemType;
@@ -49,9 +48,6 @@ import org.openremote.model.value.MetaItemType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -362,6 +358,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             }
         }
 
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
         private void calculateForecasts() {
             final long now = timerService.getCurrentTimeMillis();
             List<ForecastAttribute> attributesToCalculate = new ArrayList<>();
@@ -412,12 +409,12 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     }).toList();
 
                     if (forecastTimestamps.size() >= forecastValues.size()) {
-                        List<Pair<?, LocalDateTime>> datapoints = IntStream
+                        List<ValueDatapoint<?>> datapoints = IntStream
                             .range(0, forecastValues.size())
                             .filter(i -> forecastValues.get(i).isPresent())
-                            .mapToObj(i -> new Pair<>(
-                                forecastValues.get(i).get(),
-                                LocalDateTime.ofInstant(Instant.ofEpochMilli(forecastTimestamps.get(i)), ZoneId.systemDefault()))
+                            .mapToObj(i -> new ValueDatapoint<>(
+                                forecastTimestamps.get(i),
+                                forecastValues.get(i).get())
                             )
                             .collect(Collectors.toList());
 
@@ -732,10 +729,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         }
 
         private List<Long> loadForecastTimestampsFromDb(AttributeRef attributeRef, long now) {
-            List<AssetPredictedDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef);
+            List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef);
             List<Long> timestamps = datapoints
                 .stream()
-                .map(datapoint -> datapoint.getTimestamp())
+                .map(ValueDatapoint::getTimestamp)
                 .filter(timestamp -> timestamp >= now)
                 .sorted()
                 .collect(Collectors.toList());;

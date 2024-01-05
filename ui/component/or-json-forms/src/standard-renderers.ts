@@ -53,7 +53,6 @@ import "./layouts/layout-vertical-element";
 import "./controls/control-input-element";
 import "./controls/control-array-element";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate";
 import {AdditionalProps} from "./base-element";
 import {Util} from "@openremote/core";
 
@@ -268,7 +267,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             };
 
             return html`
-                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input></div>
+                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => showJson(ev)}"></or-mwc-input></div>
             `;
         } else {
             // We have no data so show a schema picker

@@ -44,7 +44,6 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
@@ -729,9 +728,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 }
 
                 // Push the setpoints into the prediction service for the storage asset's setpoint attribute and set current setpoint
-                List<Pair<?, LocalDateTime>> valuesAndTimestamps = IntStream.range(1, setpoints.length).mapToObj(i ->
-                    new Pair<>(setpoints[i],
-                        LocalDateTime.ofInstant(optimisationTime.plus(periodSeconds * i, ChronoUnit.SECONDS), ZoneId.systemDefault()))
+                List<ValueDatapoint<?>> valuesAndTimestamps = IntStream.range(1, setpoints.length).mapToObj(i ->
+                    new ValueDatapoint<>(optimisationTime.plus(periodSeconds * i, ChronoUnit.SECONDS).toEpochMilli(), setpoints[i])
                 ).collect(Collectors.toList());
 
                 assetPredictedDatapointService.updateValues(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName(), valuesAndTimestamps);
@@ -799,7 +797,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
             LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
-            ValueDatapoint<?>[] predictedData = assetPredictedDatapointService.queryDatapoints(
+            List<ValueDatapoint<?>> predictedData = assetPredictedDatapointService.queryDatapoints(
                     ref.getId(),
                     ref.getName(),
                     new AssetDatapointIntervalQuery(
@@ -810,13 +808,13 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                             true
                     )
             );
-            if (predictedData.length != values.length) {
-                LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.length);
+            if (predictedData.size() != values.length) {
+                LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.size());
             } else {
 
-                IntStream.range(0, predictedData.length).forEach(i -> {
-                    if (predictedData[i].getValue() != null) {
-                        values[i] = (double) (Object) predictedData[i].getValue();
+                IntStream.range(0, predictedData.size()).forEach(i -> {
+                    if (predictedData.get(i).getValue() != null) {
+                        values[i] = (double) (Object) predictedData.get(i).getValue();
                     } else {
                         // Average previous and next values to fill in gaps (goes up to 5 back and forward) - this fixes
                         // issues with resolution differences between stored predicted data and optimisation interval
@@ -824,12 +822,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                         Double next = null;
                         int j = i-1;
                         while (previous == null && j >= 0) {
-                            previous = (Double) predictedData[j].getValue();
+                            previous = (Double) predictedData.get(j).getValue();
                             j--;
                         }
                         j = i+1;
-                        while (next == null && j < predictedData.length) {
-                            next = (Double) predictedData[j].getValue();
+                        while (next == null && j < predictedData.size()) {
+                            next = (Double) predictedData.get(j).getValue();
                             j++;
                         }
                         if (next == null) {

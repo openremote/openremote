@@ -15,7 +15,6 @@ import {
 } from "@openremote/or-map";
 import {when} from "lit/directives/when.js";
 import manager, {Util} from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
 
@@ -121,7 +120,7 @@ export class MapWidget extends OrAssetWidget {
             this.markers = {};
         }).catch((reason) => {
             console.error(reason);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         });
         return assets;
     }

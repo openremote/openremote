@@ -267,11 +267,11 @@ export class AssettypesPanel extends LitElement {
                 {
                     default: true,
                     actionName: "cancel",
-                    content: i18next.t("cancel"),
+                    content: "cancel",
                 },
                 {
                     actionName: "ok",
-                    content: i18next.t("ok"),
+                    content: "ok",
                     action: () => {
                         const tree = assetTreeRef.value;
                         if(tree?.selectedIds) {

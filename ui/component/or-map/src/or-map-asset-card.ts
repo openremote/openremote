@@ -21,7 +21,6 @@ import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { i18next } from "@openremote/or-translate";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
@@ -178,7 +177,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 </div>
                 ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
                     <div id="footer">
-                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="viewAsset" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
                     </div>
                 `}
             </div>

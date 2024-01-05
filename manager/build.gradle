@@ -64,6 +64,10 @@ afterEvaluate {
     tasks.run.workingDir = isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir
 }
 
+tasks.withType(Sync).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 distributions {
     main {
         contents {
