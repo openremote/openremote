@@ -9,11 +9,6 @@ import {
     AlarmStatus,
     AlarmUserLink,
     Asset,
-    EmailNotificationMessage,
-    EmailNotificationMessageRecipient,
-    Notification,
-    NotificationTarget,
-    NotificationTargetType,
     SentAlarm,
     User,
     UserQuery
@@ -120,7 +115,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     min-height: 36px;
                 }
 
-                or-mwc-input {
+                .alarm-input {
                     margin-bottom: 10px;
                 }
 
@@ -135,7 +130,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     /*flex-wrap: wrap;*/
                     flex-direction: row;
                     justify-content: space-between;
-                    margin: var(--internal-or-log-viewer-controls-margin);
+                    /*margin: var(--internal-or-log-viewer-controls-margin);*/
                     padding: 0 10px 0px 10px;
                 }
 
@@ -146,7 +141,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
 
                 #controls > * {
-                    margin-top: 0px;
+                    /*margin-top: 0px;*/
                 }
                 
                 h5 {
@@ -159,7 +154,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     --or-icon-width: 20px;
                     --or-icon-height: 20px;
                     margin-right: 2px;
-                    margin-left: -5px;
+                    margin-left: 20px;
+                }
+                
+                #table-container {
+                    margin-left: 20px;
+                    margin-right: 20px;
                 }
 
                 .row {
@@ -190,6 +190,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
                 .hidden {
                     display: none;
+                    margin: 0 !important;
                 }
                 
                 .breadcrumb-container {
@@ -252,6 +253,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
     public assign: boolean = false;
 
     @state()
+    public allActive: boolean = true;
+
+    @state()
     protected _data?: SentAlarm[];
 
     @state()
@@ -269,6 +273,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _refresh?: number;
     protected _pageCount?: number;
     protected _currentPage: number = 1;
+    protected _selected?: TableRow[];
 
     get name(): string {
         return "alarm.alarm_plural";
@@ -297,54 +302,68 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     const spans = row.querySelectorAll('td span');
                     spans.forEach((span, columnIndex) => {
                         span = span as HTMLElement;
-                        if (columnIndex == 3) {
-                            span.parentElement.style.width = '40%';
-                        }
-                        if (columnIndex == 4) {
-                            span.parentElement.style.width = 'fit-content';
+                        if (columnIndex == 4 || columnIndex == 3) {
+                            span.parentElement.style.width = '185px';
+                            span.parentElement.style.maxWidth = '185px';
+                            span.parentElement.style.position = 'sticky';
+                            span.parentElement.style.right = '0';
                         }
                         switch (span.textContent) {
                             case 'LOW':
-                                columnIndex == 0 ?
-                                    span.innerHTML = '<or-icon style="color: green;" icon="numeric-3-box"></or-icon>' : '';
-                                span.parentElement.style.width = '5%';
+                                if(columnIndex == 0){
+                                    span.innerHTML = '<or-icon style="color: green;" icon="numeric-3-box"></or-icon>';
+                                    span.parentElement.style.width = '1%';
+                                    span.parentElement.style.padding = '2px';
+                                }
                                 break;
                             case 'MEDIUM':
-                                columnIndex == 0 ?
-                                    span.innerHTML = '<or-icon style="color: orange;" icon="numeric-2-box"></or-icon>' : '';
-                                span.parentElement.style.width = '5%';
+                                if(columnIndex == 0){
+                                    span.innerHTML = '<or-icon style="color: orange;" icon="numeric-2-box"></or-icon>';
+                                    span.parentElement.style.width = '1%';
+                                    span.parentElement.style.padding = '2px';
+                                }
                                 break;
                             case 'HIGH':
-                                columnIndex == 0 ?
-                                    span.innerHTML = '<or-icon style="color: red;" icon="numeric-1-box"></or-icon>' : '';
-                                span.parentElement.style.width = '5%';
+                                if(columnIndex == 0){
+                                    span.innerHTML = '<or-icon style="color: red;" icon="numeric-1-box"></or-icon>';
+                                    span.parentElement.style.width = '1%';
+                                    span.parentElement.style.padding = '2px';
+                                }
                                 break;
                             case 'Open':
-                                columnIndex == 1 ?
+                                if(columnIndex == 2){
                                     span.innerHTML = '<span style="color: white;' +
                                         'padding: 4px;' +
                                         'background-color: mediumblue;' +
-                                        'border-radius: 5px;">Open</span>' : '';
+                                        'border-radius: 5px;">Open</span>';
+                                    span.parentElement.style.width = '125px';
+                                }
                                 break;
                             case 'Acknowledged':
-                                columnIndex == 1 ?
+                                if(columnIndex == 2){
                                     span.innerHTML = '<span style="border: 1px mediumblue solid;' +
                                         'padding: 4px;' +
-                                        'border-radius: 5px;">Acknowledged</span>' : '';
+                                        'border-radius: 5px;">Acknowledged</span>';
+                                    span.parentElement.style.width = '125px';
+                                }
                                 break;
                             case 'In_progress':
-                                columnIndex == 1 ?
+                                if(columnIndex == 2){
                                     span.innerHTML = '<span style="color: white;' +
                                         'padding: 4px;' +
                                         'background-color: green;' +
-                                        'border-radius: 5px;">In progress</span>' : '';
+                                        'border-radius: 5px;">In progress</span>';
+                                    span.parentElement.style.width = '125px';
+                                }
                                 break;
                             case 'Closed':
-                                columnIndex == 1 ?
+                                if(columnIndex == 2){
                                     span.innerHTML = '<span style="border: 1px grey solid;' +
                                         'padding: 4px;' +
                                         'border-radius: 5px;' +
-                                        'color: grey;">Closed</span>' : '';
+                                        'color: grey;">Closed</span>';
+                                    span.parentElement.style.width = '125px';
+                                }
                                 break;
                         }
                     });
@@ -436,25 +455,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
             throw e; // Throw exception anyhow to handle individual cases
         } finally {
             await this._loadData();
-            // if(alarm.assigneeId){
-            //     let recipient: EmailNotificationMessageRecipient = { name:'Nina Taken', address:'ninataken2@gmail.com'}
-            //     let message : EmailNotificationMessage = {
-            //         type: 'email',
-            //         subject: `Assigned to new alarm: ${alarm.title}`,
-            //         text: 'New alarm created: \n' +
-            //             `Title: ${alarm.title} \n` +
-            //             `Content: ${alarm.content} \n` +
-            //             `Severity: ${alarm.severity} \n` +
-            //             `Status: ${alarm.status} \n` ,
-            //         to: [recipient]
-            //     };
-            //     let target: NotificationTarget = {type: NotificationTargetType.USER, data: message};
-            //     let notification: Notification = { name:`Assigned to new alarm: ${alarm.title}`,
-            //                                        message: message,
-            //                                        targets: [target]}
-            //
-            //     await manager.rest.api.NotificationResource.sendNotification(notification);
-            // }
             this.reset();
         }
     }
@@ -477,23 +477,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return html`
             <div id="wrapper">
                 <!-- Alarm Specific page -->
-                ${when(this.alarm || this.creationState, () =>
-                        html`
-                            <!-- Breadcrumb on top of the page-->
-                            <div class="breadcrumb-container">
-                <span class="breadcrumb-clickable" @click="${() => this.reset()}"
-                >${i18next.t("alarm.alarm_plural")}</span
-                >
-                                <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
-                                <span style="margin-left: 2px;"
-                                >${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.creatingAlarm")}</span
-                                >
-                            </div>
-                        `)}
 
-                <div id="title" style="justify-content: space-between;">
-                    <div>
-                        <or-icon icon="alert-outline"></or-icon>
+                <div id="title" class="${this.creationState || this.alarm ? "hidden" : ""}" style="justify-content: space-between; margin-top: 10px; margin-bottom: 10px">
+                    <div class="${this.creationState || this.alarm ? "hidden" : ""}">
+                        <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
                         <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
                     </div>
                     <div>
@@ -506,12 +493,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                 <or-mwc-input .type="${InputType.SELECT}" id="severity-select" comfortable
                                               ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}"
                                               @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}"
-                                              .value="${this._getSeverityOptions().filter((obj) => obj.value === this.severity).map((obj) => obj.label)[0]}"
+                                              .value="${this._getSeverityOptions().filter((obj) => obj.value === this.severity || !this.status ? obj.value === 'All' : '').map((obj) => obj.label)[0]}"
                                               .options="${this._getSeverityOptions().map( s => s.label)}"></or-mwc-input>
                                 <or-mwc-input .type="${InputType.SELECT}" id="status-select" comfortable
                                               ?disabled="${disabled}" .label="${i18next.t("alarm.status")}"
                                               @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}"
-                                              .value="${this._getStatusOptions().filter((obj) => obj.value === this.status).map((obj) => obj.label)[0]}"
+                                              .value="${this._getStatusOptions().filter((obj) => obj.value === this.status || this.allActive ? obj.value === 'All-active' : '' || !this.status ? obj.value === 'All' : '').map((obj) => obj.label)[0]}"
                                               .options="${this._getStatusOptions().map( s => s.label)}"></or-mwc-input>
 
                             </div>
@@ -606,16 +593,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected getAlarmsTable(writeAlarms: boolean) {
         // Content of Alarm Table
         const columns: TableColumn[] = [
-            {title: i18next.t('alarm.severity')},
+            {title: ''},
+            {title: i18next.t('alarm.title')},
             {title: i18next.t('alarm.status')},
             {title: i18next.t('alarm.assignee')},
-            {title: i18next.t('alarm.title')},
             {title: i18next.t('alarm.lastModified'), isSortable: true}
         ];
 
         const rows: TableRow[] = this._data!.map((alarm) => {
             return {
-                content: [alarm.severity!, alarm.status!.charAt(0) + alarm.status!.slice(1).toLowerCase(), alarm.assigneeUsername, alarm.title, new Date(alarm.lastModified!).toLocaleString()],
+                content: [alarm.severity!, alarm.title, alarm.status!.charAt(0) + alarm.status!.slice(1).toLowerCase(), alarm.assigneeUsername, new Date(alarm.lastModified!).toLocaleString()],
                 clickable: true
             } as TableRow
         });
@@ -676,6 +663,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
             if (this.status) {
                 this._data = this._data.filter((e) => e.status === this.status);
             }
+            if(!this.status && this.allActive){
+                this._data = this._data.filter((e) => e.status !== AlarmStatus.CLOSED);
+            }
         }
         this._loading = false;
     }
@@ -731,12 +721,30 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected getSingleAlarmTemplate(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
         const write = manager.hasRole("write:alarms");
         return html`
-            <div class="panel" style="margin-top: 0">
-                <div class="row">
-                    <div class="column" id="details-panel">
-                        <h5>${i18next.t("details").toUpperCase()}</h5>
-                        <!-- alarm details -->
-                        <or-mwc-input ?readonly="${!write}"
+            <!-- Breadcrumb on top of the page-->
+            <div style="margin: 0 auto auto auto;
+                        width: calc(100% - 100px);
+                        max-width: 1000px;">
+                <div class="breadcrumb-container">
+                    <span class="breadcrumb-clickable" @click="${() => this.reset()}"
+                    >${i18next.t("alarm.alarm_plural")}</span>
+                    <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
+                    <span style="margin-left: 2px;"
+                    >${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.creatingAlarm")}</span>
+                </div>
+                <div style="justify-content: flex-start; margin-top: 10px; margin-bottom: 10px">
+                    <div style="font-size: 18px; font-weight: bold;">
+                        <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
+                        <span> ${this.alarm != undefined ? this.alarm.id : i18next.t("alarm.alarm_plural")} </span>
+                    </div>
+                </div>
+                       
+                <div class="panel" style="margin-top: 0">
+                    <div class="row">
+                        <div class="column" id="details-panel">
+                            <h5>${i18next.t("details").toUpperCase()}</h5>
+                            <!-- alarm details -->
+                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
                                       .label="${i18next.t("alarm.title")}"
                                       .type="${InputType.TEXT}"
                                       .value="${alarm.title}"
@@ -744,8 +752,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         alarm.title = e.detail.value;
                                         this.onAlarmChanged(e);
                                       }}"
-                        ></or-mwc-input>
-                        <or-mwc-input ?readonly="${!write}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
                                       .label="${i18next.t("alarm.content")}"
                                       .type="${InputType.TEXTAREA}"
                                       .value="${alarm.content}"
@@ -754,76 +762,76 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         alarm.content = e.detail.value;
                                         this.onAlarmChanged(e);
                                       }}"
-                        ></or-mwc-input>
-                    </div>
-                    <div class="column" id="prop-panel">
-                        <h5>${i18next.t("properties").toUpperCase()}</h5>
-                        <or-mwc-input ?readonly="${true}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="column" id="prop-panel">
+                            <h5>${i18next.t("properties").toUpperCase()}</h5>
+                            <or-mwc-input class="alarm-input" ?readonly="${true}"
                                   .label="${i18next.t("createdOn")}"
                                   .type="${InputType.DATETIME}"
                                   .value="${new Date(alarm.createdOn)}"
-                        ></or-mwc-input>
-                        <or-mwc-input ?readonly="${true}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?readonly="${true}"
                                   .label="${i18next.t("alarm.lastModified")}"
                                   .type="${InputType.DATETIME}"
                                   .value="${new Date(alarm.lastModified)}"
-                        ></or-mwc-input>
-                        <or-mwc-input ?readonly="${!write}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
                                   .label="${i18next.t("alarm.severity")}"
                                   .type="${InputType.SELECT}"
-                                  .options="${this._getSeverityOptions().map( s => s.label)}"
-                                  .value="${this._getSeverityOptions().filter((obj) => obj.value === alarm.severity).map((obj) => obj.label)[0]}"
+                                  .options="${this._getAddSeverityOptions().map( s => s.label)}"
+                                  .value="${this._getAddSeverityOptions().filter((obj) => obj.value === alarm.severity).map((obj) => obj.label)[0]}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                        alarm.severity = this._getSeverityOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
+                                        alarm.severity = this._getAddSeverityOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
                                         this.onAlarmChanged(e);
                                   }}"
-                        ></or-mwc-input>
-                        <or-mwc-input ?readonly="${!write}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
                                   .label="${i18next.t("alarm.status")}"
                                   .type="${InputType.SELECT}"
-                                  .options="${this._getStatusOptions().map( s => s.label)}"
-                                  .value="${this._getStatusOptions().filter((obj) => obj.value === alarm.status).map((obj) => obj.label)[0]}"
+                                  .options="${this._getAddStatusOptions().map( s => s.label)}"
+                                  .value="${this._getAddStatusOptions().filter((obj) => obj.value === alarm.status).map((obj) => obj.label)[0]}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                        alarm.status = this._getStatusOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
+                                        alarm.status = this._getAddStatusOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
                                         this.onAlarmChanged(e);
                                   }}"
-                        ></or-mwc-input>
-                        <or-mwc-input ?readonly="${!manager.hasRole("read:admin")}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?readonly="${!manager.hasRole("read:admin")}"
                                   .label="${i18next.t("alarm.assignee")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getUsers().map((obj) => obj.label)}"
-                                  .value="${this._getUsers().filter((obj) => obj.value === alarm.assigneeUsername).map((obj) => obj.label)[0]}"
+                                  .value="${this._getUsers().filter((obj) => obj.label === alarm.assigneeUsername).map((obj) => obj.label)[0]}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                         alarm.assigneeId = this._getUsers().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
                                         this.onAlarmChanged(e);
                                   }}"
-                        ></or-mwc-input>
-                        <div class="${this.creationState ? "hidden" : ""}">
-                            <span style="margin: 0px auto 10px;">${i18next.t("linkedAssets")}:</span>
-                            <or-mwc-input outlined ?disabled="${!manager.hasRole("write:alarms")}" style="margin-left: 4px;"
+                            ></or-mwc-input>
+                            <div class="${this.creationState ? "hidden" : ""}">
+                                <span style="margin: 0px auto 10px;">${i18next.t("linkedAssets")}:</span>
+                                <or-mwc-input outlined ?disabled="${!manager.hasRole("write:alarms")}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {
                                             number: alarm.alarmAssetLinks?.length,
                                       })}"
                                       @or-mwc-input-changed="${(ev: MouseEvent) =>
                                             this._openAssetSelector(ev, alarm, readonly)}"
-                            ></or-mwc-input>
+                                ></or-mwc-input>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- Bottom controls (save/update and delete button) -->
-                ${when(!(readonly && !this._saveAlarmPromise), () => html`
-                <div class="row" style="justify-content: space-between;">
-                    ${when((manager.hasRole("write:alarms")), () => html`
-                    <or-mwc-input style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:admin")}"
+                    <!-- Bottom controls (save/update and delete button) -->
+                    ${when(!(readonly && !this._saveAlarmPromise), () => html`
+                    <div class="row" style="justify-content: space-between;">
+                        ${when((manager.hasRole("write:alarms")), () => html`
+                        <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:admin")}"
                                   .label="${i18next.t("delete")}"
                                   .type="${InputType.BUTTON}"
                                   @click="${() => this._deleteAlarm(this.alarm)}"
-                    ></or-mwc-input>
-                    `)}
-                    <or-mwc-input id="savebtn"
+                        ></or-mwc-input>
+                        `)}
+                        <or-mwc-input id="savebtn"
                                   style="margin: 0;"
-                                  raised
+                                  raised class="alarm-input"
                                   ?disabled="${readonly}"
                                   .label="${i18next.t(alarm.id ? "save" : "create")}"
                                   .type="${InputType.BUTTON}"
@@ -846,23 +854,38 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                             this._saveAlarmPromise = undefined;
                                         });
                                   }}"
-                    ></or-mwc-input>
-                </div>`)}
+                        ></or-mwc-input>
+                    </div>`)}
+                </div>
             </div>
         </div>`;
     }
 
     protected _getStatusOptions() {
-        return [{label: 'Open', value: AlarmStatus.OPEN}, {label: 'Acknowledged', value: AlarmStatus.ACKNOWLEDGED}, {label: 'In progress', value: AlarmStatus.IN_PROGRESS}, {label: 'Closed', value: AlarmStatus.CLOSED}];
+        return [{label: 'All active', value: 'All-active'}, {label: 'All', value: 'All'}, {label: 'Open', value: AlarmStatus.OPEN}, {label: 'Acknowledged', value: AlarmStatus.ACKNOWLEDGED}, {label: 'In progress', value: AlarmStatus.IN_PROGRESS}, {label: 'Closed', value: AlarmStatus.CLOSED}];
     }
 
     protected _getSeverityOptions() {
+        return [{label: 'All', value: 'All'}, {label: 'Low', value: AlarmSeverity.LOW}, {label: 'Medium', value: AlarmSeverity.MEDIUM}, {label: 'High', value: AlarmSeverity.HIGH}];
+    }
+
+    protected _getAddStatusOptions() {
+        return [{label: 'Open', value: AlarmStatus.OPEN}, {label: 'Acknowledged', value: AlarmStatus.ACKNOWLEDGED}, {label: 'In progress', value: AlarmStatus.IN_PROGRESS}, {label: 'Closed', value: AlarmStatus.CLOSED}];
+    }
+
+    protected _getAddSeverityOptions() {
         return [{label: 'Low', value: AlarmSeverity.LOW}, {label: 'Medium', value: AlarmSeverity.MEDIUM}, {label: 'High', value: AlarmSeverity.HIGH}];
     }
 
 
-    protected _onSeverityChanged(severity: AlarmSeverity) {
-        this.severity = this._getSeverityOptions().filter((obj) => obj.label === severity).map((obj) => obj.value)[0];
+    protected _onSeverityChanged(severity: any) {
+        if(severity == 'All'){
+            this.severity = undefined;
+            this._loadData();
+            return;
+        }
+
+        this.severity = this._getSeverityOptions().filter((obj) => obj.label === severity).map((obj) => obj.value)[0] as AlarmSeverity;
 
         if (!this.severity) {
             return;
@@ -891,8 +914,22 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this.assign = false;
     }
 
-    protected _onStatusChanged(status: AlarmStatus) {
-        this.status = this._getStatusOptions().filter((obj) => obj.label === status).map((obj) => obj.value)[0];
+    protected _onStatusChanged(status: any) {
+        if(status == 'All'){
+            this.status = undefined;
+            this.allActive = undefined;
+            this.requestUpdate();
+            return;
+        }
+
+        if(status == 'All active'){
+            this.status = undefined;
+            this.allActive = true;
+            this.requestUpdate();
+            return;
+        }
+        this.allActive = undefined;
+        this.status = this._getStatusOptions().filter((obj) => obj.label === status).map((obj) => obj.value)[0] as AlarmStatus;
 
         if (!this.status) {
             return;
