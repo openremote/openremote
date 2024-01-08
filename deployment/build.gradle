@@ -2,6 +2,7 @@ apply plugin: "java-library"
 
 dependencies {
     api resolveProject(":setup")
+    api resolveProject(":energy")
 }
 
 task license {

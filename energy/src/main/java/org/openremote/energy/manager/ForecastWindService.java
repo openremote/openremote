@@ -1,4 +1,4 @@
-package org.openremote.manager.energy;
+package org.openremote.energy.manager;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.camel.builder.RouteBuilder;
@@ -14,11 +14,10 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.impl.ElectricityProducerAsset;
-import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.energy.asset.*;
 
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;

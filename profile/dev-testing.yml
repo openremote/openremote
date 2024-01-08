@@ -34,4 +34,4 @@ services:
       - ../tmp:/storage
     # Access directly if needed on localhost
     ports:
-      - "5432:5432"
+      - "55555:5432"

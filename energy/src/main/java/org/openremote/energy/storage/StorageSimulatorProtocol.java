@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.simulator.storage;
+package org.openremote.energy.storage;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.impl.ElectricityStorageAsset;
+import org.openremote.energy.asset.ElectricityStorageAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.impl.ElectricityStorageAsset.*;
+import static org.openremote.energy.asset.ElectricityStorageAsset.*;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorAgent, StorageSimulatorAgentLink> {

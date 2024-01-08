@@ -24,8 +24,9 @@ import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.energy.asset.*;
+import org.openremote.energy.setup.EnergyManagerSetup;
 import org.openremote.manager.security.ManagerIdentityProvider;
-import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
@@ -58,7 +59,7 @@ import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 
-public class ManagerDemoSetup extends ManagerSetup {
+public class ManagerDemoSetup extends EnergyManagerSetup {
 
     public static GeoJSONPoint STATIONSPLEIN_LOCATION = new GeoJSONPoint(4.470175, 51.923464);
     public String realmMasterName;

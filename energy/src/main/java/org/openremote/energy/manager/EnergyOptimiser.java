@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.energy;
+package org.openremote.energy.manager;
 
 import org.openremote.model.util.Pair;
 
@@ -36,7 +36,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.openremote.manager.energy.EnergyOptimisationService.LOG;
+import static org.openremote.energy.manager.EnergyOptimisationService.LOG;
 
 public class EnergyOptimiser {
 

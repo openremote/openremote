@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset.impl;
+package org.openremote.energy.asset;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
