@@ -422,7 +422,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
-                /* showSnackbar(undefined, "You are offline!") */
+                showSnackbar(undefined, "You are offline!") // TODO: Remove snackbar
                 this._store.dispatch((setOffline(true)))
             }
         } else if(event === OREvent.ONLINE) {
@@ -434,9 +434,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
             console.debug(`RECONNECT_FAILED event! Setting _showOfflineFallback to ${this._offline}`);
-            if(!this._showOfflineFallback) {
-                showSnackbar(undefined, "You are offline!"); // only show snackbar 1st time TODO: Remove snackbar
-            }
             this._showOfflineFallback = this._offline;
         }
     }
