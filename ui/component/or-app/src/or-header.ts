@@ -350,7 +350,9 @@ export class OrHeader extends LitElement {
     private _drawerOpened = false;
 
     @state()
-    alarmButton = 'bell-outline';
+    private alarmButton = 'bell-outline';
+
+    private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
 
     private intervalId?: number;
 
@@ -407,7 +409,7 @@ export class OrHeader extends LitElement {
                     <div id="desktop-right">
                         <div id="alarm-btn">
                             <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
-                                <or-icon icon="${this.alarmButton}"></or-icon>
+                                <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})"></or-icon>
                             </a>
                         </div>
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
@@ -493,6 +495,7 @@ export class OrHeader extends LitElement {
             newAlarms = (open.length > 0);
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
+        this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
     }
 
     protected _onSecondaryMenuSelect(value: string) {
