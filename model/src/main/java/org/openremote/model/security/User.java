@@ -50,6 +50,7 @@ public class User {
     public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
     public static final String EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE = "emailNotificationsDisabled";
     public static final String PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE = "pushNotificationsDisabled";
+    public static final String TERMS_AND_CONDITIONS_ACCEPTED_ATTRIBUTE = "termsAndConditionsAccepted";
     protected static Field[] propertyFields;
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
