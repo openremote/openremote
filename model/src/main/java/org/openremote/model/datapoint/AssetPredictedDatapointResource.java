@@ -20,11 +20,9 @@
 package org.openremote.model.datapoint;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
+import jakarta.ws.rs.*;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -39,7 +37,7 @@ public interface AssetPredictedDatapointResource {
      * not have datapoint storage enabled.
      */
     @POST
-    @Path("{assetId}/attribute/{attributeName}")
+    @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
@@ -47,4 +45,11 @@ public interface AssetPredictedDatapointResource {
                                                @PathParam("attributeName") String attributeName,
                                                AssetDatapointQuery query);
 
+    @PUT
+    @Path("{assetId}/{attributeName}")
+    @Consumes(APPLICATION_JSON)
+    void writePredictedDatapoints(@BeanParam RequestParams requestParams,
+                                  @PathParam("assetId") String assetId,
+                                  @PathParam("attributeName") String attributeName,
+                                  ValueDatapoint<?>[] predictedDatapoints);
 }

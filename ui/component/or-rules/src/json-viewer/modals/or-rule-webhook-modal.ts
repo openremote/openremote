@@ -56,7 +56,7 @@ export class OrRuleWebhookModal extends LitElement {
         const webhookModalActions: DialogAction[] = [
             {
                 actionName: "", content: html`
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"
+                    <or-mwc-input .type="${InputType.BUTTON}" label="ok"
                                   @or-mwc-input-changed="${this.closeForm}"></or-mwc-input>`
             }
         ];
@@ -67,7 +67,7 @@ export class OrRuleWebhookModal extends LitElement {
             }
         };
         return html`
-            <or-mwc-input type="${InputType.BUTTON}" label="${i18next.t('message')}"
+            <or-mwc-input type="${InputType.BUTTON}" label="message"
                           @or-mwc-input-changed="${webhookModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="webhook-modal" heading="${this.title}" .actions="${webhookModalActions}"></or-mwc-dialog>
             <slot class="webhook-form-slot"></slot>

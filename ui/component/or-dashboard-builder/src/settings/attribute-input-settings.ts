@@ -1,7 +1,6 @@
 import {css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import {AttributeInputWidgetConfig} from "../widgets/attribute-input-widget";
-import {i18next} from "@openremote/or-translate";
 import {AttributesSelectEvent} from "../panels/attributes-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
@@ -27,25 +26,25 @@ export class AttributeInputSettings extends AssetWidgetSettings {
         return html`
             <div>
                 <!-- Attribute selection -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
 
                 <!-- Other settings -->
-                <settings-panel displayName="${i18next.t('settings')}" expanded="${true}">
+                <settings-panel displayName="settings" expanded="${true}">
                     <div>
                         <!-- Toggle readonly -->
                         <div class="switch-container">
-                            <span>${i18next.t('dashboard.userCanEdit')}</span>
+                            <span><or-translate value="dashboard.userCanEdit"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${!this.widgetConfig.readonly}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onReadonlyToggle(ev)}"
                             ></or-mwc-input>
                         </div>
                         <!-- Toggle helper text -->
                         <div class="switch-container">
-                            <span>${i18next.t('dashboard.showHelperText')}</span>
+                            <span><or-translate value="dashboard.showHelperText"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showHelperText}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onHelperTextToggle(ev)}"
                             ></or-mwc-input>

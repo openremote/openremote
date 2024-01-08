@@ -63,7 +63,9 @@ public class QrScannerViewController: UIViewController, AVCaptureMetadataOutputO
         subView.layer.addSublayer(previewLayer)
         view.addSubview(subView)
         
-        captureSession.startRunning()
+        DispatchQueue.global(qos: .background).async {
+            self.captureSession.startRunning()
+        }
 
         let cancelButton = UIButton(type: .close)
         cancelButton.layer.cornerRadius = 25
@@ -93,7 +95,9 @@ public class QrScannerViewController: UIViewController, AVCaptureMetadataOutputO
         super.viewWillAppear(animated)
 
         if (captureSession?.isRunning == false) {
-            captureSession.startRunning()
+            DispatchQueue.global(qos: .background).async {
+                self.captureSession.startRunning()
+            }
         }
     }
 

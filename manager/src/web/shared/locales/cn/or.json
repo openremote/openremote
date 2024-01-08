@@ -229,10 +229,12 @@
   "realmRules": "场所",
   "globalRules": "全局",
   "recipients": "收件人",
-  "JSON": "When-Then",
-  "FLOW": "Flow",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "When-Then",
+    "FLOW": "Flow",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "管理器互联",
   "connectionDetails": "连接详情",
   "secured": "安全",

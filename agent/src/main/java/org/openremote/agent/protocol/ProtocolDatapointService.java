@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.model.ContainerService;
-import org.openremote.model.util.Pair;
+import org.openremote.model.datapoint.ValueDatapoint;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,5 +29,7 @@ public interface ProtocolDatapointService extends ContainerService {
 
     void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException;
 
-    void upsertValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) throws IllegalStateException;
+    void upsertValue(String assetId, String attributeName, Object value, long timestamp) throws IllegalStateException;
+
+    void upsertValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) throws IllegalStateException;
 }
