@@ -340,7 +340,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                         .setActions([
                             {
                                 actionName: "none",
-                                content: i18next.t("none"),
+                                content: "none",
                                 action: () => {
                                     setPos(null);
                                     valueChangeHandler(pos as LngLatLike);
@@ -348,7 +348,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             },
                             {
                                 actionName: "ok",
-                                content: i18next.t("ok"),
+                                content: "ok",
                                 action: () => {
                                     valueChangeHandler(pos as LngLatLike);
                                 }
@@ -356,7 +356,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             {
                                 default: true,
                                 actionName: "cancel",
-                                content: i18next.t("cancel")
+                                content: "cancel"
                             }
                         ]));
             };

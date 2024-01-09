@@ -320,14 +320,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 if ( !assetsIds.includes(parentId) ) {
                     await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
                 } else {
-                    showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+                    showSnackbar(undefined, "moveAssetFailed", "dismiss");
                 }
             } else {
                 //So need to remove parent from all the selected assets
                 await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
             }
         } catch (e) {
-            showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+            showSnackbar(undefined, "moveAssetFailed", "dismiss");
         }
     }
 

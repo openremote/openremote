@@ -7,7 +7,6 @@ import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {WidgetSettings} from "../util/widget-settings";
 import {GaugeSettings} from "../settings/gauge-settings";
 import {when} from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
 import "@openremote/or-gauge";
 
 export interface GaugeWidgetConfig extends WidgetConfig {
@@ -102,7 +101,7 @@ export class GaugeWidget extends OrAssetWidget {
             }, () => {
                 return html`
                     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span>${i18next.t('noAttributeConnected')}</span>
+                        <span><or-translate value="noAttributeConnected"></or-translate></span>
                     </div>
                 `
             })}
