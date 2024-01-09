@@ -418,12 +418,12 @@ export class SessionSettings extends WidgetSettings {
     }
 
     protected onInputAttributeSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.InputRef = ev.detail;
+        this.widgetConfig.InputRef = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
     }
 
     protected onOutputAttributeSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.OutputRef = ev.detail;
+        this.widgetConfig.OutputRef = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
     }
 
