@@ -84,10 +84,12 @@ export class KpiWidget extends OrAssetWidget {
 
     protected render(): TemplateResult {
         return html`
-            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
-                               .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
-                               showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
-            </or-attribute-card>
+            <div style="height: 100%; overflow: hidden;">
+                <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
+                                   .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
+                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
+                </or-attribute-card>
+            </div>
         `;
     }
 
