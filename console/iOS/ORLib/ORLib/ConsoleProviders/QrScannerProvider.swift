@@ -113,7 +113,7 @@ public class QrScannerProvider: NSObject {
         ]
     }
     
-    public func startScanner(currentViewController: UIViewController, callback:@escaping ([String: Any]) -> Void) {
+    public func startScanner(currentViewController: UIViewController, startScanCallback:@escaping ([String: Any]) -> Void, scannedCallback:@escaping ([String: Any]) -> Void) {
         let cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
         
         switch cameraAuthorizationStatus {
@@ -122,7 +122,14 @@ public class QrScannerProvider: NSObject {
             scanner!.delegate = self
             self.scanner?.modalPresentationStyle = .fullScreen
             currentViewController.present(scanner!, animated: true, completion: nil)
-            scannedCallback = callback
+            self.scannedCallback = scannedCallback
+            startScanCallback(
+                [
+                    DefaultsKey.actionKey: Actions.scanQr,
+                    DefaultsKey.providerKey: Providers.qr,
+                    DefaultsKey.successKey: true,
+                ]
+            )
         default:
             AVCaptureDevice.requestAccess(for: .video, completionHandler: { granted in
                 if granted {
@@ -131,9 +138,23 @@ public class QrScannerProvider: NSObject {
                         self.scanner!.delegate = self
                         self.scanner?.modalPresentationStyle = .fullScreen
                         currentViewController.present(self.scanner!, animated: true, completion: nil)
-                        self.scannedCallback = callback
+                        self.scannedCallback = scannedCallback
+                        startScanCallback(
+                            [
+                                DefaultsKey.actionKey: Actions.scanQr,
+                                DefaultsKey.providerKey: Providers.qr,
+                                DefaultsKey.successKey: true,
+                            ]
+                        )
                     }
                 } else {
+                    startScanCallback(
+                        [
+                            DefaultsKey.actionKey: Actions.scanQr,
+                            DefaultsKey.providerKey: Providers.qr,
+                            DefaultsKey.successKey: false,
+                        ]
+                    )
                     let alertController = UIAlertController(title: "Camera permission needed", message: "In order to scan QR codes, access to the camera is needed. Would you like to enable it now?", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "Yes", style: .default, handler: {alertAction in
                         guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
@@ -160,9 +181,9 @@ extension QrScannerProvider: QrScannerDelegate {
         scanner?.dismiss(animated: true) {
             self.scannedCallback?(
                 [
-                    DefaultsKey.actionKey: Actions.scanQr,
+                    DefaultsKey.actionKey: Actions.scanResult,
                     DefaultsKey.providerKey: Providers.qr,
-                    DefaultsKey.dataKey: ["result": codeContents]
+                    DefaultsKey.dataKey: ["result": codeContents ?? "CANCELED"]
                 ]
             )
             self.scannedCallback = nil

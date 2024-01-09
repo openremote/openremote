@@ -41,9 +41,7 @@ export class OrDashboardWidgetsettings extends LitElement {
             <div style="padding: 12px;">
                 <div>
                     <or-mwc-input .type="${InputType.TEXT}" style="width: 100%;" .value="${this.selectedWidget?.displayName}" label="${i18next.t('name')}"
-                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                      this.selectedWidget!.displayName = event.detail.value;
-                                      this.forceParentUpdate(new Map<string, any>([['widget', this.selectedWidget]])); }}"
+                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => this.setDisplayName(event.detail.value)}"
                     ></or-mwc-input>
                 </div>
             </div>
@@ -53,6 +51,11 @@ export class OrDashboardWidgetsettings extends LitElement {
                 `)}
             </div>
         `;
+    }
+
+    protected setDisplayName(name?: string) {
+        this.selectedWidget!.displayName = name;
+        this.forceParentUpdate(new Map<string, any>([['widget', this.selectedWidget]]));
     }
 
     protected async generateContent(widgetTypeId: string): Promise<TemplateResult> {
@@ -68,6 +71,15 @@ export class OrDashboardWidgetsettings extends LitElement {
     protected initSettings(manifest: WidgetManifest): WidgetSettings {
         const settingsElem =  manifest.getSettingsHtml(this.selectedWidget!.widgetConfig);
         settingsElem.id = this.selectedWidget.id!;
+        settingsElem.getDisplayName = () => this.selectedWidget.displayName;
+        settingsElem.setDisplayName = (name?: string) => this.setDisplayName(name);
+        settingsElem.getEditMode = () => true;
+        settingsElem.getWidgetLocation = () => ({
+            x: this.selectedWidget.gridItem?.x,
+            y: this.selectedWidget.gridItem?.y,
+            w: this.selectedWidget.gridItem?.w,
+            h: this.selectedWidget.gridItem?.h
+        });
         settingsElem.addEventListener(WidgetSettingsChangedEvent.NAME, (ev: any) => this.onWidgetConfigChange(ev));
         return settingsElem;
     }

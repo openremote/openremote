@@ -94,6 +94,7 @@ open class ORViewcontroller : UIViewController {
         } else {
             sbHeight = UIApplication.shared.statusBarFrame.height
         }
+        
         webCfg.allowsInlineMediaPlayback = true
         let webFrame = CGRect(x: 0, y: sbHeight, width: view.frame.size.width, height: view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
@@ -283,9 +284,12 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                         sendData(data: disableData)
                                     }
                                 case Actions.scanQr:
-                                    qrProvider?.startScanner(currentViewController: self) { scannedData in
+                                    qrProvider?.startScanner(currentViewController: self, startScanCallback: { startScanData in
+                                        self.sendData(data: startScanData)
+                                    }, scannedCallback:
+                                    { scannedData in
                                         self.sendData(data: scannedData)
-                                    }
+                                    })
                                 default:
                                     print("Wrong action \(action) for \(provider)")
                                 }
@@ -371,7 +375,13 @@ extension ORViewcontroller: WKNavigationDelegate {
                     decisionHandler(.cancel)
                 }
             } else {
-                decisionHandler(.allow)
+                if let baseUrl = self.baseUrl {
+                    webView.loadCookiesFromStorage(for: baseUrl) {
+                        decisionHandler(.allow)
+                    }
+                } else {
+                    decisionHandler(.allow)
+                }
             }
         }
     }
@@ -381,11 +391,23 @@ extension ORViewcontroller: WKNavigationDelegate {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
                 
+                if 400...499 ~= response.statusCode {
+                    if let baseUrl = self.baseUrl {
+                        webView.clearCookies(for: baseUrl, completion: nil)
+                    }
+                }
+                
                 handleError(errorCode: response.statusCode, description: "Error in request", failingUrl: response.url?.absoluteString ?? "", isForMainFrame: true)
                 return
             }
         }
-        decisionHandler(.allow)
+        if let baseUrl = self.baseUrl {
+            webView.writeCookiesToStorage(for: baseUrl) {
+                decisionHandler(.allow)
+            }
+        } else {
+            decisionHandler(.allow)
+        }
     }
     
     public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {

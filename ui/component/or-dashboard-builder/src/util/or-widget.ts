@@ -52,4 +52,9 @@ export abstract class OrWidget extends LitElement {
 
     /* ------------------------------------- */
 
+    public getDisplayName?: () => string | undefined;
+
+    public getEditMode?: () => boolean;
+
+    public getWidgetLocation?: () => { x?: number, y?: number, h?: number, w?: number }
 }

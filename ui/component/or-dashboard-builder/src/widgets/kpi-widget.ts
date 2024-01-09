@@ -6,6 +6,7 @@ import {WidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {html, TemplateResult } from "lit";
 import {KpiSettings} from "../settings/kpi-settings";
+import "@openremote/or-attribute-card";
 
 export interface KpiWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
@@ -84,10 +85,12 @@ export class KpiWidget extends OrAssetWidget {
 
     protected render(): TemplateResult {
         return html`
-            <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
-                               .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
-                               showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
-            </or-attribute-card>
+            <div style="height: 100%; overflow: hidden;">
+                <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
+                                   .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
+                                   showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" style="height: 100%;">
+                </or-attribute-card>
+            </div>
         `;
     }
 

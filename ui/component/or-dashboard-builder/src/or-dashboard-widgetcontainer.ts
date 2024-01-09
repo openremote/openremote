@@ -22,6 +22,9 @@ export class OrDashboardWidgetContainer extends LitElement {
     protected readonly widget!: DashboardWidget;
 
     @property()
+    protected readonly editMode!: boolean;
+
+    @property()
     protected loading: boolean = false;
 
     @state()
@@ -107,11 +110,19 @@ export class OrDashboardWidgetContainer extends LitElement {
     }
 
     protected initializeWidgetElem(manifest: WidgetManifest, config: WidgetConfig) {
-        console.log(`Initialising ${manifest.displayName} widget..`);
+        console.debug(`Initialising ${manifest.displayName} widget..`);
         if (this.orWidget) {
             this.orWidget.remove();
         }
         this.orWidget = manifest.getContentHtml(config);
+        this.orWidget.getDisplayName = () => this.widget.displayName;
+        this.orWidget.getEditMode = () => this.editMode
+        this.orWidget.getWidgetLocation = () => ({
+            x: this.widget.gridItem?.x,
+            y: this.widget.gridItem?.y,
+            w: this.widget.gridItem?.w,
+            h: this.widget.gridItem?.h
+        });
     }
 
     protected render() {
