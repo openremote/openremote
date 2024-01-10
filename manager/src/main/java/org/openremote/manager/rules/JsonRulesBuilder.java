@@ -866,8 +866,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     return new RuleActionExecution(() ->
                         customNotifications.forEach(customNotification -> {
-                            log(Level.FINE, "Sending custom user notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
-                            notificationsFacade.send(notification);
+                            log(Level.FINE, "Sending custom user notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (customNotification.getTargets() != null ? customNotification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
+                            notificationsFacade.send(customNotification);
                     }), 0);
                 }
             } else {
