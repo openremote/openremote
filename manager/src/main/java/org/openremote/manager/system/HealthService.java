@@ -31,7 +31,6 @@ import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.spi.RoutePolicy;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.MapAccess;
-import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -65,6 +64,7 @@ public class HealthService implements ContainerService {
     public static final System.Logger LOG = System.getLogger(HealthService.class.getName());
     public static final String OR_METRICS_PORT = "OR_METRICS_PORT";
     public static final int OR_METRICS_PORT_DEFAULT = 8404;
+    public static final String OR_CAMEL_ROUTE_METRIC_PREFIX = "or_camel_route";
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
     protected boolean metricsEnabled;
     protected HTTPServer metricsServer;
@@ -134,52 +134,42 @@ public class HealthService implements ContainerService {
             micrometerRoutePolicyFactory.setNamingStrategy(new MicrometerRoutePolicyNamingStrategy() {
                 @Override
                 public String getName(Route route) {
-                    return "or_camel_route";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX;
                 }
 
                 @Override
                 public String getExchangesSucceededName(Route route) {
-                    return "or_camel_route_succeeded";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_succeeded";
                 }
 
                 @Override
                 public String getExchangesFailedName(Route route) {
-                    return "or_camel_route_failed";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed";
                 }
 
                 @Override
                 public String getExchangesTotalName(Route route) {
-                    return "or_camel_route_total";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_total";
                 }
 
                 @Override
                 public String getFailuresHandledName(Route route) {
-                    return "or_camel_route_failed_handled";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_handled";
                 }
 
                 @Override
                 public String getExternalRedeliveriesName(Route route) {
-                    return "or_camel_route_redeliveries";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_redeliveries";
                 }
 
                 @Override
                 public Tags getTags(Route route) {
-                    // We combine AttributeEvent processor routes
-                    if (route.getId().startsWith(AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX)) {
-                        return Tags.of(
-                            ROUTE_ID_TAG, AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX);
-                    }
                     return Tags.of(
                         ROUTE_ID_TAG, route.getId());
                 }
 
                 @Override
                 public Tags getExchangeStatusTags(Route route) {
-                    // We combine AttributeEvent processor routes
-                    if (route.getId().startsWith(AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX)) {
-                        return Tags.of(
-                            ROUTE_ID_TAG, AssetProcessingService.ATTRIBUTE_PROCESSOR_ROUTE_PREFIX);
-                    }
                     return Tags.of(
                         ROUTE_ID_TAG, route.getId());
                 }

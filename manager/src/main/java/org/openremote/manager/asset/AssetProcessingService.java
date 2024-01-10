@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.asset;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import jakarta.validation.ConstraintViolation;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -51,6 +53,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
 
 /**
@@ -81,11 +84,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     // Single threaded attribute event queue (event order has to be maintained)
-    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=10000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
     public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
     protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
     protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventProcessor";
+    protected static final String EVENT_ROUTE_URI_SUFFIX = "?size=3000&timeout=10000";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
 
     public static final String ATTRIBUTE_PROCESSOR_ROUTE_PREFIX = "AttributeEvent-Processor";
@@ -104,12 +108,23 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
     protected int eventProcessingThreadCount;
+    protected Counter queueFullCounter;
 
     // TODO Better exception handling - dead letter queue?
-    protected static Processor handleEventProcessingException() {
+    protected Processor handleEventProcessingException() {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
+            Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+
+            if (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage())) {
+                exception = new AssetProcessingException(QUEUE_FULL, "Queue for this event is full");
+                if (queueFullCounter != null) {
+                    queueFullCounter.increment();
+                }
+            }
+
+            // Make the exception available if MEP is InOut
+            exchange.getMessage().setBody(exception);
 
             if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
                 return;
@@ -123,21 +138,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 error.append("N/A");
             }
 
+            error.append(": ").append(event.toStringWithValueType());
+
             if (exception instanceof AssetProcessingException processingException) {
-                error.append(" ").append(processingException.getReason()).append(" - ").append(processingException.getMessage());
-                error.append(": ").append(event);
+                error.append(" ").append(" - ").append(processingException.getMessage());
                 if (processingException.getReason() == ASSET_NOT_FOUND) {
                     LOG.log(System.Logger.Level.DEBUG, error::toString);
                 } else {
                     LOG.log(System.Logger.Level.WARNING, error::toString);
                 }
             } else {
-                error.append(": ").append(event);
                 LOG.log(System.Logger.Level.WARNING, error::toString, exception);
             }
-
-            // Make the exception available if MEP is InOut
-            exchange.getMessage().setBody(exception);
         };
     }
 
@@ -159,7 +171,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetAttributeLinkingService = container.getService(AttributeLinkingService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
+        MeterRegistry meterRegistry = container.getMeterRegistry();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
+
+        if (meterRegistry != null) {
+            queueFullCounter = meterRegistry.counter(OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_queue_full", Tags.empty());
+        }
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -254,7 +271,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void stop(Container container) throws Exception {
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void configure() throws Exception {
 
@@ -277,7 +294,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // All user authorisation checks MUST have been carried out before events reach this queue
         from(ATTRIBUTE_EVENT_QUEUE)
             .routeId("AttributeEvent-Router")
-            .doTry()
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
 
@@ -297,8 +313,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getId()));
             })
             .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}")
-            .endDoTry()
-            .doCatch(AssetProcessingException.class)
+            .onException(IllegalStateException.class)
+            .handled(true)
             .process(handleEventProcessingException());
 
         // Create the event processor routes
@@ -307,7 +323,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             from(camelRouteURI)
                 .routeId(ATTRIBUTE_PROCESSOR_ROUTE_PREFIX + processorCount)
-                .doTry()
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                     LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: processor=" + processorCount + ", event=" + event);
@@ -328,8 +343,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     exchange.getIn().setBody(processed);
                 })
-                .endDoTry()
-                .doCatch(AssetProcessingException.class)
+                .onException(IllegalStateException.class, AssetProcessingException.class)
+                .handled(true)
                 .process(handleEventProcessingException());
         });
     }
@@ -464,6 +479,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected String getEventProcessingRouteURI(int routeNumber) {
-        return EVENT_ROUTE_URI_PREFIX + routeNumber;
+        return EVENT_ROUTE_URI_PREFIX + routeNumber + EVENT_ROUTE_URI_SUFFIX;
     }
 }

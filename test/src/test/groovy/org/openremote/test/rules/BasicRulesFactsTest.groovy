@@ -56,6 +56,8 @@ class BasicRulesFactsTest extends Specification {
     def "Handle named facts"() {
 
         when: "a fact is added with reserved name"
+        def charCode = Character.codePointAt('2', 0)
+        def threadNumber = (charCode % 3) + 1
         rulesFacts.put(RulesFacts.ASSET_STATES, "FOO")
 
         then: "it should not be allowed"

@@ -58,6 +58,11 @@ public enum AttributeWriteFailure {
     CANNOT_PROCESS,
 
     /**
+     * The attribute event processor queue is full.
+     */
+    QUEUE_FULL,
+
+    /**
      * Fallback failure when no other value makes sense.
      */
     UNKNOWN

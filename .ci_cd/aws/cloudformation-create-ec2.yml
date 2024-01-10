@@ -274,6 +274,7 @@ Resources:
                             "or_rules_firing_count": "Count",
                             "or_camel_route_queue_size": "Count",
                             "or_camel_route_failed_total": "Count",
+                            "or_camel_route_failed_queue_full_total": "Count",
                             "or_camel_route_total": "Count",
                             "or_camel_route_seconds_sum": "Seconds",
                             "or_camel_route_seconds_count": "Count",
@@ -394,7 +395,7 @@ Resources:
                     metric_relabel_configs:
                       - action: keep
                         source_labels: [__name__]
-                        regex: '(executor_queued_tasks|or_camel_route_queue_size|or_camel_route_failed_total|or_camel_route_total|or_camel_route_seconds.*|or_rules_.*)'
+                        regex: '(executor_queued_tasks|or_camel_route_queue_size|or_camel_route_failed_queue_full_total|or_camel_route_failed_total|or_camel_route_total|or_camel_route_seconds.*|or_rules_.*)'
                       - action: replace
                         source_labels: [name]
                         regex: '.+:\/\/(.+)\?.*'
@@ -951,7 +952,10 @@ Resources:
                 "type": "metric",
                 "properties": {
                   "metrics": [
-                    [ "CWAgent-Prometheus", "executor_queued_tasks", "instance_name", "${Host}", "name", "ContainerExecutorService", { "label": "ContainerExecutorService" } ]
+                    [ "CWAgent-Prometheus", "executor_queued_tasks", "instance_name", "${Host}", "name", "ContainerExecutorService", { "label": "ContainerExecutorService" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_queue_size", "routeId", "AttributeEvent-Processor1", "instance_name", "${Host}", { "id": "p1", "label": "Event Processor 1", "yAxis": "right" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_queue_size", "routeId", "AttributeEvent-Processor2", "instance_name", "${Host}", { "id": "p2", "label": "Event Processor 2", "yAxis": "right" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_queue_size", "routeId", "AttributeEvent-Processor3", "instance_name", "${Host}", { "id": "p3", "label": "Event Processor 3", "yAxis": "right" } ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -969,10 +973,15 @@ Resources:
                 "type": "metric",
                 "properties": {
                   "metrics": [
-                    [ { "expression": "m1 / m2", "label": "Avg Processing Time", "id": "e1" } ],
-                    [ "CWAgent-Prometheus", "or_camel_route_queue_size", "routeId", "AttributeEventProcessor", "instance_name", "${Host}", { "id": "e2", "label": "Queued Events", "yAxis": "right" } ],
-                    [ ".", "or_camel_route_seconds_sum", ".", ".", ".", ".", { "id": "m1", "visible": false, "stat": "Average" } ],
-                    [ ".", "or_camel_route_seconds_count", ".", ".", ".", ".", { "id": "m2", "visible": false, "stat": "Average" } ]
+                    [ { "expression": "m11 / m12", "label": "Processor 1 Avg", "id": "e1" } ],
+                    [ { "expression": "m21 / m22", "label": "Processor 2 Avg", "id": "e2" } ],
+                    [ { "expression": "m31 / m32", "label": "Processor 3 Avg", "id": "e3" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_seconds_sum", "routeId", "AttributeEvent-Processor1", "instance_name", "${Host}", { "id": "m11", "visible": false, "stat": "Average" } ],
+                    [ ".", "or_camel_route_seconds_count", ".", ".", ".", ".", { "id": "m12", "visible": false, "stat": "Average" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_seconds_sum", "routeId", "AttributeEvent-Processor2", ".", ".", { "id": "m21", "visible": false, "stat": "Average" } ],
+                    [ ".", "or_camel_route_seconds_count", ".", ".", ".", ".", { "id": "m22", "visible": false, "stat": "Average" } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_seconds_sum", "routeId", "AttributeEvent-Processor3", ".", ".", { "id": "m31", "visible": false, "stat": "Average" } ],
+                    [ ".", "or_camel_route_seconds_count", ".", ".", ".", ".", { "id": "m32", "visible": false, "stat": "Average" } ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -992,8 +1001,8 @@ Resources:
                   "metrics": [
                     [ { "expression": "RUNNING_SUM(m1)", "label": "Total", "id": "e1" } ],
                     [ { "expression": "RUNNING_SUM(m2)", "label": "Failed", "id": "e2" } ],
-                    [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEventProcessor", "instance_name", "${Host}", { "id": "m1", "visible": false } ],
-                    [ "CWAgent-Prometheus", "or_camel_route_failed_total", "routeId", "AttributeEventProcessor", "instance_name", "${Host}", { "id": "m2", "visible": false } ]
+                    [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEvent-Router", "instance_name", "${Host}", { "id": "m1", "visible": false } ],
+                    [ "CWAgent-Prometheus", "or_camel_route_failed_queue_full_total", "instance_name", "${Host}", { "id": "m2", "visible": false } ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,
@@ -1156,7 +1165,7 @@ Resources:
                     [ ".", "CPUCreditBalance", ".", ".", { "yAxis": "right", "label": "CPU Credit Balance" } ],
                     [ ".", "CPUUtilization", ".", ".", { "label": "CPU Utilization %", "stat": "Maximum" } ],
                     [ "CWAgent", "mem_used_percent", ".", ".", "ImageId", "${ImageId}", "InstanceType", "${InstanceType}", { "label": "Memory Usage %", "stat": "Average" } ],
-                    [ ".", "disk_used_percent", "path", "/", "InstanceId", "i-0c9e821c9865e70ea", "ImageId", "${ImageId}", "InstanceType", "${InstanceType}", "fstype", "xfs", { "label": "Disk Usage %", "stat": "Average" } ]
+                    [ ".", "disk_used_percent", "path", "/", "InstanceId", "${EC2Instance}", "ImageId", "${ImageId}", "InstanceType", "${InstanceType}", "fstype", "xfs", { "label": "Disk Usage %", "stat": "Average" } ]
                   ],
                   "view": "timeSeries",
                   "stacked": false,

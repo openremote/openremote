@@ -335,4 +335,12 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }
+
+    public String toStringWithValueType() {
+        return getClass().getSimpleName() + "{" +
+            "timestamp=" + timestamp.toInstant() +
+            ", ref=" + ref +
+            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
+            "}";
+    }
 }
