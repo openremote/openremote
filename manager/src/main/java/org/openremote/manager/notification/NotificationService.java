@@ -220,6 +220,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     if (mappedTargetsList == null || mappedTargetsList.isEmpty()) {
                         throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
+                    } else if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("Notification targets mapped from: [" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "to: [" + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(",")) + "]");
                     }
 
                     // Filter targets based on repeat frequency
