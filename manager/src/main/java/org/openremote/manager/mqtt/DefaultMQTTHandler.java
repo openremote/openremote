@@ -450,7 +450,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
         String attributeName = topicTokens.get(3);
         String assetId = topicTokens.get(4);
-        return new AttributeEvent(assetId, attributeName, value);
+        return new AttributeEvent(assetId, attributeName, value).setSource(DefaultMQTTHandler.class.getSimpleName());
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {

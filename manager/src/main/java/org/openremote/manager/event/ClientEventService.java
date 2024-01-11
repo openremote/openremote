@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.event;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.apache.camel.Exchange;
@@ -49,15 +52,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
+import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.Constants.*;
 
 /**
@@ -138,6 +140,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected GatewayService gatewayService;
     protected Set<EventSubscription<?>> pendingInternalSubscriptions;
     protected boolean started;
+    protected Counter queueFullCounter;
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(SESSION_KEY, String.class);
@@ -163,8 +166,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
         executorService = container.getExecutorService();
+        MeterRegistry meterRegistry = container.getMeterRegistry();
 
-        ManagerWebService webService = container.getService(ManagerWebService.class);
+        if (meterRegistry != null) {
+            queueFullCounter = meterRegistry.counter(OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_queue_full", Tags.empty());
+        }
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class)
@@ -201,6 +207,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Route for deserializing incoming websocket messages and normalising them for the INBOUND_CLIENT_QUEUE
         from(WEBSOCKET_URI)
             .routeId("ClientInbound-Websocket")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .process(exchange -> {
                 String connectionKey = exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
                 exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, HEADER_CONNECTION_TYPE_WEBSOCKET);
@@ -326,6 +333,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientInbound-EventProcessor")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .process(exchange -> {
                 // Process session open before passing to any interceptors
                 Boolean isSessionOpen = exchange.getIn().getHeader(SESSION_OPEN, Boolean.class);

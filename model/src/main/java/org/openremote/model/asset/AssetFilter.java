@@ -93,7 +93,8 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return assetClasses != null ? assetClasses.toArray(new Class[0]) : null;
     }
 
-    public AssetFilter<T> setAssetClasses(Class<? extends Asset>... assetClasses) {
+    @SafeVarargs
+    public final AssetFilter<T> setAssetClasses(Class<? extends Asset>... assetClasses) {
         this.assetClasses = Arrays.asList(assetClasses);
         return this;
     }

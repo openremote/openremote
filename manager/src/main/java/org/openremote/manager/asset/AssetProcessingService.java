@@ -26,6 +26,7 @@ import jakarta.validation.ConstraintViolation;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.builder.RouteConfigurationBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -51,6 +52,7 @@ import org.openremote.model.value.MetaItemType;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.IntStream;
 
 import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
@@ -82,13 +84,14 @@ import static org.openremote.model.attribute.AttributeWriteFailure.*;
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
+    public static final String ATTRIBUTE_EVENT_ROUTE_CONFIG_ID = "attributeEvent";
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     // Single threaded attribute event queue (event order has to be maintained)
-    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=10000";
+    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventRouter?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=10000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
     public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
     protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
-    protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventProcessor";
+    protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventRouter";
     protected static final String EVENT_ROUTE_URI_SUFFIX = "?size=3000&timeout=10000";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
 
@@ -110,49 +113,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected int eventProcessingThreadCount;
     protected Counter queueFullCounter;
 
-    // TODO Better exception handling - dead letter queue?
-    protected Processor handleEventProcessingException() {
-        return exchange -> {
-            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-            Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
-
-            if (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage())) {
-                exception = new AssetProcessingException(QUEUE_FULL, "Queue for this event is full");
-                if (queueFullCounter != null) {
-                    queueFullCounter.increment();
-                }
-            }
-
-            // Make the exception available if MEP is InOut
-            exchange.getMessage().setBody(exception);
-
-            if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
-                return;
-            }
-
-            StringBuilder error = new StringBuilder("Error processing from ");
-
-            if (event.getSource() != null) {
-                error.append(event.getSource());
-            } else {
-                error.append("N/A");
-            }
-
-            error.append(": ").append(event.toStringWithValueType());
-
-            if (exception instanceof AssetProcessingException processingException) {
-                error.append(" ").append(" - ").append(processingException.getMessage());
-                if (processingException.getReason() == ASSET_NOT_FOUND) {
-                    LOG.log(System.Logger.Level.DEBUG, error::toString);
-                } else {
-                    LOG.log(System.Logger.Level.WARNING, error::toString);
-                }
-            } else {
-                LOG.log(System.Logger.Level.WARNING, error::toString, exception);
-            }
-        };
-    }
-
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -171,12 +131,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetAttributeLinkingService = container.getService(AttributeLinkingService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
-        MeterRegistry meterRegistry = container.getMeterRegistry();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
-
-        if (meterRegistry != null) {
-            queueFullCounter = meterRegistry.counter(OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_queue_full", Tags.empty());
-        }
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -260,7 +215,59 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             eventProcessingThreadCount = 20;
         }
 
-        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+        // Add exception handling for attribute event processing that logs queue full exceptions and counts them
+        messageBrokerService.getContext().addRoutesConfigurations(new RouteConfigurationBuilder() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public void configuration() throws Exception {
+                routeConfiguration(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+                    .onException(IllegalStateException.class, RejectedExecutionException.class, AssetProcessingException.class)
+                    .handled(true)
+                    .logExhausted(false)
+                    .logStackTrace(false)
+                    .process(exchange -> {
+                        AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                        Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+
+                        if (exception instanceof RejectedExecutionException || (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage()))) {
+                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this event is full");
+                            if (queueFullCounter != null) {
+                                queueFullCounter.increment();
+                            }
+                        }
+
+                        // Make the exception available if MEP is InOut
+                        exchange.getMessage().setBody(exception);
+
+                        if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
+                            return;
+                        }
+
+                        StringBuilder error = new StringBuilder("Error processing from ");
+
+                        if (event.getSource() != null) {
+                            error.append(event.getSource());
+                        } else {
+                            error.append("N/A");
+                        }
+
+                        error.append(": ").append(event.toStringWithValueType());
+
+                        if (exception instanceof AssetProcessingException processingException) {
+                            error.append(" ").append(" - ").append(processingException.getMessage());
+                            if (processingException.getReason() == ASSET_NOT_FOUND) {
+                                LOG.log(System.Logger.Level.DEBUG, error::toString);
+                            } else {
+                                LOG.log(System.Logger.Level.WARNING, error::toString);
+                            }
+                        } else {
+                            LOG.log(System.Logger.Level.WARNING, error::toString, exception);
+                        }
+                    });
+            }
+        });
+
+        messageBrokerService.getContext().addRoutes(this);
     }
 
     @Override
@@ -294,6 +301,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // All user authorisation checks MUST have been carried out before events reach this queue
         from(ATTRIBUTE_EVENT_QUEUE)
             .routeId("AttributeEvent-Router")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
 
@@ -312,10 +320,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getId()));
             })
-            .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}")
-            .onException(IllegalStateException.class)
-            .handled(true)
-            .process(handleEventProcessingException());
+            .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}");
 
         // Create the event processor routes
         IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
@@ -323,6 +328,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             from(camelRouteURI)
                 .routeId(ATTRIBUTE_PROCESSOR_ROUTE_PREFIX + processorCount)
+                .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                     LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: processor=" + processorCount + ", event=" + event);
@@ -342,10 +348,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
 
                     exchange.getIn().setBody(processed);
-                })
-                .onException(IllegalStateException.class, AssetProcessingException.class)
-                .handled(true)
-                .process(handleEventProcessingException());
+                });
         });
     }
 
