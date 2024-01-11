@@ -97,6 +97,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     protected _onEventBind?: any;
     protected _realms!: Realm[];
+    protected _offlineDeferred?: Util.Deferred<void>;
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
 
@@ -422,6 +423,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
+                console.log("Went offline!");
                 showSnackbar(undefined, "You are offline!") // TODO: Remove snackbar
                 this._store.dispatch((setOffline(true)))
             }
@@ -429,12 +431,30 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if(this._offline) {
                 console.log("Back online!");
                 showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
-                this._showOfflineFallback = false;
+                this._offlineDeferred?.reject();
+                this._offlineDeferred = undefined;
                 this._store.dispatch((setOffline(false)))
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
-            console.debug(`RECONNECT_FAILED event! Setting _showOfflineFallback to ${this._offline}`);
-            this._showOfflineFallback = this._offline;
+            console.debug("Reconnect attempt failed...");
+            if(!this._offlineDeferred) {
+                console.log("Initializing _offlineDeferred;")
+                const deferred = new Util.Deferred<void>();
+                deferred.promise.then(() => {
+                    console.log("_offlineDeferred resolved!");
+                }).catch((reason) => {
+                    console.log("_offlineDeferred rejected.")
+                    console.error(reason);
+                }).finally(() => {
+                    console.log(`Setting _showOfflineFallback to ${this._offline}`)
+                    this._showOfflineFallback = this._offline;
+                });
+                this._offlineDeferred = deferred;
+                setTimeout(() => {
+                    console.log("_offlineDeferred timeout reached.");
+                    deferred.resolve();
+                }, this.appConfig?.offlineTimeout || 10000)
+            }
         }
     }
 
