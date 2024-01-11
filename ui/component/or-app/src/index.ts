@@ -431,9 +431,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if(this._offline) {
                 console.log("Back online!");
                 showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
-                this._offlineDeferred?.reject();
-                this._offlineDeferred = undefined;
-                this._store.dispatch((setOffline(false)))
+                if(this._offlineDeferred) {
+                    this._offlineDeferred.reject();
+                    this._offlineDeferred = undefined;
+                } else {
+                    console.log(`Removing _showOfflineFallback!`)
+                    this._showOfflineFallback = false;
+                }
+                this._store.dispatch((setOffline(false)));
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
             console.debug("Reconnect attempt failed...");
