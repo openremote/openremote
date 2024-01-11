@@ -431,36 +431,49 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if(this._offline) {
                 console.log("Back online!");
                 showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
-                if(this._offlineDeferred) {
-                    this._offlineDeferred.reject();
-                    this._offlineDeferred = undefined;
-                } else {
-                    console.log(`Removing _showOfflineFallback!`)
-                    this._showOfflineFallback = false;
-                }
+                this._showOfflineFallback = false;
+                this.completeOfflineTimer(true);
                 this._store.dispatch((setOffline(false)));
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
             console.debug("Reconnect attempt failed...");
-            if(!this._offlineDeferred) {
-                console.log("Initializing _offlineDeferred;")
-                const deferred = new Util.Deferred<void>();
-                deferred.promise.then(() => {
-                    console.log("_offlineDeferred resolved!");
-                }).catch((reason) => {
-                    console.log("_offlineDeferred rejected.")
-                    console.error(reason);
-                }).finally(() => {
-                    console.log(`Setting _showOfflineFallback to ${this._offline}`)
-                    this._showOfflineFallback = this._offline;
-                });
-                this._offlineDeferred = deferred;
-                setTimeout(() => {
-                    console.log("_offlineDeferred timeout reached.");
-                    deferred.resolve();
-                }, this.appConfig?.offlineTimeout || 10000)
-            }
+            this.startOfflineTimer();
+
+            setTimeout(() => {
+                console.log("_offlineDeferred timeout reached.");
+                this.completeOfflineTimer(false);
+            }, this.appConfig?.offlineTimeout || 10000)
         }
+    }
+
+    protected startOfflineTimer(): void {
+        console.log("startOfflineTimer()");
+        const deferred = new Util.Deferred<void>();
+        deferred.promise.then(() => {
+            console.log("_offlineDeferred resolved!");
+        }).catch((reason) => {
+            console.log("_offlineDeferred rejected.")
+            console.error(reason);
+        }).finally(() => {
+            if(this._showOfflineFallback !== this._offline) {
+                console.log(`Setting _showOfflineFallback to ${this._offline}`)
+                this._showOfflineFallback = this._offline;
+            }
+        });
+        this._offlineDeferred = deferred;
+    }
+
+    // Completes the offline timer
+    // success is TRUE when the app successfully comes back online before the timeout (and showing the offline page).
+    // success is FALSE when the timeout is reached, and the offline page should be shown.
+    protected completeOfflineTimer(success: boolean) {
+        console.log("completeOfflineTimer()");
+        if(success) {
+            this._offlineDeferred?.resolve();
+        } else {
+            this._offlineDeferred?.reject();
+        }
+        this._offlineDeferred = undefined;
     }
 
     public logout() {
