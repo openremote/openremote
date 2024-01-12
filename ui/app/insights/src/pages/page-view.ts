@@ -14,8 +14,6 @@ import {i18next} from "@openremote/or-translate";
 import {style} from "../style";
 import {isAxiosError} from "@openremote/rest";
 import "../components/dashboard-menu";
-import "@openremote/or-chart";
-import "@openremote/or-attribute-card";
 
 export function pageViewProvider(store: EnhancedStore<AppStateKeyed>, realmConfigs: {[p: string]: RealmAppConfig}): PageProvider<AppStateKeyed> {
     return {

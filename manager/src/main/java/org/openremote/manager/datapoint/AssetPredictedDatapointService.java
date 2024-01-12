@@ -27,7 +27,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
-import org.openremote.model.util.Pair;
+import org.openremote.model.datapoint.ValueDatapoint;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -80,7 +80,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         upsertValue(assetId, attributeName, value, timestamp);
     }
 
-    public void updateValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) {
+    public void updateValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
         persistenceService.doTransaction(em -> upsertValues(assetId, attributeName, valuesAndTimestamps));
     }
 

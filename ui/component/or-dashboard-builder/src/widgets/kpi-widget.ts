@@ -6,6 +6,7 @@ import {WidgetConfig} from "../util/widget-config";
 import {Attribute, AttributeRef} from "@openremote/model";
 import {html, TemplateResult } from "lit";
 import {KpiSettings} from "../settings/kpi-settings";
+import "@openremote/or-attribute-card";
 
 export interface KpiWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];

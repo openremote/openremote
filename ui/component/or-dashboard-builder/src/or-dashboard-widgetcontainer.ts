@@ -31,7 +31,7 @@ export class OrDashboardWidgetContainer extends LitElement {
     protected orWidget?: OrWidget
 
     @state()
-    protected error?: string;
+    protected error?: string; // untranslated error messages
 
     @query("#widget-container")
     protected containerElem?: Element;
@@ -100,7 +100,7 @@ export class OrDashboardWidgetContainer extends LitElement {
                     const minWidth = this.manifest!.minPixelWidth || 0;
                     const minHeight = this.manifest!.minPixelHeight || 0;
                     const isMinimumSize: boolean = (minWidth < containerElem.clientWidth) && (minHeight < containerElem.clientHeight);
-                    this.error = (isMinimumSize ? undefined : i18next.t('dashboard.widgetTooSmall'));
+                    this.error = (isMinimumSize ? undefined : "dashboard.widgetTooSmall");
                 }, 200));
                 this.resizeObserver.observe(containerElem);
             } else {
@@ -143,9 +143,7 @@ export class OrDashboardWidgetContainer extends LitElement {
                 <div style="flex: 1; max-height: ${showHeader ? 'calc(100% - 36px)' : '100%'};">
                     ${when((!this.error && !this.loading), () => html`
                         ${this.orWidget}
-                    `, () => html`
-                        ${this.error ? html`${this.error}` : html`${i18next.t('loading')}`}
-                    `)}
+                    `, () => html`<or-translate value="${this.error ? this.error : "loading"}"></or-translate>`)}
                 </div>
             </div>
         `

@@ -307,10 +307,12 @@
   "realmRules": "Domeniu",
   "globalRules": "Global",
   "recipients": "Destinatari",
-  "JSON": "Dacă-Atunci",
-  "FLOW": "Flow",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "Dacă-Atunci",
+    "FLOW": "Flow",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "Interconectare manager",
   "gateway": "Interconectare manager",
   "connectionDetails": "DETALIILE CONEXIUNII",

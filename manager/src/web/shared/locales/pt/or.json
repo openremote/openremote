@@ -229,10 +229,12 @@
   "realmRules": "Reino",
   "globalRules": "Global",
   "recipients": "Destinatários",
-  "JSON": "Quando-Então",
-  "FLOW": "Fluxo",
-  "GROOVY": "Groovy",
-  "JAVASCRIPT": "JavaScript",
+  "rulesLanguages": {
+    "JSON": "Quando-Então",
+    "FLOW": "Fluxo",
+    "GROOVY": "Groovy",
+    "JAVASCRIPT": "JavaScript"
+  },
   "gatewayConnection": "Manager interconectar",
   "connectionDetails": "Detalhes de conexão",
   "secured": "Seguro",

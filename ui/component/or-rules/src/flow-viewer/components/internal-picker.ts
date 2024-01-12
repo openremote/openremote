@@ -212,7 +212,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                             <div class="asset-attribute">${selectedAttrLabel}</div>
                         </div>
                     </div>` : 
-                    html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @or-mwc-input-changed="${() => openDialog()}"></or-mwc-input>`
+                    html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="attribute" icon="plus" @or-mwc-input-changed="${() => openDialog()}"></or-mwc-input>`
             )}
         </div>`;
     }

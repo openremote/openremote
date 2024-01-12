@@ -43,7 +43,7 @@ export class MapSettings extends AssetWidgetSettings {
             <div>
 
                 <!-- Map settings -->
-                <settings-panel displayName="${i18next.t('configuration.mapSettings')}" expanded="${true}">
+                <settings-panel displayName="configuration.mapSettings" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
@@ -59,7 +59,7 @@ export class MapSettings extends AssetWidgetSettings {
                             ></or-mwc-input>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span>${i18next.t('dashboard.showGeoJson')}</span>
+                            <span><or-translate value="dashboard.showGeoJson"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${this.widgetConfig.showGeoJson}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onGeoJsonToggle(ev)}"
@@ -69,7 +69,7 @@ export class MapSettings extends AssetWidgetSettings {
                 </settings-panel>
 
                 <!-- Panel where Asset type and the selected attribute can be customized -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${config}"
                                       @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
                                       @attributenames-select="${(ev: AttributeNamesSelectEvent) => this.onAttributeNameSelect(ev)}"
@@ -78,14 +78,14 @@ export class MapSettings extends AssetWidgetSettings {
                     <!-- Other settings like labels and units-->
                     <div>
                         <div class="switchMwcInputContainer">
-                            <span>${i18next.t("dashboard.showLabels")}</span>
+                            <span><or-translate value="dashboard.showLabels"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${this.widgetConfig.showLabels}" .disabled="${!this.widgetConfig.assetType}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLabelsToggle(ev)}"
                             ></or-mwc-input>
                         </div>
                         <div class="switchMwcInputContainer">
-                            <span>${i18next.t("dashboard.showUnits")}</span>
+                            <span><or-translate value="dashboard.showUnits"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${this.widgetConfig.showUnits}" .disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowUnitsToggle(ev)}"
@@ -96,7 +96,7 @@ export class MapSettings extends AssetWidgetSettings {
 
                 <!-- List of customizable thresholds -->
                 ${when(this.widgetConfig.assetIds.length > 0, () => html`
-                    <settings-panel displayName="${i18next.t('thresholds')}" expanded="${true}">
+                    <settings-panel displayName="thresholds" expanded="${true}">
                         <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}">
@@ -161,7 +161,7 @@ export class MapSettings extends AssetWidgetSettings {
             this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
         }).catch((reason) => {
             console.error(reason);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         });
 
         this.notifyConfigUpdate()

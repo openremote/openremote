@@ -287,7 +287,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             }
 
             if (!response.data) {
-                showSnackbar(undefined, errorMsg, i18next.t("dismiss"));
+                showSnackbar(undefined, errorMsg, "dismiss");
                 console.error(errorMsg + ": response = " + response.statusText);
                 return false;
             }
@@ -447,16 +447,16 @@ export class PageProvisioning extends Page<AppStateKeyed> {
                         </div>
 
                         <div class="row" style="margin-bottom: 0;">
-                            ${config.id ? html`<or-mwc-input .label="${i18next.t("delete")}"
+                            ${config.id ? html`<or-mwc-input label="delete"
                                           .type="${InputType.BUTTON}"
                                           @click="${() => this._deleteConfig(config)}"></or-mwc-input>
                             ` : ``}              
-                            ${!config.id ? html`<or-mwc-input .label="${i18next.t("cancel")}"
+                            ${!config.id ? html`<or-mwc-input label="cancel"
                                       .type="${InputType.BUTTON}"
                                       @click="${() => addCancel()}"></or-mwc-input>
                             ` : ``}
                             <or-mwc-input class="savebtn" style="margin-left: auto;"
-                                  .label="${i18next.t(config.id ? "save" : "create")}"
+                                  label="${config.id ? "save" : "create"}"
                                   .type="${InputType.BUTTON}"
                                   @click="${() => this._createUpdateConfig(config)}"></or-mwc-input>
                         </div>

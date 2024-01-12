@@ -180,6 +180,13 @@ class BleProvider(val context: Context) {
                                 "Successfully disconnected from $deviceAddress"
                             )
                             gatt.close()
+                            bleCallback.accept(
+                                hashMapOf(
+                                    "action" to "CONNECT_TO_DEVICE",
+                                    "provider" to "ble",
+                                    "success" to false,
+                                )
+                            )
                         }
                     } else {
                         bleCallback.accept(
@@ -218,7 +225,6 @@ class BleProvider(val context: Context) {
                                 }
 
                                 if (characteristic.isWritable()) {
-                                    gatt?.setCharacteristicNotification(characteristic, true)
                                     deviceCharacteristics.find { it.characteristic.uuid == characteristic.uuid }?.isWritable =
                                         true
                                 }
@@ -306,11 +312,11 @@ class BleProvider(val context: Context) {
                                 "action" to "CONNECT_TO_DEVICE",
                                 "provider" to "ble",
                                 "success" to true,
-                                "data" to hashMapOf("attributes" to deviceCharacteristics.map {
-                                    createAttributeMap(
-                                        it
-                                    )
-                                })
+//                                "data" to hashMapOf("attributes" to deviceCharacteristics.map {
+//                                    createAttributeMap(
+//                                        it
+//                                    )
+//                                })
                             )
                         )
                     }
