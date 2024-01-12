@@ -333,6 +333,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     if(elem?.onRefresh) {
                         elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
                         elem.onRefresh();
+                    } else {
+                        elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
                     }/*  else if(pageProvider) {
                         this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
                     } */
