@@ -18,6 +18,7 @@ const styling = css`
         width: 100%;
         flex-direction: column;
         gap: 32px;
+        padding: 0 32px;
     }
 
     #offline-icon {

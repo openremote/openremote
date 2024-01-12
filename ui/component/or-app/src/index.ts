@@ -333,9 +333,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     if(elem?.onRefresh) {
                         elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
                         elem.onRefresh();
-                    } else if(pageProvider) {
+                    }/*  else if(pageProvider) {
                         this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
-                    }
+                    } */
                 }
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
