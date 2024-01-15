@@ -741,13 +741,14 @@ export class MapWidget {
                 fontSize
             }px sans-serif; display: block">`;
 
+        //Threshold donut
         for (let i: number = 0; i < subCounts.length; i++) {
             html += this.donutSegment(
                 subOffsets[i] / subTotal,
                 (subOffsets[i] + subCounts[i]) / subTotal,
                 r,
                 r0,
-                /*subColours[i]*/ 'e3d5f4' , true, 0
+                subColours[i], true, 0
             );
         }
 
@@ -958,6 +959,7 @@ export class MapWidget {
                 if (this._mapGl.getLayer('cluster-count')) {
                     this._mapGl.removeLayer('cluster-count');
                 }
+                console.log('remove source');
                 this._mapGl.removeSource('mapPoints');
             }
 
@@ -1089,6 +1091,14 @@ export class MapWidget {
         });
     }
 
+    public cleanupMark(): void {
+        this._pointsMap = {
+            type: "FeatureCollection",
+            features: []
+        };
+
+        this._assetTypesColors = {};
+    }
 
     public removeMarker(marker: OrMapMarker) {
         this._removeMarkerRadius(marker);

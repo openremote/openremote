@@ -505,6 +505,10 @@ export class OrMap extends LitElement {
         return false;
     }
 
+    public cleanUpMarker(): void {
+        this._map?.cleanupMark();
+    }
+
     public loadPoints() {
         this._map?.loadPoints();
     }

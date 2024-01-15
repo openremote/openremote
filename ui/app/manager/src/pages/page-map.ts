@@ -285,6 +285,8 @@ export class PageMap extends Page<MapStateKeyed> {
                 if (this._map) {
                     this.locationAssets = [];
                     this.assetTypes = [];
+                    this._map.cleanUpMarker();
+
                     assets.forEach((asset: Asset) => {
                         if (this._map.addMarker(asset)) {
                             if(!this.assetTypes.find((assetType: string) => { return assetType === asset.type; })) {
