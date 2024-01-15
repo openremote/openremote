@@ -9,6 +9,7 @@ import {mapAssetLegendStyle} from "./style";
 import {AssetModelUtil} from "@openremote/model";
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {Util} from "@openremote/core";
+import {i18next} from "@openremote/or-translate";
 
 @customElement("or-map-legend")
 export class OrMapLegend extends LitElement {
@@ -61,7 +62,7 @@ export class OrMapLegend extends LitElement {
         return html`
             <div id="legend">
                 <div id="legend-title" @click="${(evt: MouseEvent) => this._onHeaderClick(evt)}">
-                    <span>Legend</span><or-icon icon="menu"></or-icon>
+                    <span>${i18next.t("mapPage.legendTitle")}</span><or-icon icon="menu"></or-icon>
                 </div>
                 <div id="legend-content">
                     <ul>

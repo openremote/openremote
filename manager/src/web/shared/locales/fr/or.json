@@ -449,5 +449,8 @@
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value",
     "assetTypeDoesNotExist": "Filter : Asset type does not exist"
+  },
+  "mapPage": {
+    "legendTitle": "Légende"
   }
 }

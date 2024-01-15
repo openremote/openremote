@@ -702,5 +702,8 @@
   "withInterval": "Met interval",
   "AVG": "Gemiddelde",
   "MIN": "Minimum",
-  "MAX": "Maximum"
+  "MAX": "Maximum",
+  "mapPage": {
+    "legendTitle": "Legend"
+  }
 }

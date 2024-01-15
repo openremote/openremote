@@ -693,5 +693,8 @@
   "saveRealmFailed": "Salvarea domeniului a eșuat",
   "saveRealmSucceeded": "Domeniul a fost salvat cu succes!",
   "userDisconnected": "Deconectare cu succes!",
-  "userDisconnectFailed": "Deconectare eșuată"
+  "userDisconnectFailed": "Deconectare eșuată",
+  "mapPage": {
+    "legendTitle": "Legend"
+  }
 }
