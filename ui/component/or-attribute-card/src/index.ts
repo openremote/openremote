@@ -12,7 +12,7 @@ import {
     ReadAttributeEvent,
     ValueDatapoint,
     AssetModelUtil,
-    AssetDatapointLTTBQuery
+    AssetDatapointLTTBQuery, AssetDatapointAllQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
@@ -744,11 +744,11 @@ export class OrAttributeCard extends LitElement {
             assetId,
             attributeName,
             {
-                type: "lttb",
+                type: "all",
                 fromTimestamp: this._startOfPeriod,
                 toTimestamp: this._endOfPeriod,
                 amountOfPoints: 20,
-            } as AssetDatapointLTTBQuery
+            } as AssetDatapointAllQuery
         );
 
         this._loading = false;
