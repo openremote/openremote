@@ -903,7 +903,8 @@ export class MapWidget {
                                 } else {
                                     props.push({
                                         assetType: assetType,
-                                        count: 1
+                                        count: 1,
+                                        threshold: []
                                     });
                                 }
 
