@@ -175,6 +175,7 @@ export class PageMap extends Page<MapStateKeyed> {
                     width: calc(100% - 20px);
                     max-width: 240px;
                     margin: 0;
+                    height: max-content;
                     max-height: calc(100vh - 150px);
                 }
             }
@@ -393,6 +394,8 @@ export class PageMap extends Page<MapStateKeyed> {
         return html`
             
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
+
+            <or-map-legend .assetTypes="${this.assetTypes}"></or-map-legend>
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${

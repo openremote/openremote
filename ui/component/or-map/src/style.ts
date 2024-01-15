@@ -240,44 +240,55 @@ export const mapAssetCardStyle = css`
 
 export const mapAssetLegendStyle = css`
             :host {
-                --internal-or-map-asset-card-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
-                --internal-or-map-asset-card-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
+                --internal-or-map-asset-legend-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-map-asset-legend-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
               
                 display: block;
             }
-  
+
             #legend {
                 display: flex;
                 flex-direction: column;
-                background-color: var(--internal-or-map-asset-card-background-color);
-                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
-                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
-                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);  
             }
             
             #legend-title {
-                height: var(--internal-or-map-asset-card-header-height);
-                background-color: var(--internal-or-map-asset-card-header-color);
-                line-height: var(--internal-or-map-asset-card-header-height);
+                height: var(--internal-or-map-asset-legend-header-height);
+                background-color: var(--internal-or-map-asset-legend-background-color);
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                line-height: var(--internal-or-map-asset-legend-header-height:);
                 border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
-                color: var(--internal-or-map-asset-card-header-text-color);
                 z-index: 99999;
                 padding-left: 10px;
                 padding-right: 10px;
                 display: flex;
                 justify-content: space-between;
+                align-items: center;
+                border-radius: 3px;
+            }
+    
+            #legend-content {
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                background-color: var(--internal-or-map-asset-legend-background-color);
+                margin-top: 10px;
+                border-radius: 3px;
+                padding: 10px;
             }
             
             #title {
                 font-weight: 500;
             }
-            
-            #attribute-list {
-                flex: 1;                
-                color: var(--internal-or-map-asset-card-background-text-color);
-                padding: 10px 20px;
-                overflow: auto;
-                font-size: 14px;
+    
+            #asset-legend {
+                display: flex;
+                align-items: center;
+            }   
+    
+            #asset-label {
+                margin-left: 5px;
             }
             
             ul {
@@ -290,33 +301,5 @@ export const mapAssetLegendStyle = css`
                 display: flex;
                 line-height: 30px;
             }
-            li.highlighted {
-                font-weight: bold;
-            }
-            
-            .attribute-name {
-                flex: 1;            
-            }
-            
-            .attribute-value {
-                overflow: hidden;
-                padding-left: 20px;
-                text-align: right;
-            }
-            
-            #footer {
-                height: var(--internal-or-map-asset-card-header-height);
-                border-top: 1px solid var(--internal-or-map-asset-card-separator-color);
-                text-align: right;
-                padding: 5px 12px;
-            }
-            
-            @media only screen and (min-width: 415px){
-                #card-container {
-                    height: 400px; /* fallback for IE */
-                    height: max-content;
-                    max-height: calc(100vh - 150px);
-                    min-height: 134px;
-                }
-            }
+}
 `

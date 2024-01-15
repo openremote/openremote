@@ -8,6 +8,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {mapAssetLegendStyle} from "./style";
 import {AssetModelUtil} from "@openremote/model";
 import {getMarkerIconAndColorFromAssetType} from "./util";
+import {Util} from "@openremote/core";
 
 @customElement("or-map-legend")
 export class OrMapLegend extends LitElement {
@@ -15,8 +16,7 @@ export class OrMapLegend extends LitElement {
     @property({type: Array})
     public assetTypes: string[] = [];
 
-    protected assetTypesIcon: any;
-    protected assetTypesColor: any;
+    protected assetTypesInfo: any;
 
     @query("#legend-content")
     protected _showLegend?: HTMLDivElement;
@@ -24,17 +24,24 @@ export class OrMapLegend extends LitElement {
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("assetTypes")) {
-            this.assetTypesIcon = {};
-            this.assetTypesColor = {};
+            this.assetTypesInfo = {};
 
             this.assetTypes.forEach((assetType: string) => {
                 const descriptor = AssetModelUtil.getAssetDescriptor(assetType);
                 const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
                 const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
+                const label = Util.getAssetTypeLabel(descriptor);
 
-                this.assetTypesIcon[assetType] = icon;
-                this.assetTypesColor[assetType] = color;
+                this.assetTypesInfo[assetType] = {
+                    icon: icon,
+                    color: color,
+                    label: label
+                }
             });
+        }
+
+        if (this._showLegend) {
+            this._showLegend.hidden = true;
         }
 
         return super.shouldUpdate(_changedProperties);
@@ -45,7 +52,6 @@ export class OrMapLegend extends LitElement {
     }
 
     protected _onHeaderClick(evt: MouseEvent | null) {
-        console.log('click');
         if (this._showLegend) {
             this._showLegend.hidden = !this._showLegend?.hidden;
         }
@@ -55,12 +61,12 @@ export class OrMapLegend extends LitElement {
         return html`
             <div id="legend">
                 <div id="legend-title" @click="${(evt: MouseEvent) => this._onHeaderClick(evt)}">
-                    <span>Legend</span><span><or-icon icon="menu"></or-icon></span>
+                    <span>Legend</span><or-icon icon="menu"></or-icon>
                 </div>
                 <div id="legend-content">
                     <ul>
                         ${this.assetTypes ? this.assetTypes.map((assetType) => {
-                            return html`<li><or-icon icon="${this.assetTypesIcon[assetType]}" style="color: #${this.assetTypesColor[assetType]}"></or-icon>${assetType}</li>`;
+                            return html`<li id="asset-legend"><or-icon icon="${this.assetTypesInfo[assetType].icon}" style="color: #${this.assetTypesInfo[assetType].color}"></or-icon><span id="asset-label">${this.assetTypesInfo[assetType].label}</span></li>`;
                         }) : ''}
                     </ul>
                 </div>
