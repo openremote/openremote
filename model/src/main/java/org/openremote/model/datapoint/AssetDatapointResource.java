@@ -25,6 +25,8 @@ import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.Suspended;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -60,8 +62,9 @@ public interface AssetDatapointResource {
     @Path("export")
     @Produces("application/zip")
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    void getDatapointExport(@QueryParam("attributeRefs") String attributeRefsString,
+    void getDatapointExport(@Suspended AsyncResponse asyncResponse,
+                            @QueryParam("attributeRefs") String attributeRefsString,
                             @QueryParam("fromTimestamp") long fromTimestamp,
-                            @QueryParam("toTimestamp") long toTimestamp) throws InterruptedException;
+                            @QueryParam("toTimestamp") long toTimestamp);
 
 }
