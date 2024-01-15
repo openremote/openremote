@@ -300,6 +300,9 @@ export const mapAssetLegendStyle = css`
             li {
                 display: flex;
                 line-height: 30px;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
             }
 }
 `

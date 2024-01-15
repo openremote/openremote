@@ -215,8 +215,6 @@ export class PageMap extends Page<MapStateKeyed> {
         let markerLabelAttributes = [];
 
         if (this.config && this.config.markers) {
-            console.log('CONFIG');
-            console.log(this.config);
             markerLabelAttributes = Object.values(this.config.markers)
               .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName)
               .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
@@ -388,7 +386,6 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected render() {
-        console.log("render page map...");
         let assetIdsToShow: string[] = this._map ? this._map.getCurrentView() : [];
 
         return html`
@@ -442,7 +439,6 @@ export class PageMap extends Page<MapStateKeyed> {
 
     stateChanged(state: MapStateKeyed) {
         this._assets = this._getMapAssets(state);
-        console.log('assets set on map page level');
         this._currentAsset = this._getCurrentAsset(state);
 
         const currentId = state.app.params ? state.app.params.id : undefined;
@@ -466,7 +462,6 @@ export class PageMap extends Page<MapStateKeyed> {
     }
 
     protected onMapLoad(e: OrMapSourceLoadedEvent) {
-        console.log('map loaded !');
         this.mapInitLoaded = !this.mapInitLoaded;
         this._map.renderCurrentCluster(this.config.markers);
     }

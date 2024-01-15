@@ -669,8 +669,6 @@ export class MapWidget {
         if (this._mapGl) {
             const res2 = this._mapGl.querySourceFeatures('mapPoints', { sourceLayer: 'unclustered-point' });
 
-            console.log(res2);
-
             let viewedAsset: any = {};
             let assetId: string[] = [];
 
@@ -828,8 +826,6 @@ export class MapWidget {
     }
     public renderCurrentCluster(config?: MapMarkerAssetConfig): void {
         if (config) {
-            console.log('got a marker config...');
-            console.log(config);
             this.markerConfig = config;
         }
 
@@ -845,9 +841,6 @@ export class MapWidget {
             let clusters = features.filter((feature) => {
                 return feature.properties && feature.properties.cluster;
             });
-
-            console.log("clusters : ");
-            console.log(clusters);
 
             clusters.forEach((cluster: any) => {
                 if (this._mapGl) {
@@ -880,7 +873,6 @@ export class MapWidget {
                             let assetType = feature.properties?.assetType;
 
                             if (assetType) {
-                                console.log(this.markerConfig);
                                 const assetTypeConfig = getMarkerConfigForAssetType(this.markerConfig, assetType);
                                 let iconAndColour: any = undefined;
 
@@ -948,8 +940,6 @@ export class MapWidget {
         if (!this._mapGl) {
             this.load();
         } else {
-            console.log('asset colors :');
-            console.log(this._assetTypesColors);
             if (this._mapGl.getSource('mapPoints')) {
                 if (this._mapGl.getLayer('unclustered-point')) {
                     this._mapGl.removeLayer('unclustered-point');
@@ -960,7 +950,6 @@ export class MapWidget {
                 if (this._mapGl.getLayer('cluster-count')) {
                     this._mapGl.removeLayer('cluster-count');
                 }
-                console.log('remove source');
                 this._mapGl.removeSource('mapPoints');
             }
 
@@ -1057,14 +1046,10 @@ export class MapWidget {
             });
 
             this._mapGl.on('load', (e) => {
-                console.log('load...');
-                console.log(e);
                 this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
             });
 
             this._mapGl.on('data', (e) => {
-                console.log('data...');
-                console.log(e);
                 this._mapContainer.dispatchEvent(new OrMapSourceLoadedEvent());
             });
 
