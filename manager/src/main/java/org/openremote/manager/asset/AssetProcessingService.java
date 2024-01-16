@@ -85,16 +85,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     public static final String ATTRIBUTE_EVENT_ROUTE_CONFIG_ID = "attributeEvent";
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
-    // Single threaded attribute event queue (event order has to be maintained)
-    public static final String ATTRIBUTE_EVENT_QUEUE = "seda://AttributeEventRouter?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=10000";
+    public static final String ATTRIBUTE_EVENT_ROUTER_QUEUE = "seda://AttributeEventRouter?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=false&discardIfNoConsumers=false&size=10000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
     public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = 3;
     protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
-    protected static final String EVENT_ROUTE_URI_PREFIX = "seda://AttributeEventRouter";
-    protected static final String EVENT_ROUTE_URI_SUFFIX = "?size=3000&timeout=10000";
+    protected static final String EVENT_PROCESSOR_URI_PREFIX = "seda://AttributeEventProcessor";
+    protected static final String EVENT_PROCESSOR_URI_SUFFIX = "?size=3000&timeout=10000";
+    public static final String EVENT_PROCESSOR_ROUTE_ID_PREFIX = "AttributeEvent-Processor";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
 
-    public static final String ATTRIBUTE_PROCESSOR_ROUTE_PREFIX = "AttributeEvent-Processor";
     final protected List<AttributeEventInterceptor> eventInterceptors = new ArrayList<>();
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
@@ -286,24 +285,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     @Override
     public void configure() throws Exception {
 
-        // Process attribute events
-        // TODO: Make SENDER much more granular (switch to microservices with RBAC)
-        /* TODO This message consumer should be transactionally consistent with the database, this is currently not the case
-
-         Our "if I have not processed this message before" duplicate detection:
-
-          - discard events with source time greater than server processing time (future events)
-          - discard events with source time less than last applied/stored event source time
-          - allow the rest (also events with same source time, order of application undefined)
-
-         Possible improvements moving towards at-least-once:
-
-         - Make AttributeEventInterceptor transactional with a two-phase commit API
-         - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
-         - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
-        */
         // All user authorisation checks MUST have been carried out before events reach this queue
-        from(ATTRIBUTE_EVENT_QUEUE)
+
+        // Router is responsible for routing events to the same processor for a given asset ID, this allows for
+        // multithreaded processing across assets
+        from(ATTRIBUTE_EVENT_ROUTER_QUEUE)
             .routeId("AttributeEvent-Router")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .process(exchange -> {
@@ -324,14 +310,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getId()));
             })
-            .toD(EVENT_ROUTE_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}");
+            .toD(EVENT_PROCESSOR_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}");
 
         // Create the event processor routes
         IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
             String camelRouteURI = getEventProcessingRouteURI(processorCount);
 
             from(camelRouteURI)
-                .routeId(ATTRIBUTE_PROCESSOR_ROUTE_PREFIX + processorCount)
+                .routeId(EVENT_PROCESSOR_ROUTE_ID_PREFIX + processorCount)
                 .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
@@ -362,14 +348,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     /**
-     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_ROUTER_QUEUE}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
         sendAttributeEvent(attributeEvent, null);
     }
 
     /**
-     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_QUEUE}.
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_ROUTER_QUEUE}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent, Object source) {
         attributeEvent.setSource(source);
@@ -380,7 +366,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
         messageBrokerService.getFluentProducerTemplate()
                 .withBody(attributeEvent)
-                .to(ATTRIBUTE_EVENT_QUEUE)
+                .to(ATTRIBUTE_EVENT_ROUTER_QUEUE)
                 .asyncSend();
     }
 
@@ -486,6 +472,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected String getEventProcessingRouteURI(int routeNumber) {
-        return EVENT_ROUTE_URI_PREFIX + routeNumber + EVENT_ROUTE_URI_SUFFIX;
+        return EVENT_PROCESSOR_URI_PREFIX + routeNumber + EVENT_PROCESSOR_URI_SUFFIX;
     }
 }

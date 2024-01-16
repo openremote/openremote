@@ -53,8 +53,7 @@ import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -563,7 +562,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // has multiple consumers and so doesn't support In/Out MEP
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
-                .to(ATTRIBUTE_EVENT_QUEUE)
+                .to(ATTRIBUTE_EVENT_ROUTER_QUEUE)
                 .request();
 
             if (result instanceof AssetProcessingException processingException) {

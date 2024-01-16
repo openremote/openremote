@@ -57,7 +57,7 @@ import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.*;
 import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_QUEUE;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
 import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.Constants.*;
@@ -353,7 +353,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
                 }
             })
-            .to(ATTRIBUTE_EVENT_QUEUE)
+            .to(ATTRIBUTE_EVENT_ROUTER_QUEUE)
             .stop()
             .when(or(
                 header(SESSION_CLOSE),
