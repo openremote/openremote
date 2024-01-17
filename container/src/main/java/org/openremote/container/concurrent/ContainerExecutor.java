@@ -47,7 +47,12 @@ public class ContainerExecutor extends ThreadPoolExecutor {
             TimeUnit.SECONDS,
             blockingQueueCapacity == -1 ? new SynchronousQueue<>() : new ArrayBlockingQueue<>(blockingQueueCapacity),
             new ContainerThreadFactory(name),
-            rejectedExecutionHandler
+            // Wrap rejected handler to add logging
+            (r, executor) -> {
+                // Log and discard
+                LOG.info("Container thread pool '" + executor + "' rejected execution of " + r);
+                rejectedExecutionHandler.rejectedExecution(r, executor);
+            }
         );
 
         this.name = name;
