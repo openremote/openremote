@@ -1060,7 +1060,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             assetId != null ? Collections.singletonList(assetId) : null);
     }
 
-    public List<UserAssetLink> findUserAssetLinks(String realm, List<String> userIds, List<String> assetIds) {
+    public List<UserAssetLink> findUserAssetLinks(String realm, Collection<String> userIds, Collection<String> assetIds) {
 
         if (realm == null && (userIds == null || userIds.isEmpty()) && (assetIds == null || assetIds.isEmpty())) {
             return Collections.emptyList();
@@ -1070,7 +1070,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             buildFindUserAssetLinksQuery(em, realm, userIds, assetIds).getResultList());
     }
 
-    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, List<String> userIds, List<String> assetIds) {
+    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, Collection<String> userIds, Collection<String> assetIds) {
         StringBuilder sb = new StringBuilder();
         Map<String, Object> parameters = new HashMap<>(3);
         sb.append("select ua from UserAssetLink ua where 1=1");
