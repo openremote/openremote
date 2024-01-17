@@ -919,7 +919,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "The mock server has received a successful response"
         conditions.eventually {
-            assert mockServer.successCount == 1
+            assert mockServer.successCount == 2
             assert mockServer.failureCount == 0
         }
     }
