@@ -772,7 +772,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return null;
             }
 
-            Notification notification = notificationAction.notification;
+            Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
             boolean linkedUsersTarget = ruleAction.target != null && ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers;
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
@@ -845,8 +845,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         Map<String, Set<AssetState<?>>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, userAssetLinks, userId);
 
                         Notification customNotification = ValueUtil.clone(notification);
-                        String triggeredAssetInfoPayload = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
-                        String newBody = finalBody.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfoPayload);
+                        String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
 
                         if (isEmail) {
                             EmailNotificationMessage email = (EmailNotificationMessage) customNotification.getMessage();
@@ -885,8 +884,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (bodyContainsTriggeredAssetInfo) {
                 // Extract asset states for matched asset IDs
                 Map<String, Set<AssetState<?>>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
-                String triggeredAssetInfoPayload = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
-                body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfoPayload);
+                body = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
 
                 if (isEmail) {
                     EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
