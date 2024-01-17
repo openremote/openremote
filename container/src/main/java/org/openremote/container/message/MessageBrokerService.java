@@ -21,11 +21,9 @@ package org.openremote.container.message;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import org.apache.camel.Exchange;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
-import org.apache.camel.builder.RouteConfigurationBuilder;
 import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.health.HealthCheckRegistry;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -34,7 +32,6 @@ import org.apache.camel.impl.health.ConsumersHealthCheckRepository;
 import org.apache.camel.impl.health.ContextHealthCheck;
 import org.apache.camel.impl.health.DefaultHealthCheckRegistry;
 import org.apache.camel.impl.health.RoutesHealthCheckRepository;
-import org.apache.camel.model.RouteConfigurationDefinition;
 import org.apache.camel.spi.ExecutorServiceManager;
 import org.apache.camel.spi.StreamCachingStrategy;
 import org.apache.camel.spi.ThreadPoolFactory;
@@ -47,15 +44,14 @@ import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.attribute.AttributeEvent;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
-
-import static org.openremote.model.attribute.AttributeWriteFailure.ASSET_NOT_FOUND;
-import static org.openremote.model.attribute.AttributeWriteFailure.QUEUE_FULL;
 
 public class MessageBrokerService implements ContainerService {
 
