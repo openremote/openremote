@@ -20,7 +20,9 @@
 package org.openremote.manager.rules;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -43,7 +45,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.query.filter.LocationAttributePredicate;
@@ -152,7 +157,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getExecutorService();
+        executorService = new ContainerScheduledExecutor(getClass().getSimpleName(), 1);
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
         rulesetStorageService = container.getService(RulesetStorageService.class);
@@ -174,6 +179,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
         }
 
         meterRegistry = container.getMeterRegistry();
+
+        if (meterRegistry != null) {
+            executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, getClass().getSimpleName());
+        }
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
 
