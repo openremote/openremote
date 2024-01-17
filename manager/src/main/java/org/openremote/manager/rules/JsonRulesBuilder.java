@@ -24,6 +24,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.notification.EmailNotificationMessage;
@@ -538,7 +539,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
     final protected Ruleset jsonRuleset;
-    final protected Logger LOG;
+    protected static Logger LOG;
 
     public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
@@ -766,107 +767,169 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
-            if (notificationAction.notification != null) {
-
-                Notification notification = notificationAction.notification;
-
-                if (notification.getMessage() != null) {
-                    String body = null;
-
-                    boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
-                    boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
-
-                    boolean isHtml = false;
-
-                    if (isEmail) {
-                        EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
-                        isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
-                        body = isHtml ? email.getHtml() : email.getText();
-                    } else if (isPush) {
-                        PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                        body = pushNotificationMessage.getBody();
-                    }
-
-                    if (!TextUtil.isNullOrEmpty(body)) {
-                        if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                            // Need to clone the notification
-                            notification = ValueUtil.clone(notification);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml, false);
-                            body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
-
-                            if (isEmail) {
-                                EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
-                                if (isHtml) {
-                                    email.setHtml(body);
-                                } else {
-                                    email.setText(body);
-                                }
-                            } else if (isPush) {
-                                PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                                pushNotificationMessage.setBody(body);
-                            }
-                        }
-                    }
-                }
-
-                // Transfer the rule action target into notification targets
-                Notification.TargetType targetType = Notification.TargetType.ASSET;
-                if (ruleAction.target != null) {
-                    if (ruleAction.target.users != null
-                        && ruleAction.target.conditionAssets == null
-                        && ruleAction.target.assets == null
-                        && ruleAction.target.matchedAssets == null) {
-                        targetType = Notification.TargetType.USER;
-                    } else if (ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers) {
-                        targetType = Notification.TargetType.USER;
-                    } else if (ruleAction.target.custom != null
-                        && ruleAction.target.conditionAssets == null
-                        && ruleAction.target.assets == null
-                        && ruleAction.target.matchedAssets == null) {
-                        targetType = Notification.TargetType.CUSTOM;
-                    }
-                }
-
-                Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
-
-                if (ids == null) {
-                    notification.setTargets((List<Notification.Target>)null);
-                } else {
-                    Notification.TargetType finalTargetType = targetType;
-                    notification.setTargets(ids.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
-                }
-
-                log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                Notification finalNotification = notification;
-                return new RuleActionExecution(() -> notificationsFacade.send(finalNotification), 0);
+            if (notificationAction.notification == null || notificationAction.notification.getMessage() == null) {
+                LOG.info("Notification action has no notification and/or message set so cannot complete action: " + jsonRuleset);
+                return null;
             }
+
+            Notification notification = ValueUtil.clone(notificationAction.notification);
+            String body;
+            boolean linkedUsersTarget = ruleAction.target != null && ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers;
+            boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
+            boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
+            boolean isHtml;
+
+            if (isEmail) {
+                EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
+                body = isHtml ? email.getHtml() : email.getText();
+            } else {
+                isHtml = false;
+                if (isPush) {
+                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                    body = pushNotificationMessage.getBody();
+                } else {
+                    body = null;
+                }
+            }
+
+            // Transfer the rule action target into notification targets
+            Notification.TargetType targetType = Notification.TargetType.ASSET;
+            if (ruleAction.target != null) {
+                if (ruleAction.target.users != null
+                    && ruleAction.target.conditionAssets == null
+                    && ruleAction.target.assets == null
+                    && ruleAction.target.matchedAssets == null) {
+                    targetType = Notification.TargetType.USER;
+                } else if (ruleAction.target.custom != null
+                    && ruleAction.target.conditionAssets == null
+                    && ruleAction.target.assets == null
+                    && ruleAction.target.matchedAssets == null) {
+                    targetType = Notification.TargetType.CUSTOM;
+                }
+            }
+
+            Collection<String> targetIds;
+            boolean bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
+
+            if (linkedUsersTarget) {
+                targetType = Notification.TargetType.USER;
+
+                // Find users linked to the matched assets
+                Set<String> assetIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+                List<String> userIds = assetIds == null || assetIds.isEmpty()
+                    ? Collections.emptyList()
+                    : usersFacade.getResults(new UserQuery().assets(assetIds.toArray(String[]::new))).toList();
+
+                if (userIds.isEmpty()) {
+                    LOG.info("No users linked to matched assets for triggered rule so nothing to do: " + jsonRuleset);
+                    return null;
+                }
+
+                if (!bodyContainsTriggeredAssetInfo) {
+                    // Nothing user specific in the notification body so same notification can be sent to all users
+                    targetIds = userIds;
+                } else {
+                    // Linked users target requires special handling when asset trigger info is included in the body, in this
+                    // situation a notification is produced for each linked user with the body containing only assets that they are linked to.
+                    LOG.finer(() -> "Mapped target user IDs: " + String.join(",", userIds));
+
+                    // Get the user(s) asset links so we can group the matched assets by user
+                    String realm = getRealm();
+                    List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(realm, userIds, assetIds);
+
+                    // Generate a custom notification for each linked user
+                    String finalBody = body;
+                    Collection<Notification> customNotifications = userIds.stream().map(userId -> {
+                        // Extract asset states for matched asset IDs that are linked to this user
+                        Map<String, Set<AssetState<?>>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, userAssetLinks, userId);
+
+                        Notification customNotification = ValueUtil.clone(notification);
+                        String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
+
+                        if (isEmail) {
+                            EmailNotificationMessage email = (EmailNotificationMessage) customNotification.getMessage();
+                            if (isHtml) {
+                                email.setHtml(newBody);
+                            } else {
+                                email.setText(newBody);
+                            }
+                        } else if (isPush) {
+                            PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) customNotification.getMessage();
+                            pushNotificationMessage.setBody(newBody);
+                        }
+
+                        customNotification.setTargets(new Notification.Target(Notification.TargetType.USER, userId));
+                        return customNotification;
+                    }).toList();
+
+                    return new RuleActionExecution(() ->
+                        customNotifications.forEach(customNotification -> {
+                            log(Level.FINE, "Sending custom user notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (customNotification.getTargets() != null ? customNotification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
+                            notificationsFacade.send(customNotification);
+                    }), 0);
+                }
+            } else {
+                targetIds = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
+            }
+
+            if (targetIds == null) {
+                notification.setTargets((List<Notification.Target>)null);
+            } else {
+                Notification.TargetType finalTargetType = targetType;
+                notification.setTargets(targetIds.stream().map(id -> new Notification.Target(finalTargetType, id)).collect(Collectors.toList()));
+            }
+
+            // Inject triggered asset info if needed
+            if (bodyContainsTriggeredAssetInfo) {
+                // Extract asset states for matched asset IDs
+                Map<String, Set<AssetState<?>>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
+                body = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
+
+                if (isEmail) {
+                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                    if (isHtml) {
+                        email.setHtml(body);
+                    } else {
+                        email.setText(body);
+                    }
+                } else if (isPush) {
+                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                    pushNotificationMessage.setBody(body);
+                }
+            }
+
+            log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
+            return new RuleActionExecution(() -> notificationsFacade.send(notification), 0);
         }
 
         if (ruleAction instanceof RuleActionWebhook webhookAction) {
-            Webhook webhook = webhookAction.webhook;
-            if (webhook.getUrl() != null && webhook.getHttpMethod() != null) {
-
-                // Replace %TRIGGER_ASSETS% with the triggered assets in JSON format.
-                if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                    String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                    webhook.setPayload(webhook.getPayload()
-                            .replace(('"' + PLACEHOLDER_TRIGGER_ASSETS + '"'), triggeredAssetInfo)
-                            .replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo)
-                    );
-                }
-
-                if (webhookAction.mediaType == null) {
-                    Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
-                    String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
-                    webhookAction.mediaType = MediaType.valueOf(contentType);
-                }
-
-                if(webhookAction.target == null) {
-                    webhookAction.target = webhooksFacade.buildTarget(webhook);
-                }
-
-                return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
+            if (webhookAction.webhook.getUrl() == null || webhookAction.webhook.getHttpMethod() == null) {
+                LOG.info("Webhook action has no URL and/or HTTP method set so cannot complete action: " + jsonRuleset);
+                return null;
             }
+
+            // Clone webhook due to mutation
+            Webhook webhook = ValueUtil.clone(webhookAction.webhook);
+
+            // Replace %TRIGGER_ASSETS% with the triggered assets in JSON format.
+            if (!TextUtil.isNullOrEmpty(webhook.getPayload()) && webhook.getPayload().contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                Map<String, Set<AssetState<?>>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
+                String triggeredAssetInfoPayload = insertTriggeredAssetInfo(webhook.getPayload(), assetStates, false, true);
+                webhook.setPayload(triggeredAssetInfoPayload);
+            }
+
+            if (webhookAction.mediaType == null) {
+                Optional<Map.Entry<String, List<String>>> contentTypeHeader = webhook.getHeaders().entrySet().stream().filter((entry) -> entry.getKey().equalsIgnoreCase("content-type")).findFirst();
+                String contentType = contentTypeHeader.isPresent() ? contentTypeHeader.get().getValue().get(0) : MediaType.APPLICATION_JSON;
+                webhookAction.mediaType = MediaType.valueOf(contentType);
+            }
+
+            if(webhookAction.target == null) {
+                webhookAction.target = webhooksFacade.buildTarget(webhook);
+            }
+
+            return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {
@@ -1029,16 +1092,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         return null;
     }
 
-    private String buildTriggeredAssetInfo(boolean useUnmatched, RuleState ruleEvaluationResult, boolean isHtml, boolean isJson) {
+    protected Map<String, Set<AssetState<?>>> getMatchedAssetStates(RuleState ruleState, boolean useUnmatched, Collection<UserAssetLink> userAssetLinks, String userId) {
+        Set<String> assetIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
 
-        Set<String> assetIds = useUnmatched ? ruleEvaluationResult.otherwiseMatchedAssetIds : ruleEvaluationResult.thenMatchedAssetIds;
-
-        if (assetIds == null || assetIds.isEmpty()) {
-            return "";
-        }
-
-        // Extract asset states for matched asset IDs
-        Map<String, Set<AssetState<?>>> assetStates = ruleEvaluationResult.conditionStateMap.values().stream()
+        return assetIds == null || assetIds.isEmpty()
+            ? null
+            : ruleState.conditionStateMap.values().stream()
             .filter(conditionState -> conditionState.lastEvaluationResult.matches)
             .flatMap(conditionState -> {
                 Collection<AssetState<?>> as = useUnmatched
@@ -1046,8 +1105,22 @@ public class JsonRulesBuilder extends RulesBuilder {
                     : conditionState.lastEvaluationResult.matchedAssetStates;
                 return as.stream();
             })
-            .filter(assetState -> assetIds.contains(assetState.getId()))
+            // Get the asset states that are in the assetId list and optionally linked to this user
+            .filter(assetState -> assetIds.contains(assetState.getId()) && (userAssetLinks == null || userAssetLinks.stream().anyMatch(ual -> ual.getId().getAssetId().equals(assetState.getId()) && ual.getId().getUserId().equals(userId))))
             .collect(Collectors.groupingBy(AssetState::getId, Collectors.toSet()));
+    }
+
+    protected String getRealm() {
+        String realm = null;
+        if (jsonRuleset instanceof RealmRuleset realmRuleset) {
+            realm = realmRuleset.getRealm();
+        } else if (jsonRuleset instanceof AssetRuleset assetRuleset) {
+            realm = assetRuleset.getRealm();
+        }
+        return realm;
+    }
+
+    protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AssetState<?>>> assetStates, boolean isHtml, boolean isJson) {
 
         StringBuilder sb = new StringBuilder();
         if (isHtml) {
@@ -1084,7 +1157,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }));
         }
 
-        return sb.toString();
+        return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, RuleState ruleState, Assets assetsFacade, Users usersFacade, RulesFacts facts) {
@@ -1101,7 +1174,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return triggerState != null ? triggerState.getUnmatchedAssetIds() : Collections.emptyList();
             }
 
-            if (conditionStateMap != null && (target.matchedAssets != null || (target.linkedUsers != null && target.linkedUsers))) {
+            if (conditionStateMap != null && target.matchedAssets != null) {
                 List<String> compareAssetIds = conditionStateMap.values().stream()
                     .flatMap(triggerState ->
                         useUnmatched ? triggerState.getUnmatchedAssetIds().stream() : triggerState.getMatchedAssetIds().stream()).toList();
@@ -1113,18 +1186,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .filter(compareAssetIds::contains)
                         .collect(Collectors.toList());
                 }
-
-                // Find linked users - apply any user query if it is present or create a new one
-                UserQuery userQuery = target.users != null ? target.users : new UserQuery();
-                if (userQuery.assets == null) {
-                    userQuery.assets = compareAssetIds.toArray(String[]::new);
-                } else {
-                    List<String> assetIds = new ArrayList<>(Arrays.asList(userQuery.assets));
-                    assetIds.addAll(compareAssetIds);
-                    userQuery.assets = assetIds.toArray(String[]::new);
-                }
-
-                return usersFacade.getResults(userQuery).collect(Collectors.toList());
             }
 
             if (target.assets != null) {
