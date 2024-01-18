@@ -988,8 +988,10 @@ Resources:
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEvent-Router", "instance_name", "${Host}", { "id": "m1", "label": "Success" } ],
-                  [ ".", "or_camel_route_failed_queue_full_total", "instance_name", "${Host}", { "id": "m2", "label": "Fail (Queue Full)" } ]
+                  [ { "expression": "m1/PERIOD(m1)", "label": "Success [/s]", "id": "e1", "region": "eu-west-1" } ],
+                  [ { "expression": "m2/PERIOD(m2)", "label": "Fail (Queue Full) [/s]", "id": "e2", "region": "eu-west-1" } ],
+                  [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEvent-Router", "instance_name", "${Host}", { "id": "m1", "label": "Success", "visible": false } ],
+                  [ ".", "or_camel_route_failed_queue_full_total", "instance_name", "${Host}", { "id": "m2", "label": "Fail (Queue Full)", "visible": false } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
