@@ -508,7 +508,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
             }
         } catch (Exception e) {
-            LOG.log(WARNING, "Couldn't send AttributeEvent to MQTT client", e);
+            LOG.log(WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
         }
     }
 

@@ -396,7 +396,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 String sessionKey = getSessionKey(exchange);
                 SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
                 if (sessionInfo == null) {
-                    LOG.log(INFO, "Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
+                    LOG.log(INFO, "Cannot send to requested session it doesn't exist or is disconnected: " + sessionKey);
                     return;
                 }
                 exchange.getIn().setHeader(HEADER_CONNECTION_TYPE, sessionInfo.connectionType);
@@ -544,7 +544,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             LOG.log(TRACE, () -> "Sending to session '" + sessionKey + "': " + data);
             SessionInfo sessionInfo = sessionKeyInfoMap.get(sessionKey);
             if (sessionInfo == null) {
-                LOG.log(INFO, "Cannot send to requested session it doesn't exist or is disconnected:" + sessionKey);
+                LOG.log(DEBUG, () -> "Send to session '" + sessionKey + "' failed, it doesn't exist or is disconnected: " + data);
                 return;
             }
             messageBrokerService.getFluentProducerTemplate()
