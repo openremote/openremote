@@ -381,7 +381,8 @@ Resources:
               content: !Sub |
                 # Prometheus scrape config file
                 global:
-                  scrape_interval: 1m
+                  # Note the interval must match what is used in cloudwatch graphs
+                  scrape_interval: 5m
                   scrape_timeout: 10s
                 scrape_configs:
                   - job_name: proxy
