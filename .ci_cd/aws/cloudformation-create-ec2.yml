@@ -264,7 +264,7 @@ Resources:
                         "resources": [
                           "/"
                         ],
-                        "metrics_collection_interval": 3600
+                        "metrics_collection_interval": 1800
                       }
                     }
                   },
@@ -907,8 +907,8 @@ Resources:
       Namespace: CWAgent
       MetricName: disk_used_percent
       Statistic: Average
-      Period: 600
-      EvaluationPeriods: 3
+      Period: 3600
+      EvaluationPeriods: 1
       ComparisonOperator: GreaterThanThreshold
       Threshold: 90
       AlarmActions:
