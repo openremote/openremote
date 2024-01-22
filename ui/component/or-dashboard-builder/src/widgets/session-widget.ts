@@ -103,19 +103,6 @@ export class SessionWidget extends OrWidget {
 
     public async connectedCallback(){
         super.connectedCallback();
-        if (!this.isValidConfig(this.widgetConfig)) return;
-
-        const sessionStore: TripData[] = await this._loadSessions();
-        const overviewData: any[] = [];
-
-        for (const [index, value] of this.sessions.entries()) {
-            sessionStore[index] = await this._loadDatapoints(value, index)
-
-        }
-
-        this.sessions = sessionStore;
-
-        console.log(this.sessions)
     }
 
     public async refreshContent(force: boolean) {
