@@ -16,9 +16,11 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {AlarmStatus, Realm} from "@openremote/model";
+import {Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
+import * as Model from "@openremote/model";
+
 
 export {DEFAULT_LANGUAGES, Languages}
 
@@ -354,7 +356,7 @@ export class OrHeader extends LitElement {
 
     private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
 
-    private intervalId?: number;
+    private _eventSubscriptionId?: string;
 
     public _onRealmSelect(realm: string) {
         this.store.dispatch(updateRealm(realm));
@@ -369,15 +371,26 @@ export class OrHeader extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this.intervalId = window.setInterval(() => {
-            this._getAlarmButton().then(() => this.updateComplete);
-        }, 1500);
+        this._subscribeEvents().then();
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        if (this.intervalId) {
-            window.clearInterval(this.intervalId);
+        this._unsubscribeEvents();
+    }
+
+    protected async _subscribeEvents() {
+        if (manager.events) {
+            this._eventSubscriptionId = await manager.events.subscribe<AlarmEvent>({
+                eventType: "alarm"
+            }, (ev) => this._getAlarmButton());
+        }
+    }
+
+    protected _unsubscribeEvents() {
+        if (this._eventSubscriptionId) {
+            manager.events!.unsubscribe(this._eventSubscriptionId);
+            this._eventSubscriptionId = undefined;
         }
     }
 
@@ -486,6 +499,7 @@ export class OrHeader extends LitElement {
 
     protected async _getAlarmButton() {
         let newAlarms= false;
+        console.log('Event triggered');
         if(manager.isRestrictedUser()){
             // TODO Filter alarms by linked assets
         }
