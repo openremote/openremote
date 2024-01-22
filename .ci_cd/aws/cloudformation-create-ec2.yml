@@ -994,7 +994,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "Attr Events Processed",
-                "stat": "Maximum",
+                "stat": "Sum",
                 "period": 300,
                 "yAxis": {
                   "left": {
@@ -1044,7 +1044,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "Proxy Active Sessions",
-                "stat": "Maximum",
+                "stat": "Sum",
                 "period": 300
               }
             },
@@ -1087,7 +1087,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "Proxy I/O",
-                "stat": "Average",
+                "stat": "Sum",
                 "period": 300
               }
             },
@@ -1106,7 +1106,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "HTTP Error Responses",
-                "stat": "Maximum",
+                "stat": "Sum",
                 "period": 300
               }
             },
@@ -1125,7 +1125,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "EBS Operations",
-                "stat": "Average",
+                "stat": "Sum",
                 "period": 300
               }
             },
@@ -1144,7 +1144,7 @@ Resources:
                 "stacked": false,
                 "region": "${AWS::Region}",
                 "title": "EBS Bytes",
-                "stat": "Average",
+                "stat": "Sum",
                 "period": 300
               }
             },
@@ -1160,13 +1160,13 @@ Resources:
                   [ ".", "EBSByteBalance%", ".", ".", { "label": "EBS Byte Balance %" } ],
                   [ ".", "CPUCreditBalance", ".", ".", { "yAxis": "right", "label": "CPU Credit Balance" } ],
                   [ ".", "CPUUtilization", ".", ".", { "label": "CPU Utilization %", "stat": "Maximum" } ],
-                  [ "CWAgent", "mem_used_percent", ".", ".", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", { "label": "Memory Usage %", "stat": "Average" } ],
-                  [ ".", "disk_used_percent", "path", "/", "InstanceId", "i-0c9e821c9865e70ea", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", "fstype", "xfs", { "label": "Disk Usage %", "stat": "Average" } ]
+                  [ "CWAgent", "mem_used_percent", ".", ".", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", { "label": "Memory Usage %", "period": 900 } ],
+                  [ ".", "disk_used_percent", "path", "/", "InstanceId", "i-0c9e821c9865e70ea", "ImageId", "ami-062cd09187a31b743", "InstanceType", "t4g.small", "fstype", "xfs", { "label": "Disk Usage %", "period": 1800 } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "${AWS::Region}",
-                "stat": "Minimum",
+                "stat": "Average",
                 "period": 300,
                 "title": "EC2 Stats"
               }
@@ -1186,7 +1186,7 @@ Resources:
                 "stacked": false,
                 "title": "Notifications",
                 "region": "${AWS::Region}",
-                "stat": "Maximum",
+                "stat": "Sum",
                 "period": 300,
                 "yAxis": {
                   "left": {
