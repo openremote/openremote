@@ -169,9 +169,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected onVisibilityChange(ev: Event) {
         console.log(`Visibility change! The manager is now ${document.visibilityState}`);
         if(document.visibilityState === "visible") {
-            this._onEvent(OREvent.CONSOLE_VISIBLE);
+            this._onEventBind(OREvent.CONSOLE_VISIBLE);
+            /* this._onEvent(OREvent.CONSOLE_VISIBLE); */
         } else {
-            this._onEvent(OREvent.CONSOLE_HIDDEN);
+            this._onEventBind(OREvent.CONSOLE_HIDDEN);
+            /* this._onEvent(OREvent.CONSOLE_HIDDEN); */
         }
     }
 
