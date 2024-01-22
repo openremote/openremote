@@ -273,6 +273,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _refresh?: number;
     protected _pageCount?: number;
     protected _currentPage: number = 1;
+
+    @state()
     protected _selected?: TableRow[];
 
     get name(): string {
@@ -284,7 +286,23 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     public connectedCallback() {
-        this._loadData();
+        this._loadData().then(() => {
+            setTimeout(() => {
+                const elem = this.shadowRoot.querySelector('or-mwc-table') as OrMwcTable;
+                elem.paginationSize = 100;
+                const checkboxes = elem?.shadowRoot?.querySelectorAll('[id*="checkbox"]');
+                if(checkboxes.length > 0){
+                    checkboxes.forEach((select, index) => {
+                        const inner = select.shadowRoot?.querySelector("input[type=checkbox]");
+                        inner?.addEventListener('change', function() {
+                            this._selected = elem.selectedRows;
+                            console.log(this._selected);
+                        }.bind(this));
+
+                    })
+                }
+            }, 1000);
+        });
         super.connectedCallback();
     }
 
@@ -295,79 +313,83 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected updated(changedProperties: Map<string, any>) {
         setTimeout(() => {
-            if(!this.alarm && !this.creationState) {
-                const elem = this.shadowRoot!.querySelector('or-mwc-table');
-                const rows = elem.shadowRoot!.querySelectorAll('tr');
-                rows.forEach(row => {
-                    const spans = row.querySelectorAll('td span');
-                    spans.forEach((span, columnIndex) => {
-                        span = span as HTMLElement;
-                        if (columnIndex == 4 || columnIndex == 3) {
-                            span.parentElement.style.width = '185px';
-                            span.parentElement.style.maxWidth = '185px';
-                            span.parentElement.style.position = 'sticky';
-                            span.parentElement.style.right = '0';
-                        }
-                        switch (span.textContent) {
-                            case 'LOW':
-                                if(columnIndex == 0){
-                                    span.innerHTML = '<or-icon style="color: green;" icon="numeric-3-box"></or-icon>';
-                                    span.parentElement.style.width = '1%';
-                                    span.parentElement.style.padding = '2px';
+            if(!this.alarm && !this.creationState && this.shadowRoot) {
+                const elem = this.shadowRoot.querySelector('or-mwc-table') as OrMwcTable;
+                const rows = elem?.shadowRoot?.querySelectorAll('tr');
+                if(rows){
+                    rows.forEach(row => {
+                        const spans = row.querySelectorAll('td span');
+                        if(spans){
+                            spans.forEach((span, columnIndex) => {
+                                span = span as HTMLElement;
+                                if (columnIndex == 4 || columnIndex == 3) {
+                                    span.parentElement.style.width = '185px';
+                                    span.parentElement.style.maxWidth = '185px';
+                                    span.parentElement.style.position = 'sticky';
+                                    span.parentElement.style.right = '0';
                                 }
-                                break;
-                            case 'MEDIUM':
-                                if(columnIndex == 0){
-                                    span.innerHTML = '<or-icon style="color: orange;" icon="numeric-2-box"></or-icon>';
-                                    span.parentElement.style.width = '1%';
-                                    span.parentElement.style.padding = '2px';
+                                switch (span.textContent) {
+                                    case 'LOW':
+                                        if(columnIndex == 0){
+                                            span.innerHTML = '<or-icon style="color: green;" icon="numeric-3-box"></or-icon>';
+                                            span.parentElement.style.width = '1%';
+                                            span.parentElement.style.padding = '2px';
+                                        }
+                                        break;
+                                    case 'MEDIUM':
+                                        if(columnIndex == 0){
+                                            span.innerHTML = '<or-icon style="color: orange;" icon="numeric-2-box"></or-icon>';
+                                            span.parentElement.style.width = '1%';
+                                            span.parentElement.style.padding = '2px';
+                                        }
+                                        break;
+                                    case 'HIGH':
+                                        if(columnIndex == 0){
+                                            span.innerHTML = '<or-icon style="color: red;" icon="numeric-1-box"></or-icon>';
+                                            span.parentElement.style.width = '1%';
+                                            span.parentElement.style.padding = '2px';
+                                        }
+                                        break;
+                                    case 'Open':
+                                        if(columnIndex == 2){
+                                            span.innerHTML = '<span style="color: white;' +
+                                                'padding: 4px;' +
+                                                'background-color: mediumblue;' +
+                                                'border-radius: 5px;">Open</span>';
+                                            span.parentElement.style.width = '125px';
+                                        }
+                                        break;
+                                    case 'Acknowledged':
+                                        if(columnIndex == 2){
+                                            span.innerHTML = '<span style="border: 1px mediumblue solid;' +
+                                                'padding: 4px;' +
+                                                'border-radius: 5px;">Acknowledged</span>';
+                                            span.parentElement.style.width = '125px';
+                                        }
+                                        break;
+                                    case 'In_progress':
+                                        if(columnIndex == 2){
+                                            span.innerHTML = '<span style="color: white;' +
+                                                'padding: 4px;' +
+                                                'background-color: green;' +
+                                                'border-radius: 5px;">In progress</span>';
+                                            span.parentElement.style.width = '125px';
+                                        }
+                                        break;
+                                    case 'Closed':
+                                        if(columnIndex == 2){
+                                            span.innerHTML = '<span style="border: 1px grey solid;' +
+                                                'padding: 4px;' +
+                                                'border-radius: 5px;' +
+                                                'color: grey;">Closed</span>';
+                                            span.parentElement.style.width = '125px';
+                                        }
+                                        break;
                                 }
-                                break;
-                            case 'HIGH':
-                                if(columnIndex == 0){
-                                    span.innerHTML = '<or-icon style="color: red;" icon="numeric-1-box"></or-icon>';
-                                    span.parentElement.style.width = '1%';
-                                    span.parentElement.style.padding = '2px';
-                                }
-                                break;
-                            case 'Open':
-                                if(columnIndex == 2){
-                                    span.innerHTML = '<span style="color: white;' +
-                                        'padding: 4px;' +
-                                        'background-color: mediumblue;' +
-                                        'border-radius: 5px;">Open</span>';
-                                    span.parentElement.style.width = '125px';
-                                }
-                                break;
-                            case 'Acknowledged':
-                                if(columnIndex == 2){
-                                    span.innerHTML = '<span style="border: 1px mediumblue solid;' +
-                                        'padding: 4px;' +
-                                        'border-radius: 5px;">Acknowledged</span>';
-                                    span.parentElement.style.width = '125px';
-                                }
-                                break;
-                            case 'In_progress':
-                                if(columnIndex == 2){
-                                    span.innerHTML = '<span style="color: white;' +
-                                        'padding: 4px;' +
-                                        'background-color: green;' +
-                                        'border-radius: 5px;">In progress</span>';
-                                    span.parentElement.style.width = '125px';
-                                }
-                                break;
-                            case 'Closed':
-                                if(columnIndex == 2){
-                                    span.innerHTML = '<span style="border: 1px grey solid;' +
-                                        'padding: 4px;' +
-                                        'border-radius: 5px;' +
-                                        'color: grey;">Closed</span>';
-                                    span.parentElement.style.width = '125px';
-                                }
-                                break;
+                            });
                         }
                     });
-                });
+                }
             }
         }, );
     }
@@ -384,17 +406,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
             || changedProperties.has("status")
             || changedProperties.has("filter")
             || changedProperties.has("sort")
-            || changedProperties.has("hide")) {
+            || changedProperties.has("hide")
+            || changedProperties.has("allActive")) {
             this._pageCount = undefined;
             this._currentPage = 1;
             this._data = undefined;
         }
 
         if (!this._data) {
-            this._loadData();
+            this._loadData().then();
         }
-
-
 
         return super.shouldUpdate(changedProperties);
     }
@@ -517,6 +538,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                  style="justify-content: flex-end;">
                                 <or-mwc-input
                                         outlined
+                                        class="${this._selected?.length > 0 ? "" : "hidden"}"
                                         style="margin: 0;"
                                         type="${InputType.BUTTON}"
                                         icon="delete"
@@ -546,6 +568,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                                     </div>`}
                                     </div>`
                 )}
+                
         `;
     }
 
@@ -730,12 +753,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     >${i18next.t("alarm.alarm_plural")}</span>
                     <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
                     <span style="margin-left: 2px;"
-                    >${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.creatingAlarm")}</span>
+                    >${this.alarm != undefined ? this.alarm.id : i18next.t("alarm.creatingAlarm")}</span>
                 </div>
                 <div style="justify-content: flex-start; margin-top: 10px; margin-bottom: 10px">
                     <div style="font-size: 18px; font-weight: bold;">
                         <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
-                        <span> ${this.alarm != undefined ? this.alarm.id : i18next.t("alarm.alarm_plural")} </span>
+                        <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
                     </div>
                 </div>
                        
@@ -744,7 +767,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         <div class="column" id="details-panel">
                             <h5>${i18next.t("details").toUpperCase()}</h5>
                             <!-- alarm details -->
-                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                       .label="${i18next.t("alarm.title")}"
                                       .type="${InputType.TEXT}"
                                       .value="${alarm.title}"
@@ -753,7 +776,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         this.onAlarmChanged(e);
                                       }}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                       .label="${i18next.t("alarm.content")}"
                                       .type="${InputType.TEXTAREA}"
                                       .value="${alarm.content}"
@@ -766,17 +789,25 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         </div>
                         <div class="column" id="prop-panel">
                             <h5>${i18next.t("properties").toUpperCase()}</h5>
-                            <or-mwc-input class="alarm-input" ?readonly="${true}"
+                            <or-mwc-input class="alarm-input" ?disabled="${true}"
+                                          ?comfortable=${!this.creationState}
                                   .label="${i18next.t("createdOn")}"
                                   .type="${InputType.DATETIME}"
                                   .value="${new Date(alarm.createdOn)}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?readonly="${true}"
+                            <or-mwc-input class="alarm-input" ?disabled="${true}"
+                                          ?comfortable=${!this.creationState}
                                   .label="${i18next.t("alarm.lastModified")}"
                                   .type="${InputType.DATETIME}"
                                   .value="${new Date(alarm.lastModified)}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
+                            <or-mwc-input class=${this.creationState ? "hidden" : "alarm-input"} ?disabled="${true}"
+                                          comfortable
+                                      .label="${i18next.t("alarm.source")}"
+                                      .type="${InputType.TEXT}"
+                                      .value="${alarm.source}"
+                            ></or-mwc-input>
+                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                   .label="${i18next.t("alarm.severity")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getAddSeverityOptions().map( s => s.label)}"
@@ -786,7 +817,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         this.onAlarmChanged(e);
                                   }}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?readonly="${!write}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                   .label="${i18next.t("alarm.status")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getAddStatusOptions().map( s => s.label)}"
@@ -796,7 +827,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         this.onAlarmChanged(e);
                                   }}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?readonly="${!manager.hasRole("read:admin")}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!manager.hasRole("read:admin")}"
                                   .label="${i18next.t("alarm.assignee")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getUsers().map((obj) => obj.label)}"
@@ -829,6 +860,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   @click="${() => this._deleteAlarm(this.alarm)}"
                         ></or-mwc-input>
                         `)}
+                        <div>
+<!--                            <span style="padding-right: 6px; font-weight: bold">Created on ${new Date(alarm.createdOn).toLocaleString()}</span>-->
                         <or-mwc-input id="savebtn"
                                   style="margin: 0;"
                                   raised class="alarm-input"
@@ -836,25 +869,26 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .label="${i18next.t(alarm.id ? "save" : "create")}"
                                   .type="${InputType.BUTTON}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      let error: { status?: number; text: string };
-                                      this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
-                                            .then(() => {
-                                            showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
-                                            this.reset();
-                                        }).catch((ex) => {
-                                            if (isAxiosError(ex)) {
-                                                error = {
-                                                    status: ex.response.status,
-                                                    text:
-                                                        ex.response.status == 403
-                                                                ? i18next.t("alarm.alarmAlreadyExists")
-                                                                : i18next.t("errorOccurred"),};
-                                            }
-                                        }).finally(() => {
-                                            this._saveAlarmPromise = undefined;
-                                        });
-                                  }}"
+                        let error: { status?: number; text: string };
+                        this._saveAlarmPromise = this._createUpdateAlarm(alarm, alarm.id ? "update" : "create")
+                                .then(() => {
+                                    showSnackbar(undefined, i18next.t("alarm.saveAlarmSucceeded"));
+                                    this.reset();
+                                }).catch((ex) => {
+                                    if (isAxiosError(ex)) {
+                                        error = {
+                                            status: ex.response.status,
+                                            text:
+                                                    ex.response.status == 403
+                                                            ? i18next.t("alarm.alarmAlreadyExists")
+                                                            : i18next.t("errorOccurred"),};
+                                    }
+                                }).finally(() => {
+                                    this._saveAlarmPromise = undefined;
+                                });
+                    }}"
                         ></or-mwc-input>
+                        </div>
                     </div>`)}
                 </div>
             </div>
@@ -907,13 +941,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
     }
 
-    protected _onHideChanged(hide: boolean) {
-        this.hide = hide;
-        this.severity = undefined;
-        this.status = undefined;
-        this.assign = false;
-    }
-
     protected _onStatusChanged(status: any) {
         if(status == 'All'){
             this.status = undefined;
@@ -954,6 +981,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _onAddClick() {
         this.creationState = {alarmModel: this.getNewAlarmModel()};
         this.requestUpdate();
+    }
+
+    protected _onSelectClick() {
+        const elem = this.shadowRoot?.querySelector('or-mwc-table');
+        if(elem){
+            this._selected = (elem as OrMwcTable).selectedRows as TableRow[];
+        }
     }
 
     protected _getUsers() {
