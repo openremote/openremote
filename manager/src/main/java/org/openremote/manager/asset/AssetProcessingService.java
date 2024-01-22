@@ -87,7 +87,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
     public static final String ATTRIBUTE_EVENT_ROUTER_QUEUE = "seda://AttributeEventRouter?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=false&discardIfNoConsumers=false&size=10000";
     public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
-    public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
     protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
     protected static final String EVENT_PROCESSOR_URI_PREFIX = "seda://AttributeEventProcessor";
     protected static final String EVENT_PROCESSOR_URI_SUFFIX = "?size=3000&timeout=10000";
