@@ -96,6 +96,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _activeMenu?: string;
 
     protected _onEventBind?: any;
+    protected _onVisibilityBind?: any;
     protected _realms!: Realm[];
     protected _offlineDeferred?: Util.Deferred<void>;
     protected _store: Store<S, AnyAction>;
@@ -169,24 +170,25 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected onVisibilityChange(ev: Event) {
         console.log(`Visibility change! The manager is now ${document.visibilityState}`);
         if(document.visibilityState === "visible") {
-            this._onEventBind(OREvent.CONSOLE_VISIBLE);
-            /* this._onEvent(OREvent.CONSOLE_VISIBLE); */
+            this._onEvent(OREvent.CONSOLE_VISIBLE);
         } else {
-            this._onEventBind(OREvent.CONSOLE_HIDDEN);
-            /* this._onEvent(OREvent.CONSOLE_HIDDEN); */
+            this._onEvent(OREvent.CONSOLE_HIDDEN);
         }
     }
 
     connectedCallback() {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
-        document.addEventListener("visibilitychange", this.onVisibilityChange);
+        this._onVisibilityBind = this.onVisibilityChange.bind(this);
+        document.addEventListener("visibilitychange", this._onVisibilityBind);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        document.removeEventListener("visibilityChange", this.onVisibilityChange);
+        if(this._onVisibilityBind) {
+            document.removeEventListener("visibilityChange", this._onVisibilityBind);
+        }
         if(this._onEventBind) {
             manager.removeListener(this._onEventBind);
         }
