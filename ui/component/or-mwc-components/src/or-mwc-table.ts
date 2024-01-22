@@ -240,7 +240,7 @@ export class OrMwcTable extends LitElement {
     protected paginationIndex: number = 0;
 
     @property({type: Number})
-    protected paginationSize: number = 10;
+    public paginationSize: number = 10;
 
     @state()
     protected _dataTable?: MDCDataTable;
@@ -313,7 +313,7 @@ export class OrMwcTable extends LitElement {
                                             <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
                                                 role="columnheader" scope="col">
                                                 <div class="">
-                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
+                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
                                                                   class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
                                                                   .indeterminate="${this.indeterminate}"
                                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" .value="${this.allSelected}">
@@ -524,15 +524,24 @@ export class OrMwcTable extends LitElement {
     protected onCheckChanged(checked: boolean, type: "all" | "single", item?: any) {
         let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
         if (type === "all") {
-            if(checked) {
-                this.selectedRows! = this.rows ? (this.rows as any[])
-                    .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize))) : [];
-                this.indeterminate = false;
+            let checkboxes = this.shadowRoot?.querySelectorAll('[id*="checkbox"]');
+            if (checked && checkboxes) {
+                console.log(checkboxes);
+                for (let i = 1; i < checkboxes.length; i++) {
+                    const inner = checkboxes[i].shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
+                    console.log(inner);
+                    inner.checked = true;
+                    console.log(inner);
+                }
+                this.selectedRows = this.rows;
                 this.allSelected = true;
-
-            }
-            else {
-                this.selectedRows! = [];
+                this.indeterminate = false;
+            } else if(checkboxes) {
+                for (let i = 0; i < checkboxes.length; i++) {
+                    const inner = checkboxes[i].shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
+                    inner.checked = false;
+                }
+                this.selectedRows = [];
                 this.allSelected = false;
                 this.indeterminate = false;
             }
@@ -541,9 +550,6 @@ export class OrMwcTable extends LitElement {
             if(checked) {
                 if(this.selectedRows!.indexOf(item) === -1) {
                     this.selectedRows!.push(item);
-                    this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
-                    this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
-                    this.requestUpdate("selectedRows");
                 }
             }
             else {

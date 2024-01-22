@@ -6,11 +6,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
-import org.openremote.model.alarm.Alarm;
-import org.openremote.model.alarm.AlarmAssetLink;
-import org.openremote.model.alarm.AlarmUserLink;
+import org.openremote.model.alarm.*;
 import org.openremote.model.alarm.Alarm.Status;
-import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -36,6 +33,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+
 
 import static java.util.logging.Level.FINE;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
