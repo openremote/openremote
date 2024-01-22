@@ -111,7 +111,6 @@ export class SessionWidget extends OrWidget {
 
     async firstUpdated(changedProperties: Map<string, any>) {
         super.update(changedProperties);
-        console.log(changedProperties);
         if (!this.isValidConfig(this.widgetConfig)) return;
 
         const sessionStore: TripData[] = await this._loadSessions();

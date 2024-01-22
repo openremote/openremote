@@ -913,11 +913,9 @@ export class MapWidget {
 
     public async getGeoJsonFeature(query: {query: string}){
         // let gc: MaplibreGeocoder. = this._geocoder;
-        return this._forwardGeocode({query: "Boschdijk 36 H"});
     }
     public async getAddress(query: {lat: number, lon: number}){
         // let gc: MaplibreGeocoder. = this._geocoder;
-        // return this._forwardGeocode({query: "Boschdijk 36 H"});
         return this._reverseGeocode(query);
     }
 
