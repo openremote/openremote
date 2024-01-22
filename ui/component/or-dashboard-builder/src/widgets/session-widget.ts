@@ -26,8 +26,8 @@ import { until } from "lit/directives/until.js";
 export interface SessionWidgetConfig extends WidgetConfig {
     period?: 'year' | 'month' | 'week' | 'day' | 'hour';
     analysisType?: AnalysisType[];
-    InputRef?: AttributeRef[];
-    OutputRef?: AttributeRef[];
+    InputRef?: {ref: AttributeRef[], type?: string };
+    OutputRef?: {ref: AttributeRef[], type?: string };
     showTimestampControls: boolean;
     customFieldOne: string;
     customFieldTwo: number;
@@ -39,16 +39,16 @@ export interface AnalysisType {
 }
 
 export enum PointAnalysisTypes {
-    'Displacement', "Distance", "Average Speed", "Count", "Overview"
+    DISPLACEMENT = "Displacement", DISTANCE = "Distance", AVERAGE_SPEED = "Average Speed", COUNT = "Count", OVERVIEW = "Overview"
 }
 export enum NumberAnalysisTypes {
-    "Difference", "Sum", "Count", "Maximum", "Minimum", "Average"
+    DIFFERENCE = "Difference", SUM = "Sum", COUNT = "Count", MAXIMUM = "Maximum", MINIMUM = "Minimum", AVERAGE = "Average"
 }
 
 function getDefaultWidgetConfig(): SessionWidgetConfig {
     return {
         period: 'day',
-        analysisType: [{number: NumberAnalysisTypes.Minimum}],
+        analysisType: [{number: NumberAnalysisTypes.MINIMUM}],
         showTimestampControls: false,
         customFieldOne: "default text",
         customFieldTwo: 0
@@ -159,12 +159,15 @@ export class SessionWidget extends OrWidget {
         const analysisType = (type: AnalysisType) => {
             return this.widgetConfig.analysisType![0].Geo_JSONPoint != undefined ? this.widgetConfig.analysisType![0].Geo_JSONPoint : this.widgetConfig.analysisType![0].number!
         }
-        const analysisTypeLabel = (type: AnalysisType) => {
-            return this.widgetConfig.analysisType![0].Geo_JSONPoint != undefined ? PointAnalysisTypes[this.widgetConfig.analysisType![0].Geo_JSONPoint] : NumberAnalysisTypes[this.widgetConfig.analysisType![0].number!]
+        const analysisTypeLabel = (type: AnalysisType) : string => {
+            return this.widgetConfig.analysisType![0].Geo_JSONPoint != undefined ? this.widgetConfig.analysisType![0].Geo_JSONPoint! as PointAnalysisTypes : this.widgetConfig.analysisType![0].number! as NumberAnalysisTypes
         }
 
         const columnHeaders: string[] = ["Start Time", "End Time", "Duration"];
-        this.widgetConfig.analysisType?.map((type) => columnHeaders.push(`${label ? label : this.asset!.name} - ${type}`))
+        this.widgetConfig.analysisType?.map((type) => {
+            const typeString = type.Geo_JSONPoint == undefined ? type.number?.toString() : type.Geo_JSONPoint.toString();
+            columnHeaders.push(`${label ? label : this.asset!.name} - ${typeString + ""}`)
+        })
         const columns: TableColumn[] = columnHeaders.map((header: string) => {
             return {
                 title: header,
@@ -219,15 +222,18 @@ export class SessionWidget extends OrWidget {
 
         if(type.Geo_JSONPoint != undefined){
 
+            const parsedType: PointAnalysisTypes = type.Geo_JSONPoint as PointAnalysisTypes;
+
             const pointArray = array as GeoJSONPoint[];
             const totalDistance: number = pointArray.reduce((sum, pointA, i, arr) => i ==0 ? 0 : sum+calculateDistance(arr[i - 1],pointA), 0)
             const duration: number = moment.duration(moment(data.trip.y?.endTime).diff(moment(data.trip.y?.startTime))).asHours()
 
-            if(type.Geo_JSONPoint == PointAnalysisTypes["Average Speed"]) return html`${totalDistance/duration} km/h`;
-            if(type.Geo_JSONPoint == PointAnalysisTypes.Displacement) return html`${calculateDistance(pointArray[0], pointArray.at(-1)!)} km`;
-            if(type.Geo_JSONPoint == PointAnalysisTypes.Count) return html`${pointArray.length} points`;
-            if(type.Geo_JSONPoint == PointAnalysisTypes.Distance) return html`${totalDistance} km`;
-            if(type.Geo_JSONPoint == PointAnalysisTypes.Overview) {
+            if(parsedType == PointAnalysisTypes.AVERAGE_SPEED) return html`${totalDistance/duration} km/h`;
+            if(parsedType == PointAnalysisTypes.DISPLACEMENT) return html`${calculateDistance(pointArray[0], pointArray.at(-1)!)} km`;
+            if(parsedType == PointAnalysisTypes.COUNT) return html`${pointArray.length} points`;
+            if(parsedType == PointAnalysisTypes.DISTANCE) return html`${totalDistance} km`;
+            if(parsedType == PointAnalysisTypes.OVERVIEW) {
+                if(!(pointArray.length >= 2)) return html`Less than two points between the two timestamps`;
                 const lastPoint = pointArray[0];
                 const firstPoint = pointArray.at(-1)!;
 
@@ -250,17 +256,21 @@ export class SessionWidget extends OrWidget {
                 </span>
                 `
             }
-        }else if (type.number != undefined){
+        }
+        else if (type.number != undefined){
+            const parsedType: NumberAnalysisTypes = type.number as NumberAnalysisTypes;
+
             const numArray = array as number[];
 
             const sum: number = numArray.reduce((a, b) => a + b, 0);
 
-            if(type.number == NumberAnalysisTypes.Sum || type.number == NumberAnalysisTypes.Difference) return html`<span>${sum}</span>`
-            if(type.number == NumberAnalysisTypes.Average) return html`<span>${sum/numArray.length}</span>`
-            if(type.number == NumberAnalysisTypes.Count) return html`<span>${numArray.length} points</span>`
-            if(type.number == NumberAnalysisTypes.Maximum) return html`<span>${Math.max(...numArray)}</span>`
-            if(type.number == NumberAnalysisTypes.Minimum) return html`<span>${Math.min(...numArray)}</span>`
-        }else{
+            if(parsedType == NumberAnalysisTypes.SUM || parsedType == NumberAnalysisTypes.DIFFERENCE) return html`<span>${sum}</span>`
+            if(parsedType == NumberAnalysisTypes.AVERAGE) return html`<span>${sum/numArray.length}</span>`
+            if(parsedType == NumberAnalysisTypes.COUNT) return html`<span>${numArray.length} points</span>`
+            if(parsedType == NumberAnalysisTypes.MAXIMUM) return html`<span>${Math.max(...numArray)}</span>`
+            if(parsedType == NumberAnalysisTypes.MINIMUM) return html`<span>${Math.min(...numArray)}</span>`
+        }
+        else{
             return html`<span>Data Type not implemented</span>`;
         }
         return html`<span>Data Type not implemented</span>`;
@@ -349,6 +359,7 @@ export class SessionSettings extends WidgetSettings {
         this.analysisTypes.set("number", Object.values(NumberAnalysisTypes) as string[])
     }
 
+
     protected render(): TemplateResult {
         const searchProvider: (search?: string) => Promise<[any, string][]> = async (search) => {
             return search ? this.analysisTypes.get(this.outputAttrType!)!.filter(o => o.toLowerCase().includes(search.toLowerCase())) : this.analysisTypes.get(this.outputAttrType!)! as any;
@@ -377,16 +388,13 @@ export class SessionSettings extends WidgetSettings {
                                       .attributeFilter="${attributeOutputFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onOutputAttributeSelect(ev)}"
                     ></attributes-panel>
-                    ${this.outputAttrType != undefined ? html`
-                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .disabled="${this.outputAttrType == undefined}"
-                                      .options="${this.analysisTypes.get(this.outputAttrType)}"
-                                      .value="${this.analysisTypeAction}" label="Analysis Type"
-                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onAnalysisSelect(ev)}"
-                        ></or-mwc-input>
-                        
-                        <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .disabled="${this.outputAttrType == undefined}"
-                                      .options="${this.analysisTypes.get(this.outputAttrType)}"
-                                      .value="${this.analysisTypeAction}" label="Analysis Type"
+                    ${this.widgetConfig.OutputRef?.type! != undefined ? html`
+                    <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" 
+                                      .options="${this.analysisTypes.get(this.widgetConfig.OutputRef?.type!)}"
+                                      .value="${this.widgetConfig.analysisType![0].number == undefined 
+                                              ? this.widgetConfig.analysisType![0].number 
+                                              : this.widgetConfig.analysisType![0].Geo_JSONPoint}" 
+                                  label="Analysis Type"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onAnalysisSelect(ev)}"
                         ></or-mwc-input>
                     ` : html`<span>Disabled</span>`}
@@ -442,11 +450,11 @@ export class SessionSettings extends WidgetSettings {
     }
 
     private onAnalysisSelect(ev: OrInputChangedEvent) {
-        if(this.outputAttrType == "GEO_JSONPoint"){
-            this.widgetConfig.analysisType = [{Geo_JSONPoint: ev.detail.value}]
+        if(this.widgetConfig.OutputRef?.type == "GEO_JSONPoint"){
+            this.widgetConfig.analysisType = [{Geo_JSONPoint: ev.detail.value as PointAnalysisTypes}]
         }
-        if(this.outputAttrType == "number"){
-            this.widgetConfig.analysisType = [{number: ev.detail.value}]
+        if(this.widgetConfig.OutputRef?.type == "number"){
+            this.widgetConfig.analysisType = [{number: ev.detail.value as NumberAnalysisTypes}]
         }
         console.log(this.widgetConfig.analysisType)
         this.notifyConfigUpdate();
