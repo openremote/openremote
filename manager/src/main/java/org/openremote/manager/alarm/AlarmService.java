@@ -34,6 +34,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
+
 import static java.util.logging.Level.FINE;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
@@ -143,14 +144,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             Notification.Target target = new Notification.Target(Notification.TargetType.USER, alarm.getAssignee());
             EmailNotificationMessage message = new EmailNotificationMessage();
             String address = persistenceService.doReturningTransaction(entityManager -> {
-                TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
-                query.setParameter("id", alarm.getAssignee());
-                return query.getSingleResult();
-            });
+                        TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
+                        query.setParameter("id", alarm.getAssignee());
+                        return query.getSingleResult();
+                    });
             message.setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
-                    "Description: " + alarm.getContent() + "\n" +
-                    "Severity: " + alarm.getSeverity() + "\n" +
-                    "Status: " + alarm.getStatus());
+                            "Description: " + alarm.getContent() + "\n" +
+                            "Severity: " + alarm.getSeverity() + "\n" +
+                            "Status: " + alarm.getStatus());
             message.setSubject("New Alarm Notification");
             message.setTo(address);
             output.setMessage(message);
@@ -200,11 +201,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 query.setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()));
                 query.setParameter("assigneeId", alarm.getAssigneeId());
                 query.executeUpdate();
-            });    
+            });
+            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
         } catch (Exception e) {
             String msg = "Failed to update alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
-            return;
         }
     }
 
@@ -547,5 +548,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             query.setParameter("status", status);
             query.executeUpdate();
         });
+
     }
 }

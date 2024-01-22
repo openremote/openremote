@@ -499,6 +499,7 @@ export class OrHeader extends LitElement {
 
     protected async _getAlarmButton() {
         let newAlarms= false;
+        console.log('Event triggered');
         if(manager.isRestrictedUser()){
             // TODO Filter alarms by linked assets
         }
