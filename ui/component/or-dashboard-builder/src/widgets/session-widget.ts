@@ -21,6 +21,8 @@ import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc
 import "@openremote/or-map"
 import { OrMap } from "@openremote/or-map";
 import { until } from "lit/directives/until.js";
+import * as nominatim from "../util/nominatim-browser"
+import {NominatimResponse} from "../util/nominatim-browser";
 
 
 export interface SessionWidgetConfig extends WidgetConfig {
