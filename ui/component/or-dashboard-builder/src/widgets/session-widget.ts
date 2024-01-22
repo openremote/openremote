@@ -52,6 +52,8 @@ function getDefaultWidgetConfig(): SessionWidgetConfig {
         period: 'day',
         analysisType: [{number: NumberAnalysisTypes.MINIMUM}],
         showTimestampControls: false,
+        InputRef: {ref: [], type: undefined},
+        OutputRef: {ref: [], type: undefined},
         customFieldOne: "default text",
         customFieldTwo: 0
     };
@@ -139,7 +141,8 @@ export class SessionWidget extends OrWidget {
     }
 
     isValidConfig = (config: SessionWidgetConfig): boolean => {
-        return config.InputRef != null && config.OutputRef != null
+        return config.InputRef?.ref.length == 1 && config.InputRef.type != undefined
+            && config.OutputRef?.ref.length == 1 && config.OutputRef.type != undefined
     }
 
     private tableConfig = {
@@ -157,7 +160,7 @@ export class SessionWidget extends OrWidget {
             <span>Invalid Configuration</span>`;
 
         //We need to get the OutputAttr's name...
-        const label: string | undefined = this.asset!.attributes![this.widgetConfig!.InputRef![0].name!].meta!["LABEL"];
+        const label: string | undefined = this.asset!.attributes![this.widgetConfig!.InputRef!.ref[0].name!].meta!["LABEL"];
         const analysisType = (type: AnalysisType) => {
             return this.widgetConfig.analysisType![0].Geo_JSONPoint != undefined ? this.widgetConfig.analysisType![0].Geo_JSONPoint : this.widgetConfig.analysisType![0].number!
         }
@@ -282,21 +285,20 @@ export class SessionWidget extends OrWidget {
     private async _loadSessions() : Promise<TripData[]> {
         let sessionStore: TripData[] = [];
 
-        const getAssetData = manager.rest.api.AssetResource.get(this.widgetConfig.InputRef![0].id)
-            .then((response) => {
-                this.asset = response.data;
+        manager.rest.api.AssetResource.queryAssets({ids: [this.widgetConfig.InputRef!.ref[0].id!]})
+            .then((response: { data: Asset[]; }) => {
+                this.asset = response.data[0];
                 const latestTrip  =this.asset!.attributes!["LastTripStartedAndEndedAt"]! as Attribute<AssetStateDuration>;
                 if (latestTrip.value != undefined && latestTrip.timestamp != undefined){
                     // sessionStore.push({trip: {x: latestTrip.timestamp, y: latestTrip.value}, points: []})
                 }
-                console.log("asset data loaded")
             })
             .catch((err) => console.log(err))
 
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-            this.widgetConfig.InputRef![0].id,
-            this.widgetConfig.InputRef![0].name,
+            this.widgetConfig.InputRef!.ref[0].id,
+            this.widgetConfig.InputRef!.ref[0].name,
             {
                 type: "all",
                 fromTimestamp: moment().startOf(this.widgetConfig.period as any).valueOf(),
@@ -316,8 +318,8 @@ export class SessionWidget extends OrWidget {
 
     private async _loadDatapoints(session: TripData, index: number) : Promise<TripData> {
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-            this.widgetConfig.OutputRef![0].id,
-            this.widgetConfig.OutputRef![0].name,
+            this.widgetConfig.OutputRef!.ref[0].id,
+            this.widgetConfig.OutputRef!.ref[0].name,
             {
                 type: "all",
                 fromTimestamp: moment(session.trip.y!.startTime).valueOf(),
@@ -347,9 +349,9 @@ export class SessionSettings extends WidgetSettings {
     protected readonly widgetConfig!: SessionWidgetConfig;
 
     @property({type: String})
-    private inputAttrType: string | undefined = "";
+    private inputAttrType: string | undefined = this.widgetConfig.InputRef != undefined ? this.widgetConfig.InputRef!.type : undefined;
     @property({type: String})
-    private outputAttrType: string | undefined = "";
+    private outputAttrType: string | undefined = this.widgetConfig.OutputRef != undefined ? this.widgetConfig.OutputRef!.type : undefined;
 
 
     public analysisTypes : Map<String, string[]> = new Map;
@@ -379,14 +381,14 @@ export class SessionSettings extends WidgetSettings {
             <div>
                 <!-- Attribute selector -->
                 <settings-panel displayName="Session Attribute" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.InputRef}" onlyDataAttrs="${false}"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.InputRef?.ref}" onlyDataAttrs="${false}"
                                       .attributeFilter="${attributeInputFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onInputAttributeSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
 
                 <settings-panel displayName="Output Attribute" expanded="${true}">
-                    <attributes-panel .attributeRefs="${this.widgetConfig.OutputRef}" onlyDataAttrs="${false}"
+                    <attributes-panel .attributeRefs="${this.widgetConfig.OutputRef?.ref}" onlyDataAttrs="${false}"
                                       .attributeFilter="${attributeOutputFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onOutputAttributeSelect(ev)}"
                     ></attributes-panel>
@@ -432,12 +434,36 @@ export class SessionSettings extends WidgetSettings {
     }
 
     protected onInputAttributeSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.InputRef = ev.detail.attributeRefs;
+        if(ev.detail.attributeRefs.length == 1){
+            let type: string = ev.detail.assets[0]!.attributes![ev.detail.attributeRefs[0].name!].type!;
+            // let type : string = this.getType(ev.detail.attributeRefs[0])!
+            this.widgetConfig.InputRef = {
+                ref: ev.detail.attributeRefs as AttributeRef[],
+                type: type
+            }
+        }else {
+            this.widgetConfig.InputRef = {
+                ref: ev.detail.attributeRefs as AttributeRef[],
+                type: undefined
+            }
+        }
         this.notifyConfigUpdate();
     }
 
     protected onOutputAttributeSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.OutputRef = ev.detail.attributeRefs;
+        if(ev.detail.attributeRefs.length == 1){
+            let type: string = ev.detail.assets[0]!.attributes![ev.detail.attributeRefs[0].name!].type!;
+            // let type: string = this.getType(ev.detail.attributeRefs![0])!;
+          this.widgetConfig.OutputRef = {
+                ref: ev.detail.attributeRefs as AttributeRef[],
+                type: type
+            }
+        }else {
+            this.widgetConfig.OutputRef = {
+                ref: ev.detail.attributeRefs as AttributeRef[],
+                type: undefined
+            }
+        }
         this.notifyConfigUpdate();
     }
 
@@ -461,6 +487,20 @@ export class SessionSettings extends WidgetSettings {
         console.log(this.widgetConfig.analysisType)
         this.notifyConfigUpdate();
     }
+
+    private getType(ref: AttributeRef): string | undefined {
+        manager.rest.api.AssetResource.queryAssets({
+            ids: [ref.id!]
+        })
+            .then((response) => {
+                let attr = response.data[0].attributes![ref.name!]
+                if(attr != undefined) return attr.type!;
+            })
+            .catch((err) => console.log(err))
+        return undefined;
+    }
+
+
 }
 
 export function toRadians(degrees: number): number {
