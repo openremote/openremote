@@ -147,7 +147,9 @@ export class SessionWidget extends OrWidget {
             enable: true
         }
     }
-
+    private getAddressFormat(addr: NominatimResponse){
+        return `${addr.address.road} ${addr.address.house_number}, ${addr.address.postcode} ${addr.address.city}, ${addr.address.country}`;
+    }
     protected render(): TemplateResult {
         if (!this.isValidConfig(this.widgetConfig) || this.sessions.length <= 0) return html`
             <span>Invalid Configuration</span>`;
@@ -228,21 +230,23 @@ export class SessionWidget extends OrWidget {
             if(type.Geo_JSONPoint == PointAnalysisTypes.Overview) {
                 const lastPoint = pointArray[0];
                 const firstPoint = pointArray.at(-1)!;
-                const startAddress = await _reverseGeocode({lat: firstPoint.coordinates![1], lon:firstPoint.coordinates![0]}, SessionWidget.geocodeUrl)
-                const endAddress = await _reverseGeocode({lat: lastPoint.coordinates![1], lon:lastPoint.coordinates![0]}, SessionWidget.geocodeUrl)
+
+
+                const startAddress: NominatimResponse = await nominatim.reverseGeocode({lat: firstPoint.coordinates![1].toString(), lon:firstPoint.coordinates![0].toString(), zoom: 18}, SessionWidget.geocodeUrl)!
+                const endAddress :NominatimResponse = await nominatim.reverseGeocode({lat: lastPoint.coordinates![1].toString(), lon:lastPoint.coordinates![0].toString(), zoom:18}, SessionWidget.geocodeUrl)!
 
                 // return html`${startAddress.features[0].properties.address.road} ${startAddress.features[0].properties.address.house_number} --> ${endAddress.features[0].properties.address.road} ${endAddress.features[0].properties.address.house_number}`
                 return html`<span>
-                    ${startAddress.features[0].properties.geocoding.label}
+                    ${this.getAddressFormat(startAddress)}
                 </span>
                 <br>
                 <span>
                     <or-icon icon="car-clock"></or-icon>
-                    ${totalDistance} km
+                    ${totalDistance.toFixed(2)} km
                 </span>
                 <br>        
                 <span>
-                    ${endAddress.features[0].properties.geocoding.label}
+                    ${this.getAddressFormat(endAddress)}
                 </span>
                 `
             }
@@ -453,9 +457,12 @@ export function toRadians(degrees: number): number {
     return degrees * Math.PI / 180;
 }
 
+// This is bad programming, but I can't really add a new library here, so I'm just using the actual math for
+// generating the distance between GeoJSONPoints.
 export function calculateDistance(point1: GeoJSONPoint, point2: GeoJSONPoint): number {
+    if(point1 == undefined || point2 == undefined) return 0;
     const R = 6371; // Radius of the Earth in kilometers
-    // console.log(point1.coordinates + "  " + point2.coordinates?)
+
     const lat1 = toRadians(point1.coordinates![1]);
     const lat2 = toRadians(point2.coordinates![1]);
     const deltaLat = toRadians(point2.coordinates![1] - point1.coordinates![1]);
@@ -469,24 +476,3 @@ export function calculateDistance(point1: GeoJSONPoint, point2: GeoJSONPoint): n
 
     return R * c; // Distance in kilometers
 }
-export async function _reverseGeocode(config: {lat: number, lon:number}, geocodeUrl: string) {
-    const features: any[] = [];
-    try {
-        let request =  geocodeUrl + '/reverse?lat=' + config.lat + '&lon='+config.lon+'&format=geocodejson&polygon_geojson=1&addressdetails=1&namedetails=1';
-        const response = await fetch(request);
-        const payload = await response.json();
-        return payload;
-        for (let feature of payload.features) {
-            // let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
-            let point = feature;
-            features.push(point);
-        }
-    } catch (e) {
-        console.error(`Failed to forwardGeocode with error: ${e}`);
-    }
-
-    return {
-        features: features
-    };
-}
-
