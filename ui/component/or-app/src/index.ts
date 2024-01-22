@@ -13,7 +13,7 @@ import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
-import {AppStateKeyed, setOffline, updatePage, updateRealm} from "./app";
+import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
@@ -163,8 +163,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return this._store.getState();
     }
 
+    // Using HTML 'visibilitychange' listener to see whether the Manager is visible for the user.
+    // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
+    // Currently used for triggering reconnecting logic or resetting its timeout timer.
     protected onVisibilityChange(ev: Event) {
         console.log(`Visibility change! The manager is now ${document.visibilityState}`);
+        if(document.visibilityState === "visible") {
+            this._onEvent(OREvent.CONSOLE_VISIBLE);
+        } else {
+            this._onEvent(OREvent.CONSOLE_HIDDEN);
+        }
     }
 
     connectedCallback() {
@@ -445,11 +453,32 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 console.log("_offlineDeferred timeout reached.");
                 this.completeOfflineTimer(false);
             }, this.appConfig?.offlineTimeout || 10000)
+
+
+        // When the manager appears on Mobile devices, but the connection is OFFLINE,
+        // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
+        // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
+        } else if(event === OREvent.CONSOLE_VISIBLE) {
+            this._store.dispatch((setVisibility(true)));
+            if(manager.console?.isMobile && this._offline) {
+                console.log("Manager was offline during your absence, resetting timer and retrying to connect.")
+                /* this.startOfflineTimer(); */ // TODO: Either uncomment or remove this depending on testing
+                manager.reconnect();
+            } else {
+                console.log("Manager is not offline (or on desktop), continuing as normal.")
+            }
+
+        } else if(event === OREvent.CONSOLE_HIDDEN) {
+            this._store.dispatch((setVisibility(false)));
         }
     }
 
     protected startOfflineTimer(): void {
         console.log("startOfflineTimer()");
+        if(this._offlineDeferred) {
+            console.log("There was already an offline timer present! Rejecting the old one...");
+            this.completeOfflineTimer(false);
+        }
         const deferred = new Util.Deferred<void>();
         deferred.promise.then(() => {
             console.log("_offlineDeferred resolved!");
@@ -466,7 +495,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     // Completes the offline timer
-    // success is TRUE when the app successfully comes back online before the timeout (and showing the offline page).
+    // success is TRUE when the app successfully comes back online, preventing the offline page to be shown due to timing out.
     // success is FALSE when the timeout is reached, and the offline page should be shown.
     protected completeOfflineTimer(success: boolean) {
         console.log("completeOfflineTimer()");

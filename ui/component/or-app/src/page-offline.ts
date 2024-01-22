@@ -61,15 +61,15 @@ export function pageOfflineProvider(store: Store<AppStateKeyed>): PageProvider<A
 @customElement("page-offline")
 export class PageOffline extends Page<AppStateKeyed> {
 
-    protected readonly DEFAULT_TIMEOUT = 6000;
+    /* protected readonly DEFAULT_TIMEOUT = 6000;
     protected readonly TIMEOUT_MULTIPLIER = 1.2;
-    protected readonly TIMEOUT_MAX = 30000;
+    protected readonly TIMEOUT_MAX = 30000; */
 
     @state()
     protected _timer?: AsyncGenerator<number | undefined>;
 
-    protected _onEventBind?: any;
-    protected _attemptAmount: number = 0;
+    /* protected _onEventBind?: any;
+    protected _attemptAmount: number = 0; */
 
     static get styles() {
         return [styling]
@@ -78,7 +78,7 @@ export class PageOffline extends Page<AppStateKeyed> {
     public stateChanged(state: AppStateKeyed) {
     }
 
-    connectedCallback() {
+    /* connectedCallback() {
         super.connectedCallback();
         this._onEventBind = this._onEvent.bind(this);
         manager.addListener(this._onEventBind);
@@ -89,31 +89,31 @@ export class PageOffline extends Page<AppStateKeyed> {
         if(this._onEventBind) {
             manager.removeListener(this._onEventBind);
         }
-    }
+    } */
 
-    protected _onEvent(event: OREvent) {
+    /* protected _onEvent(event: OREvent) {
         if (event === OREvent.CONNECTING) {
             const timeoutMs = Math.round(this.DEFAULT_TIMEOUT * (this.TIMEOUT_MULTIPLIER ** this._attemptAmount));
             this._startTimer(Math.min(timeoutMs, this.TIMEOUT_MAX));
             this._attemptAmount = this._attemptAmount + 1;
         }
-    }
+    } */
 
-    protected _startTimer(millis: number) {
+    /* protected _startTimer(millis: number) {
         const seconds = Math.round(millis / 1000);
         const timer = countDown(seconds);
         this._timer = timer;
         setTimeout(() => {
             this._stopTimer(timer); // stop after the amount of seconds is passed.
         }, millis);
-    }
+    } */
 
     // Stopping the timer/timeout if it is the current active timer
-    protected _stopTimer(timer: AsyncGenerator<number | undefined>) {
+    /* protected _stopTimer(timer: AsyncGenerator<number | undefined>) {
         if(this._timer === timer) {
             delete this._timer;
         }
-    }
+    } */
 
     protected render(): TemplateResult {
         return html`
@@ -123,13 +123,20 @@ export class PageOffline extends Page<AppStateKeyed> {
                     <span id="offline-title"">${i18next.t('youAreOffline')}</span>
                     <span>${i18next.t('checkConnection')}</span>
                 </div>
+                <div>
+                    <span>
+                        <or-translate value="reconnecting"></or-translate>
+                        ...
+                    </span>
+                </div>
                 <!-- Countdown to when it tries reconnecting again -->
-                ${when(this._timer, () => {
+                <!--${when(this._timer, () => {
                     const splitMsg = i18next.t("retryingConnection").split('{{seconds}}');
                     return html`${splitMsg[0]} ${asyncReplace(this._timer!)} ${splitMsg[1]}`;
                 }, () => html`
                     ${i18next.t('reconnecting')}...
-                `)}
+                `)}-->
+                
             </div>
         `
     }

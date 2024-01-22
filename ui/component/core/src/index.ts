@@ -61,6 +61,8 @@ export enum OREvent {
     RECONNECT_FAILED = "RECONNECT_FAILED",
     CONSOLE_INIT = "CONSOLE_INIT",
     CONSOLE_READY = "CONSOLE_READY",
+    CONSOLE_VISIBLE = "CONSOLE_VISIBLE",
+    CONSOLE_HIDDEN = "CONSOLE_HIDDEN",
     TRANSLATE_INIT = "TRANSLATE_INIT",
     TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED",
     DISPLAY_REALM_CHANGED = "DISPLAY_REALM_CHANGED"
@@ -583,9 +585,14 @@ export class Manager implements EventProviderFactory {
         return connected;
     }
 
+    public reconnect() {
+        console.log("reconnect()");
+        this._runAuthReconnectTimer();
+    }
+
     // Timer that runs the reconnect logic every X milliseconds
     // It automatically clears the interval when the reconnect is successful.
-    protected _runAuthReconnectTimer(timeout = 5000, timeoutMax = 30000) {
+    protected _runAuthReconnectTimer(timeout = 5000, timeoutMax = 20000) {
         if(!this._authReconnectTimeout) {
             const reconnectAuthFunc = () => {
                 this._tryUpdateAccessToken().then((disconnected) => {
