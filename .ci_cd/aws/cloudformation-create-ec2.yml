@@ -239,9 +239,6 @@ Resources:
             "/opt/aws/amazon-cloudwatch-agent/var/config.json":
               content: |
                 {
-                  "agent": {
-                    "metrics_collection_interval": 600
-                  },
                   "metrics": {
                     "append_dimensions": {
                       "AutoScalingGroupName": "${aws:AutoScalingGroupName}",
@@ -381,7 +378,6 @@ Resources:
               content: !Sub |
                 # Prometheus scrape config file
                 global:
-                  # Note the interval must match what is used in cloudwatch graphs
                   scrape_interval: 5m
                   scrape_timeout: 10s
                 scrape_configs:
