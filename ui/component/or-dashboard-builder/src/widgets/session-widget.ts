@@ -122,9 +122,6 @@ export class SessionWidget extends OrWidget {
         }
 
         this.sessions = sessionStore.sort((a, b) => b.trip.y!.startTime! - a.trip.y!.startTime!);
-
-        console.log(this.sessions)
-
     }
 
     isValidConfig = (config: SessionWidgetConfig): boolean => {
@@ -143,8 +140,8 @@ export class SessionWidget extends OrWidget {
         return `${addr.address.road} ${addr.address.house_number}, ${addr.address.postcode} ${addr.address.city}, ${addr.address.country}`;
     }
     protected render(): TemplateResult {
-        if (!this.isValidConfig(this.widgetConfig) || this.sessions.length <= 0) return html`
-            <span>Invalid Configuration</span>`;
+        if (!this.isValidConfig(this.widgetConfig)) return html`<span>Invalid Configuration</span>`;
+        if(this.sessions.length <= 0) return html`<span>No Asset State Duration data-points found. Please generate some, or change the session attribute.</span>`
 
         //We need to get the OutputAttr's name...
         const label: string | undefined = this.asset!.attributes![this.widgetConfig!.InputRef!.ref[0].name!].meta!["LABEL"];
@@ -168,9 +165,6 @@ export class SessionWidget extends OrWidget {
                 hideMobile: false
             }
         });
-        console.log(this.sessions.map(((trip: TripData) =>{
-            return trip.points.length;
-        })))
         // let rowContents : TemplateResult[] =
         // this.sessions.map((trip: TripData) => {
         //     rowC
@@ -208,8 +202,8 @@ export class SessionWidget extends OrWidget {
     }
 
     private async getTableElement(data: TripData, type: AnalysisType): Promise<TemplateResult> {
-        type = {Geo_JSONPoint: PointAnalysisTypes.Overview}
-        if (data.points.length == 0) return html`<span><Inv></Inv>alid data</span>`
+        // type = {Geo_JSONPoint: PointAnalysisTypes.Overview}
+        // if (data.points.length == 0) return html`<span>Invalid data</span>`
         let array: (number | GeoJSONPoint)[] = data.points.map((d) => {return d.y!});
 
         if(type.Geo_JSONPoint != undefined){
@@ -265,7 +259,7 @@ export class SessionWidget extends OrWidget {
         else{
             return html`<span>Data Type not implemented</span>`;
         }
-        return html`<span>Data Type not implemented</span>`;
+        return html`<span>Error</span>`;
     }
 
     private asset?: Asset = undefined;
@@ -363,7 +357,6 @@ export class SessionSettings extends WidgetSettings {
             this.inputAttrType = attr.type!
             return ["AssetStateDuration"].includes(attr.type!)
         };
-        console.log("rendering")
         return html`
             <div>
                 <!-- Attribute selector -->
@@ -415,10 +408,7 @@ export class SessionSettings extends WidgetSettings {
         `;
     }
 
-    protected onButtonClick() {
-        this.widgetConfig.customFieldOne = "custom text" + moment();
-        this.notifyConfigUpdate();
-    }
+    private asset? :Asset;
 
     protected onInputAttributeSelect(ev: AttributesSelectEvent) {
         if(ev.detail.attributeRefs.length == 1){
@@ -471,7 +461,6 @@ export class SessionSettings extends WidgetSettings {
         if(this.widgetConfig.OutputRef?.type == "number"){
             this.widgetConfig.analysisType = [{number: ev.detail.value as NumberAnalysisTypes}]
         }
-        console.log(this.widgetConfig.analysisType)
         this.notifyConfigUpdate();
     }
 
