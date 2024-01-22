@@ -446,7 +446,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 console.log("Back online!");
                 showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
                 this._showOfflineFallback = false;
-                this.completeOfflineTimer(true);
+                this.completeOfflineTimer();
                 this._store.dispatch((setOffline(false)));
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
@@ -455,7 +455,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
             setTimeout(() => {
                 console.log("_offlineDeferred timeout reached.");
-                this.completeOfflineTimer(false);
+                this.completeOfflineTimer();
             }, this.appConfig?.offlineTimeout || 10000)
 
 
@@ -477,36 +477,44 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
     }
 
+    // Offline timer logic
+    //
+    // This will start a Deferred promise that keeps track of the 'wait before showing offline page' timer.
+    // - Resolving the promise updates the 'show offline fallback' variable based on OFFLINE state.
+    // - Rejecting the promise skips that logic and does nothing.
+    //
+    // To explain; when the Manager reports "We're offline!" it will wait 10+ seconds before visually reporting the user that he/she is offline.
+    // However, if the user reconnects within that time period, we resolve this promise early. (which is why using Deferred is useful)
+    // TODO: Needs renaming for clear understanding.
     protected startOfflineTimer(): void {
         console.log("startOfflineTimer()");
         if(this._offlineDeferred) {
             console.log("There was already an offline timer present! Rejecting the old one...");
-            this.completeOfflineTimer(false);
+            this.completeOfflineTimer(true);
         }
         const deferred = new Util.Deferred<void>();
         deferred.promise.then(() => {
             console.log("_offlineDeferred resolved!");
-        }).catch((reason) => {
-            console.log("_offlineDeferred rejected.")
-            console.error(reason);
-        }).finally(() => {
             if(this._showOfflineFallback !== this._offline) {
                 console.log(`Setting _showOfflineFallback to ${this._offline}`)
                 this._showOfflineFallback = this._offline;
             }
+        }).catch((reason) => {
+            console.log("_offlineDeferred rejected / aborted.")
+            console.error(reason);
         });
         this._offlineDeferred = deferred;
     }
 
-    // Completes the offline timer
-    // success is TRUE when the app successfully comes back online, preventing the offline page to be shown due to timing out.
-    // success is FALSE when the timeout is reached, and the offline page should be shown.
-    protected completeOfflineTimer(success: boolean) {
+    // Completes and removes the 'show offline page' timer
+    // Resolving the timer updates the 'show offline fallback' variable based on OFFLINE state.
+    // if 'aborted' is TRUE it will skip that logic. See startOfflineTimer() for more details.
+    protected completeOfflineTimer(aborted = false) {
         console.log("completeOfflineTimer()");
-        if(success) {
-            this._offlineDeferred?.resolve();
-        } else {
+        if(aborted) {
             this._offlineDeferred?.reject();
+        } else {
+            this._offlineDeferred?.resolve();
         }
         this._offlineDeferred = undefined;
     }
