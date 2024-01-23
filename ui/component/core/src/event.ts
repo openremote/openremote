@@ -134,7 +134,6 @@ abstract class EventProviderImpl implements EventProvider {
                 this._connectingDeferred = null;
 
                 if (this._reconnectTimer) {
-                    console.debug("Clearing _reconnectTimer timeout after _doConnect() attempt.")
                     window.clearTimeout(this._reconnectTimer);
                     this._reconnectTimer = null;
                 }
@@ -160,14 +159,13 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public disconnect(): void {
-        console.debug("disconnect() on EventProviderImpl")
+        console.debug("Disconnecting from event service: " + this.endpointUrl);
         if (this._disconnectRequested) {
             return;
         }
         this._disconnectRequested = true;
 
         if (this._reconnectTimer) {
-            console.debug("Clearing _reconnectTimer because of disconnect()")
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = null;
         }
@@ -552,14 +550,11 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _scheduleReconnect() {
-        console.debug("_scheduleReconnect() in EventProviderImpl");
         if (this._reconnectTimer) {
-            console.debug("_reconnectTimer already present...")
             return;
         }
 
         if (this._disconnectRequested) {
-            console.debug("_disconnectRequested, so cancelling.")
             return;
         }
 
@@ -615,7 +610,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     constructor(managerUrl: string) {
-        console.log("[WebSocketEventProvider] Constructor!")
         super();
 
         this._endpointUrl = (managerUrl.startsWith("https:") ? "wss" : "ws") + "://" + managerUrl.substr(managerUrl.indexOf("://") + 3) + "/websocket/events";
@@ -628,7 +622,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected async _doConnect(): Promise<boolean> {
-        console.debug("[WebSocketEventProvider] Connecting...");
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
@@ -640,7 +633,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
         this._connectDeferred = new Deferred();
 
         this._webSocket!.onopen = () => {
-            console.debug("[WebSocketEventProvider] Connected.")
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
@@ -661,7 +653,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
         };
 
         this._webSocket!.onclose = () => {
-            console.debug("[WebSocketEventProvider] Closed the connection.")
             this._webSocket = undefined;
 
             if (this._connectDeferred) {
@@ -722,7 +713,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doDisconnect(): void {
-        this._webSocket?.close(); // TODO: Temporary changed it from ! to ?, should we keep it this way?
+        this._webSocket?.close();
         this._subscribeDeferred = null;
         this._repliesDeferred.clear();
     }

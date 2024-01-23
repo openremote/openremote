@@ -98,7 +98,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onEventBind?: any;
     protected _onVisibilityBind?: any;
     protected _realms!: Realm[];
-    protected _offlineDeferred?: Util.Deferred<void>;
+    protected _offlineFallbackDeferred?: Util.Deferred<void>;
     protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
 
@@ -166,9 +166,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     // Using HTML 'visibilitychange' listener to see whether the Manager is visible for the user.
     // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
-    // Currently used for triggering reconnecting logic or resetting its timeout timer.
+    // For example used for triggering reconnecting logic once the UI becomes visible again.
     protected onVisibilityChange(ev: Event) {
-        console.log(`Visibility change! The manager is now ${document.visibilityState}`);
         if(document.visibilityState === "visible") {
             this._onEvent(OREvent.CONSOLE_VISIBLE);
         } else {
@@ -336,27 +335,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 // CASE: "Offline overlay page is present, but should not be shown"
                 if(offlinePage && !showOfflineFallback) {
-                    console.log("Removing offline page fallback!");
-                    this._mainElem.removeChild(offlinePage);
+                    this._mainElem.removeChild(offlinePage); // remove offline overlay
 
-                    // If custom onRefresh() is set by the page, run that function.
-                    // Otherwise, just force recreate the page.
                     const elem = this._mainElem.firstElementChild as Page<any>;
+                    elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
                     if(elem?.onRefresh) {
-                        elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
-                        elem.onRefresh();
-                    } else {
-                        elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
-                    }/*  else if(pageProvider) {
-                        this._mainElem.replaceChild(pageProvider.pageCreator(), elem); // recreate page
-                    } */
+                        elem.onRefresh(); // If custom onRefresh() is set by the page, run that function.
+                    }
                 }
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
+                // It either shows the default offline fallback page, or a custom one defined in the AppConfig.
                 else if(!offlinePage && showOfflineFallback) {
-                    console.log("Showing offline page fallback!");
-                    (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
                     const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
+                    (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
                     newOfflinePage.id = "offline-page";
                     this._mainElem.appendChild(newOfflinePage);
                 }
@@ -437,36 +429,32 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
-                console.log("Went offline!");
-                showSnackbar(undefined, "You are offline!") // TODO: Remove snackbar
                 this._store.dispatch((setOffline(true)))
             }
         } else if(event === OREvent.ONLINE) {
             if(this._offline) {
-                console.log("Back online!");
-                showSnackbar(undefined, "Back online!"); // TODO: Remove snackbar
                 this._showOfflineFallback = false;
-                this.completeOfflineTimer();
+                this._completeOfflineFallbackTimer(); // complete fallback timer
                 this._store.dispatch((setOffline(false)));
             }
         } else if(event === OREvent.RECONNECT_FAILED) {
-            console.debug("Reconnect attempt failed...");
-            this.startOfflineTimer();
+            this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
 
             setTimeout(() => {
                 console.log("_offlineDeferred timeout reached.");
-                this.completeOfflineTimer();
+                this._completeOfflineFallbackTimer(); // complete fallback timer
             }, this.appConfig?.offlineTimeout || 10000)
 
 
-        // When the manager appears on Mobile devices, but the connection is OFFLINE,
-        // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
-        // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
         } else if(event === OREvent.CONSOLE_VISIBLE) {
             this._store.dispatch((setVisibility(true)));
+
+            // When the manager appears on Mobile devices, but the connection is OFFLINE,
+            // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
+            // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
             if(manager.console?.isMobile && this._offline) {
-                console.log("Manager was offline during your absence, resetting timer and retrying to connect.")
-                /* this.startOfflineTimer(); */ // TODO: Either uncomment or remove this depending on testing
+                console.log("Manager was offline during your absence, resetting timer and retrying to connect.");
+                this._startOfflineFallbackTimer(true);
                 manager.reconnect();
             } else {
                 console.log("Manager is not offline (or on desktop), continuing as normal.")
@@ -481,42 +469,40 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     //
     // This will start a Deferred promise that keeps track of the 'wait before showing offline page' timer.
     // - Resolving the promise updates the 'show offline fallback' variable based on OFFLINE state.
-    // - Rejecting the promise skips that logic and does nothing.
+    // - Rejecting the promise 'aborts the process' and skips that logic and does nothing.
     //
     // To explain; when the Manager reports "We're offline!" it will wait 10+ seconds before visually reporting the user that he/she is offline.
     // However, if the user reconnects within that time period, we resolve this promise early. (which is why using Deferred is useful)
-    // TODO: Needs renaming for clear understanding.
-    protected startOfflineTimer(): void {
-        console.log("startOfflineTimer()");
-        if(this._offlineDeferred) {
-            console.log("There was already an offline timer present! Rejecting the old one...");
-            this.completeOfflineTimer(true);
+    protected _startOfflineFallbackTimer(force = false): void {
+        if(force) {
+            console.log("Force aborting offline fallback timer!");
+            this._completeOfflineFallbackTimer(true);
+        } else if(this._offlineFallbackDeferred || this._showOfflineFallback) {
+            console.log("There was already an offline timer present, or fallback already visible! Not creating a new one." /* "Rejecting the old one..." */);
+            return;
+            /* this.completeOfflineFallbackTimer(true); */
         }
+
         const deferred = new Util.Deferred<void>();
         deferred.promise.then(() => {
-            console.log("_offlineDeferred resolved!");
             if(this._showOfflineFallback !== this._offline) {
-                console.log(`Setting _showOfflineFallback to ${this._offline}`)
                 this._showOfflineFallback = this._offline;
             }
-        }).catch((reason) => {
-            console.log("_offlineDeferred rejected / aborted.")
-            console.error(reason);
         });
-        this._offlineDeferred = deferred;
+
+        this._offlineFallbackDeferred = deferred;
     }
 
     // Completes and removes the 'show offline page' timer
     // Resolving the timer updates the 'show offline fallback' variable based on OFFLINE state.
     // if 'aborted' is TRUE it will skip that logic. See startOfflineTimer() for more details.
-    protected completeOfflineTimer(aborted = false) {
-        console.log("completeOfflineTimer()");
+    protected _completeOfflineFallbackTimer(aborted = false) {
         if(aborted) {
-            this._offlineDeferred?.reject();
+            this._offlineFallbackDeferred?.reject();
         } else {
-            this._offlineDeferred?.resolve();
+            this._offlineFallbackDeferred?.resolve();
         }
-        this._offlineDeferred = undefined;
+        this._offlineFallbackDeferred = undefined;
     }
 
     public logout() {

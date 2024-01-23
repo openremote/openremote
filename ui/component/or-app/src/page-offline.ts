@@ -36,6 +36,20 @@ const styling = css`
         font-size: 24px;
         font-weight: bold;
     }
+    
+    #reconnecting-text:after {
+        display: inline-block;
+        animation: dotty steps(2,end) 2s infinite;
+        content: '';
+    }
+
+    @keyframes dotty {
+        0%   { content: ''; }
+        25%  { content: '.'; }
+        50%  { content: '..'; }
+        75%  { content: '...'; }
+        100% { content: ''; }
+    }
 `
 
 async function* countDown(count: number) {
@@ -61,16 +75,6 @@ export function pageOfflineProvider(store: Store<AppStateKeyed>): PageProvider<A
 @customElement("page-offline")
 export class PageOffline extends Page<AppStateKeyed> {
 
-    /* protected readonly DEFAULT_TIMEOUT = 6000;
-    protected readonly TIMEOUT_MULTIPLIER = 1.2;
-    protected readonly TIMEOUT_MAX = 30000; */
-
-    @state()
-    protected _timer?: AsyncGenerator<number | undefined>;
-
-    /* protected _onEventBind?: any;
-    protected _attemptAmount: number = 0; */
-
     static get styles() {
         return [styling]
     }
@@ -78,65 +82,17 @@ export class PageOffline extends Page<AppStateKeyed> {
     public stateChanged(state: AppStateKeyed) {
     }
 
-    /* connectedCallback() {
-        super.connectedCallback();
-        this._onEventBind = this._onEvent.bind(this);
-        manager.addListener(this._onEventBind);
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if(this._onEventBind) {
-            manager.removeListener(this._onEventBind);
-        }
-    } */
-
-    /* protected _onEvent(event: OREvent) {
-        if (event === OREvent.CONNECTING) {
-            const timeoutMs = Math.round(this.DEFAULT_TIMEOUT * (this.TIMEOUT_MULTIPLIER ** this._attemptAmount));
-            this._startTimer(Math.min(timeoutMs, this.TIMEOUT_MAX));
-            this._attemptAmount = this._attemptAmount + 1;
-        }
-    } */
-
-    /* protected _startTimer(millis: number) {
-        const seconds = Math.round(millis / 1000);
-        const timer = countDown(seconds);
-        this._timer = timer;
-        setTimeout(() => {
-            this._stopTimer(timer); // stop after the amount of seconds is passed.
-        }, millis);
-    } */
-
-    // Stopping the timer/timeout if it is the current active timer
-    /* protected _stopTimer(timer: AsyncGenerator<number | undefined>) {
-        if(this._timer === timer) {
-            delete this._timer;
-        }
-    } */
-
     protected render(): TemplateResult {
         return html`
             <div id="offline-wrapper">
                 <or-icon id="offline-icon" icon="web-off"></or-icon>
                 <div id="offline-text-container">
-                    <span id="offline-title"">${i18next.t('youAreOffline')}</span>
-                    <span>${i18next.t('checkConnection')}</span>
+                    <span id="offline-title""><or-translate value="youAreOffline"></or-translate></span>
+                    <span id="offline-subtitle"><or-translate value="checkConnection"></or-translate></span>
                 </div>
                 <div>
-                    <span>
-                        <or-translate value="reconnecting"></or-translate>
-                        ...
-                    </span>
+                    <span><or-translate id="reconnecting-text" value="reconnecting"></or-translate></span>
                 </div>
-                <!-- Countdown to when it tries reconnecting again -->
-                <!--${when(this._timer, () => {
-                    const splitMsg = i18next.t("retryingConnection").split('{{seconds}}');
-                    return html`${splitMsg[0]} ${asyncReplace(this._timer!)} ${splitMsg[1]}`;
-                }, () => html`
-                    ${i18next.t('reconnecting')}...
-                `)}-->
-                
             </div>
         `
     }
