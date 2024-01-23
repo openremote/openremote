@@ -230,7 +230,7 @@ export class OrMwcTable extends LitElement {
 
     @property({type: Number})
     public paginationSize: number = 10;
-    
+
     @property({type: Array})
     protected config: TableConfig = {
         columnFilter: [],
