@@ -440,12 +440,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         } else if(event === OREvent.RECONNECT_FAILED) {
             this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
 
-            setTimeout(() => {
-                console.log("_offlineDeferred timeout reached.");
-                this._completeOfflineFallbackTimer(); // complete fallback timer
-            }, this.appConfig?.offlineTimeout || 10000)
-
-
         } else if(event === OREvent.CONSOLE_VISIBLE) {
             this._store.dispatch((setVisibility(true)));
 
@@ -484,11 +478,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
 
         const deferred = new Util.Deferred<void>();
+        let finished = false;
         deferred.promise.then(() => {
             if(this._showOfflineFallback !== this._offline) {
                 this._showOfflineFallback = this._offline;
             }
+        }).finally(() => {
+            finished = true;
         });
+
+        setTimeout(() => {
+            console.log("_offlineDeferred timeout reached.");
+            if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
+        }, this.appConfig?.offlineTimeout || 10000)
 
         this._offlineFallbackDeferred = deferred;
     }
