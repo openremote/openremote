@@ -447,11 +447,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
             // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
             if(manager.console?.isMobile && this._offline) {
-                console.log("Manager was offline during your absence, resetting timer and retrying to connect.");
                 this._startOfflineFallbackTimer(true);
                 manager.reconnect();
-            } else {
-                console.log("Manager is not offline (or on desktop), continuing as normal.")
             }
 
         } else if(event === OREvent.CONSOLE_HIDDEN) {
@@ -469,12 +466,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // However, if the user reconnects within that time period, we resolve this promise early. (which is why using Deferred is useful)
     protected _startOfflineFallbackTimer(force = false): void {
         if(force) {
-            console.log("Force aborting offline fallback timer!");
             this._completeOfflineFallbackTimer(true);
         } else if(this._offlineFallbackDeferred || this._showOfflineFallback) {
-            console.log("There was already an offline timer present, or fallback already visible! Not creating a new one." /* "Rejecting the old one..." */);
             return;
-            /* this.completeOfflineFallbackTimer(true); */
         }
 
         const deferred = new Util.Deferred<void>();
@@ -488,7 +482,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         });
 
         setTimeout(() => {
-            console.log("_offlineDeferred timeout reached.");
             if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
         }, this.appConfig?.offlineTimeout || 10000)
 

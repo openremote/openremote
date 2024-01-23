@@ -539,7 +539,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
-        console.debug("_onDisconnect() in EventProviderImpl");
         this._onStatusChanged(EventProviderStatus.DISCONNECTED);
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);
@@ -621,7 +620,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
         });
     }
 
-    protected async _doConnect(): Promise<boolean> {
+    protected _doConnect(): Promise<boolean> {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
