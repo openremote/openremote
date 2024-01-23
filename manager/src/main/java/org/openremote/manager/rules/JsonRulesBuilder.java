@@ -924,7 +924,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
                 Alarm finalAlarm = alarm;
                 String userId = alarmAction.assigneeId;
-                if(assetIds.size() > 0){
+                if(!assetIds.isEmpty()){
                     return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);

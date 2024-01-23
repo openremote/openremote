@@ -4,12 +4,10 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
-import org.openremote.model.alarm.Alarm;
-import org.openremote.model.alarm.AlarmAssetLink;
-import org.openremote.model.alarm.AlarmUserLink;
+import org.openremote.model.alarm.*;
 import org.openremote.model.alarm.Alarm.Status;
-import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -19,15 +17,23 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.manager.event.ClientEventService;
 
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
+
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.notification.EmailNotificationMessage;
+import org.openremote.model.notification.Notification;
+
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+
 
 import static java.util.logging.Level.FINE;
 import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
@@ -43,7 +49,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     protected AssetStorageService assetStorageService;
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
-    //protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
+    protected NotificationService notificationService;
+    protected ClientEventService clientEventService;
+
 
     protected static Processor handleAlarmProcessingException(Logger logger) {
         return exchange -> {
@@ -88,6 +96,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
+        this.notificationService = container.getService(NotificationService.class);
+        this.clientEventService = container.getService(ClientEventService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         container.getService(ManagerWebService.class).addApiSingleton(
                 new AlarmResourceImpl(this,
@@ -95,6 +105,20 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         container.getService(AssetStorageService.class),
                         container.getService(ManagerIdentityService.class))
         );
+        clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
+            if (!eventSubscription.isEventType(AlarmEvent.class) || authContext == null) {
+                return false;
+            }
+
+            // If not a super user force a filter for the users realm
+            if (!authContext.isSuperUser()) {
+                @SuppressWarnings("unchecked")
+                EventSubscription<AlarmEvent> subscription = (EventSubscription<AlarmEvent>) eventSubscription;
+                subscription.setFilter(new RealmFilter<>(authContext.getAuthenticatedRealmName()));
+            }
+
+            return true;
+        });
     }
 
     @Override
@@ -135,12 +159,41 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 entityManager.merge(sentAlarm);
                 TypedQuery<Long> query = entityManager.createQuery("select max(id) from SentAlarm", Long.class);
                 sentAlarm.setId(query.getSingleResult());
+
+                clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
+
                 return sentAlarm;
             });
         } catch (Exception e) {
             String msg = "Failed to create alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
             return new SentAlarm();
+        }
+    }
+
+    private void sendAssigneeEmail(Alarm alarm) {
+        try {
+            Notification output = new Notification();
+            Notification.Target target = new Notification.Target(Notification.TargetType.USER, alarm.getAssignee());
+            EmailNotificationMessage message = new EmailNotificationMessage();
+            String address = persistenceService.doReturningTransaction(entityManager -> {
+                        TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
+                        query.setParameter("id", alarm.getAssignee());
+                        return query.getSingleResult();
+                    });
+            message.setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
+                            "Description: " + alarm.getContent() + "\n" +
+                            "Severity: " + alarm.getSeverity() + "\n" +
+                            "Status: " + alarm.getStatus());
+            message.setSubject("New Alarm Notification");
+            message.setTo(address);
+            output.setMessage(message);
+            output.setTargets(target);
+            Notification notification = output;
+            notificationService.sendNotificationAsync(notification, Notification.Source.INTERNAL, null);
+        } catch (Exception e) {
+            String msg = "Failed to send email concerning alarm: " + alarm.getTitle();
+            LOG.log(Level.WARNING, msg, e);
         }
     }
 
@@ -190,11 +243,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 query.setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()));
                 query.setParameter("assigneeId", alarm.getAssigneeId());
                 query.executeUpdate();
-            });    
+            });
+            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
         } catch (Exception e) {
             String msg = "Failed to update alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
-            return;
         }
     }
 
@@ -406,5 +459,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             query.executeUpdate();
         });
+
     }
 }
