@@ -1,4 +1,4 @@
-import {LitElement, css, PropertyValues, CSSResultGroup} from "lit";
+import {LitElement, css, PropertyValues, CSSResultGroup, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import manager, {subscribe, Util} from "@openremote/core";
 import moment from "moment";
@@ -14,10 +14,12 @@ import {
 } from '@openremote/model';
 import maplibregl, { MapLayerMouseEvent } from "maplibre-gl";
 import type {OrMap} from "./index";
-import {OrMapMarker, OrMapMarkerClickedEvent} from "./markers/or-map-marker";
-import {OrMapLocationHistoryOverlay} from "./index";
+import {OrMapLocationHistoryMarker} from "./markers/or-map-asset-history-marker";
+import "./markers/or-map-asset-history-marker";
+
+
 @customElement("or-map-location-history-markers")
-export class OrMapLocationHistoryMarkers extends OrMapMarker {
+export class OrMapAssetCardTripSection extends subscribe(manager)(LitElement){
 
 
     public static NAME : string = "or-map-location-history-markers";
@@ -27,8 +29,10 @@ export class OrMapLocationHistoryMarkers extends OrMapMarker {
     @property({type: Object, attribute: true})
     public map?: OrMap;
 
+    @property({type: Object, attribute: true})
     private markers: maplibregl.Marker[] = [];
 
+    @property({type: Object, attribute: true})
     private history: ValueDatapoint<GeoJSONPoint>[] | undefined;
 
     disconnectedCallback() {
@@ -51,6 +55,10 @@ export class OrMapLocationHistoryMarkers extends OrMapMarker {
             }
         }
     }
+    constructor() {
+        super();
+        this._loadData();
+    }
 
     async connectedCallback() {
         super.connectedCallback();
@@ -62,33 +70,46 @@ export class OrMapLocationHistoryMarkers extends OrMapMarker {
         this.history!.slice(1, -1)
         for (const historyElement of this.history) {
 
-            const el = document.createElement('historymapmarker')
-            // el.style.position = "absolute"
-            // el.style.zIndex = "2";
+            // const el = document.createElement('historymapmarker')
+            // // el.style.position = "absolute"
+            // // el.style.zIndex = "2";
             // el.id = ""+this.assetId+historyElement.x;
-            // el.className = "historyMarker"
-
-            const time: string = moment(historyElement.x).toString();
-            const popup = new maplibregl.Popup().setText(
-                'Construction on the Washington Monument began in 1848.'
-            );
-
-
-            const marker = new maplibregl.Marker()
-                .setLngLat([historyElement!.y!.coordinates![0], historyElement!.y!.coordinates![1]])
-                .setPopup(popup)
-                .addTo(this.map!._map!._mapGl!);
-
-            (marker.getElement() as HTMLDivElement).addEventListener('click', (e: Event) => {
-                // e.originalEvent.stopPropagation();
-                e.preventDefault();
-                popup.addTo(this.map!._map!._mapGl!);
-                console.log(e)
-            })
-
-            this.markers.push(marker);
-            console.log("added \n" + historyElement.y)
+            // // el.className = "historyMarker"
+            //
+            // const time: string = moment(historyElement.x).toString();
+            // const popup = new maplibregl.Popup().setText(
+            //     'Construction on the Washington Monument began in 1848.'
+            // );
+            //
+            //
+            // const marker = new maplibregl.Marker()
+            //     .setLngLat([historyElement!.y!.coordinates![0], historyElement!.y!.coordinates![1]])
+            //     .setPopup(popup)
+            //     .addTo(this.map!._map!._mapGl!);
+            //
+            // el.addEventListener('click', () =>
+            //     {
+            //         alert(el.id + "Marker Clicked.");
+            //     }
+            // );
+            //
+            // this.markers.push(marker);
+            // console.log("added " + historyElement.x?.toString())
         }
+    }
+
+    render() {
+        if (this.history == undefined) return html``;
+        console.log(`rendering ${this.history.length} datapoints`)
+        return this.history.map(point => {
+            console.log(`rendering ${point.y!.coordinates!}`)
+                return html`
+                                            <or-map-marker-location-history
+                                                    .assetId="${this.assetId}"
+                                                    .locationDatapoint="${point}"
+                                            ></or-map-marker-location-history>
+                                        `;
+            })
     }
 
     async _loadData(): Promise<void> {
@@ -101,12 +122,13 @@ export class OrMapLocationHistoryMarkers extends OrMapMarker {
             "location",
             {
                 type: "all",
-                fromTimestamp: now.clone().startOf('day').valueOf(),
+                fromTimestamp: now.clone().startOf('week').valueOf(),
                 toTimestamp: now.valueOf()
             }
         );
         if (response.status === 200 && response.data.length > 0) {
             this.history = response.data;
+            super.requestUpdate();
         }
     }
 }

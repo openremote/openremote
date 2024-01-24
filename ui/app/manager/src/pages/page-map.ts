@@ -377,16 +377,11 @@ export class PageMap extends Page<MapStateKeyed> {
         }
         // currentAssetSelected? console.log("render") : console.log("asset unselected");
             return html`
-<!--                
-                <or-map-location-history-markers .assetId="${this._currentAsset?.id}" .map="${this._map}"></or-map-location-history-markers>
-            -->
                 <or-map-location-history-overlay .assetId="${this._currentAsset?.id}" .map="${this._map}" ></or-map-location-history-overlay>
 ${currentAssetSelected ? html`
                 <or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"
                                    .markerconfig="${this.config?.markers}" .map="${this._map}"></or-map-asset-card>
-<!--                
-                <or-map-location-history-overlay .assetId="${this._currentAsset.id}" .map="${this._map}" ></or-map-location-history-overlay>
-                -->
+
 ${!isMouseAPointer && currentAssetSelected ? 
             html`
             
@@ -423,6 +418,10 @@ ${!isMouseAPointer && currentAssetSelected ?
                                                 ?active="${this._currentAsset && this._currentAsset.id === asset.id}"
                                                 .asset="${asset}"
                                                 .config="${this.config.markers}"></or-map-marker-asset>
+                                        <or-map-marker-location-history
+                                                .assetId="${asset.id!}"
+                                                .locationHistory="${this.config.markers}">
+                                        </or-map-marker-location-history>
                                     `;
                                 })
                 }
@@ -459,6 +458,9 @@ ${!isMouseAPointer && currentAssetSelected ?
 
     protected onMapClick(e: OrMapClickedEvent) {
         router.navigate(getMapRoute());
+        // if(this._map._map._mapGl. != undefined){
+        //
+        // }
     }
 
     protected getCurrentAsset() {

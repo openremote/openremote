@@ -584,6 +584,7 @@ export class OrMap extends LitElement {
             }
 
             if (node instanceof OrMapMarker) {
+                console.log(node)
 
                 this._markers.push(node);
 
