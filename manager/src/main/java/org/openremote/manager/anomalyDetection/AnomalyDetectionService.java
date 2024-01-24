@@ -406,8 +406,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             DatapointPeriod period = assetDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
             List<ValueDatapoint<?>> datapoints = new ArrayList<>();
             if(period.getLatest() == null) return datapoints;
-
-            AttributeAnomaly[] anomalies = new AttributeAnomaly[0];
             ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
             if(detectionMethod.config.getClass().getSimpleName().equals("Global")||detectionMethod.config.getClass().getSimpleName().equals("Change")){
                 long maxTimespan = 0;
@@ -419,7 +417,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     if( ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis() > maxTimespan) maxTimespan =  ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
                 }
                 if(period.getLatest() - period.getOldest() < maxTimespan)return datapoints;
-                anomalies = assetAnomalyDatapointService.getAnommalies(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
                 valueDatapoints = assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
 
             }else if(detectionMethod.config.getClass().getSimpleName().equals("Forecast")){

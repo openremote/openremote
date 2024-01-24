@@ -156,18 +156,18 @@ export class OrAnomalyConfigChart extends OrChart {
                 let datasets = await this.getAnomalyLimits(asset,attribute,this.datapointQuery)
                     datasets = datasets as ChartDataset<"line",ScatterDataPoint[]>[];
                     if(datasets.length !== 0){
-                        let dataset = datasets[2];
-                        (dataset as any).assetId = asset.id;
-                        (dataset as any).attrName = attribute.name;
-                        (dataset as any).unit = unit;
-                        dataset = datasets[0];
+                        let dataset = datasets[0];
+                        (dataset as any).unit = unit
                         data.push(dataset);
                         dataset = datasets[1];
+                        (dataset as any).unit = unit
                         data.push(dataset);
                         for (let i = 2; i < datasets.length; i=i+2){
                             dataset = datasets[i];
+                            (dataset as any).unit = unit
                             data.push(dataset);
                             dataset = datasets[i+1];
+                            (dataset as any).unit = unit
                             data.push(dataset);
                         }
                     }
