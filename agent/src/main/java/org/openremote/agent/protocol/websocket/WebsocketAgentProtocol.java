@@ -20,6 +20,10 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.channel.ChannelHandler;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -30,7 +34,6 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
@@ -41,10 +44,6 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -116,19 +115,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
-
-        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
-            boolean isRequestStart = event.getValue()
-                .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
-                .map(status -> status == AttributeExecuteStatus.REQUEST_START)
-                .orElse(false);
-            if (!isRequestStart) {
-                LOG.fine("Unsupported execution status: " + event);
-                return null;
-            }
-        }
-
+    protected String createWriteMessage(WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
         return ValueUtil.convert(processedValue, String.class);
     }
 

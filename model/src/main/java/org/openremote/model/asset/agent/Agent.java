@@ -20,13 +20,13 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
@@ -151,7 +151,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * Get the {@link AgentLink} for the specified linked agent
      */
     @SuppressWarnings("unchecked")
-    public V getAgentLink(Attribute<?> attribute) {
+    public <T extends MetaHolder> V getAgentLink(T attribute) {
         AgentLink<?> agentLink = attribute.getMetaValue(AGENT_LINK).orElseThrow(() -> new IllegalStateException("Failed to getAgentLink<?>despite attribute being linked to an agent"));
         return (V) agentLink;
     }

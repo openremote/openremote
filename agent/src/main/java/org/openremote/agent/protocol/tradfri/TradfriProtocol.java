@@ -132,9 +132,9 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        Device device = tradfriDevices.get(event.getAttributeRef().getId());
+        Device device = tradfriDevices.get(event.getRef().getId());
 
         if (device != null) {
             tradfriConnection.controlDevice(device, event);
@@ -150,7 +150,6 @@ public class TradfriProtocol extends AbstractProtocol<TradfriAgent, DefaultAgent
 
             // Find all existing child assets of this agent that have a deviceId attribute
             List<Asset<?>> childAssets = assetService.findAssets(
-                agent.getId(),
                 new AssetQuery().attributeName(TradfriAsset.DEVICE_ID.getName()));
 
             List<String> obsoleteAssetIds = childAssets.stream()

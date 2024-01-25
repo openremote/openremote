@@ -117,7 +117,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     }
 
     @Override
-    protected MQTTMessage<String> createWriteMessage(Attribute<?> attribute, MQTTAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected MQTTMessage<String> createWriteMessage(MQTTAgentLink agentLink, AttributeEvent event, Object processedValue) {
         Optional<String> topic = agentLink.getPublishTopic();
 
         if (!topic.isPresent()) {

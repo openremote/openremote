@@ -67,7 +67,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public static final String NAME = "ORConsole";
     public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
     public static int NOTIFY_ASSETS_BATCH_MILLIS = 10000;
-    protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
+    protected Map<String, RulesEngine.AssetLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
@@ -132,7 +132,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     }
 
     @Override
-    public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates) {
+    public void processLocationPredicates(List<RulesEngine.AssetLocationPredicates> modifiedAssetLocationPredicates) {
         AtomicBoolean notifierDebounce = new AtomicBoolean(false);
 
         synchronized (notifyAssets) {
@@ -148,7 +148,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                             !(locationPredicate instanceof RadialGeofencePredicate));
 
 
-                    RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
+                    RulesEngine.AssetLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
                         assetStateLocationPredicates.getAssetId());
                     if (existingPredicates == null || !existingPredicates.getLocationPredicates().equals(assetStateLocationPredicates.getLocationPredicates())) {
                         // We're not comparing before and after state as RulesService has done that although it could be
@@ -206,7 +206,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
             return null;
         }
 
-        RulesEngine.AssetStateLocationPredicates assetStateLocationPredicates = assetLocationPredicatesMap.get(assetId);
+        RulesEngine.AssetLocationPredicates assetStateLocationPredicates = assetLocationPredicatesMap.get(assetId);
 
         if (assetStateLocationPredicates == null) {
             // No geofences exist for this asset

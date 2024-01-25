@@ -48,8 +48,6 @@ import org.openremote.model.value.MetaItemType;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,7 +61,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
     private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
     private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
-    private static final BlockingQueue<AsyncResponse> suspended = new ArrayBlockingQueue<>(5);
+
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
 
@@ -173,9 +171,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(String attributeRefsString, long fromTimestamp, long toTimestamp) throws InterruptedException {
-        final AsyncResponse asyncResponse = suspended.take();
-
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
