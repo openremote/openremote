@@ -83,16 +83,15 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
         scheduleInit(assetId);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, StorageSimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(StorageSimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Power attribute is updated only by this protocol not by clients
-        if (attribute.getName().equals(POWER.getName())) {
+        if (event.getName().equals(POWER.getName())) {
             return;
         }
 
-        updateLinkedAttribute(new AttributeState(event.getAttributeRef(), processedValue));
+        updateLinkedAttribute(new AttributeState(event.getRef(), processedValue));
     }
 
     protected void updateStorageAsset(ElectricityStorageAsset storageAsset) {
@@ -186,7 +185,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
             initFuture.cancel(false);
         }
         initFutureMap.put(assetId, executorService.schedule(() -> {
-            updateStorageAsset(assetService.findAsset(assetId, ElectricityStorageAsset.class));
+            updateStorageAsset(assetService.findAsset(assetId));
             initFutureMap.remove(assetId);
         }, 1, TimeUnit.SECONDS));
     }
@@ -194,7 +193,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     protected ScheduledFuture<?> scheduleUpdate(String assetId) {
         return executorService.schedule(() -> {
             try {
-                updateStorageAsset(assetService.findAsset(assetId, ElectricityStorageAsset.class));
+                updateStorageAsset(assetService.findAsset(assetId));
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception in " + getProtocolName(), e);
                 setConnectionStatus(ConnectionStatus.ERROR);

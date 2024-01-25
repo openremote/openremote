@@ -121,7 +121,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, V agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(V agentLink, AttributeEvent event, Object processedValue) {
         // Not supported
     }
 

@@ -1,11 +1,11 @@
 package org.openremote.manager.energy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.ws.rs.core.Response;
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -14,13 +14,13 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -206,40 +206,40 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     protected synchronized void processElectricityProducerWindAssetAttributeEvent(AttributeEvent attributeEvent) {
 
-        if (ElectricityProducerWindAsset.POWER.getName().equals(attributeEvent.getAttributeName())
-                || ElectricityProducerWindAsset.POWER_FORECAST.getName().equals(attributeEvent.getAttributeName())) {
+        if (ElectricityProducerWindAsset.POWER.getName().equals(attributeEvent.getName())
+                || ElectricityProducerWindAsset.POWER_FORECAST.getName().equals(attributeEvent.getName())) {
             // These are updated by this service
             return;
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.getName())) {
-            boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
-            if (enabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
+        if (attributeEvent.getName().equals(ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.getName())) {
+            boolean enabled = (Boolean)attributeEvent.getValue().orElse(false);
+            if (enabled && calculationFutures.containsKey(attributeEvent.getId())) {
                 // Nothing to do here
                 return;
-            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getId())) {
                 // Nothing to do here
                 return;
             }
 
             LOG.fine("Processing producer wind asset attribute event: " + attributeEvent);
-            stopCalculation(attributeEvent.getAssetId());
+            stopCalculation(attributeEvent.getId());
 
             // Get latest asset from storage
-            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getId());
 
             if (asset != null && asset.isIncludeForecastWindService().orElse(false) && asset.getLocation().isPresent()) {
                 startCalculation(asset);
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getName().equals(ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
-            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
+            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getId());
 
             // Check if power is currently zero and set it if power forecast has an value
             if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerWindAsset.POWER, asset.getPowerForecast().orElse(0d)));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerWindAsset.POWER, asset.getPowerForecast().orElse(0d)), getClass().getSimpleName());
             }
         }
     }
@@ -285,10 +285,10 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 double currentPower = calculatePower(electricityProducerWindAsset, weatherForecastResponseModel.current);
 
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower), getClass().getSimpleName());
 
                 if (electricityProducerWindAsset.isSetActualWindValueWithForecast().orElse(false)) {
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower), getClass().getSimpleName());
                 }
 
                 for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {

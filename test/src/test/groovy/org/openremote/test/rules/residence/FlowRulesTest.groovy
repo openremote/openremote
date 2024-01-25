@@ -10,7 +10,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.flow.NodeCollection
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait

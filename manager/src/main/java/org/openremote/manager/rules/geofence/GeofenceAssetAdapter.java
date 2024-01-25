@@ -32,8 +32,8 @@ import java.util.List;
  * {@link Asset} and can convert the {@link LocationAttributePredicate}s into Geofences that can be implemented by
  * the asset(s) itself.
  * <p>
- * The adapter is notified when the {@link Asset}s {@link RulesEngine.AssetStateLocationPredicates} change; if the
- * {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates()} is null or empty then it means that there
+ * The adapter is notified when the {@link Asset}s {@link RulesEngine.AssetLocationPredicates} change; if the
+ * {@link RulesEngine.AssetLocationPredicates#getLocationPredicates()} is null or empty then it means that there
  * are no longer any associated with that {@link Asset} so the adapter should clear any that already exist on that
  * {@link Asset}, it is the adapters job to maintain state if required (see initialising flag on {@link
  * #processLocationPredicates}).
@@ -57,10 +57,10 @@ public interface GeofenceAssetAdapter extends ContainerService {
 
     /**
      * If an adapter handles the location predicates for a particular asset then the adapter should remove that item
-     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates}
+     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetLocationPredicates#getLocationPredicates}
      * is empty then it means there are no longer any location predicates associated with that asset
      */
-    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates);
+    void processLocationPredicates(List<RulesEngine.AssetLocationPredicates> modifiedAssetLocationPredicates);
 
     /**
      * Called to return the active geofences for the specified {@link Asset}; if this adapter supports the requested
