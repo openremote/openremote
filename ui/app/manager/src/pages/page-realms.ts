@@ -411,8 +411,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       const dialogActions: DialogAction[] = [
           {
               actionName: "ok",
-              disabled: true,
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @or-mwc-input-changed="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
+              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
               action: doDelete
           },
           {
