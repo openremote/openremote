@@ -336,22 +336,6 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         return this;
     }
 
-    public <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
-        return getMeta().getValue(metaItemDescriptor);
-    }
-
-    public boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
-        return getMeta().has(metaItemDescriptor);
-    }
-
-    public boolean hasMeta(String metaItemName) {
-        return getMeta().has(metaItemName);
-    }
-
-    public <U> Optional<MetaItem<U>> getMetaItem(MetaItemDescriptor<U> metaItemDescriptor) {
-        return getMeta().get(metaItemDescriptor);
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public Optional<T> getValue() {

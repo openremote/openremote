@@ -227,7 +227,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 @DynamicUpdate
 @TsIgnoreTypeParams
 @SuppressWarnings("unchecked")
-public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
+public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>, AssetInfo {
 
     /**
      * The purpose of this is to provide {@link org.openremote.model.attribute.Attribute.AttributeDeserializer} access
@@ -368,6 +368,10 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return name;
     }
 
+    public String getAssetName() {
+        return name;
+    }
+
     public T setName(String name) throws IllegalArgumentException {
         Objects.requireNonNull(name);
         this.name = name;
@@ -476,6 +480,21 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public T addOrReplaceAttributes(Attribute<?>... attributes) {
         getAttributes().addOrReplace(attributes);
         return (T) this;
+    }
+
+    @Override
+    public String[] getAttributeNames() {
+        return getAttributes().keySet().toArray(new String[0]);
+    }
+
+    @Override
+    public String getAssetType() {
+        return type;
+    }
+
+    @Override
+    public Class<? extends Asset> getAssetClass() {
+        return getClass();
     }
 
     @Override

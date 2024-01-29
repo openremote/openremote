@@ -95,21 +95,21 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     }
     public void upsertValue(String assetId, String attributeName, Object value, long timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
-                em.unwrap(Session.class).doWork(connection -> {
+            em.unwrap(Session.class).doWork(connection -> {
 
-                    getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
-                    PreparedStatement st;
+                getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
+                PreparedStatement st;
 
-                    try {
-                        st = getUpsertPreparedStatement(connection);
-                        setUpsertValues(st, assetId, attributeName, value, timestamp);
-                        st.executeUpdate();
-                    } catch (Exception e) {
-                        String msg = "Failed to insert/update data point: ";
-                        getLogger().log(Level.WARNING, msg, e);
-                        throw new IllegalStateException(msg, e);
-                    }
-                }));
+                try {
+                    st = getUpsertPreparedStatement(connection);
+                    setUpsertValues(st, assetId, attributeName, value, timestamp);
+                    st.executeUpdate();
+                } catch (Exception e) {
+                    String msg = "Failed to insert/update data point: ";
+                    getLogger().log(Level.WARNING, msg, e);
+                    throw new IllegalStateException(msg, e);
+                }
+            }));
     }
 
     public void upsertValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) throws IllegalStateException {

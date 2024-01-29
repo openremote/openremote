@@ -17,11 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.model.asset;
+
+import java.util.Date;
 
 public interface AssetInfo {
 
-    String getAssetId();
+    String getId();
 
     String getRealm();
 
@@ -30,4 +32,12 @@ public interface AssetInfo {
     String[] getPath();
 
     String[] getAttributeNames();
+
+    String getAssetName();
+
+    String getAssetType();
+
+    Class<? extends Asset> getAssetClass();
+
+    Date getCreatedOn();
 }

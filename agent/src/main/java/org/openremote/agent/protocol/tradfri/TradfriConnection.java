@@ -158,20 +158,20 @@ public class TradfriConnection {
                 if (device.isLight()){
                     Light light = device.toLight();
 
-                    if (event.getAttributeName().equals(LightAsset.BRIGHTNESS.getName())) {
+                    if (event.getName().equals(LightAsset.BRIGHTNESS.getName())) {
                         int value = ValueUtil.getInteger(event.getValue()).orElse(0);
                         light.setBrightness(convertBrightness(value, false));
-                    } else if (event.getAttributeName().equals(LightAsset.ON_OFF.getName())) {
+                    } else if (event.getName().equals(LightAsset.ON_OFF.getName())) {
                         light.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
-                    } else if (event.getAttributeName().equals(LightAsset.COLOUR_RGB.getName())) {
+                    } else if (event.getName().equals(LightAsset.COLOUR_RGB.getName())) {
                         light.setColour(ValueUtil.convert(event.getValue(), ColourRGB.class));
-                    } else if (event.getAttributeName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
+                    } else if (event.getName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
                         light.setColourTemperature(ValueUtil.getInteger(event.getValue()).orElse(0));
                     }
                 }
                 else if (device.isPlug()) {
                     Plug plug = device.toPlug();
-                    if (event.getAttributeName().equals(PlugAsset.ON_OFF.getName())) {
+                    if (event.getName().equals(PlugAsset.ON_OFF.getName())) {
                         plug.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
                     }
                 }

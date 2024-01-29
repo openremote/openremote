@@ -19,22 +19,19 @@
  */
 package org.openremote.model.protocol;
 
-import org.apache.commons.codec.binary.BinaryCodec;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.ArrayUtils;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.query.filter.ValuePredicate;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
-import org.openremote.model.value.ValueType;
 
 import java.util.Locale;
 import java.util.Map;
@@ -42,44 +39,19 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.openremote.model.asset.agent.Protocol.DYNAMIC_VALUE_PLACEHOLDER;
+import static org.openremote.model.Constants.DYNAMIC_VALUE_PLACEHOLDER;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
 import static org.openremote.model.util.ValueUtil.applyValueFilters;
 
 @TsIgnore
 public final class ProtocolUtil {
 
+    protected static Logger LOG = SyslogCategory.getLogger(PROTOCOL, ProtocolUtil.class);
+    
     protected ProtocolUtil() {
-    }
-
-    public static String bytesToHexString(byte[] bytes) {
-        return Hex.encodeHexString(bytes).toUpperCase(Locale.ROOT);
-    }
-
-    public static byte[] bytesFromHexString(String hex) {
-        try {
-            return Hex.decodeHex(hex.toCharArray());
-        } catch (Exception e) {
-            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
-            return new byte[0];
-        }
-    }
-
-    public static String bytesToBinaryString(byte[] bytes) {
-        // Need to reverse the array to get a sensible string out
-        ArrayUtils.reverse(bytes);
-        return BinaryCodec.toAsciiString(bytes);
-    }
-
-    public static byte[] bytesFromBinaryString(String binary) {
-        try {
-            return BinaryCodec.fromAscii(binary.toCharArray());
-        } catch (Exception e) {
-            Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
-            return new byte[0];
-        }
     }
 
     /**
@@ -88,26 +60,16 @@ public final class ProtocolUtil {
      * searched on every single write request (for performance reasons), instead this should be recorded when the
      * attribute is first linked.
      */
-    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
+    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, AttributeInfo attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
 
         String writeValue = agentLink.getWriteValue().orElse(null);
 
         Pair<Boolean, Object> ignoreAndConvertedValue;
 
-        // Check if attribute type is executable
-        if (ValueType.EXECUTION_STATUS.equals(attribute.getType())) {
-            AttributeExecuteStatus status = ValueUtil.getValueCoerced(value, AttributeExecuteStatus.class).orElse(null);
-
-            if (status == AttributeExecuteStatus.REQUEST_START && writeValue != null) {
-                value = writeValue;
-                return new Pair<>(false, value);
-            }
-        }
-
         // value conversion
         Object finalValue = value;
         ignoreAndConvertedValue = agentLink.getWriteValueConverter().map(converter -> {
-            Protocol.LOG.finest("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             return applyValueConverter(finalValue, converter);
         }).orElse(new Pair<>(false, finalValue));
 
@@ -124,7 +86,7 @@ public final class ProtocolUtil {
         if (hasWriteValue) {
             if (containsDynamicPlaceholder) {
                 String valueStr = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
-                writeValue = writeValue.replaceAll(Protocol.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
+                writeValue = writeValue.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
             }
 
             value = writeValue;
@@ -148,17 +110,17 @@ public final class ProtocolUtil {
 
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
-            Protocol.LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             Object o = ValueUtil.applyValueFilters(value, valueFilters);
             if (o == null) {
-                Protocol.LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+                LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             }
             valRef.set(o);
         });
 
         // value conversion
         ignoreAndConvertedValue = agentLink.getValueConverter().map(converter -> {
-            Protocol.LOG.finest("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             return applyValueConverter(valRef.get(), converter);
         }).orElse(new Pair<>(false, valRef.get()));
 
@@ -177,12 +139,12 @@ public final class ProtocolUtil {
         Class<?> fromType = valRef.get().getClass();
 
         if (toType != fromType) {
-            Protocol.LOG.finest("Applying built in attribute value conversion: " + fromType + " -> " + toType);
+            LOG.finest("Applying built in attribute value conversion: " + fromType + " -> " + toType);
             valRef.set(ValueUtil.getValueCoerced(valRef.get(), toType).orElse(null));
 
             if (valRef.get() == null) {
-                Protocol.LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
-                Protocol.LOG.warning("Cannot send linked attribute update: assetId=" + assetId + ", attribute=" + attribute.getName());
+                LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
+                LOG.warning("Cannot send linked attribute update: assetId=" + assetId + ", attribute=" + attribute.getName());
                 return new Pair<>(true, null);
             }
         }
@@ -197,7 +159,7 @@ public final class ProtocolUtil {
             return new Pair<>(false, value);
         }
 
-        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL.toUpperCase());
+        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL);
 
         return Optional.ofNullable(converter.get(converterKey))
             .map(converterValue -> {
@@ -244,7 +206,7 @@ public final class ProtocolUtil {
                 Object messageFiltered = applyValueFilters(message, matchFilters);
                 if (messageFiltered != null) {
                     if (matchPredicate.asPredicate(currentMillisSupplier).test(messageFiltered)) {
-                        Protocol.LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: asssetId=" + assetId + ", attribute=" + attribute.getName());
+                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: asssetId=" + assetId + ", attribute=" + attribute.getName());
                         stateConsumer.accept(new AttributeState(assetId, attribute.getName(), message));
                     }
                 }

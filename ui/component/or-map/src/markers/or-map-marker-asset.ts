@@ -146,8 +146,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
 
-            if (attributeEvent.attributeState!.ref!.name === WellknownAttributes.LOCATION) {
-                this._updateLocation(attributeEvent.attributeState!.value as GeoJSONPoint);
+            if (attributeEvent.ref!.name === WellknownAttributes.LOCATION) {
+                this._updateLocation(attributeEvent.value as GeoJSONPoint);
                 return;
             }
 

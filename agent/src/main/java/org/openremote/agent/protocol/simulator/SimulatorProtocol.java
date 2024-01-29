@@ -106,22 +106,22 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        if (replayMap.containsKey(event.getAttributeRef())) {
-            LOG.info("Attempt to write to linked attribute that is configured for value replay so ignoring: " + attribute);
+    protected void doLinkedAttributeWrite(SimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        if (replayMap.containsKey(event.getRef())) {
+            LOG.info("Attempt to write to linked attribute that is configured for value replay so ignoring: " + event.getRef());
             return;
         }
 
         // Assume write through and endpoint returned the value we sent
         LOG.finest("Write to linked attribute so simulating that the endpoint returned the written value");
-        updateSensor(event.getAttributeRef(), processedValue);
+        updateSensor(event.getRef(), processedValue);
     }
 
     /**
      * Call this to simulate a sensor update
      */
     public void updateSensor(AttributeEvent attributeEvent) {
-        updateSensor(attributeEvent.getAttributeRef(), attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
+        updateSensor(attributeEvent.getRef(), attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
     }
 
     public void updateSensor(AttributeRef attributeRef, Object value) {
@@ -132,9 +132,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      * Call this to simulate a sensor update using the specified timestamp
      */
     public void updateSensor(AttributeRef attributeRef, Object value, long timestamp) {
-        AttributeState state = new AttributeState(attributeRef, value);
-
-        updateLinkedAttribute(state, timestamp);
+        updateLinkedAttribute(new AttributeState(attributeRef, value), timestamp);
     }
 
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {

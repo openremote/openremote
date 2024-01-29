@@ -286,6 +286,7 @@
   "loginTheme": "Login thema",
   "emailTheme": "Email thema",
   "resetPasswordAllowed": "Wachtwoord kan hersteld worden",
+  "rememberMe": "Ingelogd blijven",
   "deleteRealmConfirm":"Weet je zeker dat je deze realm wil verwijderen?",
   "serviceUser": "Service gebruiker",
   "user_plural": "Gebruikers",
