@@ -326,9 +326,12 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert (assetStorageService.find(managerTestSetup.electricityOptimisationAssetId) as EnergyOptimisationAsset).getFinancialSaving().orElse(0d) == -1.5
         }
 
-        when: "another optimisation run occurs"
+        when: "the battery energy level changes and time advances"
         batteryAsset.setEnergyLevel(70d)
         batteryAsset = assetStorageService.merge(batteryAsset)
+        advancePseudoClock(1, TimeUnit.SECONDS, container) // This prevents attribute timestamp issues
+
+        and: "another optimisation run occurs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES))
 
         then: "the optimisation saving should have decreased by the same amount (i.e. cost)"
@@ -337,9 +340,12 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert (assetStorageService.find(managerTestSetup.electricityOptimisationAssetId) as EnergyOptimisationAsset).getFinancialSaving().orElse(0d) == -3.0
         }
 
-        when: "another optimisation run occurs"
+        when: "the battery energy level changes and time advances"
         batteryAsset.setEnergyLevel(100d)
         batteryAsset = assetStorageService.merge(batteryAsset)
+        advancePseudoClock(1, TimeUnit.SECONDS, container) // This prevents attribute timestamp issues
+
+        and: "another optimisation run occurs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime.plus((long)optimiser.intervalSize*60*2, ChronoUnit.MINUTES))
 
         then: "the optimisation saving should have decreased by the same amount (i.e. cost)"
@@ -348,11 +354,13 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert (assetStorageService.find(managerTestSetup.electricityOptimisationAssetId) as EnergyOptimisationAsset).getFinancialSaving().orElse(0d) == -4.5
         }
 
-        when: "another optimisation run occurs"
+        when: "the battery energy level changes and time advances"
         batteryAsset.setEnergyLevel(130d)
         batteryAsset = assetStorageService.merge(batteryAsset)
+        advancePseudoClock(1, TimeUnit.SECONDS, container) // This prevents attribute timestamp issues
+
+        and: "another optimisation run occurs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime.plus((long)optimiser.intervalSize*60*3, ChronoUnit.MINUTES))
-        println("DONE")
 
         then: "the optimisation saving should have decreased by the same amount (i.e. cost)"
         conditions.eventually {
@@ -373,6 +381,9 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         when: "another optimisation run occurs (this should now be exporting from storage)"
         batteryAsset.setEnergyLevel(160d)
         batteryAsset = assetStorageService.merge(batteryAsset)
+        advancePseudoClock(1, TimeUnit.SECONDS, container) // This prevents attribute timestamp issues
+
+        and: "another optimisation run occurs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime.plus((long)optimiser.intervalSize*60*4, ChronoUnit.MINUTES))
 
         then: "the optimisation saving should have increased by the cost to import 30kWh (as battery will now be exporting)"

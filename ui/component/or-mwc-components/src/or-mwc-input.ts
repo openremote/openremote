@@ -49,6 +49,7 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
+import { styleMap } from "lit/directives/style-map.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -192,6 +193,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
+    const styles = {} as any;
 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
@@ -387,6 +389,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         step = format.resolution;
     }
 
+    if (inputType === InputType.COLOUR) {
+        styles.marginLeft = "24px"
+    }
+
     const supportsHelperText = inputTypeSupportsHelperText(inputType);
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
@@ -401,7 +407,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input ${ref(inputRef)} id="input" style="${styleMap(styles)}" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
@@ -1191,7 +1197,7 @@ export class OrMwcInput extends LitElement {
                             @mousedown="${(ev: MouseEvent) => onMouseDown(ev)}" @mouseup="${(ev: MouseEvent) => onMouseUp(ev)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                            ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
+                            ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}"><or-translate .value="${this.label}"></or-translate></span>` : ``}
                             ${!isIconButton && this.iconTrailing ? html`<or-icon class="${this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                         </button>
                     `;
@@ -1271,7 +1277,7 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
+                        <div id="component" style="width: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
                             <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
@@ -1300,7 +1306,7 @@ export class OrMwcInput extends LitElement {
 
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
-                        if (this.type === InputType.JSON) {
+                        if (this.type === InputType.JSON || this.type === InputType.JSON_OBJECT) {
                             if (valMinMax[0] !== undefined) {
                                 if (typeof valMinMax[0] !== "string" || valMinMax[0] === null) {
                                     try {
@@ -1549,7 +1555,8 @@ export class OrMwcInput extends LitElement {
                         }
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
-                        const searchable: boolean = (this.searchProvider != undefined);
+                        const searchable: boolean = (this.searchProvider !== undefined);
+                        const multi: boolean = this.multiple;
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                             if (this.adapter.isElementInContainer(el)) {
@@ -1559,6 +1566,9 @@ export class OrMwcInput extends LitElement {
                                 // if searchable, we manually close the menu when clicking a list item.
                                 // However, if something else than a list item (for example the search field) is clicked, it should not close, so abort.
                                 else if (el instanceof Element && !el.className.includes('mdc-list-item')) {
+                                    return;
+                                }
+                                else if (multi) {
                                     return;
                                 }
                             }

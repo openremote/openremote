@@ -42,7 +42,7 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 
     @Override
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, AssetDatapointQuery query) {
-        return assetPredictedDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(), query);
+        return assetPredictedDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(), query).toArray(ValueDatapoint[]::new);
     }
 
     @Override

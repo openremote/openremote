@@ -20,7 +20,6 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
-import { i18next } from "@openremote/or-translate";
 import { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { createRef, Ref, ref } from "lit/directives/ref.js";
@@ -64,11 +63,11 @@ export class OrConfJson extends LitElement {
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             },
             {
                 actionName: "ok",
-                content: i18next.t("update"),
+                content: "update",
                 action: _saveConfig
             },
 

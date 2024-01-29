@@ -1,7 +1,6 @@
 import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
 import {html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
 import {TimePresetCallback} from "@openremote/or-chart";
 import moment from "moment";
 import {OrAssetWidget} from "../util/or-asset-widget";
@@ -10,9 +9,11 @@ import {WidgetConfig} from "../util/widget-config";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {ChartSettings} from "../settings/chart-settings";
 import {WidgetSettings} from "../util/widget-settings";
+import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends WidgetConfig {
     attributeRefs: AttributeRef[];
+    rightAxisAttributes: AttributeRef[];
     datapointQuery: AssetDatapointQueryUnion;
     chartOptions?: any; // ChartConfiguration<"line", ScatterDataPoint[]>
     showTimestampControls: boolean;
@@ -52,6 +53,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
     const dates = dateFunc(new Date());
     return {
         attributeRefs: [],
+        rightAxisAttributes: [],
         datapointQuery: {
             type: "lttb",
             fromTimestamp: dates[0].getTime(),
@@ -62,6 +64,10 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
             options: {
                 scales: {
                     y: {
+                        min: undefined,
+                        max: undefined
+                    },
+                    y1: {
                         min: undefined,
                         max: undefined
                     }
@@ -170,7 +176,7 @@ export class ChartWidget extends OrAssetWidget {
         return html`
             ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
                 return html`
-                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}"
+                    <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
                               .timePresetOptions="${getDefaultTimePresetOptions()}" .timePresetKey="${this.widgetConfig?.defaultTimePresetKey}"
@@ -181,7 +187,7 @@ export class ChartWidget extends OrAssetWidget {
             }, () => {
                 return html`
                     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span>${i18next.t('noAttributesConnected')}</span>
+                        <span><or-translate value="noAttributesConnected"></or-translate></span>
                     </div>
                 `
             })}

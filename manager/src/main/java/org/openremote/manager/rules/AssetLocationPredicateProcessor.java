@@ -24,6 +24,6 @@ import java.util.List;
 @FunctionalInterface
 public interface AssetLocationPredicateProcessor {
 
-    void accept(RulesEngine t, List<RulesEngine.AssetStateLocationPredicates> u);
+    void accept(RulesEngine t, List<RulesEngine.AssetLocationPredicates> u);
 }
 

@@ -302,7 +302,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
         LOG.fine("Updating connected status for '" + userID + "' on " + attributeRefs.size() + " attribute(s) connected=" + connected);
         attributeRefs.forEach(attributeRef ->
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(attributeRef, connected)));
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(attributeRef, connected), getClass().getSimpleName()));
     }
 
     protected Pair<String, Set<AttributeRef>> getUserIDAndAttributeRefs(RemotingConnection connection) {

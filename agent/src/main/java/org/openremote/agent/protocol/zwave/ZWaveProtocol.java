@@ -120,7 +120,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (network == null) {
             return;
         }

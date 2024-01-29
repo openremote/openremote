@@ -31,14 +31,14 @@ export class KpiSettings extends AssetWidgetSettings {
         return html`
             <div>
                 <!-- Attribute selector -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${false}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
 
                 <!-- Display settings -->
-                <settings-panel displayName="${i18next.t('display')}" expanded="${true}">
+                <settings-panel displayName="display" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;"
                                       .options="${['year', 'month', 'week', 'day', 'hour']}"
@@ -46,7 +46,7 @@ export class KpiSettings extends AssetWidgetSettings {
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeframeSelect(ev)}"
                         ></or-mwc-input>
                         <div class="switchMwcInputContainer">
-                            <span>${i18next.t('dashboard.allowTimerangeSelect')}</span>
+                            <span><or-translate value="dashboard.allowTimerangeSelect"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="margin: 0 -10px;" .value="${this.widgetConfig.showTimestampControls}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTimeframeToggle(ev)}"
                             ></or-mwc-input>
@@ -54,7 +54,7 @@ export class KpiSettings extends AssetWidgetSettings {
                     </div>
                 </settings-panel>
 
-                <settings-panel displayName="${i18next.t('values')}" expanded="${true}">
+                <settings-panel displayName="values" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${this.widgetConfig.deltaFormat}"
                                       label="${i18next.t('dashboard.showValueAs')}"
@@ -71,8 +71,15 @@ export class KpiSettings extends AssetWidgetSettings {
         `;
     }
 
+    // When new attributes get selected
+    // Update the displayName to the new asset and attribute name.
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
+        this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
+        if(ev.detail.attributeRefs.length === 1) {
+            const attributeRef = ev.detail.attributeRefs[0];
+            const asset = ev.detail.assets.find((asset) => asset.id === attributeRef.id);
+            this.setDisplayName!(asset ? `${asset.name} - ${attributeRef.name}` : `${attributeRef.name}`);
+        }
         this.notifyConfigUpdate();
     }
 

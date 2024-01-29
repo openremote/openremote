@@ -20,6 +20,7 @@
 package org.openremote.model.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.TextUtil;
 
 import jakarta.persistence.Column;
@@ -40,7 +41,8 @@ public abstract class Event {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    public Date timestamp;
+    @JsonIgnore
+    protected Date timestamp;
 
     protected Event(long timestamp) {
         this.timestamp = new Date(timestamp);
@@ -65,6 +67,7 @@ public abstract class Event {
         return getEventType(getClass());
     }
 
+    @JsonProperty
     public long getTimestamp() {
         return timestamp != null ? timestamp.getTime() : 0L;
     }

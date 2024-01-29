@@ -323,7 +323,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (meshNetwork == null) {
             return;
         }

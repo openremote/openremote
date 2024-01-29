@@ -99,4 +99,12 @@ public class NotificationProcessingException extends RuntimeException {
     public String getReasonPhrase() {
         return getReason() + (message != null ? " (" + message + ")": "");
     }
+
+    @Override
+    public String toString() {
+        return NotificationProcessingException.class.getSimpleName() + "{" +
+            "reason=" + reason +
+            ", message='" + message + '\'' +
+            '}';
+    }
 }

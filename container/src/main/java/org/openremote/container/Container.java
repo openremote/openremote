@@ -27,13 +27,13 @@ import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.prometheus.client.CollectorRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -209,7 +209,23 @@ public class Container implements org.openremote.model.Container {
      */
     public void startBackground() throws Exception {
         start();
-        waitingThread = ContainerThreads.startWaitingThread();
+        waitingThread = startWaitingThread();
+    }
+
+    static Thread startWaitingThread() {
+        Thread thread = new Thread("Container Waiting") {
+            @Override
+            public void run() {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (InterruptedException ex) {
+                    // Ignore, thrown on shutdown
+                }
+            }
+        };
+        thread.setDaemon(false);
+        thread.start();
+        return thread;
     }
 
     @Override

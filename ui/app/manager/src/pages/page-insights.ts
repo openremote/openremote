@@ -5,7 +5,6 @@ import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
-import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "@openremote/or-dashboard-builder";
@@ -99,7 +98,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
             this._userId = response.data.id;
         }).catch((ex) => {
             console.error(ex);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         })
     }
 

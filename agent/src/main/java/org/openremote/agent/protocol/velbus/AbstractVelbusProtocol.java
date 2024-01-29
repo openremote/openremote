@@ -132,7 +132,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, VelbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(VelbusAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         // Get the device that this attribute is linked to
         int deviceAddress = getOrThrowAgentLinkProperty(agentLink.getDeviceAddress(), "device address");

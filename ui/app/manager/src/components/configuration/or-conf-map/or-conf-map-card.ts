@@ -119,12 +119,12 @@ export class OrConfMapCard extends LitElement {
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: i18next.t("cancel"),
+                content: "cancel",
             },
             {
                 default: true,
                 actionName: "ok",
-                content: i18next.t("yes"),
+                content: "yes",
                 action: () => {
                     this.dispatchEvent(new CustomEvent("remove"));
                 },
@@ -306,7 +306,7 @@ export class OrConfMapCard extends LitElement {
                     
                     ${when(this.canRemove, () => html`
                         <or-mwc-input outlined .type="${InputType.BUTTON}" id="remove-map"
-                                      .label="${i18next.t("configuration.deleteMapCustomization")}"
+                                      label="configuration.deleteMapCustomization"
                                       @click="${() => { this._showRemoveMapDialog(); }}"
                         ></or-mwc-input>
                     `)}

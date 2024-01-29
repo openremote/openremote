@@ -317,8 +317,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         and: "the client should have been notified about the attribute change"
         conditions.eventually {
             assert attributeEvents.size() == 1
-            assert attributeEvents.get(0).assetId == asset.id
-            assert attributeEvents.get(0).attributeName == "customAttribute"
+            assert attributeEvents.get(0).id == asset.id
+            assert attributeEvents.get(0).name == "customAttribute"
             assert attributeEvents.get(0).value.orElse(0d) == 99d
         }
 
@@ -329,18 +329,16 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the client should have been notified about the asset change and all attributes should have generated an attribute event"
         conditions.eventually {
             assert assetEvents.size() == 1
-            assert assetEvents.get(0).assetId == asset.id
+            assert assetEvents.get(0).id == asset.id
             assert assetEvents.get(0).assetName == asset.name
         }
 
         when: "another asset's attribute is updated within the system"
-        assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true)
-        )
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true))
 
         then: "the internal consumer should have been notified"
         conditions.eventually {
-            assert internalAttributeEvents.find{it.assetId == managerTestSetup.apartment2LivingroomId && it.attributeName == "lightSwitch" && it.value.orElse(false)} != null
+            assert internalAttributeEvents.find{it.id == managerTestSetup.apartment2LivingroomId && it.name == "lightSwitch" && it.value.orElse(false)} != null
         }
 
         and: "the client should not have been notified"

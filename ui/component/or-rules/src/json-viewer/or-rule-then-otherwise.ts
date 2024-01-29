@@ -256,14 +256,14 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         if(readonly) {
             recurrenceTemplate = html`
                 <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>
+                    <or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>
                 </div>
             `;
         } else {
         recurrenceTemplate = html`
                 <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>`,
+                        html`<or-mwc-input .type="${InputType.BUTTON}" label="${value}"></or-mwc-input>`,
                         getRecurrenceMenu(this.config),
                         value,
                         (value) => this.setRecurrenceOption(value as RecurrenceOption))}

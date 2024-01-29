@@ -64,6 +64,7 @@ public class HealthService implements ContainerService {
     public static final System.Logger LOG = System.getLogger(HealthService.class.getName());
     public static final String OR_METRICS_PORT = "OR_METRICS_PORT";
     public static final int OR_METRICS_PORT_DEFAULT = 8404;
+    public static final String OR_CAMEL_ROUTE_METRIC_PREFIX = "or_camel_route";
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
     protected boolean metricsEnabled;
     protected HTTPServer metricsServer;
@@ -133,32 +134,32 @@ public class HealthService implements ContainerService {
             micrometerRoutePolicyFactory.setNamingStrategy(new MicrometerRoutePolicyNamingStrategy() {
                 @Override
                 public String getName(Route route) {
-                    return "or_camel_route";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX;
                 }
 
                 @Override
                 public String getExchangesSucceededName(Route route) {
-                    return "or_camel_route_succeeded";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_succeeded";
                 }
 
                 @Override
                 public String getExchangesFailedName(Route route) {
-                    return "or_camel_route_failed";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed";
                 }
 
                 @Override
                 public String getExchangesTotalName(Route route) {
-                    return "or_camel_route_total";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_total";
                 }
 
                 @Override
                 public String getFailuresHandledName(Route route) {
-                    return "or_camel_route_failed_handled";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_handled";
                 }
 
                 @Override
                 public String getExternalRedeliveriesName(Route route) {
-                    return "or_camel_route_redeliveries";
+                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_redeliveries";
                 }
 
                 @Override

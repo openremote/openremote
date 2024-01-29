@@ -395,7 +395,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         // Build a filter to only respond to the callback for the requested attributes
         const eventFilter = (e: AttributeEvent) => {
-            const eventRef = e.attributeState!.ref!;
+            const eventRef = e.ref!;
 
             if (isAttributeRef) {
                 (ids as AttributeRef[]).forEach((ref: AttributeRef) => {
@@ -447,12 +447,10 @@ abstract class EventProviderImpl implements EventProvider {
                                             eventFilter({
                                                 eventType: "attribute",
                                                 timestamp: attr.timestamp,
-                                                attributeState: {
-                                                    value: attr.value,
-                                                    ref: {
-                                                        id: asset.id,
-                                                        name: attributeName
-                                                    }
+                                                value: attr.value,
+                                                ref: {
+                                                    id: asset.id,
+                                                    name: attributeName
                                                 }
                                             });
                                         }

@@ -25,13 +25,17 @@ dependencies {
     implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
     implementation "org.apache.camel:camel-undertow:$camelVersion"
 
-    implementation ("io.netty:netty-codec-http:$nettyVersion") {
-        force = true
+    implementation ("io.netty:netty-codec-http") {
+        version {
+            strictly "$nettyVersion"
+        }
     }
 
     // Exposed via MQTT API
-    api ("io.netty:netty-codec-mqtt:$nettyVersion") {
-        force = true
+    api ("io.netty:netty-codec-mqtt") {
+        version {
+            strictly "$nettyVersion"
+        }
     }
 
     implementation("org.apache.activemq:artemis-mqtt-protocol:$activeMQVersion") {
@@ -62,6 +66,10 @@ jar {
 afterEvaluate {
     // Change the working directory for the run task
     tasks.run.workingDir = isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir
+}
+
+tasks.withType(Sync).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 distributions {
