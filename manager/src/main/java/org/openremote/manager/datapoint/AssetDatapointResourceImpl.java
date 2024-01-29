@@ -20,6 +20,14 @@
 package org.openremote.manager.datapoint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -29,25 +37,17 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
-
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.container.AsyncResponse;
-import jakarta.ws.rs.container.ConnectionCallback;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -128,8 +128,11 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
             }
-            return assetDatapointService.queryDatapoints(assetId, attribute, query);
+            if (query != null) {
+                return assetDatapointService.queryDatapoints(assetId, attribute, query).toArray(ValueDatapoint[]::new);
+            }
 
+            return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName)).toArray(ValueDatapoint[]::new);
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ex);
         } catch (UnsupportedOperationException ex) {
@@ -196,9 +199,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
 
             ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
-            asyncResponse.register((ConnectionCallback) disconnected -> {
-                exportFuture.cancel(true);
-            });
+
+            asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
 
             File exportFile = null;
 

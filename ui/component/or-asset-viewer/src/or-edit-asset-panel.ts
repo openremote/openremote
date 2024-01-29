@@ -280,7 +280,7 @@ export class OrEditAssetPanel extends LitElement {
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
-                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._addAttribute()}"></or-mwc-input>
+                                    <or-mwc-input .type="${InputType.BUTTON}" label="addAttribute" icon="plus" @or-mwc-input-changed="${() => this._addAttribute()}"></or-mwc-input>
                                 </div>
                             </td>
                         </tr>
@@ -344,7 +344,7 @@ export class OrEditAssetPanel extends LitElement {
                                 ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
-                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="addMetaItems" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
                             </div>
                         </div>
                     </div>                     
@@ -482,7 +482,7 @@ export class OrEditAssetPanel extends LitElement {
             .setActions([
                 {
                     actionName: "cancel",
-                    content: i18next.t("cancel")
+                    content: "cancel"
                 },
                 {
                     default: true,
@@ -493,7 +493,7 @@ export class OrEditAssetPanel extends LitElement {
                             this._onModified();
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
                                     @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
@@ -545,7 +545,7 @@ export class OrEditAssetPanel extends LitElement {
             .setActions([
                 {
                     actionName: "cancel",
-                    content: i18next.t("cancel")
+                    content: "cancel"
                 },
                 {
                     default: true,
@@ -566,7 +566,7 @@ export class OrEditAssetPanel extends LitElement {
                             });
                         }
                     },
-                    content: i18next.t("add")
+                    content: "add"
                 }
             ])
             .setDismissAction(null));
@@ -608,18 +608,18 @@ export class OrEditAssetPanel extends LitElement {
         const dialogActions: DialogAction[] = [
             {
                 actionName: "clear",
-                content: i18next.t("none"),
+                content: "none",
                 action: clearParent
             },
             {
                 actionName: "ok",
-                content: i18next.t("ok"),
+                content: "ok",
                 action: setParent
             },
             {
                 default: true,
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             }
         ];
 
@@ -658,7 +658,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: true, label: i18next.t("parent")})}
-                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
+                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined label="edit" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;
     }

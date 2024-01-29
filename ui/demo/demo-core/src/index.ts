@@ -106,8 +106,8 @@ class OrDemo extends subscribe(manager)(LitElement) {
 
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
-            if (attributeEvent.attributeState && attributeEvent.attributeState.ref!.name === "alarmEnabled") {
-                this.alarmEnabled = attributeEvent.attributeState!.value;
+            if (attributeEvent && attributeEvent.ref!.name === "alarmEnabled") {
+                this.alarmEnabled = attributeEvent.value;
             }
         }
     }

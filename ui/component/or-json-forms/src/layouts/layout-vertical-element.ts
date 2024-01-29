@@ -139,7 +139,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
             </div>
         `;
 
@@ -179,7 +179,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.BUTTON}" label="addParameter" icon="plus" @or-mwc-input-changed="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
                         </div>`}
             </div>
         `;
@@ -375,7 +375,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             .setActions([
                 {
                     actionName: "cancel",
-                    content: i18next.t("cancel")
+                    content: "cancel"
                 },
                 {
                     default: true,
@@ -387,7 +387,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema));
                         this.handleChange(this.path || "", data);
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));

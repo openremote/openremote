@@ -147,7 +147,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined label="json" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
             </div>
         `;
 
@@ -173,7 +173,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 </div>
                 ${this.errors ? `` : html`
                     <div id="footer">
-                        <or-mwc-input .disabled="${itemCount && itemCount >= maxItems}" .type="${InputType.BUTTON}" .label="${i18next.t("addItem")}" icon="plus" @or-mwc-input-changed="${() => this.doAddItem()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${itemCount && itemCount >= maxItems}" .type="${InputType.BUTTON}" label="addItem" icon="plus" @or-mwc-input-changed="${() => this.doAddItem()}"></or-mwc-input>
                     </div>
                 `}
             </div>
@@ -312,7 +312,7 @@ export class ControlArrayElement extends ControlBaseElement {
             .setActions([
                 {
                     actionName: "cancel",
-                    content: i18next.t("cancel")
+                    content: "cancel"
                 },
                 {
                     default: true,
@@ -323,7 +323,7 @@ export class ControlArrayElement extends ControlBaseElement {
                             this.addItem(value);
                         }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));

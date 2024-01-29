@@ -20,6 +20,8 @@
 package org.openremote.manager.datapoint;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
@@ -34,17 +36,16 @@ import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
-import jakarta.persistence.TypedQuery;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
@@ -90,25 +91,28 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     }
 
     public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
+        upsertValue(assetId, attributeName, value, timestamp.toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+    public void upsertValue(String assetId, String attributeName, Object value, long timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
-                em.unwrap(Session.class).doWork(connection -> {
+            em.unwrap(Session.class).doWork(connection -> {
 
-                    getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
-                    PreparedStatement st;
+                getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
+                PreparedStatement st;
 
-                    try {
-                        st = getUpsertPreparedStatement(connection);
-                        setUpsertValues(st, assetId, attributeName, value, timestamp);
-                        st.executeUpdate();
-                    } catch (Exception e) {
-                        String msg = "Failed to insert/update data point: ";
-                        getLogger().log(Level.WARNING, msg, e);
-                        throw new IllegalStateException(msg, e);
-                    }
-                }));
+                try {
+                    st = getUpsertPreparedStatement(connection);
+                    setUpsertValues(st, assetId, attributeName, value, timestamp);
+                    st.executeUpdate();
+                } catch (Exception e) {
+                    String msg = "Failed to insert/update data point: ";
+                    getLogger().log(Level.WARNING, msg, e);
+                    throw new IllegalStateException(msg, e);
+                }
+            }));
     }
 
-    public void upsertValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) throws IllegalStateException {
+    public void upsertValues(String assetId, String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) throws IllegalStateException {
         persistenceService.doTransaction(em ->
                 em.unwrap(Session.class).doWork(connection -> {
 
@@ -118,8 +122,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                     try {
                         st = getUpsertPreparedStatement(connection);
 
-                        for (Pair<?, LocalDateTime> valueAndTimestamp : valuesAndTimestamps) {
-                            setUpsertValues(st, assetId, attributeName, valueAndTimestamp.key, valueAndTimestamp.value);
+                        for (ValueDatapoint<?> valueAndTimestamp : valuesAndTimestamps) {
+                            setUpsertValues(st, assetId, attributeName, valueAndTimestamp.getValue(), valueAndTimestamp.getTimestamp());
                             st.addBatch();
                         }
                         st.executeBatch();
@@ -131,14 +135,14 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 }));
     }
 
-    public List<T> getDatapoints(AttributeRef attributeRef) {
+    public List<ValueDatapoint> getDatapoints(AttributeRef attributeRef) {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery(
-                        "select dp from " + getDatapointClass().getSimpleName() + " dp " +
+                        "select new org.openremote.model.datapoint.ValueDatapoint(dp.timestamp, dp.value) from " + getDatapointClass().getSimpleName() + " dp " +
                                 "where dp.assetId = :assetId " +
                                 "and dp.attributeName = :attributeName " +
                                 "order by dp.timestamp desc",
-                        getDatapointClass())
+                        ValueDatapoint.class)
                         .setParameter("assetId", attributeRef.getId())
                         .setParameter("attributeName", attributeRef.getName())
                         .getResultList());
@@ -169,7 +173,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         });
     }
 
-    public ValueDatapoint<?>[] queryDatapoints(String assetId, String attributeName, AssetDatapointQuery datapointQuery) {
+    public List<ValueDatapoint<?>> queryDatapoints(String assetId, String attributeName, AssetDatapointQuery datapointQuery) {
         Asset<?> asset = assetStorageService.find(assetId, true);
         if(asset == null) {
             throw new IllegalStateException("Asset not found: " + assetId);
@@ -177,10 +181,10 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         Attribute<?> assetAttribute = asset.getAttribute(attributeName)
                 .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeName));
 
-        return this.queryDatapoints(asset.getId(), assetAttribute, datapointQuery);
+        return queryDatapoints(asset.getId(), assetAttribute, datapointQuery);
     }
 
-    public ValueDatapoint<?>[] queryDatapoints(String assetId, Attribute<?> attribute, AssetDatapointQuery datapointQuery) {
+    public List<ValueDatapoint<?>> queryDatapoints(String assetId, Attribute<?> attribute, @NotNull AssetDatapointQuery datapointQuery) {
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Map<Integer, Object> parameters = datapointQuery.getSQLParameters(attributeRef);
@@ -191,7 +195,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
 
                     @Override
-                    public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
+                    public List<ValueDatapoint<?>> execute(Connection connection) throws SQLException {
 
                         Class<?> attributeType = attribute.getTypeClass();
                         boolean isNumber = Number.class.isAssignableFrom(attributeType);
@@ -233,7 +237,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     }
                                     result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }
-                                return result.toArray(new ValueDatapoint<?>[0]);
+                                return result;
                             }
                         }
                     }
@@ -277,14 +281,14 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 "SET value = excluded.value");
     }
 
-    protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, Object value, LocalDateTime timestamp) throws Exception {
+    protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, Object value, long timestamp) throws Exception {
         PGobject pgJsonValue = new PGobject();
         pgJsonValue.setType("jsonb");
         pgJsonValue.setValue(ValueUtil.asJSON(value).orElse("null"));
         st.setString(1, assetId);
         st.setString(2, attributeName);
         st.setObject(3, pgJsonValue);
-        st.setObject(4, timestamp);
+        st.setObject(4, Instant.ofEpochMilli(timestamp).atZone(ZoneOffset.UTC).toLocalDateTime());
     }
 
     protected abstract Class<T> getDatapointClass();

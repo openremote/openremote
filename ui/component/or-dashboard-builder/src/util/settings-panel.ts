@@ -84,7 +84,7 @@ export class SettingsPanel extends LitElement {
                 </div>
                 ${when(title, () => html`
                     <div id="panel-title">
-                        <span>${this.displayName}</span>
+                        <span><or-translate value="${this.displayName}"></or-translate></span>
                     </div>
                 `)}
             </div>

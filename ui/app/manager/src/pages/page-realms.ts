@@ -308,6 +308,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
@@ -318,12 +319,12 @@ export class PageRealms extends Page<AppStateKeyed> {
                                   <div class="row" style="margin-bottom: 0;">
                                   ${realm.id && !readonly ? html`
                                       ${realm.name !== "master" && manager.isSuperUser() ? html`
-                                        <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @or-mwc-input-changed="${() => this._deleteRealm(realm)}"></or-mwc-input>  
+                                        <or-mwc-input label="delete" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @or-mwc-input-changed="${() => this._deleteRealm(realm)}"></or-mwc-input>  
                                       ` : ``}
-                                      <or-mwc-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
+                                      <or-mwc-input style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
                                   ` : !readonly ? html`
-                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
-                                    <or-mwc-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
+                                    <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
+                                    <or-mwc-input style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
                                   `: ``}    
                                   </div>
                               </div>
@@ -361,9 +362,9 @@ export class PageRealms extends Page<AppStateKeyed> {
     private async _updateRealm(realm) {
         const response = await manager.rest.api.RealmResource.update(realm.name, realm);
         if (response.status === 204) {
-            showSnackbar(undefined, i18next.t("saveRealmSucceeded"));
+            showSnackbar(undefined, "saveRealmSucceeded");
         } else {
-            showSnackbar(undefined, i18next.t("saveRealmFailed"));
+            showSnackbar(undefined, "saveRealmFailed");
         }
         //TODO improve this so that header realm picker is updated
         window.location.reload();
@@ -372,9 +373,9 @@ export class PageRealms extends Page<AppStateKeyed> {
     private async _createRealm(realm) {
         await manager.rest.api.RealmResource.create(realm).then(response => {
             if (response.status === 204) {
-                showSnackbar(undefined, i18next.t("saveRealmSucceeded"));
+                showSnackbar(undefined, "saveRealmSucceeded");
             } else {
-                showSnackbar(undefined, i18next.t("saveRealmFailed"));
+                showSnackbar(undefined, "saveRealmFailed");
             }
             //TODO improve this so that header realm picker is updated
             window.location.reload();
@@ -391,7 +392,7 @@ export class PageRealms extends Page<AppStateKeyed> {
             await manager.rest.api.RealmResource.delete(realm.name);
             this._realms = this._realms.filter(r => r !== realm);
         } catch (e) {
-            showSnackbar(undefined, i18next.t("realmDeleteFailed"), i18next.t("dismiss"));
+            showSnackbar(undefined, "realmDeleteFailed", "dismiss");
         }
       };
 
@@ -410,14 +411,13 @@ export class PageRealms extends Page<AppStateKeyed> {
       const dialogActions: DialogAction[] = [
           {
               actionName: "ok",
-              disabled: true,
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @or-mwc-input-changed="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled .label="${i18next.t("ok")}"></or-mwc-input>`,
+              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
               action: doDelete
           },
           {
               default: true,
               actionName: "cancel",
-              content: i18next.t("cancel")
+              content: "cancel"
           }
       ];
 

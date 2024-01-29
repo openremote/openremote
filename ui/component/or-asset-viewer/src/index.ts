@@ -433,14 +433,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
                     if (response.status !== 200) {
-                        showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                        showSnackbar(undefined, "somethingWentWrong", "dismiss");
                     } else {
-                        showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
+                        showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", "dismiss");
                         console.info(response.data, response) //todo: do something with this response
                     }
                 })
                 .catch((err) => {
-                    showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                    showSnackbar(undefined, "somethingWentWrong", "dismiss");
                     console.error(err);
                 })
                 .finally(() => {
@@ -483,7 +483,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
 
                 reader.onload = () => {
                     if (!reader.result) {
-                        showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                        showSnackbar(undefined, "somethingWentWrong", "dismiss");
                         console.error(reader);
                     } else {
                         let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
@@ -499,14 +499,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo, undefined, {timeout: 30000})
                             .then(response => {
                                 if (response.status !== 200) {
-                                    showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                                    showSnackbar(undefined, "somethingWentWrong", "dismiss");
                                 } else {
-                                    showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
+                                    showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", "dismiss");
                                     console.info(response.data, response)
                                 }
                             })
                             .catch((err) => {
-                                showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                                showSnackbar(undefined, "somethingWentWrong", "dismiss");
                                 console.error(err);
                             })
                             .finally(() => {
@@ -526,7 +526,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         if (descriptor.assetImport) {
             content = html`
                 <div id="fileupload">
-                    <or-mwc-input style="flex: 0 1 auto;" outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                    <or-mwc-input style="flex: 0 1 auto;" outlined label="selectFile" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
                         <input id="fileupload-elem" name="configfile" type="file" accept=".*" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
                     <or-mwc-input style="flex: 1 1 auto; margin: 0 4px 0 10px;" id="filename-elem" .label="${i18next.t("file")}" .type="${InputType.TEXT}" disabled></or-mwc-input>
@@ -537,11 +537,11 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
         }
         else if (descriptor.assetDiscovery) {
             content = html`
-                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
-                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" label="discoverAssets" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>
+                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" label="cancel" @or-mwc-input-changed="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
             `;
         } else {
-            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
+            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", "dismiss");
         }
 
         return html`
@@ -999,7 +999,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
         }
     } catch (e) {
         success = false;
-        showSnackbar(undefined, i18next.t(isUpdate ? "saveAssetFailed" : "createAssetFailed"), i18next.t("dismiss"));
+        showSnackbar(undefined, (isUpdate ? "saveAssetFailed" : "createAssetFailed"), "dismiss");
         console.error("Failed to save asset", e);
     }
 
@@ -1267,18 +1267,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const dialogActions: DialogAction[] = [
             {
                 actionName: "clear",
-                content: i18next.t("none"),
+                content: "none",
                 action: clearParent
             },
             {
                 actionName: "ok",
-                content: i18next.t("ok"),
+                content: "ok",
                 action: setParent
             },
             {
                 default: true,
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             }
         ];
 
@@ -1326,7 +1326,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 <div class="msg">
                     <div class="multipleAssetsView">
                         <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
                     </div>
                 </div>
             `;
@@ -1428,7 +1428,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </div>
                     <div id="right-wrapper" class="mobileHidden">
                         ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
-                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
+                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" label="save" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
                         ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" .disabled="${!this._assetInfo.asset.id}" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
                         `: ``}
                     </div>
@@ -1514,7 +1514,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     _onEvent(event: SharedEvent) {
         const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).attributeState!.ref!.id == assetId);
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == assetId);
 
         if (!processEvent) {
             return;
@@ -1580,7 +1580,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             // Inject the attribute as we don't subscribe to events from individual attribute inputs
             const attributeEvent = event as AttributeEvent;
-            const attrName = attributeEvent.attributeState!.ref!.name!;
+            const attrName = attributeEvent.ref!.name!;
 
             if (asset && asset.attributes && asset.attributes[attrName]) {
 
@@ -1589,7 +1589,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 // Update attribute within the asset
                 const attr = {...asset.attributes[attrName]};
-                attr.value = attributeEvent.attributeState!.value;
+                attr.value = attributeEvent.value;
                 attr.timestamp = attributeEvent.timestamp;
                 asset.attributes[attrName] = attr;
 

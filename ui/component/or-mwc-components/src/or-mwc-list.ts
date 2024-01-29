@@ -183,15 +183,15 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
         if (secondaryText !== undefined) {
             textTemplate = html`
                     <span class="mdc-list-item__text">
-                        <span class="mdc-list-item__primary-text">${translate && !!text ? i18next.t(text) : text}</span>
-                        <span class="mdc-list-item__secondary-text">${translate && !!secondaryText ? i18next.t(secondaryText) : secondaryText}</span>
+                        <span class="mdc-list-item__primary-text">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</span>
+                        <span class="mdc-list-item__secondary-text">${translate && !!secondaryText ? html`<or-translate value="${secondaryText}"></or-translate>` : secondaryText}</span>
                     </span>
                 `;
         } else {
             if (type === ListType.RADIO) {
-                textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${translate && !!text ? i18next.t(text) : text}</label>`;
+                textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</label>`;
             } else {
-                textTemplate = html`<span class="mdc-list-item__text" title="${translate && !!text ? i18next.t(text) : text}">${translate && !!text ? i18next.t(text) : text}</span>`;
+                textTemplate = html`<span class="mdc-list-item__text" title="${translate && !!text ? i18next.t(text) : text}">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</span>`;
             }
         }
     }

@@ -6,6 +6,7 @@ import {when} from "lit/directives/when.js";
 import {map} from "lit/directives/map.js";
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
+import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {DefaultColor5, Util} from "@openremote/core";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -215,7 +216,7 @@ export class AttributesPanel extends LitElement {
             assets = response.data;
         }).catch((reason) => {
             console.error(reason);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         });
         return assets;
     }
@@ -288,11 +289,11 @@ export class AttributesPanel extends LitElement {
                     </div>
 
                 `, () => html`
-                    <span style="padding: 14px 0; display: block;">${i18next.t('noAttributesConnected')}</span>
+                    <span style="padding: 14px 0; display: block;"><or-translate value="noAttributesConnected"></or-translate></span>
                 `)}
 
                 <!-- Button that opens attribute selection -->
-                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('attribute')}" icon="${(this.multi || this.attributeRefs.length === 0) ? "plus" : "swap-horizontal"}"
+                <or-mwc-input .type="${InputType.BUTTON}" label="attribute" icon="${(this.multi || this.attributeRefs.length === 0) ? "plus" : "swap-horizontal"}"
                               style="margin-top: 8px;"
                               @or-mwc-input-changed="${() => this.openAttributeSelector(this.attributeRefs, this.multi, this.onlyDataAttrs, this.attributeFilter)}">
                 </or-mwc-input>

@@ -22,14 +22,14 @@ export class GaugeSettings extends WidgetSettings {
         return html`
             <div>
                 <!-- Attribute selection -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" .attributeFilter="${attributeFilter}" style="padding-bottom: 12px;"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
                 
                 <!-- Min/max and decimals options-->
-                <settings-panel displayName="${i18next.t('values')}" expanded="${true}">
+                <settings-panel displayName="values" expanded="${true}">
                     <div style="padding-bottom: 12px; display: flex; flex-direction: column; gap: 12px;">
                         <div style="display: flex; gap: 8px;">
                             <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('min')}" .max="${this.widgetConfig.max}" .value="${this.widgetConfig.min}"
@@ -48,7 +48,7 @@ export class GaugeSettings extends WidgetSettings {
                 </settings-panel>
                 
                 <!-- Thresholds panel -->
-                <settings-panel displayName="${i18next.t('thresholds')}" expanded="${true}">
+                <settings-panel displayName="thresholds" expanded="${true}">
                     <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .valueType="${'number'}" style="padding-bottom: 12px;"
                                       .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                       @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdChange(ev)}">

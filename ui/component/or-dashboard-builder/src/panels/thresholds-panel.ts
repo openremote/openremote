@@ -2,7 +2,6 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined.js";
-import {i18next} from "@openremote/or-translate";
 import {DefaultColor5} from "@openremote/core";
 import {style} from "../style";
 
@@ -168,7 +167,7 @@ export class ThresholdsPanel extends LitElement {
                             </div>
                         `
                     })}
-                    <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
+                    <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
                                   @or-mwc-input-changed="${() => this.addNewThreshold()}">
                     </or-mwc-input>
                 ` : null}
@@ -238,7 +237,7 @@ export class ThresholdsPanel extends LitElement {
                             </div>
                         `
                     })}
-                    <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('threshold')}" icon="plus"
+                    <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
                                   @or-mwc-input-changed="${() => this.addNewThreshold()}">
                     </or-mwc-input>
                 ` : null}

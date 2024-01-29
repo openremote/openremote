@@ -22,15 +22,13 @@ package org.openremote.model.asset.agent;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
+import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnoreTypeParams;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.Map;
 import java.util.logging.Logger;
@@ -72,7 +70,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * The protocol handles read and write of linked attributes:
  * <p>
  * If the actual state of the device (or service) changes, the linked protocol writes the new state into the attribute
- * value and notifies the context broker of the change. A protocol updates a linked attributes' value by sending  an
+ * by sending an {@link AttributeEvent} using the {@link #}value and notifies the context broker of the change. A protocol updates a linked attributes' value by sending  an
  * {@link AttributeEvent} messages on the {@link #SENSOR_QUEUE}, including the source protocol name in header {@link
  * #SENSOR_QUEUE_SOURCE_PROTOCOL}.
  * <p>
@@ -100,7 +98,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <ol>
  * <li>Configurable value conversion which allows the value sent from the linked attribute to be converted in a
  * configurable way before being sent to the protocol for processing (see {@link AgentLink#getWriteValueConverter})
- * <li>Configurable dynamic value insertion (replacement of {@link #DYNAMIC_VALUE_PLACEHOLDER} strings within a
+ * <li>Configurable dynamic value insertion (replacement of {@link org.openremote.model.Constants#DYNAMIC_VALUE_PLACEHOLDER} strings within a
  * pre-defined JSON string with the value sent from the linked attribute (this allows for attribute values to be inserted
  * into a larger payload before processing by the protocol; it also allows the written value to be fixed or statically
  * converted (see {@link AgentLink#getWriteValue}).
@@ -154,24 +152,6 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public interface Protocol<T extends Agent<T, ?, ?>> {
 
     Logger LOG = SyslogCategory.getLogger(PROTOCOL, Protocol.class);
-    String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
-    String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
-
-    // TODO: Some of these options should be configurable depending on expected load etc.
-    // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
-    String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
-
-    // Message queue for communicating from protocol to asset/thing layer (sensor changed, trigger asset attribute update)
-    String SENSOR_QUEUE = "seda://SensorQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-
-    String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
-
-    String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\"?\\{\\$value}\"?";
-
-    /**
-     * Specify to use time. First # delimiter used to specify format. Second # delimiter used to add or subtract millis
-     */
-    String DYNAMIC_TIME_PLACEHOLDER_REGEXP = "\"?\\{\\$time#?([a-z,A-Z,\\-,\\s,:]*)#?(-?\\d*)?}\"?";
 
     /**
      * Prefixes the log message with {@link #getProtocolName} and {@link #getProtocolInstanceUri}.
@@ -231,4 +211,40 @@ public interface Protocol<T extends Agent<T, ?, ?>> {
      * Get the {@link Agent} associated with this protocol instance.
      */
     T getAgent();
+
+    /**
+     * Update the value of a linked {@link Attribute} linked to this {@link Protocol}; call this to publish new sensor
+     * values. Implementators are responsible for ensuring the requested {@link Attribute} is actually linked to this
+     * {@link Protocol}.
+     */
+    void updateLinkedAttribute(final AttributeState state, long timestamp);
+
+    /**
+     * Update the value of a linked {@link Attribute} linked to this {@link Protocol}; call this to publish new sensor
+     * values. Implementators are responsible for ensuring the requested {@link Attribute} is actually linked to this
+     * {@link Protocol}.
+     */
+    void updateLinkedAttribute(final AttributeState state);
+
+
+    /**
+     * Called by instantiator during instantiation to allow the {@link Protocol} to interact with {@link Asset}s and
+     * {@link Attribute}s.
+     */
+    void setAssetService(ProtocolAssetService assetService);
+
+    /**
+     * An Attribute event (write) has been requested for an attribute linked to this protocol; implementations should
+     * handle multithreaded requests or use some sort of synchronisation for thread safety. The {@link AttributeEvent}
+     * will be enriched with data about the relating asset and attribute.
+     */
+    void processLinkedAttributeWrite(AttributeEvent event);
+
+    /**
+     * Called when one of the associated {@link Agent}'s {@link Attribute}s are updated; the implementation can decide
+     * if it wants to request the protocol instance to be re-created thus simplifying handling of config changes.
+     *
+     * @return true if the agent should be redeployed (this will stop current protocol instance and create a new one).
+     */
+    boolean onAgentAttributeChanged(AttributeEvent event);
 }

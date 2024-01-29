@@ -202,8 +202,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             TriggeredEventSubscription triggeredEvent = receivedMessages[0] as TriggeredEventSubscription
             assert triggeredEvent.subscriptionId == "attributes"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent) triggeredEvent.events[0]).assetId == managerTestSetup.apartment1LivingroomId
-            assert ((AttributeEvent) triggeredEvent.events[0]).attributeName == "targetTemperature"
+            assert ((AttributeEvent) triggeredEvent.events[0]).id == managerTestSetup.apartment1LivingroomId
+            assert ((AttributeEvent) triggeredEvent.events[0]).name == "targetTemperature"
             assert ((AttributeEvent) triggeredEvent.events[0]).value.orElse(0) == 5
         }
 
@@ -223,8 +223,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             TriggeredEventSubscription triggeredEvent = receivedMessages2[0] as TriggeredEventSubscription
             assert triggeredEvent.subscriptionId == "attributes2"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent) triggeredEvent.events[0]).assetId == managerTestSetup.apartment2LivingroomId
-            assert ((AttributeEvent) triggeredEvent.events[0]).attributeName == "targetTemperature"
+            assert ((AttributeEvent) triggeredEvent.events[0]).id == managerTestSetup.apartment2LivingroomId
+            assert ((AttributeEvent) triggeredEvent.events[0]).name == "targetTemperature"
             assert ((AttributeEvent) triggeredEvent.events[0]).value.orElse(0) == 15
         }
 
@@ -247,7 +247,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert (receivedMessages.get(0) as TriggeredEventSubscription).subscriptionId == "assets"
             assert (receivedMessages.get(0) as TriggeredEventSubscription).events.size() == 1
             assert (receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) instanceof AssetEvent
-            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).assetId == managerTestSetup.apartment1LivingroomId
+            assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).id == managerTestSetup.apartment1LivingroomId
             assert ((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.size() == 7
             assert !((receivedMessages.get(0) as TriggeredEventSubscription).events.get(0) as AssetEvent).attributeNames.contains("testAttribute")
         }
@@ -342,8 +342,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             TriggeredEventSubscription triggeredEvent = receivedMessages[0] as TriggeredEventSubscription
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).assetId == managerTestSetup.apartment1LivingroomId
-            assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
+            assert ((AttributeEvent)triggeredEvent.events[0]).id == managerTestSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).name == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.orElse(0) == 5
         }
 
@@ -357,8 +357,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             TriggeredEventSubscription triggeredEvent = receivedMessages[0] as TriggeredEventSubscription
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).assetId == managerTestSetup.apartment1LivingroomId
-            assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
+            assert ((AttributeEvent)triggeredEvent.events[0]).id == managerTestSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).name == "targetTemperature"
             assert ((AttributeEvent)triggeredEvent.events[0]).value.orElse(0) == 5
         }
 
@@ -372,8 +372,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             TriggeredEventSubscription triggeredEvent = receivedMessages[0] as TriggeredEventSubscription
             assert triggeredEvent.subscriptionId == "1"
             assert triggeredEvent.events.size() == 1
-            assert ((AttributeEvent)triggeredEvent.events[0]).assetId == managerTestSetup.apartment1LivingroomId
-            assert ((AttributeEvent)triggeredEvent.events[0]).attributeName == "targetTemperature"
+            assert ((AttributeEvent)triggeredEvent.events[0]).id == managerTestSetup.apartment1LivingroomId
+            assert ((AttributeEvent)triggeredEvent.events[0]).name == "targetTemperature"
             assert !((AttributeEvent)triggeredEvent.events[0]).value.isPresent()
         }
 
