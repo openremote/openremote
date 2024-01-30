@@ -621,16 +621,16 @@ export class WebSocketEventProvider extends EventProviderImpl {
     protected _doConnect(): Promise<boolean> {
         let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
-        if(manager.isTokenExpired()) {
-            throw new Error("Aborted websocket connect attempt; access token is expired.");
-        }
-
         if (manager.authenticated) {
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
         }
 
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
+
+        if(manager.isTokenExpired()) {
+            this._connectDeferred.resolve(false);
+        }
 
         this._webSocket!.onopen = () => {
             if (this._connectDeferred) {
