@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 import java.awt.*;
 import java.io.Serializable;
@@ -100,7 +100,7 @@ public class ColourRGB implements Serializable {
     @JsonValue
     @Override
     public String toString() {
-        return "#" + ProtocolUtil.bytesToHexString(new byte[] {(byte)r, (byte)g, (byte)b});
+        return "#" + ValueUtil.bytesToHexString(new byte[] {(byte)r, (byte)g, (byte)b});
     }
 
     public static ColourRGB fromHexString(String hexString) {
@@ -110,7 +110,7 @@ public class ColourRGB implements Serializable {
         if (hexString.charAt(0) == '#') {
             hexString = hexString.substring(1);
         }
-        byte[] values = ProtocolUtil.bytesFromHexString(hexString);
+        byte[] values = ValueUtil.bytesFromHexString(hexString);
         if (values.length == 3) {
             return new ColourRGB(
                 Byte.toUnsignedInt(values[0]),

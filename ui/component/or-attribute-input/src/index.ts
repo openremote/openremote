@@ -665,7 +665,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected getValue(): any {
-        return this._attributeEvent ? this._attributeEvent.attributeState!.value : this.attribute ? this.attribute.value : this.value;
+        return this._attributeEvent ? this._attributeEvent.value : this.attribute ? this.attribute.value : this.value;
     }
 
     protected getTimestamp(): number | undefined {
@@ -682,7 +682,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
         const oldValue = this.getValue();
         this._attributeEvent = event as AttributeEvent;
-        this._onAttributeValueChanged(oldValue, this._attributeEvent.attributeState!.value, event.timestamp);
+        this._onAttributeValueChanged(oldValue, this._attributeEvent.value, event.timestamp);
     }
 
     public checkValidity(): boolean {
@@ -741,10 +741,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             super._sendEvent({
                 eventType: "attribute",
-                attributeState: {
-                    ref: attributeRef,
-                    value: newValue
-                }
+                ref: attributeRef,
+                value: newValue
             } as AttributeEvent);
 
             this._writeTimeoutHandler = window.setTimeout(() => this._onWriteTimeout(), this.writeTimeout);

@@ -28,9 +28,9 @@ import org.openremote.model.rules.SunPositionTrigger;
  * <li>{@link #duration} - ISO8601 duration expression (e.g. 'PT1H') after which the condition becomes true - 1min precision</li>
  * <li>{@link #cron} - CRON expression (e.g. "*&#47;5 * * * *") in UTC at which time the condition becomes true - 1min precision</li>
  * <li>{@link #sun} - {@link SunPositionTrigger} at which time the condition becomes true - 1min precision</li>
- * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.rules.AssetState}s
+ * <li>{@link #assets} - {@link AssetQuery} to be applied to the {@link org.openremote.model.attribute.AttributeInfo}s
  * available within the rule engine this rule is loaded into. Evaluates to true when one or more
- * {@link org.openremote.model.rules.AssetState}s (referencing unique {@link org.openremote.model.asset.Asset}s) are
+ * {@link org.openremote.model.attribute.AttributeInfo}s (referencing unique {@link org.openremote.model.asset.Asset}s) are
  * returned after applying the query.</li>
  * </ol>
  * <p>

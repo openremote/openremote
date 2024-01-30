@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
@@ -39,27 +38,69 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
     public static final String FILTER_TYPE = "asset";
 
-    protected String[] assetIds;
+    protected List<String> assetIds;
+    protected List<String> assetTypes;
+    protected List<Class<? extends Asset>> assetClasses;
     protected String realm;
-    protected String[] parentIds;
-    protected String[] path;
-    protected String[] attributeNames;
+    protected List<String> parentIds;
+    protected List<String> path;
+    protected List<String> attributeNames;
     protected boolean publicEvents;
     protected boolean restrictedEvents;
+    protected boolean internal;
 
     public AssetFilter() {
     }
 
     public AssetFilter(String... assetIds) {
+        this.assetIds = Arrays.asList(assetIds);
+    }
+
+    public AssetFilter(List<String> assetIds) {
         this.assetIds = assetIds;
     }
 
     public String[] getAssetIds() {
-        return assetIds;
+        return assetIds != null ? assetIds.toArray(new String[0]) : null;
+    }
+
+    public AssetFilter<T> setAssetIds(List<String> assetIds) {
+        this.assetIds = assetIds;
+        return this;
     }
 
     public AssetFilter<T> setAssetIds(String... assetIds) {
-        this.assetIds = assetIds;
+        this.assetIds = Arrays.asList(assetIds);
+        return this;
+    }
+
+    public String[] getAssetTypes() {
+        return assetTypes != null ? assetTypes.toArray(new String[0]) : null;
+    }
+
+    public AssetFilter<T> setAssetTypes(String... assetTypes) {
+        this.assetTypes = Arrays.asList(assetTypes);
+        return this;
+    }
+
+    public AssetFilter<T> setAssetTypes(List<String> assetTypes) {
+        this.assetTypes = assetTypes;
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Class<? extends Asset>[] getAssetClasses() {
+        return assetClasses != null ? assetClasses.toArray(new Class[0]) : null;
+    }
+
+    @SafeVarargs
+    public final AssetFilter<T> setAssetClasses(Class<? extends Asset>... assetClasses) {
+        this.assetClasses = Arrays.asList(assetClasses);
+        return this;
+    }
+
+    public AssetFilter<T> setAssetClasses(List<Class<? extends Asset>> assetClasses) {
+        this.assetClasses = assetClasses;
         return this;
     }
 
@@ -73,29 +114,29 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     }
 
     public String[] getParentIds() {
-        return parentIds;
+        return parentIds != null ? parentIds.toArray(new String[0]) : null;
     }
 
     public AssetFilter<T> setParentIds(String... parentIds) {
-        this.parentIds = parentIds;
+        this.parentIds = Arrays.asList(parentIds);
         return this;
     }
 
     public String[] getPath() {
-        return path;
+        return path != null ? path.toArray(new String[0]) : null;
     }
 
     public AssetFilter<T> setPath(String[] path) {
-        this.path = path;
+        this.path = Arrays.asList(path);
         return this;
     }
 
     public String[] getAttributeNames() {
-        return attributeNames;
+        return attributeNames != null ? attributeNames.toArray(new String[0]) : null;
     }
 
     public AssetFilter<T> setAttributeNames(String... attributeNames) {
-        this.attributeNames = attributeNames;
+        this.attributeNames = Arrays.asList(attributeNames);
         return this;
     }
 
@@ -117,6 +158,14 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return this;
     }
 
+    public boolean isInternal() {
+        return internal;
+    }
+
+    public void setInternal(boolean internal) {
+        this.internal = internal;
+    }
+
     @Override
     public String getFilterType() {
         return FILTER_TYPE;
@@ -128,9 +177,16 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         MetaItemDescriptor<?> filterAttributesBy = null;
 
+        // Non internal subscribers of attribute events only get value updates so make sure the value has changed
+        if (!internal && event instanceof AttributeEvent attributeEvent) {
+            if (!attributeEvent.valueChanged()) {
+                return null;
+            }
+        }
+
         if (restrictedEvents) {
             if (event instanceof AttributeEvent attributeEvent) {
-                if (!attributeEvent.isRestrictedRead()) {
+                if (!attributeEvent.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false)) {
                     return null;
                 }
             } else {
@@ -140,7 +196,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         if (publicEvents) {
             if (event instanceof AttributeEvent attributeEvent) {
-                if (!attributeEvent.isPublicRead()) {
+                if (!attributeEvent.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false)) {
                     return null;
                 }
             } else if (event instanceof AssetEvent assetEvent) {
@@ -152,21 +208,34 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
-        if (assetIds != null && assetIds.length > 0) {
-            if (!Arrays.asList(assetIds).contains(event.getAssetId())) {
+        if (assetIds != null && !assetIds.isEmpty()) {
+            if (!assetIds.contains(event.getId())) {
                 return null;
             }
         }
 
-        if (parentIds != null && parentIds.length > 0) {
-            if (!Arrays.asList(parentIds).contains(event.getParentId())) {
+        if (assetTypes != null && !assetTypes.isEmpty()) {
+            if (!assetTypes.contains(event.getAssetType())) {
                 return null;
             }
         }
 
-        if(path != null && path.length > 0) {
+        if (assetClasses != null && !assetClasses.isEmpty()) {
+            T finalEvent = event;
+            if (assetClasses.stream().noneMatch(ac -> ac.isAssignableFrom(finalEvent.getAssetClass()))) {
+                return null;
+            }
+        }
+
+        if (parentIds != null && !parentIds.isEmpty()) {
+            if (!parentIds.contains(event.getParentId())) {
+                return null;
+            }
+        }
+
+        if(path != null && !path.isEmpty()) {
             List<String> pathList = Arrays.asList(event.getPath());
-            if (Arrays.stream(path).noneMatch(pathList::contains)) {
+            if (path.stream().noneMatch(pathList::contains)) {
                 return null;
             }
         }
@@ -188,9 +257,9 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
-        if (attributeNames != null && attributeNames.length > 0) {
+        if (attributeNames != null && !attributeNames.isEmpty()) {
             List<String> eventAttributeNames = Arrays.asList(event.getAttributeNames());
-            if (Arrays.stream(attributeNames).noneMatch(eventAttributeNames::contains)) {
+            if (attributeNames.stream().noneMatch(eventAttributeNames::contains)) {
                 return null;
             }
         }
@@ -201,10 +270,11 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetIds='" + (assetIds != null ? Arrays.toString(assetIds) : "") + '\'' +
-            ", parentIds='" + (parentIds != null ? Arrays.toString(parentIds) : "") + '\'' +
+            "assetIds='" + (assetIds != null ? String.join(",", assetIds) : "") + '\'' +
+            "assetTypes='" + (assetTypes != null ? String.join(",", assetTypes) : "") + '\'' +
+            ", parentIds='" + (parentIds != null ? String.join(",", parentIds) : "") + '\'' +
             ", realm='" + realm + '\'' +
-            ", attributeNames='" + (attributeNames != null ? Arrays.toString(attributeNames) : "") + '\'' +
+            ", attributeNames='" + (attributeNames != null ? String.join(",", attributeNames) : "") + '\'' +
             '}';
     }
 }

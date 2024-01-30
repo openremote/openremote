@@ -938,15 +938,15 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
  */
 export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
 
-    const attributeName = event.attributeState!.ref!.name!;
+    const attributeName = event.ref!.name!;
 
     if (asset.attributes) {
-        if (event.attributeState!.deleted) {
+        if (event.deleted) {
             delete asset.attributes![attributeName];
         } else {
             const attribute = asset.attributes[attributeName];
             if (attribute) {
-                attribute.value = event.attributeState!.value;
+                attribute.value = event.value;
                 attribute.timestamp = event.timestamp;
             }
         }

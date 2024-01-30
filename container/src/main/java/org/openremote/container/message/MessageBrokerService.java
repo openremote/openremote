@@ -20,6 +20,7 @@
 package org.openremote.container.message;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -84,8 +86,10 @@ public class MessageBrokerService implements ContainerService {
                     1,
                     Integer.MAX_VALUE,
                     10,
-                    -1);
+                    -1,
+                    new ThreadPoolExecutor.CallerRunsPolicy());
 
+// Disabled as not very useful for SEDA components
 //                if (meterRegistry != null) {
 //                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name("instrumented-delegate-"));
 //                }
@@ -101,15 +105,16 @@ public class MessageBrokerService implements ContainerService {
                     profile.getPoolSize(),
                     profile.getMaxPoolSize(),
                     profile.getKeepAliveTime(),
-                    profile.getMaxQueueSize()
+                    profile.getMaxQueueSize(),
+                    profile.getRejectedExecutionHandler()
                 );
 
-// Disabled as not very useful for SEDA components
-//                if (meterRegistry != null) {
-//                    String name = getExecutorName("Pool", threadFactory);
-//                    name = "Pool".equals(name) ? profile.getId() : name;
-//                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
-//                }
+                // Want to instrument pools that use defaultThreadPool profile (ProducerTemplate and multiple consumer SEDA endpoints)
+                if (meterRegistry != null && profile.isDefaultProfile() != null && profile.isDefaultProfile()) {
+                    String name = getExecutorName("Pool", threadFactory);
+                    name = "Pool".equals(name) ? profile.getId() : name;
+                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
+                }
 
                 return executorService;
             }
@@ -118,7 +123,7 @@ public class MessageBrokerService implements ContainerService {
             public ScheduledExecutorService newScheduledThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
                 ScheduledExecutorService scheduledExecutorService = new ContainerScheduledExecutor(
                     getExecutorName("ScheduledPool", threadFactory),
-                    profile.getPoolSize()
+                    profile.getPoolSize(), profile.getRejectedExecutionHandler()
                 );
 
 // Disabled as not very useful for SEDA components
@@ -132,8 +137,7 @@ public class MessageBrokerService implements ContainerService {
             }
 
             protected String getExecutorName(String name, ThreadFactory threadFactory) {
-                if (threadFactory instanceof CamelThreadFactory) {
-                    CamelThreadFactory factory = (CamelThreadFactory) threadFactory;
+                if (threadFactory instanceof CamelThreadFactory factory) {
                     String camelName = factory.getName();
                     camelName = camelName.contains("://") ? StringHelper.after(camelName, "://") : camelName;
                     camelName = camelName.contains("?") ? StringHelper.before(camelName, "?") : camelName;
@@ -175,6 +179,11 @@ public class MessageBrokerService implements ContainerService {
         context.setStreamCachingStrategy(streamCachingStrategy);
 
         context.getCamelContextExtension().setErrorHandlerFactory(new DefaultErrorHandlerBuilder());
+
+        if (container.isDevMode()) {
+            context.setMessageHistory(true);
+            context.setSourceLocationEnabled(true);
+        }
 
         ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
 

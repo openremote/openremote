@@ -293,9 +293,12 @@ services:
       # Web server port used to host metrics endpoint
       OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
 
+      # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
+      OR_ATTRIBUTE_EVENT_THREADS:
+
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
-      # OR_DATA_POINTS_MAX_AGE_DAYS = 30
+      # OR_DATA_POINTS_MAX_AGE_DAYS: 30
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
@@ -312,13 +315,8 @@ services:
   # THE FOLLOWING OPTIONS CAN BE USED TO ENABLE JMX; PORT MUST ALSO BE EXPOSED
   # ACCESS SHOULD BE RESTRICTED BY FIREWALL TO SPECIFIC IPs FOR DIAGNOSTIC PURPOSES
   #
-  #  -Dcom.sun.management.jmxremote=true
-  #  -Dcom.sun.management.jmxremote.ssl=false
-  #  -Dcom.sun.management.jmxremote.authenticate=false
-  #  -Dcom.sun.management.jmxremote.port=8085
-  #  -Dcom.sun.management.jmxremote.rmi.port=8085
-  #  -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
-
+  #JAVA_TOOL_OPTIONS: -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=8085 -Dcom.sun.management.jmxremote.rmi.port=8085 -Djava.rmi.server.hostname=${OR_HOSTNAME:-localhost}
+  #
   # Custom JVM tool options (for remote debugging)
   #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8000,server=y,suspend=n'
 

@@ -33,11 +33,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Target({ FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE })
 @Retention(RUNTIME)
-@Repeatable(AssetStateValid.List.class)
-@Constraint(validatedBy = AssetStateValidator.class)
+@Repeatable(AttributeInfoValid.List.class)
+@Constraint(validatedBy = AttributeInfoValidator.class)
 @Documented
 @TsIgnore
-public @interface AssetStateValid {
+public @interface AttributeInfoValid {
 
     String MESSAGE_TEMPLATE = "{Asset.invalid.message}";
 
@@ -52,6 +52,6 @@ public @interface AssetStateValid {
     @Documented
     @interface List {
 
-        AssetStateValid[] value();
+        AttributeInfoValid[] value();
     }
 }

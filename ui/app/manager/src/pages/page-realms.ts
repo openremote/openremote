@@ -308,6 +308,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
@@ -410,8 +411,7 @@ export class PageRealms extends Page<AppStateKeyed> {
       const dialogActions: DialogAction[] = [
           {
               actionName: "ok",
-              disabled: true,
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @or-mwc-input-changed="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
+              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
               action: doDelete
           },
           {

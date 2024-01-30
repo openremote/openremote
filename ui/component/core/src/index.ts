@@ -97,7 +97,8 @@ export const DEFAULT_LANGUAGES: Languages = {
     it: "italian",
     pt: "portuguese",
     ro: "romanian",
-    es: "spanish"
+    es: "spanish",
+    uk: "ukrainian"
 };
 
 export function normaliseConfig(config: ManagerConfig): ManagerConfig {

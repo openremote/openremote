@@ -737,7 +737,7 @@ export class OrAttributeCard extends LitElement {
             } as ReadAttributeEvent
         });
 
-        this.mainValue = currentValue.attributeState!.value;
+        this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
