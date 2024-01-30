@@ -454,7 +454,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._startOfflineFallbackTimer(true);
             }
             // Always try reconnecting (if necessary)
-            manager.reconnect(true);
+            manager.reconnect();
 
         } else if(event === OREvent.CONSOLE_HIDDEN) {
             this._store.dispatch((setVisibility(false)));

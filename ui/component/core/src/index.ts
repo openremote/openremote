@@ -587,11 +587,11 @@ export class Manager implements EventProviderFactory {
     }
 
     // Public method for reconnecting if disconnected.
-    public reconnect(force = false) {
-        if(this._authDisconnected || force) {
+    public reconnect() {
+        if(this._authDisconnected) {
             this._runAuthReconnectTimer();
         }
-        if(this._eventsDisconnected || force) {
+        if(this._eventsDisconnected) {
             this._tryReconnectEvents();
         }
     }
