@@ -66,8 +66,10 @@ export class OrDashboardBrowser extends LitElement {
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
         const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
-        const sidebarItems: any[] = Array.from(widgetTypes).map((typeArr, index) => {
-            return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
+        const sidebarItems: any[] = Array.from(widgetTypes)
+            .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
+            .map((typeArr, index) => {
+                return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
         });
 
         // Setting Sidebar height depending on sidebarItems

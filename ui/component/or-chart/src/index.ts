@@ -38,7 +38,7 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -47,11 +47,13 @@ import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse} from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {cache} from "lit/directives/cache.js";
 import {throttle} from "lodash";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { when } from "lit/directives/when.js";
+import {createRef, Ref, ref } from "lit/directives/ref.js";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -370,6 +372,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
+    @property({type: Array}) // List of AttributeRef that are shown on the right axis instead.
+    public rightAxisAttributes: AttributeRef[] = [];
+
     @property()
     public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
 
@@ -393,6 +398,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public attributeControls: boolean = true;
+
+    @property()
+    public timeframe?: [Date, Date];
 
     @property()
     public timestampControls: boolean = true;
@@ -460,8 +468,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             }
         }
 
-        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") ||
-            changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
+        const reloadData = changedProperties.has("datapointQuery") || changedProperties.has("timePresetKey") || changedProperties.has("timeframe") ||
+            changedProperties.has("rightAxisAttributes") || changedProperties.has("assetAttributes") || changedProperties.has("realm") || changedProperties.has("dataProvider");
 
         if (reloadData) {
             this._data = undefined;
@@ -526,6 +534,16 @@ export class OrChart extends translate(i18next)(LitElement) {
                             },
                             grid: {
                                 color: "#cccccc"
+                            }
+                        },
+                        y1: {
+                            display: this.rightAxisAttributes.length > 0,
+                            position: 'right',
+                            ticks: {
+                                beginAtZero: true
+                            },
+                            grid: {
+                                drawOnChartArea: false
                             }
                         },
                         x: {
@@ -593,7 +611,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 container.style.flexDirection = bottomLegend ? 'column' : 'row';
                 const periodControls = this.shadowRoot.querySelector('.period-controls') as HTMLElement;
                 if(periodControls) {
-                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'start';
+                    periodControls.style.justifyContent = bottomLegend ? 'center' : 'space-between';
                     periodControls.style.paddingLeft = bottomLegend ? '' : '18px';
                 }
                 const attributeList = this.shadowRoot.getElementById('attribute-list');
@@ -633,22 +651,45 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ${this.timePresetOptions && this.timePresetKey ? html`
                                     ${this.timestampControls ? html`
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}"></or-mwc-input>`,
+                                                html`<or-mwc-input .type="${InputType.BUTTON}" label="${this.timeframe ? "dashboard.customTimeSpan" : this.timePresetKey}"></or-mwc-input>`,
                                                 Array.from(this.timePresetOptions!.keys()).map((key) => ({ value: key } as ListItem)),
                                                 this.timePresetKey,
-                                                (value: string | string[]) => this.timePresetKey = value.toString(),
+                                                (value: string | string[]) => {
+                                                    this.timeframe = undefined; // remove any custom start & end times
+                                                    this.timePresetKey = value.toString();
+                                                },
                                                 undefined,
                                                 undefined,
                                                 undefined,
                                                 true
                                         )}
+                                        <!-- Button that opens custom time selection -->
+                                        <or-mwc-input .type="${InputType.BUTTON}" icon="calendar-clock" @or-mwc-input-changed="${() => this._openTimeDialog(this._startOfPeriod, this._endOfPeriod)}"></or-mwc-input>
                                     ` : html`
-                                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(this.timePresetKey)}" disabled="true"></or-mwc-input>
+                                        <or-mwc-input .type="${InputType.BUTTON}" label="${this.timePresetKey}" disabled="true"></or-mwc-input>
                                     `}
                                 ` : undefined}
                             </div>
+                            ${this.timeframe ? html`
+                                <div style="margin-left: 18px; font-size: 12px;">
+                                    <table style="width: 100%;">
+                                        <thead>
+                                        <tr>
+                                            <th style="font-weight: normal; text-align: left;">${i18next.t('from')}:</th>
+                                            <th style="font-weight: normal; text-align: left;">${moment(this.timeframe[0]).format("L HH:mm")}</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td>${i18next.t('to')}:</td>
+                                            <td>${moment(this.timeframe[1]).format("L HH:mm")}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : undefined}
                             ${this.attributeControls ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="selectAttributes" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                             ` : undefined}
                         </div>
                         ${cache(this.showLegend ? html`
@@ -659,15 +700,20 @@ export class OrChart extends translate(i18next)(LitElement) {
                                     </div>
                                 ` : undefined}
                                 ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                                    const asset: Asset | undefined = this.assets[assetIndex];
                                     const colourIndex = index % this.colors.length;
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                                    const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset!.type, attr.name, attr);
+                                    const label = Util.getAttributeLabel(attr, descriptors[0], asset!.type, true);
+                                    const axisNote = (this.rightAxisAttributes.find(ar => asset!.id === ar.id && attr.name === ar.name)) ? i18next.t('right') : undefined;
                                     const bgColor = this.colors[colourIndex] || "";
                                     return html`
                                         <div class="attribute-list-item ${this.denseLegend ? 'attribute-list-item-dense' : undefined}" @mouseover="${()=> this.addDatasetHighlight(this.assets[assetIndex]!.id, attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                             <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                             <div class="attribute-list-item-label ${this.denseLegend ? 'attribute-list-item-label-dense' : undefined}">
-                                                <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span style="font-size:12px; ${this.denseLegend ? 'margin-right: 8px' : undefined}">${this.assets[assetIndex].name}</span>
+                                                    ${when(axisNote, () => html`<span style="font-size:12px; color:grey">(${axisNote})</span>`)}
+                                                </div>
                                                 <span style="font-size:12px; color:grey;">${label}</span>
                                             </div>
                                         </div>
@@ -851,13 +897,39 @@ export class OrChart extends translate(i18next)(LitElement) {
         manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
     }
 
-    _openDialog() {
+    protected _openDialog() {
         const dialog = showDialog(new OrAttributePicker()
             .setShowOnlyDatapointAttrs(true)
             .setMultiSelect(true)
             .setSelectedAttributes(this._getSelectedAttributes()));
 
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
+    }
+
+    protected _openTimeDialog(startTimestamp?: number, endTimestamp?: number) {
+        const startRef: Ref<OrMwcInput> = createRef();
+        const endRef: Ref<OrMwcInput> = createRef();
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t('timeframe'))
+            .setContent(() => html`
+                <div>
+                    <or-mwc-input ${ref(startRef)} type="${InputType.DATETIME}" required label="${i18next.t('start')}" .value="${startTimestamp}"></or-mwc-input>
+                    <or-mwc-input ${ref(endRef)} type="${InputType.DATETIME}" required label="${i18next.t('ending')}" .value="${endTimestamp}"></or-mwc-input>
+                </div>
+            `)
+            .setActions([{
+                actionName: "cancel",
+                content: "cancel"
+            }, {
+                actionName: "ok",
+                content: "ok",
+                action: () => {
+                    if(this.timePresetOptions && startRef.value?.value && endRef.value?.value) {
+                        this.timeframe = [new Date(startRef.value.value), new Date(endRef.value.value)];
+                    }
+                }
+            }])
+        )
     }
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
@@ -1001,8 +1073,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._loading = true;
 
         const dates: [Date, Date] = this.timePresetOptions!.get(this.timePresetKey!)!(new Date());
-        this._startOfPeriod = dates[0].getTime();
-        this._endOfPeriod = dates[1].getTime();
+        this._startOfPeriod = this.timeframe ? this.timeframe[0].getTime() : dates[0].getTime();
+        this._endOfPeriod = this.timeframe ? this.timeframe[1].getTime() : dates[1].getTime();
 
         const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours);
@@ -1027,6 +1099,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                 const asset = this.assets[assetIndex];
+                const shownOnRightAxis = !!this.rightAxisAttributes.find(ar => ar.id === asset.id && ar.name === attribute.name);
                 const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
                 const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
                 const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
@@ -1035,6 +1108,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (dataset as any).assetId = asset.id;
                 (dataset as any).attrName = attribute.name;
                 (dataset as any).unit = unit;
+                (dataset as any).yAxisID = shownOnRightAxis ? 'y1' : 'y';
                 data.push(dataset);
 
                 dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));

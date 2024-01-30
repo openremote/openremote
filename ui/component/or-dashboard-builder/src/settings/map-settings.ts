@@ -1,31 +1,49 @@
-import {html, TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import {css, html, TemplateResult} from "lit";
+import {customElement} from "lit/decorators.js";
 import {AssetWidgetSettings} from "../util/or-asset-widget";
 import {i18next} from "@openremote/or-translate";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MapWidgetConfig} from "../widgets/map-widget";
-import { LngLatLike } from "@openremote/or-map";
+import {LngLatLike} from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
 import {LngLat} from "maplibre-gl"; // TODO: Replace this import
-import { when } from "lit/directives/when.js";
-import {AssetTypeSelectEvent, AttributeNameSelectEvent, ShowLabelsToggleEvent, ShowUnitsToggleEvent} from "../panels/assettypes-panel";
+import {when} from "lit/directives/when.js";
+import {AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
 import manager from "@openremote/core";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {ThresholdChangeEvent} from "../panels/thresholds-panel";
+
+const styling = css`
+  .switchMwcInputContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+`;
 
 @customElement("map-settings")
 export class MapSettings extends AssetWidgetSettings {
 
     protected widgetConfig!: MapWidgetConfig;
 
+    static get styles() {
+        return [...super.styles, styling];
+    }
+
     protected render(): TemplateResult {
         const allowedValueTypes = ["boolean", "number", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
+        const config = {
+            attributes: {
+                enabled: true,
+                valueTypes: allowedValueTypes
+            }
+        } as AssetTypesFilterConfig;
         return html`
             <div>
-                
+
                 <!-- Map settings -->
-                <settings-panel displayName="${i18next.t('configuration.mapSettings')}" expanded="${true}">
+                <settings-panel displayName="configuration.mapSettings" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div>
                             <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;"
@@ -41,7 +59,7 @@ export class MapSettings extends AssetWidgetSettings {
                             ></or-mwc-input>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span>${i18next.t('dashboard.showGeoJson')}</span>
+                            <span><or-translate value="dashboard.showGeoJson"></or-translate></span>
                             <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
                                           .value="${this.widgetConfig.showGeoJson}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onGeoJsonToggle(ev)}"
@@ -49,22 +67,36 @@ export class MapSettings extends AssetWidgetSettings {
                         </div>
                     </div>
                 </settings-panel>
-                
+
                 <!-- Panel where Asset type and the selected attribute can be customized -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
-                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeName="${this.widgetConfig.attributeName}"
-                                      .showLabels="${this.widgetConfig.showLabels}" .showUnits="${this.widgetConfig.showUnits}"
-                                      .valueTypes="${allowedValueTypes}"
+                <settings-panel displayName="attributes" expanded="${true}">
+                    <assettypes-panel .assetType="${this.widgetConfig.assetType}" .attributeNames="${this.widgetConfig.attributeName}" .config="${config}"
                                       @assettype-select="${(ev: AssetTypeSelectEvent) => this.onAssetTypeSelect(ev)}"
-                                      @attributename-select="${(ev: AttributeNameSelectEvent) => this.onAttributeNameSelect(ev)}"
-                                      @showlabels-toggle="${(ev: ShowLabelsToggleEvent) => this.onShowLabelsToggle(ev)}"
-                                      @showunits-toggle="${(ev: ShowUnitsToggleEvent) => this.onShowUnitsToggle(ev)}"
+                                      @attributenames-select="${(ev: AttributeNamesSelectEvent) => this.onAttributeNameSelect(ev)}"
                     ></assettypes-panel>
+
+                    <!-- Other settings like labels and units-->
+                    <div>
+                        <div class="switchMwcInputContainer">
+                            <span><or-translate value="dashboard.showLabels"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                          .value="${this.widgetConfig.showLabels}" .disabled="${!this.widgetConfig.assetType}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowLabelsToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                        <div class="switchMwcInputContainer">
+                            <span><or-translate value="dashboard.showUnits"></or-translate></span>
+                            <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;"
+                                          .value="${this.widgetConfig.showUnits}" .disabled="${!this.widgetConfig.showLabels || !this.widgetConfig.assetType}"
+                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onShowUnitsToggle(ev)}"
+                            ></or-mwc-input>
+                        </div>
+                    </div>
                 </settings-panel>
-                
+
                 <!-- List of customizable thresholds -->
                 ${when(this.widgetConfig.assetIds.length > 0, () => html`
-                    <settings-panel displayName="${i18next.t('thresholds')}" expanded="${true}">
+                    <settings-panel displayName="thresholds" expanded="${true}">
                         <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}">
@@ -113,34 +145,35 @@ export class MapSettings extends AssetWidgetSettings {
         }
     }
 
-    protected async onAttributeNameSelect(ev: AttributeNameSelectEvent) {
-        this.widgetConfig.attributeName = ev.detail;
+    protected async onAttributeNameSelect(ev: AttributeNamesSelectEvent) {
+        const attrName = ev.detail as string;
+        this.widgetConfig.attributeName = attrName;
         await manager.rest.api.AssetResource.queryAssets({
             realm: {
                 name: manager.displayRealm
             },
             select: {
-                attributes: [ev.detail, 'location']
+                attributes: [attrName, 'location']
             },
             types: [this.widgetConfig.assetType!],
         }).then(response => {
             this.widgetConfig.assetIds = response.data.map((a) => a.id!);
-            this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![ev.detail].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
+            this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
         }).catch((reason) => {
             console.error(reason);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         });
 
         this.notifyConfigUpdate()
     }
 
-    protected onShowLabelsToggle(ev: ShowLabelsToggleEvent) {
-        this.widgetConfig.showLabels = ev.detail;
+    protected onShowLabelsToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showLabels = ev.detail.value;
         this.notifyConfigUpdate();
     }
 
-    protected onShowUnitsToggle(ev: ShowUnitsToggleEvent) {
-        this.widgetConfig.showUnits = ev.detail;
+    protected onShowUnitsToggle(ev: OrInputChangedEvent) {
+        this.widgetConfig.showUnits = ev.detail.value;
         this.notifyConfigUpdate();
     }
 

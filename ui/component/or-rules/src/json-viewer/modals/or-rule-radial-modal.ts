@@ -123,7 +123,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         const radiusPickerModalActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
                 action: () => {
                     // Nothing to do here
                 }
@@ -131,7 +131,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
             {
                 actionName: "ok",
                 default: true,
-                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-mwc-input>`,
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="ok"></or-mwc-input>`,
                 action: () => {
                 }
             }
@@ -151,7 +151,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         this.renderDialogHTML(value);
         
         return html`
-            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("area")}" @or-mwc-input-changed="${radialPickerModalOpen}"></or-mwc-input>
+            <or-mwc-input .type="${InputType.BUTTON}" label="area" @or-mwc-input-changed="${radialPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="radial-modal" heading="area" .actions="${radiusPickerModalActions}"></or-mwc-dialog>
         `
     }

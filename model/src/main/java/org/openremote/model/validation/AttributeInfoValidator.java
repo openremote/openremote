@@ -7,16 +7,11 @@ import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorInitializationContext;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
-
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * A JSR-380 validator that uses {@link ValueUtil} to ensure that the
@@ -29,22 +24,22 @@ import java.util.Objects;
  * </ul>
  */
 @TsIgnore
-public class AssetStateValidator implements HibernateConstraintValidator<AssetStateValid, AssetStateStore> {
+public class AttributeInfoValidator implements HibernateConstraintValidator<AttributeInfoValid, AttributeInfo> {
 
-    public static final System.Logger LOG = System.getLogger(AssetStateValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
+    public static final System.Logger LOG = System.getLogger(AttributeInfoValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
     protected ClockProvider clockProvider;
     @Override
-    public void initialize(ConstraintDescriptor<AssetStateValid> constraintDescriptor, HibernateConstraintValidatorInitializationContext initializationContext) {
+    public void initialize(ConstraintDescriptor<AttributeInfoValid> constraintDescriptor, HibernateConstraintValidatorInitializationContext initializationContext) {
         clockProvider = initializationContext.getClockProvider();
         HibernateConstraintValidator.super.initialize(constraintDescriptor, initializationContext);
     }
 
     @Override
-    public boolean isValid(AssetStateStore assetState, ConstraintValidatorContext context) {
+    public boolean isValid(AttributeInfo attributeInfo, ConstraintValidatorContext context) {
 
-        String type = assetState.getAssetType();
+        String type = attributeInfo.getAssetType();
         AssetTypeInfo assetModelInfo = ValueUtil.getAssetInfo(type).orElse(null);
 
-        return AssetValidator.validateAttribute(assetModelInfo, assetState.getAttribute(), context, clockProvider.getClock().instant());
+        return AssetValidator.validateNameValueMetaHolder(assetModelInfo, attributeInfo, context, clockProvider.getClock().instant());
     }
 }

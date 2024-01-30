@@ -53,21 +53,21 @@ export class ImageSettings extends AssetWidgetSettings {
         return html`
             <div>
                 <!-- Attributes selector -->
-                <settings-panel displayName="${i18next.t('attributes')}" expanded="${true}">
+                <settings-panel displayName="'attributes" expanded="${true}">
                     <attributes-panel .attributeRefs="${this.widgetConfig.attributeRefs}" onlyDataAttrs="${false}" multi="${true}"
                                       @attribute-select="${(ev: AttributesSelectEvent) => this.onAttributesSelect(ev)}"
                     ></attributes-panel>
                 </settings-panel>
                 
                 <!-- Marker coordinates -->
-                <settings-panel displayName="${i18next.t('dashboard.markerCoordinates')}" expanded="${true}">
+                <settings-panel displayName="dashboard.markerCoordinates" expanded="${true}">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         ${map(this.draftCoordinateEntries(this.widgetConfig), template => template)}
                     </div>
                 </settings-panel>
                 
                 <!-- Image settings -->
-                <settings-panel displayName="${i18next.t('dashboard.imageSettings')}" expanded="${true}">
+                <settings-panel displayName="dashboard.imageSettings" expanded="${true}">
                     <div>
                         <or-mwc-input style="width: 100%;" type="${InputType.TEXT}" label="${i18next.t('dashboard.imageUrl')}" .value="${this.widgetConfig.imagePath}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onImageUrlUpdate(ev)}"
@@ -79,7 +79,7 @@ export class ImageSettings extends AssetWidgetSettings {
     }
 
     protected onAttributesSelect(ev: AttributesSelectEvent) {
-        this.widgetConfig.attributeRefs = ev.detail as AttributeRef[];
+        this.widgetConfig.attributeRefs = ev.detail.attributeRefs;
         this.notifyConfigUpdate();
     }
 
@@ -153,7 +153,7 @@ export class ImageSettings extends AssetWidgetSettings {
             });
         } else {
             return [
-                html`<span>${i18next.t('noAttributeConnected')}</span>`
+                html`<span><or-translate value="noAttributeConnected"></or-translate></span>`
             ];
         }
     }

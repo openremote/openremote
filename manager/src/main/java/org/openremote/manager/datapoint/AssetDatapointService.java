@@ -4,14 +4,15 @@ import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
@@ -19,6 +20,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
 import jakarta.persistence.EntityManager;
@@ -51,7 +53,7 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
  * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
-public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor, ProtocolDatapointService {
+public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
@@ -77,6 +79,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         if (maxDatapointAgeDays <= 0) {
             LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+        } else {
+            LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
         }
 
         Path storageDir = persistenceService.getStorageDir();
@@ -97,26 +101,23 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                 Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
             );
         }
+
+        ClientEventService clientEventService = container.getService(ClientEventService.class);
+        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
-    public static boolean attributeIsStoreDatapoint(Attribute<?> attribute) {
-        return attribute.getMetaValue(STORE_DATA_POINTS).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
+    public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {
+        return attributeInfo.getMetaValue(STORE_DATA_POINTS).orElse(attributeInfo.hasMeta(MetaItemType.AGENT_LINK));
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em,
-                                      Asset<?> asset,
-                                      Attribute<?> attribute,
-                                      Source source) throws AssetProcessingException {
-
-        if (attributeIsStoreDatapoint(attribute) && attribute.getValue().isPresent()) { // Don't store datapoints with null value
+    public void onAttributeEvent(AttributeEvent attributeEvent) {
+        if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store datapoints with null value
             try {
-                upsertValue(asset.getId(), attribute.getName(), attribute.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis)), ZoneId.systemDefault()));
+                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attributeEvent.getTimestamp()), ZoneId.systemDefault()));
             } catch (Exception e) {
-                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute, e);
+                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
-        return false;
     }
 
     @Override

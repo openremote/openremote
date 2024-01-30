@@ -31,7 +31,6 @@ import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.ReadAttributeEvent
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.Protocol
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -196,12 +195,12 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     "targetTemperature",
                                     0.12345))
                                     .orElse(ValueUtil.NULL_LITERAL)
-                                        .replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER)
+                                        .replace("0.12345", Constants.DYNAMIC_VALUE_PLACEHOLDER)
                             )
                         .setMessageMatchFilters(
                             [
                                 new RegexValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX + "(.*)", true, false).setMatchGroup(1),
-                                new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                new JsonPathFilter("\$..ref.name", true, false)
                             ] as ValueFilter[]
                         )
                         .setMessageMatchPredicate(
@@ -210,7 +209,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         .setValueFilters(
                             [
                                 new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"targetTemperature\")].attributeState.value", true, false)
+                                new JsonPathFilter("\$..events[?(@.ref.name == \"targetTemperature\")].value", true, false)
                             ] as ValueFilter[]
                         )
                         .setWebsocketSubscriptions(
@@ -231,7 +230,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setMessageMatchFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                    new JsonPathFilter("\$..ref.name", true, false)
                                 ] as ValueFilter[]
                             )
                             .setMessageMatchPredicate(
@@ -240,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setValueFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"co2Level\")].attributeState.value", true, false),
+                                    new JsonPathFilter("\$..events[?(@.ref.name == \"co2Level\")].value", true, false),
                                 ] as ValueFilter[]
                             )
                             .setWebsocketSubscriptions(

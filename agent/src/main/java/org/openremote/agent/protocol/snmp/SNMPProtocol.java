@@ -120,7 +120,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
         // Nothing to do here
     }
 }

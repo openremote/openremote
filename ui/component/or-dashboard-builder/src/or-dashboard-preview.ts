@@ -269,7 +269,7 @@ export class OrDashboardPreview extends LitElement {
         if(!this.template && this.dashboardId) {
             manager.rest.api.DashboardResource.get(this.realm, this.dashboardId)
                 .then((response) => { this.template = response.data.template!; })
-                .catch((reason) => { console.error(reason); showSnackbar(undefined, i18next.t('errorOccurred')); });
+                .catch((reason) => { console.error(reason); showSnackbar(undefined, "errorOccurred"); });
         } else if(this.template == null && this.dashboardId == null) {
             console.warn("Neither the template nor dashboardId attributes have been specified!");
         }
@@ -527,7 +527,7 @@ export class OrDashboardPreview extends LitElement {
                 ` : undefined}
                 ${this.rerenderActive ? html`
                     <div id="container" style="justify-content: center; align-items: center;">
-                        <span>${i18next.t('dashboard.renderingGrid')}</span>
+                        <span><or-translate value="dashboard.renderingGrid"></or-translate></span>
                     </div>
                 ` : html`
                     <div id="container" style="justify-content: center; position: relative;">
@@ -538,7 +538,7 @@ export class OrDashboardPreview extends LitElement {
                         `, () => html`
                             ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
                                 <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
-                                    <span>${i18next.t('dashboard.deviceNotSupported')}</span>
+                                    <span><or-translate value="dashboard.deviceNotSupported"></or-translate></span>
                                 </div>
                             ` : undefined}
                         `)}
@@ -562,7 +562,7 @@ export class OrDashboardPreview extends LitElement {
                                                              this.onGridItemClick(widget.gridItem);
                                                          }}">
                                                         <div class="grid-stack-item-content" style="display: flex;">
-                                                            <or-dashboard-widget-container .widget="${widget}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget-container>
+                                                            <or-dashboard-widget-container .widget="${widget}" .editMode="${this.editMode}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget-container>
                                                         </div>
                                                     </div>
                                                 `

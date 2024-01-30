@@ -42,7 +42,7 @@ public interface AssetDatapointResource {
      * not have datapoint storage enabled.
      */
     @POST
-    @Path("{assetId}/attribute/{attributeName}")
+    @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,

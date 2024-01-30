@@ -262,11 +262,12 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             }
         });
 
-        // Create internal producer for producing and consuming messages
+        // Create internal producer for producing messages
         ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
         ClientSessionFactory factory = serverLocator.createSessionFactory();
         String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
         internalSession = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+        internalSession.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
         ServerSession serverSession = server.getActiveMQServer().getSessionByID(internalSession.getName());
         serverSession.disableSecurity();
         internalSession.start();
@@ -507,7 +508,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
             }
         } catch (Exception e) {
-            LOG.log(WARNING, "Couldn't send AttributeEvent to MQTT client", e);
+            LOG.log(WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
         }
     }
 
@@ -524,7 +525,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return ID instanceof ChannelId ? ((ChannelId) ID).asLongText() : ID.toString();
     }
 
-    public String connectionToString(RemotingConnection connection) {
+    public static String connectionToString(RemotingConnection connection) {
         if (connection == null) {
             return "";
         }
@@ -533,20 +534,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         Subject subject = connection.getSubject();
 
         if (subject != null) {
-            username = getSubjectNameAndRealm(subject);
+            username = getSubjectName(subject);
         }
 
         return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + username;
     }
 
     public static String getSubjectName(Subject subject) {
-        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
-            .findFirst()
-            .map(Principal::getName)
-            .orElse(KeycloakIdentityProvider.getSubjectName(subject));
-    }
-
-    public static String getSubjectNameAndRealm(Subject subject) {
         return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
             .findFirst()
             .map(Principal::getName)

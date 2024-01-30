@@ -270,4 +270,20 @@ public abstract class Ruleset {
         getMeta().put(SHOW_ON_LIST, showOn);
         return this;
     }
+
+    @Override
+    public String toString() {
+        return Ruleset.class.getSimpleName() + "{" +
+            "id=" + id +
+            ", version=" + version +
+            ", createdOn=" + createdOn +
+            ", lastModified=" + lastModified +
+            ", name='" + name + '\'' +
+            ", enabled=" + enabled +
+            ", rules='" + rules + '\'' +
+            ", lang=" + lang +
+            ", status=" + status +
+            ", error='" + error + '\'' +
+            '}';
+    }
 }

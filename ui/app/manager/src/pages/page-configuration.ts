@@ -34,6 +34,8 @@ import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
+import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 declare const CONFIG_URL_PREFIX: string;
 
@@ -115,11 +117,17 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             }
 
             or-icon {
-                vertical-align: middle;
+                vertical-align: middle; 
                 --or-icon-width: 20px;
                 --or-icon-height: 20px;
                 margin-right: 2px;
                 margin-left: -5px;
+            }
+            
+            .notFound-container {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
             }
 
             @media screen and (max-width: 768px) {
@@ -178,18 +186,24 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             if(this.managerConfiguration === undefined) {
                 managerConfigPromise = this.getManagerConfig().then((value) => {
                     this.managerConfiguration = value;
+                }).catch(() => {
+                    this.managerConfiguration = null;
                 });
             }
             let mapConfigPromise;
             if(this.mapConfig === undefined) {
                 mapConfigPromise = this.getMapConfig().then((value) => {
                     this.mapConfig = value;
+                }).catch(() => {
+                    this.mapConfig = null;
                 });
             }
             let realmsPromise;
             if(this.realms === undefined) {
                 realmsPromise = this.getAccessibleRealms().then((value) => {
                     this.realms = value;
+                }).catch(() => {
+                    this.realms = null;
                 });
             }
 
@@ -216,16 +230,16 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             `, () => {
                 const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
-                        <span style="margin: 0;">${i18next.t("configuration.realmStyling")}</span>
-                            <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
-                                          @saveLocalManagerConfig="${(ev: CustomEvent) => {
-                                              this.managerConfiguration = ev.detail.value as ManagerAppConfig;
-                                              this.managerConfigurationChanged = true;
-                                          }}"
-                            ></or-conf-json>
+                        <span style="margin: 0;">${i18next.t("configuration.realmStyling").toUpperCase()}</span>
+                        <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
+                                      @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                                          this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                                          this.managerConfigurationChanged = true;
+                                      }}"
+                        ></or-conf-json>
                     </div>
                 `;
-                const realmOptions = this.realms?.map((r) => ({ name: r.name, displayName: r.displayName, canDelete: true }));
+                const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
                 realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
                 return html`
                     <div id="wrapper">
@@ -235,20 +249,42 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ${i18next.t("appearance")}
                             </div>
                             <div id="header-actions">
-                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" .label="${i18next.t("save")}"
+                                <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
                                               @click="${() => this.saveAllConfigs(this.managerConfiguration, this.mapConfig)}"
                                 ></or-mwc-input>
                             </div>
                         </div>
                         <or-panel .heading="${realmHeading}">
-                            <or-conf-panel id="managerConfig-panel" .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
-                                           @change="${() => { this.managerConfigurationChanged = true; }}"
-                            ></or-conf-panel>
+                            ${when(this.managerConfiguration, () => html`
+                                <or-conf-panel id="managerConfig-panel" .config="${this.managerConfiguration}" .realmOptions="${realmOptions}"
+                                               @change="${() => { this.managerConfigurationChanged = true; }}"
+                                ></or-conf-panel>
+                            `, () => html`
+                                <div class="notFound-container">
+                                    <span>${i18next.t('configuration.managerConfigNotFound')}</span>
+                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
+                                                  @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
+                                                      this.managerConfiguration = val;
+                                                  }).catch(e => console.error(e))}"
+                                    ></or-mwc-input>
+                                </div>
+                            `)}
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
-                            <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
-                                           @change="${() => { this.mapConfigChanged = true; }}"
-                            ></or-conf-panel>
+                            ${when(this.mapConfig, () => html`
+                                <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
+                                               @change="${() => { this.mapConfigChanged = true; }}"
+                                ></or-conf-panel>
+                            `, () => html`
+                                <div class="notFound-container">
+                                    <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
+                                    <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
+                                                  @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
+                                                      this.mapConfig = val;
+                                                  }).catch(e => console.error(e))}"
+                                    ></or-mwc-input>
+                                </div>
+                            `)}
                         </or-panel>
                     </div>
                 `

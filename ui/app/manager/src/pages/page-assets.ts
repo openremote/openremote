@@ -149,7 +149,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     @property()
     protected _editMode: boolean = false;
 
-    @property()
+    @property() // selected asset ids
     protected _assetIds?: string[];
 
     @state()
@@ -201,8 +201,15 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected render(): TemplateResult | void {
         return html`
-            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}" .expandedIds="${this._expandedIds}"></or-asset-tree>
-            <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}" class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}" .editMode="${this._editMode}"></or-asset-viewer>
+            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
+                           class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
+                           .selectedIds="${this._assetIds}"
+                           .expandedIds="${this._expandedIds}"
+            ></or-asset-tree>
+            <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
+                             class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}"
+                             .editMode="${this._editMode}"
+            ></or-asset-viewer>
         `;
     }
 
@@ -211,7 +218,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        if(!this._assetIds || (this._assetIds.length === 0 && this._assetIds[0] === state.app.params.id)) {
+        if(!this._assetIds || this._assetIds.length === 0) {
             this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
         }
     }
@@ -313,14 +320,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 if ( !assetsIds.includes(parentId) ) {
                     await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
                 } else {
-                    showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+                    showSnackbar(undefined, "moveAssetFailed", "dismiss");
                 }
             } else {
                 //So need to remove parent from all the selected assets
                 await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
             }
         } catch (e) {
-            showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+            showSnackbar(undefined, "moveAssetFailed", "dismiss");
         }
     }
 

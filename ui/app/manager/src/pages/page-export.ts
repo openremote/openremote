@@ -265,8 +265,8 @@ export class PageExport extends Page<AppStateKeyed> {
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                     </div>
                     <div class="export-btn-wrapper">
-                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.clearSelection()}"></or-mwc-input>
-                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="clearTable" @click="${() => this.clearSelection()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="export" @click="${() => this.export()}"></or-mwc-input>
                     </div>
                 </div>
             </div>
@@ -382,6 +382,7 @@ export class PageExport extends Page<AppStateKeyed> {
             
         }).then(response => {
             // This is the best we can do with xhr - would need to return a link to the file for proper streamed download support
+            // @ts-ignore
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;

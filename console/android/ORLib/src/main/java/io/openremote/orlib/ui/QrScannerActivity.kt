@@ -2,12 +2,12 @@ package io.openremote.orlib.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -18,7 +18,6 @@ import com.google.android.gms.vision.barcode.Barcode
 import com.google.android.gms.vision.barcode.BarcodeDetector
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrQrScannerBinding
-import io.openremote.orlib.service.QrScannerProvider
 import java.io.IOException
 
 class QrScannerActivity : AppCompatActivity() {
@@ -36,6 +35,15 @@ class QrScannerActivity : AppCompatActivity() {
         supportActionBar!!.title = "Scan QR Code"
         initViews()
         initialiseDetectorsAndSources()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val data = Intent()
+                data.putExtra("result", "CANCELED")
+                setResult(RESULT_OK, data)
+                finish()
+            }
+        })
     }
 
     private fun initViews() {

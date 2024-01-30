@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 
+// RT: Removed this from META-INF as RequestSimulatorState not used anywhere
 /**
  * Connects the client/UI to the {@link SimulatorProtocol}.
  */

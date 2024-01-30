@@ -118,7 +118,7 @@ export class OrRuleFormWebhook extends LitElement {
                     `, () => html`
                         ${this.getHeadersTemplate(this.webhook.headers!, false)}
                     `)}
-                    <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="${i18next.t('addRequestHeader')}"
+                    <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="addRequestHeader"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                       if ((this.webhook.headers ? this.webhook.headers[''] : undefined) != undefined) {
                                           this.webhook.headers![''].push('');

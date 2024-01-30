@@ -12,19 +12,19 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub" enabled="true">
-        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">stoptestnow</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">100</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">10</stringProp>
         <stringProp name="ThreadGroup.start_time"></stringProp>
         <stringProp name="ThreadGroup.end_time"></stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration">0</stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
       </ThreadGroup>
       <hashTree>
         <CacheManager guiclass="CacheManagerGui" testclass="CacheManager" testname="Cache" enabled="true">
@@ -62,7 +62,7 @@
         </ConfigTestElement>
         <hashTree/>
         <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV devices.csv" enabled="true">
-          <stringProp name="filename">C:\Users\Richard\code\openremote\test\load1\tmp\devices.csv</stringProp>
+          <stringProp name="filename">.\tmp\devices.csv</stringProp>
           <stringProp name="delimiter">,</stringProp>
           <boolProp name="quotedData">false</boolProp>
           <boolProp name="recycle">false</boolProp>
@@ -89,7 +89,7 @@
           <stringProp name="mqtt.conn_attampt_max">0</stringProp>
           <stringProp name="mqtt.reconn_attampt_max">0</stringProp>
           <stringProp name="mqtt.conn_clean_session">true</stringProp>
-          <stringProp name="mqtt.user_name"></stringProp>
+          <stringProp name="mqtt.user_name">${id}</stringProp>
           <stringProp name="mqtt.password"></stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           <stringProp name="mqtt.conn_attempt_max">0</stringProp>
@@ -105,7 +105,7 @@
           <stringProp name="mqtt.sample_condition">number of received messages</stringProp>
           <stringProp name="mqtt.sample_condition_value">1</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
-          <stringProp name="mqtt.sample_condition_value_opt">10000</stringProp>
+          <stringProp name="mqtt.sample_condition_value_opt">30000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree/>
         <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="true">
@@ -145,7 +145,7 @@
         <hashTree/>
         <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">true</boolProp>
-          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="LoopController.loops">100</stringProp>
         </LoopController>
         <hashTree>
           <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall" enabled="true">
@@ -169,8 +169,13 @@
             <boolProp name="mqtt.retained_message">false</boolProp>
             <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           </net.xmeter.samplers.PubSampler>
-          <hashTree/>
-          <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check attribute response" enabled="true"/>
+          <hashTree>
+            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+              <stringProp name="ConstantTimer.delay">100</stringProp>
+            </ConstantTimer>
+            <hashTree/>
+          </hashTree>
+          <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check attribute response" enabled="false"/>
           <hashTree>
             <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="false">
               <stringProp name="ConstantTimer.delay">50</stringProp>
@@ -191,7 +196,7 @@
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
             <value class="SampleSaveConfiguration">

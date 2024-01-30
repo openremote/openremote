@@ -2,7 +2,6 @@ import { manager } from "@openremote/core";
 import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
 import { getMapRoute } from "./routes";
-import { i18next } from "@openremote/or-translate";
 
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {

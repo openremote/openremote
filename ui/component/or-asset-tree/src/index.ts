@@ -43,6 +43,7 @@ import {
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { when } from "lit/directives/when.js";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -275,13 +276,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public _assetIdsOverride?: string[];
 
     @property({type: Array})
-    public _assetTypeOptions?: string[];
-
-    @property({type: Array})
     public rootAssets?: Asset[];
 
     @property({type: Array})
     public rootAssetIds?: string[];
+
+    @property({type: Object})
+    public dataProvider?: () => Promise<Asset[]>;
 
     @property({type: Boolean})
     public readonly: boolean = false;
@@ -300,6 +301,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     @property({type: Boolean})
     public showSortBtn?: boolean = true;
+
+    @property({type: Boolean})
+    public showFilter: boolean = true;
 
     @property({type: String})
     public sortBy?: string = "name";
@@ -463,105 +467,107 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
             </div>
             
-            <div id="asset-tree-filter">
-                <or-mwc-input id="filterInput"
-                              ?disabled="${this._loading}"
-                              style="width: 100%;"
-                              type="${ InputType.TEXT }"
-                              placeholder="${i18next.t("filter.filter")}..."
-                              compact="true"
-                              outlined="true"
-                              @input="${(e: KeyboardEvent) => {
-                                  // Means some input is occurring so delay filter
-                                  this._onFilterInputEvent(e);                                  
-                              }}"
-                              @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
-                                  // Means field has lost focus so do filter immediately
-                                  this._onFilterInput((e.detail.value as string) || undefined, true);
-                              }}">
-                              </or-mwc-input>
-                <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
-                    if (this._filterSettingOpen) {
-                        this._filterSettingOpen = false;
-                    } else {
-                        this._filterSettingOpen = true;
-                        // Avoid to build again the types
-                        if ( this._assetTypes.length === 0 ) {
-                            let usedTypes: string[] = [];
-                            const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-                            this._assetTypes = types.filter((t) => t.descriptorType === "asset");
-                        }
-                        
-                        if (this._filter.attribute.length > 0) {
-                            this._attributeNameFilter.value = this._filter.attribute[0];
-                        }
-                        
-                        if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
-                            this._attributeValueFilter.disabled = false;
-                            this._attributeValueFilter.value = this._filter.attributeValue[0];
-                        }
-                        
-                        if (this._filter.assetType.length > 0) {
-                            this._assetTypeFilter = this._filter.assetType[0];
-                        } else {
-                            this._assetTypeFilter = '';
-                        }
-                    }
-                }}"></or-icon>
-            </div>
-            <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
-                <div class="advanced-filter">
-                    ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
-                        this.assetTypeSelect(), 
-                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }), 
-                        undefined,
-                        (v: string[] | string) => {
-                            this._assetTypeFilter = (v as string);
-                        },
-                    undefined,
-                    false,
-                    true,
-                    true) : html ``
-                    }
-                    <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
-                                  
-                                  .type="${InputType.TEXT}"
-                                  style="margin-top: 10px;"
+            ${when(this.showFilter, () => html`
+                <div id="asset-tree-filter">
+                    <or-mwc-input id="filterInput"
                                   ?disabled="${this._loading}"
+                                  style="width: 100%;"
+                                  type="${InputType.TEXT}"
+                                  placeholder="${i18next.t("filter.filter")}..."
+                                  compact="true"
+                                  outlined="true"
                                   @input="${(e: KeyboardEvent) => {
-                                      this._shouldEnableAttrTypeEvent(e);
+                                      // Means some input is occurring so delay filter
+                                      this._onFilterInputEvent(e);
                                   }}"
-                                  @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
-                                      this._shouldEnableAttrType((e.detail.value as string) || undefined);
-                                  }}"></or-mwc-input>
-                    <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
-                                  
-                                  .type="${InputType.TEXT}"
-                                  style="margin-top: 10px;"
-                                  disabled></or-mwc-input>
-                    <div style="margin-top: 10px;">
-                        <or-mwc-input style="float:left;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.clear")}" @or-mwc-input-changed="${() => {
-                            // Wipe the current value and hide the clear button
-                            this._filterInput.value = undefined;
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      // Means field has lost focus so do filter immediately
+                                      this._onFilterInput((e.detail.value as string) || undefined, true);
+                                  }}">
+                    </or-mwc-input>
+                    <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
+                        if (this._filterSettingOpen) {
+                            this._filterSettingOpen = false;
+                        } else {
+                            this._filterSettingOpen = true;
+                            // Avoid to build again the types
+                            if (this._assetTypes.length === 0) {
+                                let usedTypes: string[] = [];
+                                const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                                this._assetTypes = types.filter((t) => t.descriptorType === "asset");
+                            }
 
-                            this._attributeValueFilter.value = undefined;
-                            this._attributeNameFilter.value = undefined;
+                            if (this._filter.attribute.length > 0) {
+                                this._attributeNameFilter.value = this._filter.attribute[0];
+                            }
 
-                            this._attributeValueFilter.disabled = true;
+                            if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                                this._attributeValueFilter.disabled = false;
+                                this._attributeValueFilter.value = this._filter.attributeValue[0];
+                            }
 
-                            this._assetTypeFilter = '';
+                            if (this._filter.assetType.length > 0) {
+                                this._assetTypeFilter = this._filter.assetType[0];
+                            } else {
+                                this._assetTypeFilter = '';
+                            }
+                        }
+                    }}"></or-icon>
+                </div>
+                <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
+                    <div class="advanced-filter">
+                        ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
+                                this.assetTypeSelect(),
+                                this.mapDescriptors(this._assetTypes, {text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse"}),
+                                undefined,
+                                (v: string[] | string) => {
+                                    this._assetTypeFilter = (v as string);
+                                },
+                                undefined,
+                                false,
+                                true,
+                                true) : html``
+                        }
+                        <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
 
-                            this._filter = new OrAssetTreeFilter();
+                                      .type="${InputType.TEXT}"
+                                      style="margin-top: 10px;"
+                                      ?disabled="${this._loading}"
+                                      @input="${(e: KeyboardEvent) => {
+                                          this._shouldEnableAttrTypeEvent(e);
+                                      }}"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                          this._shouldEnableAttrType((e.detail.value as string) || undefined);
+                                      }}"></or-mwc-input>
+                        <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
 
-                            // Call filtering
-                            this._doFiltering();
-                        }}"></or-mwc-input>
-                        <or-mwc-input style="float: right;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @or-mwc-input-changed="${() => {
-                            this._filterFromSettings();
-                        }}"></or-mwc-input>
+                                      .type="${InputType.TEXT}"
+                                      style="margin-top: 10px;"
+                                      disabled></or-mwc-input>
+                        <div style="margin-top: 10px;">
+                            <or-mwc-input style="float:left;" type="${InputType.BUTTON}" label="filter.clear" @or-mwc-input-changed="${() => {
+                                // Wipe the current value and hide the clear button
+                                this._filterInput.value = undefined;
+
+                                this._attributeValueFilter.value = undefined;
+                                this._attributeNameFilter.value = undefined;
+
+                                this._attributeValueFilter.disabled = true;
+
+                                this._assetTypeFilter = '';
+
+                                this._filter = new OrAssetTreeFilter();
+
+                                // Call filtering
+                                this._doFiltering();
+                            }}"></or-mwc-input>
+                            <or-mwc-input style="float: right;" type="${InputType.BUTTON}" label="filter.action" raised @or-mwc-input-changed="${() => {
+                                this._filterFromSettings();
+                            }}"></or-mwc-input>
+                        </div>
                     </div>
                 </div>
-            </div>
+            `)}
             
             ${!this._nodes
                 ? html`
@@ -798,7 +804,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 canSelect = this.config.select.types.indexOf(node.asset!.type!) >= 0;
             }
 
-            if (!canSelect) {
+            // If node cannot be selected, and it is not the 'select all of this parent'-checkbox, cancel it.
+            if (!canSelect && !isParentCheckbox) {
                 return;
             }
 
@@ -824,7 +831,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                     const childNodes: UiAssetTreeNode[] = [];
                     OrAssetTree._forEachNodeRecursive(node.children, (childNode) => {
-                        childNodes.push(childNode);
+                        let canSelectChild = true;
+                        // If not of required asset type, cancel selection of the child
+                        if(childNode && this.config?.select?.types) {
+                            canSelectChild = this.config.select.types.indexOf(childNode.asset!.type!) >= 0;
+                        }
+                        if(canSelectChild) {
+                            childNodes.push(childNode);
+                        }
                     });
 
                     // based on multiple-box already selected, remove or add to array of selected nodes
@@ -1221,7 +1235,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
        } catch (e) {
             this._filter.assetType.forEach((assetT: string) => {
                 if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
-                    showSnackbar(undefined, i18next.t('filter.assetTypeDoesNotExist'), i18next.t("dismiss"));
+                    showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
                 }
             });
             foundAssetIds = [];
@@ -1378,11 +1392,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             .setActions([
                     {
                         actionName: "cancel",
-                        content: i18next.t("cancel")
+                        content: "cancel"
                     },
                     {
                         actionName: "add",
-                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" disabled></or-mwc-input>`,
+                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
                         action: () => {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
@@ -1591,35 +1605,43 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             this._loading = true;
 
-            const query: AssetQuery = {
-                realm: {
-                    name: manager.displayRealm
-                },
-                select: { // Just need the basic asset info
-                    attributes: []
-                }
-            };
+            if(this.dataProvider) {
+                this.dataProvider().then(assets => {
+                    this._loading = false;
+                    this._buildTreeNodes(assets, sortFunction);
+                })
 
-            if (this.assetIds) {
-                query.ids = this.assetIds;
-                query.recursive = true;
-            } else if (this.rootAssets) {
-                query.ids = this.rootAssets.map((asset) => asset.id!);
-                query.recursive = true;
-            } else if (this.rootAssetIds) {
-                query.ids = this.rootAssetIds;
-                query.recursive = true;
-            }
-            this._sendEventWithReply({
-                event: {
-                    eventType: "read-assets",
-                    assetQuery: query
+            } else {
+
+                const query: AssetQuery = {
+                    realm: {
+                        name: manager.displayRealm
+                    },
+                    select: { // Just need the basic asset info
+                        attributes: []
+                    }
+                };
+
+                if (this.assetIds) {
+                    query.ids = this.assetIds;
+                    query.recursive = true;
+                } else if (this.rootAssets) {
+                    query.ids = this.rootAssets.map((asset) => asset.id!);
+                    query.recursive = true;
+                } else if (this.rootAssetIds) {
+                    query.ids = this.rootAssetIds;
+                    query.recursive = true;
                 }
-            })
-                .then((ev) => {
+                this._sendEventWithReply({
+                    event: {
+                        eventType: "read-assets",
+                        assetQuery: query
+                    }
+                }).then((ev) => {
                     this._loading = false;
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)
                 });
+            }
         } else {
             this._loading = false;
             this._buildTreeNodes(this.assets, sortFunction);
