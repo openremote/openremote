@@ -58,7 +58,7 @@ public class DetectionMethodChange extends DetectionMethod {
 
     @Override
     public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
-        if(datapoints.size() < ((AnomalyDetectionConfiguration.Change)config).minimumDatapoints) return false;
+        if(datapoints.size() < 3) return false;
         smallestIncrease = Double.MAX_VALUE;
         biggestIncrease = -100000000;
         for(int i = 1; i < datapoints.size(); i++){

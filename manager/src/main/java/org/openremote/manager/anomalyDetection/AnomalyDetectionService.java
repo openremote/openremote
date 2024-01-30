@@ -363,7 +363,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                             valid = false;
                             if (method.config.alarmOnOff && method.config.alarm.getSeverity() != null) {
                                 String message = method.config.alarm.getContent();
-                                if(message.contains("%ASSET_ID%")){
+                                if(message.contains("%ASSET_NAME%")){
                                     String name = assetStorageService.find(attributeRef.getId()).getName();
                                     message = message.replace("%ASSET_NAME%", name);
                                 }
@@ -420,7 +420,6 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                 valueDatapoints = assetDatapointService.queryDatapoints(attributeRef.getId(), attributeRef.getName(),new AssetDatapointAllQuery(period.getLatest()- maxTimespan, period.getLatest()));
 
             }else if(detectionMethod.config.getClass().getSimpleName().equals("Forecast")){
-                DatapointPeriod predictedPeriod = assetPredictedDatapointService.getDatapointPeriod(attributeRef.getId(), attributeRef.getName());
                 valueDatapoints = assetPredictedDatapointService.queryDatapoints(attributeRef.getId(),attributeRef.getName(), new AssetDatapointAllQuery(period.getOldest(), period.getLatest()+ (period.getLatest()-period.getOldest())));
             }
             return Arrays.stream(valueDatapoints).toList();
