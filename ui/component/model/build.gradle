@@ -14,7 +14,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly findProject(":model-util")
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
     implementation resolveProject(":agent")
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"

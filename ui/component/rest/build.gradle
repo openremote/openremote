@@ -14,7 +14,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly findProject(":model-util")
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
     implementation resolveProject(":agent")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
