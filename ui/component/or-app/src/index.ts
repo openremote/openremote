@@ -448,8 +448,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
             if(manager.console?.isMobile && this._offline) {
                 this._startOfflineFallbackTimer(true);
-                manager.reconnect();
             }
+            // Always try reconnecting (if necessary)
+            manager.reconnect(true);
 
         } else if(event === OREvent.CONSOLE_HIDDEN) {
             this._store.dispatch((setVisibility(false)));
@@ -474,9 +475,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         const deferred = new Util.Deferred<void>();
         let finished = false;
         deferred.promise.then(() => {
-            if(this._showOfflineFallback !== this._offline) {
-                this._showOfflineFallback = this._offline;
-            }
+            this._showOfflineFallback = this._offline;
         }).finally(() => {
             finished = true;
         });

@@ -586,11 +586,11 @@ export class Manager implements EventProviderFactory {
     }
 
     // Public method for reconnecting if disconnected.
-    public reconnect() {
-        if(this._authDisconnected) {
+    public reconnect(force = false) {
+        if(this._authDisconnected || force) {
             this._runAuthReconnectTimer();
         }
-        if(this._eventsDisconnected) {
+        if(this._eventsDisconnected || force) {
             this._tryReconnectEvents();
         }
     }
@@ -1097,6 +1097,7 @@ export class Manager implements EventProviderFactory {
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
 
         // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+        // TODO: Improve this, see https://github.com/openremote/openremote/issues/1233
         const promise = this._keycloak!.updateToken(30) as Promise<boolean>;
         promise.then(tokenRefreshed => {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
