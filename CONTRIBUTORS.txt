@@ -7,13 +7,11 @@ Michal Rutka <michal@openremote.io>
 Don Willems <don@openremote.io>
 Martin Peeters (martin.peeters@openremote.io)
 Igor Rutka (igor.rutka@openremote.io)
+Pierre Kil (pierre@openremote.io)
 Rainer Hitz (rainer@openremote.io)
 Jérôme Vervier (jerome@openremote.io)
 Wouter Born (wouter.born@openremote.io)
-Pierre Kil (pierre@openremote.io)
-William Balcaen
-Mica Hallin
-Mestiez Pereira
+Marcus Redeker
 Vincent Lichtenberg
 Marcus Redeker
 Damien Kusters
@@ -24,10 +22,13 @@ Rens van der Linden
 Peter de Witte
 Pululu Kinanga
 Denis Weber
-Neal Geilen
-Mihaela Aleksandrova
+Mestiez Pereira
 Pepijn Muskens
 Panos Kalogeroppoulos
+Neal Geilen
+William Balcaen
+Mica Hallin
+Mihaela Aleksandrova
 Kevin Lin
 Sam Sulaimanov
 Igor Melnyk
