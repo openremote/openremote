@@ -13,6 +13,7 @@ Jérôme Vervier (jerome@openremote.io)
 Wouter Born (wouter.born@openremote.io)
 Marcus Redeker
 Vincent Lichtenberg
+Marcus Redeker
 Damien Kusters
 Ramon Peek
 Alexandru Bogdan
