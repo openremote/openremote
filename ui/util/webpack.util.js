@@ -280,6 +280,10 @@ function generateExports(dirname) {
                 library: libName,
                 libraryTarget: "umd"
             },
+            resolve: {
+                extensions: [".ts", ".tsx", "..."],
+                fallback: { "vm": false }
+            },
             module: {...getStandardModuleRules()},
             externals: generateExternals(bundle)
         };

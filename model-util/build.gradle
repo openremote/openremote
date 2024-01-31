@@ -26,8 +26,8 @@ publishing {
             artifactId = "openremote-${project.name}"
             from components.java
             pom {
-                name = 'OpenRemote Model'
-                description = 'Provides core model classes used within OpenRemote; add maven {url "https://repo.osgeo.org/repository/release/"} and maven {url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"} to resolve all dependencies'
+                name = 'OpenRemote Model Util'
+                description = 'Provides utilities for building the typescript model used within OpenRemote and custom projects'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
