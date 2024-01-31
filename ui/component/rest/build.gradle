@@ -14,20 +14,24 @@ plugins {
 }
 
 dependencies {
-    compileOnly findProject(":model-util")
+    // TODO: Remove this as shouldn't build custom project code into this package
+    def customModel = findProject(":model")
+    if (customModel != null) {
+        implementation customModel
+    }
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
-    implementation resolveProject(":agent")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 }
 
-project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
-generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
+//project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
+//generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
 
-generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts")
-generateTypeScript.dependsOn generateTypescriptModelInfo
+generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${resolveProject(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
+generateTypeScript.dependsOn resolveTask(":ui:component:model:generateTypeScript")
 
 clean {
     doLast {

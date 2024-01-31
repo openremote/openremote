@@ -14,7 +14,18 @@ plugins {
 }
 
 dependencies {
-    compileOnly findProject(":model-util")
+    if (isCustomProject()) {
+        // TODO: Remove this as shouldn't build custom project code into this package
+        def customModel = findProject(":model")
+        if (customModel != null) {
+            implementation customModel
+        }
+        def customAgent = findProject(":agent")
+        if (customAgent != null) {
+            implementation customAgent
+        }
+    }
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
     implementation resolveProject(":agent")
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
