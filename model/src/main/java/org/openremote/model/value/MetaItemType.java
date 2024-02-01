@@ -19,15 +19,14 @@
  */
 package org.openremote.model.value;
 
+import jakarta.validation.constraints.Pattern;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeLink;
-import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.TsIgnore;
 
-import jakarta.validation.constraints.Pattern;
 import java.util.Date;
 
 @TsIgnore

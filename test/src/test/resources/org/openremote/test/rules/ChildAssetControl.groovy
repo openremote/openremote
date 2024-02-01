@@ -8,7 +8,7 @@ package org.openremote.setup.integration.rules
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
+import org.openremote.model.attribute.AttributeInfo
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
@@ -29,7 +29,7 @@ rules.add()
         .when(
                 { facts ->
 
-                    List<AssetState<?>> changes = Collections.synchronizedList(new ArrayList<>())
+                    List<AttributeInfo> changes = Collections.synchronizedList(new ArrayList<>())
 
                     def childUpdates = facts.matchAssetState(
                             new AssetQuery().ids(parentAssetId)
@@ -37,7 +37,7 @@ rules.add()
                         def changed = false
 
                         // Get previous state from facts
-                        def previous = facts.matchFirst(state.id + state.name) as Optional<AssetState<?>>
+                        def previous = facts.matchFirst(state.id + state.name) as Optional<AttributeInfo>
 
                         if (previous.isEmpty()) {
                             // Store initial state to avoid triggering on first run
@@ -73,7 +73,7 @@ rules.add()
                 })
         .then(
         { facts ->
-            def changes = facts.bound("changes") as List<AssetState<?>>
+            def changes = facts.bound("changes") as List<AttributeInfo>
             def updates = facts.bound("updates") as List<AttributeEvent>
 
             // Create fact for state of attribute

@@ -4,7 +4,6 @@ import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
@@ -34,7 +33,7 @@ rules.add()
                             new AssetQuery()
                                     .types(WeatherAsset)
                                     .attributeNames(WeatherAsset.TEMPERATURE.name, WeatherAsset.RAINFALL.name)
-                    ).collect(Collectors.groupingBy{AssetState<?> state -> state.id})
+                    ).collect(Collectors.groupingBy{state -> state.id})
                     .forEach{id, states ->
                         // See if either attribute has changed for this asset
                         if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))}) {

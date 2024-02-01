@@ -10,7 +10,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -83,7 +82,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         and: "we turn the light on again in a room"
         assetProcessingService.sendAttributeEvent(
-            new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true)
+                new AttributeEvent(managerTestSetup.apartment2LivingroomId, "lightSwitch", true)
         )
 
         then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"

@@ -36,8 +36,8 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -75,14 +75,14 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
                         String.class,
                         client,
                         (msg, out) -> {
-                            byte[] bytes = hexMode ? ProtocolUtil.bytesFromHexString(msg) : ProtocolUtil.bytesFromBinaryString(msg);
+                            byte[] bytes = hexMode ? ValueUtil.bytesFromHexString(msg) : ValueUtil.bytesFromBinaryString(msg);
                             out.writeBytes(bytes);
                         }
                     ));
 
                 if (delimiters.length > 0) {
                     ByteBuf[] byteDelimiters = Arrays.stream(delimiters)
-                        .map(delim -> Unpooled.wrappedBuffer(hexMode ? ProtocolUtil.bytesFromHexString(delim) : ProtocolUtil.bytesFromBinaryString(delim)))
+                        .map(delim -> Unpooled.wrappedBuffer(hexMode ? ValueUtil.bytesFromHexString(delim) : ValueUtil.bytesFromBinaryString(delim)))
                         .toArray(ByteBuf[]::new);
                     encodersDecoders.add(new DelimiterBasedFrameDecoder(maxLength, stripDelimiter, byteDelimiters));
                 } else {
@@ -96,7 +96,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
                         (byteBuf, messages) -> {
                             byte[] bytes = new byte[byteBuf.readableBytes()];
                             byteBuf.readBytes(bytes);
-                            String msg = hexMode ? ProtocolUtil.bytesToHexString(bytes) : ProtocolUtil.bytesToBinaryString(bytes);
+                            String msg = hexMode ? ValueUtil.bytesToHexString(bytes) : ValueUtil.bytesToBinaryString(bytes);
                             messages.add(msg);
                         }
                     )
@@ -161,13 +161,13 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(X agentLink, AttributeEvent event, Object processedValue) {
 
-        if (client == null || attribute == null) {
+        if (client == null) {
             return;
         }
 
-        V message = createWriteMessage(attribute, agent.getAgentLink(attribute), event, processedValue);
+        V message = createWriteMessage(agent.getAgentLink(event), event, processedValue);
 
         if (message == null) {
             LOG.fine("No message produced for attribute event so not sending to IO client '" + client.getClientUri() + "': " + event);
@@ -211,5 +211,5 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     /**
      * Generate the actual message to send to the {@link IOClient} for this {@link AttributeEvent}
      */
-    protected abstract V createWriteMessage(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue);
+    protected abstract V createWriteMessage(X agentLink, AttributeEvent event, Object processedValue);
 }

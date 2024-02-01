@@ -19,7 +19,7 @@
  */
 package org.openremote.container.web;
 
-import org.openremote.model.asset.agent.Protocol;
+import org.openremote.model.Constants;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
@@ -35,9 +35,9 @@ import java.util.regex.Pattern;
 
 /**
  * A filter for injecting query parameters into the request URI. The query parameters are extracted from the request
- * property {@link #QUERY_PARAMETERS_PROPERTY}. Any {@link Protocol#DYNAMIC_VALUE_PLACEHOLDER} in the query parameters
+ * property {@link #QUERY_PARAMETERS_PROPERTY}. Any {@link Constants#DYNAMIC_VALUE_PLACEHOLDER} in the query parameters
  * will be replaced with the {@link #DYNAMIC_VALUE_PROPERTY} from the request. Any
- * {@link Protocol#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the query parameters will be replaced with the current system
+ * {@link Constants#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the query parameters will be replaced with the current system
  * time in the specified format with optional offset.
  */
 @Provider
@@ -54,7 +54,7 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
      */
     public static final String QUERY_PARAMETERS_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".params";
 
-    public static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
+    public static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
 
     @SuppressWarnings("unchecked")
     @Override
@@ -72,7 +72,7 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
         queryParameters.forEach((name, values) -> {
 
             Object[] formattedValues = values.stream().map(v -> {
-                v = v.replaceAll(Protocol.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue);
+                v = v.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue);
 
                 Matcher matcher = DYNAMIC_TIME_PATTERN.matcher(v);
 
@@ -87,7 +87,7 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
                         millisToAdd = Long.parseLong(matcher.group(2));
                     }
 
-                    v = v.replaceAll(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP, dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault())));
+                    v = v.replaceAll(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP, dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault())));
                 }
 
                 return v;

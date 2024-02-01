@@ -1,10 +1,11 @@
 package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesBuilder;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueHolder;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,14 +23,14 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                Optional<AssetState<?>> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
-                return readValue.<Object>map(assetState -> assetState.getValue().orElse(null)).orElse(null);
+                Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
+                return readValue.flatMap(ValueHolder::getValue).orElse(null);
             },
             params -> {
                 AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = internal.getAssetId();
                 String attributeName = internal.getAttributeName();
-                List<AssetState<?>> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
+                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
                 ).toList();
 
                 return allAssets.stream().anyMatch(state -> {
@@ -53,7 +54,7 @@ public enum NodeModel {
                     return;
                 }
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
-                Optional<AssetState<?>> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getAttributeName()));
+                Optional<AttributeInfo> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getAttributeName()));
 
                 if (existingValue.isPresent())
                     if (existingValue.get().getValue().isPresent())
