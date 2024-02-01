@@ -331,7 +331,7 @@
   "host": "Hostname",
   "errorOccurred": "An error has occurred",
   "sendFailed": "Send failed",
-  "youAreOffline": "You are offline",
+  "youAreOffline": "Lost connection to the server",
   "checkConnection": "Please check your connection",
   "retryingConnection": "Retrying in {{seconds}} seconds",
   "reconnecting": "Reconnecting",

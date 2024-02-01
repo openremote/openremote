@@ -4,6 +4,7 @@ export interface AppState {
     page: string;
     params: {[k in string]: string} | null;
     offline: boolean;
+    visible: boolean;
     resolved: boolean,
     drawerOpened: boolean;
     scrollTop: number;
@@ -18,6 +19,7 @@ const INITIAL_STATE: AppState = {
     page: "",
     params: null,
     offline: false,
+    visible: true,
     resolved: false,
     drawerOpened: false,
     scrollTop: 0,
@@ -63,9 +65,15 @@ const appSlice = createSlice({
                 ...state,
                 offline: action.payload
             }
+        },
+        setVisibility(state, action: PayloadAction<boolean>) {
+            return {
+                ...state,
+                visible: action.payload
+            }
         }
     }
 });
 
-export const {updatePage, updateDrawer, scrollToTop, updateRealm, setOffline} = appSlice.actions;
+export const {updatePage, updateDrawer, scrollToTop, updateRealm, setOffline, setVisibility} = appSlice.actions;
 export const appReducer = appSlice.reducer;

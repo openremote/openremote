@@ -1,7 +1,11 @@
 // Common configuration applied to all projects
-import java.nio.file.*
-import java.nio.file.attribute.*
-import java.util.Set
+
+import org.jetbrains.gradle.ext.JUnit
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFileAttributes
+import java.nio.file.attribute.PosixFilePermission
 import java.util.stream.Collectors
 import java.util.stream.StreamSupport
 
@@ -279,7 +283,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
             }
     return config
 }
-def createTSGeneratorConfigForClient(String outputFileName, Project...customProjectsToScan) {
+def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, Project...customProjectsToScan) {
     def config = createTSGeneratorConfig(true, outputFileName, customProjectsToScan) <<
             {
                 extensions = [
@@ -303,7 +307,7 @@ def createTSGeneratorConfigForClient(String outputFileName, Project...customProj
                         cz.habarta.typescript.generator.ModuleDependency.module(
                                 "@openremote/model",
                                 "Model",
-                                new File("$buildDir/typescript-generator-info.json"),
+                                modelInfoJson,
                                 (String) null,
                                 (String) null
                         )
