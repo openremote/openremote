@@ -19,12 +19,9 @@
  */
 package org.openremote.manager.notification;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.model.asset.agent.Protocol;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -33,6 +30,8 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
@@ -44,8 +43,6 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -71,37 +68,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
-
-    protected static Processor handleNotificationProcessingException() {
-        return exchange -> {
-            Notification notification = exchange.getIn().getBody(Notification.class);
-            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
-
-            StringBuilder error = new StringBuilder();
-
-            Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Notification.Source.class);
-            if (source != null) {
-                error.append("Error processing from ").append(source);
-            }
-
-            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
-            if (protocolName != null) {
-                error.append(" (protocol: ").append(protocolName).append(")");
-            }
-
-            // TODO Better exception handling - dead letter queue?
-            if (exception instanceof NotificationProcessingException processingException) {
-                error.append(" - ").append(processingException.getReasonPhrase());
-                error.append(": ").append(notification.toString());
-                NotificationService.LOG.warning(error.toString());
-            } else {
-                error.append(": ").append(notification.toString());
-                NotificationService.LOG.log(Level.WARNING, error.toString(), exception);
-            }
-
-            exchange.getMessage().setBody(false);
-        };
-    }
 
     @Override
     public int getPriority() {
@@ -143,7 +109,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         from(NOTIFICATION_QUEUE)
                 .routeId("NotificationQueue")
-                .doTry()
                 .process(exchange -> {
                     Notification notification = exchange.getIn().getBody(Notification.class);
 
@@ -220,6 +185,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     if (mappedTargetsList == null || mappedTargetsList.isEmpty()) {
                         throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
+                    } else if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("Notification targets mapped from: [" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "to: [" + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(",")) + "]");
                     }
 
                     // Filter targets based on repeat frequency
@@ -251,27 +218,30 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 long id = sentNotification.getId();
 
                                 try {
-                                    NotificationSendResult result = handler.sendMessage(
+                                    handler.sendMessage(
                                         id,
                                         source,
                                         sourceId.get(),
                                         target,
                                         notification.getMessage());
 
-                                    if (result.isSuccess()) {
-                                        LOG.fine("Notification sent '" + id + "': " + target);
-                                    } else {
-                                        LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + result.getMessage());
-                                        sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
-                                    }
+                                    NotificationSendResult result = NotificationSendResult.success();
+                                    LOG.fine("Notification sent '" + id + "': " + target);
+
                                     // Merge the sent notification again with the message included just in case the handler modified the message
                                     sentNotification.setMessage(notification.getMessage());
-                                    em.merge(sentNotification);
+
                                 } catch (Exception e) {
-                                    LOG.log(Level.SEVERE,
-                                        "Notification handler threw an exception whilst sending notification '" + id + "'",
-                                        e);
-                                    sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
+                                    NotificationProcessingException notificationProcessingException;
+                                    if (e instanceof NotificationProcessingException) {
+                                        notificationProcessingException = (NotificationProcessingException) e;
+                                    } else {
+                                        notificationProcessingException = new NotificationProcessingException(SEND_FAILURE, e.getMessage());
+                                    }
+                                    LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
+                                    sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
+                                    throw(notificationProcessingException);
+                                } finally {
                                     em.merge(sentNotification);
                                 }
                                 return sentNotification.getError() == null;
@@ -284,9 +254,13 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     exchange.getMessage().setBody(success.get());
                 })
-                .endDoTry()
-                .doCatch(NotificationProcessingException.class)
-                .process(handleNotificationProcessingException());
+            .onException(Exception.class)
+            .logStackTrace(false)
+            .handled(true)
+            .process(exchange -> {
+                // Just notify sender in case of RequestReply
+                exchange.getMessage().setBody(false);
+            });
     }
 
     public boolean sendNotification(Notification notification) {

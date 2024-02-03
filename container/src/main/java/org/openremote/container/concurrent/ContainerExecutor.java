@@ -20,15 +20,15 @@
 package org.openremote.container.concurrent;
 
 import java.util.concurrent.*;
-
-import static org.openremote.container.concurrent.ContainerThreads.DEFAULT_REJECTED_EXECUTION_HANDLER;
-import static org.openremote.container.concurrent.ContainerThreads.logExceptionCause;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Thread pool that adds logging for tasks that throw exceptions
  */
 public class ContainerExecutor extends ThreadPoolExecutor {
 
+    protected static final Logger LOG = Logger.getLogger(ContainerExecutor.class.getName());
     protected String name;
 
     /**
@@ -38,7 +38,8 @@ public class ContainerExecutor extends ThreadPoolExecutor {
                              int corePoolSize,
                              int maximumPoolSize,
                              long keepAliveSeconds,
-                             int blockingQueueCapacity) {
+                             int blockingQueueCapacity,
+                             RejectedExecutionHandler rejectedExecutionHandler) {
         super(
             corePoolSize,
             maximumPoolSize,
@@ -46,7 +47,12 @@ public class ContainerExecutor extends ThreadPoolExecutor {
             TimeUnit.SECONDS,
             blockingQueueCapacity == -1 ? new SynchronousQueue<>() : new ArrayBlockingQueue<>(blockingQueueCapacity),
             new ContainerThreadFactory(name),
-            DEFAULT_REJECTED_EXECUTION_HANDLER
+            // Wrap rejected handler to add logging
+            (r, executor) -> {
+                // Log and discard
+                LOG.info("Container thread pool '" + executor + "' rejected execution of " + r);
+                rejectedExecutionHandler.rejectedExecution(r, executor);
+            }
         );
 
         this.name = name;
@@ -56,6 +62,28 @@ public class ContainerExecutor extends ThreadPoolExecutor {
     protected void afterExecute(Runnable runnable, Throwable throwable) {
         super.afterExecute(runnable, throwable);
         logExceptionCause(runnable, throwable);
+    }
+
+    protected static void logExceptionCause(Runnable runnable, Throwable throwable) {
+        if (throwable != null) {
+            Throwable cause = unwrap(throwable);
+            if (cause instanceof InterruptedException) {
+                // Ignore this, might happen when we shutdownNow() the executor. We can't
+                // log at this point as the logging system might be stopped already.
+                return;
+            }
+            LOG.log(Level.WARNING, "Thread terminated unexpectedly executing: " +runnable.getClass(), throwable);
+        }
+    }
+
+    protected static Throwable unwrap(Throwable throwable) throws IllegalArgumentException {
+        if (throwable == null) {
+            throw new IllegalArgumentException("Cannot unwrap null throwable");
+        }
+        for (Throwable current = throwable; current != null; current = current.getCause()) {
+            throwable = current;
+        }
+        return throwable;
     }
 
     @Override

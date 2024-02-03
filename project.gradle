@@ -1,7 +1,14 @@
 // Common configuration applied to all projects
-import java.nio.file.*
-import java.nio.file.attribute.*
-import java.util.Set
+
+import org.jetbrains.gradle.ext.JUnit
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFileAttributes
+import java.nio.file.attribute.PosixFilePermission
+import java.util.stream.Collectors
+import java.util.stream.StreamSupport
+
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
@@ -255,6 +262,121 @@ def getDeploymentJars(Project project = project) {
     }
 }
 
+/**
+ * This defines reusable config for the typescript generator plugin
+ */
+def createTSGeneratorConfigForModel(String outputFileName, Project...customProjectsToScan) {
+    def config = createTSGeneratorConfig(false, outputFileName, customProjectsToScan) <<
+            {
+                extensions = [
+                        "org.openremote.model.util.AssetModelInfoExtension",
+                        "CustomExtension",
+                        "JsonSerializeExtension"
+                ]
+                customTypeMappings = [
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "java.lang.Class<T>:string",
+                        "org.openremote.model.attribute.MetaItem<T>:any"
+                ]
+                customTypeProcessor = "CustomTypeProcessor"
+                generateInfoJson = true
+            }
+    return config
+}
+def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, Project...customProjectsToScan) {
+    def config = createTSGeneratorConfig(true, outputFileName, customProjectsToScan) <<
+            {
+                extensions = [
+                        "CustomExtension",
+                        "JsonSerializeExtension",
+                        "AggregatedApiClient",
+                        "cz.habarta.typescript.generator.ext.AxiosClientExtension"
+                ]
+                customTypeMappings = [
+                        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
+                        "java.lang.Class<T>:string",
+                        "org.openremote.model.attribute.MetaItem<T>:any",
+                        "org.openremote.model.asset.Asset<T>:Model.Asset",
+                        "org.openremote.model.asset.AssetDescriptor<T>:Model.AssetDescriptor",
+                        "org.openremote.model.asset.agent.Agent<T,U,V>:Model.Agent",
+                        "org.openremote.model.asset.agent.AgentDescriptor<T,U,V>:Model.AgentDescriptor",
+                        "org.openremote.model.value.MetaItemDescriptor<T>:Model.MetaItemDescriptor",
+                        "org.openremote.model.value.ValueDescriptor<T>:Model.ValueDescriptor"
+                ]
+                moduleDependencies = [
+                        cz.habarta.typescript.generator.ModuleDependency.module(
+                                "@openremote/model",
+                                "Model",
+                                modelInfoJson,
+                                (String) null,
+                                (String) null
+                        )
+                ]
+                restNamespacing = "perResource"
+            }
+    return config
+}
+def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Project...customProjectsToScan) {
+
+    def classPatternGlobs = Arrays.stream(customProjectsToScan).flatMap { project ->
+        return project.sourceSets.findByName('main').java.srcDirs.stream().map {
+            def srcPath = it
+            def isPackageDir = true
+            while (srcPath != null && isPackageDir) {
+                def files = srcPath.listFiles()
+                isPackageDir = files != null && files.length == 1 && files[0].isDirectory()
+                if (isPackageDir) {
+                    srcPath = files[0]
+                }
+            }
+            java.nio.file.Path packagePath = it.toPath().relativize(srcPath.toPath())
+            return StreamSupport
+                    .stream(packagePath.spliterator(), false)
+                    .map(java.nio.file.Path::toString)
+                    .collect(Collectors.joining(".")) + (outputAPIClient ? ".**Resource" : ".**")
+        }
+    }.toList()
+
+    return {
+        jsonLibrary = "jackson2"
+        classPatterns = [
+                (outputAPIClient ? "org.openremote.model.**Resource" : "org.openremote.model.**")
+        ] + classPatternGlobs
+        customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
+        excludeClassPatterns = [
+                "org.openremote.model.event.shared.*Filter**",
+                "org.openremote.model.util.**",
+                "org.openremote.model.flow.**",
+                "java.io.**",
+                "java.lang.**",
+                "org.hibernate.**",
+                "jakarta.**"
+        ]
+        mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+        mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
+        optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
+        outputFileType = "implementationFile"
+        outputKind = "module"
+        outputFile = outputFileName
+        jackson2Configuration = [
+                fieldVisibility: "ANY",
+                creatorVisibility: "ANY",
+                getterVisibility: "NONE",
+                isGetterVisibility: "NONE",
+                setterVisibility: "NONE"
+        ]
+        jackson2Modules = [
+                "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
+                "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
+                "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
+        ]
+    }
+}
+
+def resolveDependency(String path) {
+    "io.openremote:openremote-" + path.substring(1) + ":" + version
+}
+
 ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
@@ -262,6 +384,9 @@ ext {
     isCustomProject = this.&isCustomProject
     getYarnInstallTask = this.&getYarnInstallTask
     getDeploymentJars = this.&getDeploymentJars
+    resolveDependency = this.&resolveDependency
+    createTSGeneratorConfigForClient = this.&createTSGeneratorConfigForClient
+    createTSGeneratorConfigForModel = this.&createTSGeneratorConfigForModel
 }
 
 // Add UI tasks

@@ -473,16 +473,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         if (connectionStatusConsumers.size() > 0) {
             LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
         }
-        executorService.submit(() -> {
-            connectionStatusConsumers.forEach(
-                consumer -> {
-                    try {
-                        consumer.accept(connectionStatus);
-                    } catch (Exception e) {
-                        LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
-                    }
-                });
-        });
+        connectionStatusConsumers.forEach(
+            consumer -> {
+                try {
+                    consumer.accept(connectionStatus);
+                } catch (Exception e) {
+                    LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
+                }
+            });
     }
 
     protected void setPermanentError(String message) {

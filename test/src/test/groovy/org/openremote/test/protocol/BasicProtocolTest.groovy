@@ -306,8 +306,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the update should reach the protocol as an attribute write request"
         conditions.eventually {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 1
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeName == "tempTarget1"
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeRef.id == mockThing.id
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).name == "tempTarget1"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).ref.id == mockThing.id
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).value.orElse(null) == 30d
         }
 

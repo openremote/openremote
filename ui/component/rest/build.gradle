@@ -1,6 +1,3 @@
-apply plugin: "groovy"
-apply plugin: "cz.habarta.typescript-generator"
-
 buildscript {
     repositories {
         mavenCentral()
@@ -11,105 +8,30 @@ buildscript {
     }
 }
 
+plugins {
+    id 'groovy'
+    id 'cz.habarta.typescript-generator'
+}
+
 dependencies {
-    if (isCustomProject()) {
-        def customModel = findProject(":model")
-        if (customModel != null) {
-            implementation customModel
-        }
+    // TODO: Remove this as shouldn't build custom project code into this package
+    def customModel = findProject(":model")
+    if (customModel != null) {
+        implementation customModel
     }
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
-    implementation resolveProject(":ui:component:model")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 }
 
-task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.GenerateTask) {
-    jsonLibrary = "jackson2"
-    classPatterns = [
-        "org.openremote.model.**"
-    ]
-    outputKind = "module"
-    generateInfoJson = true
-    excludeClassPatterns = [
-        "org.openremote.model.event.shared.*Filter**",
-        "org.openremote.model.util.**",
-        "org.openremote.model.flow.**",
-        "java.io.**",
-        "java.lang.**",
-        "org.hibernate.**",
-        "jakarta.**"
-    ]
-    customTypeProcessor = "CustomTypeProcessor"
-    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
-    customTypeMappings = [
-        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
-        "java.lang.Class<T>:string"
-    ]
-    optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
-    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
-    jackson2Modules = [
-        "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
-        "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
-        "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
-    ]
-    extensions = [
-        "CustomExtension",
-        "JsonSerializeExtension"
-    ]
-}
+//project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
+//generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
 
-generateTypeScript {
-    dependsOn generateTypescriptModelInfo
-    jsonLibrary = "jackson2"
-    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
-    customTypeMappings = [
-        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
-        "java.lang.Class<T>:string",
-        "org.openremote.model.asset.Asset<T>:Model.Asset",
-        "org.openremote.model.asset.AssetDescriptor<T>:Model.AssetDescriptor",
-        "org.openremote.model.asset.agent.Agent<T,U,V>:Model.Agent",
-        "org.openremote.model.asset.agent.AgentDescriptor<T,U,V>:Model.AgentDescriptor",
-        "org.openremote.model.value.MetaItemDescriptor<T>:Model.MetaItemDescriptor",
-        "org.openremote.model.value.ValueDescriptor<T>:Model.ValueDescriptor"
-    ]
-    classPatterns = [
-        "org.openremote.model.**Resource"
-    ]
-    excludeClassPatterns = [
-        "org.openremote.model.event.shared.*Filter**",
-        "org.openremote.model.util.**",
-        "org.openremote.model.flow.**",
-        "java.io.**",
-        "java.lang.**",
-        "org.hibernate.**",
-        "jakarta.**"
-    ]
-    moduleDependencies = [
-        cz.habarta.typescript.generator.ModuleDependency.module(
-            "@openremote/model",
-            "Model",
-            new File("$buildDir/typescript-generator/typescript-generator-info.json"),
-            (String)null,
-            (String)null
-        )
-    ]
-    outputFile = "src/restclient.ts"
-    outputFileType = "implementationFile"
-    outputKind = "module"
-    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
-    restNamespacing = "perResource"
-    extensions = [
-        "CustomExtension",
-        "JsonSerializeExtension",
-        "AggregatedApiClient",
-        "cz.habarta.typescript.generator.ext.AxiosClientExtension"
-    ]
-}
+generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${resolveProject(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
+generateTypeScript.dependsOn resolveTask(":ui:component:model:generateTypeScript")
 
 clean {
     doLast {

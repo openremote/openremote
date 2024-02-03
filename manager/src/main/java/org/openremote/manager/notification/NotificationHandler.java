@@ -76,5 +76,5 @@ public interface NotificationHandler extends ContainerService {
      * The ID can be used by the {@link NotificationHandler} to update the delivered and/or acknowledged status of the notification
      * by calling {@link NotificationService#setNotificationDelivered} or {@link NotificationService#setNotificationAcknowleged}
      */
-    NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message);
+    void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) throws Exception;
 }

@@ -922,10 +922,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         Thread.sleep(1000)
         conditions.eventually {
             assert attributeEvents.size() == 4
-            assert attributeEvents.any{it.assetId == managerTestSetup.light2Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == managerTestSetup.light1Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == managerTestSetup.light1Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
         }
 
         when: "a gateway client asset is deleted"

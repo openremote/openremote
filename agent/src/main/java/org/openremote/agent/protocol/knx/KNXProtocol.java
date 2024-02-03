@@ -137,10 +137,10 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         synchronized (attributeActionMap) {
-            Datapoint datapoint = attributeActionMap.get(event.getAttributeRef());
+            Datapoint datapoint = attributeActionMap.get(event.getRef());
 
             if (datapoint == null) {
                 LOG.fine("Attribute isn't linked to a KNX datapoint so cannot process write: " + event);
@@ -150,7 +150,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
             connection.sendCommand(datapoint, event.getValue());
 
             // We assume KNX actuator will send new status on relevant status group address which will be picked up by listener and updates the state again later
-            updateLinkedAttribute(event.getAttributeState());
+            updateLinkedAttribute(event.getState());
         }
     }
 

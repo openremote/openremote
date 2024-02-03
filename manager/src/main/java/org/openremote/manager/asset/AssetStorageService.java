@@ -49,7 +49,6 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -61,8 +60,6 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.validation.AssetStateStore;
-import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
 import java.sql.*;
@@ -76,6 +73,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINE;
 import static java.util.stream.Collectors.groupingBy;
@@ -153,15 +151,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  return false;
              }
 
-             // Superuser can get events for any asset in any realm
-             if (auth != null && auth.isSuperUser()) {
-                 return true;
-             }
-
              AssetFilter<T> filter = (AssetFilter<T>) subscription.getFilter();
              if (filter == null) {
                  filter = new AssetFilter<>();
                  subscription.setFilter(filter);
+             }
+
+             filter.setInternal(subscription.isInternal());
+
+             // Internal subscribers and superusers can get events for any asset in any realm
+             if (subscription.isInternal() || (auth != null && auth.isSuperUser())) {
+                 return true;
              }
 
              requestRealm = filter.getRealm() != null ? filter.getRealm() : requestRealm;
@@ -521,7 +521,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     /**
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     * @param loadComplete If the whole asset data (including attributes) should be loaded.
      */
     public Asset<?> find(String assetId, boolean loadComplete) {
         if (assetId == null)
@@ -1060,7 +1060,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             assetId != null ? Collections.singletonList(assetId) : null);
     }
 
-    public List<UserAssetLink> findUserAssetLinks(String realm, List<String> userIds, List<String> assetIds) {
+    public List<UserAssetLink> findUserAssetLinks(String realm, Collection<String> userIds, Collection<String> assetIds) {
 
         if (realm == null && (userIds == null || userIds.isEmpty()) && (assetIds == null || assetIds.isEmpty())) {
             return Collections.emptyList();
@@ -1070,7 +1070,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             buildFindUserAssetLinksQuery(em, realm, userIds, assetIds).getResultList());
     }
 
-    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, List<String> userIds, List<String> assetIds) {
+    protected TypedQuery<UserAssetLink> buildFindUserAssetLinksQuery(EntityManager em, String realm, Collection<String> userIds, Collection<String> assetIds) {
         StringBuilder sb = new StringBuilder();
         Map<String, Object> parameters = new HashMap<>(3);
         sb.append("select ua from UserAssetLink ua where 1=1");
@@ -1343,48 +1343,37 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * generate the {@link AttributeEvent}
      */
     @SuppressWarnings("unchecked")
-    protected boolean updateAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws ConstraintViolationException {
+    protected boolean updateAttributeValue(EntityManager em, AttributeEvent event) throws ConstraintViolationException {
 
-        long timestamp = attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis);
-
-        // TODO: Reuse AssetState and change validator over to that class
-        // Do standard JSR-380 validation on the new value (needs attribute descriptor to do this)
-        Set<ConstraintViolation<AssetStateStore>> validationFailures = ValueUtil.validate(new AssetStateStore(asset.getType(), attribute));
-
-        if (!validationFailures.isEmpty()) {
-            String msg = "Attribute update failed as value failed constraint validation: attribute=" + attribute;
-            ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-            LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
-            throw ex;
-        }
+        long timestamp = event.getTimestamp() > 0 ? event.getTimestamp() : timerService.getCurrentTimeMillis();
 
         try {
             PGobject valueTimestampJSON = new PGobject();
             valueTimestampJSON.setType("jsonb");
-            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
+            valueTimestampJSON.setValue("{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}");
 
             // TODO: Use jsonb type directly to optimise over wire data (couldn't get this to work even after seeing https://stackoverflow.com/questions/53847917/postgresql-throws-column-is-of-type-jsonb-but-expression-is-of-type-bytea-with)
             Query query = em.createNativeQuery("UPDATE asset SET attributes[?] = attributes[?] || ?\\:\\:jsonb where id = ?")
-                .setParameter(1, attribute.getName())
-                .setParameter(2, attribute.getName())
-                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(attribute.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
-                .setParameter(4, asset.getId());
+                .setParameter(1, event.getName())
+                .setParameter(2, event.getName())
+                .setParameter(3, "{\"value\":" + ValueUtil.asJSON(event.getValue().orElse(null)).orElse(ValueUtil.NULL_LITERAL) + ",\"timestamp\":" + timestamp + "}")
+                .setParameter(4, event.getId());
 
             int affectedRows = query.executeUpdate();
             boolean success = affectedRows == 1;
 
             if (success) {
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Updated attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                    LOG.finest("Updated attribute value assetID=" + event.getId() + ", attributeName=" + event.getName() + ", timestamp=" + timestamp);
                 }
             } else {
                 if (LOG.isLoggable(Level.FINE)) {
-                    LOG.fine("Failed to update attribute value assetID=" + asset.getId() + ", attributeName=" + attribute.getName() + ", timestamp=" + timestamp);
+                    LOG.fine("Failed to update attribute value assetID=" + event.getId() + ", attributeName=" + event.getName() + ", timestamp=" + timestamp);
                 }
             }
 
             if (success) {
-                publishAttributeEvent(asset, attribute);
+                clientEventService.publishEvent(event);
             }
 
             return success;
@@ -1393,22 +1382,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LOG.log(Level.WARNING, "Failed to store attribute value", e);
             return false;
         }
-    }
-
-    protected void publishAttributeEvent(Asset<?> asset, Attribute<?> attribute) {
-        clientEventService.publishEvent(
-            new AttributeEvent(
-                asset.getId(),
-                attribute.getName(),
-                attribute.getValue().orElse(null),
-                attribute.getTimestamp().orElse(timerService.getCurrentTimeMillis())
-            )
-                .setParentId(asset.getParentId())
-                .setRealm(asset.getRealm())
-                .setPath(asset.getPath())
-                .setAccessRestrictedRead(attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
-                .setAccessPublicRead(attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
-        );
     }
 
     protected void publishModificationEvents(PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -1428,41 +1401,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
+
+                // Raise attribute event for each created attribute
+                asset.getAttributes().forEach(newAttribute ->
+                    clientEventService.publishEvent(
+                        new AttributeEvent(
+                            asset,
+                            newAttribute,
+                            getClass().getName(),
+                            newAttribute.getValue().orElse(null),
+                            newAttribute.getTimestamp().orElse(0L),
+                            newAttribute.getValue().orElse(null),
+                            newAttribute.getTimestamp().orElse(0L))
+                    ));
             }
-
-//                // Raise attribute event for each attribute
-//                asset.getAttributes().forEach(newAttribute ->
-//                    clientEventService.publishEvent(
-//                        new AttributeEvent(asset.getId(),
-//                            newAttribute.getName(),
-//                            newAttribute.getValue().orElse(null),
-//                            newAttribute.getTimestamp().orElse(timerService.getCurrentTimeMillis()))
-//                            .setParentId(asset.getParentId()).setRealm(asset.getRealm())
-//                    ));
             case UPDATE -> {
+                boolean nonAttributeChange = persistenceEvent.getPropertyNames().size() > 1 || !persistenceEvent.hasPropertyChanged("attributes");
                 boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
+                LOG.finest(() -> "Asset updated: " + persistenceEvent);
 
-//                String[] updatedProperties = Arrays.stream(persistenceEvent.getPropertyNames()).filter(propertyName -> {
-//                    Object oldValue = persistenceEvent.getPreviousState(propertyName);
-//                    Object newValue = persistenceEvent.getCurrentState(propertyName);
-//                    return !Objects.deepEquals(oldValue, newValue);
-//                }).toArray(String[]::new);
-
-                // Fully load the asset
-                Asset<?> loadedAsset = find(new AssetQuery().ids(asset.getId()));
-                if (loadedAsset == null) {
-                    return;
-                }
-                LOG.finest("Asset updated: " + persistenceEvent);
                 clientEventService.publishEvent(
-                    new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, persistenceEvent.getPropertyNames().toArray(String[]::new))
+                    new AssetEvent(AssetEvent.Cause.UPDATE, asset, persistenceEvent.getPropertyNames().toArray(String[]::new))
                 );
 
-                // Did any attributes change if so raise attribute events on the event bus
-                if (attributesChanged) {
-                    AttributeMap oldAttributes = persistenceEvent.getPreviousState("attributes");
-                    AttributeMap newAttributes = persistenceEvent.getCurrentState("attributes");
+                AttributeMap oldAttributes = attributesChanged ? persistenceEvent.getPreviousState("attributes") : asset.getAttributes();
+                AttributeMap newAttributes = attributesChanged ? persistenceEvent.getCurrentState("attributes") : asset.getAttributes();
 
+                // Publish events for deleted attributes
+                if (attributesChanged) {
                     // Get removed attributes and raise an attribute event with deleted flag in attribute state
                     oldAttributes.stream()
                         .filter(oldAttribute ->
@@ -1471,16 +1437,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             ))
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
-                                AttributeEvent.deletedAttribute(asset.getId(), obsoleteAttribute.getName())
+                                new AttributeEvent(asset, obsoleteAttribute, getClass().getName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                                    .setDeleted(true)
                             ));
-
-                    // Get new or modified attributes
-                    getAddedOrModifiedAttributes(oldAttributes.values(),
-                        newAttributes.values())
-                        .forEach(newOrModifiedAttribute ->
-                            publishAttributeEvent(asset, newOrModifiedAttribute)
-                        );
                 }
+
+                Stream<Attribute<?>> attributeStream;
+
+                if (nonAttributeChange) {
+                    // If something other than attributes has changed then treat as if attributes changed as path etc could have changed
+                    attributeStream = newAttributes.values().stream();
+                } else {
+                    // Get new or modified attributes
+                    attributeStream = getAddedOrModifiedAttributes(oldAttributes.values(), newAttributes.values());
+                }
+
+                attributeStream
+                    .forEach(newOrModifiedAttribute -> {
+                        Optional<Attribute<?>> oldAttribute = oldAttributes.get(newOrModifiedAttribute.getName());
+                        clientEventService.publishEvent(new AttributeEvent(
+                            asset,
+                            newOrModifiedAttribute,
+                            getClass().getSimpleName(),
+                            newOrModifiedAttribute.getValue().orElse(null),
+                            newOrModifiedAttribute.getTimestamp().orElse(0L),
+                            oldAttribute.flatMap(Attribute::getValue).orElse(null),
+                            oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
+                        ));
+                    });
             }
             case DELETE -> {
                 if (LOG.isLoggable(Level.FINEST)) {
@@ -1496,7 +1480,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 AttributeMap deletedAttributes = asset.getAttributes();
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
-                        AttributeEvent.deletedAttribute(asset.getId(), obsoleteAttribute.getName())
+                        new AttributeEvent(asset, obsoleteAttribute, getClass().getName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                            .setDeleted(true)
                     ));
             }
         }
