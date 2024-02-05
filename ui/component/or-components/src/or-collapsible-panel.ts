@@ -19,7 +19,7 @@
  */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
-import {DefaultColor5, Util} from "@openremote/core";
+import {DefaultColor5} from "@openremote/core";
 
 // language=CSS
 const style = css`

@@ -45,9 +45,9 @@ export class OrAnomalyConfigChart extends OrChart {
     @property({type: Number})
     public timespan?: Number = undefined;
     @property({type: String})
-    private errorMessage = ""
+    protected errorMessage = ""
     @property({type: Boolean})
-    private canRefresh = false
+    protected canRefresh = false
 
 
     protected willUpdate(changedProps: Map<string, any>) {
@@ -55,75 +55,33 @@ export class OrAnomalyConfigChart extends OrChart {
     }
 
     protected async _loadData() {
+        let ready = await this.validateCanUpdate()
+        if(!ready){
+            this._loading = false;
+            return;
+        }
+
         let timespan=0
-        if(this._loading || !this.anomalyConfig || !this.canRefresh){
-            return
-        }
-        if(this.anomalyConfig.onOff == undefined || !this.anomalyConfig.type || !this.anomalyConfig.deviation){
-            return;
-        }
-        if(this.anomalyConfig.type==="global"){
-            if((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan === "" || !(this.anomalyConfig as AnomalyDetectionConfigurationGlobal).timespan
-                || !(this.anomalyConfig as AnomalyDetectionConfigurationGlobal).minimumDatapoints ||!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((this.anomalyConfig as AnomalyDetectionConfigurationGlobal).timespan as string)){
-                this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
-                return
-            }
-        }else if(this.anomalyConfig.type==="change"){
-            if((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan === "" || !(this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan
-                || !(this.anomalyConfig as AnomalyDetectionConfigurationChange).minimumDatapoints || !/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan as string)){
-                this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
-                return
-            }
-        }
-        if(this.attributeRef){
-            this._loading = true
-            const query = {
-                ids: [this.attributeRef.id],
-                select: {
-                    attributes: [
-                        this.attributeRef.name
-                    ]
-                },
-            } as AssetQuery;
-            try {
-                const response = await manager.rest.api.AssetResource.queryAssets(query);
-                this.assets = response.data || [];
-                if(this.attributeRef.name){
-                    if(this.assets[0].attributes){
-                        this.assetAttributes[0] = [0,this.assets[0].attributes[this.attributeRef.name]]
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to get assets requested in settings", e);
-            }
-
-
-        }
-
-        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider)) {
-            this._loading = false
-            return;
-        }
-        this._loading = true;
-
         this._startOfPeriod = 0;
         this._endOfPeriod = 0;
+        // @ts-ignore  is checked in validateCanUpdate function
         if(this.anomalyConfig.type === "global" || this.anomalyConfig.type === "change"){
             timespan =  moment.duration((this.anomalyConfig as AnomalyDetectionConfigurationGlobal | AnomalyDetectionConfigurationChange).timespan).asMilliseconds()
             this._startOfPeriod = Date.now() - timespan * 5;
             this._endOfPeriod = Date.now();
-        }else if(this.anomalyConfig.type === "forecast"){
-            timespan = 1000*60*20;
-            this._startOfPeriod = Date.now() - timespan * 2;
-            this._endOfPeriod = Date.now() + timespan;
+        }else { // @ts-ignore  is checked in validateCanUpdate function
+            if(this.anomalyConfig.type === "forecast"){
+                        timespan = 1000*60*20;
+                        this._startOfPeriod = Date.now() - timespan * 2;
+                        this._endOfPeriod = Date.now() + timespan;
+                    }
         }
 
-        this.datapointQuery = {
-            type: "all",
+        this.datapointQuery = {// not used
+            type: "lttb",
             fromTimestamp: Date.now()- timespan * 5,
             toTimestamp: Date.now()
         }
-
 
         const diffInHours = (this._endOfPeriod - this._startOfPeriod) / 1000 / 60 / 60;
         const intervalArr = this._getInterval(diffInHours);
@@ -182,6 +140,59 @@ export class OrAnomalyConfigChart extends OrChart {
         }
         this._loading = false;
 
+    }
+
+    protected async validateCanUpdate(): Promise<boolean>{
+        if(this._loading || !this.anomalyConfig || !this.canRefresh){
+            return false;
+        }
+        if(this.anomalyConfig.onOff == undefined || !this.anomalyConfig.type || !this.anomalyConfig.deviation){
+            return false;
+        }
+        if(this.anomalyConfig.type==="global"){
+            if(!this.validateConfig((this.anomalyConfig as AnomalyDetectionConfigurationGlobal).timespan as string, (this.anomalyConfig as AnomalyDetectionConfigurationGlobal).minimumDatapoints)){
+                return false;
+            }
+        }else if(this.anomalyConfig.type==="change"){
+            if(!this.validateConfig((this.anomalyConfig as AnomalyDetectionConfigurationChange).timespan as string, (this.anomalyConfig as AnomalyDetectionConfigurationChange).minimumDatapoints)){
+                return false;
+            }
+        }
+        if(this.attributeRef){
+            this._loading = true
+            const query = {
+                ids: [this.attributeRef.id],
+                select: {
+                    attributes: [
+                        this.attributeRef.name
+                    ]
+                },
+            } as AssetQuery;
+            try {
+                const response = await manager.rest.api.AssetResource.queryAssets(query);
+                this.assets = response.data || [];
+                if(this.attributeRef.name){
+                    if(this.assets[0].attributes){
+                        this.assetAttributes[0] = [0,this.assets[0].attributes[this.attributeRef.name]]
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to get assets requested in settings", e);
+            }
+        }
+
+        if (this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider)) {
+            return false;
+        }
+        return true;
+    }
+
+    protected validateConfig(timespan: string, minimumDatapoints: number|undefined): boolean{
+        if(!timespan || timespan === "" ||  !minimumDatapoints || !/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test(timespan)){
+            this.errorMessage = i18next.t("anomalyDetection.invalidConfiguration");
+            return false;
+        }
+        return true;
     }
 
     protected async getAnomalyLimits(asset: Asset, attribute:Attribute<any>,query:AssetDatapointQueryUnion): Promise<ChartDataset<"line", ScatterDataPoint[]>[]>{
