@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -28,7 +28,7 @@ import org.openremote.model.value.AnomalyDetectionConfigObject;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Anomaly Datapoint")
+@Tag(name = "Asset Datapoint")
 @Path("asset/anomaly")
 public interface AssetAnomalyDatapointResource {
     /**

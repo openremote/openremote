@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
@@ -7,11 +26,11 @@ import org.openremote.model.value.AnomalyDetectionConfiguration;
 import java.util.List;
 
 public class DetectionMethodTimespan extends DetectionMethod{
-    long longestTimespan;
-    long longestTimespanTimestamp;
-    long shortestTimespan;
-    long shortestTimespanTimestamp;
-    long previousValueTimestamp;
+    private long longestTimespan;
+    private long longestTimespanTimestamp;
+    private long shortestTimespan;
+    private long shortestTimespanTimestamp;
+    private long previousValueTimestamp;
 
     public DetectionMethodTimespan(AnomalyDetectionConfiguration config){
         super(config);
@@ -52,7 +71,7 @@ public class DetectionMethodTimespan extends DetectionMethod{
     }
 
     @Override
-    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
+    public boolean updateData(List<ValueDatapoint<?>> datapoints) {
 
         if(datapoints.size() <((AnomalyDetectionConfiguration.Timespan)config).minimumDatapoints) return false;
         shortestTimespan = datapoints.get(0).getTimestamp();
@@ -75,7 +94,7 @@ public class DetectionMethodTimespan extends DetectionMethod{
     }
 
     @Override
-    public double[] GetLimits(ValueDatapoint<?> datapoint) {
+    public double[] getLimits(ValueDatapoint<?> datapoint) {
         return new double[0];
     }
 }

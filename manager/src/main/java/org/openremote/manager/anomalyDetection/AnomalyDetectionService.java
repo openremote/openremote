@@ -1,5 +1,5 @@
 /*
- * Copyright 2023, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -210,7 +210,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         if(anomalyDetectionConfiguration == null) return null;
         String type = anomalyDetectionConfiguration.getClass().getSimpleName();
         DatapointPeriod period = assetDatapointService.getDatapointPeriod(assetId, attributeName);
-        if(type.equals(DetectionMethodGlobal.class.getSimpleName())){
+        if(type.equals(AnomalyDetectionConfiguration.Global.class.getSimpleName())){
             detectionMethod = new DetectionMethodGlobal(anomalyDetectionConfiguration);
             timespan = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
             minimumDatapoints = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
@@ -218,7 +218,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             if(period.getLatest() == null)return vdaa;
             if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
 
-        }else if(type.equals(DetectionMethodChange.class.getSimpleName())){
+        }else if(type.equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
             detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
             timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
             minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
@@ -226,7 +226,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             if(period.getLatest() == null)return vdaa;
             if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
 
-        }else if(type.equals(DetectionMethodForecast.class.getSimpleName())){
+        }else if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
             detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
             timespan = 1000*60*20;
             minimumDatapoints = 2;
@@ -236,7 +236,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             datapoints = ArrayUtils.addAll( assetPredictedDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest(), period.getLatest() + timespan*5)),
                     assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest())));
 
-        }else if(type.equals(DetectionMethodTimespan.class.getSimpleName())){
+        }else if(type.equals(AnomalyDetectionConfiguration.Timespan.class.getSimpleName())){
             return null;
             //not yet implemented
         }else{
@@ -257,23 +257,23 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         for(int i = datapoints.length - minimumDatapoints; i >= 0; i--){
             ValueDatapoint<?> dp = datapoints[i];
             if(detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
-                double[] values = detectionMethod.GetLimits(datapoints[i]);
+                double[] values = detectionMethod.getLimits(datapoints[i]);
                 valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
                 valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
                 if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
                     anomalyDatapoints.add(datapoints[i]);
                 }
-            }else if(type.equals(DetectionMethodGlobal.class.getSimpleName()) || type.equals(DetectionMethodChange.class.getSimpleName())){
-                if(detectionMethod.UpdateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
-                    double[] values = detectionMethod.GetLimits(datapoints[i]);
+            }else if(type.equals(AnomalyDetectionConfiguration.Global.class.getSimpleName()) || type.equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
+                if(detectionMethod.updateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
+                    double[] values = detectionMethod.getLimits(datapoints[i]);
                     valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
                     valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
                     if ((double) datapoints[i].getValue() < values[0] || (double) datapoints[i].getValue() > values[1]) {
                         anomalyDatapoints.add(datapoints[i]);
                     }
                 }
-            }else if(type.equals(DetectionMethodForecast.class.getSimpleName())){
-                detectionMethod.UpdateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > period.getLatest()).toList());
+            }else if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
+                detectionMethod.updateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > period.getLatest()).toList());
             }
             index++;
 
@@ -292,10 +292,11 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         if(anomalyDetectionAttributes.containsKey(event.getAssetId() + "$" + event.getAttributeName())){
             AnomalyAttribute anomalyAttribute = anomalyDetectionAttributes.get(event.getAssetId() + "$" + event.getAttributeName());
             anomalyAttribute.validateDatapoint(event.getValue(), event.getTimestamp());
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Attribute Anomaly detection took " + (System.currentTimeMillis() - startMillis) + "ms");
+            }
         }
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Attribute Anomaly detection took " + (System.currentTimeMillis() - startMillis) + "ms");
-        }
+
     }
 
     public class AnomalyAttribute {
@@ -314,19 +315,19 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             this.detectionMethods = new ArrayList<>();
             if(attribute.getMetaItem(ANOMALYDETECTION).isPresent()){
                 for (AnomalyDetectionConfiguration con: attribute.getMetaValue(ANOMALYDETECTION).get().methods){
-                    if(con.getClass().getSimpleName().equals(DetectionMethodGlobal.class.getSimpleName())){
+                    if(con.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Global.class.getSimpleName())){
                         detectionMethods.add(new DetectionMethodGlobal(con));
-                    }else if(con.getClass().getSimpleName().equals(DetectionMethodChange.class.getSimpleName())){
+                    }else if(con.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
                         detectionMethods.add(new DetectionMethodChange(con));
-                    }else if(con.getClass().getSimpleName().equals(DetectionMethodForecast.class.getSimpleName())){
+                    }else if(con.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
                         detectionMethods.add(new DetectionMethodForecast(con));
-                    }else if(con.getClass().getSimpleName().equals(DetectionMethodTimespan.class.getSimpleName())){
+                    }else if(con.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Timespan.class.getSimpleName())){
                         detectionMethods.add(new DetectionMethodTimespan(con));
                     }
                 }
             }
             for (DetectionMethod method: detectionMethods) {
-                method.UpdateData(getDatapoints(method));
+                method.updateData(getDatapoints(method));
             }
         }
 
@@ -359,7 +360,7 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
                     boolean enoughData = true;
                     if (!method.checkRecentDataSaved(timestamp)) {
                         datapoints = getDatapoints(method);
-                        enoughData = method.UpdateData(datapoints);
+                        enoughData = method.updateData(datapoints);
                     }
                     if (enoughData)
                         if (!method.validateDatapoint(value.get(), timestamp)) {
@@ -415,14 +416,14 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             if(period.getLatest() == null) return datapoints;
             ValueDatapoint<?>[] valueDatapoints = new ValueDatapoint[0];
             AnomalyDetectionConfiguration config = detectionMethod.config;
-            if(config.getClass().getSimpleName().equals(DetectionMethodGlobal.class.getSimpleName())||config.getClass().getSimpleName().equals(DetectionMethodChange.class.getSimpleName())){
+            if(config.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Global.class.getSimpleName())||config.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
                 long maxTimespan = 0;
-                if(config.getClass().getSimpleName().equals(DetectionMethodGlobal.class.getSimpleName())){
+                if(config.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Global.class.getSimpleName())){
                     if(((AnomalyDetectionConfiguration.Global)config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Global)config).timespan.toMillis() > maxTimespan){
                         maxTimespan = ((AnomalyDetectionConfiguration.Global)config).timespan.toMillis();
                     }
-                }else if(config.getClass().getSimpleName().equals(DetectionMethodChange.class.getSimpleName())){
+                }else if(config.getClass().getSimpleName().equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
                     if(((AnomalyDetectionConfiguration.Change)config).timespan == null) return  datapoints;
                     if( ((AnomalyDetectionConfiguration.Change)config).timespan.toMillis() > maxTimespan){
                         maxTimespan = ((AnomalyDetectionConfiguration.Change)config).timespan.toMillis();

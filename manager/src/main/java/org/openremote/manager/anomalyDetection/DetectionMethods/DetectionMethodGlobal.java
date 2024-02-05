@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
@@ -54,7 +73,7 @@ public class DetectionMethodGlobal extends DetectionMethod {
         return !needsNewData;
     }
 
-    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
+    public boolean updateData(List<ValueDatapoint<?>> datapoints) {
         if(datapoints.isEmpty() || datapoints.size() < ((AnomalyDetectionConfiguration.Global)config).minimumDatapoints) return false;
         minValue = Double.MAX_VALUE;
         maxValue = (double)datapoints.get(0).getValue();
@@ -72,7 +91,7 @@ public class DetectionMethodGlobal extends DetectionMethod {
     }
 
     @Override
-    public double[] GetLimits(ValueDatapoint<?> datapoint) {
+    public double[] getLimits(ValueDatapoint<?> datapoint) {
         double differance = maxValue - minValue + 0.001;
         double deviation = differance * ((double)config.deviation /100);
         double[] limits = new double[]{minValue - deviation, maxValue + deviation};

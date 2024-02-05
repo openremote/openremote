@@ -184,8 +184,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Map<Integer, Object> parameters = datapointQuery.getSQLParameters(attributeRef);
-
-        getLogger().finest("Querying datapoints for: " + attributeRef);
+        long startTime = System.currentTimeMillis();
 
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
@@ -233,6 +232,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     }
                                     result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }
+                                getLogger().finest("Queried datapoints " + result.size() +" for: " + attributeRef + " in " + (System.currentTimeMillis() - startTime) +"ms");
                                 return result.toArray(new ValueDatapoint<?>[0]);
                             }
                         }

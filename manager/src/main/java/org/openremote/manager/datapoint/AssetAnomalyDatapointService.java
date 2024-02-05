@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -42,7 +42,6 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
-import scala.math.BigInt;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -156,7 +155,7 @@ public class AssetAnomalyDatapointService implements ContainerService {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Map<Integer, Object> parameters = datapointQuery.getSQLParameters(attributeRef);
 
-        getLogger().finest("Querying anomalies for: " + attributeRef);
+        long startTime = System.currentTimeMillis();
 
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<>() {
@@ -189,14 +188,13 @@ public class AssetAnomalyDatapointService implements ContainerService {
                             try (ResultSet rs = st.executeQuery()) {
                                 List<AttributeAnomaly> result = new ArrayList<>();
                                 while (rs.next()) {
-                                    if (rs.getObject(4) != null) {
                                         String assetId = rs.getString("entity_id");
                                         String attributeName = rs.getString("attribute_name");
                                         Date timestamp = rs.getTimestamp("timestamp");
                                         String methodName = rs.getString("method_name");
                                         result.add(new AttributeAnomaly(assetId,attributeName,timestamp,methodName));
-                                    }
                                 }
+                                getLogger().finest("Queried datapoints " + result.size() +" for: " + attributeRef + " in " + (System.currentTimeMillis() - startTime) +"ms");
                                 return result.toArray(new AttributeAnomaly[0]);
                             }
                         }

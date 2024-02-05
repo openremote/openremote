@@ -46,7 +46,6 @@ import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-f
 import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
 import "./or-anomaly-config-chart"
 import "./or-anomaly-config-input"
-import {updateAsset} from "@openremote/core/lib/util";
 
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
@@ -69,12 +68,6 @@ export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputCh
 export interface OrAttributeInputChangedEventDetail {
     value?: any;
     previousValue?: any;
-}
-
-interface FormValue {
-    value?: any;
-    type?: string;
-    properties?:any;
 }
 
 declare global {
@@ -306,14 +299,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                     }]}
             }
             return html`
-                <style>
-                    .test {
-                        display: flex;
-                        flex-direction: column;
-                        width: 100%;
-                    }
-                </style>
-                <div class="test">
+                <div style="display: flex; width: 100%; flex-direction: column;">
                     <or-anomaly-config-input .anomalyDetectionConfigObject="${value as AnomalyDetectionConfigObject}" .attributeRef="${attributeRef}" .onChange="${onChangedA}"></or-anomaly-config-input>
                 </div>
             `
@@ -419,6 +405,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 flex: 0;
                 margin-left: 4px;
                 margin-top: 4px;
+            }
+            
+            #test{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
             }
         `];
     }

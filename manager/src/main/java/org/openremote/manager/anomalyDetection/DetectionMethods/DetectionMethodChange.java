@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.anomalyDetection.DetectionMethods;
 
 import org.openremote.model.attribute.AttributeAnomaly;
@@ -7,12 +26,12 @@ import org.openremote.model.value.AnomalyDetectionConfiguration;
 import java.util.List;
 
 public class DetectionMethodChange extends DetectionMethod {
-    double biggestIncrease;
-    long biggestIncreaseTimestamp;
-    double smallestIncrease;
-    long smallestIncreaseTimestamp;
-    double previousValue;
-    long previousValueTimestamp;
+    private double biggestIncrease;
+    private long biggestIncreaseTimestamp;
+    private double smallestIncrease;
+    private long smallestIncreaseTimestamp;
+    private double previousValue;
+    private long previousValueTimestamp; // Is not used since method is now checking change between values instead of change relative to time between points.(Might change later)
 
     public DetectionMethodChange(AnomalyDetectionConfiguration config){
         super(config);
@@ -57,7 +76,7 @@ public class DetectionMethodChange extends DetectionMethod {
     }
 
     @Override
-    public boolean UpdateData(List<ValueDatapoint<?>> datapoints) {
+    public boolean updateData(List<ValueDatapoint<?>> datapoints) {
         if(datapoints.size() < 3) return false;
         smallestIncrease = Double.MAX_VALUE;
         biggestIncrease = -100000000;
@@ -80,7 +99,7 @@ public class DetectionMethodChange extends DetectionMethod {
     }
 
     @Override
-    public double[] GetLimits(ValueDatapoint<?> datapoint) {
+    public double[] getLimits(ValueDatapoint<?> datapoint) {
         double increase = ((double)datapoint.getValue() - previousValue);
         double diff = biggestIncrease - smallestIncrease;
         double offset =  diff * ((double)config.deviation/100);
