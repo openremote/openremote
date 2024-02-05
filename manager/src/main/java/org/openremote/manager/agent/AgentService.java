@@ -460,7 +460,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     }
                 }
                 protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol: " + protocol, e);
+                LOG.log(Level.SEVERE, "Failed to start protocol '" + protocol + "': " + agent, e);
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         }
@@ -622,8 +622,10 @@ public class AgentService extends RouteBuilder implements ContainerService {
             Protocol<?> protocolInstance = getProtocolInstance(agent.getId());
 
             if (protocolInstance == null) {
-                // Maybe agent was disabled and now isn't - use standard mechanism
-                deployAgent(agent);
+                if (Agent.DISABLED.getName().equals(event.getName())) {
+                    // Maybe agent was disabled and now isn't - use standard mechanism
+                    deployAgent(agent);
+                }
                 return;
             }
 
