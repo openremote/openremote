@@ -12,7 +12,6 @@ import {
     EventRequestResponseWrapper,
     EventSubscription,
     ReadAssetsEvent,
-    ReadAttributeEvent,
     SharedEvent,
     TriggeredEventSubscription
 } from "@openremote/model";
@@ -20,7 +19,8 @@ import {
 export enum EventProviderStatus {
     DISCONNECTED = "DISCONNECTED",
     CONNECTED = "CONNECTED",
-    CONNECTING = "CONNECTING"
+    CONNECTING = "CONNECTING",
+    RECONNECT_FAILED = "RECONNECT_FAILED"
 }
 
 export interface EventProvider {
@@ -159,6 +159,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public disconnect(): void {
+        console.debug("Disconnecting from event service: " + this.endpointUrl);
         if (this._disconnectRequested) {
             return;
         }
@@ -564,9 +565,11 @@ abstract class EventProviderImpl implements EventProvider {
 
             this.connect().then(connected => {
                 if (!connected) {
+                    this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
                     this._scheduleReconnect();
                 }
             }).catch(error => {
+                this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
                 this._scheduleReconnect();
             });
         }, this._reconnectDelayMillis);
@@ -624,6 +627,10 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
+
+        if(manager.isTokenExpired()) {
+            this._connectDeferred.resolve(false);
+        }
 
         this._webSocket!.onopen = () => {
             if (this._connectDeferred) {
@@ -706,7 +713,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doDisconnect(): void {
-        this._webSocket!.close();
+        this._webSocket?.close();
         this._subscribeDeferred = null;
         this._repliesDeferred.clear();
     }
