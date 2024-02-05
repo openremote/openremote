@@ -201,7 +201,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     mappedTargetsList.forEach(
                         target -> {
-                            boolean targetSuccess = persistenceService.doReturningTransaction(em -> {
+                            Exception error = persistenceService.doReturningTransaction(em -> {
 
                                 // commit the notification first to get the ID
                                 SentNotification sentNotification = new SentNotification()
@@ -240,13 +240,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     }
                                     LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
                                     sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
-                                    throw(notificationProcessingException);
+                                    return notificationProcessingException;
                                 } finally {
                                     em.merge(sentNotification);
                                 }
-                                return sentNotification.getError() == null;
+                                return null;
                             });
-                            if (!targetSuccess) {
+
+                            if (error != null) {
                                 success.set(false);
                             }
                         }
