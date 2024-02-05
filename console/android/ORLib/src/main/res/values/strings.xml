@@ -4,7 +4,6 @@
     <string name="title_activity_project">Project</string>
     <string name="Project">Project</string>
     <string name="OR_CONSOLE_LOAD_ERROR_URL"></string>
-    <string name="OR_CONSOLE_LOAD_TIMEOUT">5000</string>
     <string name="OR_CONSOLE_IGNORE_PAGE_ERRORS">true</string>
     <string name="SHARED_PREF_REFRESH_TOKEN">REFRESH_TOKEN</string>
     <string name="fatalError">Sorry, there is a problem.</string>
@@ -26,4 +25,5 @@
     <string name="yes">Yes</string>
     <string name="button_accept">Accept</string>
     <string name="NOTIFICATION_CHANNEL_ID">OR</string>
+    <string name="title_activity_offline">OfflineActivity</string>
 </resources>
