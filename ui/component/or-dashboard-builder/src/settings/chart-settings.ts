@@ -4,6 +4,7 @@ import {WidgetSettings} from "../util/widget-settings";
 import "../panels/attributes-panel";
 import "../util/settings-panel";
 import {i18next} from "@openremote/or-translate";
+
 import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
 import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
 import {ChartWidgetConfig} from "../widgets/chart-widget";
@@ -46,6 +47,7 @@ export class ChartSettings extends WidgetSettings {
         };
         const min = this.widgetConfig.chartOptions.options?.scales?.y?.min;
         const max = this.widgetConfig.chartOptions.options?.scales?.y?.max;
+
         const isMultiAxis = this.widgetConfig.rightAxisAttributes.length > 0;
         const samplingValue = Array.from(this.samplingOptions.entries()).find((entry => entry[1] === this.widgetConfig.datapointQuery.type))![0]
         const attributeLabelCallback = (asset: Asset, attribute: Attribute<any>, attributeLabel: string) => {
@@ -103,6 +105,7 @@ export class ChartSettings extends WidgetSettings {
                         </div>
                     </div>
                 </settings-panel>
+
 
                 <!-- Axis configuration -->
                 <settings-panel displayName="dashboard.axisConfig" expanded="${true}">
@@ -241,6 +244,7 @@ export class ChartSettings extends WidgetSettings {
         this.notifyConfigUpdate();
     }
 
+
     protected addToRightAxis(attributeRef: AttributeRef, notify = false) {
         if(!this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
             this.widgetConfig.rightAxisAttributes.push(attributeRef);
@@ -273,6 +277,7 @@ export class ChartSettings extends WidgetSettings {
         this.widgetConfig.showLegend = ev.detail.value;
         this.notifyConfigUpdate();
     }
+
 
     protected setAxisMinMaxValue(axis: 'left' | 'right', type: 'min' | 'max', value?: number) {
         if(axis === 'left') {

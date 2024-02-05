@@ -224,7 +224,7 @@ export class CoordinatesControl {
     }
 }
 
-export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (attributeRef,assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);

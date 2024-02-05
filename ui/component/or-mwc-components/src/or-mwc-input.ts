@@ -20,6 +20,7 @@ import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/cor
 import "@openremote/or-icon";
 import {OrIcon} from "@openremote/or-icon";
 import {
+    Asset,
     AssetDescriptor,
     Attribute,
     AttributeDescriptor,
@@ -154,7 +155,7 @@ export interface ValueInputProvider {
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (attributeRef: {name: string | undefined, id: string | undefined}, assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -182,7 +183,7 @@ function inputTypeSupportsLabel(inputType: InputType) {
     return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
 }
 
-export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (attributeRef, assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     let inputType: InputType | undefined = options.inputType;
     let step: number | undefined;

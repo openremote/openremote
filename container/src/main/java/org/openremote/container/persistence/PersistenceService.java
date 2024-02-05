@@ -40,11 +40,15 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.EntityClassProvider;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.AlarmAssetLink;
+import org.openremote.model.alarm.AlarmUserLink;
+import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.UnknownAsset;
+import org.openremote.model.attribute.AttributeAnomaly;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
@@ -345,6 +349,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Asset.class.getName());
         entityClasses.add(UserAssetLink.class.getName());
         entityClasses.add(AssetDatapoint.class.getName());
+        entityClasses.add(AttributeAnomaly.class.getName());
         entityClasses.add(SentNotification.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
         entityClasses.add(Realm.class.getName());
@@ -360,6 +365,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
+        entityClasses.add(SentAlarm.class.getName());
+        entityClasses.add(AlarmAssetLink.class.getName());
+        entityClasses.add(AlarmUserLink.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.util");

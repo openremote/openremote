@@ -86,6 +86,7 @@ const styling = css`
     line-height: 16px;
     flex-direction: column;
   }
+
   
   .attribute-list-item-actions {
     flex: 1;
@@ -109,6 +110,7 @@ const styling = css`
   .attribute-list-item:hover .button.delete {
     display: block;
   }
+  
 
   .button-action {
     background: none;
@@ -120,6 +122,7 @@ const styling = css`
     padding: 0;
     cursor: pointer;
   }
+
 
   .attribute-list-item:hover .attribute-list-item-actions {
     background: white;
@@ -221,6 +224,7 @@ export class AttributesPanel extends LitElement {
         return assets;
     }
 
+
     protected onAttributeActionClick(asset: Asset, attributeRef: AttributeRef, action: AttributeAction) {
         this.dispatchEvent(new AttributeActionEvent(asset, attributeRef, action));
     }
@@ -243,6 +247,7 @@ export class AttributesPanel extends LitElement {
                 ${when(this.attributeRefs.length > 0, () => html`
 
                     <div id="attribute-list">
+
                         ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
                             ${map(this.attributeRefs, (attributeRef: AttributeRef) => {
                                 const asset = this.getLoadedAsset(attributeRef);

@@ -17,9 +17,13 @@ import {
     WellknownMetaItems,
     WellknownValueTypes,
     AssetModelUtil,
-    ClientRole
+    ClientRole,
+    AnomalyDetectionConfigObject,
+    AnomalyDetectionConfiguration,
+    AnomalyDetectionConfigurationUnion,
+    AnomalyDetectionConfigurationGlobal
 } from "@openremote/model";
-import manager, {subscribe, Util} from "@openremote/core";
+import manager, {Console, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {progressCircular} from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
@@ -40,6 +44,10 @@ import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
 import "@openremote/or-json-forms";
 import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
 import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
+import "./or-anomaly-config-chart"
+import "./or-anomaly-config-input"
+import {updateAsset} from "@openremote/core/lib/util";
+
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -57,9 +65,16 @@ export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputCh
     }
 }
 
+
 export interface OrAttributeInputChangedEventDetail {
     value?: any;
     previousValue?: any;
+}
+
+interface FormValue {
+    value?: any;
+    type?: string;
+    properties?:any;
 }
 
 declare global {
@@ -119,7 +134,8 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
 type ErrorMessage = "agentNotFound" | "agentTypeMismatch";
 
-export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (attributeRef, assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+
 
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
@@ -221,6 +237,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
 
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
+
             // Need to have a value so that the agent ID picker is shown
             if (!value) {
                 value = {
@@ -260,6 +277,54 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
                     return false;
                 }
                 return jsonForms.value.checkValidity();
+            }
+        };
+    }else if (valueDescriptor.name === WellknownValueTypes.ANOMALYDETECTIONCONFIGURATION) {
+        const onChangedA = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any },update :boolean) => {
+            const newConfig: AnomalyDetectionConfigObject = dataAndErrors.data;
+            valueChangeNotifier({
+                value: newConfig
+            });
+        }
+        const validate = async (valid:boolean) => {
+
+        }
+        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+            if(!value){
+                value ={methods:[
+                    {
+                        type: "global",
+                        name: "Method 1",
+                        onOff: true,
+                        deviation: 10,
+                        alarm: {
+                            content: "%ASSET_NAME%\n%ATTRIBUTE_NAME%\n%METHOD_TYPE%"
+                        },
+                        alarmOnOff: false,
+                        minimumDatapoints: 2,
+                        timespan: "PT20M"
+                    }]}
+            }
+            return html`
+                <style>
+                    .test {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
+                    }
+                </style>
+                <div class="test">
+                    <or-anomaly-config-input .anomalyDetectionConfigObject="${value as AnomalyDetectionConfigObject}" .attributeRef="${attributeRef}" .onChange="${onChangedA}"></or-anomaly-config-input>
+                </div>
+            `
+        };
+        return {
+            templateFunction: templateFunction,
+            supportsHelperText: false,
+            supportsLabel: false,
+            supportsSendButton: false,
+            validator: () => {
+                return true
             }
         };
     }
@@ -357,6 +422,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
         `];
     }
+
+    @property({type: Object})
+    public anomalyDetectionConfigObject? : AnomalyDetectionConfigObject
 
     @property({type: Object, reflect: false})
     public attribute?: Attribute<any>;
@@ -581,20 +649,25 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             const updateImmediately = (detail && detail.enterPressed) || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
             this._onInputValueChanged(value, updateImmediately);
         };
+        let attributeRef =
+            {
+                name: this.attribute?.name,
+                id: this.assetId
+            }
 
         if (this.customProvider) {
-            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options) : undefined;
+            this._templateProvider = this.customProvider ? this.customProvider(attributeRef, this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options) : undefined;
             return;
         }
 
         // Handle special value types
         if (valueDescriptor.name === WellknownValueTypes.GEOJSONPOINT) {
-            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+            this._templateProvider = geoJsonPointInputTemplateProvider(attributeRef, this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
             return;
         }
 
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
-        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        const standardInputProvider = getValueHolderInputTemplateProvider(attributeRef, this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(attributeRef, this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {
             this._templateProvider = standardInputProvider;
@@ -628,7 +701,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (!this.assetType || !this._templateProvider) {
             return html``;
         }
-        
+
         // Check if attribute hasn't been loaded yet or pending write
         const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
         let content: TemplateResult;

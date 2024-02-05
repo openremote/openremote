@@ -406,8 +406,13 @@ export class OrEditAssetPanel extends LitElement {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
                 resizeVertical: true
             };
-            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
-            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            let attributeRef =
+                {
+                    name: attribute.name,
+                    id: this.asset.id
+                }
+            const standardInputProvider = getValueHolderInputTemplateProvider(attributeRef, this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            let provider = jsonFormsInputTemplateProvider(standardInputProvider)(attributeRef, this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
 
             if (!provider) {
                 provider = standardInputProvider;

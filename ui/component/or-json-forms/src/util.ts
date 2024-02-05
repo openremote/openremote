@@ -368,7 +368,7 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                 <style>
                     .mdc-dialog__surface {
                         width: 1024px;
-                        overflow-x: visible !important;
+                        overflow-x: visible !important;     
                         overflow-y: visible !important;
                     }
                     #dialog-content {

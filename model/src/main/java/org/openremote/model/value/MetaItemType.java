@@ -102,6 +102,11 @@ public final class MetaItemType {
      */
     public static final MetaItemDescriptor<ForecastConfiguration> FORECAST = new MetaItemDescriptor<>("forecast", ValueType.FORECAST_CONFIGURATION);
 
+    /**
+     * The Anomaly detection listens to incoming data and checks if it is normal according to the anomaly configuration.
+     */
+    public static final MetaItemDescriptor<AnomalyDetectionConfigObject> ANOMALYDETECTION = new MetaItemDescriptor<>("anomalyDetection", ValueType.ANOMALY_DETECTION_CONFIGURATION);
+
 
     /* RULE META */
 

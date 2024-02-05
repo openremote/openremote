@@ -207,6 +207,8 @@ public final class ValueType {
 
     public static final ValueDescriptor<ValueDescriptor> VALUE_DESCRIPTOR_VALUE_DESCRIPTOR = new ValueDescriptor<>("valueDescriptor", ValueDescriptor.class).forMetaUseOnly();
 
+    public static final ValueDescriptor<AnomalyDetectionConfigObject> ANOMALY_DETECTION_CONFIGURATION = new ValueDescriptor<>("anomalyDetectionConfiguration", AnomalyDetectionConfigObject.class);
+
     protected ValueType() {
     }
 }

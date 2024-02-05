@@ -1,24 +1,24 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {
-    css,
-    html,
-    LitElement,
-    PropertyValues,
-    TemplateResult,
-    unsafeCSS
-} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import {
+    AssetModelUtil,
+    Attribute,
+    AttributeRef,
+    DatapointInterval,
+    ValueDatapoint,
+    ValueDescriptor
+} from "@openremote/model";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
+import {Chart, ChartConfiguration, ScatterDataPoint, TimeScaleOptions, TimeUnit} from "chart.js";
 import "chartjs-adapter-moment";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
@@ -247,6 +247,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _data?: ValueDatapoint<any>[];
 
     @property()
+    protected _anomalyData?: ValueDatapoint<any>[];
+
+    @property()
     protected _tableTemplate?: TemplateResult;
 
     @query("#chart")
@@ -294,6 +297,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         if (reloadData) {
             this._type = undefined;
             this._data = undefined;
+            this._anomalyData = undefined;
             this._loadData();
         }
 
@@ -347,6 +351,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         if (isChart) {
             const data = this._data as ScatterDataPoint[];
+            const anomalyData = this._anomalyData as ScatterDataPoint[];
 
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
@@ -363,6 +368,20 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     type: "line",
                     data: {
                         datasets: [
+                            {
+                                data: anomalyData,
+                                backgroundColor: "#00000000",
+                                borderColor: "#00000000",
+                                pointBorderColor: "#be0000",
+                                pointBackgroundColor: "#be0000",
+                                pointRadius: 10,
+                                pointRotation: 45,
+                                pointStyle: "cross",
+                                pointBorderWidth: 2,
+                                pointHitRadius: -10,
+                                pointHoverRadius: -10,
+                                fill: false
+                            },
                             {
                                 data: data,
                                 backgroundColor: bgColor,
@@ -441,7 +460,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     this._chart.options!.scales!.x!.max = this._endOfPeriod;
                     (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
                     (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
-                    this._chart.data.datasets![0].data = data;
+                    this._chart.data.datasets![0].data = anomalyData;
+                    this._chart.data.datasets![1].data = data;
                     this._chart.update();
                 }
             }
@@ -619,6 +639,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     protected _getIntervalOptions(): [string, string][] {
         return [
+            DatapointInterval.MINUTE,
             DatapointInterval.HOUR,
             DatapointInterval.DAY,
             DatapointInterval.WEEK,
@@ -630,6 +651,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
     protected _getPeriodOptions() {
         return [
+            DatapointInterval.MINUTE.toLowerCase(),
             DatapointInterval.HOUR.toLowerCase(),
             DatapointInterval.DAY.toLowerCase(),
             DatapointInterval.WEEK.toLowerCase(),
@@ -679,6 +701,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         let stepSize = 1;
 
         switch (this.period) {
+            case "minute":
+                interval = DatapointInterval.MINUTE;
+                stepSize = 1/12
+                break;
             case "hour":
                 interval = DatapointInterval.MINUTE;
                 stepSize = 5;
@@ -702,8 +728,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         const lowerCaseInterval = interval.toLowerCase();
-        this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-        this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        if(this.period == "minute"){
+            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).toDate().getTime();
+            this._endOfPeriod = moment(this.toTimestamp).toDate().getTime();
+        }else{
+            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+            this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        }
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
 
@@ -720,6 +751,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     amountOfPoints: 100
                 }
             )
+            let anomalyresponse = await manager.rest.api.AssetAnomalyDatapointResource.getAnomalyDatapoints(
+                assetId,
+                attributeName,
+                {
+                    type: "all",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod
+                })
+                this._anomalyData = response.data.filter(value => anomalyresponse.data.findIndex(a => a.timestamp == value.x)  != -1) as ScatterDataPoint[];
         } else {
             response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                 assetId,
