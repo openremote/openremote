@@ -197,11 +197,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // Send message to each applicable target
-                    AtomicBoolean success = new AtomicBoolean(true);
+                    AtomicReference<Exception> error = new AtomicReference<>();
 
+                    // As we can have multiple targets in a single exchange we'll track the first exception that occurs
                     mappedTargetsList.forEach(
                         target -> {
-                            boolean targetSuccess = persistenceService.doReturningTransaction(em -> {
+                            Exception notificationError = persistenceService.doReturningTransaction(em -> {
 
                                 // commit the notification first to get the ID
                                 SentNotification sentNotification = new SentNotification()
@@ -240,19 +241,23 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     }
                                     LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
                                     sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
-                                    throw(notificationProcessingException);
+                                    return notificationProcessingException;
                                 } finally {
                                     em.merge(sentNotification);
                                 }
-                                return sentNotification.getError() == null;
+                                return null;
                             });
-                            if (!targetSuccess) {
-                                success.set(false);
+
+                            if (notificationError != null && error.get() == null) {
+                                error.set(notificationError);
                             }
                         }
                     );
 
-                    exchange.getMessage().setBody(success.get());
+                    exchange.getMessage().setBody(error.get() == null);
+                    if (error.get() != null) {
+                        throw error.get();
+                    }
                 })
             .onException(Exception.class)
             .logStackTrace(false)

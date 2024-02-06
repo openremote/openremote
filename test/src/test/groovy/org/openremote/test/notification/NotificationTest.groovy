@@ -61,10 +61,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
         and: "a mock push notification handler"
+        def throwPushHandlerException = false
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
         mockPushNotificationHandler.isValid() >> true
         mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
             id, source, sourceId, target, message ->
+                if (throwPushHandlerException) {
+                    throw new Exception("Failed to send notification")
+                }
                 notificationIds << id
                 notificationTargetTypes << target.type
                 notificationTargetIds << target.id
@@ -352,6 +356,22 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert !notificationTargetIds.contains(testuser3Console1.id)
         }
 
+        when: "a notification handler throws an exception"
+        throwPushHandlerException = true
+        advancePseudoClock(1, TimeUnit.HOURS, container)
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "a bad request exception should be thrown"
+        ex = thrown()
+        ex.response.status == 400
+
+        and: "the notification should be recorded in the DB with the exception set as the error"
+        conditions.eventually {
+            notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id)
+            notifications.last().error == "Failed to send notification"
+        }
+
+
         // -----------------------------------------------
         //    Check notification resource
         // -----------------------------------------------
@@ -369,7 +389,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                         n.deliveredOn == null &&
                         n.acknowledgedOn == null
             }
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 7
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id).length == 8
             assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id).length == 4
         }
 
@@ -481,6 +501,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         // -----------------------------------------------
 
         when: "a repeat frequency is set and a notification is sent"
+        // Clear exception flag
+        throwPushHandlerException = false
         // Move clock to beginning of next hour
         def advancement = Instant.ofEpochMilli(getClockTimeOf(container))
                 .truncatedTo(ChronoUnit.HOURS)

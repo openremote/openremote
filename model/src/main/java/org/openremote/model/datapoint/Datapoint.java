@@ -63,7 +63,7 @@ public abstract class Datapoint implements Serializable {
     }
 
     public Datapoint(AttributeEvent stateEvent) {
-        this(stateEvent.getState(), stateEvent.getTimestamp());
+        this(stateEvent.getRef(), stateEvent.getValue(), stateEvent.getTimestamp());
     }
 
     public Datapoint(AttributeRef attributeRef, Object value, long timestamp) {
