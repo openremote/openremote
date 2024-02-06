@@ -19,9 +19,8 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
@@ -67,7 +66,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     @JsonView(Enhanced.class)
     protected Object oldValue;
     @JsonView(Enhanced.class)
-    protected long oldValueTimestamp;
+    protected Long oldValueTimestamp;
     @JsonView(Enhanced.class)
     protected String[] path;
     @JsonView(Enhanced.class)
@@ -89,7 +88,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(new AttributeRef(assetId, attributeName), value);
     }
 
-    public AttributeEvent(String assetId, String attributeName, Object value, long timestamp) {
+    public AttributeEvent(String assetId, String attributeName, Object value, Long timestamp) {
         this(new AttributeRef(assetId, attributeName), value, timestamp);
     }
 
@@ -97,7 +96,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(attributeState.getRef(), attributeState.getValue().orElse(null));
     }
 
-    public AttributeEvent(AttributeState attributeState, long timestamp) {
+    public AttributeEvent(AttributeState attributeState, Long timestamp) {
         this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
     }
 
@@ -105,7 +104,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(attributeRef, value, 0L);
     }
 
-    public AttributeEvent(AttributeRef ref, Object value, long timestamp) {
+    public AttributeEvent(AttributeRef ref, Object value, Long timestamp) {
         super(timestamp);
         Objects.requireNonNull(ref);
         this.ref = ref;
@@ -113,9 +112,8 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @JsonCreator
-    @Deprecated
-    // This allows backwards compatibility with old attribute event structure
-    protected AttributeEvent(AttributeState attributeState, AttributeRef ref, Object value, long timestamp) {
+    // This allows backwards compatibility with old attribute event JSON that used attributeState
+    protected AttributeEvent(AttributeState attributeState, AttributeRef ref, Object value, Long timestamp) {
         super(timestamp);
         if (attributeState != null) {
             this.ref = attributeState.getRef();
@@ -126,7 +124,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         }
     }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, long valueTimestamp, Object oldValue, long oldValueTimestamp) {
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
         this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
 
         this.oldValue = oldValue;
@@ -330,8 +328,9 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     public String toString() {
         String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp.toInstant() +
+            "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
             ", ref=" + ref +
+            ", realm=" + realm +
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }

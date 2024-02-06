@@ -26,7 +26,6 @@ import org.openremote.model.asset.impl.ElectricityStorageAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.time.Duration;
@@ -91,7 +90,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
             return;
         }
 
-        updateLinkedAttribute(new AttributeState(event.getRef(), processedValue));
+        updateLinkedAttribute(event.getRef(), processedValue);
     }
 
     protected void updateStorageAsset(ElectricityStorageAsset storageAsset) {
@@ -152,9 +151,9 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
                 level = newLevel;
 
                 if (energyDelta > 0) {
-                    updateLinkedAttribute(new AttributeState(storageAsset.getId(), ElectricityStorageAsset.ENERGY_IMPORT_TOTAL.getName(), storageAsset.getEnergyImportTotal().orElse(0d) + energyDelta));
+                    updateLinkedAttribute(new AttributeRef(storageAsset.getId(), ElectricityStorageAsset.ENERGY_IMPORT_TOTAL.getName()), storageAsset.getEnergyImportTotal().orElse(0d) + energyDelta);
                 } else {
-                    updateLinkedAttribute(new AttributeState(storageAsset.getId(), ElectricityStorageAsset.ENERGY_EXPORT_TOTAL.getName(), storageAsset.getEnergyExportTotal().orElse(0d) - energyDelta));
+                    updateLinkedAttribute(new AttributeRef(storageAsset.getId(), ElectricityStorageAsset.ENERGY_EXPORT_TOTAL.getName()), storageAsset.getEnergyExportTotal().orElse(0d) - energyDelta);
                 }
             }
         }
@@ -169,9 +168,9 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
             power = 0d;
         }
 
-        updateLinkedAttribute(new AttributeState(assetId, POWER.getName(), power));
-        updateLinkedAttribute(new AttributeState(assetId, ENERGY_LEVEL.getName(), level));
-        updateLinkedAttribute(new AttributeState(assetId, ENERGY_LEVEL_PERCENTAGE.getName(), capacity <= 0d ? 0 : (int) ((level / capacity) * 100)));
+        updateLinkedAttribute(new AttributeRef(assetId, POWER.getName()), power);
+        updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL.getName()), level);
+        updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()), capacity <= 0d ? 0 : (int) ((level / capacity) * 100));
 
         if (power != 0d) {
             lastUpdateMap.put(assetId, now);

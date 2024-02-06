@@ -150,7 +150,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
             connection.sendCommand(datapoint, event.getValue());
 
             // We assume KNX actuator will send new status on relevant status group address which will be picked up by listener and updates the state again later
-            updateLinkedAttribute(event.getState());
+            updateLinkedAttribute(event.getRef(), event.getValue());
         }
     }
 
@@ -182,7 +182,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
     
     protected void handleKNXValueChange(AttributeRef attributeRef, Object value) {
         LOG.fine("KNX protocol received value '" + value + "' for : " + attributeRef);
-        updateLinkedAttribute(new AttributeState(attributeRef, value));
+        updateLinkedAttribute(attributeRef, value);
     }
     
     protected void removeStatusDatapoint(AttributeRef attributeRef) {

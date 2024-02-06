@@ -26,6 +26,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.value.ValueType;
@@ -87,7 +88,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getId() + ":" + event.getName());
         protocolWriteAttributeEvents.add(event);
         if (updateSensor) {
-            updateReceived(event.getState());
+            updateReceived(event.getRef(), event.getValue(), event.getTimestamp());
         }
     }
 
@@ -101,11 +102,11 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
         return "mock://" + getAgent().getId();
     }
 
-    public void updateReceived(AttributeState state) {
+    public void updateReceived(final AttributeRef attributeRef, final Object value, long timestamp) {
         // Assume we've pushed the update to the actual device and it responded with OK
         // so now we want to cause a sensor update that will go through the processing
         // chain.
-        updateLinkedAttribute(state);
+        updateLinkedAttribute(attributeRef, value, timestamp);
     }
 
     protected void updateAttribute(AttributeState state) {
