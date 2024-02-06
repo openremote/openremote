@@ -189,6 +189,9 @@ repositories {
     maven {
         url "https://pkgs.dev.azure.com/OpenRemote/OpenRemote/_packaging/OpenRemote/maven/v1"
     }
+    maven {
+        url "https://s01.oss.sonatype.org/content/repositories/snapshots"
+    }
 }
 
 // Eclipse needs help
@@ -374,7 +377,7 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
 }
 
 def resolveDependency(String path) {
-    "io.openremote:openremote-" + path.substring(1) + ":" + version
+    isCustomProject() ? resolveProject(path) : "io.openremote:openremote-" + path.substring(1) + ":" + version
 }
 
 ext {
