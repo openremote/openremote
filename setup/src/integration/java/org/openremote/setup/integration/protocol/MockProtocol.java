@@ -102,11 +102,15 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
         return "mock://" + getAgent().getId();
     }
 
-    public void updateReceived(final AttributeRef attributeRef, final Object value, long timestamp) {
+    public void updateReceived(final AttributeRef attributeRef, final Object value, Long timestamp) {
         // Assume we've pushed the update to the actual device and it responded with OK
         // so now we want to cause a sensor update that will go through the processing
         // chain.
-        updateLinkedAttribute(attributeRef, value, timestamp);
+        if (timestamp != null) {
+            updateLinkedAttribute(attributeRef, value, timestamp);
+        } else {
+            updateLinkedAttribute(attributeRef, value);
+        }
     }
 
     protected void updateAttribute(AttributeState state) {
