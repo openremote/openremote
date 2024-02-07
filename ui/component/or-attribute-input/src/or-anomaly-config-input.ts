@@ -316,25 +316,11 @@ export class OrAnomalyConfigInput extends translate(i18next)(LitElement) {
                 if ( !method.type || !method.deviation || method.onOff === undefined || method.alarmOnOff === undefined || !method.alarm  || (method.alarmOnOff? !method.alarm!.severity:false) || !method.name || method.name === "") valid = false;
                 method.alarm!.realm = manager.getRealm();
                 if(method.type === "global"){
-                    if(!(method as AnomalyDetectionConfigurationGlobal).timespan || (method as AnomalyDetectionConfigurationGlobal).timespan === ""){
-                        (method as AnomalyDetectionConfigurationGlobal).timespan = "";
-                        valid= false;
-                    }else if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationGlobal).timespan as string)){
-                        valid = false;
-                    }
-                    if(!((method as AnomalyDetectionConfigurationGlobal).minimumDatapoints)){
-                        (method as AnomalyDetectionConfigurationGlobal).minimumDatapoints = 0
+                    if(!this.testValid((method as AnomalyDetectionConfigurationGlobal).minimumDatapoints,(method as AnomalyDetectionConfigurationGlobal).timespan as string)){
                         valid = false;
                     }
                 }else if(method.type === "change"){
-                    if(!(method as AnomalyDetectionConfigurationChange).timespan || (method as AnomalyDetectionConfigurationChange).timespan === ""){
-                        (method as AnomalyDetectionConfigurationChange).timespan = "";
-                        valid= false;
-                    }else if(!/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test((method as AnomalyDetectionConfigurationChange).timespan as string)){
-                        valid = false;
-                    }
-                    if(!((method as AnomalyDetectionConfigurationChange).minimumDatapoints)){
-                        (method as AnomalyDetectionConfigurationChange).minimumDatapoints = 0
+                    if(!this.testValid((method as AnomalyDetectionConfigurationChange).minimumDatapoints,(method as AnomalyDetectionConfigurationChange).timespan as string)){
                         valid = false;
                     }
                 }
@@ -346,6 +332,14 @@ export class OrAnomalyConfigInput extends translate(i18next)(LitElement) {
                 }
             }
         }
+    }
+    protected testValid(minimumDatapoints:number|undefined, timespan:string|undefined):boolean{
+        if(!timespan || timespan === "" || !/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test(timespan)){
+            return false;
+        }else if(!minimumDatapoints || minimumDatapoints < 1){
+            return false;
+        }
+        return true;
     }
     protected async loadUsers() {
         const usersResponse = await manager.rest.api.UserResource.query({
