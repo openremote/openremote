@@ -2856,6 +2856,7 @@ __metadata:
     fork-ts-checker-webpack-plugin: "npm:^9.0.2"
     html-webpack-plugin: "npm:^5.5.0"
     prettier: "npm:^2.5.1"
+    querystring-es3: "npm:^0.2.1"
     shx: "npm:^0.3.3"
     source-map-loader: "npm:^3.0.0"
     style-loader: "npm:^3.3.1"
@@ -7964,6 +7965,13 @@ __metadata:
   dependencies:
     side-channel: "npm:^1.0.4"
   checksum: 10/f2321d0796664d0f94e92447ccd3bdfd6b6f3a50b6b762aa79d7f5b1ea3a7a9f94063ba896b82bc2a877ed6a7426d4081e4f16568fdb04f0ee188cca9d8505b4
+  languageName: node
+  linkType: hard
+
+"querystring-es3@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "querystring-es3@npm:0.2.1"
+  checksum: 10/c99fccfe1a9c4c25ea6194fa7a559fdb83d2628f118f898af6f0ac02c4ffcd7e0576997bb80e7dfa892d193988b60e23d4968122426351819f87051862af991c
   languageName: node
   linkType: hard
 
