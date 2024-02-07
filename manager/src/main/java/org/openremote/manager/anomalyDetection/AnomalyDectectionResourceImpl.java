@@ -20,6 +20,7 @@
 package org.openremote.manager.anomalyDetection;
 
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
@@ -36,6 +37,7 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 import org.openremote.model.value.MetaItemType;
 
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 public class AnomalyDectectionResourceImpl extends ManagerWebResource implements AnomalyDetectionResource {
@@ -55,10 +57,14 @@ public class AnomalyDectectionResourceImpl extends ManagerWebResource implements
     }
 
 
-    public ValueDatapoint<?>[][] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
-                                                           String assetId,
-                                                           String attributeName,
-                                                           AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
+    public ArrayList<ValueDatapoint<?>>[] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
+                                                                    String assetId,
+                                                                    String attributeName,
+                                                                    boolean getLimits,
+                                                                    boolean getData,
+                                                                    boolean getAnomalies,
+                                                                    int maximumDatapoints,
+                                                                    AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
         try {
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -107,7 +113,7 @@ public class AnomalyDectectionResourceImpl extends ManagerWebResource implements
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
             }
-            return anomalyDetectionService.getAnomalyDatapointLimits(assetId,attributeName, anomalyDetectionConfiguration);
+            return anomalyDetectionService.getAnomalyDatapointLimits(assetId,attributeName, getLimits, getData, getAnomalies, maximumDatapoints, anomalyDetectionConfiguration);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

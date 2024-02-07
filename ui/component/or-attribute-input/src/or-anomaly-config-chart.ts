@@ -245,7 +245,8 @@ export class OrAnomalyConfigChart extends OrChart {
             data: [],
         };
         if(this.anomalyConfig){
-            response = await manager.rest.api.AnomalyDetectionResource.getAnomalyDatapointLimits(asset.id, attribute.name, this.anomalyConfig);
+            response = await manager.rest.api.AnomalyDetectionResource.getAnomalyDatapointLimits(asset.id, attribute.name,  this.anomalyConfig,
+                {getLimits:true, getAnomalies:true, getData:true,maximumDatapoints:100});
             if (response.status === 200) {
                 if(response.data.length === 0){
                     this.errorMessage = i18next.t("anomalyDetection.noDatapointsSaved");

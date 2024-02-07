@@ -27,6 +27,8 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.AnomalyDetectionConfigObject;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
 
+import java.util.ArrayList;
+
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Anomaly Detection")
@@ -43,9 +45,13 @@ public interface AnomalyDetectionResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    ValueDatapoint<?>[][] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
-                                                    @PathParam("assetId") String assetId,
-                                                    @PathParam("attributeName") String attributeName,
-                                                    AnomalyDetectionConfiguration anomalyDetectionConfiguration);
+    ArrayList<ValueDatapoint<?>>[] getAnomalyDatapointLimits(@BeanParam RequestParams requestParams,
+                                                             @PathParam("assetId") String assetId,
+                                                             @PathParam("attributeName") String attributeName,
+                                                             @DefaultValue("true") @QueryParam("getLimits") boolean getLimits,
+                                                             @DefaultValue("true") @QueryParam("getData") boolean getData,
+                                                             @DefaultValue("true") @QueryParam("getAnomalies") boolean getAnomalies,
+                                                             @DefaultValue("200") @QueryParam("maximumDatapoints") int maximumDatapoints,
+                                                             AnomalyDetectionConfiguration anomalyDetectionConfiguration);
 
 }

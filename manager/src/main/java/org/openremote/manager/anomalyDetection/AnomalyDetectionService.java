@@ -42,11 +42,13 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.datapoint.*;
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery;
+import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.value.AnomalyDetectionConfiguration;
+import scala.Enumeration;
 
 
 import java.time.Duration;
@@ -200,7 +202,11 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
      * Returns empty list if no datapoints are saved yet<p>
      * Returns just original datapoints if not enough datapoints are available to calculate limits<p>
      */
-    public ValueDatapoint<?>[][] getAnomalyDatapointLimits( String assetId, String attributeName, AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
+    public ArrayList<ValueDatapoint<?>>[] getAnomalyDatapointLimits( String assetId, String attributeName, boolean getLimits, boolean getData,  boolean getAnomalies, int maximumDatapoints, AnomalyDetectionConfiguration anomalyDetectionConfiguration) {
+        ArrayList<ValueDatapoint<?>>[] valueDatapointLists = new ArrayList[4];
+        for(int i =0; i< 4; i++){
+            valueDatapointLists[i] = new ArrayList<>();
+        }
         ValueDatapoint<?>[][] vdaa = new ValueDatapoint<?>[0][0];
         DetectionMethod detectionMethod;
         long timespan = 0;
@@ -215,24 +221,24 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
             timespan = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).timespan.toMillis();
             minimumDatapoints = ((AnomalyDetectionConfiguration.Global)detectionMethod.config).minimumDatapoints;
 
-            if(period.getLatest() == null)return vdaa;
-            if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+            if(period.getLatest() == null)return valueDatapointLists;
+            if(period.getLatest() - period.getOldest() < timespan) return new ArrayList[1];
 
         }else if(type.equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
             detectionMethod = new DetectionMethodChange(anomalyDetectionConfiguration);
             timespan = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).timespan.toMillis();
             minimumDatapoints = ((AnomalyDetectionConfiguration.Change)detectionMethod.config).minimumDatapoints;
 
-            if(period.getLatest() == null)return vdaa;
-            if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+            if(period.getLatest() == null)return valueDatapointLists;
+            if(period.getLatest() - period.getOldest() < timespan) return new ArrayList[1];
 
         }else if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
             detectionMethod = new DetectionMethodForecast(anomalyDetectionConfiguration);
             timespan = 1000*60*20;
             minimumDatapoints = 2;
 
-            if(period.getLatest() == null)return vdaa;
-            if(period.getLatest() - period.getOldest() < timespan) return new ValueDatapoint<?>[1][0];
+            if(period.getLatest() == null)return valueDatapointLists;
+            if(period.getLatest() - period.getOldest() < timespan) return new ArrayList[1];
             datapoints = ArrayUtils.addAll( assetPredictedDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest(), period.getLatest() + timespan*5)),
                     assetDatapointService.queryDatapoints(assetId, attributeName,new AssetDatapointAllQuery(period.getLatest() - timespan*5, period.getLatest())));
 
@@ -247,43 +253,75 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
         }
 
         //check if there are enough datapoints to draw at least 2 limits
-        if(datapoints.length < minimumDatapoints+ 2) return new ValueDatapoint<?>[1][datapoints.length];
-        ValueDatapoint<?>[][] valueDatapoints = new ValueDatapoint[4][datapoints.length - minimumDatapoints+1];
-        List<ValueDatapoint<?>> anomalyDatapoints = new ArrayList<>();
+        if(datapoints.length < minimumDatapoints+ 2) return new ArrayList[1];
 
+        boolean limitData = datapoints.length > maximumDatapoints;
+        ValueDatapoint<?>[] LttbDatapoints = new ValueDatapoint[0];
+        if(limitData){
+            LttbDatapoints = assetDatapointService.queryDatapoints(assetId,attributeName,new AssetDatapointLTTBQuery(now - timespan * 6, now, maximumDatapoints));
+        }
 
-        int index =0;
         long finalTimespan = timespan;
         for(int i = datapoints.length - minimumDatapoints; i >= 0; i--){
             ValueDatapoint<?> dp = datapoints[i];
             if(detectionMethod.checkRecentDataSaved(dp.getTimestamp())){
                 double[] values = detectionMethod.getLimits(datapoints[i]);
-                valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
-                valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
-                if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
-                    anomalyDatapoints.add(datapoints[i]);
+                if(!limitData || Arrays.stream(LttbDatapoints).anyMatch(LttbDp -> LttbDp.getTimestamp() == dp.getTimestamp())){
+                    if(getLimits){
+                        valueDatapointLists[0].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]));
+                        valueDatapointLists[1].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]));
+                    }
+                    if(getData) valueDatapointLists[2].add(dp);
+                    if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]) {
+                        if(getAnomalies) valueDatapointLists[3].add(datapoints[i]);
+                    }
+                } else if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
+                    if(getLimits){
+                        valueDatapointLists[0].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]));
+                        valueDatapointLists[1].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]));
+                    }
+                    if(getData) valueDatapointLists[2].add(dp);
+                    if(getAnomalies) valueDatapointLists[3].add(datapoints[i]);
                 }
             }else if(type.equals(AnomalyDetectionConfiguration.Global.class.getSimpleName()) || type.equals(AnomalyDetectionConfiguration.Change.class.getSimpleName())){
                 if(detectionMethod.updateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > dp.getTimestamp() - finalTimespan && p.getTimestamp() < dp.getTimestamp()).toList())) {
                     double[] values = detectionMethod.getLimits(datapoints[i]);
-                    valueDatapoints[0][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]);
-                    valueDatapoints[1][index] = new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]);
-                    if ((double) datapoints[i].getValue() < values[0] || (double) datapoints[i].getValue() > values[1]) {
-                        anomalyDatapoints.add(datapoints[i]);
+                    if(!limitData || Arrays.stream(LttbDatapoints).anyMatch(LttbDp -> LttbDp.getTimestamp() == dp.getTimestamp())){
+                        if(getLimits){
+                            valueDatapointLists[0].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]));
+                            valueDatapointLists[1].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]));
+                        }
+                        if(getData) valueDatapointLists[2].add(dp);
+                        if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]) {
+                            if(getAnomalies) valueDatapointLists[3].add(datapoints[i]);
+                        }
+                    } else if((double)datapoints[i].getValue() < values[0] || (double)datapoints[i].getValue() > values[1]){
+                        if(getLimits){
+                            valueDatapointLists[0].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[0]));
+                            valueDatapointLists[1].add(new ValueDatapoint<>(datapoints[i].getTimestamp(), values[1]));
+                        }
+                        if(getData) valueDatapointLists[2].add(dp);
+                        if(getAnomalies) valueDatapointLists[3].add(datapoints[i]);
                     }
                 }
             }else if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
                 detectionMethod.updateData(Arrays.stream(datapoints).filter(p -> p.getTimestamp() > period.getLatest()).toList());
             }
-            index++;
 
         }
-        valueDatapoints[3] = new ValueDatapoint[anomalyDatapoints.size()];
-        for(int i = 0; i < valueDatapoints[3].length; i++){
-            valueDatapoints[3][i] = anomalyDatapoints.get(i);
+        if(limitData){
+            if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
+                for (ValueDatapoint<?> lttbDatapoint : LttbDatapoints) {
+                    valueDatapointLists[2].add(lttbDatapoint);
+                }
+            }
         }
-        valueDatapoints[2] = datapoints;
-        return valueDatapoints;
+        else if(type.equals(AnomalyDetectionConfiguration.Forecast.class.getSimpleName())){
+            for (ValueDatapoint<?> datapoint : datapoints) {
+                valueDatapointLists[2].add(datapoint);
+            }
+        }
+        return valueDatapointLists;
     }
 
     protected void onAttributeChange(AttributeEvent event) {

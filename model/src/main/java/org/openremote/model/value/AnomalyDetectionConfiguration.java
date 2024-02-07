@@ -48,9 +48,6 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
     public Integer deviation;
     public AlarmConfig alarm;
     public Boolean alarmOnOff;
-    private final String assetNamePlaceholder = "%ASSET_NAME%";
-    private final String attributeNamePlaceholder = "%ATTRIBUTE_NAME%";
-    private final String methodTypePlaceholder = "%METHOD_TYPE%";
 
 
     public AnomalyDetectionConfiguration(@JsonProperty("name") String name, @JsonProperty("onOff") Boolean onOff, @JsonProperty("deviation") Integer deviation, @JsonProperty("alarm") AlarmConfig alarm, @JsonProperty("alarmOnOff") Boolean alarmOnOff){
@@ -66,14 +63,17 @@ public abstract class AnomalyDetectionConfiguration implements Serializable {
     }
 
     public String getAssetNamePlaceholder() {
+        String assetNamePlaceholder = "%ASSET_NAME%";
         return assetNamePlaceholder;
     }
 
     public String getAttributeNamePlaceholder() {
+        String attributeNamePlaceholder = "%ATTRIBUTE_NAME%";
         return attributeNamePlaceholder;
     }
 
     public String getMethodTypePlaceholder() {
+        String methodTypePlaceholder = "%METHOD_TYPE%";
         return methodTypePlaceholder;
     }
 
