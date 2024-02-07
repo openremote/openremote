@@ -7,7 +7,7 @@ import {MDCCheckbox} from "@material/checkbox";
 import {when} from 'lit/directives/when.js';
 import {DefaultColor3, DefaultColor2, DefaultColor1, manager} from "@openremote/core";
 import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "./or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "./or-mwc-input";
 import { styleMap } from "lit/directives/style-map.js";
 
 

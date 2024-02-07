@@ -145,14 +145,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             Notification.Target target = new Notification.Target(Notification.TargetType.USER, alarm.getAssignee());
             EmailNotificationMessage message = new EmailNotificationMessage();
             String address = persistenceService.doReturningTransaction(entityManager -> {
-                TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
-                query.setParameter("id", alarm.getAssignee());
-                return query.getSingleResult();
-            });
+                        TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
+                        query.setParameter("id", alarm.getAssignee());
+                        return query.getSingleResult();
+                    });
             message.setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
-                    "Description: " + alarm.getContent() + "\n" +
-                    "Severity: " + alarm.getSeverity() + "\n" +
-                    "Status: " + alarm.getStatus());
+                            "Description: " + alarm.getContent() + "\n" +
+                            "Severity: " + alarm.getSeverity() + "\n" +
+                            "Status: " + alarm.getStatus());
             message.setSubject("New Alarm Notification");
             message.setTo(address);
             output.setMessage(message);
