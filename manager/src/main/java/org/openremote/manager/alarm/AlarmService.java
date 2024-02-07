@@ -52,6 +52,38 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     protected NotificationService notificationService;
     protected ClientEventService clientEventService;
 
+
+    protected static Processor handleAlarmProcessingException(Logger logger) {
+        return exchange -> {
+            Alarm alarm = exchange.getIn().getBody(Alarm.class);
+            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
+
+            StringBuilder error = new StringBuilder();
+
+            Alarm.Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Alarm.Source.class);
+            if (source != null) {
+                error.append("Error processing from ").append(source);
+            }
+
+            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
+            if (protocolName != null) {
+                error.append(" (protocol: ").append(protocolName).append(")");
+            }
+
+            if (exception instanceof AlarmProcessingException) {
+                AlarmProcessingException processingException = (AlarmProcessingException) exception;
+                error.append(" - ").append(processingException.getReasonPhrase());
+                error.append(": ").append(alarm.toString());
+                logger.warning(error.toString());
+            } else {
+                error.append(": ").append(alarm.toString());
+                logger.log(Level.WARNING, error.toString(), exception);
+            }
+
+            exchange.getMessage().setBody(false);
+        };
+    }
+
     @Override
     public int getPriority() {
         return ContainerService.DEFAULT_PRIORITY;
@@ -276,7 +308,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
-    }
+}
 
     public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
@@ -285,7 +317,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             }
 
             try {
-                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
+                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (alarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, asset_id) DO NOTHING");;
                 for (String assetId : assetIds) {
                     st.setLong(1, alarmId);
                     st.setString(2, realm);
@@ -304,38 +336,38 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting asset alarm links");
-        }
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Getting asset alarm links");
+            }
 
-        try {
-            return persistenceService.doReturningTransaction(entityManager -> {
-                StringBuilder sb = new StringBuilder();
-                Map<String, Object> parameters = new HashMap<>(2);
-                sb.append("select al from AlarmAssetLink al where 1=1");
+            try {
+                return persistenceService.doReturningTransaction(entityManager -> {
+                    StringBuilder sb = new StringBuilder();
+                    Map<String, Object> parameters = new HashMap<>(2);
+                    sb.append("select al from AlarmAssetLink al where 1=1");
 
-                if (!isNullOrEmpty(realm)) {
-                    sb.append(" and al.id.realm = :realm");
-                    parameters.put("realm", realm);
-                }
-                if (alarmId != null) {
-                    sb.append(" and al.id.sentalarmId = :alarmId");
-                    parameters.put("alarmId", alarmId);
-                }
-                sb.append(" order by al.createdOn desc");
+                    if (!isNullOrEmpty(realm)) {
+                        sb.append(" and al.id.realm = :realm");
+                        parameters.put("realm", realm);
+                    }
+                    if (alarmId != null) {
+                        sb.append(" and al.id.alarmId = :alarmId");
+                        parameters.put("alarmId", alarmId);
+                    }
+                    sb.append(" order by al.createdOn desc");
 
-                TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
-                parameters.forEach(query::setParameter);
+                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
+                    parameters.forEach(query::setParameter);
 
-                return query.getResultList();
+                    return query.getResultList();
 
-            });
+                });
 
-        } catch (Exception e) {
-            String msg = "Failed to get asset alarm links";
-            LOG.log(Level.WARNING, msg, e);
-            throw new IllegalStateException(msg, e);
-        }
+            } catch (Exception e) {
+                String msg = "Failed to get asset alarm links";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
     }
 
     public List<SentAlarm> getAlarmsByAssetId(String assetId) throws IllegalArgumentException {
@@ -347,7 +379,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
                 sb.append("SELECT sa FROM SentAlarm sa ");
-                sb.append("JOIN AlarmAssetLink aal ON sa.id = aal.id.sentalarmId ");
+                sb.append("JOIN AlarmAssetLink aal ON sa.id = aal.id.alarmId ");
                 sb.append("WHERE aal.id.assetId = :assetId ");
                 sb.append("ORDER BY sa.createdOn DESC");
 

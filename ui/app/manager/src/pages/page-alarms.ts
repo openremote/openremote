@@ -322,7 +322,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         if(spans){
                             spans.forEach((span, columnIndex) => {
                                 span = span as HTMLElement;
-                                if (columnIndex == 3 || columnIndex == 4 || columnIndex == 5) {
+                                if (columnIndex == 4 || columnIndex == 3) {
                                     span.parentElement.style.width = '185px';
                                     span.parentElement.style.maxWidth = '185px';
                                     span.parentElement.style.position = 'sticky';
@@ -619,15 +619,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
             {title: ''},
             {title: i18next.t('alarm.title')},
             {title: i18next.t('alarm.status')},
-            {title: i18next.t('alarm.linkedAssets'), hideMobile: true},
             {title: i18next.t('alarm.assignee')},
             {title: i18next.t('alarm.lastModified'), isSortable: true}
         ];
 
         const rows: TableRow[] = this._data!.map((alarm) => {
-            console.log(alarm.asset);
             return {
-                content: [alarm.severity!, alarm.title ,alarm.status!.charAt(0) + alarm.status!.slice(1).toLowerCase(), alarm.asset?.map((asset) => asset.name), alarm.assigneeUsername, new Date(alarm.lastModified!).toLocaleString()],
+                content: [alarm.severity!, alarm.title, alarm.status!.charAt(0) + alarm.status!.slice(1).toLowerCase(), alarm.assigneeUsername, new Date(alarm.lastModified!).toLocaleString()],
                 clickable: true
             } as TableRow
         });
@@ -707,7 +705,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     private _deleteAlarms() {
         const table = this.shadowRoot!.querySelector('or-mwc-table') as OrMwcTable;
         const ids = table!.selectedRows;
-        console.log(ids);
+
 
         // showOkCancelDialog(i18next.t("deleteUser"), i18next.t("deleteUserConfirm", { alarm: alarms.length }), i18next.t("delete"))
         //     .then((ok) => {
