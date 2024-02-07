@@ -3,8 +3,11 @@ package org.openremote.model.alarm;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.Formula;
+import org.openremote.model.asset.Asset;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -61,6 +64,10 @@ public class SentAlarm {
 
     @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = ASSIGNEE_ID)")
     protected String assigneeUsername;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "ALARM_ASSET_LINK")
+    protected List<Asset<?>> asset = new ArrayList<>();
 
     public Long getId() { return id; }
 
