@@ -34,8 +34,8 @@ public class AlarmAssetLink {
         @Column(name = "REALM", length = 36)
         protected String realm;
 
-        @Column(name = "ALARM_ID")
-        protected Long alarmId;
+        @Column(name = "SENTALARM_ID")
+        protected Long sentalarmId;
 
 
         @Column(name = "ASSET_ID")
@@ -46,7 +46,7 @@ public class AlarmAssetLink {
 
         public Id(String realm, Long alarmId, String assetId) {
             this.realm = realm;
-            this.alarmId = alarmId;
+            this.sentalarmId = alarmId;
             this.assetId = assetId;
         }
 
@@ -55,7 +55,7 @@ public class AlarmAssetLink {
         }
 
         public Long getAlarmId() {
-            return alarmId;
+            return sentalarmId;
         }
 
         public String getAssetId() {
@@ -70,14 +70,14 @@ public class AlarmAssetLink {
             Id id = (Id) o;
 
             if (!realm.equals(id.realm)) return false;
-            if (!alarmId.equals(id.alarmId)) return false;
+            if (!sentalarmId.equals(id.sentalarmId)) return false;
             return assetId.equals(id.assetId);
         }
 
         @Override
         public int hashCode() {
             int result = realm.hashCode();
-            result = 31 * result + alarmId.hashCode();
+            result = 31 * result + sentalarmId.hashCode();
             result = 31 * result + assetId.hashCode();
             return result;
         }
@@ -86,7 +86,7 @@ public class AlarmAssetLink {
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "realm='" + realm + '\'' +
-                ", alarmId='" + alarmId + '\'' +
+                ", alarmId='" + sentalarmId + '\'' +
                 ", assetId='" + assetId + '\'' +
                 '}';
         }
