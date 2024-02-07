@@ -767,6 +767,7 @@
     "detectionMethod": "Detection method",
     "noMethodsCreated": "No methods created",
     "addMethod": "Add method",
+    "testMethod": "Test method",
     "deviationGlobal": "Deviation from range (%)",
     "deviationChange": "Deviation from change (%)",
     "deviationForecast": "Deviation from forecast (absolute)",

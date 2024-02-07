@@ -23,7 +23,7 @@ import {
     UISchemaElement
 } from "@jsonforms/core";
 import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
-import {getLabel, getTemplateFromProps} from "./util";
+import {getLabel, getTemplateFromProps, showJsonEditor} from "./util";
 import {baseStyle} from "./styles";
 import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
@@ -39,7 +39,8 @@ export {
     StandardRenderers,
     getTemplateWrapper,
     JsonFormsRendererRegistryEntry,
-    UISchemaElement
+    UISchemaElement,
+    showJsonEditor
 };
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {

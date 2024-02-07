@@ -18,10 +18,7 @@ import {
     WellknownValueTypes,
     AssetModelUtil,
     ClientRole,
-    AnomalyDetectionConfigObject,
-    AnomalyDetectionConfiguration,
-    AnomalyDetectionConfigurationUnion,
-    AnomalyDetectionConfigurationGlobal
+    AnomalyDetectionConfigObject
 } from "@openremote/model";
 import manager, {Console, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";

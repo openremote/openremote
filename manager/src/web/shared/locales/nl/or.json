@@ -744,6 +744,7 @@
     "detectionMethod": "Detectie methode",
     "noMethodsCreated": "Geen bestaande methodes",
     "addMethod": "Voeg methode toe",
+    "testMethod": "Test methode",
     "deviation": "Afwijking",
     "minimumDatapoints": "Minimum aantal datapunten binnen tijdsduur",
     "minimumTimespan": "Minimum tijdsduur"
