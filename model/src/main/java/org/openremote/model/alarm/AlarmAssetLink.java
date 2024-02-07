@@ -55,7 +55,7 @@ public class AlarmAssetLink {
         }
 
         public Long getAlarmId() {
-            return alarmId;
+            return sentalarmId;
         }
 
         public String getAssetId() {
