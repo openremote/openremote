@@ -376,12 +376,12 @@ public class AnomalyDetectionService extends RouteBuilder implements ContainerSe
 
         private void createOrUpdateAlarm(DetectionMethod method, long timestamp){
             String message = method.config.alarm.getContent();
-            if(message.contains("%ASSET_NAME%")){
+            if(message.contains(method.config.getAssetNamePlaceholder())){
                 String name = assetStorageService.find(attributeRef.getId()).getName();
-                message = message.replace("%ASSET_NAME%", name);
+                message = message.replace(method.config.getAssetNamePlaceholder(), name);
             }
-            message = message.replace("%ATTRIBUTE_NAME%", attributeRef.getName());
-            message = message.replace("%METHOD_TYPE%", method.config.getClass().getSimpleName());
+            message = message.replace(method.config.getAttributeNamePlaceholder(), attributeRef.getName());
+            message = message.replace(method.config.getMethodTypePlaceholder(), method.config.getClass().getSimpleName());
             Optional<SentAlarm> existingAlarm = alarmService.getAlarmsByAssetId(attributeRef.getId()).stream().filter(a -> a.getStatus() == Alarm.Status.OPEN
                     && Objects.equals(a.getSourceId(), attributeRef.getName() + "$" + method.config.name)).findFirst();
             long alarmId = 0;
