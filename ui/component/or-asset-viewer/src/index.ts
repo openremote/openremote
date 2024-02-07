@@ -47,7 +47,7 @@ import { progressCircular } from "@openremote/or-mwc-components/style";
 import { OrAssetTree } from "@openremote/or-asset-tree";
 
 export interface PanelConfig {
-    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "linkedAlarms";
+    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
     title?: string;
     hide?: boolean;
     column?: number;
@@ -818,7 +818,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     </or-mwc-table>`;
     }
 
-    if (panelConfig.type === "linkedAlarms") {
+    if (panelConfig.type === "alarm.linkedAlarms") {
 
         const hasReadAlarmsRole = manager.hasRole(ClientRole.READ_ALARMS);
         const linkedAlarms = assetInfo.alarmAssetLinks
@@ -1136,7 +1136,7 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
             column: 1
         },
         {
-            type: "linkedAlarms",
+            type: "alarm.linkedAlarms",
             column: 1,
             hideOnMobile: true
         }

@@ -955,7 +955,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
+                            Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
+                            String triggeredAssetInfo = insertTriggeredAssetInfo(content, assetStates, false, true);
                             JsonObject json = JsonParser.parseString(triggeredAssetInfo).getAsJsonObject();
                             Object[] key = json.keySet().toArray();
                             StringBuilder builder = new StringBuilder();
@@ -963,13 +964,14 @@ public class JsonRulesBuilder extends RulesBuilder {
                             for (int i = 0; i < key.length; i++) {
                                 JsonArray array = json.getAsJsonArray(key[i].toString());
                                 JsonObject object = array.get(0).getAsJsonObject();
-                                builder.append("ID: " + object.get("id")).append("\n");
+//                                builder.append("ID: " + object.get("ref").get("id")).append("\n");
                                 builder.append("Asset type: " + object.get("assetType")).append("\n");
                                 builder.append("Asset name: " + object.get("assetName")).append("\n");
-                                builder.append("Attribute name: " + object.get("name")).append("\n");
+//                                builder.append("Attribute name: " + object.get("ref").get("name")).append("\n");
                                 builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
                             }
 
+                            // TODO: Locate Id and attribute name in json response
                             String result = builder.toString();
                             content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
                             alarm.setContent(content);
@@ -991,162 +993,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                 Alarm finalAlarm = alarm;
                 String userId = alarmAction.assigneeId;
                 if(assetIds.size() > 0){
-                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
-                }
-                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
-            }
-        }
-
-        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
-            if (alarmAction.alarm != null) {
-                Alarm alarm = alarmAction.alarm;
-                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
-                if(alarm.getContent() != null) {
-                    String content = alarm.getContent();
-                    if (!TextUtil.isNullOrEmpty(content)) {
-                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                            // Need to clone the alarm
-                            alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                            JsonParser parser = new JsonParser();
-                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
-                            Object[] key = json.keySet().toArray();
-                            StringBuilder builder = new StringBuilder();
-                            builder.append("Triggered asset(s):").append("\n");
-                            for (int i = 0; i < key.length; i++) {
-                                JsonArray array = json.getAsJsonArray(key[i].toString());
-                                JsonObject object = array.get(0).getAsJsonObject();
-                                builder.append("ID: " + object.get("id")).append("\n");
-                                builder.append("Asset type: " + object.get("assetType")).append("\n");
-                                builder.append("Asset name: " + object.get("assetName")).append("\n");
-                                builder.append("Attribute name: " + object.get("name")).append("\n");
-                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
-                            }
-
-                            String result = builder.toString();
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
-                            alarm.setContent(content);
-                        }
-                    }
-                }
-                else {
-                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getSeverity() == null) {
-                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getTitle() == null) {
-                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                Alarm finalAlarm = alarm;
-                if(assetIds.size() > 0){
-                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
-                }
-                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
-            }
-        }
-
-        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
-            if (alarmAction.alarm != null) {
-                Alarm alarm = alarmAction.alarm;
-                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
-                if(alarm.getContent() != null) {
-                    String content = alarm.getContent();
-                    if (!TextUtil.isNullOrEmpty(content)) {
-                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                            // Need to clone the alarm
-                            alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                            JsonParser parser = new JsonParser();
-                            JsonObject json = parser.parse(triggeredAssetInfo).getAsJsonObject();
-                            Object[] key = json.keySet().toArray();
-                            StringBuilder builder = new StringBuilder();
-                            builder.append("Triggered asset(s):").append("\n");
-                            for (int i = 0; i < key.length; i++) {
-                                JsonArray array = json.getAsJsonArray(key[i].toString());
-                                JsonObject object = array.get(0).getAsJsonObject();
-                                builder.append("ID: " + object.get("id")).append("\n");
-                                builder.append("Asset type: " + object.get("assetType")).append("\n");
-                                builder.append("Asset name: " + object.get("assetName")).append("\n");
-                                builder.append("Attribute name: " + object.get("name")).append("\n");
-                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
-                            }
-
-                            String result = builder.toString();
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
-                            alarm.setContent(content);
-                        }
-                    }
-                }
-                else {
-                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getSeverity() == null) {
-                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getTitle() == null) {
-                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                Alarm finalAlarm = alarm;
-                if(assetIds.size() > 0){
-                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
-                }
-                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
-            }
-        }
-
-        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
-            if (alarmAction.alarm != null) {
-                Alarm alarm = alarmAction.alarm;
-                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
-                if(alarm.getContent() != null) {
-                    String content = alarm.getContent();
-                    if (!TextUtil.isNullOrEmpty(content)) {
-                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
-                            // Need to clone the alarm
-                            alarm = ValueUtil.clone(alarm);
-                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, false, true);
-                            JsonObject json = JsonParser.parseString(triggeredAssetInfo).getAsJsonObject();
-                            Object[] key = json.keySet().toArray();
-                            StringBuilder builder = new StringBuilder();
-                            builder.append("Triggered asset(s):").append("\n");
-                            for (int i = 0; i < key.length; i++) {
-                                JsonArray array = json.getAsJsonArray(key[i].toString());
-                                JsonObject object = array.get(0).getAsJsonObject();
-                                builder.append("ID: " + object.get("id")).append("\n");
-                                builder.append("Asset type: " + object.get("assetType")).append("\n");
-                                builder.append("Asset name: " + object.get("assetName")).append("\n");
-                                builder.append("Attribute name: " + object.get("name")).append("\n");
-                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
-                            }
-
-                            String result = builder.toString();
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
-                            alarm.setContent(content);
-                        }
-                    }
-                }
-                else {
-                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getSeverity() == null) {
-                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getTitle() == null) {
-                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                Alarm finalAlarm = alarm;
-                String userId = alarmAction.assigneeId;
-                if(!assetIds.isEmpty()){
                     return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
