@@ -6,7 +6,7 @@ CA_KEY_PATH=../../setup/src/load1/resources/org/openremote/setup/load1/ca.key
 CA_PEM_PATH=../../setup/src/load1/resources/org/openremote/setup/load1/ca.pem
 DEVICE_PREFIX=device
 TEMP_CERT_DIR=tmp
-CSV_PATH="$TEMP_CERT_DIR/devices.csv"
+CSV_PATH="devices.csv"
 COUNT=${1,,}
 
 if [ -z "$COUNT" ]; then

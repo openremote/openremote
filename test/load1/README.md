@@ -1,30 +1,45 @@
-# Load Test
-A load test that uses [Taurus](https://gettaurus.org/) to simulate:
-
-* 1 x Realm (master)
-* 1 x Auto provisioning config (WeatherAsset with a custom `calculated` attribute)
-* 1 x Realm rule that performs a simple calculation to calculate the `calculated` attribute value of WeatherAssets based
-on changes to `rainfall` and `temperature` attributes  
-* N x auto provisioning MQTT devices connecting to the MQTT broker and:
-  * Subscribing to the auto provisioning response topic (1-N devices in M minutes) 
-  * Publishing their provisioning config requests (1-N devices in M minutes with initial delay of 10s)
-  * Subscribing to the attributes of the asset
-  * Publishing two attribute values (temperature and rainfall) every R seconds
-  * Checking for 3 attribute events to be received (temperature, rainfall and calculated)
-  * Repeat the publish and checking indefinitely
+# Load Tests
+Various [JMeter](https://jmeter.apache.org/) load tests.
 
 # Prerequisites
 
 * Bash shell
 * Java 17+
-* Taurus
+* JMeter with the following plugins:
+  * Custom MQTT plugin from: https://github.com/richturner/mqtt-jmeter/releases
+  * WebSocket Samplers by Peter Doornbosch
+  * 
 
-# Usage
 
-1. Run the `device_generator.sh COUNT` script to generate auto provisioning device X.509 certificates which are output to `tmp/devices.csv`
-the COUNT value is the number of devices to generate certificates for (default: 100)
-3. Either run the manager using the `load1` setup or compile the `load1` setup jar (`./gradlew clean :setup:load1Jar`) manager with the `load1` setup included  
-4. Run Taurus:
-```
-bzt mqtt_auto_provision.yml
-```
+# Auto provisioning device test (`auto-provisioning.jmx`)
+Simulates auto provisioning devices as follows:
+
+* 1 x Realm (master)
+* 1 x Auto provisioning config (WeatherAsset with a custom `calculated` attribute)
+* 1 x Realm rule that performs a simple calculation to calculate the `calculated` attribute value of WeatherAssets based
+  on changes to `rainfall` and `temperature` attributes
+* N x auto provisioning MQTT devices connecting to the MQTT broker and:
+    * Subscribing to the auto provisioning response topic (1-N devices in M minutes)
+    * Publishing their provisioning config requests (1-N devices in M minutes with initial delay of 10s)
+    * Publishing two attribute values (temperature and rainfall) every R seconds
+    * Repeat the publish X times
+
+
+## Test setup
+This test requires the device client X.509 certificates to be available at './devices.csv', if more devices are required
+then run the `device_generator.sh COUNT` script to generate a new file the COUNT value is the number of devices to
+generate certificates for (default: 100).
+
+## Manager setup (`load1`)
+* run the manager using the `load1` setup in an IDE 
+* Compile the `load1` setup jar into the manager image: `./gradlew -PSETUP_JAR=load1 clean installDist`
+* Volume map the `load1` setup jar into the manager extensions folder
+
+
+# Console users test (`console-users.jmx`)
+Simulates console users as follows:
+* 1 x Realm (master)
+* Get OAuth2 token from keycloak
+* Make websocket connection
+* Subscribe to attribute events for a given asset
+
