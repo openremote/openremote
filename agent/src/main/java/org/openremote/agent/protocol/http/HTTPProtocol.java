@@ -43,7 +43,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
@@ -575,14 +574,14 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
 
         if (attributeRef != null) {
-            updateLinkedAttribute(new AttributeState(attributeRef, value));
+            updateLinkedAttribute(attributeRef, value);
 
             // Look for any attributes that also want to use this polling response
             synchronized (pollingLinkedAttributeMap) {
                 Set<AttributeRef> linkedRefs = pollingLinkedAttributeMap.get(attributeRef);
                 if (linkedRefs != null) {
                     Object finalValue = value;
-                    linkedRefs.forEach(ref -> updateLinkedAttribute(new AttributeState(ref, finalValue)));
+                    linkedRefs.forEach(ref -> updateLinkedAttribute(ref, finalValue));
                 }
             }
         }

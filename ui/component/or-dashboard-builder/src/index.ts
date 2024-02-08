@@ -285,7 +285,7 @@ export class OrDashboardBuilder extends LitElement {
     @query('or-dashboard-preview')
     protected dashboardPreview?: OrDashboardPreview;
 
-    protected refreshTimer?: NodeJS.Timer;
+    protected refreshTimer?: ReturnType<typeof setInterval>;
     private readonly keyEmitter: DashboardKeyEmitter = new DashboardKeyEmitter();
 
 

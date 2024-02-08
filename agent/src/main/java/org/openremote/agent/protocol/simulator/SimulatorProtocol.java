@@ -132,7 +132,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
      * Call this to simulate a sensor update using the specified timestamp
      */
     public void updateSensor(AttributeRef attributeRef, Object value, long timestamp) {
-        updateLinkedAttribute(new AttributeState(attributeRef, value), timestamp);
+        updateLinkedAttribute(attributeRef, value, timestamp);
     }
 
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {
@@ -163,7 +163,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         return executorService.schedule(() -> {
             LOG.fine("Updating asset " + attributeRef.getId() + " for attribute " + attributeRef.getName() + " with value " + nextDatapoint.value.toString());
             try {
-                updateLinkedAttribute(new AttributeState(attributeRef, nextDatapoint.value));
+                updateLinkedAttribute(attributeRef, nextDatapoint.value);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown when updating value: %s", e);
             } finally {
