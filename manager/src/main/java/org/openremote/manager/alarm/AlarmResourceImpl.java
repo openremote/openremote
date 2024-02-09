@@ -13,8 +13,9 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AlarmResourceImpl extends WebResource implements AlarmResource {
@@ -45,19 +46,15 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         }
     }
 
-//    @Override
-//    public void removeAlerts(RequestParams requestParams, Long id, String severity, String status) {
-//        try{
-//            alertService.removeAlerts(
-//                    id != null ? Collections.singletonList(id) : null,
-//                    severity,
-//                    status
-//            );
-//        } catch (IllegalArgumentException e) {
-//            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
-//        }
-//    }
-//
+    @Override
+    public void removeAlarms(RequestParams requestParams, List<Long> ids) {
+        try{
+            alarmService.removeAlarms(ids);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", Status.BAD_REQUEST);
+        }
+    }
+
     @Override
     public  void removeAlarm(RequestParams requestParams, Long alarmId) {
         if (alarmId == null) {
@@ -67,11 +64,21 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
-    public void createAlarm(RequestParams requestParams, Alarm alarm) {
-        SentAlarm success = alarmService.sendAlarm(alarm, Alarm.Source.INTERNAL, "");
+    public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
+        SentAlarm success = alarmService.sendAlarm(alarm);
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
         }
+        return success;
+    }
+
+    @Override
+    public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
+        SentAlarm success = alarmService.sendAlarm(alarm, source, sourceId);
+        if (success.getId() == null) {
+            throw new WebApplicationException(Status.BAD_REQUEST);
+        }
+        return success;
     }
 
     @Override
@@ -151,6 +158,14 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         }
         List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
         return result;
+    }
+
+    @Override
+    public void setAssetLinks(RequestParams requestParams, ArrayList<AlarmAssetLink> links) {
+        if(links.isEmpty()){
+            throw new WebApplicationException("Missing links", Status.BAD_REQUEST);
+        }
+        alarmService.linkAssets(links);
     }
     
     @Override

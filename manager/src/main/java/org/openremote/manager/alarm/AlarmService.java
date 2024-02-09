@@ -22,10 +22,10 @@ import org.openremote.manager.event.ClientEventService;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
-import org.openremote.model.notification.EmailNotificationMessage;
-import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.*;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -104,7 +104,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public SentAlarm sendAlarm(Alarm alarm) {
-        return sendAlarm(alarm, INTERNAL, "");
+        return sendAlarm(alarm, MANUAL, "");
     }
 
     public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
@@ -128,36 +128,50 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 sentAlarm.setId(query.getSingleResult());
 
                 clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-
+                if(alarm.getAssignee() != null && alarm.getSeverity() == Alarm.Severity.HIGH){
+                    sendAssigneeNotification(alarm);
+                }
                 return sentAlarm;
             });
         } catch (Exception e) {
-            String msg = "Failed to create alarm: " + alarm.getTitle();
+            String msg = "Failed to create alarm: " + (alarm.getTitle() != null ? alarm.getTitle() : ' ');
             LOG.log(Level.WARNING, msg, e);
             return new SentAlarm();
         }
     }
 
-    private void sendAssigneeEmail(Alarm alarm) {
+    private void sendAssigneeNotification(Alarm alarm) {
         try {
-            Notification output = new Notification();
-            Notification.Target target = new Notification.Target(Notification.TargetType.USER, alarm.getAssignee());
-            EmailNotificationMessage message = new EmailNotificationMessage();
-            String address = persistenceService.doReturningTransaction(entityManager -> {
-                        TypedQuery<String> query = entityManager.createQuery("select email from User where id=:id", String.class);
-                        query.setParameter("id", alarm.getAssignee());
-                        return query.getSingleResult();
-                    });
-            message.setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
+            List<Notification.Target> assignee = new ArrayList<>();
+            assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
+            Notification email = new Notification();
+            email.setName("New Alarm");
+            email.setMessage(new EmailNotificationMessage()
+                    .setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
                             "Description: " + alarm.getContent() + "\n" +
                             "Severity: " + alarm.getSeverity() + "\n" +
-                            "Status: " + alarm.getStatus());
-            message.setSubject("New Alarm Notification");
-            message.setTo(address);
-            output.setMessage(message);
-            output.setTargets(target);
-            Notification notification = output;
-            notificationService.sendNotificationAsync(notification, Notification.Source.INTERNAL, null);
+                            "Status: " + alarm.getStatus())
+                    .setSubject("New Alarm Notification"));
+            email.setTargets(assignee);
+
+            Notification push = new Notification();
+            push.setName("New Alarm");
+            push.setMessage(
+                    new PushNotificationMessage()
+                            .setTitle("Alarm: " + alarm.getTitle())
+                            .setBody("Add alarm info here.") // TODO: Add alarm info to body
+            );
+            push.setTargets(assignee);
+
+            boolean resultPush = notificationService.sendNotification(push);
+            boolean resultEmail = notificationService.sendNotification(email);
+
+
+            LOG.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
+
+            System.out.println(resultPush);
+            System.out.println(resultEmail);
+
         } catch (Exception e) {
             String msg = "Failed to send email concerning alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
@@ -293,6 +307,31 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }));
     }
 
+    public void linkAssets(ArrayList<AlarmAssetLink> links) {
+        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
+            if (LOG.isLoggable(FINE)) {
+                LOG.fine("Storing asset alarm link");
+            }
+
+            try {
+                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
+                for (AlarmAssetLink link : links) {
+                    st.setLong(1, link.getId().getAlarmId());
+                    st.setString(2, link.getId().getRealm());
+                    st.setString(3, link.getId().getAssetId());
+                    st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                    st.addBatch();
+                }
+                st.executeBatch();
+
+            } catch (Exception e) {
+                String msg = "Failed to create asset alarm link";
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        }));
+    }
+
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
             if (LOG.isLoggable(FINE)) {
                 LOG.fine("Getting asset alarm links");
@@ -404,12 +443,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         );
     }
 
-    public void removeAlarms(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeAlarms(List<Long> ids) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentAlarm n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        //processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, true);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
