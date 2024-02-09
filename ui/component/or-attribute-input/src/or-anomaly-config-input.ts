@@ -152,7 +152,7 @@ export class OrAnomalyConfigInput extends translate(i18next)(LitElement) {
                     `;
                 case "forecast":
                     return html`
-                        <or-mwc-input style="padding-top: 10px;" required="true" type="number" .label="${i18next.t("anomalyDetection.deviationGlobal")}" .value="${method.deviation}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"deviation")}"></or-mwc-input>
+                        <or-mwc-input style="padding-top: 10px;" required="true" type="number" .label="${i18next.t("anomalyDetection.deviationForecast")}" .value="${method.deviation}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.updateProperty(e,"deviation")}"></or-mwc-input>
                     `;
                 default:
                     return html`
@@ -337,6 +337,7 @@ export class OrAnomalyConfigInput extends translate(i18next)(LitElement) {
         if(!timespan || timespan === "" || !/^P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$/.test(timespan)){
             return false;
         }else if(!minimumDatapoints || minimumDatapoints < 1){
+            minimumDatapoints = 2;
             return false;
         }
         return true;

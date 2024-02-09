@@ -639,7 +639,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     protected _getIntervalOptions(): [string, string][] {
         return [
-            DatapointInterval.MINUTE,
             DatapointInterval.HOUR,
             DatapointInterval.DAY,
             DatapointInterval.WEEK,
@@ -651,7 +650,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
     protected _getPeriodOptions() {
         return [
-            DatapointInterval.MINUTE.toLowerCase(),
             DatapointInterval.HOUR.toLowerCase(),
             DatapointInterval.DAY.toLowerCase(),
             DatapointInterval.WEEK.toLowerCase(),
@@ -701,10 +699,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         let stepSize = 1;
 
         switch (this.period) {
-            case "minute":
-                interval = DatapointInterval.MINUTE;
-                stepSize = 1/12
-                break;
             case "hour":
                 interval = DatapointInterval.MINUTE;
                 stepSize = 5;
@@ -728,13 +722,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         const lowerCaseInterval = interval.toLowerCase();
-        if(this.period == "minute"){
-            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).toDate().getTime();
-            this._endOfPeriod = moment(this.toTimestamp).toDate().getTime();
-        }else{
-            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-        }
+        this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
 
