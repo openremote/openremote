@@ -316,7 +316,7 @@ export class OrMwcTable extends LitElement {
                                                     <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
                                                                   class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
                                                                   .indeterminate="${this.indeterminate}"
-                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value, "all")}" .value="${this.allSelected}">
+                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "all")}" .value="${this.allSelected}">
                                                     </or-mwc-input>
                                                 </div>
                                             </th>
@@ -396,7 +396,7 @@ export class OrMwcTable extends LitElement {
                                                                     <td class="mdc-data-table__cell mdc-data-table__cell--checkbox" >
                                                                         <div class="">
                                                                             <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
-                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev.detail.value,"single",item)}" 
+                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev,ev.detail.value,"single",item)}" 
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
                                                                         </div>
@@ -521,13 +521,14 @@ export class OrMwcTable extends LitElement {
         }
     }
 
-    protected onCheckChanged(checked: boolean, type: "all" | "single", item?: any) {
+    protected onCheckChanged(event: Event, checked: boolean, type: "all" | "single", item?: any) {
+        event.stopPropagation();
         let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
         if (type === "all") {
             let checkboxes = this.shadowRoot?.querySelectorAll('[id*="checkbox"]');
             if (checked && checkboxes) {
                 console.log(checkboxes);
-                for (let i = 1; i < checkboxes.length; i++) {
+                for (let i = 0; i < checkboxes.length; i++) {
                     const inner = checkboxes[i].shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
                     console.log(inner);
                     inner.checked = true;
@@ -559,6 +560,7 @@ export class OrMwcTable extends LitElement {
             this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
             this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
         }
+        event.target?.dispatchEvent(new Event(event.type));
     }
 
 

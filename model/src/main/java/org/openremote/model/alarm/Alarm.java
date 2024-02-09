@@ -5,11 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Alarm {
     public enum Source {
-        INTERNAL,
+        MANUAL,
         CLIENT,
         GLOBAL_RULESET,
         REALM_RULESET,
-        ASSET_RULESET
+        ASSET_RULESET,
+        AGENT
     }
     public enum Status {
         OPEN,

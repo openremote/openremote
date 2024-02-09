@@ -766,6 +766,7 @@
     "sort": "Sort",
     "assignee": "Assignee",
     "assignedToMe": "Assigned to me",
-    "noData": "No alarms found."
+    "noData": "No alarms found.",
+    "source": "Source"
   }
 }

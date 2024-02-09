@@ -2275,21 +2275,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-alarm-viewer@workspace:ui/component/or-alarm-viewer":
-  version: 0.0.0-use.local
-  resolution: "@openremote/or-alarm-viewer@workspace:ui/component/or-alarm-viewer"
-  dependencies:
-    "@material/data-table": ^9.0.0
-    "@openremote/core": "workspace:*"
-    "@openremote/or-mwc-components": ^1.1.0
-    "@openremote/util": "workspace:*"
-    lit: ^2.0.2
-    moment: ^2.29.4
-    parse-link-header: ^2.0.0
-    url: ^0.11.0
-  languageName: unknown
-  linkType: soft
-
 "@openremote/or-app@^1.1.0, @openremote/or-app@workspace:ui/component/or-app":
   version: 0.0.0-use.local
   resolution: "@openremote/or-app@workspace:ui/component/or-app"

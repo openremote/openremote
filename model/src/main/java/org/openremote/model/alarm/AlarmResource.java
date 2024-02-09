@@ -7,6 +7,7 @@ import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -15,35 +16,37 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("alarm")
 @Consumes(APPLICATION_JSON)
 public interface AlarmResource {
-    /**
-     * @param requestParams
-     * @return
-     */
+
     @Path("all")
     @GET
     @Produces(APPLICATION_JSON)
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
-     /**
-     *
-     * @param requestParams
-     * @param alarmId
-     */
+
+    @DELETE
+    @Path("{ids}/delete")
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+    void removeAlarms(@BeanParam RequestParams requestParams, @PathParam("ids") List<Long> ids);
+
+
      @DELETE
      @Path("{alarmId}/delete")
      @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
      void removeAlarm(@BeanParam RequestParams requestParams,
      @PathParam("alarmId") Long alarmId);
 
-    /**
-     * @param requestParams
-     * @param alarm
-     */
+
     @POST
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    void createAlarm(@BeanParam RequestParams requestParams,
+    SentAlarm createAlarm(@BeanParam RequestParams requestParams,
                      Alarm alarm);
+
+    @Path("create/{source}")
+    @POST
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+    SentAlarm createAlarmWithSource(@BeanParam RequestParams requestParams, Alarm alarm, @PathParam("source") Alarm.Source source, String sourceId);
 
     @Path("{alarmId}/update")
     @PUT
@@ -98,4 +101,8 @@ public interface AlarmResource {
     @Produces(APPLICATION_JSON)
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
 
+    @Path("/assetLinks/set")
+    @PUT
+    void setAssetLinks(@BeanParam RequestParams requestParams,
+                       ArrayList<AlarmAssetLink> links);
 }

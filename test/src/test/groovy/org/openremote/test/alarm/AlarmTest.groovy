@@ -16,7 +16,7 @@ import spock.util.concurrent.PollingConditions
 import spock.lang.Unroll
 import spock.lang.Shared
 
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
