@@ -22,9 +22,9 @@ package org.openremote.model.protocol;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeLink;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeLink;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -192,7 +193,7 @@ public final class ProtocolUtil {
                 .orElse(new Pair<>(true, value)));
     }
 
-    public static Consumer<String> createGenericAttributeMessageConsumer(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Supplier<Long> currentMillisSupplier, Consumer<AttributeState> stateConsumer) {
+    public static Consumer<String> createGenericAttributeMessageConsumer(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Supplier<Long> currentMillisSupplier, BiConsumer<AttributeRef, Object> stateConsumer) {
 
         ValueFilter[] matchFilters = agentLink.getMessageMatchFilters().orElse(null);
         ValuePredicate matchPredicate = agentLink.getMessageMatchPredicate().orElse(null);
@@ -207,7 +208,7 @@ public final class ProtocolUtil {
                 if (messageFiltered != null) {
                     if (matchPredicate.asPredicate(currentMillisSupplier).test(messageFiltered)) {
                         LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: asssetId=" + assetId + ", attribute=" + attribute.getName());
-                        stateConsumer.accept(new AttributeState(assetId, attribute.getName(), message));
+                        stateConsumer.accept(new AttributeRef(assetId, attribute.getName()), message);
                     }
                 }
             }

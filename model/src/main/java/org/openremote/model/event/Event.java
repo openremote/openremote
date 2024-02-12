@@ -44,8 +44,10 @@ public abstract class Event {
     @JsonIgnore
     protected Date timestamp;
 
-    protected Event(long timestamp) {
-        this.timestamp = new Date(timestamp);
+    protected Event(Long timestamp) {
+        if (timestamp != null) {
+            this.timestamp = new Date(timestamp);
+        }
     }
 
     protected Event() {
