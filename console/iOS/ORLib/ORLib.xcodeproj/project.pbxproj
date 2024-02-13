@@ -3,11 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		321D41E7A29ED29205BD441C /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 850D0E4EC689CD46245628A2 /* Pods_ORLib.framework */; };
+		4C3F82392B7A7AC9004ED480 /* OfflineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */; };
+		4C3F823B2B7AA24A004ED480 /* UIViewController+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */; };
+		4CB5495F2B7A19F700AED1A5 /* ConnectivityChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB5495E2B7A19F700AED1A5 /* ConnectivityChecker.swift */; };
 		4CBDF2AD2AE285E400C7D94C /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4CBDF2AC2AE285E400C7D94C /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4CBDF2BD2AE2869D00C7D94C /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05227143F1F00D705BE /* StorageProvider.swift */; };
 		4CBDF2BE2AE2869D00C7D94C /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05327143F1F00D705BE /* GeofenceProvider.swift */; };
@@ -31,7 +34,6 @@
 		4CBDF2D02AE2869D00C7D94C /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05C27143F1F00D705BE /* Constants.swift */; };
 		4CBDF2D12AE2869D00C7D94C /* Window+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05D27143F1F00D705BE /* Window+Utils.swift */; };
 		4CBDF2D22AE2869D00C7D94C /* UIColor+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */; };
-		4CBDF2D32AE2869D00C7D94C /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05F27143F1F00D705BE /* Reachability.swift */; };
 		4CBDF2D42AE2869D00C7D94C /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D06027143F1F00D705BE /* String+Utils.swift */; };
 		4CBDF2D52AE2869D00C7D94C /* ORLib.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D04A27143EEC00D705BE /* ORLib.swift */; };
 		4CBDF2D62AE2869D00C7D94C /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9A8FC28BF6A9900DF8928 /* ConfigManager.swift */; };
@@ -61,10 +63,13 @@
 		4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerOverlayPreviewLayer.swift; sourceTree = "<group>"; };
 		4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerProvider.swift; sourceTree = "<group>"; };
 		4C2CE793274BB48500416B1A /* QrScannerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerViewController.swift; sourceTree = "<group>"; };
+		4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineViewController.swift; sourceTree = "<group>"; };
+		4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Utils.swift"; sourceTree = "<group>"; };
 		4C537EDF299D3BA0006EFB94 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C537EE1299D3BA0006EFB94 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
 		4C649E6729C251A300FFBEA4 /* BleProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleProvider.swift; sourceTree = "<group>"; };
 		4C649E6929C2554F00FFBEA4 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks/CoreBluetooth.framework; sourceTree = DEVELOPER_DIR; };
+		4CB5495E2B7A19F700AED1A5 /* ConnectivityChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectivityChecker.swift; sourceTree = "<group>"; };
 		4CBDF2AA2AE285E400C7D94C /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CBDF2AC2AE285E400C7D94C /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
 		4CC64C3E27C3CDD400A2FA4C /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
@@ -79,7 +84,6 @@
 		4CF5D05C27143F1F00D705BE /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		4CF5D05D27143F1F00D705BE /* Window+Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Window+Utils.swift"; sourceTree = "<group>"; };
 		4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Utils.swift"; sourceTree = "<group>"; };
-		4CF5D05F27143F1F00D705BE /* Reachability.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		4CF5D06027143F1F00D705BE /* String+Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "String+Utils.swift"; sourceTree = "<group>"; };
 		4CF5D06327143F1F00D705BE /* ORLinkConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORLinkConfig.swift; sourceTree = "<group>"; };
 		4CF5D06427143F1F00D705BE /* ORPushNotificationButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationButton.swift; sourceTree = "<group>"; };
@@ -200,6 +204,7 @@
 				4CF5D05A27143F1F00D705BE /* ErrorManager.swift */,
 				4C2CE793274BB48500416B1A /* QrScannerViewController.swift */,
 				4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */,
+				4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -210,9 +215,10 @@
 				4CF5D05C27143F1F00D705BE /* Constants.swift */,
 				4CF5D05D27143F1F00D705BE /* Window+Utils.swift */,
 				4CF5D05E27143F1F00D705BE /* UIColor+Utils.swift */,
-				4CF5D05F27143F1F00D705BE /* Reachability.swift */,
 				4CF5D06027143F1F00D705BE /* String+Utils.swift */,
 				4CDE11DF2B286275005A4170 /* WKWebView+Utils.swift */,
+				4CB5495E2B7A19F700AED1A5 /* ConnectivityChecker.swift */,
+				4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -348,8 +354,9 @@
 		4CF5D03F27143EEC00D705BE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1340;
-				LastUpgradeCheck = 1250;
+				LastUpgradeCheck = 1520;
 				TargetAttributes = {
 					4CBDF2A92AE285E400C7D94C = {
 						CreatedOnToolsVersion = 15.0;
@@ -440,6 +447,7 @@
 			files = (
 				4CBDF2D82AE286E200C7D94C /* ORLib.h in Sources */,
 				4CBDF2D72AE286DF00C7D94C /* Media.xcassets in Sources */,
+				4C3F823B2B7AA24A004ED480 /* UIViewController+Utils.swift in Sources */,
 				4CBDF2BD2AE2869D00C7D94C /* StorageProvider.swift in Sources */,
 				4CBDF2BE2AE2869D00C7D94C /* GeofenceProvider.swift in Sources */,
 				4CBDF2BF2AE2869D00C7D94C /* PushNotificationProvider.swift in Sources */,
@@ -462,8 +470,9 @@
 				4CBDF2CF2AE2869D00C7D94C /* ScannerOverlayPreviewLayer.swift in Sources */,
 				4CBDF2D02AE2869D00C7D94C /* Constants.swift in Sources */,
 				4CBDF2D12AE2869D00C7D94C /* Window+Utils.swift in Sources */,
+				4C3F82392B7A7AC9004ED480 /* OfflineViewController.swift in Sources */,
 				4CBDF2D22AE2869D00C7D94C /* UIColor+Utils.swift in Sources */,
-				4CBDF2D32AE2869D00C7D94C /* Reachability.swift in Sources */,
+				4CB5495F2B7A19F700AED1A5 /* ConnectivityChecker.swift in Sources */,
 				4CBDF2D42AE2869D00C7D94C /* String+Utils.swift in Sources */,
 				4CBDF2D52AE2869D00C7D94C /* ORLib.swift in Sources */,
 				4CBDF2D62AE2869D00C7D94C /* ConfigManager.swift in Sources */,
@@ -490,6 +499,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
@@ -531,6 +541,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;

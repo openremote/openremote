@@ -21,15 +21,18 @@
 import Foundation
 import UIKit
 import WebKit
-import MaterialComponents.MaterialButtons
 
 open class ORViewcontroller : UIViewController {
+    
+    let offlineViewController = OfflineViewController()
+    var offlineVIewControllerPresented = false
     
     var data : Data?
     var myWebView : WKWebView?
     var webProgressBar: UIProgressView?
     var defaults : UserDefaults?
     var webCfg : WKWebViewConfiguration?
+    var connectivityChecker: ConnectivityChecker?
     public var geofenceProvider: GeofenceProvider?
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
@@ -40,10 +43,19 @@ open class ORViewcontroller : UIViewController {
     
     public var targetUrl: String?
     
+    deinit {
+        self.connectivityChecker?.stopMonitoring()
+    }
+    
     open override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
         self.configureAccess()
+        
+        self.offlineViewController.modalPresentationStyle = .fullScreen
+        self.connectivityChecker = ConnectivityChecker()
+        self.connectivityChecker!.delegate = self
+        self.connectivityChecker!.startMonitoring()
     }
     
     open override func viewDidAppear(_ animated: Bool) {
@@ -55,6 +67,10 @@ open class ORViewcontroller : UIViewController {
                     loadURL(url: url)
                 }
             }
+        }
+        if (!self.connectivityChecker!.hasInternet()) {
+            self.present(self.offlineViewController, animated: true)
+            self.offlineVIewControllerPresented = true
         }
     }
     
@@ -153,14 +169,16 @@ open class ORViewcontroller : UIViewController {
     internal func handleError(errorCode: Int, description: String, failingUrl: String, isForMainFrame: Bool) {
         print("Error requesting '\(failingUrl)': \(errorCode) (\(description))")
         
-        let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
-        
-        if self.presentingViewController != nil {
-            alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in self.dismiss(animated: true)} ))
-        } else {
-            alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        if !self.offlineVIewControllerPresented {
+            let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
+            
+            if self.presentingViewController != nil {
+                alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in self.dismiss(animated: true)} ))
+            } else {
+                alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            }
+            self.present(alertView, animated: true, completion: nil)
         }
-        self.present(alertView, animated: true, completion: nil)
         
         /*
          if (false) {
@@ -287,7 +305,7 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     qrProvider?.startScanner(currentViewController: self, startScanCallback: { startScanData in
                                         self.sendData(data: startScanData)
                                     }, scannedCallback:
-                                    { scannedData in
+                                                                { scannedData in
                                         self.sendData(data: scannedData)
                                     })
                                 default:
@@ -371,7 +389,7 @@ extension ORViewcontroller: WKNavigationDelegate {
             let app = UIApplication.shared
             if navigationAction.targetFrame == nil, let url = navigationAction.request.url{
                 if app.canOpenURL(url) {
-                    app.open(url, options: convertToUIApplicationOpenExternalURLOptionsKeyDictionary([:]), completionHandler: nil)
+                    app.open(url)
                     decisionHandler(.cancel)
                 }
             } else {
@@ -450,9 +468,31 @@ extension ORViewcontroller: WKNavigationDelegate {
         }
         hideProgressView()
     }
+    
+    func reloadWebView() {
+        var url = self.myWebView?.url
+            
+        if url?.absoluteString == "about:blank" || url == nil {
+            url = URL(string: baseUrl!)
+        }
+        self.loadURL(url: url!)
+    }
 }
 
-// Helper function inserted by Swift 4.2 migrator.
-fileprivate func convertToUIApplicationOpenExternalURLOptionsKeyDictionary(_ input: [String: Any]) -> [UIApplication.OpenExternalURLOptionsKey: Any] {
-    return Dictionary(uniqueKeysWithValues: input.map { key, value in (UIApplication.OpenExternalURLOptionsKey(rawValue: key), value)})
+extension ORViewcontroller: ConnectivityDelegate {
+    func connectivityStatusDidChange(isConnected: Bool) {
+        DispatchQueue.main.async {
+            print("connection changed \(isConnected)")
+            if isConnected {
+                if (self.offlineVIewControllerPresented) {
+                    self.reloadWebView()
+                    self.offlineViewController.dismiss(animated: true)
+                }
+            } else {
+                if (!self.offlineVIewControllerPresented) {
+                    self.showToast(message: "Check your internet connection")
+                }
+            }
+        }
+    }
 }
