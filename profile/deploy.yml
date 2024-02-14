@@ -126,7 +126,7 @@ services:
     #  - "8080:8080" # Web server port
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
     #  - "8085:8085" # JMX port - FOR DIAGNOSTICS ONLY!!!
-    #  - "127.0.0.1:8405:8404" # Localhost metrics access
+    #  - "127.0.0.1:8405:8405" # Localhost metrics access
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -372,6 +372,8 @@ services:
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     restart: always
+    # Shared memory should be increased for any reasonable DB size this should be increased further
+    shm_size: 128mb
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       # Needs to be available on the same path as the manager for data exports to work
