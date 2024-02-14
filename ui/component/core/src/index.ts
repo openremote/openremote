@@ -9,6 +9,7 @@ import moment from "moment";
 import {AssetModelUtil, Auth, ConsoleAppConfig, EventProviderType, ManagerConfig, MapType, Role, User, UsernamePassword} from "@openremote/model";
 import * as Util from "./util";
 import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
+import Keycloak from 'keycloak-js';
 
 // Re-exports
 export {Util};
@@ -22,25 +23,6 @@ export const DEFAULT_ICONSET: string = "mdi";
 export declare type KeycloakPromise<T> = {
     success<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | KeycloakPromise<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | KeycloakPromise<TResult2>) | undefined | null): KeycloakPromise<TResult1 | TResult2>;
     error<TResult = never>(onrejected?: ((reason: any) => TResult | KeycloakPromise<TResult>) | undefined | null): Promise<T | TResult>;
-}
-
-export declare type Keycloak = {
-    token: string;
-    refreshToken: string;
-    tokenParsed: any;
-    refreshTokenParsed: any;
-    resourceAccess: any;
-    onAuthSuccess: () => void;
-    onAuthError: () => void;
-    onAuthRefreshSuccess: () => void;
-    onAuthRefreshError: () => void;
-    init(options?: any): PromiseLike<boolean>;
-    login(options?: any): void;
-    hasRealmRole(role: string): boolean;
-    logout(options?: any): void;
-    isTokenExpired(expiry?: number): boolean;
-    updateToken(expiry?: number): PromiseLike<boolean>;
-    clearToken(): void;
 }
 
 export enum ORError {
@@ -244,8 +226,10 @@ export class Manager implements EventProviderFactory {
     }
 
     set language(lang: string) {
-        i18next.changeLanguage(lang);
-        this.console.storeData("LANGUAGE", lang);
+        if (lang) {
+            i18next.changeLanguage(lang);
+            this.console.storeData("LANGUAGE", lang);
+        }
     }
 
     get displayRealm() {
@@ -462,7 +446,7 @@ export class Manager implements EventProviderFactory {
         // Look for language preference in local storage
         const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
-            lng: language,
+            lng: language || "en",
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
@@ -794,8 +778,7 @@ export class Manager implements EventProviderFactory {
             if (this.console.isMobile) {
                 this.console.storeData("REFRESH_TOKEN", null);
             }
-            const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
-            this._keycloak.logout(options);
+            this._keycloak.logout(redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : undefined);
         } else if (this._basicIdentity) {
             this._basicIdentity = undefined;
             if (redirectUrl) {
@@ -970,7 +953,7 @@ export class Manager implements EventProviderFactory {
     // By default, using a margin / minimum validity of 2 seconds
     public isTokenExpired(margin = 2000): boolean {
         if(this.isKeycloak()) {
-            return (this._keycloak!.tokenParsed.exp <= moment().add(margin, "milliseconds").unix());
+            return (this._keycloak?.tokenParsed?.exp! <= moment().add(margin, "milliseconds").unix());
         } else {
             return !this._basicIdentity?.token; // TODO: Update this to check validity of JWT token manually
         }
@@ -995,7 +978,7 @@ export class Manager implements EventProviderFactory {
         // If native shell is enabled, we need an offline refresh token
         if (this.console && this.console.isMobile && this.config.auth === Auth.KEYCLOAK) {
 
-            if (this._keycloak && this._keycloak.refreshTokenParsed.typ === "Offline") {
+            if (this._keycloak && this._keycloak.refreshTokenParsed?.typ === "Offline") {
                 console.debug("Storing offline refresh token");
                 this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
             } else {
@@ -1009,31 +992,15 @@ export class Manager implements EventProviderFactory {
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
 
         try {
-
-            // There's a bug in some Keycloak versions which means the init promise doesn't resolve
-            // so putting a check in place; wrap keycloak promise in proper ES6 promise
-            let keycloakPromise: any = null;
-
-            // Load the keycloak JS API
-            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.min.js");
-
-            // Should have Keycloak global var now
-            if (!(window as any).Keycloak) {
-                console.log("Keycloak global variable not found probably failed to load keycloak or manager doesn't support it");
-                return false;
-            }
-
             // Initialise keycloak
-            this._keycloak = (window as any).Keycloak({
+            this._keycloak = new Keycloak({
                 clientId: this._config.clientId,
                 realm: this._config.realm,
-                url: this._config.keycloakUrl
+                url: this._config.keycloakUrl,
+
             });
 
             this._keycloak!.onAuthSuccess = () => {
-                if (keycloakPromise) {
-                    keycloakPromise(true);
-                }
                 // clear auth reconnect timer after success
                 this._finishAuthReconnectTimer(true);
             };
@@ -1047,50 +1014,42 @@ export class Manager implements EventProviderFactory {
                 this._setAuthDisconnected(true);
             }
 
-            try {
-                // Try to use a stored offline refresh token if defined
-                const offlineToken = await this._getNativeOfflineRefreshToken();
+            // Try to use a stored offline refresh token if defined
+            const offlineToken = await this._getNativeOfflineRefreshToken();
 
-                const authenticated = await this._keycloak!.init({
-                    checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
-                    onLoad: this._config.autoLogin ? "login-required" : "check-sso",
-                    refreshToken: offlineToken
-                });
+            const authenticated = await this._keycloak!.init({
+                checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
+                onLoad: this._config.autoLogin ? "login-required" : "check-sso",
+                refreshToken: offlineToken
+            });
 
-                keycloakPromise = null;
+            if (authenticated) {
 
-                if (authenticated) {
+                this._name = this._keycloak.tokenParsed?.name;
+                this._username = this._keycloak.tokenParsed?.preferred_username;
 
-                    this._name = this._keycloak!.tokenParsed.name;
-                    this._username = this._keycloak!.tokenParsed.preferred_username;
-
-                    // Update the access token every 10s (note keycloak will only update if expiring within configured
-                    // time period.
-                    if (this._keycloakUpdateTokenInterval) {
-                        clearInterval(this._keycloakUpdateTokenInterval);
-                        delete this._keycloakUpdateTokenInterval;
-                    }
-                    this._keycloakUpdateTokenInterval = window.setInterval(() => {
-                        // only try to update token when online, otherwise the reconnect logic (this._attemptReconnect()) will try this
-                        if(!this._authDisconnected) {
-                            this.updateKeycloakAccessToken().catch(() => {
-                                console.error("Could not update keycloak access token during regular interval.");
-                            });
-                        }
-                    }, 10000);
-                    this._onAuthenticated();
+                // Update the access token every 10s (note keycloak will only update if expiring within configured
+                // time period.
+                if (this._keycloakUpdateTokenInterval) {
+                    clearInterval(this._keycloakUpdateTokenInterval);
+                    delete this._keycloakUpdateTokenInterval;
                 }
-                this._setAuthenticated(authenticated);
-                return true;
-            } catch (e) {
-                console.error(e);
-                keycloakPromise = null;
-                this._setAuthenticated(false);
-                return false;
+                this._keycloakUpdateTokenInterval = window.setInterval(() => {
+                    // only try to update token when online, otherwise the reconnect logic (this._attemptReconnect()) will try this
+                    if(!this._authDisconnected) {
+                        this.updateKeycloakAccessToken().catch(() => {
+                            console.error("Could not update keycloak access token during regular interval.");
+                        });
+                    }
+                }, 10000);
+                this._onAuthenticated();
             }
+            this._setAuthenticated(authenticated);
+            return true;
         } catch (error) {
+            this._setAuthenticated(false);
             this._setError(ORError.AUTH_FAILED);
-            console.error("Failed to load Keycloak");
+            console.error("Failed to initialise Keycloak: " + error);
             return false;
         }
     }

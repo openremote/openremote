@@ -29,7 +29,8 @@ dependencies {
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-    api "org.keycloak:keycloak-admin-client-jakarta:$keycloakVersion"
+    api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
+    api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
     api "org.flywaydb:flyway-core:$flywaydbVersion"
