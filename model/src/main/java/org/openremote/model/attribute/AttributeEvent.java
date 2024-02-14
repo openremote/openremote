@@ -143,6 +143,8 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this.realm = asset.getRealm();
     }
 
+    @Deprecated(forRemoval = true)
+    @JsonProperty("attributeState")
     @Override
     public AttributeState getState() {
         return new AttributeState(ref, value);
