@@ -134,7 +134,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 return sentAlarm;
             });
         } catch (Exception e) {
-            String msg = "Failed to create alarm: " + (alarm.getTitle() != null ? alarm.getTitle() : ' ');
+            String msg = "Failed to create alarm: " + (alarm != null ? alarm.getTitle() : ' ');
             LOG.log(Level.WARNING, msg, e);
             return new SentAlarm();
         }

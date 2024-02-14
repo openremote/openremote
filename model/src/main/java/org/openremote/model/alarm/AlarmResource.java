@@ -1,5 +1,6 @@
 package org.openremote.model.alarm;
 
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -25,9 +26,9 @@ public interface AlarmResource {
 
 
     @DELETE
-    @Path("{ids}/delete")
+    @Path("delete")
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    void removeAlarms(@BeanParam RequestParams requestParams, @PathParam("ids") List<Long> ids);
+    void removeAlarms(@BeanParam RequestParams requestParams, @RequestBody List<Long> ids);
 
 
      @DELETE
@@ -43,11 +44,12 @@ public interface AlarmResource {
     void createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
 
-    @Path("create/{source}")
+    @Path("create/{source}/{sourceId}")
     @POST
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    SentAlarm createAlarmWithSource(@BeanParam RequestParams requestParams, Alarm alarm, @PathParam("source") Alarm.Source source, String sourceId);
+    SentAlarm createAlarmWithSource(@BeanParam RequestParams requestParams, @RequestBody Alarm alarm, @PathParam("source") Alarm.Source source, @PathParam("sourceId") String sourceId);
 
     @Path("{alarmId}/update")
     @PUT

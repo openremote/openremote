@@ -56,7 +56,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     }
 
     @Override
-    public  void removeAlarm(RequestParams requestParams, Long alarmId) {
+    public void removeAlarm(RequestParams requestParams, Long alarmId) {
         if (alarmId == null) {
             throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
         }
@@ -74,6 +74,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
+        System.out.println(alarm);
         SentAlarm success = alarmService.sendAlarm(alarm, source, sourceId);
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
@@ -89,6 +90,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.updateAlarm(alarmId, alarm);
     }
 
+    // UNUSED
     @Override
     public void setAlarmAcknowledged(RequestParams requestParams, String alarmId) {
         if (alarmId == null) {
@@ -97,6 +99,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.setAlarmAcknowledged(alarmId);
     }
 
+    // UNUSED
     @Override
     public void setAlarmStatus(RequestParams requestParams, String alarmId, String status) {
         if (alarmId == null) {
@@ -105,6 +108,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.updateAlarmStatus(alarmId, status);
     }
 
+    // UNUSED
     @Override
     public void assignUser(RequestParams requestParams, Long alarmId, String userId, String realm) {
         if (alarmId == null) {
@@ -119,6 +123,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.assignUser(alarmId, userId, realm);
     }
 
+    // UNUSED
     @Override
     public List<AlarmUserLink> getUserLinks(RequestParams requestParams, Long alarmId, String realm) {
         if (alarmId == null) {
@@ -156,8 +161,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         if (realm == null) {
             throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
         }
-        List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        return result;
+        return alarmService.getAssetLinks(alarmId, realm);
     }
 
     @Override

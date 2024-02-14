@@ -39,7 +39,7 @@ public class Alarm {
     public Alarm(@JsonProperty("title") String title,
                  @JsonProperty("content") String content,
                  @JsonProperty("severity") Severity severity,
-                 @JsonProperty("assignee") String assignee,
+                 @JsonProperty("assigneeId") String assignee,
                  @JsonProperty("realm") String realm){
         this.title = title;
         this.content = content;
@@ -51,6 +51,7 @@ public class Alarm {
         this.realm = realm;
     }
 
+    @JsonCreator
     public Alarm() {
 
     }
