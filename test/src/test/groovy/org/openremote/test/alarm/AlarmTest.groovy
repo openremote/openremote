@@ -8,6 +8,8 @@ import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.alarm.AlarmService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.http.RequestParams
+import org.openremote.protocol.zwave.model.commandclasses.CCAlarmV2
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -28,14 +30,11 @@ import static org.openremote.model.util.ValueUtil.parse
 import jakarta.ws.rs.WebApplicationException
 
 class AlarmTest extends Specification implements ManagerContainerTrait{
-    @Shared
-    List<SentAlarm> alarms = []
-
-    @Shared
-    static AlarmService mockAlarmService
-
     @Shared 
     static AlarmResource adminResource
+
+    @Shared
+    static AlarmResource regularUserResource
 
     @Shared
     static KeycloakTestSetup keycloakTestSetup
@@ -43,211 +42,220 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     @Shared
     static ManagerTestSetup managerTestSetup
 
-    @Shared 
-    static PollingConditions conditions
-
 
     def setupSpec() {
-        conditions = new PollingConditions(timeout: 10, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        AlarmService alarmService = container.getService(AlarmService.class)
 
+        def adminAccessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
+        ).token
 
-//        and: "a mock persistence service"
-//        AlarmService mockAlarmService = Spy(alarmService)
-//        mockAlarmService.sendAlarm(_ as Alarm) >> {
-//            output ->
-//                alarms << output
-//                callRealMethod()
-//        }
-//        mockAlarmService.getAlarms(_ as String, _ as String) >> {
-//
-//        }
-//
-//        and: "an authenticated test user"
-//        def testuser1AccessToken = authenticate(
-//                container,
-//                MASTER_REALM,
-//                KEYCLOAK_CLIENT_ID,
-//                "testuser1",
-//                "testuser1"
-//        ).token
-//
-//        and: "an authenticated superuser"
-//        def adminAccessToken = authenticate(
-//                container,
-//                MASTER_REALM,
-//                KEYCLOAK_CLIENT_ID,
-//                MASTER_REALM_ADMIN_USER,
-//                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
-//        ).token
-//
-//        Alarm alarm = new Alarm("Test Alarm", "Test Content", Alarm.Severity.MEDIUM)
-//        Alarm alarm1 = new Alarm("Test Alarm1", "Test Content1", Alarm.Severity.LOW)
-//        Alarm update = new Alarm("Updated Alarm1", "Updated Content1", Alarm.Severity.HIGH)
-//        //SentAlarm[] sentAlarms = [new SentAlarm("1", "Test SentAlarm", "Test Content", Alarm.Severity.HIGH, Alarm.Status.ACTIVE), new SentAlarm("2", "Test SentAlarm2", "Test Content", Alarm.Severity.MEDIUM, Alarm.Status.ACTIVE)]
-//
-//
-//        and: "the mock alarm resource"
-//        def testuser1Resource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(AlarmResource.class)
-//        def adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
-//        def anonymousResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.realmBuilding.name).proxy(AlarmResource.class)
-//
-//        when: "the anonymous user creates an alarm"
-//        anonymousResource.createAlarm(null, alarm)
-//
-//        then: "no alarm should have been created"
-//        WebApplicationException ex = thrown()
-//        ex.response.status == 403
-//
-//        when: "the admin user creates an alarm"
-//        adminResource.createAlarm(null, alarm1)
-//
-//        then: "an alarm should have been created"
-//        conditions.eventually {
-//            alarms = adminResource.getAlarms(null)
-//            assert alarms.count {n -> n.content != null} == 1
-//        }
-//
-//        when: "the admin user updates an existing alarm"
-//        adminResource.updateAlarm(null, alarms.first().id, update)
-//
-//        then: "the alarm object has been updated"
-//        conditions.eventually {
-//            alarms = adminResource.getAlarms(null)
-//            assert alarms.first().content == update.content
-//            assert alarms.first().title == update.title
-//        }
+        regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
+        adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
     }
 
-
+    // Create alarm as admin
     @Unroll
-    def "should create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
-        when:
-        def alarm = mockAlarmService.sendAlarm(new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+    def "should create an alarm with title '#title', content '#content', and severity '#severity'"() {
+        when: "an alarm is created"
+        def input = new Alarm(title, content, severity, null, MASTER_REALM)
+        def alarm = adminResource.createAlarm(null, input)
+
 
         then:
-        conditions.eventually {
-            alarm != null
-            alarm.title == title
-            alarm.content == content
-            alarm.severity == severity
-            alarm.status == status
-        }
+        assert alarm != null
+        assert alarm.title == title
+        assert alarm.content == content
+        assert alarm.severity == severity
+        assert alarm.status == Alarm.Status.OPEN
+
 
         where:
-        title | content | severity | status
-        "Test Alarm" | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
-        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Status.RESOLVED
+        title | content | severity
+        "Test Alarm" | "Test Description" | Severity.LOW
+        "Another Alarm" | "Another Description" | Severity.MEDIUM
+    }
+
+    @Unroll
+    def "should create an alarm with title '#title', content '#content', severity '#severity', and source '#source'"() {
+        when: "an alarm is created"
+        def input = new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(Alarm.Status.OPEN).setRealm(MASTER_REALM)
+        def alarm = adminResource.createAlarmWithSource(null, input, source, 'test')
+
+
+        then:
+        assert alarm != null
+        assert alarm.title == title
+        assert alarm.content == content
+        assert alarm.severity == severity
+        assert alarm.status == Alarm.Status.OPEN
+        assert alarm.source == source
+
+
+        where:
+        title | content | severity | source
+        "Test Alarm" | "Test Description" | Severity.LOW | Alarm.Source.AGENT
+        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.REALM_RULESET
     }
 
     @Unroll
     def "should not create an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def alarm = adminResource.createAlarm(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+        adminResource.createAlarm(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status).setRealm(MASTER_REALM))
+
+        and:
+        adminResource.createAlarmWithSource(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status).setRealm(MASTER_REALM), Alarm.Source.MANUAL, "id")
 
         then:
         WebApplicationException ex = thrown()
-        ex.response.status == 400
+        assert ex.response.status == 400
 
         where:
         title | content | severity | status
-        null | "Test Description" | Severity.LOW | Alarm.Status.ACTIVE
+        null | "Test Description" | Severity.LOW | Alarm.Status.OPEN
         "Another Alarm" | null | Severity.MEDIUM | Alarm.Status.RESOLVED
         "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
     }
 
-    def "should return list of alarms"() {
+    // Create alarm without write:alarm role
+    def "should not create an alarm as regular user"() {
         when:
-        def output = adminResource.getAlarms()
+        regularUserResource.createAlarm(null, new Alarm().setTitle("title").setContent("content").setSeverity(Severity.MEDIUM).setStatus(Alarm.Status.ACKNOWLEDGED).setRealm(MASTER_REALM))
+
+        and:
+        regularUserResource.createAlarmWithSource(null, new Alarm().setTitle("title").setContent("content").setSeverity(Severity.MEDIUM).setStatus(Alarm.Status.ACKNOWLEDGED).setRealm(MASTER_REALM), Alarm.Source.MANUAL, "id")
 
         then:
-        output != null
-        output.size() == 2
+        WebApplicationException ex = thrown()
+        assert ex.response.status == 403
     }
 
-    // @Unroll
-    // def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
-    //     when:
-    //     adminResource.updateAlarm(alarms[0].id, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
-    //     def updated = adminResource.getAlarms()[0]
 
-    //     then:
-    //     conditions.eventually {
-    //         updated != null
-    //         updated.title == title
-    //         updated.content == content
-    //         updated.severity == severity
-    //         updated.status == status
-    //     }
+    // Get alarms as admin
+    def "should return list of alarms"() {
+        when:
+        def output = adminResource.getAlarms(null)
 
-    //     where:
-    //     title | content | severity | status
-    //     "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.ACTIVE
-    //     "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.INACTIVE
-    // }
+        then:
+        assert output != null
+        assert output.size() == 4
+    }
+
+    // Get alarms without read:alarm role
+    def "should not return list of alarms"() {
+        when:
+        regularUserResource.getAlarms(null)
+
+        then:
+        WebApplicationException ex = thrown()
+        assert ex.response.status == 403
+    }
+
+    // Update alarm as admin
+     @Unroll
+     def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+         when:
+         def updatable = adminResource.getAlarms(null)[0]
+         adminResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+         def updated = adminResource.getAlarms(null)[0]
+
+         then:
+         assert updated != null
+         assert updated.title == title
+         assert updated.content == content
+         assert updated.severity == severity
+         assert updated.status == status
+
+
+         where:
+         title | content | severity | status
+         "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
+         "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
+     }
 
     @Unroll
     def "should not update an alarm with id 'null'"() {
         when:
-        adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.ACTIVE))
+        adminResource.updateAlarm(null, null, new SentAlarm().setTitle('title').setContent('content').setSeverity(Severity.LOW).setStatus(Alarm.Status.OPEN))
 
         then:
         NullPointerException ex = thrown()
     }
 
-    // @Unroll
-    // def "should get an alarm with id '#id'"() {
-    //     given:
-    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+    // Update alarm without write:alarm role
+    @Unroll
+    def "should not update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+        when:
+        def updatable = adminResource.getAlarms(null)[0]
+        regularUserResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
 
-    //     when:
-    //     def retrievedAlarm = alarmResourceImp.getAlarm(id)
+        then:
+        WebApplicationException ex = thrown()
+        assert ex.response.status == 403
 
-    //     then:
-    //     retrievedAlarm != null
-    //     retrievedAlarm.id == id
-    //     retrievedAlarm.name == alarm.name
-    //     retrievedAlarm.description == alarm.description
+        where:
+        title | content | severity | status
+        "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
+        "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
+    }
 
-    //     where:
-    //     id << [alarm.id, "invalid-id"]
-    // }
+    // Delete alarm without write:alarm role
+    def "should not delete alarm without proper permissions"() {
+        when:
+        def delete = adminResource.getAlarms(null)[0]
+        regularUserResource.removeAlarm(null, delete.id)
 
-    // @Unroll
-    // def "should update an alarm with id '#id' to have name '#name' and description '#description'"() {
-    //     given:
-    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+        then:
+        WebApplicationException ex = thrown()
+        assert ex.response.status == 403
+    }
 
-    //     when:
-    //     def updatedAlarm = alarmResourceImp.updateAlarm(id, name, description)
+    // Delete alarms without write:alarm role
+    def "should not delete alarms without proper permissions"() {
+        when:
+        def delete = adminResource.getAlarms(null)
+        regularUserResource.removeAlarms(null, (List<Long>) delete.collect{it.id})
 
-    //     then:
-    //     updatedAlarm != null
-    //     updatedAlarm.id == id
-    //     updatedAlarm.name == name
-    //     updatedAlarm.description == description
+        then:
+        WebApplicationException ex = thrown()
+        assert ex.response.status == 403
+    }
 
-    //     where:
-    //     id | name | description
-    //     alarm.id | "Updated Alarm" | "Updated Description"
-    //     "invalid-id" | "Invalid Alarm" | "Invalid Description"
-    // }
+    // Delete alarm as admin
+    def "should delete alarm as admin"() {
+        when:
+        def delete = adminResource.getAlarms(null)[0]
+        adminResource.removeAlarm(null, delete.id)
 
-    // @Unroll
-    // def "should delete an alarm with id '#id'"() {
-    //     given:
-    //     def alarm = alarmResourceImp.createAlarm("Test Alarm", "Test Description")
+        then:
+        adminResource.getAlarms(null).find {it.id == delete.id} == null
+    }
 
-    //     when:
-    //     def isDeleted = alarmResourceImp.deleteAlarm(id)
+    // Delete alarms as admin
+    def "should delete alarms as admin"() {
+        when:
+        def delete = adminResource.getAlarms(null)
+        adminResource.removeAlarms(null, (List<Long>) delete.collect{it.id})
 
-    //     then:
-    //     isDeleted == true
+        then:
+        adminResource.getAlarms(null).length == 0
+    }
 
-    //     where:
-    //     id << [alarm.id, "invalid-id"]
-    // }
+    // Get open alarms
+    def "should get open alarms"() {
+        when: "two open and one closed alarms are added"
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 3').setContent('content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        def open = adminResource.getOpenAlarms(null)
+
+        then: "returns 2 open alarms"
+        open.size() == 2
+    }
 }

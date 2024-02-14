@@ -442,7 +442,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         try {
             action == "update"
                 ? await manager.rest.api.AlarmResource.updateAlarm(alarm.id, alarm)
-                : await manager.rest.api.AlarmResource.createAlarmWithSource(alarm.source, alarm).then(async (response) => {
+                : await manager.rest.api.AlarmResource.createAlarmWithSource(alarm.source,'alarm-page', alarm).then(async (response) => {
                     if (alarm.alarmAssetLinks.length > 0) {
                         alarm.alarmAssetLinks.forEach((link) => {
                             link.id.sentalarmId = response.data.id;
@@ -996,41 +996,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this.requestUpdate();
     }
 
-    protected _onAddClick() {
-        this.creationState = {alarmModel: this.getNewAlarmModel()};
-        this.requestUpdate();
-    }
-
 
     protected _getUsers() {
         return this._loadedUsers.map((u) => {
             return {value: u.id, label: u.username};
         });
-    }
-
-    protected _assignClick() {
-        this._assign = !this._assign;
-        this.requestUpdate();
-    }
-
-    protected async _assignUser(alarm: AlarmModel) {
-        if (!this._userId || !this.alarm.id) {
-            return;
-        }
-        try {
-            await manager.rest.api.AlarmResource.assignUser(alarm.id, this._userId);
-        } catch (e) {
-            if (isAxiosError(e)) {
-                console.error("save alarm failed" + ": response = " + e.response.statusText);
-
-                if (e.response.status === 400) {
-                    showSnackbar(undefined, i18next.t("alarm.saveAlarmFailed"), i18next.t("dismiss"));
-                }
-            }
-            throw e; // Throw exception anyhow to handle individual cases
-        } finally {
-            await this.loadAlarm(alarm);
-        }
     }
 
     protected _openAssetSelector(ev: MouseEvent, alarm: AlarmModel, readonly: boolean) {
