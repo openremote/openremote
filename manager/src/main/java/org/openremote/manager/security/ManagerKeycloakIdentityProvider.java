@@ -92,6 +92,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
+    public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
     public static final String KC_HOSTNAME = "KC_HOSTNAME";
     public static final String KC_HOSTNAME_PATH = "KC_HOSTNAME_PATH";
     public static final String KC_HOSTNAME_PORT = "KC_HOSTNAME_PORT";
@@ -982,11 +983,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         client.setName("OpenRemote");
         client.setPublicClient(true);
 
-        if (container.isDevMode()) {
-            // We need direct access for integration tests
+        boolean enableDirectAccessGrant = getBoolean(container.getConfig(), OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT, container.isDevMode());
+
+        if (enableDirectAccessGrant) {
+            // We need direct access for integration/load tests
             LOG.info("### Allowing direct access grants for client id '" + client.getClientId() + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
+        }
 
+        if (container.isDevMode()) {
             // Allow any web origin (this will add CORS headers to token requests etc.)
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
