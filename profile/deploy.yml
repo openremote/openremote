@@ -150,14 +150,14 @@ services:
       # This value is passed to SetupTasks can be used to determine what assets etc. should be setup for this deployment
       # the available values and general use of this is dependent on the actual SetupTasks available in the instance
       # being deployed some basic recommendations are 'production', 'staging'
-      OR_SETUP_TYPE: ${OR_SETUP_TYPE}
+      OR_SETUP_TYPE:
 
       # The public HOSTNAME and SSL PORT of this manager
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
 
       # Additional hostnames that should be allowed to access the auth server
-      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_ADDITIONAL_HOSTNAMES:
 
       # Configure Email, SMTP server to send password reset emails etc.
       OR_EMAIL_HOST:
@@ -165,14 +165,14 @@ services:
       OR_EMAIL_PASSWORD:
       OR_EMAIL_PORT:
       OR_EMAIL_TLS:
-      OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
+      OR_EMAIL_X_HEADERS: # Headers to set on all outbound emails
       OR_EMAIL_PROTOCOL: # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
 
       # Where to send admin emails to
-      OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
+      OR_EMAIL_ADMIN:
 
       # From address for emails sent by the system
-      OR_EMAIL_FROM: ${OR_EMAIL_FROM}
+      OR_EMAIL_FROM:
 
       # Console applications can register for push notifications through FCM.
       OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
@@ -193,16 +193,16 @@ services:
 
       # Comma separated list of manager web server CORS allowed origins (can be a prefix, exact match or wildcard *)
       # These are in addition to the OR_HOSTNAME and OR_ADDITIONAL_HOSTNAMES which are implicitly allowed
-      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
+      OR_WEBSERVER_ALLOWED_ORIGINS:
 
       # Dump web server requests to logs; default: false
-      OR_WEBSERVER_DUMP_REQUESTS: ${OR_WEBSERVER_DUMP_REQUESTS:-}
+      OR_WEBSERVER_DUMP_REQUESTS:
 
       # Manager web server maximum worker thread count; default: Processor core count or 10
-      OR_WEBSERVER_WORKER_THREADS_MAX: ${OR_WEBSERVER_WORKER_THREADS_MAX:-}
+      OR_WEBSERVER_WORKER_THREADS_MAX:
 
       # Manager web server maximum IO thread count; default: Processor core count or 2
-      OR_WEBSERVER_IO_THREADS_MAX: ${OR_WEBSERVER_IO_THREADS_MAX:-}
+      OR_WEBSERVER_IO_THREADS_MAX:
 
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
@@ -216,7 +216,7 @@ services:
       OR_DB_MAX_POOL_SIZE: ${OR_DB_MAX_POOL_SIZE:-20}
       OR_DB_CONNECTION_TIMEOUT_SECONDS: ${OR_DB_CONNECTION_TIMEOUT_SECONDS:-300}
       # Allow migration scripts to be applied out of order (see flyway DB docs)
-      OR_DB_FLYWAY_OUT_OF_ORDER: ${OR_DB_FLYWAY_OUT_OF_ORDER}
+      OR_DB_FLYWAY_OUT_OF_ORDER:
 
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
@@ -353,7 +353,7 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
       KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
-      KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
+      KC_HOSTNAME_ADMIN:
       KC_PROXY: ${KC_PROXY:-edge}
 
       # Configure main user credentials (only on first startup)
@@ -361,7 +361,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
       KEYCLOAK_START_COMMAND: ${KEYCLOAK_START_COMMAND:-start}
-      KEYCLOAK_START_OPTS: ${KEYCLOAK_START_OPTS:-}
+      KEYCLOAK_START_OPTS:
       # Default themes to use
       KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
       KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
