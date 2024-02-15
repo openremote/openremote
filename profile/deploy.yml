@@ -163,10 +163,10 @@ services:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
-      OR_EMAIL_PORT: ${OR_EMAIL_PORT}
-      OR_EMAIL_TLS: ${OR_EMAIL_TLS}
+      OR_EMAIL_PORT:
+      OR_EMAIL_TLS:
       OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
-      OR_EMAIL_PROTOCOL: ${OR_EMAIL_PROTOCOL} # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
+      OR_EMAIL_PROTOCOL: # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
 
       # Where to send admin emails to
       OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
@@ -347,6 +347,8 @@ services:
       KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
       KC_DB_USERNAME: ${KC_DB_USERNAME:-postgres}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-postgres}
+      KC_DB_POOL_MAX_SIZE:
+
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}

@@ -19,28 +19,30 @@
  */
 package org.openremote.setup.load1;
 
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.security.User;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 public class KeycloakSetup extends AbstractKeycloakSetup {
 
     /**
-     * A semicolon separated list of realm:count indicating number of regular users to create in the specified realm.
-     * Realms will be created automatically
+     * How many regular users to provision
      */
-    public static final String REGULAR_USERS = "REGULAR_USERS";
-    public static final String REGULAR_USERS_DEFAULT = "master:10";
+    public static final String OR_SETUP_REGULAR_USERS = "OR_SETUP_REGULAR_USERS";
+
     /**
-     * A semicolon separated list of realm:count indicating number of service users to create in the specified realm.
-     * Realms will be created automatically.
+     * How many service users to provision
      */
-    public static final String SERVICE_USERS = "SERVICE_USERS";
+    public static final String OR_SETUP_SERVICE_USERS = "OR_SETUP_SERVICE_USERS";
     public List<User> users;
 
     public KeycloakSetup(Container container) {
@@ -49,9 +51,29 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
 
     @Override
     public void onStart() throws Exception {
-        // Create 10 users
-        users = IntStream.rangeClosed(1, 10).mapToObj(i ->
-            createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "", "user" + i + "@openremote.local", true, REGULAR_USER_ROLES)
-        ).collect(Collectors.toList());
+
+        if (!container.isDevMode()) {
+            // Re-enable direct access login
+            ClientRepresentation clientRepresentation = keycloakProvider.getClient(MASTER_REALM, KEYCLOAK_CLIENT_ID);
+            clientRepresentation.setDirectAccessGrantsEnabled(true);
+            keycloakProvider.createUpdateClient(
+                MASTER_REALM,
+                clientRepresentation
+            );
+        }
+
+        int regularUsers = getInteger(container.getConfig(), OR_SETUP_REGULAR_USERS, 0);
+        int serviceUsers = getInteger(container.getConfig(), OR_SETUP_SERVICE_USERS, 0);
+
+        if (regularUsers > 0) {
+            IntStream.rangeClosed(1, regularUsers).forEach(i ->
+                createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "", "user" + i + "@openremote.local", true, REGULAR_USER_ROLES)
+            );
+        }
+        if (serviceUsers > 0) {
+            IntStream.rangeClosed(1, regularUsers).forEach(i ->
+                createUser(Constants.MASTER_REALM, User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + i, null, null, null, null, true, REGULAR_USER_ROLES)
+            );
+        }
     }
 }

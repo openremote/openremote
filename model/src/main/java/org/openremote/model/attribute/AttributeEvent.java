@@ -331,6 +331,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
             "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
             ", ref=" + ref +
             ", realm=" + realm +
+            ", source=" + source +
             ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }
