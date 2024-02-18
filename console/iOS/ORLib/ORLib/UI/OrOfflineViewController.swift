@@ -7,7 +7,7 @@
 
 import UIKit
 
-class OfflineViewController: UIViewController {
+class OrOfflineViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()

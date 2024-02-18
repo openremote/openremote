@@ -24,7 +24,9 @@ import WebKit
 
 open class ORViewcontroller : UIViewController {
     
-    let offlineViewController = OfflineViewController()
+    lazy var offlineViewController: UIViewController = {
+        ViewControllerFactory.createOfflineViewController()
+    }()
     var offlineVIewControllerPresented = false
     
     var data : Data?

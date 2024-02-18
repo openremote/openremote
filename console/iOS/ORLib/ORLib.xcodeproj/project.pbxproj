@@ -8,8 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		321D41E7A29ED29205BD441C /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 850D0E4EC689CD46245628A2 /* Pods_ORLib.framework */; };
-		4C3F82392B7A7AC9004ED480 /* OfflineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */; };
+		4C3F82392B7A7AC9004ED480 /* OrOfflineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3F82382B7A7AC9004ED480 /* OrOfflineViewController.swift */; };
 		4C3F823B2B7AA24A004ED480 /* UIViewController+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */; };
+		4C4A309A2B824F500096BBA8 /* ViewControllerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4A30992B824F500096BBA8 /* ViewControllerFactory.swift */; };
 		4CB5495F2B7A19F700AED1A5 /* ConnectivityChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CB5495E2B7A19F700AED1A5 /* ConnectivityChecker.swift */; };
 		4CBDF2AD2AE285E400C7D94C /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4CBDF2AC2AE285E400C7D94C /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4CBDF2BD2AE2869D00C7D94C /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF5D05227143F1F00D705BE /* StorageProvider.swift */; };
@@ -63,8 +64,9 @@
 		4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerOverlayPreviewLayer.swift; sourceTree = "<group>"; };
 		4C0E4A11274BE411008CB352 /* QrScannerProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerProvider.swift; sourceTree = "<group>"; };
 		4C2CE793274BB48500416B1A /* QrScannerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrScannerViewController.swift; sourceTree = "<group>"; };
-		4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineViewController.swift; sourceTree = "<group>"; };
+		4C3F82382B7A7AC9004ED480 /* OrOfflineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrOfflineViewController.swift; sourceTree = "<group>"; };
 		4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Utils.swift"; sourceTree = "<group>"; };
+		4C4A30992B824F500096BBA8 /* ViewControllerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewControllerFactory.swift; sourceTree = "<group>"; };
 		4C537EDF299D3BA0006EFB94 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C537EE1299D3BA0006EFB94 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
 		4C649E6729C251A300FFBEA4 /* BleProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BleProvider.swift; sourceTree = "<group>"; };
@@ -204,7 +206,7 @@
 				4CF5D05A27143F1F00D705BE /* ErrorManager.swift */,
 				4C2CE793274BB48500416B1A /* QrScannerViewController.swift */,
 				4C0E4A0F274BDCE0008CB352 /* ScannerOverlayPreviewLayer.swift */,
-				4C3F82382B7A7AC9004ED480 /* OfflineViewController.swift */,
+				4C3F82382B7A7AC9004ED480 /* OrOfflineViewController.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -219,6 +221,7 @@
 				4CDE11DF2B286275005A4170 /* WKWebView+Utils.swift */,
 				4CB5495E2B7A19F700AED1A5 /* ConnectivityChecker.swift */,
 				4C3F823A2B7AA24A004ED480 /* UIViewController+Utils.swift */,
+				4C4A30992B824F500096BBA8 /* ViewControllerFactory.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -458,6 +461,7 @@
 				4CBDF2C42AE2869D00C7D94C /* ORPushNotificationAction.swift in Sources */,
 				4CDE11E02B286275005A4170 /* WKWebView+Utils.swift in Sources */,
 				4CBDF2C52AE2869D00C7D94C /* ORConsoleConfig.swift in Sources */,
+				4C4A309A2B824F500096BBA8 /* ViewControllerFactory.swift in Sources */,
 				4CBDF2C62AE2869D00C7D94C /* ORAppInfo.swift in Sources */,
 				4CBDF2C72AE2869D00C7D94C /* ProjectConfig.swift in Sources */,
 				4CBDF2C82AE2869D00C7D94C /* ORNotificationResource.swift in Sources */,
@@ -470,7 +474,7 @@
 				4CBDF2CF2AE2869D00C7D94C /* ScannerOverlayPreviewLayer.swift in Sources */,
 				4CBDF2D02AE2869D00C7D94C /* Constants.swift in Sources */,
 				4CBDF2D12AE2869D00C7D94C /* Window+Utils.swift in Sources */,
-				4C3F82392B7A7AC9004ED480 /* OfflineViewController.swift in Sources */,
+				4C3F82392B7A7AC9004ED480 /* OrOfflineViewController.swift in Sources */,
 				4CBDF2D22AE2869D00C7D94C /* UIColor+Utils.swift in Sources */,
 				4CB5495F2B7A19F700AED1A5 /* ConnectivityChecker.swift in Sources */,
 				4CBDF2D42AE2869D00C7D94C /* String+Utils.swift in Sources */,
