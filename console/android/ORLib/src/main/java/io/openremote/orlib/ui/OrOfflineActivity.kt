@@ -7,7 +7,7 @@ import androidx.activity.ComponentActivity
 import io.openremote.orlib.R
 import io.openremote.orlib.service.ConnectivityChangeReceiver
 
-class OfflineActivity : ComponentActivity() {
+open class OrOfflineActivity : ComponentActivity() {
 
     private val connectivityChangeReceiver: ConnectivityChangeReceiver =
         ConnectivityChangeReceiver(onConnectivityChanged = ::onConnectivityChanged)

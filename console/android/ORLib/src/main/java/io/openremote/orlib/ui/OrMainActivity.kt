@@ -37,6 +37,7 @@ import io.openremote.orlib.service.BleProvider
 import io.openremote.orlib.service.ConnectivityChangeReceiver
 import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
+import io.openremote.orlib.shared.SharedData.offlineActivity
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.logging.Level
@@ -91,7 +92,7 @@ open class OrMainActivity : Activity() {
         setContentView(view)
 
         if(!connectivityChangeReceiver.isInternetAvailable(this)) {
-            val intent = Intent(this, OfflineActivity::class.java)
+            val intent = Intent(this, offlineActivity)
             startActivity(intent)
         }
 
@@ -153,13 +154,17 @@ open class OrMainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        registerReceiver(
+        ContextCompat.registerReceiver(
+            this,
             connectivityChangeReceiver,
-            IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+            IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
-        registerReceiver(
+        ContextCompat.registerReceiver(
+            this,
             onDownloadCompleteReceiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 
