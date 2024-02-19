@@ -36,10 +36,7 @@ import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.util.Pair;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -162,7 +159,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
             doLinkedAttributeWrite(agent.getAgentLink(event), event, ignoreAndConverted.value);
 
             if (agent.isUpdateOnWrite().orElse(false) || agentLink.getUpdateOnWrite().orElse(false)) {
-                updateLinkedAttribute(new AttributeState(event.getRef(), ignoreAndConverted.value));
+                updateLinkedAttribute(event.getRef(), ignoreAndConverted.value);
             }
         }
     }
@@ -191,29 +188,29 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
 
 
     @Override
-    final public void updateLinkedAttribute(final AttributeState state, long timestamp) {
-        Attribute<?> attribute = linkedAttributes.get(state.getRef());
+    final public void updateLinkedAttribute(final AttributeRef attributeRef, final Object value, long timestamp) {
+        Attribute<?> attribute = linkedAttributes.get(attributeRef);
 
         if (attribute == null) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Update linked attribute called for un-linked attribute: " + state);
+            LOG.log(System.Logger.Level.WARNING, () -> "Update linked attribute called for un-linked attribute: " + attributeRef);
             return;
         }
 
-        Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doInboundValueProcessing(state.getRef().getId(), attribute, agent.getAgentLink(attribute), state.getValue().orElse(null));
+        Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doInboundValueProcessing(attributeRef.getId(), attribute, agent.getAgentLink(attribute), value);
 
         if (ignoreAndConverted.key) {
-            LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not be updated: " + state.getRef());
+            LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not be updated: " + attributeRef);
             return;
         }
 
-        AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(state.getRef(), ignoreAndConverted.value), timestamp);
+        AttributeEvent attributeEvent = new AttributeEvent(attributeRef, ignoreAndConverted.value, timestamp);
         LOG.log(System.Logger.Level.TRACE, () -> "Sending linked attribute update: " + attributeEvent);
         assetService.sendAttributeEvent(attributeEvent);
     }
 
     @Override
-    final public void updateLinkedAttribute(final AttributeState state) {
-        updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
+    final public void updateLinkedAttribute(final AttributeRef attributeRef, final Object value) {
+        updateLinkedAttribute(attributeRef, value, timerService.getCurrentTimeMillis());
     }
 
     @Override

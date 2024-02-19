@@ -33,6 +33,7 @@ import org.openremote.model.util.TextUtil;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.SESSION_KEY;
@@ -156,8 +157,12 @@ public class EventSubscriptions {
 
                     if (sessionSub.subscription.isInternal()) {
                         if (triggeredEventSubscription.getEvents() != null) {
-                            triggeredEventSubscription.getEvents().forEach(e ->
-                                sessionSub.subscription.getInternalConsumer().accept(e));
+                            try {
+                                triggeredEventSubscription.getEvents().forEach(e ->
+                                        sessionSub.subscription.getInternalConsumer().accept(e));
+                            } catch (Exception e) {
+                                LOG.log(Level.WARNING, "Internal subscription consumer has thrown an exception: id=" + triggeredEventSubscription.getSubscriptionId(), e);
+                            }
                         }
                     } else {
                         Message msg = new DefaultMessage(exchange.getContext());

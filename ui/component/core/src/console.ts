@@ -498,7 +498,8 @@ export class Console {
                     }
                     break;
                 default:
-                    throw new Error("Unsupported provider: " + msg.provider);
+                    // Just log that this provider is unsupported in a normal browser
+                    console.error("Unsupported provider: " + msg.provider);
             }
         }
     }

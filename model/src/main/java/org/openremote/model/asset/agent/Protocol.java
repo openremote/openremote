@@ -31,6 +31,7 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -214,17 +215,17 @@ public interface Protocol<T extends Agent<T, ?, ?>> {
 
     /**
      * Update the value of a linked {@link Attribute} linked to this {@link Protocol}; call this to publish new sensor
-     * values. Implementators are responsible for ensuring the requested {@link Attribute} is actually linked to this
+     * values. Implementors are responsible for ensuring the requested {@link Attribute} is actually linked to this
      * {@link Protocol}.
      */
-    void updateLinkedAttribute(final AttributeState state, long timestamp);
+    void updateLinkedAttribute(final AttributeRef attributeRef, final Object value, long timestamp);
 
     /**
      * Update the value of a linked {@link Attribute} linked to this {@link Protocol}; call this to publish new sensor
-     * values. Implementators are responsible for ensuring the requested {@link Attribute} is actually linked to this
+     * values. Implementors are responsible for ensuring the requested {@link Attribute} is actually linked to this
      * {@link Protocol}.
      */
-    void updateLinkedAttribute(final AttributeState state);
+    void updateLinkedAttribute(final AttributeRef attributeRef, final Object value);
 
 
     /**
