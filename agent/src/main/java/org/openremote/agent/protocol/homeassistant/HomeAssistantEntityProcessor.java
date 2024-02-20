@@ -40,7 +40,7 @@ public class HomeAssistantEntityProcessor {
         return parts[0];
     }
 
-    // Processes a Home Assistant entity state event and updates the appropriate asset
+    // Handle a Home Assistant entity state event and updates the appropriate asset
     public void handleEntityStateEvent(HomeAssistantEntityStateEvent event) {
         LOG.info("Processing entity state event: " + event.getData().getEntityId() + " with value: " + event.getData().getNewBaseEntity().getState());
         var entityId = event.getData().getEntityId();
@@ -215,15 +215,19 @@ public class HomeAssistantEntityProcessor {
         protocol.getAgent().getImportedLight().ifPresent(bool -> {
             if (bool) importedEntityTypes.add(ENTITY_TYPE_LIGHT);
         });
+
         protocol.getAgent().getImportedSensor().ifPresent(bool -> {
             if (bool) importedEntityTypes.add(ENTITY_TYPE_SENSOR);
         });
+
         protocol.getAgent().getImportedBinarySensor().ifPresent(bool -> {
             if (bool) importedEntityTypes.add(ENTITY_TYPE_BINARY_SENSOR);
         });
+
         protocol.getAgent().getImportedSwitch().ifPresent(bool -> {
             if (bool) importedEntityTypes.add(ENTITY_TYPE_SWITCH);
         });
+
         for (String importedEntityType : importedEntityTypes) {
             if (importedEntityType.equals(entityType))
                 return false;

@@ -52,7 +52,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
     public static final String PROTOCOL_DISPLAY_NAME = "HomeAssistant Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HomeAssistantProtocol.class);
     public HomeAssistantEntityProcessor entityProcessor;
-    protected HomeAssistantHttpClient client;
+    protected HomeAssistantApiClient client;
     protected HomeAssistantWebSocketClient webSocketClient;
     protected volatile boolean running;
 
@@ -76,11 +76,12 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
             return new IllegalArgumentException(msg);
         });
 
-        client = new HomeAssistantHttpClient(url, accessToken);
-        if (client.isConnectionSuccessful()) {
+        client = new HomeAssistantApiClient(url, accessToken);
+
+
+        if (client.isConnected()) {
             setConnectionStatus(ConnectionStatus.CONNECTED);
             LOG.info("Connection to HomeAssistant API successful");
-
 
             executorService = container.getExecutorService();
             webSocketClient = createWebSocketClient();
@@ -94,7 +95,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
 
     }
 
-    // Imports all entities from Home Assistant and merges them into the agents asset store
+    // Imports all entities from Home Assistant and merge them into the agents asset store
     // Uses the assetDiscoveryConsumer to pass the assets back to the agent
     private void importAssets() {
         var assetConsumer = new Consumer<AssetTreeNode[]>() {
@@ -136,7 +137,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
         if (command.isEmpty())
             return;
 
-        client.setEntityState(agentLink.domainId, command.get());
+        client.updateEntityState(agentLink.domainId, command.get());
         updateLinkedAttribute(event.getRef(), event.getValue());
     }
 
@@ -165,7 +166,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
             if (assets.isPresent()) {
                 for (var asset : assets.get()) {
                     String entityType = HomeAssistantEntityProcessor.getEntityTypeFromEntityId(asset.getEntityId());
-                    var parent = getOrCreateParentAsset(assetConsumer, entityType, asset);
+                    var parent = getOrCreateParentAsset(assetConsumer, entityType);
                     if (parent.isEmpty())
                         continue;
 
@@ -178,7 +179,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
         return null;
     }
 
-    public Optional<Asset<?>> getOrCreateParentAsset(Consumer<AssetTreeNode[]> consumer, String entityType, HomeAssistantBaseAsset asset) {
+    public Optional<Asset<?>> getOrCreateParentAsset(Consumer<AssetTreeNode[]> consumer, String entityType) {
         //find the parent asset based on the entity type (group for entity type attribute) and the parent of the parent has to be the agentId
         HomeAssistantBaseAsset parentAsset = (HomeAssistantBaseAsset) assetService.findAssets(new AssetQuery().attributeName("GroupForEntityType")).stream()
                 .filter(a -> a.getAttributes().get("GroupForEntityType").orElseThrow().getValue().flatMap(v -> v.equals(entityType) ? Optional.of(v) : Optional.empty()).isPresent())
@@ -196,6 +197,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
             AssetTreeNode node = new AssetTreeNode(parentAsset);
             consumer.accept(new AssetTreeNode[]{node});
         }
+
         return Optional.of(parentAsset);
     }
 

@@ -3,7 +3,6 @@ package org.openremote.agent.protocol.homeassistant.commands;
 import org.openremote.agent.protocol.homeassistant.HomeAssistantEntityProcessor;
 import org.openremote.agent.protocol.homeassistant.assets.HomeAssistantBaseAsset;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.util.Optional;
@@ -22,8 +21,7 @@ public final class EntityStateCommandFactory {
         var entityType = HomeAssistantEntityProcessor.getEntityTypeFromEntityId(entityId);
         var attributeName = attribute.getName();
         var isStateAttribute = attributeName.equals("state");
-
-        // currently the only entity types that actually need to handle state changes are lights and switches.
+        
         return switch (entityType) {
             case ENTITY_TYPE_LIGHT, ENTITY_TYPE_SWITCH, ENTITY_TYPE_FAN -> {
                 if (isStateAttribute) {

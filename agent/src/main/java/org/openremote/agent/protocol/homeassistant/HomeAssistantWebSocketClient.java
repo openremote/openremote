@@ -15,17 +15,15 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public class HomeAssistantWebSocketClient extends WebsocketIOClient<String> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HomeAssistantHttpClient.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, HomeAssistantApiClient.class);
     private final HomeAssistantProtocol protocol;
 
     public HomeAssistantWebSocketClient(HomeAssistantProtocol protocol, URI homeAssistantWebSocketUrl) {
         super(homeAssistantWebSocketUrl, null, null);
         this.protocol = protocol;
-
         setEncoderDecoderProvider(() ->
-            new ChannelHandler[] {new MessageToMessageDecoder<>(String.class, this)}
+                new ChannelHandler[]{new MessageToMessageDecoder<>(String.class, this)}
         );
-
         addMessageConsumer(this::onExternalMessageReceived);
         connect();
     }
@@ -43,8 +41,7 @@ public class HomeAssistantWebSocketClient extends WebsocketIOClient<String> {
 
         if (connectionStatus == ConnectionStatus.CONNECTED) {
             var authMessage = ValueUtil.asJSON(Map.of("type", "auth", "access_token", this.protocol.getAgent().getAccessToken().orElse("")));
-            if(authMessage.isPresent())
-            {
+            if (authMessage.isPresent()) {
                 LOG.info("Sending auth message to Home Assistant WebSocket Endpoint: " + authMessage.get());
                 sendMessage(authMessage.get());
                 subscribeToEntityStateChanges();
@@ -66,8 +63,7 @@ public class HomeAssistantWebSocketClient extends WebsocketIOClient<String> {
     // Subscribe to state changes for all entities within Home Assistant
     private void subscribeToEntityStateChanges() {
         var subscribeMessage = ValueUtil.asJSON(Map.of("id", 1, "type", "subscribe_events", "event_type", "state_changed"));
-        if(subscribeMessage.isPresent())
-        {
+        if (subscribeMessage.isPresent()) {
             LOG.info("Sending subscribe message to Home Assistant WebSocket Endpoint: " + subscribeMessage.get());
             sendMessage(subscribeMessage.get());
         }
