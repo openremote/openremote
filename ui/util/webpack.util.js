@@ -80,7 +80,10 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         // },
         resolve: {
             extensions: [".ts", ".tsx", "..."],
-            fallback: { "vm": false }
+            fallback: {
+                "vm": false,
+                "querystring": require.resolve("querystring-es3")
+            }
         }
     };
 

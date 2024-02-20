@@ -1,9 +1,3 @@
-import com.fasterxml.jackson.annotation.JsonAutoDetect
-import cz.habarta.typescript.generator.Jackson2Configuration
-
-apply plugin: "groovy"
-apply plugin: "cz.habarta.typescript-generator"
-
 buildscript {
     repositories {
         mavenCentral()
@@ -14,13 +8,24 @@ buildscript {
     }
 }
 
+plugins {
+    id 'groovy'
+    id 'cz.habarta.typescript-generator'
+}
+
 dependencies {
     if (isCustomProject()) {
+        // TODO: Remove this as shouldn't build custom project code into this package
         def customModel = findProject(":model")
         if (customModel != null) {
             implementation customModel
         }
+        def customAgent = findProject(":agent")
+        if (customAgent != null) {
+            implementation customAgent
+        }
     }
+    compileOnly resolveProject(":model-util")
     implementation resolveProject(":model")
     implementation resolveProject(":agent")
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
@@ -29,50 +34,7 @@ dependencies {
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
-generateTypeScript {
-    jsonLibrary = "jackson2"
-    classPatterns = [
-            "org.openremote.model.**"
-    ]
-    excludeClassPatterns = [
-        "org.openremote.model.event.shared.*Filter**",
-        "org.openremote.model.util.**",
-        "org.openremote.model.flow.**",
-        "java.io.**",
-        "org.hibernate.**",
-        "jakarta.**"
-    ]
-    customTypeProcessor = "CustomTypeProcessor"
-    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
-    customTypeMappings = [
-        "com.fasterxml.jackson.databind.node.ObjectNode:{ [id: string]: any }",
-        "java.lang.Class<T>:string",
-        "org.openremote.model.attribute.MetaItem<T>:any"
-    ]
-    optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
-    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-    mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
-    outputFile = "src/model.ts"
-    outputFileType = "implementationFile"
-    outputKind = "module"
-    jackson2Configuration = [
-        fieldVisibility: "ANY",
-        creatorVisibility: "ANY",
-        getterVisibility: "NONE",
-        isGetterVisibility: "NONE",
-        setterVisibility: "NONE"
-    ]
-    jackson2Modules = [
-        "com.fasterxml.jackson.datatype.jdk8.Jdk8Module",
-        "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule",
-        "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
-    ]
-    extensions = [
-        "org.openremote.model.util.AssetModelInfoExtension",
-        "CustomExtension",
-        "JsonSerializeExtension"
-    ]
-}
+generateTypeScript createTSGeneratorConfigForModel("src/model.ts")
 
 build.dependsOn generateTypeScript, npmBuild
 npmBuild.dependsOn generateTypeScript

@@ -150,7 +150,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "after a few seconds the engines in scope should have facts and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
@@ -196,7 +196,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "no rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
@@ -222,7 +222,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
@@ -253,7 +253,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be added to the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2
@@ -274,7 +274,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING

@@ -121,12 +121,14 @@ public abstract class MQTTHandler {
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
 
+                // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
+                // Need to be able to get connection/auth from the message somehow
                 if (connection == null) {
                     LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
-                getLogger().fine("Client published to '" + publishTopic + "': " + mqttBrokerService.connectionToString(connection));
+                getLogger().fine("Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
             });
         } catch (ActiveMQException e) {

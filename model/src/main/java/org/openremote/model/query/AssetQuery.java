@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
-// TODO: Add AssetQuery support for arbitrary attribute property path and value (e.g. consoleProviders.geofence.version == "ORConsole")
 public class AssetQuery implements Serializable {
 
     public static class Select {

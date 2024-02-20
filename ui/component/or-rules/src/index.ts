@@ -198,7 +198,7 @@ export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
             "\n" +
             "import org.openremote.manager.rules.RulesBuilder\n" +
             "import org.openremote.model.notification.*\n" +
-            "import org.openremote.model.rules.AssetState\n" +
+            "import org.openremote.model.attribute.AttributeInfo\n" +
             "import org.openremote.model.asset.Asset\n" +
             "import org.openremote.model.asset.impl.*\n" +
             "import org.openremote.model.query.*\n" +
@@ -292,7 +292,7 @@ export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
             "    facts ->\n" +
             "\n" +
             "        // Extract any binded facts\n" +
-            "        AssetState assetState = facts.bound(\"assetState\")\n" +
+            "        AttributeInfo assetState = facts.bound(\"assetState\")\n" +
             "\n" +
             "        // Insert the custom fact to prevent rule loop\n" +
             "        facts.put(\"someAttribute\", assetState.getTimestamp())\n" +

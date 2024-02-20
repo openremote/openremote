@@ -303,7 +303,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     clientRealmMap.put(connection.getLocalRealm(), null);
                 }
             } else if (event instanceof AttributeEvent) {
-                assetProcessingService.sendAttributeEvent((AttributeEvent)event, AttributeEvent.Source.INTERNAL);
+                assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());
             } else if (event instanceof AssetEvent) {
                 AssetEvent assetEvent = (AssetEvent)event;
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
