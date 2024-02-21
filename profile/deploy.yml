@@ -212,8 +212,8 @@ services:
       OR_DB_SCHEMA: ${OR_DB_SCHEMA:-openremote}
       OR_DB_USER: ${OR_DB_USER:-postgres}
       OR_DB_PASSWORD: ${OR_DB_PASSWORD:-postgres}
-      OR_DB_MIN_POOL_SIZE: ${OR_DB_MIN_POOL_SIZE:-5}
-      OR_DB_MAX_POOL_SIZE: ${OR_DB_MAX_POOL_SIZE:-20}
+      OR_DB_POOL_MIN_SIZE: ${OR_DB_POOL_MIN_SIZE:-5}
+      OR_DB_POOL_MAX_SIZE: ${OR_DB_POOL_MAX_SIZE:-20}
       OR_DB_CONNECTION_TIMEOUT_SECONDS: ${OR_DB_CONNECTION_TIMEOUT_SECONDS:-300}
       # Allow migration scripts to be applied out of order (see flyway DB docs)
       OR_DB_FLYWAY_OUT_OF_ORDER:
@@ -347,7 +347,9 @@ services:
       KC_DB_SCHEMA: ${KC_DB_SCHEMA:-public}
       KC_DB_USERNAME: ${KC_DB_USERNAME:-postgres}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-postgres}
-      KC_DB_POOL_MAX_SIZE:
+      KC_DB_POOL_INITIAL_SIZE:
+      KC_DB_POOL_MIN_SIZE:
+      KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-20}
 
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
@@ -357,10 +359,9 @@ services:
       KC_PROXY: ${KC_PROXY:-edge}
 
       # Configure main user credentials (only on first startup)
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
-      KEYCLOAK_START_COMMAND: ${KEYCLOAK_START_COMMAND:-start}
+      KEYCLOAK_START_COMMAND:
       KEYCLOAK_START_OPTS:
       # Default themes to use
       KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
@@ -394,6 +395,9 @@ services:
       POSTGRES_DB: ${OR_DB_NAME:-openremote}
       POSTGRES_USER: ${OR_DB_USER:-postgres}
       POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      # This setting may still be overridden depending on your kernel settings so tune this and other
+      # service DB values so the actual max connections are not exhausted
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-50}
 
       # When a newer POSTGRESQL image is used with a higher OR_REINDEX_COUNTER and PGDATA is
       # preserved then the container will REINDEX the DB automatically unless the following
