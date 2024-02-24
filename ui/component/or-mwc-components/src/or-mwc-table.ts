@@ -246,7 +246,7 @@ export class OrMwcTable extends LitElement {
     protected _dataTable?: MDCDataTable;
 
     @property({ type: String })
-    protected sortDirection?: 'ASC' | 'DESC' = 'ASC';
+    protected sortDirection: 'ASC' | 'DESC' = 'ASC';
 
     @property({type: Number})
     protected sortIndex?: number = -1;
@@ -332,7 +332,7 @@ export class OrMwcTable extends LitElement {
                                                           'mdc-data-table__header-cell--with-sort': !!column.isSortable,
                                                         })}"
                                                     role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
-                                                    @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                    @click="${(ev: MouseEvent) => column.isSortable! ? this.sortRows(ev, index, this.sortDirection!) : ''}">
                                                     ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
                                                 </th>
                                             `
@@ -351,7 +351,7 @@ export class OrMwcTable extends LitElement {
                                             })}"
                                                 style="${styleMap(styles)}"
                                                 role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
-                                                @click="${(ev: MouseEvent) => !!column.isSortable ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                @click="${(ev: MouseEvent) => column.isSortable! ? this.sortRows(ev, index, this.sortDirection ? this.sortDirection : 'ASC') : ''}">
                                                 ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!, !!column.isNumeric), html`${i18next.t('loading')}`))}
                                             </th>
                                         `
@@ -485,7 +485,7 @@ export class OrMwcTable extends LitElement {
         sortDirection == 'ASC' ? this.sortDirection = 'DESC' : this.sortDirection = 'ASC';
         sortDirection = this.sortDirection;
         this.sortIndex = index;
-        if(this.rows!){
+        if(this.rows! && this.rows!.length > 0){
             if('content' in this.rows[0]) {
                 (this.rows as TableRow[]).sort((a : TableRow, b : TableRow) => {
                     return this.customSort(a.content, b.content, index, sortDirection);
@@ -525,23 +525,20 @@ export class OrMwcTable extends LitElement {
         event.stopPropagation();
         let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
         if (type === "all") {
-            let checkboxes = this.shadowRoot?.querySelectorAll('[id*="checkbox"]');
+            let checkboxes = this.shadowRoot?.querySelectorAll('[id*="checkbox-0"]');
             if (checked && checkboxes) {
-                console.log(checkboxes);
-                for (let i = 0; i < checkboxes.length; i++) {
-                    const inner = checkboxes[i].shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
-                    console.log(inner);
-                    inner.checked = true;
-                    console.log(inner);
-                }
+                checkboxes.forEach(checkbox => {
+                    (checkbox.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement).checked = true;
+                    // inner.checked = true;
+                });
                 this.selectedRows = this.rows;
                 this.allSelected = true;
                 this.indeterminate = false;
             } else if(checkboxes) {
-                for (let i = 0; i < checkboxes.length; i++) {
-                    const inner = checkboxes[i].shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
+                checkboxes.forEach(checkbox => {
+                    const inner = checkbox.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
                     inner.checked = false;
-                }
+                });
                 this.selectedRows = [];
                 this.allSelected = false;
                 this.indeterminate = false;
@@ -560,7 +557,8 @@ export class OrMwcTable extends LitElement {
             this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
             this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
         }
-        event.target?.dispatchEvent(new Event(event.type));
+        const selectEvent = new CustomEvent('selectChanged', { detail: this.selectedRows! });
+        window.dispatchEvent(selectEvent);
     }
 
 

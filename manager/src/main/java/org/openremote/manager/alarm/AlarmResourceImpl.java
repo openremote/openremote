@@ -74,7 +74,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
-        System.out.println(alarm);
         SentAlarm success = alarmService.sendAlarm(alarm, source, sourceId);
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);

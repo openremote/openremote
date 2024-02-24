@@ -170,9 +170,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             LOG.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
 
-            System.out.println(resultPush);
-            System.out.println(resultEmail);
-
         } catch (Exception e) {
             String msg = "Failed to send email concerning alarm: " + alarm.getTitle();
             LOG.log(Level.WARNING, msg, e);
