@@ -83,6 +83,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final List<String> DEFAULT_CLIENTS = Arrays.asList(
         "account",
+        "account-console",
         ADMIN_CLI_CLIENT_ID,
         "broker",
         "master-realm",
