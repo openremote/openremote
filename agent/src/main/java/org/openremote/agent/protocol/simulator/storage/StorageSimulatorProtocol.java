@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.simulator.storage;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.ElectricityStorageAsset;
 import org.openremote.model.attribute.Attribute;
@@ -31,9 +32,11 @@ import org.openremote.model.syslog.SyslogCategory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +49,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, StorageSimulatorProtocol.class);
     protected final Map<String, Instant> lastUpdateMap = new HashMap<>();
     protected final Map<String, ScheduledFuture<?>> simulationMap = new HashMap<>();
-    protected final Map<String, ScheduledFuture<?>> initFutureMap = new HashMap<>();
+    protected final ReentrantLock lock = new ReentrantLock();
 
     public StorageSimulatorProtocol(StorageSimulatorAgent agent) {
         super(agent);
@@ -70,16 +73,37 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
 
     @Override
     protected void doStop(Container container) throws Exception {
+        lock.lock();
+        try {
+            new HashSet<>(simulationMap.keySet()).forEach(assetId -> stopSimulation(assetId));
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, StorageSimulatorAgentLink agentLink) throws RuntimeException {
-        scheduleInit(assetId);
+        lock.lock();
+        try {
+            if (checkLinkedAttributes(assetId) && !isSimulationStarted(assetId)) {
+                startSimulation(assetId);
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, StorageSimulatorAgentLink agentLink) {
-        scheduleInit(assetId);
+        lock.lock();
+        try {
+            if (!checkLinkedAttributes(assetId) && isSimulationStarted(assetId)) {
+                stopSimulation(assetId);
+                LOG.info("Stopped storage simulation for asset id: " + assetId);
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -93,31 +117,29 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
         updateLinkedAttribute(event.getRef(), processedValue);
     }
 
-    protected void updateStorageAsset(ElectricityStorageAsset storageAsset) {
+    protected void updateStorageAsset(String assetId) {
 
+        Asset asset = assetService.findAsset(assetId);
+        ElectricityStorageAsset storageAsset = asset instanceof ElectricityStorageAsset ? (ElectricityStorageAsset)asset : null;
         if (storageAsset == null) {
             LOG.finest("Storage asset not set so skipping update");
             return;
         }
 
-        String assetId = storageAsset.getId();
-        Instant previousTimestamp = lastUpdateMap.remove(assetId);
-        ScheduledFuture<?> scheduledFuture = simulationMap.remove(assetId);
-
-        if (scheduledFuture != null) {
-            scheduledFuture.cancel(true);
-        }
-
-        boolean setpointLinked = getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER_SETPOINT.getName()));
-        boolean powerLinked = getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER.getName()));
-        boolean levelLinked = getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL.getName()));
-
-        if (!setpointLinked || !powerLinked || !levelLinked) {
-            LOG.fine("Not all required attributes are linked or don't have values (setpoint, power and energy level): " + assetId);
+        Instant now = Instant.now();
+        Instant previousTimestamp;
+        try {
+            lock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return;
         }
+        try {
+            previousTimestamp = lastUpdateMap.put(assetId, now);
+        } finally {
+            lock.unlock();
+        }
 
-        Instant now = Instant.now();
         double setpoint = storageAsset.getPowerSetpoint().orElse(0d);
         double capacity = storageAsset.getEnergyCapacity().orElse(0d);
         double power = storageAsset.getPower().orElse(0d);
@@ -171,33 +193,43 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
         updateLinkedAttribute(new AttributeRef(assetId, POWER.getName()), power);
         updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL.getName()), level);
         updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()), capacity <= 0d ? 0 : (int) ((level / capacity) * 100));
-
-        if (power != 0d) {
-            lastUpdateMap.put(assetId, now);
-            simulationMap.put(assetId, scheduleUpdate(assetId));
-        }
-    }
-
-    protected void scheduleInit(String assetId) {
-        ScheduledFuture<?> initFuture = initFutureMap.remove(assetId);
-        if (initFuture != null) {
-            initFuture.cancel(false);
-        }
-        initFutureMap.put(assetId, executorService.schedule(() -> {
-            updateStorageAsset(assetService.findAsset(assetId));
-            initFutureMap.remove(assetId);
-        }, 1, TimeUnit.SECONDS));
     }
 
     protected ScheduledFuture<?> scheduleUpdate(String assetId) {
-        return executorService.schedule(() -> {
+        return executorService.scheduleAtFixedRate(() -> {
             try {
-                updateStorageAsset(assetService.findAsset(assetId));
+                updateStorageAsset(assetId);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception in " + getProtocolName(), e);
                 setConnectionStatus(ConnectionStatus.ERROR);
             }
 
-        }, 1, TimeUnit.MINUTES);
+        }, 0, 1, TimeUnit.MINUTES);
+    }
+
+    protected boolean checkLinkedAttributes(String assetId) {
+        return getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER_SETPOINT.getName())) &&
+               getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER.getName())) &&
+               getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL.getName()))&&
+               getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()));
+    }
+
+    protected boolean isSimulationStarted(String assetId) {
+        return simulationMap.containsKey(assetId);
+    }
+
+    protected void startSimulation(String assetId) {
+        LOG.info("Started storage simulation for asset id: " + assetId);
+        simulationMap.put(assetId, scheduleUpdate(assetId));
+    }
+
+    protected void stopSimulation(String assetId) {
+        if (isSimulationStarted(assetId)) {
+            lastUpdateMap.remove(assetId);
+            ScheduledFuture<?> scheduledFuture = simulationMap.remove(assetId);
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(true);
+            }
+        }
     }
 }
