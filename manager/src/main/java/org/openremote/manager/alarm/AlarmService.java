@@ -101,6 +101,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
+
     }
 
     public SentAlarm sendAlarm(Alarm alarm) {
@@ -200,6 +201,15 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+    public void assignUser(Long alarmId, String userId){
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
+            query.setParameter("id", alarmId);
+            query.setParameter("assigneeId", userId);
+            query.executeUpdate();
+        });
+    }
+
     public void updateAlarm(Long id, SentAlarm alarm) {
         try {
             persistenceService.doTransaction(entityManager -> {
@@ -277,7 +287,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
-}
+    }
 
     public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
@@ -330,38 +340,38 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Getting asset alarm links");
-            }
+        if (LOG.isLoggable(FINE)) {
+            LOG.fine("Getting asset alarm links");
+        }
 
-            try {
-                return persistenceService.doReturningTransaction(entityManager -> {
-                    StringBuilder sb = new StringBuilder();
-                    Map<String, Object> parameters = new HashMap<>(2);
-                    sb.append("select al from AlarmAssetLink al where 1=1");
+        try {
+            return persistenceService.doReturningTransaction(entityManager -> {
+                StringBuilder sb = new StringBuilder();
+                Map<String, Object> parameters = new HashMap<>(2);
+                sb.append("select al from AlarmAssetLink al where 1=1");
 
-                    if (!isNullOrEmpty(realm)) {
-                        sb.append(" and al.id.realm = :realm");
-                        parameters.put("realm", realm);
-                    }
-                    if (alarmId != null) {
-                        sb.append(" and al.id.sentalarmId = :alarmId");
-                        parameters.put("alarmId", alarmId);
-                    }
-                    sb.append(" order by al.createdOn desc");
+                if (!isNullOrEmpty(realm)) {
+                    sb.append(" and al.id.realm = :realm");
+                    parameters.put("realm", realm);
+                }
+                if (alarmId != null) {
+                    sb.append(" and al.id.sentalarmId = :alarmId");
+                    parameters.put("alarmId", alarmId);
+                }
+                sb.append(" order by al.createdOn desc");
 
-                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
-                    parameters.forEach(query::setParameter);
+                TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
+                parameters.forEach(query::setParameter);
 
-                    return query.getResultList();
+                return query.getResultList();
 
-                });
+            });
 
-            } catch (Exception e) {
-                String msg = "Failed to get asset alarm links";
-                LOG.log(Level.WARNING, msg, e);
-                throw new IllegalStateException(msg, e);
-            }
+        } catch (Exception e) {
+            String msg = "Failed to get asset alarm links";
+            LOG.log(Level.WARNING, msg, e);
+            throw new IllegalStateException(msg, e);
+        }
     }
 
     public List<SentAlarm> getAlarmsByAssetId(String assetId) throws IllegalArgumentException {
@@ -444,12 +454,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
 
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
-            query.setParameter("id", id);
-            query.setParameter("status", status);
+            Query query = entityManager.createQuery(builder.toString());
+            IntStream.range(0, ids.size())
+                    .forEach(i -> query.setParameter(i + 1, ids.get(i)));
             query.executeUpdate();
         });
 

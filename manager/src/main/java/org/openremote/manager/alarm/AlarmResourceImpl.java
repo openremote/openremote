@@ -171,30 +171,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         alarmService.linkAssets(links);
     }
     
-    @Override
-    public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        if (alarmId == null) {
-            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
-        }
-        if (realm == null) {
-            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
-        }
-        List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        return result;
-    }
-    
-    @Override
-    public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        if (alarmId == null) {
-            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
-        }
-        if (realm == null) {
-            throw new WebApplicationException("Missing realm", Status.BAD_REQUEST);
-        }
-        List<AlarmAssetLink> result = alarmService.getAssetLinks(alarmId, realm);
-        return result;
-    }
-    
     protected void verifyAccess(SentAlarm sentAlarm) {
         if (sentAlarm == null) {
             LOG.fine("DENIED: Alarm not found");

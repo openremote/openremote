@@ -79,9 +79,14 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     static class RuleActionExecution {
         Runnable runnable;
+        long delay;
+
+        public RuleActionExecution(Runnable runnable, long delay) {
+            this.runnable = runnable;
             this.delay = delay;
         }
     }
+
 
     /**
      * Stores all state for a given {@link RuleCondition} and calculates which {@link AttributeInfo}s match and don't

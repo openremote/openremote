@@ -306,7 +306,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         setTimeout(() => {
             if(!this.alarm && !this.creationState && this.shadowRoot) {
                 const elem = this.shadowRoot.querySelector('or-mwc-table') as OrMwcTable;
-                const rows = elem.shadowRoot?.querySelectorAll('tr');
+                const rows = elem?.shadowRoot?.querySelectorAll('tr');
                 if(rows){
                     rows.forEach(row => {
                         const spans = row.querySelectorAll('td span');

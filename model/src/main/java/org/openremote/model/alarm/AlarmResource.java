@@ -41,7 +41,7 @@ public interface AlarmResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    void createAlarm(@BeanParam RequestParams requestParams,
+    SentAlarm createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
 
     @Path("create/{source}/{sourceId}")
@@ -58,14 +58,6 @@ public interface AlarmResource {
     void updateAlarm(@BeanParam RequestParams requestParams,
             @PathParam("alarmId") Long alarmId,
             SentAlarm alarm);
-
-    @Path("{alarmId}/update")
-    @PUT
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    void updateAlarm(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            Alarm alarm);
 
     @Path("{alarmId}/setStatus")
     @PUT
@@ -87,12 +79,10 @@ public interface AlarmResource {
                     String realm);
 
 
-    @Path("{alarmId}/assetLink")
+    @Path("set/assetLinks")
     @PUT
-    void setAssetLink(@BeanParam RequestParams requestParams,
-                      @PathParam("alarmId") String alarmId,
-                      String assetId,
-                      String realm);
+    void setAssetLinks(@BeanParam RequestParams requestParams,
+                      @RequestBody ArrayList<AlarmAssetLink> links);
 
     @Path("{alarmId}/assetLinks/get")
     @GET
