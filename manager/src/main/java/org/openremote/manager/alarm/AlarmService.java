@@ -454,11 +454,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentAlarm n where 1=1");
+        List<Object> parameters = new ArrayList<>();
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, ids.size())
-                    .forEach(i -> query.setParameter(i + 1, ids.get(i)));
+            IntStream.range(0, parameters.size())
+                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             query.executeUpdate();
         });
 

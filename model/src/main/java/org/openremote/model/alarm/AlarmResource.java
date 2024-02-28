@@ -40,6 +40,7 @@ public interface AlarmResource {
 
     @POST
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
     SentAlarm createAlarm(@BeanParam RequestParams requestParams,
             Alarm alarm);
