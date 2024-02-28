@@ -1,8 +1,15 @@
 # Load Tests
 Various [JMeter](https://jmeter.apache.org/) load tests.
 
+# Build jmeter docker image
+Ensure you have docker installed with buildx configured as the default (or substitute `build` with `buildx` below):
+```
+docker buildx build -o type=docker,dest=- --platform linux/arm64 -t openremote/jmeter-taurus . | gzip > jmeter-taurus.tar.gz
+```
+
 # Prerequisites
 
+* Docker with buildx (for cross platform build)
 * Bash shell
 * Java 17+
 * JMeter with the following plugins:
