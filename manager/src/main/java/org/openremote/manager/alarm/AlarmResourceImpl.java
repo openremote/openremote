@@ -134,7 +134,6 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         List<AlarmUserLink> result = alarmService.getUserLinks(alarmId, realm);
         return result;
     }
-
     @Override
     public List<SentAlarm> getAlarmsByAssetId(RequestParams requestParams, String assetId) {
         if (assetId == null) {
