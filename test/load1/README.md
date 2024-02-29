@@ -33,10 +33,16 @@ This Simulates auto provisioning devices as follows:
     * Publishing two attribute values (temperature and rainfall) every R seconds
     * Repeat the publish X times
 
+```bash
+MSYS_NO_PATHCONV=1 docker run --rm -it -v $PWD/test/load1:/bzt-configs -v $PWD/test/load1/results:/tmp/artifacts openremote/jmeter-taurus -o settings.env.MANAGER_HOSTNAME=192.168.1.123 console-users.yml
+```
+
 #### Device X.509 certificates (for auto provisioning)
 The `auto-provisioning` test requires device client X.509 certificates to be available at './devices.csv'; the file
 contains 10,000 pre-generated device certificates but if more devices are required then use the `device_generator.sh COUNT`
 script to generate a new file the COUNT value is the number of devices to generate certificates for (default: 100).
+
+
 
 ## Console users test (`console-users.jmx`)
 Simulates console users as follows:
