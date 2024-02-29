@@ -1,36 +1,27 @@
 # Load Tests
-Various [JMeter](https://jmeter.apache.org/) load tests.
+[Blazemeter Taurus](https://gettaurus.org/) load testing utilising [JMeter](https://jmeter.apache.org/).
 
-# Build jmeter docker image
-Ensure you have docker installed with buildx configured as the default (or substitute `build` with `buildx` below):
-```
-docker buildx build -o type=docker,dest=- --platform linux/arm64 -t openremote/jmeter-taurus . | gzip > jmeter-taurus.tar.gz
-```
-
-# Prerequisites
-
-* Docker with buildx (for cross platform build)
+## Prerequisites
+* Custom Taurus docker image - available in docker hub (https://github.com/openremote/jmeter-taurus)
 * Bash shell
-* Java 17+
-* JMeter with the following plugins:
-  * Custom MQTT plugin from: https://github.com/richturner/mqtt-jmeter/releases
-  * WebSocket Samplers by Peter Doornbosch
-  * 
+* See wiki for toolchain requirements (if running the manager locally)
 
 ## Setup
-This test requires the device client X.509 certificates to be available at './devices.csv', if more devices are required
-then run the `device_generator.sh COUNT` script to generate a new file the COUNT value is the number of devices to
-generate certificates for (default: 100).
+To run the tests you will need the Manager instance being tested to be deployed with the
+`load` setup; the steps to do this are explained below. The test suite consists of:
 
-## Deployment (`load1` Setup)
-3 options for running the manager with the required setup:
-* run the manager using the `load1` setup in an IDE
-* Compile the `load1` setup jar into the manager image: `./gradlew -PSETUP_JAR=load1 clean installDist`
-* Volume map the `load1` setup jar into the manager extensions folder
+### Target - OpenRemote Manager to test (must be running `load1` setup)
+The OpenRemote Manager instance under test must be running with `load1` setup and must be accessible
+to the test runners. Three options for running the manager with the required setup:
+* run the manager using the `load1` setup in an IDE (Use `Load1 Setup` run configuration and `dev-proxy.yml`)
+* Compile the `load1` setup jar directly into the manager image: `./gradlew -PSETUP_JAR=load1 clean installDist`
+and package it into a docker image 
+* Volume map the `load1` setup jar into the manager extensions folder: `./gradlew :setup:load1Jar` compiled
+jar can then be found in `setup/build/libs`, this should be volume mapped into `/deployment/manager/extensions` of the 
+manager container.
 
-
-## Auto provisioning device test (`auto-provisioning.jmx`)
-Simulates auto provisioning devices as follows:
+### Auto provisioning device test (`auto-provisioning.yml`)
+This Simulates auto provisioning devices as follows:
 
 * 1 x Realm (master)
 * 1 x Auto provisioning config (WeatherAsset with a custom `calculated` attribute)
@@ -42,6 +33,10 @@ Simulates auto provisioning devices as follows:
     * Publishing two attribute values (temperature and rainfall) every R seconds
     * Repeat the publish X times
 
+#### Device X.509 certificates (for auto provisioning)
+The `auto-provisioning` test requires device client X.509 certificates to be available at './devices.csv'; the file
+contains 10,000 pre-generated device certificates but if more devices are required then use the `device_generator.sh COUNT`
+script to generate a new file the COUNT value is the number of devices to generate certificates for (default: 100).
 
 ## Console users test (`console-users.jmx`)
 Simulates console users as follows:
@@ -49,4 +44,3 @@ Simulates console users as follows:
 * Get OAuth2 token from keycloak
 * Make websocket connection
 * Subscribe to attribute events for a given asset
-
