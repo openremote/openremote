@@ -9,7 +9,6 @@ settings:
 
 modules:
   jmeter:
-    memory-xmx: 4G
     version: ${JMETER_VERSION}
     detect-plugins: true
     fix-jars: true
@@ -26,5 +25,5 @@ execution:
 
 scenarios:
   simple:
-    script: console-users.jmx
+    script: auto-provisioning.jmx
 
