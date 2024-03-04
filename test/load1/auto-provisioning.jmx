@@ -67,7 +67,7 @@
           <stringProp name="shareMode">shareMode.all</stringProp>
         </CSVDataSet>
         <hashTree/>
-        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect ${id}" enabled="true">
+        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect">
           <stringProp name="mqtt.server">test2.openremote.app</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
@@ -90,7 +90,7 @@
           <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
         </net.xmeter.samplers.ConnectSampler>
         <hashTree/>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response ${id}" enabled="true">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response">
           <stringProp name="mqtt.topic_name">provisioning/${id}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -102,7 +102,7 @@
           <stringProp name="mqtt.sample_condition_value_opt">60000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree/>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning ${id}" enabled="true">
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning">
           <stringProp name="mqtt.topic_name">provisioning/${id}/request</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -113,7 +113,7 @@
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response ${id}" enabled="true"/>
+        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response"/>
         <hashTree>
           <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Regular Expression Extractor" enabled="true">
             <stringProp name="RegexExtractor.useHeaders">false</stringProp>
@@ -126,7 +126,7 @@
           </RegexExtractor>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe attributes ${id}" enabled="true">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe attributes">
           <stringProp name="mqtt.topic_name">master/${id}/attributevalue/+/${assetId}</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -143,7 +143,7 @@
           <intProp name="LoopController.loops">-1</intProp>
         </LoopController>
         <hashTree>
-          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall ${id}" enabled="true">
+          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall">
             <stringProp name="mqtt.topic_name">master/${id}/writeattributevalue/rainfall/${assetId}</stringProp>
             <stringProp name="mqtt.qos_level">0</stringProp>
             <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -154,7 +154,7 @@
             <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           </net.xmeter.samplers.PubSampler>
           <hashTree/>
-          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature ${id}" enabled="true">
+          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature">
             <stringProp name="mqtt.topic_name">master/${id}/writeattributevalue/temperature/${assetId}</stringProp>
             <stringProp name="mqtt.qos_level">0</stringProp>
             <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -186,11 +186,11 @@
           <stringProp name="cacheKey">true</stringProp>
         </JSR223PostProcessor>
         <hashTree/>
-        <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect ${id}" enabled="true">
+        <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect">
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
