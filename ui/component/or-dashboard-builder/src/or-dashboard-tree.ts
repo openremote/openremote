@@ -151,7 +151,6 @@ export class OrDashboardTree extends LitElement {
 
     protected _doDuplicateDashboard(dashboard: Dashboard) {
         const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
-        newDashboard.id = undefined;
         newDashboard.displayName = (newDashboard.displayName + ' copy');
         DashboardService.create(newDashboard, undefined, this.realm).then(d => {
             if (!this.dashboards) {
@@ -244,6 +243,11 @@ export class OrDashboardTree extends LitElement {
                                 this.selectDashboard(undefined);
                             }}"></or-mwc-input>
                             ${!this.readonly ? html`
+                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy"
+                                              @or-mwc-input-changed="${() => {
+                                                  this.duplicateDashboard(this.selected!);
+                                              }}"
+                                ></or-mwc-input>
                                 <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
                                     if (this.selected != null) {
                                         showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
@@ -253,11 +257,6 @@ export class OrDashboardTree extends LitElement {
                                         });
                                     }
                                 }}"></or-mwc-input>
-                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy"
-                                              @or-mwc-input-changed="${() => {
-                                                  this.duplicateDashboard(this.selected!);
-                                              }}"
-                                ></or-mwc-input>
                             ` : undefined}
                         ` : undefined}
                         ${!this.readonly ? html`
