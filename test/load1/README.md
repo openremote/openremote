@@ -28,6 +28,18 @@ and package it into a custom docker image
 jar can then be found in `setup/build/libs`, this should be volume mapped into `/deployment/manager/extensions` of the 
 manager container.
 
+Some commands to deploy to a remote server `server1`, run from repo root dir:
+```shell
+./gradlew :setup:load1Jar
+cd test
+mkdir -p build/deployment1/manager/extensions build/deployment2 build/deployment3
+cp ../setup/build/libs/openremote-load1-setup-0.0.0.jar build/deployment1/manager/extensions
+cp ../profile/test-load1.yml build/deployment1
+cp load1/console-users.jmx load1/console-users.yml build/deployment2
+cp load1/auto-provisioning.jmx load1/auto-provisioning.yml build/deployment3
+cd build
+```
+
 ### Auto provisioning device test (`auto-provisioning.yml`)
 Simulates auto provisioning devices connecting to the Manager via MQTT as follows:
 
