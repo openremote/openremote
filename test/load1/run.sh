@@ -36,7 +36,7 @@ fi
 cd ../../
 ./gradlew :setup:load1Jar
 cd test
-mkdir -p build/deployment1/manager/extensions build/deployment2 build/deployment3
+mkdir -p build/deployment1/manager/extensions build/deployment2/results build/deployment3/results
 cp ../setup/build/libs/openremote-load1-setup-0.0.0.jar build/deployment1/manager/extensions
 cp ../profile/test-load1.yml build/deployment1
 cp load1/console-users.jmx load1/console-users.yml build/deployment2
@@ -52,9 +52,32 @@ else
   echo "Deploying on remote host deployment1 -> $SERVER1"
   $SSH_PREFIX $SERVER1 << EOF
 
-docker-compose -p test -f deployment1/test-load1.yml up -d
+cd deployment1
 
-echo "Waiting for up to 5mins for all services to be healthy"
+if ! [ -f .env ]; then
+  OR_ADMIN_PASSWORD=\$(date +%s | sha256sum | base64 | head -c 15)
+  echo "OR_ADMIN_PASSWORD: \$OR_ADMIN_PASSWORD"
+  touch .env
+  echo OR_ADMIN_PASSWORD=\$OR_ADMIN_PASSWORD >> .env
+else
+  echo "Env variables:"
+  cat .env
+fi
+
+echo "Stopping any existing stack"
+OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml down
+# Prune old data
+docker volume rm test_manager-data test_postgresql-data
+OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml pull
+OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml up -d
+
+if [ \$? -ne 0 ]; then
+  exit 1
+fi
+
+docker image prune -af
+
+echo "Waiting for up to 10mins for all services to be healthy"
 COUNT=1
 STATUSES_OK=false
 IFS=\$'\n'
@@ -75,7 +98,7 @@ while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
       break
    fi
 
-   sleep 5
+   sleep 10
    COUNT=\$((COUNT+1))
 done
 
@@ -90,6 +113,13 @@ fi
 EOF
 fi
 
+if [ $? -ne 0 ]; then
+  echo "Failed to deploy deployment1"
+  exit 1
+else
+  echo "Deployed deployment1"
+fi
+
 if [ "$SERVER2" == "localhost" ]; then
   echo "Deploying on localhost deployment2"
 
@@ -97,7 +127,29 @@ else
   echo "Copying files to remote host deployment2 -> $SERVER2"
   $SCP_PREFIX -r deployment2 $SERVER2:~
   echo "Deploying on remote host deployment2 -> $SERVER2"
+  $SSH_PREFIX $SERVER2 << EOF
+
+cd deployment2
+#CONTAINER_ID=\$(docker run --rm -d -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus -o settings.env.MANAGER_HOSTNAME=$SERVER1 -o settings.env.DURATION=30 -o settings.env.THREAD_COUNT=10 console-users.yml)
+docker run --rm -d -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus -o settings.env.MANAGER_HOSTNAME=$SERVER1 -o settings.env.DURATION=30 -o settings.env.THREAD_COUNT=10 console-users.yml
+
+if [ \$? -ne 0 ]; then
+  exit 1
 fi
+
+echo "Test is now running"
+
+EOF
+fi
+
+if [ $? -ne 0 ]; then
+  echo "Failed to deploy deployment2"
+  exit 1
+else
+  echo "Deployed deployment2"
+fi
+
+exit 0
 
 if [ "$SERVER3" == "localhost" ]; then
   echo "Deploying on localhost deployment3"
@@ -108,8 +160,6 @@ else
   echo "Deploying on remote host deployment3 -> $SERVER3"
 
 fi
-
-exit 0
 
 if [ -z "$START" ]; then
  START=1

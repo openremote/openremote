@@ -68,8 +68,6 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-    volumes:
-      - ../deployment:/deployment
     environment:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
@@ -99,9 +97,10 @@ services:
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES:
+      OR_SETUP_REGULAR_USERS: ${OR_SETUP_REGULAR_USERS:-1000}
+      OR_SETUP_SERVICE_USERS:
     volumes:
       - manager-data:/storage
-      - deployment-data:/deployment
-      - ./deployment:/deployment
+      - ./manager:/deployment/manager
     <<: *awslogs
 
