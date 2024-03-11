@@ -189,6 +189,10 @@ export interface OrMwcTableRowClickDetail {
     index: number
 }
 
+export interface OrMwcTableRowSelectDetail extends OrMwcTableRowClickDetail {
+    state: boolean
+}
+
 export class OrMwcTableRowClickEvent extends CustomEvent<OrMwcTableRowClickDetail> {
 
     public static readonly NAME = "or-mwc-table-row-click";
@@ -197,6 +201,22 @@ export class OrMwcTableRowClickEvent extends CustomEvent<OrMwcTableRowClickDetai
         super(OrMwcTableRowClickEvent.NAME, {
             detail: {
                 index: index
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMwcTableRowSelectEvent extends CustomEvent<OrMwcTableRowSelectDetail> {
+
+    public static readonly NAME = "or-mwc-table-row-select";
+
+    constructor(index: number, state: boolean) {
+        super(OrMwcTableRowSelectEvent.NAME, {
+            detail: {
+                index: index,
+                state: state
             },
             bubbles: true,
             composed: true
@@ -254,11 +274,6 @@ export class OrMwcTable extends LitElement {
     @property({type: Array})
     public selectedRows?: TableRow[] | string[][] | any[] = [];
 
-    @property()
-    protected indeterminate?: boolean = false;
-
-    @property()
-    protected allSelected?: boolean = false;
 
     /* ------------------- */
 
@@ -280,8 +295,6 @@ export class OrMwcTable extends LitElement {
 
             // Reset selected rows properties
             this.selectedRows = [];
-            this.indeterminate = false;
-            this.allSelected = false;
         }
     }
 
@@ -306,37 +319,40 @@ export class OrMwcTable extends LitElement {
                                 <tr class="mdc-data-table__header-row">
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
                                         const styles = {
-                                            maxWidth: tableWidth ? `${tableWidth / (this.columns!.length / 2)}px` : undefined
+                                            width: this.getColumnWidth(index, this.columns, tableWidth),
+                                            maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
                                         } as any;
-                                        if(index == 0 && this.config.multiSelect){
-                                            return html` 
-                                            <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
-                                                role="columnheader" scope="col">
-                                                <div class="">
-                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
-                                                                  class="${classMap({'mdi-checkbox-intermediate': this.indeterminate!})}"
-                                                                  .indeterminate="${this.indeterminate}"
-                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "all")}" .value="${this.allSelected}">
-                                                    </or-mwc-input>
-                                                </div>
-                                            </th>
-                                            ${(typeof column == "string") ? html`
-                                                <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
-                                                    title="${column}">
-                                                    column
+                                        if(index === 0 && this.config.multiSelect){
+                                            const allSelected = this.selectedRows?.length === this.rows?.length;
+                                            const indeterminate = !allSelected && this.selectedRows && this.selectedRows.length > 0;
+                                            return html`
+                                                <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
+                                                    role="columnheader" scope="col">
+                                                    <div class="">
+                                                        <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
+                                                                      .indeterminate="${indeterminate}" .value="${allSelected}"
+                                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "all")}">
+                                                        </or-mwc-input>
+                                                    </div>
                                                 </th>
-                                            ` : html`
-                                                <th class="mdc-data-table__header-cell ${classMap({
-                                                          'mdc-data-table__cell--numeric': !!column.isNumeric,
-                                                          'hide-mobile': !!column.hideMobile,
-                                                          'mdc-data-table__header-cell--with-sort': !!column.isSortable,
-                                                        })}"
-                                                    role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
-                                                    @click="${(ev: MouseEvent) => column.isSortable! ? this.sortRows(ev, index, this.sortDirection!) : ''}">
-                                                    ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
-                                                </th>
-                                            `
-                                            }`
+                                                ${(typeof column === "string") ? html`
+                                                    <th class="mdc-data-table__header-cell ${this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index + 1}"
+                                                        role="columnheader" scope="col"
+                                                        title="${column}">
+                                                        column
+                                                    </th>
+                                                ` : html`
+                                                    <th class="mdc-data-table__header-cell ${classMap({
+                                                        'mdc-data-table__cell--numeric': !!column.isNumeric,
+                                                        'hide-mobile': !!column.hideMobile,
+                                                        'mdc-data-table__header-cell--with-sort': !!column.isSortable,
+                                                    })}"
+                                                        role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
+                                                        @click="${(ev: MouseEvent) => column.isSortable! ? this.sortRows(ev, index, this.sortDirection!) : ''}">
+                                                        ${(!column.isSortable ? column.title : until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
+                                                    </th>
+                                                `
+                                                }`
                                         }
                                         return (typeof column == "string") ? html`
                                             <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
@@ -379,9 +395,6 @@ export class OrMwcTable extends LitElement {
                                             .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
                                             .map((item: TableRow | string[]) => {
                                                 const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
-                                                const styles = {
-                                                    maxWidth: tableWidth ? `${tableWidth / (this.columns!.length / 2)}px` : undefined
-                                                } as any;
                                                 return html`
                                                     <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.onRowClick(ev, item)}">
                                                         ${content?.map((cell: string | number | TemplateResult, index: number) => {
@@ -391,25 +404,24 @@ export class OrMwcTable extends LitElement {
                                                                 "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
                                                                 "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
                                                             }
-                                                            if(index == 0 && this.config.multiSelect){
-                                                                return html`
+                                                            const styles = {
+                                                                maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
+                                                            } as any;
+                                                            return html`
+                                                                ${when(index === 0 && this.config.multiSelect, () => html`
                                                                     <td class="mdc-data-table__cell mdc-data-table__cell--checkbox" >
                                                                         <div class="">
                                                                             <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
-                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev,ev.detail.value,"single",item)}" 
+                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev,ev.detail.value,"single",item)}"
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
                                                                         </div>
                                                                     </td>
-                                                                    <td class="${classMap(classes)}" title="${cell}">
-                                                                        <span>${cell}</span>
-                                                                    </td>`
-                                                            }
-                                                            return html`
+                                                                `)}
                                                                 <td class="${classMap(classes)}" title="${cell}" style="${styleMap(styles)}">
                                                                     <span>${cell}</span>
                                                                 </td>
-                                                            `
+                                                            `;
                                                         })}
                                                     </tr>
                                                 `
@@ -523,42 +535,32 @@ export class OrMwcTable extends LitElement {
 
     protected onCheckChanged(event: Event, checked: boolean, type: "all" | "single", item?: any) {
         event.stopPropagation();
-        let rowCount = (this.config.pagination?.enable && this.rows!.length > this.paginationSize ? this.paginationSize : this.rows!.length);
         if (type === "all") {
-            let checkboxes = this.shadowRoot?.querySelectorAll('[id*="checkbox-0"]');
-            if (checked && checkboxes) {
-                checkboxes.forEach(checkbox => {
-                    (checkbox.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement).checked = true;
-                    // inner.checked = true;
-                });
-                this.selectedRows = this.rows;
-                this.allSelected = true;
-                this.indeterminate = false;
-            } else if(checkboxes) {
-                checkboxes.forEach(checkbox => {
-                    const inner = checkbox.shadowRoot?.querySelector("input[type=checkbox]") as HTMLInputElement;
-                    inner.checked = false;
-                });
-                this.selectedRows = [];
-                this.allSelected = false;
-                this.indeterminate = false;
-            }
-        }
-        else {
             if(checked) {
-                if(this.selectedRows!.indexOf(item) === -1) {
-                    this.selectedRows!.push(item);
-                }
+                this.selectedRows = this.rows;
+            } else {
+                this.selectedRows = [];
             }
-            else {
-                this.selectedRows! = this.selectedRows!.filter((e: TableRow) => e !== item);
-            }
+            // Dispatch events to parent component
+            this.rows?.forEach((_, index) => this.dispatchEvent(new OrMwcTableRowSelectEvent(index, checked)));
 
-            this.indeterminate = (this.selectedRows!.length < (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
-            this.allSelected = (this.selectedRows!.length === (this.config.pagination?.enable ? rowCount : this.rows!.length) && this.selectedRows!.length > 0);
+        } else {
+            if(checked) {
+                if(this.selectedRows === undefined) {
+                    this.selectedRows = [item];
+                } else if(this.selectedRows.indexOf(item) === -1) {
+                    this.selectedRows.push(item);
+                    this.requestUpdate('selectedRows');
+                }
+            } else {
+                this.selectedRows = this.selectedRows?.filter((e: TableRow) => e !== item);
+            }
+            // Dispatch events to parent component
+            const index = this.rows?.indexOf(item);
+            if(index && index > -1) {
+                this.dispatchEvent(new OrMwcTableRowSelectEvent(index, checked));
+            }
         }
-        const selectEvent = new CustomEvent('selectChanged', { detail: this.selectedRows! });
-        window.dispatchEvent(selectEvent);
     }
 
 
@@ -618,6 +620,14 @@ export class OrMwcTable extends LitElement {
             await this.updateComplete;
         }
         return this._dataTable ? (this._dataTable.root as HTMLElement) : (this.shadowRoot!.querySelector('.mdc-data-table') as HTMLElement);
+    }
+
+    protected getColumnWidth(index: number, columns?: string[] | TableColumn[], tableWidthPx?: number): string | undefined {
+        return undefined;
+    }
+
+    protected getMaxColumnWidth(index: number, columns?: string[] | TableColumn[], tableWidthPx?: number): string | undefined {
+        return tableWidthPx ? (`${tableWidthPx / (columns?.length || 2)}px`) : undefined;
     }
 
 }
