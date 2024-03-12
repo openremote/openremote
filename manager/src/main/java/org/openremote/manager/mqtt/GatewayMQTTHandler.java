@@ -20,7 +20,6 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.timer.TimerService;
@@ -49,7 +48,6 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class GatewayMQTTHandler extends MQTTHandler {
 
     // main topics
-    public static final String GATEWAY_TOPIC = "gateway"; // core topic for all gateway-related messages
     public static final String EVENTS_TOPIC = "events"; // prefix for event topics, users subscribe to these
     public static final String OPERATIONS_TOPIC = "operations"; // prefix for operation topics, users publish to these (or subscribe to responses)
 
@@ -67,11 +65,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String RESPONSE_TOPIC = "response"; // response suffix, responses will be published to this topic
 
     // token indexes
-    public static final int GATEWAY_PREFIX_TOKEN_INDEX = 2;
-    public static final int OPERATIONS_PREFIX_TOKEN_INDEX = 3;
-    public static final int EVENTS_PREFIX_TOKEN_INDEX = 3;
-    public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 7;
-    public static final int ASSET_ID_TOKEN_INDEX = 5;
+    public static final int OPERATIONS_PREFIX_TOKEN_INDEX = 2;
+    public static final int EVENTS_PREFIX_TOKEN_INDEX = 2;
+    public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
+    public static final int ASSET_ID_TOKEN_INDEX = 4;
+    public static final int REQUEST_RESPONSE_IDENTIFIER_TOKEN_INDEX = 4;
     public static final int CLIENT_ID_TOKEN_INDEX = 1;
     public static final int REALM_TOKEN_INDEX = 0;
 
@@ -112,9 +110,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public void onConnect(RemotingConnection connection) {
         super.onConnect(connection);
         LOG.fine("New MQTT connection session " + MQTTBrokerService.connectionToString(connection));
-        updateGatewayAssetStatusIfLinked(connection, ConnectionStatus.CONNECTED);
 
-        // TODO: Check whether we allow more than one connection per gateway - ? if not, disconnect the new connection?
+        if (isGatewayConnection(connection)) {
+            updateLinkedGatewayStatus(connection, ConnectionStatus.CONNECTED);
+        }
+
     }
 
     @Override
@@ -124,7 +124,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return GATEWAY_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, GATEWAY_PREFIX_TOKEN_INDEX));
+        if (isEventsTopic(topic)) {
+            return true;
+        }
+        return isOperationsTopic(topic);
     }
 
     @Override
@@ -167,20 +170,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void registerPublishTopicHandlers() {
-        // topic: +/+/gateway/operations/health-check
-        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + HEALTH_TOPIC,
-                this::handleHealthTopicRequest);
-        // topic: +/+/gateway/operations/assets/+/attributes/+/update
-        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + ATTRIBUTES_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + UPDATE_TOPIC,
+        // topic: realm/clientId/operations/assets/+/attributes/+/update
+        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + ATTRIBUTES_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + UPDATE_TOPIC,
                 this::handleSingleLineAttributeUpdateRequest);
-        // topic: +/+/gateway/operations/assets/+/attributes/update
-        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
+        // topic: realm/clientId/operations/assets/+/attributes/update
+        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
                 this::handleMultiLineAttributeUpdateRequest);
+
+        // topic: realm/clientId/operations/assets/+/create
+        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + CREATE_TOPIC,
+                this::handleCreateAssetRequest);
 
         topicHandlers.forEach((topic, handler) -> {
             LOG.fine("Registered handler for topic " + topic);
         });
     }
+
 
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
@@ -193,7 +198,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             LOG.finest("Invalid topic " + topic + " for publishing" + OPERATIONS_TOPIC);
             return false;
         }
-
 
         //TODO: Authorization and implement
 
@@ -223,12 +227,29 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        updateGatewayAssetStatusIfLinked(connection, ConnectionStatus.DISCONNECTED);
+        if (isGatewayConnection(connection)) {
+            updateLinkedGatewayStatus(connection, ConnectionStatus.DISCONNECTED);
+        }
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        updateGatewayAssetStatusIfLinked(connection, ConnectionStatus.DISCONNECTED);
+        if (isGatewayConnection(connection)) {
+            updateLinkedGatewayStatus(connection, ConnectionStatus.DISCONNECTED);
+        }
+
+    }
+
+    private void handleCreateAssetRequest(PublishTopicMessage publishTopicMessage) {
+        String responseIdentifier = topicTokenIndexToString(publishTopicMessage.topic, REQUEST_RESPONSE_IDENTIFIER_TOKEN_INDEX);
+        String payloadContent = publishTopicMessage.body.toString(StandardCharsets.UTF_8);
+
+        if (responseIdentifier == null) {
+            LOG.info("Received create asset request " + publishTopicMessage.connection.getClientID() + " with missing response identifier");
+            return;
+        }
+
+        LOG.fine("Received create asset request " + publishTopicMessage.connection.getClientID() + " for asset " + assetId + " with payload " + payloadContent);
     }
 
 
@@ -238,11 +259,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String payloadContent = message.body.toString(StandardCharsets.UTF_8);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request from gateway " + message.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request " + message.connection.getClientID());
             return;
         }
 
-        LOG.finer("Received single-line attribute update request from gateway " + message.connection.getClientID() + " for asset " + assetId + " and attribute " + attributeName + " with payload " + payloadContent);
+        LOG.finer("Received single-line attribute update request " + message.connection.getClientID() + " for asset " + assetId + " and attribute " + attributeName + " with payload " + payloadContent);
     }
 
     protected void handleMultiLineAttributeUpdateRequest(PublishTopicMessage message) {
@@ -251,25 +272,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String payloadContent = message.body.toString(StandardCharsets.UTF_8);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request from gateway " + message.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request " + message.connection.getClientID());
             return;
         }
-        LOG.fine("Received multi-line attribute update request from gateway " + message.connection.getClientID() + " for asset " + assetId + " and attribute " + attributeName + " with payload " + payloadContent);
-    }
-
-    protected void handleHealthTopicRequest(PublishTopicMessage message) {
-        LOG.fine("Received health request message from gateway " + message.connection.getClientID());
-
-        // publish response
-        String responseTopic = message.topic.toString() + "/" + RESPONSE_TOPIC;
-        mqttBrokerService.publishMessage(responseTopic, "OK", MqttQoS.AT_MOST_ONCE);
+        LOG.fine("Received multi-line attribute update request " + message.connection.getClientID() + " for asset " + assetId + " and attribute " + attributeName + " with payload " + payloadContent);
     }
 
     protected void sendAttributeEvent(AttributeEvent event) {
         assetProcessingService.sendAttributeEvent(event, GatewayMQTTHandler.class.getName());
     }
 
-    protected void updateGatewayAssetStatusIfLinked(RemotingConnection connection, ConnectionStatus status) {
+    protected void updateLinkedGatewayStatus(RemotingConnection connection, ConnectionStatus status) {
         GatewayV2Asset gatewayAsset = (GatewayV2Asset) assetStorageService.find(new AssetQuery()
                 .types(GatewayV2Asset.class).attributeValue(GatewayV2Asset.CLIENT_ID.getName(), connection.getClientID()));
 
@@ -284,7 +297,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected boolean isResponseTopic(Topic topic) {
-        // check if the last token is “response”
         return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
     }
 
