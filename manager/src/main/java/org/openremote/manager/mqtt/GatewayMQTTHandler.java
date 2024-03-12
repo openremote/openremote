@@ -249,7 +249,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        LOG.fine("Received create asset request " + publishTopicMessage.connection.getClientID() + " for asset " + assetId + " with payload " + payloadContent);
+        LOG.fine("Received create asset request " + publishTopicMessage.connection.getClientID() + " with response identifier " + responseIdentifier + " with payload " + payloadContent);
     }
 
 
