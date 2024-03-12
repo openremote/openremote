@@ -1,6 +1,6 @@
 package org.openremote.manager.rules.facade;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.rules.RulesEngineId;
@@ -46,8 +46,8 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         return null;
     }
 
-    public void linkAssets(ArrayList<String> assetIds, Long alarmId){
-        if(assetIds != null && assetIds.size() > 0){
+    public void linkAssets(List<String> assetIds, Long alarmId){
+        if(assetIds != null && !assetIds.isEmpty()){
             String realmId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
             alarmService.linkAssets(assetIds, realmId, alarmId);
         }
