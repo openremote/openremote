@@ -1,8 +1,7 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {OrMwcTable, TableColumn, TableConfig, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrMwcTable, TableColumn, TableConfig, TableRow, TableContent} from "@openremote/or-mwc-components/or-mwc-table";
 import {AlarmSeverity, AlarmStatus, Asset, SentAlarm} from "@openremote/model";
-import moment from "moment";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
 
@@ -74,10 +73,10 @@ export class OrAlarmsTable extends OrMwcTable {
     // Setup columns
     public columns: AlarmTableColumn[] = [
         {title: "", widthWeight: 2},
-        {title: i18next.t("alarm.title"), widthWeight: 25},
-        {title: i18next.t("alarm.status"), widthWeight: 3},
+        {title: i18next.t("alarm.title"), widthWeight: 25, isSortable: true},
+        {title: i18next.t("alarm.status"), widthWeight: 3, isSortable: true},
         {title: i18next.t("alarm.linkedAssets"), widthWeight: 6, hideMobile: true},
-        {title: i18next.t("alarm.assignee"), widthWeight: 4},
+        {title: i18next.t("alarm.assignee"), widthWeight: 4, isSortable: true},
         {title: i18next.t("alarm.lastModified"), widthWeight: 6, isSortable: true}
     ];
 
@@ -131,7 +130,7 @@ export class OrAlarmsTable extends OrMwcTable {
 
     /* TEMPLATING FUNCTIONS */
 
-    protected getSeverityContent(severity?: AlarmSeverity): TemplateResult {
+    protected getSeverityContent(severity?: AlarmSeverity): TemplateResult | string | number {
         switch (severity) {
             case AlarmSeverity.HIGH:
                 return html`
@@ -147,11 +146,11 @@ export class OrAlarmsTable extends OrMwcTable {
         }
     }
 
-    protected getDisplayNameContent(title?: string): TemplateResult {
-        return html`${title}`;
+    protected getDisplayNameContent(title?: string): TableContent {
+        return title;
     }
 
-    protected getAlarmStatusContent(status?: AlarmStatus): TemplateResult {
+    protected getAlarmStatusContent(status?: AlarmStatus): TableContent {
         const classes = {
             "alarm-status-text": true,
             "alarm-status-text__closed": status === AlarmStatus.CLOSED,
@@ -165,17 +164,16 @@ export class OrAlarmsTable extends OrMwcTable {
         `;
     }
 
-    protected getLinkedAssetsContent(assets?: Asset[]): TemplateResult {
+    protected getLinkedAssetsContent(assets?: Asset[]): TableContent {
         return html`${assets?.map(a => a.name)}`;
     }
 
-    protected getAssigneeContent(assigneeName?: string): TemplateResult {
-        return html`${assigneeName}`;
+    protected getAssigneeContent(assigneeName?: string): TableContent {
+        return assigneeName;
     }
 
-    protected getLastModifiedContent(lastModified?: number): TemplateResult {
-        const date = moment(lastModified).format("lll");
-        return html`${date}`;
+    protected getLastModifiedContent(lastModified?: number): TableContent {
+        return new Date(lastModified);
     }
 
 

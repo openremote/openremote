@@ -865,17 +865,16 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected _onRowSelect(ev: OrMwcTableRowSelectEvent) {
         const alarm = this._data[ev.detail.index];
-        const index = this._data.indexOf(alarm);
         if(alarm) {
             if(ev.detail.state) {
                 if(this._selectedIds === undefined) {
-                    this._selectedIds = [index];
+                    this._selectedIds = [alarm.id];
                 } else {
-                    this._selectedIds.push(index);
+                    this._selectedIds.push(alarm.id);
                     this.requestUpdate('_selectedIds');
                 }
             } else {
-                this._selectedIds = this._selectedIds.filter(id => id === index);
+                this._selectedIds = this._selectedIds.filter(id => id !== alarm.id);
             }
         } else {
             console.warn("Tried selecting an alarm that does not exist?")
