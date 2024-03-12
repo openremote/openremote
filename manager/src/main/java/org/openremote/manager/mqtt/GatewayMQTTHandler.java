@@ -59,7 +59,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String ATTRIBUTES_TOPIC = "attributes";
 
     // operation topics
-    public static final String HEALTH_CHECK_TOPIC = "health-check";
+    public static final String HEALTH_TOPIC = "health";
     public static final String CREATE_TOPIC = "create";
     public static final String READ_TOPIC = "read";
     public static final String UPDATE_TOPIC = "update";
@@ -145,8 +145,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 LOG.finest("Invalid topic " + topic + " for subscriptions");
                 return false;
             }
-            LOG.finest("Invalid topic " + topic + " for subscriptions");
-            return false;
         }
 
         //TODO: Authorization and implement
@@ -170,7 +168,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected void registerPublishTopicHandlers() {
         // topic: +/+/gateway/operations/health-check
-        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + HEALTH_CHECK_TOPIC,
+        topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + HEALTH_TOPIC,
                 this::handleHealthTopicRequest);
         // topic: +/+/gateway/operations/assets/+/attributes/+/update
         topicHandlers.put(SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + GATEWAY_TOPIC + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + ATTRIBUTES_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + UPDATE_TOPIC,
