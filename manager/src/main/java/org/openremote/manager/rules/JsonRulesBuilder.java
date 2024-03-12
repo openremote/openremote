@@ -19,12 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
@@ -73,7 +67,6 @@ import java.util.stream.Stream;
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
 import static org.openremote.model.util.ValueUtil.distinctByKey;
-import static org.openremote.model.util.ValueUtil.*;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
@@ -946,37 +939,16 @@ public class JsonRulesBuilder extends RulesBuilder {
             return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
         }
 
-        if (ruleAction instanceof  RuleActionAlarm alarmAction) {
-            if (alarmAction.alarm != null) {
+        if (ruleAction instanceof  RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
                 Alarm alarm = alarmAction.alarm;
                 ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
                 if(alarm.getContent() != null) {
                     String content = alarm.getContent();
-                    if (!TextUtil.isNullOrEmpty(content)) {
-                        if (content.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
+                    if (!TextUtil.isNullOrEmpty(content) && (content.contains(PLACEHOLDER_TRIGGER_ASSETS))) {
                             // Need to clone the alarm
                             alarm = ValueUtil.clone(alarm);
                             Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
-                            String triggeredAssetInfo = insertTriggeredAssetInfo(content, assetStates, false, true);
-                            JsonObject json = JsonParser.parseString(triggeredAssetInfo).getAsJsonObject();
-                            Object[] key = json.keySet().toArray();
-                            StringBuilder builder = new StringBuilder();
-                            builder.append("Triggered asset(s):").append("\n");
-                            for (int i = 0; i < key.length; i++) {
-                                JsonArray array = json.getAsJsonArray(key[i].toString());
-                                JsonObject object = array.get(0).getAsJsonObject();
-//                                builder.append("ID: " + object.get("ref").get("id")).append("\n");
-                                builder.append("Asset type: " + object.get("assetType")).append("\n");
-                                builder.append("Asset name: " + object.get("assetName")).append("\n");
-//                                builder.append("Attribute name: " + object.get("ref").get("name")).append("\n");
-                                builder.append("Attribute value: " + object.get("value")).append("\n").append("\n");
-                            }
-
-                            // TODO: Locate Id and attribute name in json response
-                            String result = builder.toString();
-                            content = content.replace(PLACEHOLDER_TRIGGER_ASSETS, result);
-                            alarm.setContent(content);
-                        }
+                            alarm.setContent(getAlarmContent(content, assetStates));
                     }
                 }
                 else {
@@ -993,11 +965,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
                 Alarm finalAlarm = alarm;
                 String userId = alarmAction.assigneeId;
-                if(assetIds.size() > 0){
+                if(!assetIds.isEmpty()){
                     return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
-            }
+
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {
@@ -1186,6 +1158,19 @@ public class JsonRulesBuilder extends RulesBuilder {
             realm = assetRuleset.getRealm();
         }
         return realm;
+    }
+
+    protected String getAlarmContent(String sourceText, Map<String, Set<AttributeInfo>> assetStates) {
+        StringBuilder sb = new StringBuilder();
+
+        assetStates.forEach((key, value) -> value.forEach(assetState -> {
+            sb.append("ID: ").append(assetState.getId()).append("\n");
+            sb.append("Asset name: ").append(assetState.getAssetName()).append("\n");
+            sb.append("Attribute name: ").append(assetState.getName()).append("\n");
+            sb.append("Value: ").append(assetState.getValue().flatMap(ValueUtil::asJSON).orElse("")).append("\n");
+        }));
+
+        return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {

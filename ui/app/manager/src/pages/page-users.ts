@@ -479,7 +479,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             stickyFirstColumn: false,
             pagination: {
                 enable: true
-            },
+            }
         }
 
         const mergedUserList: UserModel[] = [...this._users, ...this._serviceUsers];

@@ -134,7 +134,7 @@ interface UserAssetLinkInfo {
 interface AssetInfo {
     asset: Asset;
     userAssetLinks?: UserAssetLinkInfo[];
-    alarmAssetLinks?: SentAlarm[]; // TODO Change data type
+    alarmAssetLinks?: SentAlarm[];
     childAssets?: Asset[];
     viewerConfig: AssetViewerConfig;
     modified: boolean;

@@ -1,6 +1,5 @@
 import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { until } from "lit/directives/until.js";
 import { ActionType, RulesConfig } from "../index";
 import {
     JsonRule,
@@ -87,6 +86,6 @@ export class OrRuleActionAlarm extends LitElement {
                     `;
         }
 
-        return html`${until(modalTemplate, html``)}`;
+        return html`${modalTemplate}`;
     }
 }

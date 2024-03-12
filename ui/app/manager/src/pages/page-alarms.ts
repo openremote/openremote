@@ -27,12 +27,9 @@ import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@open
 import {OrMwcTable, OrMwcTableRowClickEvent, OrMwcTableRowSelectEvent} from "@openremote/or-mwc-components/or-mwc-table";
 import "../components/alarms/or-alarms-table";
 
-const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
-
 export interface PageAlarmsConfig {
     initialFilter?: string;
     initialSeverity?: AlarmSeverity;
-    hideControls?: boolean;
     assignOnly?: boolean;
 }
 
@@ -61,7 +58,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     static get styles() {
         // language=CSS
         return [
-            unsafeCSS(tableStyle),
             css`
                 :host {
                     flex: 1;
@@ -249,9 +245,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     public status?: AlarmStatus;
 
     @state()
-    public hide: boolean = false;
-
-    @state()
     public assign: boolean = false;
 
     @state()
@@ -278,6 +271,25 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     @state()
     protected _selectedIds?: number[];
+
+    get statusValue() {
+        const statusOptions = this._getStatusOptions();
+        const matchingOption = statusOptions.find(option =>
+            option.value === this.status ||
+            (this.allActive && option.value === 'All-active') ||
+            (!this.status && option.value === 'All')
+        );
+        return matchingOption ? matchingOption.label : '';
+    }
+
+    get severityValue() {
+        const severityOptions = this._getSeverityOptions();
+        const matchingOption = severityOptions.find(option =>
+            option.value === this.severity ||
+            (!this.severity && option.value === 'All')
+        );
+        return matchingOption ? matchingOption.label : '';
+    }
 
     get name(): string {
         return "alarm.alarm_plural";
@@ -306,9 +318,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
         if (changedProperties.has("severity")
             || changedProperties.has("status")
-            || changedProperties.has("filter")
-            || changedProperties.has("sort")
-            || changedProperties.has("hide")
             || changedProperties.has("allActive")) {
             this._pageCount = undefined;
             this._currentPage = 1;
@@ -316,7 +325,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         if (!this._data) {
-            this._loadData().then();
+            this._loadData();
         }
 
         return super.shouldUpdate(changedProperties);
@@ -341,15 +350,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected async _createUpdateAlarm(alarm: AlarmModel, action: "update" | "create") {
-        console.log(alarm);
-        if (!alarm.title! || !alarm.content!) {
-            console.log("First if");
+        if (!alarm.title || !alarm.content) {
             return;
         }
 
         if (alarm.content === "" || alarm.title === "") {
             // Means a validation failure shouldn't get here
-            console.log("Second if");
             return;
         }
 
@@ -359,7 +365,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         try {
-            console.log("Try block");
             action == "update"
                 ? await manager.rest.api.AlarmResource.updateAlarm(alarm.id, alarm)
                 : await manager.rest.api.AlarmResource.createAlarmWithSource(alarm.source,'alarm-page', alarm).then(async (response) => {
@@ -442,12 +447,12 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                 <or-mwc-input .type="${InputType.SELECT}" id="severity-select" comfortable
                                               ?disabled="${disabled}" .label="${i18next.t("alarm.severity")}"
                                               @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onSeverityChanged(evt.detail.value)}"
-                                              .value="${this._getSeverityOptions().filter((obj) => obj.value === this.severity || !this.status ? obj.value === 'All' : '').map((obj) => obj.label)[0]}"
+                                              .value="${this.severityValue}"
                                               .options="${this._getSeverityOptions().map( s => s.label)}"></or-mwc-input>
                                 <or-mwc-input .type="${InputType.SELECT}" id="status-select" comfortable
                                               ?disabled="${disabled}" .label="${i18next.t("alarm.status")}"
                                               @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onStatusChanged(evt.detail.value)}"
-                                              .value="${this._getStatusOptions().filter((obj) => obj.value === this.status || this.allActive ? obj.value === 'All-active' : '' || !this.status ? obj.value === 'All' : '').map((obj) => obj.label)[0]}"
+                                              .value="${this.statusValue}"
                                               .options="${this._getStatusOptions().map( s => s.label)}"></or-mwc-input>
 
                             </div>
@@ -458,7 +463,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         style="padding: 0px 10px; margin: 0;"
                                         type="${InputType.BUTTON}"
                                         icon="plus"
-                                        label="${i18next.t("add")} ${i18next.t("alarm.")}"
+                                        label="${i18next.t("alarm.add")}"
                                         @or-mwc-input-changed="${() => (this.creationState = {alarmModel: this.getNewAlarmModel()})}"
                                 ></or-mwc-input>
                             </div>
@@ -466,7 +471,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     </div>
                 </div>
                 ${when(this.alarm || this.creationState, () => {
-                    const alarm: AlarmModel = this.alarm !== undefined ? this.alarm : this.creationState.alarmModel;
+                    const alarm: AlarmModel = this.alarm ?? this.creationState.alarmModel;
                     return this.getSingleAlarmView(alarm, readonly);
                 }, () => {
                     return html`
@@ -583,7 +588,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         showOkCancelDialog(i18next.t("alarm.deleteAlarm"), i18next.t("alarm.deleteAlarmConfirm", { alarm: alarm.title }), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
-                    this.doDelete(alarm);
+                    this.doDelete(alarm.id);
                 }
             });
     }
@@ -602,6 +607,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     private doDelete(alarmId: any) {
+        console.log(alarmId);
         manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
             this._data = [...this._data.filter(u => u.id !== alarmId)];
             this.reset();
@@ -840,6 +846,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _onStatusChanged(status: any) {
+        console.log(status);
         if(status == 'All'){
             this.status = undefined;
             this.allActive = undefined;
@@ -855,7 +862,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
         this.allActive = undefined;
         this.status = this._getStatusOptions().filter((obj) => obj.label === status).map((obj) => obj.value)[0] as AlarmStatus;
-
+        console.log(this.status);
         if (!this.status) {
             return;
         }

@@ -1,14 +1,11 @@
 package org.openremote.manager.alarm;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.*;
 import org.openremote.model.alarm.Alarm.Status;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -22,7 +19,6 @@ import org.openremote.manager.event.ClientEventService;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.*;
@@ -34,16 +30,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-
-import static java.util.logging.Level.FINE;
-import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
 
-    public static final String ALARM_QUEUE = "seda://AlarmQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-    private static final Logger LOG = Logger.getLogger(org.openremote.manager.alarm.AlarmService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(org.openremote.manager.alarm.AlarmService.class.getName());
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -136,7 +128,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             });
         } catch (Exception e) {
             String msg = "Failed to create alarm: " + (alarm != null ? alarm.getTitle() : ' ');
-            LOG.log(Level.WARNING, msg, e);
+            LOGGER.log(Level.WARNING, msg, e);
             return new SentAlarm();
         }
     }
@@ -146,33 +138,36 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             List<Notification.Target> assignee = new ArrayList<>();
             assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
             Notification email = new Notification();
-            email.setName("New Alarm");
-            email.setMessage(new EmailNotificationMessage()
+            email.setName("New Alarm")
+                    .setMessage(new EmailNotificationMessage()
                     .setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
                             "Description: " + alarm.getContent() + "\n" +
                             "Severity: " + alarm.getSeverity() + "\n" +
                             "Status: " + alarm.getStatus())
-                    .setSubject("New Alarm Notification"));
-            email.setTargets(assignee);
+                    .setSubject("New Alarm Notification"))
+                    .setTargets(assignee);
 
             Notification push = new Notification();
-            push.setName("New Alarm");
-            push.setMessage(
+            push.setName("New Alarm")
+                    .setMessage(
                     new PushNotificationMessage()
                             .setTitle("Alarm: " + alarm.getTitle())
-                            .setBody("Add alarm info here.") // TODO: Add alarm info to body
-            );
-            push.setTargets(assignee);
+                            .setBody("Assigned to alarm: " + alarm.getTitle() + "\n" +
+                                    "Description: " + alarm.getContent() + "\n" +
+                                    "Severity: " + alarm.getSeverity() + "\n" +
+                                    "Status: " + alarm.getStatus())
+                    )
+                    .setTargets(assignee);
 
-            boolean resultPush = notificationService.sendNotification(push);
-            boolean resultEmail = notificationService.sendNotification(email);
+            notificationService.sendNotification(push);
+            notificationService.sendNotification(email);
 
 
-            LOG.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
+            LOGGER.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
 
         } catch (Exception e) {
             String msg = "Failed to send email concerning alarm: " + alarm.getTitle();
-            LOG.log(Level.WARNING, msg, e);
+            LOGGER.log(Level.WARNING, msg, e);
         }
     }
 
@@ -196,7 +191,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             query.setParameter("status", status);
             query.executeUpdate();
         });
-        if(status == Status.ACKNOWLEDGED.toString()){
+        if(status.equals(Status.ACKNOWLEDGED.toString())){
             this.setAlarmAcknowledged(id);
         }
     }
@@ -226,15 +221,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
         } catch (Exception e) {
             String msg = "Failed to update alarm: " + alarm.getTitle();
-            LOG.log(Level.WARNING, msg, e);
+            LOGGER.log(Level.WARNING, msg, e);
         }
     }
 
     public void assignUser(Long alarmId, String userId, String realm) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing user alarm link");
-            }
             PreparedStatement st;
 
             try {
@@ -249,17 +241,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create user alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
     public List<AlarmUserLink> getUserLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting user alarm links");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -278,23 +265,17 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
                 TypedQuery<AlarmUserLink> query = entityManager.createQuery(sb.toString(), AlarmUserLink.class);
                 parameters.forEach(query::setParameter);
-                List<AlarmUserLink> result = query.getResultList();
-                return result;
+                return query.getResultList();
             });
 
         } catch (Exception e) {
             String msg = "Failed to get user alarm links";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
     }
 
-    public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
+    public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing asset alarm link");
-            }
-
             try {
                 PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
                 for (String assetId : assetIds) {
@@ -308,18 +289,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create asset alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
-    public void linkAssets(ArrayList<AlarmAssetLink> links) {
+    public void linkAssets(List<AlarmAssetLink> links) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing asset alarm link");
-            }
-
             try {
                 PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
                 for (AlarmAssetLink link : links) {
@@ -333,17 +309,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create asset alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting asset alarm links");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -369,16 +340,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         } catch (Exception e) {
             String msg = "Failed to get asset alarm links";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
     }
 
     public List<SentAlarm> getAlarmsByAssetId(String assetId) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting alarms by assetId");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -395,16 +361,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         } catch (Exception e) {
             String msg = "Failed to get alarms by assetId";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
     }
 
     public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting Open alarms");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -419,13 +380,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         } catch (Exception e) {
             String msg = "Failed to get open alarms";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
-    }
-
-    public SentAlarm getSentAlarm(String alarmId) {
-        return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
     }
 
     public List<SentAlarm> getAlarms() throws IllegalArgumentException {

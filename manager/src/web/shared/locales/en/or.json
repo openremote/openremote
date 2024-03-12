@@ -744,6 +744,7 @@
   "alarm": {
     "": "Alarm",
     "alarm_plural": "Alarms",
+    "add": "Add Alarm",
     "inactive_plural": "Inactive alarms",
     "active_plural" : "Active alarms",
     "title": "Title",

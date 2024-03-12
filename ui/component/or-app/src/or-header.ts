@@ -354,6 +354,7 @@ export class OrHeader extends LitElement {
     @state()
     private alarmButton = 'bell-outline';
 
+    @state()
     private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
 
     private _eventSubscriptionId?: string;
