@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.impl;
 
+import jakarta.persistence.Entity;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -27,26 +28,24 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import jakarta.persistence.Entity;
-
 import java.util.Optional;
 
 @Entity
-public class GatewayAsset extends Asset<GatewayAsset> {
+public class GatewayV2Asset extends Asset<GatewayV2Asset> {
 
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.UUID);
     public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("gatewayStatus", ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("disabled", ValueType.BOOLEAN);
-    public static final AssetDescriptor<GatewayAsset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", null, GatewayAsset.class);
+    public static final AssetDescriptor<GatewayV2Asset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", "5a20cc", GatewayV2Asset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    protected GatewayAsset() {
+    protected GatewayV2Asset() {
     }
 
-    public GatewayAsset(String name) {
+    public GatewayV2Asset(String name) {
         super(name);
     }
 
@@ -54,7 +53,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
         return getAttributes().getValue(CLIENT_ID);
     }
 
-    public GatewayAsset setClientId(String clientId) {
+    public GatewayV2Asset setClientId(String clientId) {
         getAttributes().getOrCreate(CLIENT_ID).setValue(clientId);
         return this;
     }
@@ -63,7 +62,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
         return getAttributes().getValue(CLIENT_SECRET);
     }
 
-    public GatewayAsset setClientSecret(String clientSecret) {
+    public GatewayV2Asset setClientSecret(String clientSecret) {
         getAttributes().getOrCreate(CLIENT_SECRET).setValue(clientSecret);
         return this;
     }
@@ -72,7 +71,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
         return getAttributes().getValue(STATUS);
     }
 
-    public GatewayAsset setGatewayStatus(ConnectionStatus connectionStatus) {
+    public GatewayV2Asset setGatewayStatus(ConnectionStatus connectionStatus) {
         getAttributes().getOrCreate(STATUS).setValue(connectionStatus);
         return this;
     }
@@ -81,7 +80,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
         return getAttributes().getValue(DISABLED);
     }
 
-    public GatewayAsset setDisabled(Boolean disabled) {
+    public GatewayV2Asset setDisabled(Boolean disabled) {
         getAttributes().getOrCreate(DISABLED).setValue(disabled);
         return this;
     }
