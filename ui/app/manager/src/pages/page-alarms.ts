@@ -607,7 +607,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     private doDelete(alarmId: any) {
-        console.log(alarmId);
         manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
             this._data = [...this._data.filter(u => u.id !== alarmId)];
             this.reset();
@@ -846,7 +845,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _onStatusChanged(status: any) {
-        console.log(status);
         if(status == 'All'){
             this.status = undefined;
             this.allActive = undefined;
@@ -862,7 +860,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
         this.allActive = undefined;
         this.status = this._getStatusOptions().filter((obj) => obj.label === status).map((obj) => obj.value)[0] as AlarmStatus;
-        console.log(this.status);
         if (!this.status) {
             return;
         }
