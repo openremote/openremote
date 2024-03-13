@@ -373,9 +373,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 String sessionKey = getSessionKey(exchange);
                 EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                 LOG.log(TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
-                eventSubscriptions.createOrUpdate(sessionKey, subscription);
                 subscription.setSubscribed(true);
                 sendToSession(sessionKey, subscription);
+                eventSubscriptions.createOrUpdate(sessionKey, subscription);
             })
             .stop()
             .when(body().isInstanceOf(CancelEventSubscription.class))

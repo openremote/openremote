@@ -49,7 +49,6 @@ services:
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
-    <<: *awslogs
 
   postgresql:
     restart: always
@@ -60,7 +59,6 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
-    <<: *awslogs
 
   keycloak:
     restart: always
@@ -73,7 +71,6 @@ services:
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
       KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-38}
-    <<: *awslogs
 
   manager:
     restart: always
@@ -102,5 +99,3 @@ services:
     volumes:
       - manager-data:/storage
       - ./manager:/deployment/manager
-    <<: *awslogs
-
