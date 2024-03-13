@@ -72,7 +72,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-25}
+      KC_DB_POOL_MAX_SIZE: ${KC_DB_POOL_MAX_SIZE:-38}
     <<: *awslogs
 
   manager:
@@ -85,8 +85,8 @@ services:
       - "127.0.0.1:8405:8405" # Localhost metrics access
     environment:
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
-      OR_DB_POOL_MAX_SIZE: ${OR_DB_POOL_MAX_SIZE:-70}
-      OR_LOGGING_CONFIG_FILE:
+      OR_DB_POOL_MAX_SIZE: ${OR_DB_POOL_MAX_SIZE:-60}
+      OR_LOGGING_CONFIG_FILE: /deployment/manager/logging-load.properties
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:

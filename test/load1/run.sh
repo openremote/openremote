@@ -38,19 +38,22 @@ cd ../../
 cd test
 mkdir -p build/deployment1/manager/extensions build/deployment2/results build/deployment3/results
 cp ../setup/build/libs/openremote-load1-setup-0.0.0.jar build/deployment1/manager/extensions
-cp ../profile/test-load1.yml build/deployment1
+cp -r load1/deployment1 build
 cp load1/console-users.jmx load1/console-users.yml build/deployment2
-cp load1/auto-provisioning.jmx load1/auto-provisioning.yml build/deployment3
+cp load1/auto-provisioning.jmx load1/devices.csv load1/auto-provisioning.yml build/deployment3
 cd build
 
-if [ "$SERVER1" == "localhost" ]; then
-  echo "Deploying on localhost deployment1"
-  docker-compose -p test -f deployment1/test-load1.yml up -d
+if [ "$DEPLOYMENT1_SKIP" == "true" ]; then
+  echo "Skipping deployment1 (assuming stack already running and will be reused)"
 else
-  echo "Copying files to remote host deployment1 -> $SERVER1"
-  $SCP_PREFIX -r deployment1 $SERVER1:~
-  echo "Deploying on remote host deployment1 -> $SERVER1"
-  $SSH_PREFIX $SERVER1 << EOF
+  if [ "$SERVER1" == "localhost" ]; then
+    echo "Deploying on localhost deployment1"
+    docker-compose -p test -f deployment1/test-load1.yml up -d
+  else
+    echo "Copying files to remote host deployment1 -> $SERVER1"
+    $SCP_PREFIX -r deployment1 $SERVER1:~
+    echo "Deploying on remote host deployment1 -> $SERVER1"
+    $SSH_PREFIX $SERVER1 << EOF
 
 cd deployment1
 
@@ -64,18 +67,28 @@ else
   cat .env
 fi
 
-echo "Stopping any existing stack"
-OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml down
-# Prune old data
-docker volume rm test_manager-data test_postgresql-data
-OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml pull
-OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml up -d
+if [ "$DEPLOYMENT1_SKIP_FORCE_REDEPLOY" == "true" ]; then
+  echo "Skipping forced redeploy of manager instance, will just try restart"
+  docker restart test-manager-1 1>/dev/null 2>&1
+else
+  echo "Stopping any existing stack"
+  OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml down
+  # Prune old data
+  docker volume rm test_manager-data test_postgresql-data
+  OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml pull
 
-if [ \$? -ne 0 ]; then
-  exit 1
+  if [ \$? -ne 0 ]; then
+    echo "Failed to pull images"
+    exit 1
+  fi
 fi
 
-docker image prune -af
+OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml up -d
+if [ \$? -ne 0 ]; then
+  echo "Failed to start the stack"
+  exit 1
+fi
+docker image prune -af 1>/dev/null 2>&1
 
 echo "Waiting for up to 10mins for all services to be healthy"
 COUNT=1
@@ -111,127 +124,146 @@ else
 fi
 
 EOF
+  fi
+
+  if [ $? -ne 0 ]; then
+    echo "Failed to deploy deployment 1"
+    exit 1
+  else
+    echo "Deployed deployment 1"
+  fi
 fi
 
-if [ $? -ne 0 ]; then
-  echo "Failed to deploy deployment1"
-  exit 1
-else
-  echo "Deployed deployment1"
+
+# DEPLOYMENT 2
+SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
+if [ -n "$CONSOLE_THREAD_COUNT" ]; then
+  SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$CONSOLE_THREAD_COUNT"
 fi
+if [ -n "$CONSOLE_DURATION" ]; then
+  SETTINGS="$SETTINGS -o settings.env.DURATION=$CONSOLE_DURATION"
+fi
+if [ -n "$CONSOLE_RAMP_RATE" ]; then
+  SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$CONSOLE_RAMP_RATE"
+fi
+COMMAND="cd deployment2; docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml; cd .."
+echo "Deployment 2 launch command: $COMMAND"
 
 if [ "$SERVER2" == "localhost" ]; then
-  echo "Deploying on localhost deployment2"
-
+  echo "Deploying on localhost"
+  $COMMAND
 else
   echo "Copying files to remote host deployment2 -> $SERVER2"
   $SCP_PREFIX -r deployment2 $SERVER2:~
   echo "Deploying on remote host deployment2 -> $SERVER2"
   $SSH_PREFIX $SERVER2 << EOF
 
-cd deployment2
-#CONTAINER_ID=\$(docker run --rm -d -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus -o settings.env.MANAGER_HOSTNAME=$SERVER1 -o settings.env.DURATION=30 -o settings.env.THREAD_COUNT=10 console-users.yml)
-docker run --rm -d -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus -o settings.env.MANAGER_HOSTNAME=$SERVER1 -o settings.env.DURATION=30 -o settings.env.THREAD_COUNT=10 console-users.yml
+$COMMAND
 
 if [ \$? -ne 0 ]; then
   exit 1
 fi
 
-echo "Test is now running"
+echo "Test container is now running"
 
 EOF
 fi
 
 if [ $? -ne 0 ]; then
-  echo "Failed to deploy deployment2"
+  echo "Failed to deploy deployment 2"
   exit 1
 else
-  echo "Deployed deployment2"
+  echo "Deployed deployment 2"
 fi
 
-exit 0
+sleep 5
+
+# DEPLOYMENT 3
+
+SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
+if [ -n "$DEVICE_THREAD_COUNT" ]; then
+  SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEVICE_THREAD_COUNT"
+fi
+if [ -n "$DEVICE_DURATION" ]; then
+  SETTINGS="$SETTINGS -o settings.env.DURATION=$DEVICE_DURATION"
+fi
+if [ -n "$DEVICE_RAMP_RATE" ]; then
+  SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
+fi
+if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
+  SETTINGS="$SETTINGS -o settings.env.TIME_BETWEEN_PUBLISHES=$DEVICE_TIME_BETWEEN_PUBLISHES"
+fi
+COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
+
+echo "Deployment 3 launch command: $COMMAND"
 
 if [ "$SERVER3" == "localhost" ]; then
   echo "Deploying on localhost deployment3"
-
+  $COMMAND
 else
   echo "Copying files to remote host deployment3 -> $SERVER3"
   $SCP_PREFIX -r deployment3 $SERVER3:~
   echo "Deploying on remote host deployment3 -> $SERVER3"
+  $SSH_PREFIX $SERVER3 << EOF
 
+$COMMAND
+
+if [ \$? -ne 0 ]; then
+  exit 1
 fi
 
-if [ -z "$START" ]; then
- START=1
+echo "Test container is now running"
+
+EOF
 fi
 
-if [ -z "$CSV_PATH" ]; then
-  CSV_PATH="devices.csv"
+if [ $? -ne 0 ]; then
+  echo "Failed to deploy deployment 3"
+  exit 1
+else
+  echo "Deployed deployment 3"
 fi
 
-if [ -f "$CSV_PATH" ]; then
-    echo "CSV file '$CSV_PATH' already exists"
-    exit 1
-fi
+echo "Waiting for test runners to finish"
 
-if [ -d "$TEMP_CERT_DIR" ]; then
-    rm -rf $TEMP_CERT_DIR
-fi
+if [ "$SERVER2" == "localhost" ]; then
+  while [ -n "$(docker ps -q -f name=deployment2)" ]; do
+    echo "Waiting for deployment 2 container to exit..."
+    sleep 10
+  done
 
-mkdir -p $TEMP_CERT_DIR
+  echo "Deployment 2 container has finished"
 
-if [ ! -f "$TEMP_CERT_DIR/device.key" ]; then
-  echo "Generating a device private key"
-  MSYS_NO_PATHCONV=1 openssl genrsa -out "$TEMP_CERT_DIR/device.pem" 2048
-fi
+else
+  $SSH_PREFIX $SERVER2 << EOF
 
-# THIS DOESN'T WORK DUE TO FILE READ ISSUES ACROSS PROCESSES
-#if [ $COUNT -gt 100 ]; then
-#  # LIMIT PROCESSES TO 10
-#  CHILD_COUNT=$(( ($COUNT + 100 - 1) / 100 ))
-#  CHILD_COUNT=$(( $CHILD_COUNT > $MAX_PROCESSES ? $MAX_PROCESSES : $CHILD_COUNT ))
-#  PER_PROCESS_COUNT=$(( ($COUNT + $CHILD_COUNT - 1) / $CHILD_COUNT ))
-#  PER_PROCESS_COUNT=$(( $PER_PROCESS_COUNT < 100 ? 100 : $PER_PROCESS_COUNT ))
-#  PER_PROCESS_COUNT_LAST=$(( $COUNT - (($CHILD_COUNT-1) * $PER_PROCESS_COUNT) ))
-#  echo "Running in multi process mode, need to spawn $CHILD_COUNT processes"
-#  trap 'kill 0' EXIT
-#  i=1
-#  while [ $i -le $CHILD_COUNT ]; do
-#    echo "Starting process $i..."
-#    DEVICE_COUNT=$(( $i == $CHILD_COUNT ? $PER_PROCESS_COUNT_LAST : $PER_PROCESS_COUNT ))
-#    $0 $DEVICE_COUNT $(( (($i - 1) * $PER_PROCESS_COUNT) + 1 )) $TEMP_CERT_DIR/devices$i.csv &
-#    i=$((i+1))
-#  done
-#  wait
-#
-#  # Patch files together
-#  touch $CSV_PATH
-#  i=1
-#  while [ $i -le $CHILD_COUNT ]; do
-#    echo "Merging devices from process $i into CSV file '$CSV_PATH'..."
-#    cat $TEMP_CERT_DIR/devices$i.csv >> $CSV_PATH
-#    i=$((i+1))
-#  done
-#
-#  exit 0
-#fi
-
-echo "Generating CSV file '$CSV_PATH' for $COUNT devices starting at $START..."
-touch $CSV_PATH
-
-i=$START
-while [ $i -le $(( $COUNT + $START -1 )) ]; do
-    echo "Generating $DEVICE_PREFIX$i..."
-    MSYS_NO_PATHCONV=1 openssl req -new -key "$TEMP_CERT_DIR/device.pem" -subj '/C=NL/ST=North Brabant/O=OpenRemote/CN='$DEVICE_PREFIX$i -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr 1>/dev/null 2>&1
-    MSYS_NO_PATHCONV=1 openssl x509 -req -in $TEMP_CERT_DIR/$DEVICE_PREFIX$i.csr -CA $CA_PEM_PATH -CAkey $CA_KEY_PATH -CAcreateserial -out $TEMP_CERT_DIR/$DEVICE_PREFIX$i.pem -days 10000 -sha256 1>/dev/null 2>&1
-
-    if [ $? -ne 0 ]; then
-      echo "Failed to sign device certificate"
-      exit 1
-    fi
-
-    echo -n "$DEVICE_PREFIX$i," >> $CSV_PATH
-    awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' $TEMP_CERT_DIR/$DEVICE_PREFIX$i.pem >> $CSV_PATH
-    echo "" >> $CSV_PATH
-    i=$((i+1))
+while [ -n "\$(docker ps -q -f name=deployment2)" ]; do
+  echo "Waiting for deployment 2 container to exit..."
+  sleep 10
 done
+
+echo "Deployment 2 container has finished"
+
+EOF
+fi
+
+if [ "$SERVER3" == "localhost" ]; then
+  while [ -n "$(docker ps -q -f name=deployment3)" ]; do
+    echo "Waiting for deployment 3 container to exit..."
+    sleep 10
+  done
+
+  echo "Deployment 3 container has finished"
+
+else
+  $SSH_PREFIX $SERVER3 << EOF
+
+while [ -n "\$(docker ps -q -f name=deployment3)" ]; do
+  echo "Waiting for deployment 3 container to exit..."
+  sleep 10
+done
+
+echo "Deployment 3 container has finished"
+
+EOF
+fi
