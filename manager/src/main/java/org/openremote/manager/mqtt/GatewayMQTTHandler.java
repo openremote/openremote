@@ -21,6 +21,7 @@ package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.timer.TimerService;
@@ -77,7 +78,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int OPERATIONS_TOKEN_INDEX = 2;
     public static final int EVENTS_TOKEN_INDEX = 2;
     public static final int ASSET_ID_TOKEN_INDEX = 4;
-    public static final int REQUEST_RESPONSE_IDENTIFIER_TOKEN_INDEX = 4;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
@@ -265,19 +265,40 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
+        // TODO: Authorization
+
         // Replace any placeholders in the template
         String assetTemplate = payloadContent;
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, UniqueIdentifierGenerator.generateId());
 
-        // Try and parse the provided asset template
-        var asset = ValueUtil.parse(assetTemplate, Asset.class);
-        if (asset.isEmpty()) {
+        var optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
+
+        if (optionalAsset.isEmpty()) {
+            LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + handlerData.connection.getClientID());
             publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
             return;
         }
 
-        // as a test just return the asset back to the client - this will be replaced with the actual asset creation
-        mqttBrokerService.publishMessage(getResponseTopic(handlerData.topic), new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE);
+        Asset<?> asset = optionalAsset.get();
+        asset.setId(UniqueIdentifierGenerator.generateId());
+        asset.setRealm(realm);
+
+        try {
+            assetStorageService.merge(asset);
+        } catch (ConstraintViolationException e) {
+            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
+            LOG.fine("Failed to create asset " + asset + " in realm " + realm + " " + handlerData.connection.getClientID());
+            return;
+        } catch (Exception e) {
+            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.SERVER_ERROR);
+            LOG.warning("Failed to create asset " + asset + " in realm " + realm + " " + handlerData.connection.getClientID());
+            return;
+        }
+
+        // send success response
+        mqttBrokerService.publishMessage(getResponseTopic(handlerData.topic),
+                new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE
+        );
     }
 
 
@@ -362,7 +383,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(error), MqttQoS.AT_MOST_ONCE);
     }
 
-    // wraps the con, top, body into a data record for consumer usage
+    // wraps the con, top, body into a record object for consumer usage
     protected record PublishHandlerData(RemotingConnection connection, Topic topic, ByteBuf body) {
     }
 
