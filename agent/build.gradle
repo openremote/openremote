@@ -37,7 +37,7 @@ dependencies {
 
     implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
 
-    implementation "jdom:jdom:$jdomVersion"
+    implementation "org.jdom:jdom2:$jdomVersion"
 }
 
 jar {
