@@ -220,7 +220,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
-
         if (authContext == null) {
             LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
             return false;
@@ -244,11 +243,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        var authContext = getAuthContextFromConnection(connection);
+        if (authContext.isEmpty()) {
+            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
+            return;
+        }
+
         var topicHandler = getTopicHandler(topic);
         if (topicHandler.isPresent()) {
             // each handler will authorize the operation - similar to a http endpoint
             // handler will response with the appropriate error if the operation is not allowed
-            topicHandler.get().handler.accept(new MQTTMessage(connection, topic, body));
+            topicHandler.get().handler.accept(new MQTTMessage(connection, topic, body, authContext.get()));
         } else {
             LOG.fine("No handler found for topic " + topic);
         }
@@ -272,21 +277,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
     private void handleCreateAssetRequest(MQTTMessage message) {
         String payloadContent = message.body.toString(StandardCharsets.UTF_8);
         String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
-        var optionalAuthContext = getAuthContextFromConnection(message.connection);
-        if (optionalAuthContext.isEmpty()) {
-            LOG.fine("Failed to get auth context for create asset request " + message.connection.getClientID());
-            return;
-        }
-        var authContext = optionalAuthContext.get();
+
 
         // restricted users are not allowed to write assets
-        if (authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE)) {
+        if (message.authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE)) {
             publishErrorResponse(message.topic, ErrorResponseMessage.Error.FORBIDDEN);
             return;
         }
 
         // only users with the write assets role are allowed to create assets
-        if (!authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID)) {
+        if (!message.authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID)) {
             publishErrorResponse(message.topic, ErrorResponseMessage.Error.FORBIDDEN);
             return;
         }
@@ -414,7 +414,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected record MQTTPublishTopicHandler(Consumer<MQTTMessage> handler) {
     }
 
-    protected record MQTTMessage(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected record MQTTMessage(RemotingConnection connection, Topic topic, ByteBuf body, AuthContext authContext) {
     }
 
     protected record MultiAttributeData(List<Attribute<?>> attributes) {
