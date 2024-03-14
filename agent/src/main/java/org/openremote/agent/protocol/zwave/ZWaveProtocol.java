@@ -75,7 +75,12 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
 
     @Override
     protected synchronized void doStart(Container container) throws Exception {
-        String serialPort = agent.getSerialPort().orElseThrow(() -> new IllegalStateException("Invalid serial port property"));
+        String serialPort = agent.getSerialPort().orElse(null);
+        if (serialPort == null) {
+            LOG.info("No serial port provided for protocol: " + this);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            return;
+        }
         network = new ZWaveNetwork(serialPort, executorService);
         network.addConnectionStatusConsumer(this::setConnectionStatus);
         network.connect();
