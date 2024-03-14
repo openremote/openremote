@@ -39,6 +39,7 @@ import org.openremote.model.mqtt.ErrorResponseMessage;
 import org.openremote.model.mqtt.SuccessResponseMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -148,13 +149,21 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        // only events topics are allowed for subscriptions (unless its the operations topic with a response topic)
+        // only events and operation response topics are allowed for subscriptions
         if (!isEventsTopic(topic)) {
-            if (!isOperationsTopic(topic) && !isResponseTopic(topic)) {
-                LOG.finest("Invalid topic " + topic + " for subscriptions");
-                return false;
+            // check if the topic is a request-response operation topic
+            if (isOperationsTopic(topic) && isResponseTopic(topic)) {
+                var topicWithoutResponseSuffix = Topic.parse(topic.toString().replace("/" + RESPONSE_TOPIC, ""));
+                if (getHandlerFromTopic(topicWithoutResponseSuffix).isPresent()) {
+                    return true;
+                }
             }
+
+            LOG.finest("Invalid topic " + topic + " for subscribing" + OPERATIONS_TOPIC);
+            return false;
         }
+
+        //TODO: Check if the events topic exists and is allowed for the user
 
         //TODO: Authorization and implement
         return true;
@@ -163,6 +172,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
         // TODO:: Implement
+        LOG.fine("Subscribed to topic " + topic);
     }
 
     @Override
@@ -246,13 +256,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     }
 
-    private void handleCreateAssetRequest(PublishHandlerData publishTopicMessage) {
-        String responseIdentifier = topicTokenIndexToString(publishTopicMessage.topic, REQUEST_RESPONSE_IDENTIFIER_TOKEN_INDEX);
-        String payloadContent = publishTopicMessage.body.toString(StandardCharsets.UTF_8);
-        String realm = topicTokenIndexToString(publishTopicMessage.topic, REALM_TOKEN_INDEX);
+    private void handleCreateAssetRequest(PublishHandlerData handlerData) {
+        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
+        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
 
-        if (responseIdentifier == null) {
-            LOG.info("Received create asset request " + publishTopicMessage.connection.getClientID() + " with missing response identifier");
+        if (TextUtil.isNullOrEmpty(payloadContent)) {
+            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_EMPTY);
             return;
         }
 
@@ -263,37 +272,35 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // Try and parse the provided asset template
         var asset = ValueUtil.parse(assetTemplate, Asset.class);
         if (asset.isEmpty()) {
-            mqttBrokerService.publishMessage(getResponseTopic(publishTopicMessage.topic),
-                    new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
+            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
             return;
         }
 
         // as a test just return the asset back to the client - this will be replaced with the actual asset creation
-        mqttBrokerService.publishMessage(getResponseTopic(publishTopicMessage.topic),
-                new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE);
+        mqttBrokerService.publishMessage(getResponseTopic(handlerData.topic), new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 
 
-    protected void handleSingleLineAttributeUpdateRequest(PublishHandlerData message) {
-        String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
-        String assetId = topicTokenIndexToString(message.topic, ASSET_ID_TOKEN_INDEX);
-        String attributeName = topicTokenIndexToString(message.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
-        String payloadContent = message.body.toString(StandardCharsets.UTF_8);
+    protected void handleSingleLineAttributeUpdateRequest(PublishHandlerData handlerData) {
+        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
+        String assetId = topicTokenIndexToString(handlerData.topic, ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokenIndexToString(handlerData.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
+        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request " + message.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request " + handlerData.connection.getClientID());
             return;
         }
     }
 
-    protected void handleMultiLineAttributeUpdateRequest(PublishHandlerData message) {
-        String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
-        String assetId = topicTokenIndexToString(message.topic, ASSET_ID_TOKEN_INDEX);
-        String attributeName = topicTokenIndexToString(message.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
-        String payloadContent = message.body.toString(StandardCharsets.UTF_8);
+    protected void handleMultiLineAttributeUpdateRequest(PublishHandlerData handlerData) {
+        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
+        String assetId = topicTokenIndexToString(handlerData.topic, ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokenIndexToString(handlerData.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
+        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request " + message.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request " + handlerData.connection.getClientID());
             return;
         }
 
@@ -313,16 +320,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
-    protected String getResponseTopic(Topic topic) {
-        return topic.toString() + "/" + RESPONSE_TOPIC;
-    }
-
     protected boolean isOperationsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, OPERATIONS_TOKEN_INDEX), OPERATIONS_TOPIC);
     }
 
     protected boolean isResponseTopic(Topic topic) {
-        // always a suffix (so we need to check the last token)
+        // always a suffix
         return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
     }
 
@@ -333,6 +336,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected boolean isGatewayConnection(RemotingConnection connection) {
         return assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
                 .attributeValue(GatewayV2Asset.CLIENT_ID.getName(), connection.getClientID())) != null;
+    }
+
+    protected String getResponseTopic(Topic topic) {
+        return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
     // returns the handler for the given topic - if any
@@ -349,6 +356,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
         return Optional.ofNullable(matchedHandler);
+    }
+
+    protected void publishErrorResponse(Topic topic, ErrorResponseMessage.Error error) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(error), MqttQoS.AT_MOST_ONCE);
     }
 
     // wraps the con, top, body into a data record for consumer usage
