@@ -270,7 +270,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // as a test just return the asset back to the client - this will be replaced with the actual asset creation
         mqttBrokerService.publishMessage(getResponseTopic(publishTopicMessage.topic),
-                new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, ValueUtil.asJSON(asset)), MqttQoS.AT_MOST_ONCE);
+                new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 
 
