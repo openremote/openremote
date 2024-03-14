@@ -24,6 +24,7 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import jakarta.validation.ConstraintViolationException;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.keycloak.KeycloakSecurityContext;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -35,12 +36,12 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.asset.impl.GatewayV2Asset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.mqtt.ErrorResponseMessage;
 import org.openremote.model.mqtt.SuccessResponseMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -51,7 +52,7 @@ import java.util.regex.Pattern;
 
 import static org.openremote.manager.mqtt.Topic.SINGLE_LEVEL_TOKEN;
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
-import static org.openremote.model.Constants.ASSET_ID_REGEXP;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class GatewayMQTTHandler extends MQTTHandler {
@@ -77,7 +78,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int CLIENT_ID_TOKEN_INDEX = 1;
     public static final int OPERATIONS_TOKEN_INDEX = 2;
     public static final int EVENTS_TOKEN_INDEX = 2;
+    public static final int ASSETS_TOKEN_INDEX = 3;
     public static final int ASSET_ID_TOKEN_INDEX = 4;
+    public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
@@ -88,7 +91,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected boolean isKeycloak;
 
     // publish topic - handler map
-    protected HashMap<String, Consumer<PublishHandlerData>> topicHandlers = new HashMap<>();
+    protected HashMap<String, MQTTPublishTopicHandler> topicHandlers = new HashMap<>();
 
     @Override
     public void start(Container container) throws Exception {
@@ -154,7 +157,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             // check if the topic is a request-response operation topic
             if (isOperationsTopic(topic) && isResponseTopic(topic)) {
                 var topicWithoutResponseSuffix = Topic.parse(topic.toString().replace("/" + RESPONSE_TOPIC, ""));
-                if (getHandlerFromTopic(topicWithoutResponseSuffix).isPresent()) {
+                if (getTopicHandler(topicWithoutResponseSuffix).isPresent()) {
                     return true;
                 }
             }
@@ -192,15 +195,18 @@ public class GatewayMQTTHandler extends MQTTHandler {
         var prefix = SINGLE_LEVEL_TOKEN + "/" + SINGLE_LEVEL_TOKEN + "/" + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/";
 
         // topic: realm/clientId/operations/assets/+/create
-        topicHandlers.put(prefix + CREATE_TOPIC, this::handleCreateAssetRequest);
+        topicHandlers.put(prefix + CREATE_TOPIC,
+                new MQTTPublishTopicHandler(this::handleCreateAssetRequest));
 
         // topic: realm/clientId/operations/assets/+/attributes/+/update
-        topicHandlers.put(prefix + ATTRIBUTES_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + UPDATE_TOPIC, this::handleSingleLineAttributeUpdateRequest);
+        topicHandlers.put(prefix + ATTRIBUTES_TOPIC + "/" + SINGLE_LEVEL_TOKEN + "/" + UPDATE_TOPIC,
+                new MQTTPublishTopicHandler(this::handleSingleLineAttributeUpdateRequest));
 
         // topic: realm/clientId/operations/assets/+/attributes/update
-        topicHandlers.put(prefix + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC, this::handleMultiLineAttributeUpdateRequest);
+        topicHandlers.put(prefix + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
+                new MQTTPublishTopicHandler(this::handleMultiLineAttributeUpdateRequest));
 
-        topicHandlers.forEach((topic, handler) -> {
+        topicHandlers.forEach((topic, topicHandler) -> {
             LOG.fine("Registered handler for topic " + topic);
         });
     }
@@ -213,29 +219,36 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        AuthContext authContext = getAuthContextFromSecurityContext(securityContext);
+
+        if (authContext == null) {
+            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + connection);
+            return false;
+        }
+
         if (!isOperationsTopic(topic)) {
             LOG.finest("Invalid topic " + topic + " for publishing" + OPERATIONS_TOPIC);
             return false;
         }
 
-        //TODO: Authorization
-
-        if (getHandlerFromTopic(topic).isEmpty()) {
+        var topicHandler = getTopicHandler(topic);
+        if (topicHandler.isEmpty()) {
             LOG.fine("No handler found for topic " + topic);
             return false;
         }
 
+        // each handler will authorize the operation - similar to a http endpoint
+        // handler will response with the appropriate error if the operation is not allowed
         return true;
     }
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-        // TODO: Authorization
-
-        // we check whether we have a handler for the topic, if not we don't process it
-        var handler = getHandlerFromTopic(topic);
-        if (handler.isPresent()) {
-            handler.get().accept(new PublishHandlerData(connection, topic, body));
+        var topicHandler = getTopicHandler(topic);
+        if (topicHandler.isPresent()) {
+            // each handler will authorize the operation - similar to a http endpoint
+            // handler will response with the appropriate error if the operation is not allowed
+            topicHandler.get().handler.accept(new MQTTMessage(connection, topic, body));
         } else {
             LOG.fine("No handler found for topic " + topic);
         }
@@ -256,26 +269,36 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     }
 
-    private void handleCreateAssetRequest(PublishHandlerData handlerData) {
-        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
-        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
+    private void handleCreateAssetRequest(MQTTMessage message) {
+        String payloadContent = message.body.toString(StandardCharsets.UTF_8);
+        String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
+        var optionalAuthContext = getAuthContextFromConnection(message.connection);
+        if (optionalAuthContext.isEmpty()) {
+            LOG.fine("Failed to get auth context for create asset request " + message.connection.getClientID());
+            return;
+        }
+        var authContext = optionalAuthContext.get();
 
-        if (TextUtil.isNullOrEmpty(payloadContent)) {
-            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_EMPTY);
+        // restricted users are not allowed to write assets
+        if (authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE)) {
+            publishErrorResponse(message.topic, ErrorResponseMessage.Error.FORBIDDEN);
             return;
         }
 
-        // TODO: Authorization
+        // only users with the write assets role are allowed to create assets
+        if (!authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID)) {
+            publishErrorResponse(message.topic, ErrorResponseMessage.Error.FORBIDDEN);
+            return;
+        }
 
         // Replace any placeholders in the template
         String assetTemplate = payloadContent;
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, UniqueIdentifierGenerator.generateId());
 
         var optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
-
         if (optionalAsset.isEmpty()) {
-            LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + handlerData.connection.getClientID());
-            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
+            LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + message.connection.getClientID());
+            publishErrorResponse(message.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
             return;
         }
 
@@ -286,42 +309,44 @@ public class GatewayMQTTHandler extends MQTTHandler {
         try {
             assetStorageService.merge(asset);
         } catch (ConstraintViolationException e) {
-            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID, e.getMessage());
-            LOG.fine("Failed to create asset " + asset + " in realm " + realm + " " + handlerData.connection.getClientID());
+            publishErrorResponse(message.topic, ErrorResponseMessage.Error.MESSAGE_INVALID, e.getMessage());
+            LOG.fine("Failed to create asset " + asset + " in realm " + realm + " " + message.connection.getClientID());
             return;
         } catch (Exception e) {
-            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.SERVER_ERROR);
-            LOG.warning("Failed to create asset " + asset + " in realm " + realm + " " + handlerData.connection.getClientID());
+            publishErrorResponse(message.topic, ErrorResponseMessage.Error.SERVER_ERROR);
+            LOG.warning("Failed to create asset " + asset + " in realm " + realm + " " + message.connection.getClientID());
             return;
         }
 
         // send success response
-        mqttBrokerService.publishMessage(getResponseTopic(handlerData.topic),
+        mqttBrokerService.publishMessage(getResponseTopic(message.topic),
                 new SuccessResponseMessage(SuccessResponseMessage.Success.CREATED, realm, asset), MqttQoS.AT_MOST_ONCE
         );
     }
 
 
-    protected void handleSingleLineAttributeUpdateRequest(PublishHandlerData handlerData) {
-        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
-        String assetId = topicTokenIndexToString(handlerData.topic, ASSET_ID_TOKEN_INDEX);
-        String attributeName = topicTokenIndexToString(handlerData.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
-        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
+    protected void handleSingleLineAttributeUpdateRequest(MQTTMessage message) {
+        String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
+        String assetId = topicTokenIndexToString(message.topic, ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokenIndexToString(message.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
+        String payloadContent = message.body.toString(StandardCharsets.UTF_8);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request " + handlerData.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in single-line attribute update request " + message.connection.getClientID());
             return;
         }
     }
 
-    protected void handleMultiLineAttributeUpdateRequest(PublishHandlerData handlerData) {
-        String realm = topicTokenIndexToString(handlerData.topic, REALM_TOKEN_INDEX);
-        String assetId = topicTokenIndexToString(handlerData.topic, ASSET_ID_TOKEN_INDEX);
-        String attributeName = topicTokenIndexToString(handlerData.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
-        String payloadContent = handlerData.body.toString(StandardCharsets.UTF_8);
+    protected void handleMultiLineAttributeUpdateRequest(MQTTMessage message) {
+        String realm = topicTokenIndexToString(message.topic, REALM_TOKEN_INDEX);
+        String assetId = topicTokenIndexToString(message.topic, ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokenIndexToString(message.topic, ATTRIBUTE_NAME_TOKEN_INDEX);
+        String payloadContent = message.body.toString(StandardCharsets.UTF_8);
+
+        var authContext = getAuthContextFromConnection(message.connection);
 
         if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request " + handlerData.connection.getClientID());
+            LOG.info("Received invalid asset ID " + assetId + " in multi-line attribute update request " + message.connection.getClientID());
             return;
         }
 
@@ -346,7 +371,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected boolean isResponseTopic(Topic topic) {
-        // always a suffix
         return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
     }
 
@@ -363,12 +387,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
-    // returns the handler for the given topic - if any
-    protected Optional<Consumer<PublishHandlerData>> getHandlerFromTopic(Topic topic) {
-        Consumer<PublishHandlerData> matchedHandler = null;
-        for (Map.Entry<String, Consumer<PublishHandlerData>> entry : topicHandlers.entrySet()) {
+    protected Optional<MQTTPublishTopicHandler> getTopicHandler(Topic topic) {
+        MQTTPublishTopicHandler matchedHandler = null;
+        for (Map.Entry<String, MQTTPublishTopicHandler> entry : topicHandlers.entrySet()) {
             String topicPattern = entry.getKey();
-            Consumer<PublishHandlerData> handler = entry.getValue();
+            MQTTPublishTopicHandler handler = entry.getValue();
 
             // Translate MQTT topic patterns with wildcards (+ and #) into regular expressions
             if (topic.toString().matches(topicPattern.replace("+", "[^/]+").replace("#", ".*"))) {
@@ -387,8 +410,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
         mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
-    // wraps the con, top, body into a record object for consumer usage
-    protected record PublishHandlerData(RemotingConnection connection, Topic topic, ByteBuf body) {
+
+    protected record MQTTPublishTopicHandler(Consumer<MQTTMessage> handler) {
+    }
+
+    protected record MQTTMessage(RemotingConnection connection, Topic topic, ByteBuf body) {
+    }
+
+    protected record MultiAttributeData(List<Attribute<?>> attributes) {
     }
 
 

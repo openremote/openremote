@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public class ErrorResponseMessage {
 
     public enum Error {
-        MESSAGE_EMPTY,
         MESSAGE_INVALID,
         NOT_FOUND,
         UNAUTHORIZED,

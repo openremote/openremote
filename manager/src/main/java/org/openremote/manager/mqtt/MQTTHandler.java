@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.DEBUG;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
@@ -124,7 +124,7 @@ public abstract class MQTTHandler {
                 // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
                 // Need to be able to get connection/auth from the message somehow
                 if (connection == null) {
-                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
                     return;
                 }
 
@@ -304,8 +304,8 @@ public abstract class MQTTHandler {
 
     protected static Optional<AuthContext> getAuthContextFromConnection(RemotingConnection connection) {
         return Optional.ofNullable(getSubjectFromConnection(connection))
-            .map(MQTTHandler::getSecurityContextFromSubject)
-            .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
+                .map(MQTTHandler::getSecurityContextFromSubject)
+                .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
     }
 
     protected static AuthContext getAuthContextFromSecurityContext(KeycloakSecurityContext securityContext) {
