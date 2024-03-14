@@ -286,7 +286,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         try {
             assetStorageService.merge(asset);
         } catch (ConstraintViolationException e) {
-            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID);
+            publishErrorResponse(handlerData.topic, ErrorResponseMessage.Error.MESSAGE_INVALID, e.getMessage());
             LOG.fine("Failed to create asset " + asset + " in realm " + realm + " " + handlerData.connection.getClientID());
             return;
         } catch (Exception e) {
@@ -381,6 +381,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected void publishErrorResponse(Topic topic, ErrorResponseMessage.Error error) {
         mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(error), MqttQoS.AT_MOST_ONCE);
+    }
+
+    protected void publishErrorResponse(Topic topic, ErrorResponseMessage.Error error, String message) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
     // wraps the con, top, body into a record object for consumer usage

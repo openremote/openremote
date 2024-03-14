@@ -15,20 +15,20 @@ public class ErrorResponseMessage {
     }
 
     protected Error error;
+    protected String message;
 
     @JsonCreator
     public ErrorResponseMessage(Error error) {
         this.error = error;
     }
 
-    public Error getError() {
-        return error;
+    @JsonCreator
+    public ErrorResponseMessage(Error error, String message) {
+        this.error = error;
+        this.message = message;
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "error=" + error +
-                '}';
+    public Error getError() {
+        return error;
     }
 }
