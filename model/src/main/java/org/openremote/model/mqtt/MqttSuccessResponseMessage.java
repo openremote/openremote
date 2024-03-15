@@ -2,25 +2,28 @@ package org.openremote.model.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public class SuccessResponseMessage {
+public class MqttSuccessResponseMessage {
     protected String realm;
     protected Object data;
 
     public enum Success {
         CREATED,
-        UPDATED,
-        DELETED,
-        REQUESTED,
-        PROVISIONED,
+        ACCEPTED,
     }
 
     protected Success success;
 
     @JsonCreator
-    public SuccessResponseMessage(Success success, String realm, Object data) {
+    public MqttSuccessResponseMessage(Success success, String realm, Object data) {
         this.success = success;
         this.realm = realm;
         this.data = data;
+    }
+
+    @JsonCreator
+    public MqttSuccessResponseMessage(Success success, String realm) {
+        this.success = success;
+        this.realm = realm;
     }
 
     public String getRealm() {

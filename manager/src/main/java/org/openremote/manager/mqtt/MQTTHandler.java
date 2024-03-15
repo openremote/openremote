@@ -65,6 +65,7 @@ public abstract class MQTTHandler {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
 
+
     /**
      * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
      * initialised and started first.
@@ -302,7 +303,7 @@ public abstract class MQTTHandler {
         return KeycloakIdentityProvider.getSecurityContext(subject);
     }
 
-    protected static Optional<AuthContext> getAuthContextFromConnection(RemotingConnection connection) {
+    public static Optional<AuthContext> getAuthContextFromConnection(RemotingConnection connection) {
         return Optional.ofNullable(getSubjectFromConnection(connection))
                 .map(MQTTHandler::getSecurityContextFromSubject)
                 .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
