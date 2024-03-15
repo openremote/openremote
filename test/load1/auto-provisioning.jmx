@@ -10,6 +10,7 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub">
+        <boolProp name="ThreadGroup.delayedStart">true</boolProp>
         <stringProp name="ThreadGroup.num_threads">${__groovy(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;,)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__groovy(Math.max(1\,(int)((props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;).toInteger() / (props.get(&quot;RAMP_RATE&quot;) ?: &quot;50&quot;).toInteger())),)}</stringProp>
         <stringProp name="ThreadGroup.duration">${__groovy(props.get(&quot;DURATION&quot;) ?: &quot;300&quot;,)}</stringProp>
@@ -64,7 +65,7 @@
           <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
         </net.xmeter.samplers.ConnectSampler>
         <hashTree/>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response" enabled="true">
           <stringProp name="mqtt.topic_name">provisioning/${id}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -73,7 +74,7 @@
           <stringProp name="mqtt.sample_condition">number of received messages</stringProp>
           <stringProp name="mqtt.sample_condition_value">1</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
-          <stringProp name="mqtt.sample_condition_value_opt">30000</stringProp>
+          <stringProp name="mqtt.sample_condition_value_opt">60000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree/>
         <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="true">
@@ -87,7 +88,7 @@
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response"/>
+        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response" enabled="true"/>
         <hashTree>
           <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Regular Expression Extractor" enabled="true">
             <stringProp name="RegexExtractor.useHeaders">false</stringProp>
