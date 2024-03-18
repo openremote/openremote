@@ -54,7 +54,7 @@
           <stringProp name="mqtt.clientcert_password"></stringProp>
           <stringProp name="mqtt.client_id_prefix">${id}</stringProp>
           <boolProp name="mqtt.client_id_suffix">false</boolProp>
-          <stringProp name="mqtt.conn_keep_alive">300</stringProp>
+          <stringProp name="mqtt.conn_keep_alive">30</stringProp>
           <stringProp name="mqtt.conn_attampt_max">0</stringProp>
           <stringProp name="mqtt.reconn_attampt_max">0</stringProp>
           <stringProp name="mqtt.conn_clean_session">true</stringProp>
@@ -65,7 +65,7 @@
           <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
         </net.xmeter.samplers.ConnectSampler>
         <hashTree/>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response" enabled="true">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response">
           <stringProp name="mqtt.topic_name">provisioning/${id}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -74,10 +74,10 @@
           <stringProp name="mqtt.sample_condition">number of received messages</stringProp>
           <stringProp name="mqtt.sample_condition_value">1</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
-          <stringProp name="mqtt.sample_condition_value_opt">60000</stringProp>
+          <stringProp name="mqtt.sample_condition_value_opt">120000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree/>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="true">
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning">
           <stringProp name="mqtt.topic_name">provisioning/${id}/request</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -165,7 +165,7 @@
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -199,7 +199,7 @@
               <connectTime>true</connectTime>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename">results.log</stringProp>
         </ResultCollector>
         <hashTree/>
       </hashTree>

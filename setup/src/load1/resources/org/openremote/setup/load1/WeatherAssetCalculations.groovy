@@ -27,7 +27,7 @@ rules.add()
                 { facts ->
 
                     List<AttributeEvent> updates = []
-
+                    LOG.info("Calculations start")
                     // Get weather asset rainfall and/or temperature states that have changed value
                     facts.matchAssetState(
                             new AssetQuery()
@@ -49,14 +49,16 @@ rules.add()
                         facts.bind("updates", updates)
                     }
 
+                    LOG.info("Calculations end")
                     // Trigger the rule action if we have one or more changes to process
                     return !updates.isEmpty()
                 })
         .then(
                 { facts ->
                     def updates = facts.bound("updates") as List<AttributeEvent>
-
+                    LOG.info("Update start")
                     updates.forEach {
                         assets.dispatch(it)
                     }
+                    LOG.info("Update end")
                 })
