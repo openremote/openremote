@@ -1,10 +1,8 @@
-package org.openremote.manager.mqtt.gateway;
+package org.openremote.manager.mqtt;
 
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.manager.mqtt.MQTTBrokerService;
-import org.openremote.manager.mqtt.Topic;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.CancelEventSubscription;
@@ -20,9 +18,9 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.manager.mqtt.GatewayMQTTHandler.prepareHeaders;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
-import static org.openremote.manager.mqtt.gateway.GatewayMQTTHandler.prepareHeaders;
 
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
 public class GatewayMQTTSubscriptionManager {
