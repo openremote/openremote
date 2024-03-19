@@ -276,12 +276,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-        Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
-        if (authContext.isEmpty()) {
-            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + MQTTBrokerService.connectionToString(connection));
-            return;
-        }
-
         // Asset operations
         if (isAssetsMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
