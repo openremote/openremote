@@ -231,6 +231,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @Operation(description = "Write to a single attribute", responses = {
         @ApiResponse(
+            description = "The result of the write operation",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = AttributeWriteResult.class)))})
     Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
