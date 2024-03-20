@@ -99,3 +99,10 @@ MSYS_NO_PATHCONV=1 docker run --rm -it \
 -o settings.env.MANAGER_HOSTNAME=192.168.1.123 \
 console-users.yml
 ```
+
+## Full test script `run.sh`
+The `run.sh` script can be used to orchestrate deploying the 3 different deployments via `ssh` see the file header for
+usage e.g.:
+```bash
+./run.sh test1.example.com test2.example.com test3.example.com
+```

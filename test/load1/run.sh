@@ -2,9 +2,22 @@
 
 # Runs the test on the servers requested ./run.sh server1 server2 server3; this script requires SSH access to each server
 #
-# server1 - Server where the OpenRemote Manager should run
-# server2 - Server where the console-users test should run
-# server3 = Server where the auto-provisioning test should run
+# server1 - Server where the OpenRemote Manager should run (deployment 1)
+# server2 - Server where the console-users test should run (deployment 2)
+# server3 = Server where the auto-provisioning test should run (deployment 3)
+#
+# The following environment variables can be used:
+#
+# `DEPLOYMENT1_SKIP` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
+# `DEPLOYMENT1_SKIP_FORCE_REDEPLOY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
+# `CONSOLE_THREAD_COUNT` (default: unset) - Console user test `THREAD_COUNT`
+# `CONSOLE_DURATION` (default: unset) - Console user test `DURATION`
+# `CONSOLE_RAMP_RATE` (default: unset) - Console user test `RAMP_RATE`
+# `DEVICE_THREAD_COUNT` (default: unset) - Auto provisioning device test `THREAD_COUNT`
+# `DEVICE_DURATION` (default: unset) - Auto provisioning device test `DURATION`
+# `DEVICE_RAMP_RATE` (default: unset) - Auto provisioning device test `RAMP_RATE`
+# `DEVICE_TIME_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `TIME_BETWEEN_PUBLISHES`
+
 
 SSH_PREFIX="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 SCP_PREFIX="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
