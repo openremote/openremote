@@ -1,4 +1,0 @@
-include ':app'
-rootProject.name = "GenericApp"
-include ':ORLib'
-project(':ORLib').projectDir = file('../ORLib')
