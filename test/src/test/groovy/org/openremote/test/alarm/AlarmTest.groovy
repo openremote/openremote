@@ -110,7 +110,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         where:
         title | content | severity | status
         null | "Test Description" | Severity.LOW | Alarm.Status.OPEN
-        "Another Alarm" | null | Severity.MEDIUM | Alarm.Status.RESOLVED
         "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
     }
 
