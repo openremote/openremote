@@ -606,14 +606,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
     private doDelete(alarmId: any) {
         manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
             this._data = [...this._data.filter(u => u.id !== alarmId)];
-            this.reset();
+            location.reload();
         })
     }
 
     private doMultipleDelete(alarmIds: any[]) {
         manager.rest.api.AlarmResource.removeAlarms(alarmIds).then(response => {
             this._data = [...this._data.filter(u => !alarmIds.includes(u.id))];
-            this.reset();
+            location.reload();
         })
     }
 
@@ -695,7 +695,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   .type="${InputType.DATETIME}"
                                   .value="${new Date(alarm.lastModified)}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!write || this.creationState}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!write || this.creationState || this.alarm}"
                                   .label="${i18next.t("alarm.source")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getSourceOptions().map( s => s.label)}"
@@ -897,7 +897,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
 
     protected _getUsers() {
-        return this._loadedUsers.map((u) => {
+        return this._loadedUsers.filter((u) => u.username != 'manager-keycloak').map((u) => {
             return {value: u.id, label: u.username};
         });
     }

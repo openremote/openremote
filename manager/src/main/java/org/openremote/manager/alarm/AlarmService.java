@@ -171,38 +171,17 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public void setAlarmAcknowledged(String id) {
-        setAlarmAcknowledged(id, timerService.getCurrentTimeMillis());
-    }
-
-    public void setAlarmAcknowledged(String id, long timestamp) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET acknowledgedOn=:timestamp WHERE id =:id");
-            query.setParameter("id", id);
-            query.setParameter("timestamp", new Date(timestamp));
-            query.executeUpdate();
-        });
-    }
-
-    public void updateAlarmStatus(String id, String status) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
-            query.setParameter("id", id);
-            query.setParameter("status", status);
-            query.executeUpdate();
-        });
-        if(status.equals(Status.ACKNOWLEDGED.toString())){
-            this.setAlarmAcknowledged(id);
-        }
-    }
-
     public void assignUser(Long alarmId, String userId){
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
-            query.setParameter("id", alarmId);
-            query.setParameter("assigneeId", userId);
-            query.executeUpdate();
-        });
+        try {
+            persistenceService.doTransaction(entityManager -> {
+                Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
+                query.setParameter("id", alarmId);
+                query.setParameter("assigneeId", userId);
+                query.executeUpdate();
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void updateAlarm(Long id, SentAlarm alarm) {
@@ -385,35 +364,52 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public List<SentAlarm> getAlarms() throws IllegalArgumentException {
-        StringBuilder builder = new StringBuilder();
-        builder.append("select n from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
-        builder.append(" order by n.createdOn desc");
-        return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
-            return query.getResultList();
+        try {
+            StringBuilder builder = new StringBuilder();
+            builder.append("select n from SentAlarm n where 1=1");
+            List<Object> parameters = new ArrayList<>();
+            builder.append(" order by n.createdOn desc");
+            return persistenceService.doReturningTransaction(entityManager -> {
+                TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
+                IntStream.range(0, parameters.size())
+                        .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+                return query.getResultList();
 
-        });
+            });
+        } catch (Exception e) {
+            String msg = "Failed to get alarms";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
-    public void removeAlarm(Long id) {
-        persistenceService.doTransaction(entityManager -> entityManager
-                .createQuery("delete SentAlarm where id = :id")
-                .setParameter("id", id)
-                .executeUpdate()
-        );
+    public void removeAlarm(Long id, String realm) {
+        try {
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
+            persistenceService.doTransaction(entityManager -> entityManager
+                    .createQuery("delete SentAlarm where id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate()
+            );
+        } catch (Exception e) {
+            String msg = "Failed to get alarms";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
-    public void removeAlarms(List<Long> ids) throws IllegalArgumentException {
-        StringBuilder builder = new StringBuilder();
-        builder.append("delete from SentAlarm n where n.id in :ids");
+    public void removeAlarms(List<Long> ids, String realm) throws IllegalArgumentException {
+        try {
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
+            StringBuilder builder = new StringBuilder();
+            builder.append("delete from SentAlarm n where n.id in :ids");
 
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery(builder.toString());
-            query.setParameter("ids", ids);
-            query.executeUpdate();
-        });
+            persistenceService.doTransaction(entityManager -> {
+                Query query = entityManager.createQuery(builder.toString());
+                query.setParameter("ids", ids);
+                query.executeUpdate();
+            });
+        } catch (Exception e) {
+            String msg = "Failed to get alarms";
+            throw new IllegalStateException(msg, e);
+        }
     }
 }

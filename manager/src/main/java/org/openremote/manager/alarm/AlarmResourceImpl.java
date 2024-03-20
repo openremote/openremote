@@ -54,7 +54,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> ids) {
         try{
-            alarmService.removeAlarms(ids);
+            alarmService.removeAlarms(ids, getAuthenticatedRealmName());
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(this.invalidCriteria, Status.BAD_REQUEST);
         }
@@ -65,7 +65,7 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         if (alarmId == null) {
             throw new WebApplicationException(this.missingId, Status.BAD_REQUEST);
         }
-        alarmService.removeAlarm(alarmId);
+        alarmService.removeAlarm(alarmId, getAuthenticatedRealmName());
     }
 
     @Override
