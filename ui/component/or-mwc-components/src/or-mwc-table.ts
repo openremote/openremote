@@ -325,7 +325,7 @@ export class OrMwcTable extends LitElement {
                                             maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
                                         } as any;
                                         if(index === 0 && this.config.multiSelect){
-                                            const allSelected = this.selectedRows?.length === this.rows?.length;
+                                            const allSelected = this.rows && this.rows.length > 0 && this.selectedRows?.length === this.rows?.length;
                                             const indeterminate = !allSelected && this.selectedRows && this.selectedRows.length > 0;
                                             return html`
                                                 <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"

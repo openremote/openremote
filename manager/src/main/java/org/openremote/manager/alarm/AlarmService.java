@@ -407,17 +407,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public void removeAlarms(List<Long> ids) throws IllegalArgumentException {
-
         StringBuilder builder = new StringBuilder();
-        builder.append("delete from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
+        builder.append("delete from SentAlarm n where n.id in :ids");
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+            query.setParameter("ids", ids);
             query.executeUpdate();
         });
-
     }
 }

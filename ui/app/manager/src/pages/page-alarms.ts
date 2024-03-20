@@ -24,7 +24,11 @@ import {guard} from "lit/directives/guard.js";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {OrMwcTable, OrMwcTableRowClickEvent, OrMwcTableRowSelectEvent} from "@openremote/or-mwc-components/or-mwc-table";
+import {
+    OrMwcTable,
+    OrMwcTableRowClickEvent,
+    OrMwcTableRowSelectEvent
+} from "@openremote/or-mwc-components/or-mwc-table";
 import "../components/alarms/or-alarms-table";
 
 export interface PageAlarmsConfig {
@@ -350,12 +354,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected async _createUpdateAlarm(alarm: AlarmModel, action: "update" | "create") {
-        if (!alarm.title || !alarm.content) {
-            return;
-        }
-
-        if (alarm.content === "" || alarm.title === "") {
-            // Means a validation failure shouldn't get here
+        if (!alarm.title || alarm.title === "") {
             return;
         }
 
@@ -381,7 +380,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         } catch (e) {
             if (isAxiosError(e)) {
                 console.error(
-                    (isUpdate ? "save alarm failed" : "create alarm failed") + ": response = " + e.response.statusText
+                    (isUpdate ? "alarm.saveAlarmFailed" : "alarm.createAlarmFailed") + ": response = " + e.response.statusText
                 );
 
                 if (e.response.status === 400) {
@@ -497,7 +496,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
             previousAssetLinks: [],
             alarmUserLinks: [],
             loaded: true,
-            source: AlarmSource.MANUAL
+            source: AlarmSource.MANUAL,
+            severity: AlarmSeverity.MEDIUM,
+            status: AlarmStatus.OPEN
         };
     }
 
@@ -594,14 +595,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     private _deleteAlarms() {
-        showOkCancelDialog(i18next.t("alarm.deleteAlarms"), i18next.t("alarm.deleteAlarmsConfirm", { alarm: this._selectedIds.length }), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("alarm.deleteAlarms"), i18next.t("alarm.deleteAlarmsConfirm", { count: this._selectedIds.length }), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
-                    const ids = this._selectedIds
-                        .filter((index) => this._data[index] !== undefined)
-                        .map((index) => this._data[index].id);
-
-                    this.doMultipleDelete(ids);
+                    this.doMultipleDelete(this._selectedIds);
                 }
             });
     }
@@ -666,7 +663,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <h5>${i18next.t("details").toUpperCase()}</h5>
                             <!-- alarm details -->
                             <or-mwc-input class="alarm-input" ?disabled="${!write}"
-                                      .label="${i18next.t("alarm.title")}"
+                                      .label="${i18next.t("alarm.title")}" required
                                       .type="${InputType.TEXT}"
                                       .value="${alarm.title}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
