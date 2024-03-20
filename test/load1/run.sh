@@ -10,10 +10,10 @@
 #
 # `DEPLOYMENT1_SKIP` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
 # `DEPLOYMENT1_SKIP_FORCE_REDEPLOY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
-# `CONSOLE_THREAD_COUNT` (default: unset) - Console user test `THREAD_COUNT`
+# `CONSOLE_THREAD_COUNT` (default: unset) - Console user test `THREAD_COUNT` (set to `0` to skip deployment 2 test)
 # `CONSOLE_DURATION` (default: unset) - Console user test `DURATION`
 # `CONSOLE_RAMP_RATE` (default: unset) - Console user test `RAMP_RATE`
-# `DEVICE_THREAD_COUNT` (default: unset) - Auto provisioning device test `THREAD_COUNT`
+# `DEVICE_THREAD_COUNT` (default: unset) - Auto provisioning device test `THREAD_COUNT` (set to `0` to skip deployment 3 test)
 # `DEVICE_DURATION` (default: unset) - Auto provisioning device test `DURATION`
 # `DEVICE_RAMP_RATE` (default: unset) - Auto provisioning device test `RAMP_RATE`
 # `DEVICE_TIME_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `TIME_BETWEEN_PUBLISHES`
@@ -147,29 +147,31 @@ EOF
   fi
 fi
 
+sleep 120
 
 # DEPLOYMENT 2
-SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
-if [ -n "$CONSOLE_THREAD_COUNT" ]; then
-  SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$CONSOLE_THREAD_COUNT"
-fi
-if [ -n "$CONSOLE_DURATION" ]; then
-  SETTINGS="$SETTINGS -o settings.env.DURATION=$CONSOLE_DURATION"
-fi
-if [ -n "$CONSOLE_RAMP_RATE" ]; then
-  SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$CONSOLE_RAMP_RATE"
-fi
-COMMAND="cd deployment2; docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml; cd .."
-echo "Deployment 2 launch command: $COMMAND"
+if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
+  SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
+  if [ -n "$CONSOLE_THREAD_COUNT" ]; then
+    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$CONSOLE_THREAD_COUNT"
+  fi
+  if [ -n "$CONSOLE_DURATION" ]; then
+    SETTINGS="$SETTINGS -o settings.env.DURATION=$CONSOLE_DURATION"
+  fi
+  if [ -n "$CONSOLE_RAMP_RATE" ]; then
+    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$CONSOLE_RAMP_RATE"
+  fi
+  COMMAND="cd deployment2; docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml; cd .."
+  echo "Deployment 2 launch command: $COMMAND"
 
-if [ "$SERVER2" == "localhost" ]; then
-  echo "Deploying on localhost"
-  $COMMAND
-else
-  echo "Copying files to remote host deployment2 -> $SERVER2"
-  $SCP_PREFIX -r deployment2 $SERVER2:~
-  echo "Deploying on remote host deployment2 -> $SERVER2"
-  $SSH_PREFIX $SERVER2 << EOF
+  if [ "$SERVER2" == "localhost" ]; then
+    echo "Deploying on localhost"
+    $COMMAND
+  else
+    echo "Copying files to remote host deployment2 -> $SERVER2"
+    $SCP_PREFIX -r deployment2 $SERVER2:~
+    echo "Deploying on remote host deployment2 -> $SERVER2"
+    $SSH_PREFIX $SERVER2 << EOF
 
 $COMMAND
 
@@ -180,44 +182,45 @@ fi
 echo "Test container is now running"
 
 EOF
-fi
+  fi
 
-if [ $? -ne 0 ]; then
-  echo "Failed to deploy deployment 2"
-  exit 1
+  if [ $? -ne 0 ]; then
+    echo "Failed to deploy deployment 2"
+    exit 1
+  else
+    echo "Deployed deployment 2"
+  fi
 else
-  echo "Deployed deployment 2"
+  echo "Skipping deployment 2"
 fi
-
-sleep 5
 
 # DEPLOYMENT 3
+if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
+  SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
+  if [ -n "$DEVICE_THREAD_COUNT" ]; then
+    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEVICE_THREAD_COUNT"
+  fi
+  if [ -n "$DEVICE_DURATION" ]; then
+    SETTINGS="$SETTINGS -o settings.env.DURATION=$DEVICE_DURATION"
+  fi
+  if [ -n "$DEVICE_RAMP_RATE" ]; then
+    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
+  fi
+  if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
+    SETTINGS="$SETTINGS -o settings.env.TIME_BETWEEN_PUBLISHES=$DEVICE_TIME_BETWEEN_PUBLISHES"
+  fi
+  COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
 
-SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
-if [ -n "$DEVICE_THREAD_COUNT" ]; then
-  SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEVICE_THREAD_COUNT"
-fi
-if [ -n "$DEVICE_DURATION" ]; then
-  SETTINGS="$SETTINGS -o settings.env.DURATION=$DEVICE_DURATION"
-fi
-if [ -n "$DEVICE_RAMP_RATE" ]; then
-  SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
-fi
-if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
-  SETTINGS="$SETTINGS -o settings.env.TIME_BETWEEN_PUBLISHES=$DEVICE_TIME_BETWEEN_PUBLISHES"
-fi
-COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
+  echo "Deployment 3 launch command: $COMMAND"
 
-echo "Deployment 3 launch command: $COMMAND"
-
-if [ "$SERVER3" == "localhost" ]; then
-  echo "Deploying on localhost deployment3"
-  $COMMAND
-else
-  echo "Copying files to remote host deployment3 -> $SERVER3"
-  $SCP_PREFIX -r deployment3 $SERVER3:~
-  echo "Deploying on remote host deployment3 -> $SERVER3"
-  $SSH_PREFIX $SERVER3 << EOF
+  if [ "$SERVER3" == "localhost" ]; then
+    echo "Deploying on localhost deployment3"
+    $COMMAND
+  else
+    echo "Copying files to remote host deployment3 -> $SERVER3"
+    $SCP_PREFIX -r deployment3 $SERVER3:~
+    echo "Deploying on remote host deployment3 -> $SERVER3"
+    $SSH_PREFIX $SERVER3 << EOF
 
 $COMMAND
 
@@ -228,27 +231,31 @@ fi
 echo "Test container is now running"
 
 EOF
-fi
+  fi
 
-if [ $? -ne 0 ]; then
-  echo "Failed to deploy deployment 3"
-  exit 1
+  if [ $? -ne 0 ]; then
+    echo "Failed to deploy deployment 3"
+    exit 1
+  else
+    echo "Deployed deployment 3"
+  fi
 else
-  echo "Deployed deployment 3"
+  echo "Skipping deployment 3"
 fi
 
 echo "Waiting for test runners to finish"
 
-if [ "$SERVER2" == "localhost" ]; then
-  while [ -n "$(docker ps -q -f name=deployment2)" ]; do
-    echo "Waiting for deployment 2 container to exit..."
-    sleep 10
-  done
+if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
+  if [ "$SERVER2" == "localhost" ]; then
+    while [ -n "$(docker ps -q -f name=deployment2)" ]; do
+      echo "Waiting for deployment 2 container to exit..."
+      sleep 10
+    done
 
-  echo "Deployment 2 container has finished"
+    echo "Deployment 2 container has finished"
 
-else
-  $SSH_PREFIX $SERVER2 << EOF
+  else
+    $SSH_PREFIX $SERVER2 << EOF
 
 while [ -n "\$(docker ps -q -f name=deployment2)" ]; do
   echo "Waiting for deployment 2 container to exit..."
@@ -258,18 +265,20 @@ done
 echo "Deployment 2 container has finished"
 
 EOF
+  fi
 fi
 
-if [ "$SERVER3" == "localhost" ]; then
-  while [ -n "$(docker ps -q -f name=deployment3)" ]; do
-    echo "Waiting for deployment 3 container to exit..."
-    sleep 10
-  done
+if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
+  if [ "$SERVER3" == "localhost" ]; then
+    while [ -n "$(docker ps -q -f name=deployment3)" ]; do
+      echo "Waiting for deployment 3 container to exit..."
+      sleep 10
+    done
 
-  echo "Deployment 3 container has finished"
+    echo "Deployment 3 container has finished"
 
-else
-  $SSH_PREFIX $SERVER3 << EOF
+  else
+    $SSH_PREFIX $SERVER3 << EOF
 
 while [ -n "\$(docker ps -q -f name=deployment3)" ]; do
   echo "Waiting for deployment 3 container to exit..."
@@ -279,4 +288,5 @@ done
 echo "Deployment 3 container has finished"
 
 EOF
+  fi
 fi

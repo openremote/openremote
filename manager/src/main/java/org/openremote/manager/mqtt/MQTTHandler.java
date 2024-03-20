@@ -124,7 +124,7 @@ public abstract class MQTTHandler {
                 // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
                 // Need to be able to get connection/auth from the message somehow
                 if (connection == null) {
-                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(TRACE, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
