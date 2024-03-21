@@ -34,11 +34,16 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
+import org.openremote.model.asset.ReadAssetEvent;
+import org.openremote.model.asset.ReadAttributeEvent;
+import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.mqtt.MQTTErrorResponse;
 import org.openremote.model.mqtt.MQTTSuccessResponse;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
@@ -82,7 +87,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int ASSETS_METHOD_TOKEN = 5;
     public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
-    public static final int ATTRIBUTES_METHOD_TOKEN = 7;
+    public static final int ATTRIBUTES_METHOD_TOKEN_INDEX = 7;
+
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
     protected AssetProcessingService assetProcessingService;
@@ -169,7 +175,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         // TODO: Check for valid topic + authorization
-
         return true;
     }
 
@@ -190,15 +195,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE,
-
                 // <realm>/<clientId>/operations/assets/<assetId>/get
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET,
 
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE,
-
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET
         );
     }
 
@@ -222,10 +227,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        boolean isRestrictedUser = authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
+        boolean isRestrictedUser = identityProvider.isRestrictedUser(authContext);
         boolean hasWriteAssetsRole = authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID);
         String connectionID = getConnectionIDString(connection);
-
         List<String> topicTokens = topic.getTokens();
 
         // Asset operations
@@ -233,6 +237,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             String method = topicTokens.get(ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE -> {
+                    //TODO: authorizeEventWrite for AssetEvents
                     if (isRestrictedUser || !hasWriteAssetsRole) {
                         LOG.finer("User is unauthorized to create assets in realm " + topicRealm(topic) + " " + connectionID);
                         return false;
@@ -249,59 +254,80 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case GET -> {
-                    if (!authContext.hasResourceRole(READ_ASSETS_ROLE, KEYCLOAK_CLIENT_ID)) {
-                        LOG.finer("User is unauthorized to get assets in realm " + topicRealm(topic) + " " + connectionID);
-                        return false;
-                    }
-                    // Restricted users? TODO
-                }
-
-            }
-            // Attribute operations
-        } else if (isAttributesMethodTopic(topic)) {
-            String method = topicTokens.get(ATTRIBUTES_METHOD_TOKEN);
-            switch (Objects.requireNonNull(method)) {
-                case UPDATE, GET -> {
-                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
-                        LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
-                        return false;
-                    }
                     if (!hasValidAssetId(topic)) {
                         LOG.finer("Invalid asset get request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/get " + connectionID);
                         return false;
                     }
+                    ReadAssetEvent event = buildReadAssetEvent(topicTokens);
+                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
+                        LOG.fine("Get asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
+                        return false;
+                    }
+
+                }
+
+            }
+        }
+        // Attribute operations
+        else if (isAttributesMethodTopic(topic)) {
+            String method = topicTokens.get(ATTRIBUTES_METHOD_TOKEN_INDEX);
+            switch (Objects.requireNonNull(method)) {
+                case UPDATE -> {
+                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
+                        LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + " " + connectionID);
+                        return false;
+                    }
+                }
+                case GET -> {
+                    if (hasValidAssetId(topic)) {
+                        LOG.finer("Invalid get attribute request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get " + connectionID);
+                        return false;
+                    }
+                    ReadAttributeEvent event = buildReadAttributeEvent(topicTokens);
+                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
+                        LOG.fine("Get attribute request was not authorised for this user and topic: topic=" + topic + ", " + connectionID);
+                        return false;
+                    }
                 }
             }
-        } else { // unsupported publish topic
+        }
+        // Multi attribute update request (Edge case) (authorization needs to be handled in the handler function)
+        else if (isMultiAttributeUpdateTopic(topic)) {
+            LOG.fine("Multi attribute update request " + topic + " " + connectionID);
+        } else {
             return false;
         }
+
 
         return true;
     }
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        List<String> topicTokens = topic.getTokens();
+
         // Asset operations
         if (isAssetsMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE -> createAssetRequest(connection, topic, body);
-                case DELETE ->
-                        LOG.fine("Received delete asset request " + topic + " " + getConnectionIDString(connection));
+                case DELETE -> LOG.fine("Received delete asset request");
                 case GET -> getAssetRequest(connection, topic, body);
             }
         }
 
         // Attribute operations
         if (isAttributesMethodTopic(topic)) {
-            var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN);
+            var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
-                case UPDATE -> {
-                    updateAttributeRequest(connection, topic, body);
-                }
-                case GET ->
-                        LOG.fine("Received get attribute request " + topic + " " + getConnectionIDString(connection));
+                case UPDATE -> updateAttributeRequest(connection, topic, body);
+                case GET -> LOG.fine("Received get attribute request");
             }
+        }
+
+        // Multi attribute operation
+        if (isMultiAttributeUpdateTopic(topic)) {
+            LOG.fine("Received multi attribute update request " + topic + " " + getConnectionIDString(connection));
         }
     }
 
@@ -332,7 +358,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
         asset.setId(UniqueIdentifierGenerator.generateId());
         asset.setRealm(realm);
 
-        assetStorageService.merge(asset); // TODO: Try catch and publish error response?
+        try {
+            assetStorageService.merge(asset);
+        } catch (Exception e) {
+            LOG.warning("Failed to merge asset " + asset + " " + getConnectionIDString(connection));
+            publishErrorResponse(topic, MQTTErrorResponse.Error.SERVER_ERROR, "Failed to process asset");
+            return;
+        }
+
         publishSuccessResponse(topic, MQTTSuccessResponse.Success.CREATED, realm, asset);
     }
 
@@ -379,6 +412,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return new AttributeEvent(assetId, attributeName, value).setSource(GatewayMQTTHandler.class.getSimpleName());
     }
 
+    protected static AssetEvent buildAssetEvent(List<String> topicTokens, Asset<?> asset, AssetEvent.Cause cause) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new AssetEvent(cause, asset, null);
+    }
+
+    protected static ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new ReadAssetEvent(assetId);
+    }
+
+    protected static ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
+        return new ReadAttributeEvent(assetId, attributeName);
+    }
+
 
     protected boolean isAssetsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC);
@@ -394,8 +443,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected boolean isAttributesMethodTopic(Topic topic) {
         return isAttributesTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN), UPDATE) ||
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN), GET);
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE) ||
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET);
+    }
+
+    protected boolean isMultiAttributeUpdateTopic(Topic topic) {
+        return isAttributesTopic(topic) &&
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE) &&
+                Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE);
     }
 
 
@@ -416,7 +471,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Objects.equals(topicTokenIndexToString(topic, EVENTS_TOKEN_INDEX), EVENTS_TOPIC);
     }
 
-
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
         headers.put(SESSION_KEY, getConnectionIDString(connection));
@@ -427,6 +481,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     public String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Optional<Asset<GatewayV2Asset>> getGateway(RemotingConnection connection) {
+        if (connection.getClientID().contains("gateway")) {
+            return Optional.ofNullable((Asset<GatewayV2Asset>) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
+                    .attributeValue(GatewayV2Asset.CLIENT_ID.getName(), connection.getClientID())));
+        }
+        return Optional.empty();
     }
 
     protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error) {
