@@ -98,6 +98,7 @@ public interface Constants {
     String UNITS_MEGA = "mega";
     String UNITS_KILO = "kilo";
     String UNITS_CENTI = "centi";
+    String UNITS_HECTO = "hecto";
     String UNITS_MICRO = "micro";
     String UNITS_MILLI = "milli";
     String UNITS_PERCENTAGE = "percentage";

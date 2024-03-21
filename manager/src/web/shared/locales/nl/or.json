@@ -395,6 +395,7 @@
     "mega": "M",
     "kilo": "k",
     "centi": "c",
+    "hecto": "h",
     "milli": "m",
     "micro": "µ",
     "percentage": "%",
