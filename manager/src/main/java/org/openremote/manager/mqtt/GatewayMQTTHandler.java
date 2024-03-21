@@ -72,10 +72,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String ASSETS_TOPIC = "assets";
 
     // method topics
-    public static final String CREATE = "create";
-    public static final String DELETE = "delete";
-    public static final String UPDATE = "update";
-    public static final String GET = "get";
+    public static final String CREATE_TOPIC = "create";
+    public static final String DELETE_TOPIC = "delete";
+    public static final String UPDATE_TOPIC = "update";
+    public static final String GET_TOPIC = "get";
 
 
     // index tokens
@@ -192,18 +192,18 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         return Set.of(
                 // <realm>/<clientId>/operations/assets/<responseId>/create
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE,
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE,
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/get
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET,
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
 
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE,
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE,
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC
         );
     }
 
@@ -236,14 +236,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAssetsMethodTopic(topic)) {
             String method = topicTokens.get(ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
-                case CREATE -> {
+                case CREATE_TOPIC -> {
                     //TODO: authorizeEventWrite for AssetEvents
                     if (isRestrictedUser || !hasWriteAssetsRole) {
                         LOG.finer("User is unauthorized to create assets in realm " + topicRealm(topic) + " " + connectionID);
                         return false;
                     }
                 }
-                case DELETE -> {
+                case DELETE_TOPIC -> {
                     if (isRestrictedUser || !hasWriteAssetsRole) {
                         LOG.finer("User is unauthorized to delete assets in realm " + topicRealm(topic) + " " + connectionID);
                         return false;
@@ -253,7 +253,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         return false;
                     }
                 }
-                case GET -> {
+                case GET_TOPIC -> {
                     ReadAssetEvent event = buildReadAssetEvent(topicTokens);
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
@@ -268,13 +268,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
         else if (isAttributesMethodTopic(topic)) {
             String method = topicTokens.get(ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
-                case UPDATE -> {
+                case UPDATE_TOPIC -> {
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
                         LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
                     }
                 }
-                case GET -> {
+                case GET_TOPIC -> {
                     ReadAttributeEvent event = buildReadAttributeEvent(topicTokens);
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get attribute request was not authorised for this user and topic: topic=" + topic + ", " + connectionID);
@@ -302,9 +302,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAssetsMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
-                case CREATE -> createAssetRequest(connection, topic, body);
-                case DELETE -> LOG.fine("Received delete asset request");
-                case GET -> getAssetRequest(connection, topic, body);
+                case CREATE_TOPIC -> createAssetRequest(connection, topic, body);
+                case DELETE_TOPIC -> LOG.fine("Received delete asset request");
+                case GET_TOPIC -> getAssetRequest(connection, topic, body);
             }
         }
 
@@ -312,8 +312,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAttributesMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
-                case UPDATE -> updateAttributeRequest(connection, topic, body);
-                case GET -> LOG.fine("Received get attribute request");
+                case UPDATE_TOPIC -> updateAttributeRequest(connection, topic, body);
+                case GET_TOPIC -> LOG.fine("Received get attribute request");
             }
         }
 
@@ -427,22 +427,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected boolean isAssetsMethodTopic(Topic topic) {
         return isAssetsTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), CREATE) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), DELETE) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), UPDATE) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), GET);
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), CREATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), DELETE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), UPDATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), GET_TOPIC);
     }
 
     protected boolean isAttributesMethodTopic(Topic topic) {
         return isAttributesTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE) ||
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET);
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_TOPIC);
     }
 
     protected boolean isMultiAttributeUpdateTopic(Topic topic) {
         return isAttributesTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE) &&
-                Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE);
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE_TOPIC) &&
+                Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE_TOPIC);
     }
 
 
