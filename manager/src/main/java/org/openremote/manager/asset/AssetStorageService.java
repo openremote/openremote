@@ -71,6 +71,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -80,6 +81,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.*;
@@ -335,6 +337,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     LOG.info("Read asset event must specify an asset ID");
                     return false;
                 }
+
+                if (!Pattern.matches(ASSET_ID_REGEXP, readAssetEvent.getAssetId())) {
+                    LOG.info("Asset ID is invalid, read asset event must specify a valid asset ID");
+                    return false;
+                }
+
             } else if (event instanceof ReadAttributeEvent readAttributeEvent) {
                 if (readAttributeEvent.getAssetQuery() == null) {
                     LOG.info("Read attribute event must specify an asset ID");
