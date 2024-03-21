@@ -254,10 +254,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case GET -> {
-                    if (!hasValidAssetId(topic)) {
-                        LOG.finer("Invalid asset get request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/get " + connectionID);
-                        return false;
-                    }
                     ReadAssetEvent event = buildReadAssetEvent(topicTokens);
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
@@ -279,10 +275,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case GET -> {
-                    if (hasValidAssetId(topic)) {
-                        LOG.finer("Invalid get attribute request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get " + connectionID);
-                        return false;
-                    }
                     ReadAttributeEvent event = buildReadAttributeEvent(topicTokens);
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get attribute request was not authorised for this user and topic: topic=" + topic + ", " + connectionID);
