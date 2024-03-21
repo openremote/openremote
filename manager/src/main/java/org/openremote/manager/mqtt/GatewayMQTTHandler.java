@@ -89,6 +89,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
     public static final int ATTRIBUTES_METHOD_TOKEN_INDEX = 7;
 
+    public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
     protected AssetProcessingService assetProcessingService;
@@ -270,7 +271,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case UPDATE_TOPIC -> {
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
-                        LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + " " + connectionID);
+                        LOG.fine("Update attribute request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
                     }
                 }
@@ -343,6 +344,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         Optional<Asset> optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
         if (optionalAsset.isEmpty()) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.MESSAGE_INVALID, "Invalid asset template");
             LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + getConnectionIDString(connection));
             return;
         }
@@ -358,7 +360,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        publishSuccessResponse(topic, MQTTSuccessResponse.Success.CREATED, realm, asset);
+        publishSuccessResponse(topic, realm, asset);
     }
 
 
@@ -367,12 +369,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
-            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
+            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
             return;
         }
-
-        publishSuccessResponse(topic, MQTTSuccessResponse.Success.ACCEPTED, topicRealm(topic), asset);
+        publishSuccessResponse(topic, topicRealm(topic), asset);
     }
 
     protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -386,6 +387,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .withBody(event)
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncRequest();
+
+        publishSuccessResponse(topic, realm, event);
     }
 
 
@@ -476,28 +479,21 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     @SuppressWarnings("unchecked")
-    protected Optional<Asset<GatewayV2Asset>> getGateway(RemotingConnection connection) {
-        if (connection.getClientID().contains("gateway")) {
+    protected Optional<Asset<GatewayV2Asset>> getGatewayAssetFromConnection(RemotingConnection connection) {
+        if (connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX)) {
             return Optional.ofNullable((Asset<GatewayV2Asset>) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
                     .attributeValue(GatewayV2Asset.CLIENT_ID.getName(), connection.getClientID())));
         }
         return Optional.empty();
     }
 
-    protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error), MqttQoS.AT_MOST_ONCE);
-    }
 
     protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error, String message) {
         mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
-    protected void publishSuccessResponse(Topic topic, MQTTSuccessResponse.Success success, String realm) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(success, realm), MqttQoS.AT_MOST_ONCE);
-    }
-
-    protected void publishSuccessResponse(Topic topic, MQTTSuccessResponse.Success success, String realm, Object data) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(success, realm, data), MqttQoS.AT_MOST_ONCE);
+    protected void publishSuccessResponse(Topic topic, String realm, Object data) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
 
