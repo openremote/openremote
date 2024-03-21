@@ -2,7 +2,7 @@ package org.openremote.model.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public class MqttSuccessResponseMessage {
+public class MQTTSuccessResponse {
     protected String realm;
     protected Object data;
 
@@ -14,14 +14,14 @@ public class MqttSuccessResponseMessage {
     protected Success success;
 
     @JsonCreator
-    public MqttSuccessResponseMessage(Success success, String realm, Object data) {
+    public MQTTSuccessResponse(Success success, String realm, Object data) {
         this.success = success;
         this.realm = realm;
         this.data = data;
     }
 
     @JsonCreator
-    public MqttSuccessResponseMessage(Success success, String realm) {
+    public MQTTSuccessResponse(Success success, String realm) {
         this.success = success;
         this.realm = realm;
     }

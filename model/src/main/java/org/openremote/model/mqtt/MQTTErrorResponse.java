@@ -2,7 +2,7 @@ package org.openremote.model.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public class MqttErrorResponseMessage {
+public class MQTTErrorResponse {
 
     public enum Error {
         MESSAGE_INVALID,
@@ -15,12 +15,12 @@ public class MqttErrorResponseMessage {
     protected String message;
 
     @JsonCreator
-    public MqttErrorResponseMessage(Error error) {
+    public MQTTErrorResponse(Error error) {
         this.error = error;
     }
 
     @JsonCreator
-    public MqttErrorResponseMessage(Error error, String message) {
+    public MQTTErrorResponse(Error error, String message) {
         this.error = error;
         this.message = message;
     }

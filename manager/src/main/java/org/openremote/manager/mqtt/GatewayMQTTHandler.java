@@ -37,8 +37,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.mqtt.MqttErrorResponseMessage;
-import org.openremote.model.mqtt.MqttSuccessResponseMessage;
+import org.openremote.model.mqtt.MQTTErrorResponse;
+import org.openremote.model.mqtt.MQTTSuccessResponse;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
@@ -168,45 +168,37 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        if (!isEventsTopic(topic)) {
-            if (!isOperationsTopic(topic) && isResponseTopic(topic)) {
-                LOG.finest("Invalid topic " + topic + " for subscribing, must be " + OPERATIONS_TOPIC);
-                return false;
-            }
-            LOG.finest("Invalid topic " + topic + " for subscribing, must be " + EVENTS_TOPIC + " or " + OPERATIONS_TOPIC);
-            return false;
-        }
-
+        // TODO: Check for valid topic + authorization
 
         return true;
     }
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
-        Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
-        if (authContext.isEmpty()) {
-            LOG.finer("Anonymous publish not supported: topic=" + topic + ", connection=" + MQTTBrokerService.connectionToString(connection));
-            return;
-        }
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
-        //subscriptionManager.unsubscribe(connection, topic);
     }
 
     @Override
     public Set<String> getPublishListenerTopics() {
-
-
         String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + OPERATIONS_TOPIC + "/";
-
 
         return Set.of(
                 // <realm>/<clientId>/operations/assets/<responseId>/create
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE,
+                // <realm>/<clientId>/operations/assets/<assetId>/delete
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE,
+
+                // <realm>/<clientId>/operations/assets/<assetId>/get
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET,
+
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE,
+
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE
         );
     }
 
@@ -232,6 +224,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         boolean isRestrictedUser = authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
         boolean hasWriteAssetsRole = authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID);
+        String connectionID = getConnectionIDString(connection);
 
         List<String> topicTokens = topic.getTokens();
 
@@ -241,20 +234,28 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case CREATE -> {
                     if (isRestrictedUser || !hasWriteAssetsRole) {
-                        LOG.finer("User is unauthorized to create assets in realm " + topicRealm(topic) + " " + MQTTBrokerService.connectionToString(connection));
+                        LOG.finer("User is unauthorized to create assets in realm " + topicRealm(topic) + " " + connectionID);
                         return false;
                     }
                 }
                 case DELETE -> {
                     if (isRestrictedUser || !hasWriteAssetsRole) {
-                        LOG.finer("User is unauthorized to delete assets in realm " + topicRealm(topic) + " " + MQTTBrokerService.connectionToString(connection));
+                        LOG.finer("User is unauthorized to delete assets in realm " + topicRealm(topic) + " " + connectionID);
                         return false;
                     }
                     if (!hasValidAssetId(topic)) {
-                        LOG.finer("Invalid delete asset request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/delete " + MQTTBrokerService.connectionToString(connection));
+                        LOG.finer("Invalid delete asset request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/delete " + connectionID);
                         return false;
                     }
                 }
+                case GET -> {
+                    if (!authContext.hasResourceRole(READ_ASSETS_ROLE, KEYCLOAK_CLIENT_ID)) {
+                        LOG.finer("User is unauthorized to get assets in realm " + topicRealm(topic) + " " + connectionID);
+                        return false;
+                    }
+                    // Restricted users? TODO
+                }
+
             }
             // Attribute operations
         } else if (isAttributesMethodTopic(topic)) {
@@ -263,6 +264,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 case UPDATE, GET -> {
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
                         LOG.fine("Publish was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+                        return false;
+                    }
+                    if (!hasValidAssetId(topic)) {
+                        LOG.finer("Invalid asset get request " + topic + " should include a valid asset ID <realm>/<clientId>/operations/assets/<assetId>/get " + connectionID);
                         return false;
                     }
                 }
@@ -280,9 +285,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAssetsMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
-                case CREATE -> assetCreateRequest(connection, topic, body);
+                case CREATE -> createAssetRequest(connection, topic, body);
                 case DELETE ->
                         LOG.fine("Received delete asset request " + topic + " " + getConnectionIDString(connection));
+                case GET -> getAssetRequest(connection, topic, body);
             }
         }
 
@@ -291,7 +297,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case UPDATE -> {
-                    singleLineAttributeUpdateRequest(connection, topic, body);
+                    updateAttributeRequest(connection, topic, body);
                 }
                 case GET ->
                         LOG.fine("Received get attribute request " + topic + " " + getConnectionIDString(connection));
@@ -310,7 +316,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
 
-    protected void assetCreateRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void createAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         String realm = topicRealm(topic);
 
@@ -326,13 +332,26 @@ public class GatewayMQTTHandler extends MQTTHandler {
         asset.setId(UniqueIdentifierGenerator.generateId());
         asset.setRealm(realm);
 
-        assetStorageService.merge(asset);
-        publishSuccessResponse(topic, MqttSuccessResponseMessage.Success.CREATED, realm, asset);
+        assetStorageService.merge(asset); // TODO: Try catch and publish error response?
+        publishSuccessResponse(topic, MQTTSuccessResponse.Success.CREATED, realm, asset);
     }
 
-    protected void singleLineAttributeUpdateRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
 
-        LOG.fine("Received attribute update request " + topic + " " + getConnectionIDString(connection));
+    protected void getAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+        LOG.finest("Received get asset request " + topic + " " + getConnectionIDString(connection));
+        String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+        Asset<?> asset = assetStorageService.find(assetId);
+        if (asset == null) {
+            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
+            publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
+            return;
+        }
+
+        publishSuccessResponse(topic, MQTTSuccessResponse.Success.ACCEPTED, topicRealm(topic), asset);
+    }
+
+    protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+        LOG.finest("Received attribute update request " + topic + " " + getConnectionIDString(connection));
         String realm = topicRealm(topic);
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
 
@@ -410,20 +429,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
-    protected void publishErrorResponse(Topic topic, MqttErrorResponseMessage.Error error) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MqttErrorResponseMessage(error), MqttQoS.AT_MOST_ONCE);
+    protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error), MqttQoS.AT_MOST_ONCE);
     }
 
-    protected void publishErrorResponse(Topic topic, MqttErrorResponseMessage.Error error, String message) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MqttErrorResponseMessage(error, message), MqttQoS.AT_MOST_ONCE);
+    protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error, String message) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
-    protected void publishSuccessResponse(Topic topic, MqttSuccessResponseMessage.Success success, String realm) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MqttSuccessResponseMessage(success, realm), MqttQoS.AT_MOST_ONCE);
+    protected void publishSuccessResponse(Topic topic, MQTTSuccessResponse.Success success, String realm) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(success, realm), MqttQoS.AT_MOST_ONCE);
     }
 
-    protected void publishSuccessResponse(Topic topic, MqttSuccessResponseMessage.Success success, String realm, Object data) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MqttSuccessResponseMessage(success, realm, data), MqttQoS.AT_MOST_ONCE);
+    protected void publishSuccessResponse(Topic topic, MQTTSuccessResponse.Success success, String realm, Object data) {
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(success, realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
 
