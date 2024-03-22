@@ -38,6 +38,7 @@ import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.ReadAssetEvent;
 import org.openremote.model.asset.ReadAttributeEvent;
 import org.openremote.model.asset.impl.GatewayV2Asset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -304,8 +305,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> createAssetRequest(connection, topic, body);
-                case DELETE_TOPIC -> LOG.fine("Received delete asset request");
                 case GET_TOPIC -> getAssetRequest(connection, topic, body);
+                case DELETE_TOPIC -> LOG.fine("Received delete asset request");
             }
         }
 
@@ -313,8 +314,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAttributesMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
+                case GET_TOPIC -> getAttributeRequest(connection, topic, body);
                 case UPDATE_TOPIC -> updateAttributeRequest(connection, topic, body);
-                case GET_TOPIC -> LOG.fine("Received get attribute request");
             }
         }
 
@@ -360,7 +361,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        publishSuccessResponse(topic, realm, asset);
+        publishSuccessResponse(topic, realm,asset);
     }
 
 
@@ -373,7 +374,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
             return;
         }
-        publishSuccessResponse(topic, topicRealm(topic), asset);
+        publishSuccessResponse(topic, topicRealm(topic),  asset);
     }
 
     protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -388,7 +389,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncRequest();
 
-        publishSuccessResponse(topic, realm, event);
+        publishSuccessResponse(topic, realm,event);
+    }
+
+    protected void getAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+        LOG.finest("Received get attribute request " + topic + " " + getConnectionIDString(connection));
+        String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
+        Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
+
+        if (attribute.isEmpty()) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Attribute not found");
+            LOG.fine("Attribute not found " + assetId + " " + attributeName + " " + getConnectionIDString(connection));
+            return;
+        }
+
+        publishSuccessResponse(topic, topicRealm(topic), attribute.get());
     }
 
 
@@ -493,7 +509,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void publishSuccessResponse(Topic topic, String realm, Object data) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(realm, data), MqttQoS.AT_MOST_ONCE);
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse( realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
 

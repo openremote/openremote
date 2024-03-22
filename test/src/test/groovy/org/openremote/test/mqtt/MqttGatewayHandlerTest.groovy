@@ -9,6 +9,8 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.GatewayMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.mqtt.MQTTResponseMessage
@@ -25,8 +27,7 @@ import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.mqtt.MQTTBrokerService.MQTT_SERVER_LISTEN_PORT
+import static org.openremote.manager.mqtt.MQTTBrokerService.*
 
 class MqttGatewayHandlerTest extends Specification implements ManagerContainerTrait {
 
@@ -51,8 +52,21 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
 
+
+        //region Client connection test
+        when: "a mqtt client connects with valid credentials"
+        mqttClientId = UniqueIdentifierGenerator.generateId()
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
         client.connect()
+
+        then: "mqtt connection should exist"
+        conditions.eventually {
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
+        }
+        //endregion
 
 
         //region Asset creation test
@@ -74,8 +88,8 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //region Asset creation test with response
         when: "a mqtt client publishes a create asset message and subscribes to the response topic"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
-        def responseTopic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC/$GatewayMQTTHandler.RESPONSE_TOPIC".toString()
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
+        def responseTopic = topic + "/response"
         assetName = "gatewayHandlerTestCreationAssetResponse"
         testAsset = new ThingAsset(assetName)
         payload = ValueUtil.asJSON(testAsset).get()
@@ -87,18 +101,41 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(responseTopic, messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the asset should be created and the expected response should be received"
+        then: "the thing asset should be created and the asset data should be received on the response topic"
         conditions.eventually {
             assert assetStorageService.find(new AssetQuery().names(assetName)) != null
             assert receivedResponses.size() == 1
-            assert receivedResponses.get(0) != null
             assert receivedResponses.get(0) instanceof MQTTSuccessResponse
             def response = receivedResponses.get(0) as MQTTSuccessResponse
-            assert response.realm == keycloakTestSetup.realmBuilding.name
-            assert response.data != null
+            def asset = response.getData(ThingAsset.class)
+            assert asset != null
+            assert asset.getName() == assetName
         }
         receivedResponses.clear()
+        client.removeAllMessageConsumers()
         //endregion
+
+        //region asset get test with response
+        when: "a mqtt client publishes a get asset message and subscribes to the response topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$managerTestSetup.smartBuildingId/get".toString()
+        responseTopic = topic + "/response"
+        payload = ValueUtil.asJSON(testAsset).get()
+
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedResponses.add(ValueUtil.parse(msg.payload, MQTTResponseMessage.class).orElse(null))
+        }
+        client.addMessageConsumer(responseTopic, messageConsumer)
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the specified asset should be received on the response topic"
+        conditions.eventually {
+            assert receivedResponses.size() == 1
+            assert receivedResponses.get(0) instanceof MQTTSuccessResponse
+            def response = receivedResponses.get(0) as MQTTSuccessResponse
+            def asset = response.getData(BuildingAsset.class)
+            assert asset != null
+            assert asset.getId() == managerTestSetup.smartBuildingId
+        }
 
 
         //region Asset attribute update test
@@ -112,13 +149,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
         }
         //endregion
-
-
-
-
-
-
-
+        
 
         cleanup: "disconnect the clients"
         if (client != null) {

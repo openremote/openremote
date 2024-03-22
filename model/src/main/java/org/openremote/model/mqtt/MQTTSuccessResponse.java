@@ -1,15 +1,15 @@
 package org.openremote.model.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-
-import javax.annotation.Nullable;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.openremote.model.util.ValueUtil;
 
 public class MQTTSuccessResponse extends MQTTResponseMessage {
-    protected String realm;
-    protected Object data;
+    private final String realm;
+    private final Object data;
 
     @JsonCreator
-    public MQTTSuccessResponse(String realm, @Nullable Object data) {
+    public MQTTSuccessResponse(String realm, @JsonDeserialize(contentAs = Object.class) Object data) {
         this.realm = realm;
         this.data = data;
     }
@@ -20,6 +20,10 @@ public class MQTTSuccessResponse extends MQTTResponseMessage {
 
     public Object getData() {
         return data;
+    }
+
+    public <T> T getData(Class<T> clazz) {
+        return ValueUtil.convert(data, clazz);
     }
 
 }
