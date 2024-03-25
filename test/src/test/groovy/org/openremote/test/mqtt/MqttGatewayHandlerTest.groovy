@@ -149,7 +149,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
         }
         //endregion
-        
+
 
         cleanup: "disconnect the clients"
         if (client != null) {

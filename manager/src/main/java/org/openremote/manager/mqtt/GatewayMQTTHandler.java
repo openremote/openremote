@@ -285,7 +285,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 }
             }
         }
-        // Multi attribute update request (Edge case) (authorization needs to be handled in the handler function)
+        // Multi attribute update request (edge case)
         else if (isMultiAttributeUpdateTopic(topic)) {
             LOG.fine("Multi attribute update request " + topic + " " + connectionID);
         } else {
@@ -319,7 +319,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
 
-        // Multi attribute operation
+        // Multi attribute operation (edge case - authorization in topic handler)
+        // Special case since we cannot handle authorization in canPublish due the attribute names + values being in the payload
         if (isMultiAttributeUpdateTopic(topic)) {
             LOG.fine("Received multi attribute update request " + topic + " " + getConnectionIDString(connection));
         }
@@ -336,6 +337,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
 
+    /**
+     * Create asset request topic handler
+     */
     protected void createAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         String realm = topicRealm(topic);
@@ -365,6 +369,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
 
+    /**
+     * Get asset request topic handler
+     */
     protected void getAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         LOG.finest("Received get asset request " + topic + " " + getConnectionIDString(connection));
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -377,6 +384,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, topicRealm(topic),  asset);
     }
 
+    /**
+     * Update attribute request topic handler
+     */
     protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         LOG.finest("Received attribute update request " + topic + " " + getConnectionIDString(connection));
         String realm = topicRealm(topic);
@@ -392,6 +402,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, realm,event);
     }
 
+    /**
+     * Get attribute request topic handler
+     */
     protected void getAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         LOG.finest("Received get attribute request " + topic + " " + getConnectionIDString(connection));
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
