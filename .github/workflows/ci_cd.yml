@@ -372,16 +372,14 @@ jobs:
                 if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
                   dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release" and refName in eventConfig:
+            elif eventName == "release" and eventConfig is not None:
 
-              eventConfig = eventConfig[refName]
-              if eventConfig is not None:
-                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
-                if 'distribute' in eventConfig:
-                  if 'docker' in eventConfig['distribute']:
-                     dockerPublishTags = eventConfig['distribute']['docker']
-                  if 'maven' in eventConfig['distribute']:
-                     mavenPublishTag = eventConfig['distribute']['maven']
+              deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
+              if 'distribute' in eventConfig:
+                if 'docker' in eventConfig['distribute']:
+                   dockerPublishTags = eventConfig['distribute']['docker']
+                if 'maven' in eventConfig['distribute']:
+                   mavenPublishTag = eventConfig['distribute']['maven']
 
           if dockerPublishTags is not None and isMainRepo == 'true':
             dockerPublishTags = dockerPublishTags.replace("$version", refName)
@@ -502,10 +500,10 @@ jobs:
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
-          SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD }}
-          SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_KEY }}
-          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD }}
+          SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD || steps.inputs-and-secrets.outputs.SIGNING_PASSWORD }}
+          SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_KEY || steps.inputs-and-secrets.outputs.SIGNING_KEY }}
+          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME || steps.inputs-and-secrets.outputs.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD || steps.inputs-and-secrets.outputs.MAVEN_PASSWORD }}
 
       - name: Define deployment docker build command
         id: deployment-docker-command
