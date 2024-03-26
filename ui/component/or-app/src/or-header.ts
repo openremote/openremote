@@ -505,7 +505,7 @@ export class OrHeader extends LitElement {
         }
         if(manager.hasRole("read:alarms") || manager.hasRole("write:alarms")){
             const response = await manager.rest.api.AlarmResource.getOpenAlarms();
-            let open = response.data.filter((alarm) => alarm.status === AlarmStatus.OPEN);
+            let open = response.data.filter((alarm) => alarm.status === AlarmStatus.OPEN && alarm.realm === manager.displayRealm);
             newAlarms = (open.length > 0);
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';

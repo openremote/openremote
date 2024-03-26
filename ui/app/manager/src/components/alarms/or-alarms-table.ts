@@ -1,6 +1,6 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {OrMwcTable, TableColumn, TableConfig, TableRow, TableContent} from "@openremote/or-mwc-components/or-mwc-table";
+import {OrMwcTable, TableColumn, TableConfig, TableContent, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {AlarmSeverity, AlarmStatus, Asset, SentAlarm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {classMap} from "lit/directives/class-map.js";
@@ -15,7 +15,7 @@ export interface AlarmTableColumn extends TableColumn {
 }
 
 const styling = css`
-  .alarm-status-text {
+  .alarm-text {
     padding: 4px;
     border-radius: 5px;
   }
@@ -49,6 +49,21 @@ const styling = css`
     background-color: var(--or-alarm-status-background__open, mediumblue);
     border: var(--or-alarm-status-border__open);
   }
+
+    .alarm-severity-text__low {
+        color: white;
+        background-color: mediumblue;
+    }
+
+    .alarm-severity-text__medium {
+        color: white;
+        background-color: darkorange;
+    }
+
+    .alarm-severity-text__high {
+        color: white;
+        background-color: red;
+    }
 `;
 
 /**
@@ -72,7 +87,7 @@ export class OrAlarmsTable extends OrMwcTable {
 
     // Setup columns
     public columns: AlarmTableColumn[] = [
-        {title: "", widthWeight: 2},
+        {title: i18next.t("alarm.severity"), widthWeight: 3, isSortable: true},
         {title: i18next.t("alarm.title"), widthWeight: 25, isSortable: true},
         {title: i18next.t("alarm.status"), widthWeight: 3, isSortable: true},
         {title: i18next.t("alarm.linkedAssets"), widthWeight: 6, hideMobile: true},
@@ -131,19 +146,15 @@ export class OrAlarmsTable extends OrMwcTable {
     /* TEMPLATING FUNCTIONS */
 
     protected getSeverityContent(severity?: AlarmSeverity): TemplateResult | string | number {
-        switch (severity) {
-            case AlarmSeverity.HIGH:
-                return html`
-                    <or-icon style="color: var(--or-alarm-severity-color__high, red);" icon="numeric-1-box"></or-icon>`;
-            case AlarmSeverity.MEDIUM:
-                return html`
-                    <or-icon style="color: var(--or-alarm-severity-color__medium, orange);" icon="numeric-2-box"></or-icon>`;
-            case AlarmSeverity.LOW:
-                return html`
-                    <or-icon style="color: var(--or-alarm-severity-color__low, green);" icon="numeric-3-box"></or-icon>`;
-            default:
-                return html`${severity}`;
-        }
+        const classes = {
+            "alarm-text": true,
+            "alarm-severity-text__low": severity === AlarmSeverity.LOW,
+            "alarm-severity-text__medium": severity === AlarmSeverity.MEDIUM,
+            "alarm-severity-text__high": severity === AlarmSeverity.HIGH
+        };
+        return html`
+            <or-translate class=${classMap(classes)} value="${severity ? `alarm.severity_${severity}` : "error"}"></or-translate>
+        `;
     }
 
     protected getDisplayNameContent(title?: string): TableContent {
@@ -152,7 +163,7 @@ export class OrAlarmsTable extends OrMwcTable {
 
     protected getAlarmStatusContent(status?: AlarmStatus): TableContent {
         const classes = {
-            "alarm-status-text": true,
+            "alarm-text": true,
             "alarm-status-text__closed": status === AlarmStatus.CLOSED,
             "alarm-status-text__resolved": status === AlarmStatus.RESOLVED,
             "alarm-status-text__acknowledged": status === AlarmStatus.ACKNOWLEDGED,
@@ -165,7 +176,7 @@ export class OrAlarmsTable extends OrMwcTable {
     }
 
     protected getLinkedAssetsContent(assets?: Asset[]): TableContent {
-        return html`${assets?.map(a => a.name)}`;
+        return html`${assets?.map(a => a.name).join(', ')}`;
     }
 
     protected getAssigneeContent(assigneeName?: string): TableContent {

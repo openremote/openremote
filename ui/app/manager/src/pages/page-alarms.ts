@@ -314,7 +314,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
-        if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
+        if (changedProperties.has("realm")) {
             this.reset();
         }
         if (changedProperties.has("alarm")) {
@@ -323,8 +323,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         if (changedProperties.has("severity")
             || changedProperties.has("status")
             || changedProperties.has("allActive")) {
-            this._pageCount = undefined;
-            this._currentPage = 1;
             this._data = undefined;
         }
 
@@ -360,7 +358,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
         const isUpdate = !!alarm.id;
         if (!isUpdate) {
-            alarm.realm = manager.getRealm();
+            alarm.realm = manager.displayRealm;
         }
 
         try {
@@ -395,8 +393,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             }
             throw e; // Throw exception anyhow to handle individual cases
         } finally {
-            await this._loadData();
             this.reset();
+            await this._loadData();
         }
     }
 
@@ -498,7 +496,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
             loaded: true,
             source: AlarmSource.MANUAL,
             severity: AlarmSeverity.MEDIUM,
-            status: AlarmStatus.OPEN
+            status: AlarmStatus.OPEN,
+            realm: manager.displayRealm
         };
     }
 
@@ -563,9 +562,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
         if (response.status === 200) {
             // Get page count
             this._data = response.data;
-            if (manager.getRealm() != "master") {
-                this._data = this._data.filter((e) => e.realm === manager.getRealm());
-            }
+            this._data = this._data.filter((e) => e.realm === manager.displayRealm);
+
             if (this.config?.assignOnly) {
                 const userResponse = await manager.rest.api.UserResource.getCurrent();
                 if (userResponse.status === 200) {
@@ -605,15 +603,15 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     private doDelete(alarmId: any) {
         manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
-            this._data = [...this._data.filter(u => u.id !== alarmId)];
-            location.reload();
+            this._data = undefined;
+            this._selectedIds = [];
         })
     }
 
     private doMultipleDelete(alarmIds: any[]) {
         manager.rest.api.AlarmResource.removeAlarms(alarmIds).then(response => {
-            this._data = [...this._data.filter(u => !alarmIds.includes(u.id))];
-            location.reload();
+            this._data = undefined;
+            this._selectedIds = [];
         })
     }
 
@@ -791,29 +789,29 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getStatusOptions() {
-        return [{label: 'All active', value: 'All-active'}, {label: 'All', value: 'All'}, {label: 'Open', value: AlarmStatus.OPEN}, {label: 'Acknowledged', value: AlarmStatus.ACKNOWLEDGED}, {label: 'In progress', value: AlarmStatus.IN_PROGRESS}, {label: 'Closed', value: AlarmStatus.CLOSED}];
+        return [{label: 'alarm.allActive', value: 'All-active'}, {label: 'alarm.all', value: 'All'}, {label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
     }
 
     protected _getSeverityOptions() {
-        return [{label: 'All', value: 'All'}, {label: 'Low', value: AlarmSeverity.LOW}, {label: 'Medium', value: AlarmSeverity.MEDIUM}, {label: 'High', value: AlarmSeverity.HIGH}];
+        return [{label: 'alarm.all', value: 'All'}, {label: 'alarm.severity_LOW', value: AlarmSeverity.LOW}, {label: 'alarm.severity_MEDIUM', value: AlarmSeverity.MEDIUM}, {label: 'alarm.severity_HIGH', value: AlarmSeverity.HIGH}];
     }
 
     protected _getAddStatusOptions() {
-        return [{label: 'Open', value: AlarmStatus.OPEN}, {label: 'Acknowledged', value: AlarmStatus.ACKNOWLEDGED}, {label: 'In progress', value: AlarmStatus.IN_PROGRESS}, {label: 'Closed', value: AlarmStatus.CLOSED}];
+        return [{label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
     }
 
     protected _getAddSeverityOptions() {
-        return [{label: 'Low', value: AlarmSeverity.LOW}, {label: 'Medium', value: AlarmSeverity.MEDIUM}, {label: 'High', value: AlarmSeverity.HIGH}];
+        return [{label: 'alarm.severity_LOW', value: AlarmSeverity.LOW}, {label: 'alarm.severity_MEDIUM', value: AlarmSeverity.MEDIUM}, {label: 'alarm.severity_HIGH', value: AlarmSeverity.HIGH}];
     }
 
     protected _getSourceOptions() {
-        return [{label: 'Realm ruleset', value: AlarmSource.REALM_RULESET}, {label: 'Asset ruleset', value: AlarmSource.ASSET_RULESET},
-                {label: 'Global ruleset', value: AlarmSource.GLOBAL_RULESET}, {label: 'Agent', value: AlarmSource.AGENT},
-                {label: 'Client', value: AlarmSource.CLIENT}, {label: 'Manual', value: AlarmSource.MANUAL}];
+        return [{label: 'alarm.source_REALM_RULESET', value: AlarmSource.REALM_RULESET}, {label: 'alarm.source_ASSET_RULESET', value: AlarmSource.ASSET_RULESET},
+                {label: 'alarm.source_GLOBEL_RULESET', value: AlarmSource.GLOBAL_RULESET}, {label: 'alarm.source_AGENT', value: AlarmSource.AGENT},
+                {label: 'alarm.source_CLIENT', value: AlarmSource.CLIENT}, {label: 'alarm.source_MANUAL', value: AlarmSource.MANUAL}];
     }
 
     protected _onSeverityChanged(severity: any) {
-        if(severity == 'All'){
+        if(severity == 'alarm.all'){
             this.severity = undefined;
             this._loadData();
             return;
@@ -842,14 +840,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _onStatusChanged(status: any) {
-        if(status == 'All'){
+        if(status == 'alarm.all'){
             this.status = undefined;
             this.allActive = undefined;
             this.requestUpdate();
             return;
         }
 
-        if(status == 'All active'){
+        if(status == 'alarm.allActive'){
             this.status = undefined;
             this.allActive = true;
             this.requestUpdate();
@@ -975,6 +973,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected reset() {
         this.alarm = undefined;
         this.creationState = undefined;
+        this._data = undefined;
+        this._selectedIds = undefined;
         this._assign = false;
         if (this._table) {
             this._table = undefined;
