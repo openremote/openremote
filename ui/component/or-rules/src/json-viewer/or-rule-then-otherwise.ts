@@ -5,11 +5,14 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
+    AlarmSeverity,
+    AlarmStatus,
     Asset,
     AssetModelUtil,
     AssetTypeInfo,
     HTTPMethod,
     JsonRule,
+    RuleActionAlarm,
     RuleActionNotification,
     RuleActionUnion,
     RuleActionWebhook,
@@ -24,15 +27,18 @@ import {Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import "./or-rule-action-webhook";
+import "./or-rule-action-alarm";
 import {translate} from "@openremote/or-translate";
 
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
+const ALARM_COLOR = "FC2D2D";
 
 function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
 
     let addAssetTypes = true;
     let addWait = true;
+    let addAlarm = true;
     let addNotification = true;
     let addPushNotification = true;
     let addWebhook = true;
@@ -40,6 +46,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     if (config && config.controls && config.controls.allowedActionTypes) {
         addAssetTypes = config.controls.allowedActionTypes.indexOf(ActionType.ATTRIBUTE) >= 0;
         addWait = config.controls.allowedActionTypes.indexOf(ActionType.WAIT) >= 0;
+        addAlarm = config.controls.allowedActionTypes.indexOf(ActionType.ALARM) >= 0;
         addNotification = config.controls.allowedActionTypes.indexOf(ActionType.EMAIL) >= 0;
         addPushNotification = config.controls.allowedActionTypes.indexOf(ActionType.PUSH_NOTIFICATION) >= 0;
         addWebhook = config.controls.allowedActionTypes.indexOf(ActionType.WEBHOOK) >= 0;
@@ -91,6 +98,15 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "timer",
             value: ActionType.WAIT,
             styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
+        } as ListItem);
+    }
+
+    if (addAlarm) {
+        menu.push({
+            text: i18next.t("alarm."),
+            icon: "alert-outline",
+            value: ActionType.ALARM,
+            styleMap: {"--or-icon-fill": "#" + ALARM_COLOR}
         } as ListItem);
     }
 
@@ -315,6 +331,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                             buttonColor = NOTIFICATION_COLOR;
                         }
                         break;
+                    case ActionType.ALARM:
+                        buttonIcon = "alert-outline";
+                        buttonColor = ALARM_COLOR;
+                        break;
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
                         buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad);
@@ -355,6 +375,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     break;
                 case ActionType.WEBHOOK:
                     template = html`<or-rule-action-webhook .rule="${this.rule}" .action="${action}" .actionType="${ActionType.WEBHOOK}"></or-rule-action-webhook>`;
+                    break;
+                case ActionType.ALARM:
+                    template = html`<or-rule-action-alarm .rule="${this.rule}" .action="${action}" .actionType="${ActionType.ALARM}"></or-rule-action-alarm>`;
                     break;
                 default:
                     template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .assetProvider="${this.assetProvider}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
@@ -409,6 +432,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "notification":
                 const type = action.notification && action.notification.message && action.notification.message.type ? action.notification.message.type : action.action;
                 return type;
+                break;
+            case "alarm":
+                return action.action;
                 break;
             case "write-attribute":
             case "update-attribute":
@@ -466,6 +492,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             case "notification":
                 action.notification =  undefined;
                 break;
+            case "alarm":
+                action.alarm = undefined;
+                action.assigneeId = undefined;
+                break;
             case "update-attribute":
                 action.value = undefined;
                 action.attributeName = undefined;
@@ -477,6 +507,16 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
         if (value === ActionType.WAIT) {
             action.action = "wait";
+        } else if (value == ActionType.ALARM){
+            action = action as RuleActionAlarm;
+            action.action = "alarm";
+            action.alarm = {
+                title: "%RULESET_NAME%",
+                content: "%TRIGGER_ASSETS%",
+                severity: AlarmSeverity.LOW,
+                status: AlarmStatus.OPEN
+            };
+            action.assigneeId = undefined;
         } else if (value == ActionType.WEBHOOK) {
             action = action as RuleActionWebhook;
             action.action = "webhook";
