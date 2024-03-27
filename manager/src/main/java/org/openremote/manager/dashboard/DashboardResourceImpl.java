@@ -43,10 +43,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         if(!isRealmActiveAndAccessible(realm)) {
             throw new WebApplicationException(FORBIDDEN);
         }
-        return dashboardStorageService.query(
-                this.createDashboardQuery(realm),
-                getUserId()
-        );
+        return dashboardStorageService.query(this.createDashboardQuery(realm), getUserId());
     }
 
     @Override
@@ -172,6 +169,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if (isRestrictedUser()) {
                 assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.RESTRICTED));
             }
+        } else {
+            // If not logged in, force only public read/write access
+            userViewAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
+            userEditAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
+            assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.REALM));
         }
         return query.conditions(new DashboardQuery.Conditions(
                         new DashboardQuery.DashboardConditions()

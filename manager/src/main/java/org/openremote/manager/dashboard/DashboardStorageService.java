@@ -21,9 +21,6 @@ package org.openremote.manager.dashboard;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -106,6 +103,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             if(dashboardQuery.names != null) {
                 this.buildSqlNamesFilter(sql, dashboardQuery, parameters);
             }
+            if(dashboardQuery.userIds != null) {
+                this.buildSqlUserIdsFilter(sql, dashboardQuery, parameters);
+            }
             if(dashboardQuery.conditions.getDashboard() != null) {
                 this.buildSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
             }
@@ -167,6 +167,12 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return sqlBuilder;
     }
 
+    protected StringBuilder buildSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+        sqlBuilder.append(" AND owner_id IN (:ownerIds)");
+        sqlParams.put("ownerIds", List.of(query.userIds));
+        return sqlBuilder;
+    }
+
     /**
      * Builds SQL section for filtering dashboards by dashboard conditions, such as {@link DashboardAccess} (PRIVATE, SHARED, PUBLIC),
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
@@ -179,20 +185,22 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
             List<DashboardAccess> editAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getEditAccess()));
             sqlBuilder.append(" AND (");
-            if(viewAccess.contains(DashboardAccess.PRIVATE)) {
+            if(userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
                 viewAccess.remove(DashboardAccess.PRIVATE);
                 sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
+                sqlParams.put("userId", userId);
             }
-            if(editAccess.contains(DashboardAccess.PRIVATE)) {
+            if(userId != null && editAccess.contains(DashboardAccess.PRIVATE)) {
                 editAccess.remove(DashboardAccess.PRIVATE);
                 sqlBuilder.append("(edit_access = 2 AND owner_id = :userId) OR ");
+                sqlParams.put("userId", userId);
             }
             sqlBuilder.append("(view_access IN (:viewAccess) OR edit_access IN (:editAccess)))");
             sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
             sqlParams.put("editAccess", editAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
-            sqlParams.put("userId", userId);
 
             /** TODO: Implement filtering by {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets} */
+
         }
         return sqlBuilder;
     }
@@ -242,15 +250,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         if(realm == null) {
             throw new IllegalArgumentException("No realm is specified.");
         }
-        return persistenceService.doReturningTransaction(em -> {
-            CriteriaBuilder cb = em.getCriteriaBuilder();
-            CriteriaQuery<Dashboard> cq = cb.createQuery(Dashboard.class);
-            Root<Dashboard> root = cq.from(Dashboard.class);
-            return em.createQuery(cq.select(root)
-                    .where(cb.like(root.get("realm"), realm))
-                    .where(cb.like(root.get("id"), dashboardId))
-            );
-        }) != null;
+        return this.query(new DashboardQuery()
+                .realm(new RealmPredicate(realm))
+                .ids(dashboardId),
+                null
+        ).length > 0;
     }
 
 
@@ -282,18 +286,17 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             throw new IllegalArgumentException("No userId is specified.");
         }
         // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
-        Dashboard[] dashboards = this.query(new DashboardQuery()
+        var query = new DashboardQuery()
                 .ids(dashboard.getId())
                 .realm(new RealmPredicate(realm))
                 .userIds(userId)
                 .limit(1)
                 .conditions(new DashboardQuery.Conditions().dashboard(
-                        new DashboardQuery.DashboardConditions().editAccess(new DashboardAccess[]{
-                                DashboardAccess.SHARED, DashboardAccess.PRIVATE
-                        })
-                )),
-                userId
-        );
+                        new DashboardQuery.DashboardConditions()
+                                .viewAccess(new DashboardAccess[]{})
+                                .editAccess(new DashboardAccess[]{DashboardAccess.SHARED, DashboardAccess.PRIVATE})
+                ));
+        Dashboard[] dashboards = this.query(query, userId);
         if(dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
             return persistenceService.doReturningTransaction(em -> {
@@ -330,8 +333,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             if(dashboards == null || dashboards.length == 0) {
                 throw new IllegalArgumentException("No dashboards could be found.");
             }
-            Query query = em.createQuery("DELETE from Dashboard d where d.id=?1");
+            Query query = em.createQuery("DELETE from Dashboard d where d.id=?1 and d.realm =?2");
             query.setParameter(1, dashboardId);
+            query.setParameter(2, realm);
             query.executeUpdate();
             return true;
         });
