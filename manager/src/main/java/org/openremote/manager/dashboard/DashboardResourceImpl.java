@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.dashboard;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -58,9 +77,9 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         // If no dashboards were returned, check whether it existed, and return a different response.
         if(dashboards.length == 0) {
             if(this.dashboardStorageService.exists(dashboardId, realm)) {
-                throw new WebApplicationException(FORBIDDEN); // when no dashboard returned from query, but it does exist.
+                throw new WebApplicationException(FORBIDDEN);
             } else {
-                throw new WebApplicationException(NOT_FOUND); // aka it does not exist
+                throw new WebApplicationException(NOT_FOUND);
             }
         }
 
@@ -158,6 +177,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         userEditAccess.add(DashboardAccess.PUBLIC);
         assetAccess.add(DashboardQuery.AssetAccess.REALM);
 
+        // Adjust query object based on user roles/permissions
         if (isAuthenticated()) {
             assetAccess.add(DashboardQuery.AssetAccess.LINKED);
             if (hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
@@ -175,6 +195,8 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             userEditAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
             assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.REALM));
         }
+
+        // Build query object and return
         return query.conditions(new DashboardQuery.Conditions(
                         new DashboardQuery.DashboardConditions()
                                 .viewAccess(userViewAccess.toArray(new DashboardAccess[0]))

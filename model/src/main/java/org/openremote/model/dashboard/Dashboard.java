@@ -1,6 +1,5 @@
 package org.openremote.model.dashboard;
 
-import com.fasterxml.jackson.annotation.JsonFilter;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +14,6 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 @Entity
 @Table(name = "DASHBOARD")
-@JsonFilter("dashboardDtoFilter")
 public class Dashboard {
 
     @Id

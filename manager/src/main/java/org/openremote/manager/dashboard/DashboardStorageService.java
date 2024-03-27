@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.dashboard;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -91,29 +90,27 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      */
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
 
-        return (Dashboard[]) persistenceService.doReturningTransaction((EntityManager em) -> {
+        return (Dashboard[]) persistenceService.doReturningTransaction((em) -> {
 
             StringBuilder sql = new StringBuilder("SELECT * FROM Dashboard WHERE realm LIKE :realm");
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("realm", dashboardQuery.realm.name);
 
             if(dashboardQuery.ids != null) {
-                this.buildSqlIdFilter(sql, dashboardQuery, parameters);
+                this.appendSqlIdFilter(sql, dashboardQuery, parameters);
             }
             if(dashboardQuery.names != null) {
-                this.buildSqlNamesFilter(sql, dashboardQuery, parameters);
+                this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
             }
             if(dashboardQuery.userIds != null) {
-                this.buildSqlUserIdsFilter(sql, dashboardQuery, parameters);
+                this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
             }
             if(dashboardQuery.conditions.getDashboard() != null) {
-                this.buildSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
+                this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
             }
             if(dashboardQuery.conditions.getAsset() != null) {
-                this.buildSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
+                this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
             }
-
-            /** TODO: Implement filtering by {@link DashboardQuery.userIds} */
 
             /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
 
@@ -140,7 +137,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder buildSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND id IN (:ids)");
         sqlParams.put("ids", List.of(query.ids));
         return sqlBuilder;
@@ -151,7 +148,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder buildSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         IntStream.range(0, query.names.length).forEach(index -> {
             String key = "name" + index;
             StringPredicate pred = query.names[index];
@@ -167,7 +164,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return sqlBuilder;
     }
 
-    protected StringBuilder buildSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND owner_id IN (:ownerIds)");
         sqlParams.put("ownerIds", List.of(query.userIds));
         return sqlBuilder;
@@ -178,13 +175,15 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder buildSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
+    protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
         var dashboardConditions = query.conditions.getDashboard();
         if(dashboardConditions.getViewAccess() != null || dashboardConditions.getEditAccess() != null) {
 
             List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
             List<DashboardAccess> editAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getEditAccess()));
             sqlBuilder.append(" AND (");
+
+            // When requesting PRIVATE dashboards, check whether the user is also the owner
             if(userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
                 viewAccess.remove(DashboardAccess.PRIVATE);
                 sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
@@ -195,7 +194,10 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                 sqlBuilder.append("(edit_access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
             }
+
+            // Append simple SQL filter by dashboard access
             sqlBuilder.append("(view_access IN (:viewAccess) OR edit_access IN (:editAccess)))");
+
             sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
             sqlParams.put("editAccess", editAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
 
@@ -212,20 +214,24 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * it applies the necessary data to the sqlBuilder and sqlParams parameters.
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder buildSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
+    protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
         var assetConditions = query.conditions.getAsset();
         if(assetConditions.access != null) {
             List<DashboardQuery.AssetAccess> levels = Arrays.asList(assetConditions.access);
             if (levels.size() == 1 && levels.contains(DashboardQuery.AssetAccess.RESTRICTED)) {
 
+                // Gather asset ids the user is linked to
                 List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.realm.name, userId, null);
                 List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId()).collect(Collectors.toList());
+
+                // AT_LEAST_ONE - When user has access to the assets of at least 1 widget
                 if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
                     sqlBuilder.append(" AND (template IS NULL OR template->'widgets' IS NULL OR EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(COALESCE(template->'widgets', '[]')) AS j(widget) ");
                     sqlBuilder.append("LEFT JOIN jsonb_array_elements(COALESCE(widget->'widgetConfig'->'attributeRefs', '[]')) AS a(attributeRef) ");
                     sqlBuilder.append("ON a->>'id' IN (:assetIds)))");
                 }
+                // ALL - User needs access to the assets of ALL widgets (or the dashboard has no widgets)
                 else if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.ALL) {
                     sqlBuilder.append(" AND NOT EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(template->'widgets') AS j(widget), ");
@@ -325,6 +331,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
                     .ids(dashboardId)
                     .realm(new RealmPredicate(realm))
                     .userIds(userId)
+                    .limit(1)
                     .conditions(new DashboardQuery.Conditions().dashboard(
                             new DashboardQuery.DashboardConditions().editAccess(new DashboardAccess[]{ DashboardAccess.SHARED, DashboardAccess.PRIVATE })
                     )),
