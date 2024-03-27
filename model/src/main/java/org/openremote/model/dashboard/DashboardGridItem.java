@@ -22,4 +22,21 @@ public class DashboardGridItem {
     protected boolean noResize;
     protected boolean noMove;
     protected boolean locked;
+
+    public DashboardGridItem setX(int x) {
+        this.x = x;
+        return this;
+    }
+    public DashboardGridItem setY(int y) {
+        this.y = y;
+        return this;
+    }
+    public DashboardGridItem setW(int w) {
+        this.w = w;
+        return this;
+    }
+    public DashboardGridItem setH(int h) {
+        this.h = h;
+        return this;
+    }
 }

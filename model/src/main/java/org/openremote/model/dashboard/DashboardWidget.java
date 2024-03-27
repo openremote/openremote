@@ -25,15 +25,48 @@ public class DashboardWidget {
 
     /* ------------------------------ */
 
-    public void setId(@NotNull @NotEmpty String id) { this.id = id; }
-    public void setDisplayName(@NotNull String displayName) { this.displayName = displayName; }
-    public void setGridItem(@NotNull DashboardGridItem gridItem) { this.gridItem = gridItem; }
-    public void setWidgetTypeId(@NotNull String widgetTypeId) { this.widgetTypeId = widgetTypeId; }
-    public void setWidgetConfig(Object widgetConfig) { this.widgetConfig = widgetConfig; }
+    public DashboardWidget setId(@NotNull @NotEmpty String id) {
+        this.id = id;
+        return this;
+    }
 
-    public String getId() { return id; }
-    public String getDisplayName() { return displayName; }
-    public DashboardGridItem getGridItem() { return gridItem; }
-    public String getWidgetTypeId() { return widgetTypeId; }
-    public Object getWidgetConfig() { return widgetConfig; }
+    public DashboardWidget setDisplayName(@NotNull String displayName) {
+        this.displayName = displayName;
+        return this;
+    }
+
+    public DashboardWidget setGridItem(@NotNull DashboardGridItem gridItem) {
+        this.gridItem = gridItem;
+        return this;
+    }
+
+    public DashboardWidget setWidgetTypeId(@NotNull String widgetTypeId) {
+        this.widgetTypeId = widgetTypeId;
+        return this;
+    }
+
+    public DashboardWidget setWidgetConfig(Object widgetConfig) {
+        this.widgetConfig = widgetConfig;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public DashboardGridItem getGridItem() {
+        return gridItem;
+    }
+
+    public String getWidgetTypeId() {
+        return widgetTypeId;
+    }
+
+    public Object getWidgetConfig() {
+        return widgetConfig;
+    }
 }
