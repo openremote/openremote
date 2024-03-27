@@ -1,18 +1,17 @@
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl,{
-    AnyLayer,
-    Control,
-    GeoJSONSource,
-    GeolocateControl,
+    AddLayerObject,
     IControl,
+    GeolocateControl,
     LngLat,
     LngLatLike,
     Map as MapGL,
-    MapboxOptions as OptionsGL,
+    MapOptions as OptionsGL,
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
-    Style as StyleGL,
+    StyleSpecification,
+    GeoJSONSourceSpecification,
 } from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
@@ -58,7 +57,7 @@ export class MapWidget {
     protected _showBoundaryBox: boolean = false;
     protected _useZoomControls: boolean = true;
     protected _showGeoJson: boolean = true;
-    protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
 
@@ -166,13 +165,13 @@ export class MapWidget {
         return this;
     }
 
-    public setControls(controls?: (Control | IControl | [Control | IControl, ControlPosition?])[]): this {
+    public setControls(controls?: (IControl | [IControl, ControlPosition?])[]): this {
         this._controls = controls;
         if (this._mapGl) {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -310,9 +309,9 @@ export class MapWidget {
             const settings = await this.loadViewSettings();
                 
             const options: OptionsGL = {
-                attributionControl: true,
+                attributionControl: {compact: true},
                 container: this._mapContainer,
-                style: settings as StyleGL,
+                style: settings as StyleSpecification,
                 transformRequest: (url, resourceType) => {
                     return {
                         headers: {Authorization: manager.getAuthorizationHeader()},
@@ -420,7 +419,7 @@ export class MapWidget {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -508,7 +507,7 @@ export class MapWidget {
                             type: "FeatureCollection",
                             features: features
                         }
-                    } as any as GeoJSONSource;
+                    } as any as GeoJSONSourceSpecification;
                     const sourceInfo = this.addGeoJSONSource(newSource);
                     if(sourceInfo) {
                         this.addGeoJSONLayer(type, sourceInfo.sourceId);
@@ -538,7 +537,7 @@ export class MapWidget {
         return groupedSources;
     }
 
-    public addGeoJSONSource(source: GeoJSONSource): { source: GeoJSONSource, sourceId: string } | undefined {
+    public addGeoJSONSource(source: GeoJSONSourceSpecification): { source: GeoJSONSourceSpecification, sourceId: string } | undefined {
         if(!this._mapGl) {
             console.error("mapGl instance not found!"); return;
         }
@@ -617,7 +616,7 @@ export class MapWidget {
                             'line-color': realmColor,
                             'line-width': 2
                         },
-                    } as AnyLayer
+                    } as AddLayerObject
                     this._geoJsonLayers.set(outlineId, outlineLayer);
                     this._mapGl.addLayer(outlineLayer);
                     break;
@@ -789,13 +788,13 @@ export class MapWidget {
                 "type": "circle",
                 "source": "circleData",
                 "paint": {
-                    "circle-radius": {
-                        stops: [
-                            [0, 0],
-                            [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
-                        ],
-                        base: 2
-                    },
+                    "circle-radius": [
+                        "interpolate", 
+                        ["linear"], 
+                        ["zoom"], 
+                        0, 0, 
+                        20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)
+                    ],
                     "circle-color": "red",
                     "circle-opacity": 0.3
                 }
