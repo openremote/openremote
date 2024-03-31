@@ -324,7 +324,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         Response response = null;
 
         try {
-            response = resource.getWelcomePage();
+            response = resource.getInstanceHealth();
             if (response != null &&
                 (response.getStatusInfo().getFamily() == SUCCESSFUL
                     || response.getStatusInfo().getFamily() == REDIRECTION)) {

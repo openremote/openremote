@@ -59,4 +59,8 @@ public interface KeycloakResource {
     @Produces(APPLICATION_JSON)
     AdapterConfig getAdapterConfig(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
+	@GET
+	@Path("/")
+	@Produces(TEXT_HTML)
+	Response getInstanceHealth();
 }
