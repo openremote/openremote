@@ -60,7 +60,7 @@ public interface KeycloakResource {
     AdapterConfig getAdapterConfig(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
 	@GET
-	@Path("/")
+	@Path("health")
 	@Produces(TEXT_HTML)
 	Response getInstanceHealth();
 }
