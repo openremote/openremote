@@ -321,6 +321,7 @@ jobs:
           deploys = None
           dockerPublishTags = None
           mavenPublishTag = None
+          npmPublishTag = None
           deployEnvironment = None
 
           f = open(".ci_cd/ci_cd.json")
@@ -380,6 +381,8 @@ jobs:
                    dockerPublishTags = eventConfig['distribute']['docker']
                 if 'maven' in eventConfig['distribute']:
                    mavenPublishTag = eventConfig['distribute']['maven']
+                if 'npm' in eventConfig['distribute']:
+                   npmPublishTag = eventConfig['distribute']['npm']
 
           if dockerPublishTags is not None and isMainRepo == 'true':
             dockerPublishTags = dockerPublishTags.replace("$version", refName)
@@ -393,6 +396,11 @@ jobs:
             mavenPublishTag = mavenPublishTag.replace("$version", refName)
             os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
             os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
+
+          if npmPublishTag is not None and isMainRepo == 'true':
+            npmPublishTag = npmPublishTag.replace("$version", refName)
+            os.system(f" echo 'npm publish version: {npmPublishTag}'")
+            os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
           if deploys is not None:
@@ -750,6 +758,16 @@ jobs:
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         continue-on-error: true
+
+      - name: Run npm publish command
+        if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
+        run: |
+          echo "npmRegistryServer: $NPM_REGISTRY_SERVER" >> .yarnrc.yml
+          echo "npmAuthIdent: $NPM_AUTH_IDENT" >> .yarnrc.yml
+          yarn workspaces foreach --all --no-private --topological npm publish
+        env:
+          NPM_REGISTRY_SERVER: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_REGISTRY_SERVER || steps.inputs-and-secrets.outputs.NPM_REGISTRY_SERVER }}
+          NPM_AUTH_IDENT: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_IDENT || steps.inputs-and-secrets.outputs.NPM_AUTH_IDENT }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
