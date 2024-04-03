@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import manager, {DefaultColor4, DefaultColor3, Util} from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor4, Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
@@ -10,12 +10,13 @@ import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {isAxiosError, GenericAxiosResponse} from "@openremote/rest";
+import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getNewUserRoute, getUsersRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
+import {debounce} from "lodash";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -204,6 +205,10 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _serviceUsers: UserModel[] = [];
     @state()
+    protected _userFilter = this.getDefaultUserFilter(false);
+    @state()
+    protected _serviceUserFilter = this.getDefaultUserFilter(true);
+    @state()
     protected _roles: Role[] = [];
     @state()
     protected _realmRoles: Role[] = [];
@@ -212,10 +217,9 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     @state()
     protected _compositeRoles: Role[] = [];
-    protected _loading: boolean = false;
 
     @state()
-    protected _loadUsersPromise?: Promise<any>;
+    protected _loadDataPromise?: Promise<any>;
     @state()
     protected _saveUserPromise?: Promise<any>;
 
@@ -230,7 +234,7 @@ export class PageUsers extends Page<AppStateKeyed> {
     public shouldUpdate(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
-            this.loadUsers();
+            this.loadData();
         }
         if (changedProperties.has('userId')) {
             this._updateRoute();
@@ -242,7 +246,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
     public connectedCallback() {
         super.connectedCallback();
-        this.loadUsers();
+        this.loadData();
     }
 
     public disconnectedCallback() {
@@ -264,21 +268,21 @@ export class PageUsers extends Page<AppStateKeyed> {
         return true;
     }
 
-    protected async loadUsers(): Promise<void> {
-        this._loadUsersPromise = this.fetchUsers();
-        this._loadUsersPromise.then(() => {
-            this._loadUsersPromise = undefined;
-        })
-        return this._loadUsersPromise;
+    protected async loadData(): Promise<void> {
+        if(!this._loadDataPromise) {
+            this._loadDataPromise = this.fetchUsers();
+            this._loadDataPromise.finally(() => {
+                this._loadDataPromise = undefined;
+            })
+        }
+        return this._loadDataPromise;
     }
 
     protected async fetchUsers(): Promise<void> {
 
-        if (!this.realm || this._loading || !this.isConnected) {
+        if (!this.realm || !this.isConnected) {
             return;
         }
-
-        this._loading = true;
 
         this._compositeRoles = [];
         this._roles = [];
@@ -320,7 +324,6 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
-        this._loading = false;
     }
 
     private async _createUpdateUser(user: UserModel, action: 'update' | 'create'): Promise<boolean> {
@@ -368,7 +371,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             throw e; // Throw exception anyhow to handle individual cases
 
         } finally {
-            await this.loadUsers();
+            await this.loadData();
             return result;
         }
     }
@@ -441,6 +444,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <or-translate value="notAuthenticated"></or-translate>
             `;
         }
+        // Apply filter (such as search input)
+        const users = this._userFilter(this._users);
+        const serviceUsers = this._serviceUserFilter(this._serviceUsers);
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
         const realmRoleOptions: [string, string][] = this._realmRoles ? this._realmRoles.filter(r => Util.realmRoleFilter(r)).map(r => [r.name, i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name.replace("_", " ").replace("-", " ")))]) : [];
@@ -454,7 +460,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             {title: i18next.t('email'), hideMobile: true},
             {title: i18next.t('status')}
         ];
-        const userTableRows: TableRow[] = this._users.map((user) => {
+        const userTableRows: TableRow[] = users.map((user) => {
             return {
                 content: [user.username, user.firstName, user.lastName, user.email, user.enabled ? i18next.t('enabled') : i18next.t('disabled')] as string[],
                 clickable: true
@@ -466,7 +472,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             {title: i18next.t('username')},
             {title: i18next.t('status')}
         ];
-        const serviceUserTableRows: TableRow[] = this._serviceUsers.map((user) => {
+        const serviceUserTableRows: TableRow[] = serviceUsers.map((user) => {
             return {
                 content: [user.username, user.enabled ? i18next.t('enabled') : i18next.t('disabled')] as string[],
                 clickable: true
@@ -482,7 +488,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             }
         }
 
-        const mergedUserList: UserModel[] = [...this._users, ...this._serviceUsers];
+        const mergedUserList: UserModel[] = [...users, ...serviceUsers];
         const index: number | undefined = (this.userId ? mergedUserList.findIndex((user) => user.id == this.userId) : undefined);
 
         return html`
@@ -524,24 +530,34 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <div id="content" class="panel">
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("regularUser_plural")}</p>
-                            <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
-                                          label="${i18next.t('add')} ${i18next.t("user")}"
-                                          @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(false)}}"></or-mwc-input>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" live compact outlined
+                                              @or-mwc-input-changed="${debounce((ev) => this.onRegularUserSearch(ev), 150)}"
+                                ></or-mwc-input>
+                                <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
+                                              @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(false)}}"
+                                ></or-mwc-input>
+                            </div>
                         </div>
                         ${until(this.getUsersTable(userTableColumns, userTableRows, tableConfig, (ev) => {
-                            this.userId = this._users[ev.detail.index].id;
+                            this.userId = users[ev.detail.index].id;
                         }), html`${i18next.t('loading')}`)}
                     </div>
 
                     <div id="content" class="panel">
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("serviceUser_plural")}</p>
-                            <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus"
-                                          label="${i18next.t('add')} ${i18next.t("user")}"
-                                          @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(true)}}"></or-mwc-input>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" live compact outlined
+                                              @or-mwc-input-changed="${debounce((ev) => this.onServiceUserSearch(ev), 150)}"
+                                ></or-mwc-input>
+                                <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
+                                              @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(true)}}"
+                                ></or-mwc-input>
+                            </div>
                         </div>
                         ${until(this.getUsersTable(serviceUserTableColumns, serviceUserTableRows, tableConfig, (ev) => {
-                            this.userId = this._serviceUsers[ev.detail.index].id;
+                            this.userId = serviceUsers[ev.detail.index].id;
                         }), html`${i18next.t('loading')}`)}
                     </div>
                 `)}
@@ -550,8 +566,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     }
 
     protected async getUsersTable(columns: TemplateResult | TableColumn[] | string[], rows: TemplateResult | TableRow[] | string[][], config: any, onRowClick: (event: OrMwcTableRowClickEvent) => void): Promise<TemplateResult> {
-        if (this._loadUsersPromise) {
-            await this._loadUsersPromise;
+        if (this._loadDataPromise) {
+            await this._loadDataPromise;
         }
         return html`
             <or-mwc-table .columns="${columns instanceof Array ? columns : undefined}"
@@ -575,6 +591,39 @@ export class PageUsers extends Page<AppStateKeyed> {
             previousRealmRoles: [],
             userAssetLinks: [],
             serviceAccount: serviceAccount
+        }
+    }
+
+    protected getDefaultUserFilter(serviceUser: boolean): (users: UserModel[]) => UserModel[] {
+        return (users) => users;
+    }
+
+    protected onRegularUserSearch(ev: OrInputChangedEvent) {
+        const value = (ev.detail.value as string)?.toLowerCase();
+        if(!value) {
+            this._userFilter = this.getDefaultUserFilter(false);
+        } else {
+            this._userFilter = (users) => {
+                return users.filter(u =>
+                    (u.username as string)?.toLowerCase().includes(value) ||
+                    (u.firstName as string)?.toLowerCase().includes(value) ||
+                    (u.lastName as string)?.toLowerCase().includes(value) ||
+                    (u.email as string)?.toLowerCase().includes(value)
+                );
+            }
+        }
+    }
+
+    protected onServiceUserSearch(ev: OrInputChangedEvent) {
+        const value = (ev.detail.value as string)?.toLowerCase();
+        if(!value) {
+            this._serviceUserFilter = this.getDefaultUserFilter(true);
+        } else {
+            this._serviceUserFilter = (users) => {
+                return users.filter(u =>
+                    (u.username as string)?.includes(value)
+                );
+            }
         }
     }
 
@@ -1023,6 +1072,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     protected reset() {
         this.userId = undefined;
         this.creationState = undefined;
+        this._userFilter = this.getDefaultUserFilter(false);
+        this._serviceUserFilter = this.getDefaultUserFilter(true);
     }
 
     public stateChanged(state: AppStateKeyed) {

@@ -678,6 +678,10 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public required: boolean = false;
 
+    /* Triggers OrInputChangedEvent based on @input instead of @change. Only supported for text-field input. */
+    @property({type: Boolean})
+    public live: boolean = false;
+
     @property()
     public max?: any;
 
@@ -1405,7 +1409,8 @@ export class OrMwcInput extends LitElement {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
                             @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}"
-                            @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
+                            @input="${this.live ? (e: InputEvent) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value) : undefined}"
+                            @change="${!this.live ? (e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value) : undefined}" />`;
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">

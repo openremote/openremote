@@ -555,6 +555,7 @@
     }
   },
   "rowsPerPage": "Rijen per pagina",
+  "search": "Zoeken",
   "noEmailSet": "Gebruiker aanmaken mislukt, geen email ingevuld.",
   "noUsernameSet": "Gebruiker aanmaken mislukt, geen gebruikersnaam ingevuld.",
   "createUserFailed": "Aanmaken gebruiker mislukt",

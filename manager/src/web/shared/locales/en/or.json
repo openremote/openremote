@@ -555,6 +555,7 @@
     }
   },
   "rowsPerPage": "Rows per page",
+  "search": "Search",
   "noEmailSet": "Create user failed, no email set.",
   "noUsernameSet": "Create user failed, no username set",
   "createUserFailed": "Create user failed",
