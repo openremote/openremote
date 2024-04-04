@@ -1143,14 +1143,20 @@ export class OrChart extends translate(i18next)(LitElement) {
             query.toTimestamp = this._endOfPeriod;
 
             if(query.type == 'lttb') {
-                if(this._chartElem.clientWidth === 0) console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
 
                 // If amount of data points is set, only allow a maximum of 1 points per pixel in width
                 // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
                 if(query.amountOfPoints) {
-                    query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem.clientWidth)
+                    if(this._chartElem?.clientWidth > 0) {
+                        query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem?.clientWidth)
+                    }
                 } else {
-                    query.amountOfPoints = (this._chartElem.clientWidth ? Math.round(this._chartElem.clientWidth / 5) : 100)
+                    if(this._chartElem?.clientWidth > 0) {
+                        query.amountOfPoints = Math.round(this._chartElem.clientWidth / 5)
+                    } else {
+                        console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
+                        query.amountOfPoints = 100;
+                    }
                 }
 
             } else if(query.type === 'interval' && !query.interval) {
