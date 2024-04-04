@@ -1144,7 +1144,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             if(query.type == 'lttb' && !query.amountOfPoints) {
                 if(this._chartElem.clientWidth == 0) {
-                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
+                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 100 points instead.")
                 }
                 query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 5); // set amount of datapoints based on current chart width.
             } else if(query.type == 'interval' && !query.interval) {
