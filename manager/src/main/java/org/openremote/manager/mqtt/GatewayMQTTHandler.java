@@ -78,6 +78,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String DELETE_TOPIC = "delete";
     public static final String UPDATE_TOPIC = "update";
     public static final String GET_TOPIC = "get";
+    public static final String GET_VALUE_TOPIC = "get-value";
 
 
     // index tokens
@@ -183,10 +184,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
+        if (isEventsTopic(topic)) {
+            if (isAssetsTopic(topic)) {
+                subscriptionManager.subscribe(connection, topic, AssetEvent.class);
+            }
+            else if (isAttributesTopic(topic))
+            {
+                subscriptionManager.subscribe(connection, topic, AttributeEvent.class);
+            }
+        }
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
+        if (isEventsTopic(topic)) {
+            subscriptionManager.unsubscribe(connection, topic);
+        }
     }
 
     @Override
@@ -200,13 +213,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/get
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/update
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
 
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get-value
+                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
         );
     }
 
@@ -359,6 +376,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
             });
         }
+
+        var headers = prepareHeaders(null, connection);
+        headers.put(SESSION_CLOSE_ERROR, true);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(headers)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
     }
 
     @Override
@@ -368,6 +392,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
             });
         }
+
+        var headers = prepareHeaders(null, connection);
+        headers.put(SESSION_CLOSE, true);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(headers)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
     }
 
     @Override
@@ -377,6 +408,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.CONNECTED);
             });
         }
+        var headers = prepareHeaders(null, connection);
+        headers.put(SESSION_OPEN, true);
+
+        Runnable closeRunnable = () -> {
+            if (mqttBrokerService != null) {
+                LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
+                mqttBrokerService.doForceDisconnect(connection);
+            }
+        };
+        headers.put(SESSION_TERMINATOR, closeRunnable);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(headers)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
     }
 
 
@@ -497,11 +542,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
 
-    protected boolean isAssetsTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC);
+    public static boolean isAssetsTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
+                && !isAttributesTopic(topic); // it is considered an asset topic as long it does not contain attributes
     }
 
-    protected boolean isAssetsMethodTopic(Topic topic) {
+    protected static boolean isAssetsMethodTopic(Topic topic) {
         return isAssetsTopic(topic) &&
                 Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), CREATE_TOPIC) ||
                 Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), DELETE_TOPIC) ||
@@ -509,33 +555,34 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), GET_TOPIC);
     }
 
-    protected boolean isAttributesMethodTopic(Topic topic) {
+    protected static boolean isAttributesMethodTopic(Topic topic) {
         return isAttributesTopic(topic) &&
                 Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_TOPIC);
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_VALUE_TOPIC);
     }
 
-    protected boolean isMultiAttributeUpdateTopic(Topic topic) {
+    protected static boolean isMultiAttributeUpdateTopic(Topic topic) {
         return isAttributesTopic(topic) &&
                 Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE_TOPIC) &&
                 Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE_TOPIC);
     }
 
 
-    protected boolean isAttributesTopic(Topic topic) {
+    protected static boolean isAttributesTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC) &&
                 Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX), ATTRIBUTES_TOPIC);
     }
 
-    protected boolean isOperationsTopic(Topic topic) {
+    protected static boolean isOperationsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, OPERATIONS_TOKEN_INDEX), OPERATIONS_TOPIC);
     }
 
-    protected boolean isResponseTopic(Topic topic) {
+    protected static boolean isResponseTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
     }
 
-    protected boolean isEventsTopic(Topic topic) {
+    protected static boolean isEventsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, EVENTS_TOKEN_INDEX), EVENTS_TOPIC);
     }
 
@@ -547,13 +594,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return headers;
     }
 
-    public String getResponseTopic(Topic topic) {
+    public static String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
 
 
-    protected boolean isGatewayConnection(RemotingConnection connection) {
+    protected static boolean isGatewayConnection(RemotingConnection connection) {
         return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
 
@@ -583,6 +630,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void publishSuccessResponse(Topic topic, String realm, Object data) {
+        LOG.fine("Publishing success response to " + getResponseTopic(topic));
         mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse( realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
