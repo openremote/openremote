@@ -1142,12 +1142,18 @@ export class OrChart extends translate(i18next)(LitElement) {
             query.fromTimestamp = this._startOfPeriod;
             query.toTimestamp = this._endOfPeriod;
 
-            if(query.type == 'lttb' && !query.amountOfPoints) {
-                if(this._chartElem.clientWidth == 0) {
-                    console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 100 points instead.")
+            if(query.type == 'lttb') {
+                if(this._chartElem.clientWidth === 0) console.warn("Could not grab width of the Chart for estimating amount of data points. Using 100 points instead.")
+
+                // If amount of data points is set, only allow a maximum of 1 points per pixel in width
+                // Otherwise, dynamically set amount of data points based on chart width (1000px = 200 data points)
+                if(query.amountOfPoints) {
+                    query.amountOfPoints = Math.min(query.amountOfPoints, this._chartElem.clientWidth)
+                } else {
+                    query.amountOfPoints = (this._chartElem.clientWidth ? Math.round(this._chartElem.clientWidth / 5) : 100)
                 }
-                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 5); // set amount of datapoints based on current chart width.
-            } else if(query.type == 'interval' && !query.interval) {
+
+            } else if(query.type === 'interval' && !query.interval) {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
                 const intervalArr = this._getInterval(diffInHours);
                 query.interval = (intervalArr[0].toString() + " " + intervalArr[1].toString()); // for example: "5 minute"
