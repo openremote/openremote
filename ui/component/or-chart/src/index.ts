@@ -1146,7 +1146,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(this._chartElem.clientWidth == 0) {
                     console.error("Could not grab width of the Chart for estimating amount of datapoints. Using 10 points instead.")
                 }
-                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 10); // set amount of datapoints based on current chart width.
+                query.amountOfPoints = (this._chartElem.clientWidth == 0) ? 100 : Math.round(this._chartElem.clientWidth / 5); // set amount of datapoints based on current chart width.
             } else if(query.type == 'interval' && !query.interval) {
                 const diffInHours = (this.datapointQuery.toTimestamp! - this.datapointQuery.fromTimestamp!) / 1000 / 60 / 60;
                 const intervalArr = this._getInterval(diffInHours);
