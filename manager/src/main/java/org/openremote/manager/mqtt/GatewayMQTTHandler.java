@@ -102,6 +102,86 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected boolean isKeycloak;
 
+    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
+        String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new AttributeEvent(assetId, attributeName, value).setSource(GatewayMQTTHandler.class.getSimpleName());
+    }
+
+    protected static AssetEvent buildAssetEvent(List<String> topicTokens, Asset<?> asset, AssetEvent.Cause cause) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new AssetEvent(cause, asset, null);
+    }
+
+    protected static ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new ReadAssetEvent(assetId);
+    }
+
+    protected static ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
+        return new ReadAttributeEvent(assetId, attributeName);
+    }
+
+    public static boolean isAssetsTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
+                && !isAttributesTopic(topic); // it is considered an asset topic as long it does not contain attributes
+    }
+
+    protected static boolean isAssetsMethodTopic(Topic topic) {
+        return isAssetsTopic(topic) &&
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), CREATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), DELETE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), UPDATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), GET_TOPIC);
+    }
+
+    protected static boolean isAttributesMethodTopic(Topic topic) {
+        return isAttributesTopic(topic) &&
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_TOPIC) ||
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_VALUE_TOPIC);
+    }
+
+    protected static boolean isMultiAttributeUpdateTopic(Topic topic) {
+        return isAttributesTopic(topic) &&
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE_TOPIC) &&
+                Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE_TOPIC);
+    }
+
+    protected static boolean isAttributesTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC) &&
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX), ATTRIBUTES_TOPIC);
+    }
+
+    protected static boolean isOperationsTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, OPERATIONS_TOKEN_INDEX), OPERATIONS_TOPIC);
+    }
+
+    protected static boolean isResponseTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
+    }
+
+    protected static boolean isEventsTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, EVENTS_TOKEN_INDEX), EVENTS_TOPIC);
+    }
+
+    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(SESSION_KEY, getConnectionIDString(connection));
+        headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(REALM_PARAM_NAME, requestRealm);
+        return headers;
+    }
+
+    public static String getResponseTopic(Topic topic) {
+        return topic.toString() + "/" + RESPONSE_TOPIC;
+    }
+
+    protected static boolean isGatewayConnection(RemotingConnection connection) {
+        return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
+    }
 
     @Override
     public void start(Container container) throws Exception {
@@ -149,7 +229,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         });
     }
 
-
     @Override
     public boolean handlesTopic(Topic topic) {
         return topicMatches(topic);
@@ -187,9 +266,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isEventsTopic(topic)) {
             if (isAssetsTopic(topic)) {
                 subscriptionManager.subscribe(connection, topic, AssetEvent.class);
-            }
-            else if (isAttributesTopic(topic))
-            {
+            } else if (isAttributesTopic(topic)) {
                 subscriptionManager.subscribe(connection, topic, AttributeEvent.class);
             }
         }
@@ -226,7 +303,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
         );
     }
-
 
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
@@ -424,7 +500,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .asyncSend();
     }
 
-
     /**
      * Create asset request topic handler
      */
@@ -446,8 +521,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         asset.setRealm(realm);
 
         // if it is a gateway connection the asset needs to be associated with the respective gateway asset.
-        if (isGatewayConnection(connection))
-        {
+        if (isGatewayConnection(connection)) {
             Optional<GatewayV2Asset> gateway = findGatewayFromConnection(connection);
             gateway.ifPresent(gatewayAsset -> asset.setParentId(gatewayAsset.getId()));
         }
@@ -460,9 +534,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        publishSuccessResponse(topic, realm,asset);
+        publishSuccessResponse(topic, realm, asset);
     }
-
 
     /**
      * Get asset request topic handler
@@ -476,7 +549,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
             return;
         }
-        publishSuccessResponse(topic, topicRealm(topic),  asset);
+        publishSuccessResponse(topic, topicRealm(topic), asset);
     }
 
     /**
@@ -489,7 +562,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         sendAttributeEvent(event);
 
-        publishSuccessResponse(topic, realm,event);
+        publishSuccessResponse(topic, realm, event);
     }
 
     /**
@@ -510,98 +583,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, topicRealm(topic), attribute.get());
     }
 
-
     protected boolean topicHasValidAssetId(Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         if (assetId == null) {
             return false;
         }
         return Pattern.matches(ASSET_ID_REGEXP, assetId);
-    }
-
-    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
-        String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        return new AttributeEvent(assetId, attributeName, value).setSource(GatewayMQTTHandler.class.getSimpleName());
-    }
-
-    protected static AssetEvent buildAssetEvent(List<String> topicTokens, Asset<?> asset, AssetEvent.Cause cause) {
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        return new AssetEvent(cause, asset, null);
-    }
-
-    protected static ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        return new ReadAssetEvent(assetId);
-    }
-
-    protected static ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
-        return new ReadAttributeEvent(assetId, attributeName);
-    }
-
-
-    public static boolean isAssetsTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
-                && !isAttributesTopic(topic); // it is considered an asset topic as long it does not contain attributes
-    }
-
-    protected static boolean isAssetsMethodTopic(Topic topic) {
-        return isAssetsTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), CREATE_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), DELETE_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), UPDATE_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN), GET_TOPIC);
-    }
-
-    protected static boolean isAttributesMethodTopic(Topic topic) {
-        return isAttributesTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), UPDATE_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_TOPIC) ||
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX), GET_VALUE_TOPIC);
-    }
-
-    protected static boolean isMultiAttributeUpdateTopic(Topic topic) {
-        return isAttributesTopic(topic) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX), UPDATE_TOPIC) &&
-                Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), UPDATE_TOPIC);
-    }
-
-
-    protected static boolean isAttributesTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC) &&
-                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX), ATTRIBUTES_TOPIC);
-    }
-
-    protected static boolean isOperationsTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, OPERATIONS_TOKEN_INDEX), OPERATIONS_TOPIC);
-    }
-
-    protected static boolean isResponseTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
-    }
-
-    protected static boolean isEventsTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, EVENTS_TOKEN_INDEX), EVENTS_TOPIC);
-    }
-
-    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(SESSION_KEY, getConnectionIDString(connection));
-        headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(REALM_PARAM_NAME, requestRealm);
-        return headers;
-    }
-
-    public static String getResponseTopic(Topic topic) {
-        return topic.toString() + "/" + RESPONSE_TOPIC;
-    }
-
-
-
-    protected static boolean isGatewayConnection(RemotingConnection connection) {
-        return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
 
     protected boolean isGatewayDisabled(GatewayV2Asset gatewayAsset) {
@@ -631,7 +618,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected void publishSuccessResponse(Topic topic, String realm, Object data) {
         LOG.fine("Publishing success response to " + getResponseTopic(topic));
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse( realm, data), MqttQoS.AT_MOST_ONCE);
+        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
     protected void sendAttributeEvent(AttributeEvent event) {

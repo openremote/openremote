@@ -102,31 +102,31 @@ public class GatewayMQTTSubscriptionManager {
             if (topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1) {
                 path = topicTokens.get(ASSET_ID_TOKEN_INDEX + 1);
             }
-
             // realm/clientId/events/assets/#
-            // realm/clientId/events/assets/+
-            // realm/clientId/events/assets/{assetId}
-            // realm/clientId/events/assets/{assetId}/#
-            // realm/clientId/events/assets/{assetId}/+
             if (assetId.equals("#")) {
             }
+            // realm/clientId/events/assets/+
             else if (assetId.equals("+")) {
                 parentIds.add(null);
             }
+            // has a valid assetId
             else if (hasAssetId) {
-                assetIds.add(assetId);
-            }
-            else if (path.equals("#")) {
-                paths.add(assetId);
-            }
-            else if (path.equals("+")) {
-                parentIds.add(assetId);
-            }
-            else {
+                // realm/clientId/events/assets/{assetId}/#
+                if (path.equals("#")) {
+                    paths.add(assetId);
+                }
+                // realm/clientId/events/assets/{assetId}/+
+                else if (path.equals("+")) {
+                    parentIds.add(assetId);
+                }
+                // realm/clientId/events/assets/{assetId}
+                else {
+                    assetIds.add(assetId);
+                }
+            } else {
                 return null;
             }
-        }
-        else if (isAttributesTopic) {
+        } else if (isAttributesTopic) {
             var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
             var attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
             var hasAssetId = Pattern.matches(ASSET_ID_REGEXP, assetId);
