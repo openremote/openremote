@@ -40,11 +40,6 @@ public class GatewayMQTTSubscriptionManager {
         this.mqttBrokerService = mqttBrokerService;
     }
 
-    /**
-     * Unsubscribe from a topic, removes the subscription and consumer from the connectionSubscriberInfoMap
-     */
-
-
     public ConcurrentMap<String, GatewaySubscriberInfo> getConnectionSubscriberInfoMap() {
         return connectionSubscriberInfoMap;
     }
@@ -58,11 +53,15 @@ public class GatewayMQTTSubscriptionManager {
         String subscriptionId = topic.toString();
         AssetFilter assetFilter = buildAssetFilter(topic);
 
+        if (assetFilter == null) {
+            LOG.warning("Invalid asset filter for topic " + topic);
+            return;
+        }
+
         EventSubscription subscription = new EventSubscription(subscriptionClass, assetFilter, subscriptionId);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
         subscribeToTopic(subscription, headers);
-        Consumer<SharedEvent> subscriptionConsumer = subscriptionClass == AssetEvent.class ?
-                getAssetEventSubscriptionConsumer(topic) : null;
+        Consumer<SharedEvent> subscriptionConsumer = getEventSubscriptionConsumer(topic);
 
         addSubscriberInfo(connection, topic, subscriptionConsumer);
     }
@@ -83,6 +82,7 @@ public class GatewayMQTTSubscriptionManager {
     }
 
     protected AssetFilter<?> buildAssetFilter(Topic topic) {
+        var topicTokens = topic.getTokens();
         boolean isAttributesTopic = isAttributesTopic(topic);
         boolean isAssetsTopic = isAssetsTopic(topic) && !isAttributesTopic;
 
@@ -91,61 +91,98 @@ public class GatewayMQTTSubscriptionManager {
         List<String> parentIds = new ArrayList<>();
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
-        var topicTokens = topic.getTokens();
 
-
-        // asset events
         if (isAssetsTopic) {
-            var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-            var hasAssetId = Pattern.matches(ASSET_ID_REGEXP, assetId);
-            var path = "";
-            if (topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1) {
-                path = topicTokens.get(ASSET_ID_TOKEN_INDEX + 1);
-            }
+            var assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
+            var path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
+
             // realm/clientId/events/assets/#
+            // all asset events of the realm
             if (assetId.equals("#")) {
             }
             // realm/clientId/events/assets/+
+            // all asset events of direct children of the realm
             else if (assetId.equals("+")) {
                 parentIds.add(null);
             }
-            // has a valid assetId
-            else if (hasAssetId) {
+            // topic has a valid assetId
+            else if (Pattern.matches(ASSET_ID_REGEXP, assetId)) {
                 // realm/clientId/events/assets/{assetId}/#
+                // all asset events for descendants of the asset
                 if (path.equals("#")) {
                     paths.add(assetId);
                 }
                 // realm/clientId/events/assets/{assetId}/+
+                // all asset events for direct children of the asset
                 else if (path.equals("+")) {
                     parentIds.add(assetId);
                 }
                 // realm/clientId/events/assets/{assetId}
+                // all asset events of the specified asset
                 else {
                     assetIds.add(assetId);
                 }
             } else {
                 return null;
             }
-        } else if (isAttributesTopic) {
-            var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-            var attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
-            var hasAssetId = Pattern.matches(ASSET_ID_REGEXP, assetId);
-            var hasAttributeName = !attributeName.equals("+") && !attributeName.equals("#");
+        } else if (isAttributesTopic){
+            var assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
+            var attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
+            boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
+            boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
+            // if the topic has an assetId and is valid
+            if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId))
+            {
+                // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
+                var path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
 
-            // realm/clientId/events/assets/{assetId}/attributes/#
-            // realm/clientId/events/assets/{assetId}/attributes/{attributeName}
-            // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/#
-            // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/+
-            if (hasAssetId) {
-                var path = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1);
+                // realm/clientId/events/assets/{assetId}/attributes/+
+                // all attribute events for the specified asset
+                if (attributeName.equals("+")) {
+                    assetIds.add(assetId);
+                }
+                else if (attributeNameIsNotWildcardOrEmpty) {
+                    attributeNames.add(attributeName);
 
+                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/#
+                    // all attribute events of descendants of the asset with the specified attribute name
+                    if (path.equals("#"))
+                    {
+                        paths.add(assetId);
+                    }
+                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/+
+                    // all attribute events of direct children of the asset with the specified attribute name
+                    else if (path.equals("+"))
+                    {
+                        parentIds.add(assetId);
+                    }
+                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}
+                    // all attribute events of the asset with the specified attribute name
+                    else
+                    {
+                        assetIds.add(assetId);
+                    }
+                }
+                // unsupported topic-filter
+                else {
+                    return null;
+                }
             }
-
             // realm/clientId/events/assets/+/attributes/{attributeName}/#
+            // All attribute events of the realm with the specified attributeName
+
             // realm/clientId/events/assets/+/attributes/{attributeName}/+
-            // realm/clientId/events/assets/+/attributes/+/#
-            // realm/clientId/events/assets/+/attributes/+/+
+            // All attribute events for direct children of the realm with the specified attributeName
+
+            // realm/clientId/events/assets/+/attributes/#
+            // All attribute events of the realm
+
+            // realm/clientId/events/assets/+/attributes/+
+            // All attribute events of direct children of the realm
+            else {
+                return null;
+            }
         }
 
         AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm);
@@ -210,7 +247,7 @@ public class GatewayMQTTSubscriptionManager {
     /**
      * Returns a consumer that publishes asset events to the specified topic
      */
-    protected Consumer<SharedEvent> getAssetEventSubscriptionConsumer(Topic topic) {
+    protected Consumer<SharedEvent> getEventSubscriptionConsumer(Topic topic) {
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
         String topicStr = topic.toString();
         String replaceToken = topicStr.endsWith("+") ? "#" : null;
@@ -224,7 +261,11 @@ public class GatewayMQTTSubscriptionManager {
             return topicStr;
         };
 
+        LOG.info("Creating event subscription consumer for topic " + topicStr);
+
+
         return ev -> {
+            LOG.info("Received event " + ev + " for topic " + topicStr);
             if (ev instanceof AssetEvent) {
                 LOG.info("Publishing asset event " + ev + " to topic " + topicExpander.apply(ev));
                 mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
