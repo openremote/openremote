@@ -125,11 +125,15 @@ export const style = css`
     }
     
     .in-between-element {
-        height: 3px;
+        position: relative;
+        height: 2px;
     }
-
+    .in-between-element.over {
+        padding: 8px 0;
+        margin: -8px 0;
+    }
     .end-element {
-        height: 15px;
+        height: 44px;
     }
     
     .node-container {
