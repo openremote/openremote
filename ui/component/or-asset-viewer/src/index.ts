@@ -796,7 +796,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
-        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
+        return html`<or-mwc-table id="linked-users-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
                                   @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => { 
                                       hostElement.dispatchEvent(new OrAssetViewerLoadUserEvent(assetLinkInfos[ev.detail.index].userId));
                                   }}">
@@ -936,7 +936,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
 
     const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
         .then((response) => {
-            return response.data.filter(role => role.composite).map(r => r.name!);
+            return response.data.filter(role => role.composite && role.assigned).map(r => r.name!);
         })
         .catch((err) => {
             console.info('User not allowed to get roles', err);
