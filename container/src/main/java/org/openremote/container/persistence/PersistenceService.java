@@ -195,7 +195,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     // TODO: Make configurable
     public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());

@@ -16,7 +16,7 @@
 # `DEVICE_THREAD_COUNT` (default: unset) - Auto provisioning device test `THREAD_COUNT` (set to `0` to skip deployment 3 test)
 # `DEVICE_DURATION` (default: unset) - Auto provisioning device test `DURATION`
 # `DEVICE_RAMP_RATE` (default: unset) - Auto provisioning device test `RAMP_RATE`
-# `DEVICE_TIME_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `TIME_BETWEEN_PUBLISHES`
+# `DEVICE_MILLIS_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `MILLIS_BETWEEN_PUBLISHES`
 
 
 SSH_PREFIX="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -203,7 +203,7 @@ if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
     SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
   fi
   if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
-    SETTINGS="$SETTINGS -o settings.env.TIME_BETWEEN_PUBLISHES=$DEVICE_TIME_BETWEEN_PUBLISHES"
+    SETTINGS="$SETTINGS -o settings.env.MILLIS_BETWEEN_PUBLISHES=$DEVICE_MILLIS_BETWEEN_PUBLISHES"
   fi
 
   COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."

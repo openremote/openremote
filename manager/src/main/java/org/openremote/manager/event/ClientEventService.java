@@ -122,8 +122,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_MQTT = "mqtt";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
     public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
-    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
-    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
     protected static final String PUBLISH_QUEUE = "seda://ClientPublishQueue?multipleConsumers=false&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";

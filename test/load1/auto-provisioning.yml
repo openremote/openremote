@@ -6,7 +6,7 @@ settings:
     THREAD_COUNT:
     RAMP_RATE:
     DURATION:
-    TIME_BETWEEN_PUBLISHES:
+    MILLIS_BETWEEN_PUBLISHES:
 
 reporting:
   - module: final-stats
@@ -29,7 +29,7 @@ modules:
       THREAD_COUNT: ${THREAD_COUNT}
       RAMP_RATE: ${RAMP_RATE}
       DURATION: ${DURATION}
-      TIME_BETWEEN_PUBLISHES: ${TIME_BETWEEN_PUBLISHES}
+      MILLIS_BETWEEN_PUBLISHES: ${MILLIS_BETWEEN_PUBLISHES}
 
 execution:
   - scenario: simple
