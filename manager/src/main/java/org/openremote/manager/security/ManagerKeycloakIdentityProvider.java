@@ -257,6 +257,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User getUserByUsername(String realm, String username) {
+        if (username.length() > 255) {
+            // Keycloak has a 255 character limit on clientId
+            username = username.substring(0, 254);
+        }
+        username = username.toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
         return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
@@ -267,6 +272,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // Force lowercase username
             if (user.getUsername() != null) {
                 user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
+            }
+            if (user.getUsername().length() > 255) {
+                // Keycloak has a 255 character limit on clientId which affects service users
+                user.setUsername(user.getUsername().substring(0, 254));
             }
 
             if (!user.isServiceAccount() && allowUpdate) {

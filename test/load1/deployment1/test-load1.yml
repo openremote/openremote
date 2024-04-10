@@ -75,6 +75,10 @@ services:
   manager:
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
+      interval: 60s
+      retries: 15
     depends_on:
       keycloak:
         condition: service_healthy
@@ -96,6 +100,8 @@ services:
       OR_ADDITIONAL_HOSTNAMES:
       OR_SETUP_REGULAR_USERS: ${OR_SETUP_REGULAR_USERS:-1000}
       OR_SETUP_SERVICE_USERS:
+      OR_SETUP_DEVICES: ${OR_SETUP_DEVICES:-10000}
+      OR_SETUP_DEVICES_SKIP_COUNT:
       OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms500m -Xmx4g -XX:NativeMemoryTracking=summary -Xlog:all=warning:stdout:uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
     volumes:
       - manager-data:/storage

@@ -309,56 +309,36 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String realm = matchingConfig.getRealm();
 
         // Get/create service user
-        String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
-        if (serviceUsername.length() > 255) {
-            // Keycloak has a 255 character limit on clientId
-            serviceUsername = serviceUsername.substring(0, 254);
-        }
         User serviceUser;
 
         try {
-            LOG.finest("Checking service user for this client");
-            serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + serviceUsername);
-
-            if (serviceUser != null) {
-                if (!serviceUser.getEnabled()) {
-                    LOG.info(() -> "Service user exists and has been disabled so cannot continue: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-                    mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
-                    return;
-                }
-                LOG.finest("Service user exists and is enabled");
-            } else {
-                LOG.fine("Creating service user");
-                serviceUser = createClientServiceUser(realm, serviceUsername, matchingConfig);
-                LOG.fine("Service user has been created: username=" + serviceUser.getUsername());
-            }
+            LOG.finest("Checking service user: " + uniqueId);
+            serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection), e);
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
+        if (!serviceUser.getEnabled()) {
+            LOG.info(() -> "Service user exists and has been disabled so cannot continue: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+        LOG.finest("Service user exists and is enabled");
+
         Asset<?> asset;
 
-        // Prepend realm name to unique ID to generate asset ID to further improve uniqueness
-        String assetId = UniqueIdentifierGenerator.generateId(matchingConfig.getRealm() + uniqueId);
-
         try {
-            LOG.finest(() -> "Checking provisioned asset: assetId=" + assetId);
-            // Look for existing asset
-            asset = assetStorageService.find(assetId);
+            LOG.finest(() -> "Checking provisioned asset: " + uniqueId);
+            asset = getCreateClientAsset(assetStorageService, realm, uniqueId, serviceUser, matchingConfig);
 
             if (asset != null) {
-                LOG.finest("Asset exists");
-
                 if (!matchingConfig.getRealm().equals(asset.getRealm())) {
                     LOG.warning("Client asset realm mismatch");
                     mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
-            } else {
-                LOG.finest("Asset doesn't exist so creating");
-                asset = createClientAsset(realm, assetId, uniqueId, serviceUser, matchingConfig);
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection) + ", config=" + matchingConfig, e);
@@ -423,10 +403,18 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .orElse(null);
     }
 
-    protected User createClientServiceUser(String realm, String username, ProvisioningConfig<?, ?> provisioningConfig) {
-        LOG.finest("Creating client service user: realm=" + realm + ", username=" + username);
+    public static User getCreateClientServiceUser(String realm, ManagerKeycloakIdentityProvider identityProvider, String uniqueId, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+        String username = (PROVISIONING_USER_PREFIX + uniqueId);
+        User serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
 
-        User serviceUser = new User()
+        if (serviceUser != null) {
+            LOG.fine("Service user found: realm=" + realm + ", username=" + username);
+            return serviceUser;
+        }
+
+        LOG.finest("Creating service user: realm=" + realm + ", username=" + username);
+
+        serviceUser = new User()
             .setServiceAccount(true)
             .setEnabled(true)
             .setUsername(username);
@@ -456,10 +444,20 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         return serviceUser;
     }
 
-    protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+    public static Asset<?> getCreateClientAsset(AssetStorageService assetStorageService, String realm, String uniqueId, User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+        // Prepend realm name to unique ID to generate asset ID to further improve uniqueness
+        String assetId = UniqueIdentifierGenerator.generateId(realm + uniqueId);
+        Asset<?> asset = assetStorageService.find(assetId);
+
+        if (asset != null) {
+            LOG.finest("Asset exists");
+            return asset;
+        }
+
         LOG.finest("Creating client asset: realm=" + realm + ", username=" + serviceUser.getUsername());
 
         if (TextUtil.isNullOrEmpty(provisioningConfig.getAssetTemplate())) {
+            LOG.finest("Provisioning config doesn't contain an asset template: " + provisioningConfig);
             return null;
         }
 
@@ -468,15 +466,15 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, uniqueId);
 
         // Try and parse provisioning config asset template
-        Asset<?> asset = ValueUtil.parse(assetTemplate, Asset.class).orElseThrow(() ->
-            new RuntimeException("Failed to de-serialise asset template into an asset instance: template=" + provisioningConfig.getAssetTemplate())
+        asset = ValueUtil.parse(assetTemplate, Asset.class).orElseThrow(() ->
+            new RuntimeException("Failed to de-serialise asset template into an asset instance: " + provisioningConfig)
         );
 
         // Set ID and realm
         asset.setId(assetId);
         asset.setRealm(realm);
 
-        assetStorageService.merge(asset);
+        asset = assetStorageService.merge(asset);
 
         if (provisioningConfig.isRestrictedUser()) {
             assetStorageService.storeUserAssetLinks(Collections.singletonList(new UserAssetLink(realm, serviceUser.getId(), assetId)));

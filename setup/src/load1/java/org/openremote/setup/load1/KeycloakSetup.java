@@ -26,6 +26,8 @@ import org.openremote.model.Container;
 import org.openremote.model.security.User;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.openremote.container.util.MapAccess.getInteger;
@@ -44,9 +46,11 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
      */
     public static final String OR_SETUP_SERVICE_USERS = "OR_SETUP_SERVICE_USERS";
     public List<User> users;
+    protected ExecutorService executor;
 
-    public KeycloakSetup(Container container) {
+    public KeycloakSetup(Container container, ExecutorService executor) {
         super(container);
+        this.executor = executor;
     }
 
     @Override
@@ -64,16 +68,33 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
 
         int regularUsers = getInteger(container.getConfig(), OR_SETUP_REGULAR_USERS, 0);
         int serviceUsers = getInteger(container.getConfig(), OR_SETUP_SERVICE_USERS, 0);
+        AtomicInteger createdUsers = new AtomicInteger(0);
 
         if (regularUsers > 0) {
             IntStream.rangeClosed(1, regularUsers).forEach(i ->
-                createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "", "user" + i + "@openremote.local", true, REGULAR_USER_ROLES)
+                executor.submit(() -> {
+                    createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "", "user" + i + "@openremote.local", true, REGULAR_USER_ROLES);
+                    createdUsers.incrementAndGet();
+                })
             );
         }
         if (serviceUsers > 0) {
             IntStream.rangeClosed(1, regularUsers).forEach(i ->
-                createUser(Constants.MASTER_REALM, User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + i, null, null, null, null, true, REGULAR_USER_ROLES)
+                executor.submit(() -> {
+                    createUser(Constants.MASTER_REALM, User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + i, null, null, null, null, true, REGULAR_USER_ROLES);
+                    createdUsers.incrementAndGet();
+                })
             );
+        }
+
+        // Wait until all users created
+        int waitCounter = 0;
+        while (createdUsers.get() < regularUsers+serviceUsers) {
+            if (waitCounter > 1000) {
+                throw new IllegalStateException("Failed to add all requested user in the specified time");
+            }
+            waitCounter++;
+            Thread.sleep(1000);
         }
     }
 }

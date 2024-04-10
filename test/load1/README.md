@@ -14,6 +14,10 @@ To run the tests you will need the Manager instance being tested to be deployed 
   the WeatherAssets based on changes to `rainfall` and `temperature` attributes
 * N x Regular users in the master realm with normal read/write permissions username format `user+i` (OR_SETUP_REGULAR_USERS: default = 0)
 * N x Service users in the master realm with normal read/write permissions username format `serviceuser+i` (OR_SETUP_SERVICE_USERS: default = 0)
+* N x Pre-provisioned devices created from the auto provisioning config with asset name format `device+i` (OR_SETUP_DEVICES: default = 0) can optionally
+skip every N'th device using (OR_SETUP_DEVICES_SKIP_COUNT: default = 10); this allows these N'th devices to go through the full auto provisioning process
+when they connect during load testing thus simulating a more real world situation where a large percentage of devices would have provisioned slowly over 
+time as they are first powered up 
 
 
 

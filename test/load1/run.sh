@@ -8,8 +8,8 @@
 #
 # The following environment variables can be used:
 #
-# `DEPLOYMENT1_SKIP` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
-# `DEPLOYMENT1_SKIP_FORCE_REDEPLOY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
+# `DEPLOYMENT1_DO_NOTHING` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
+# `DEPLOYMENT1_RESTART_ONLY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
 # `CONSOLE_THREAD_COUNT` (default: unset) - Console user test `THREAD_COUNT` (set to `0` to skip deployment 2 test)
 # `CONSOLE_DURATION` (default: unset) - Console user test `DURATION`
 # `CONSOLE_RAMP_RATE` (default: unset) - Console user test `RAMP_RATE`
@@ -56,7 +56,7 @@ cp load1/console-users.jmx load1/console-users.yml build/deployment2
 cp load1/auto-provisioning.jmx load1/devices.csv load1/auto-provisioning.yml build/deployment3
 cd build
 
-if [ "$DEPLOYMENT1_SKIP" == "true" ]; then
+if [ "$DEPLOYMENT1_DO_NOTHING" == "true" ]; then
   echo "Skipping deployment1 (assuming stack already running and will be reused)"
 else
   if [ "$SERVER1" == "localhost" ]; then
@@ -80,7 +80,7 @@ else
   cat .env
 fi
 
-if [ "$DEPLOYMENT1_SKIP_FORCE_REDEPLOY" == "true" ]; then
+if [ "$DEPLOYMENT1_RESTART_ONLY" == "true" ]; then
   echo "Skipping forced redeploy of manager instance, will just try restart"
   docker restart test-manager-1 1>/dev/null 2>&1
 else
@@ -88,15 +88,10 @@ else
   OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml down
   # Prune old data
   docker volume rm test_manager-data test_postgresql-data
-  OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml pull
-
-  if [ \$? -ne 0 ]; then
-    echo "Failed to pull images"
-    exit 1
-  fi
+  OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml pull --ignore-pull-failures
 fi
 
-OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml up -d
+$DEPLOYMENT1_ENV OR_HOSTNAME=$SERVER1 docker-compose -p test -f test-load1.yml up -d
 if [ \$? -ne 0 ]; then
   echo "Failed to start the stack"
   exit 1
@@ -147,8 +142,6 @@ EOF
   fi
 fi
 
-sleep 120
-
 # DEPLOYMENT 2
 if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
   SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
@@ -161,12 +154,15 @@ if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
   if [ -n "$CONSOLE_RAMP_RATE" ]; then
     SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$CONSOLE_RAMP_RATE"
   fi
+
   COMMAND="cd deployment2; docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml; cd .."
   echo "Deployment 2 launch command: $COMMAND"
 
   if [ "$SERVER2" == "localhost" ]; then
     echo "Deploying on localhost"
-    $COMMAND
+    cd deployment2
+    MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml
+    cd ..
   else
     echo "Copying files to remote host deployment2 -> $SERVER2"
     $SCP_PREFIX -r deployment2 $SERVER2:~
@@ -209,13 +205,15 @@ if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
   if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
     SETTINGS="$SETTINGS -o settings.env.TIME_BETWEEN_PUBLISHES=$DEVICE_TIME_BETWEEN_PUBLISHES"
   fi
-  COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
 
+  COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
   echo "Deployment 3 launch command: $COMMAND"
 
   if [ "$SERVER3" == "localhost" ]; then
     echo "Deploying on localhost deployment3"
-    $COMMAND
+    cd deployment3
+    MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment3 -v $PWD:/bzt-configs -v $PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml
+    cd ..
   else
     echo "Copying files to remote host deployment3 -> $SERVER3"
     $SCP_PREFIX -r deployment3 $SERVER3:~
