@@ -40,6 +40,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import static org.openremote.agent.protocol.homeassistant.HomeAssistantEntityProcessor.HomeAssistantIdentifierAttribute;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -165,7 +166,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
             var assets = entityProcessor.convertEntitiesToAssets(entities.get());
             if (assets.isPresent()) {
                 for (var asset : assets.get()) {
-                    var entityId = asset.getAttribute("homeAssistantEntityId");
+                    var entityId = asset.getAttribute(HomeAssistantIdentifierAttribute);
                     if (entityId.isEmpty() || entityId.get().getValue().isEmpty())
                     {
                         continue;
