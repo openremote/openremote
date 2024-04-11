@@ -1,7 +1,6 @@
 package org.openremote.agent.protocol.homeassistant.commands;
 
 import org.openremote.agent.protocol.homeassistant.HomeAssistantEntityProcessor;
-import org.openremote.agent.protocol.homeassistant.assets.HomeAssistantBaseAsset;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 
