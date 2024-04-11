@@ -318,8 +318,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        GatewayV2Asset gatewayAsset = null;
+        if (!isOperationsTopic(topic)) {
+            LOG.finest("Invalid topic " + topic + " for publishing, must be " + OPERATIONS_TOPIC);
+            return false;
+        }
 
+        GatewayV2Asset gatewayAsset = null;
         // Check if its a disabled gateway connection
         if (isGatewayConnection(connection)) {
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
@@ -333,10 +337,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
 
-        if (!isOperationsTopic(topic)) {
-            LOG.finest("Invalid topic " + topic + " for publishing, must be " + OPERATIONS_TOPIC);
-            return false;
-        }
 
         boolean isRestrictedUser = identityProvider.isRestrictedUser(authContext);
         boolean hasWriteAssetsRole = authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID);
@@ -541,7 +541,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Get asset request topic handler
      */
     protected void getAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
-        LOG.finest("Received get asset request " + topic + " " + getConnectionIDString(connection));
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
@@ -556,7 +555,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Update attribute request topic handler
      */
     protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
-        LOG.finest("Received attribute update request " + topic + " " + getConnectionIDString(connection));
         String realm = topicRealm(topic);
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
 
@@ -569,7 +567,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Get attribute request topic handler
      */
     protected void getAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
-        LOG.finest("Received get attribute request " + topic + " " + getConnectionIDString(connection));
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
         Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
@@ -617,7 +614,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void publishSuccessResponse(Topic topic, String realm, Object data) {
-        LOG.fine("Publishing success response to " + getResponseTopic(topic));
         mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTSuccessResponse(realm, data), MqttQoS.AT_MOST_ONCE);
     }
 
