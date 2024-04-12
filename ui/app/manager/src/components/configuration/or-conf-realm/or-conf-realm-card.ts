@@ -183,7 +183,8 @@ export class OrConfRealmCard extends LitElement {
         Object.entries(colors).forEach(([key, value]) => {
             css += key +":" +value + ";"
         })
-        this.realm.styles = css
+        css += "}";
+        this.realm.styles = css;
         this.notifyConfigChange(this.realm);
     }
 
