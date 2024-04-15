@@ -763,12 +763,41 @@ jobs:
         continue-on-error: true
 
       - name: Run npm publish command
-        if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
         run: |
+          VERSION=$NPM_TAG
+          if [ "$VERSION" == "" ]; then
+            VERSION=$(grep openremoteVersion gradle.properties | sed -E 's/.*=[ ]*//g' )
+          fi
+
+          QUALIFIER=$(sed -E 's/.+-([A-Z]+).*/\1/g' <<< $VERSION)
+          if [ "$QUALIFIER" == "$VERSION" ]; then
+            QUALIFIER=""
+          fi
+
+          if [ "$QUALIFIER" == "" ]; then
+            VERSION="$VERSION"
+            TAG="latest"
+          else
+            if [ "$QUALIFIER" == "SNAPSHOT" ]; then
+              # Add a timestamp to snapshot versions
+              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
+            else
+              # Separate qualifiers from numbers of alpha, beta, rc versions
+              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
+            fi
+            VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
+            TAG=$(awk '{print tolower($0)}' <<< $QUALIFIER)
+          fi
+
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
+
           echo "npmRegistryServer: $NPM_REGISTRY_SERVER" >> .yarnrc.yml
           echo "npmAuthIdent: $NPM_AUTH_IDENT" >> .yarnrc.yml
-          yarn workspaces foreach --all --no-private --topological npm publish
+
+          yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
+          NPM_TAG: ${{ steps.ci-cd-output.outputs.npmTag }}
           NPM_REGISTRY_SERVER: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_REGISTRY_SERVER || steps.inputs-and-secrets.outputs.NPM_REGISTRY_SERVER }}
           NPM_AUTH_IDENT: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_IDENT || steps.inputs-and-secrets.outputs.NPM_AUTH_IDENT }}
 
