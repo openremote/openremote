@@ -101,6 +101,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected boolean isKeycloak;
 
+
     @Override
     public void start(Container container) throws Exception {
         super.start(container);
@@ -567,23 +568,19 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Pattern.matches(ASSET_ID_REGEXP, assetId);
     }
 
-
     protected boolean authorizeGatewayEvent(GatewayV2Asset gateway, AuthContext authContext, SharedEvent event) {
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
-        }
-        else if (event instanceof AssetEvent assetEvent) {
+        } else if (event instanceof AssetEvent assetEvent) {
             return isAssetDescendantOfGateway(assetEvent.getId(), gateway);
-        }
-        else if (event instanceof ReadAttributeEvent readAttributeEvent) {
+        } else if (event instanceof ReadAttributeEvent readAttributeEvent) {
             Asset<?> asset = assetStorageService.find(readAttributeEvent.getAttributeRef().getId());
             if (asset == null) {
                 return false;
             }
             return isAssetDescendantOfGateway(asset.getId(), gateway);
 
-        }
-        else if (event instanceof AttributeEvent attributeEvent) {
+        } else if (event instanceof AttributeEvent attributeEvent) {
             Asset<?> asset = assetStorageService.find(attributeEvent.getId());
             if (asset == null) {
                 return false;

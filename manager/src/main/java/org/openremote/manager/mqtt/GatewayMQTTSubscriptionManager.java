@@ -125,15 +125,14 @@ public class GatewayMQTTSubscriptionManager {
             } else {
                 return null;
             }
-        } else if (isAttributesTopic){
+        } else if (isAttributesTopic) {
             var assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
             var attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
             boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
             boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
             // if the topic has an assetId and is valid
-            if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId))
-            {
+            if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
                 // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
                 var path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
 
@@ -141,26 +140,22 @@ public class GatewayMQTTSubscriptionManager {
                 // all attribute events for the specified asset
                 if (attributeName.equals("+")) {
                     assetIds.add(assetId);
-                }
-                else if (attributeNameIsNotWildcardOrEmpty) {
+                } else if (attributeNameIsNotWildcardOrEmpty) {
                     attributeNames.add(attributeName);
 
                     // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/#
                     // all attribute events of descendants of the asset with the specified attribute name
-                    if (path.equals("#"))
-                    {
+                    if (path.equals("#")) {
                         paths.add(assetId);
                     }
                     // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/+
                     // all attribute events of direct children of the asset with the specified attribute name
-                    else if (path.equals("+"))
-                    {
+                    else if (path.equals("+")) {
                         parentIds.add(assetId);
                     }
                     // realm/clientId/events/assets/{assetId}/attributes/{attributeName}
                     // all attribute events of the asset with the specified attribute name
-                    else
-                    {
+                    else {
                         assetIds.add(assetId);
                     }
                 }
