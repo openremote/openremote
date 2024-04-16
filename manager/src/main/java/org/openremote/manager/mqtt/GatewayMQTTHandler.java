@@ -80,7 +80,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String GET_TOPIC = "get";
     public static final String GET_VALUE_TOPIC = "get-value";
 
-
     // index tokens
     public static final int OPERATIONS_TOKEN_INDEX = 2;
     public static final int EVENTS_TOKEN_INDEX = 2;
@@ -101,8 +100,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected boolean isKeycloak;
-
-
 
     @Override
     public void start(Container container) throws Exception {
@@ -310,6 +307,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
 
                 }
+                // TODO: DELETE NEEDS ADDITIONAL AUTHORIZATION (EACH CHILD ASSET NEEDS TO BE CHECKED)
                 case DELETE_TOPIC -> {
                     AssetEvent event = buildAssetEvent(topicTokens, null, AssetEvent.Cause.DELETE);
                     if (isGatewayConnection(connection)) {
@@ -384,7 +382,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 case CREATE_TOPIC -> createAssetRequest(connection, topic, body);
                 case GET_TOPIC -> getAssetRequest(connection, topic, body);
                 case UPDATE_TOPIC -> LOG.fine("Received update asset request");
-                case DELETE_TOPIC -> LOG.fine("Received delete asset request");
+                case DELETE_TOPIC -> deleteAssetRequest(connection, topic, body);
             }
         }
 
@@ -509,6 +507,29 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, topicRealm(topic), asset);
     }
 
+    protected void deleteAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+        String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+        Asset<?> asset = assetStorageService.find(assetId);
+        if (asset == null) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
+            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
+            return;
+        }
+
+        // Retrieve all descendant assets
+        List<String> assetsToDelete = new ArrayList<>(assetStorageService.findAll(
+                new AssetQuery()
+                        .select(new AssetQuery.Select().excludeAttributes())
+                        .recursive(true)
+                        .parents(asset.getId())).stream().map(Asset::getId).toList(
+        ));
+
+        assetsToDelete.add(asset.getId()); // ensure the parent is also included in the deletion
+
+        assetStorageService.delete(assetsToDelete);
+        publishSuccessResponse(topic, topicRealm(topic), asset);
+    }
+
     /**
      * Update attribute request topic handler
      */
@@ -547,7 +568,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
 
-    // TODO: Centralize it?
     protected boolean authorizeGatewayEvent(GatewayV2Asset gateway, AuthContext authContext, SharedEvent event) {
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
