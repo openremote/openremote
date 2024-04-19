@@ -81,7 +81,7 @@ public class GatewayMQTTSubscriptionManager {
 
     }
 
-    protected AssetFilter<?> buildAssetFilter(Topic topic) {
+    protected static AssetFilter<?> buildAssetFilter(Topic topic) {
         var topicTokens = topic.getTokens();
         boolean isAttributesTopic = isAttributesTopic(topic);
         boolean isAssetsTopic = isAssetsTopic(topic) && !isAttributesTopic;

@@ -33,15 +33,13 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetEvent;
-import org.openremote.model.asset.ReadAssetEvent;
-import org.openremote.model.asset.ReadAttributeEvent;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
+import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.mqtt.MQTTErrorResponse;
 import org.openremote.model.mqtt.MQTTSuccessResponse;
@@ -162,6 +160,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return LOG;
     }
 
+     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (!isKeycloak) {
@@ -175,7 +174,38 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        // TODO: Check for valid topic + authorization
+        if (!isEventsTopic(topic) && !isOperationResponseTopic(topic))
+        {
+            LOG.finest("Invalid topic " + topic + " for subscribing - must be " + EVENTS_TOPIC + " or  a operations " + RESPONSE_TOPIC + " topic");
+            return false;
+        }
+
+         // TODO: Gateway connection subscription authorization (asset must be descendant of gateway asset)
+         // TODO: Do we need any additional checks for responses? Responses are client-id bound, so they cannot be accessed by other clients
+
+
+         // Events topic makes use of AssetFilter, authorization through the clientEventService
+         if (isEventsTopic(topic))
+         {
+             AssetFilter<?> filter = GatewayMQTTSubscriptionManager.buildAssetFilter(topic);
+
+            if (filter == null) {
+                LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
+                return false;
+            }
+
+            EventSubscription<?> subscription = new EventSubscription(
+                    isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class,
+                    filter
+            );
+
+            if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
+                LOG.finest("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
+                return false;
+            }
+         }
+
+
         return true;
     }
 
@@ -244,6 +274,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         GatewayV2Asset gatewayAsset = null;
         // Check if its a disabled gateway connection
         if (isGatewayConnection(connection)) {
+            LOG.fine("Gateway connection " + getConnectionIDString(connection));
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
             if (gatewayAsset == null) {
                 LOG.finer("Gateway not found for connection " + getConnectionIDString(connection));
@@ -266,7 +297,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
             String method = topicTokens.get(ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> {
-                    AssetEvent event = buildAssetEvent(topicTokens, null, AssetEvent.Cause.CREATE);
+                    AssetEvent event = buildAssetEvent(topicTokens, AssetEvent.Cause.CREATE);
+
+                    if (event == null) {
+                        return false;
+                    }
+
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Create asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -294,7 +330,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case UPDATE_TOPIC -> {
-                    AssetEvent event = buildAssetEvent(topicTokens, null, AssetEvent.Cause.UPDATE);
+                    AssetEvent event = buildAssetEvent(topicTokens, AssetEvent.Cause.UPDATE);
+                    if (event == null) {
+                        return false;
+                    }
+
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Update asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -308,9 +348,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
 
                 }
-                // TODO: DELETE NEEDS ADDITIONAL AUTHORIZATION (EACH CHILD ASSET NEEDS TO BE CHECKED)
                 case DELETE_TOPIC -> {
-                    AssetEvent event = buildAssetEvent(topicTokens, null, AssetEvent.Cause.DELETE);
+                    AssetEvent event = buildAssetEvent(topicTokens, AssetEvent.Cause.DELETE);
+
+                    if (event == null) {
+                        return false;
+                    }
+
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Delete asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -572,6 +616,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
         } else if (event instanceof AssetEvent assetEvent) {
+            // creation has no known asset id - only after the event is processed
+            if (assetEvent.getCause() == AssetEvent.Cause.CREATE)
+            {
+                return true;
+            }
             return isAssetDescendantOfGateway(assetEvent.getId(), gateway);
         } else if (event instanceof ReadAttributeEvent readAttributeEvent) {
             Asset<?> asset = assetStorageService.find(readAttributeEvent.getAttributeRef().getId());
@@ -628,27 +677,44 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .asyncRequest();
     }
 
-    protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
+    protected AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
         String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         return new AttributeEvent(assetId, attributeName, value).setSource(GatewayMQTTHandler.class.getSimpleName());
     }
 
-    protected static AssetEvent buildAssetEvent(List<String> topicTokens, Asset<?> asset, AssetEvent.Cause cause) {
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        return new AssetEvent(cause, asset, null);
-    }
-
-    protected static ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
-        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        return new ReadAssetEvent(assetId);
-    }
-
-    protected static ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
+    protected ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
         return new ReadAttributeEvent(assetId, attributeName);
     }
+
+    protected AssetEvent buildAssetEvent(List<String> topicTokens, AssetEvent.Cause cause) {
+        if (cause == AssetEvent.Cause.CREATE) {
+            return new AssetEvent(cause, null, null);
+        }
+
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        if (!Pattern.matches(ASSET_ID_REGEXP, assetId)) {
+            LOG.fine("Failed to build AssetEvent, invalid asset id " + assetId);
+            return null;
+        }
+
+        Asset<?> asset = assetStorageService.find(assetId);
+        if (asset == null) {
+            LOG.fine("Failed to build AssetEvent, Asset not found " + assetId);
+            return null;
+        }
+        return new AssetEvent(cause, asset, null);
+    }
+
+    protected ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        return new ReadAssetEvent(assetId);
+    }
+
+
+
 
     public static boolean isAssetsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
@@ -685,8 +751,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Objects.equals(topicTokenIndexToString(topic, OPERATIONS_TOKEN_INDEX), OPERATIONS_TOPIC);
     }
 
-    protected static boolean isResponseTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
+    protected static boolean isOperationResponseTopic(Topic topic) {
+        return isOperationsTopic(topic) && Objects.equals(topicTokenIndexToString(topic, topic.getTokens().size() - 1), RESPONSE_TOPIC);
     }
 
     protected static boolean isEventsTopic(Topic topic) {
