@@ -1,7 +1,11 @@
 // Common configuration applied to all projects
-import java.nio.file.*
-import java.nio.file.attribute.*
-import java.util.Set
+
+import org.jetbrains.gradle.ext.JUnit
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFileAttributes
+import java.nio.file.attribute.PosixFilePermission
 import java.util.stream.Collectors
 import java.util.stream.StreamSupport
 
@@ -217,7 +221,7 @@ def isCustomProject() {
 }
 
 def resolveDependency(String path) {
-    "0.0.0".equals(version) ? project(resolvePath(path)) : "io.openremote:openremote-${path.substring(1)}:${version}"
+    "0.0.0".equals(version) ? resolveProject(path) : "io.openremote:openremote-${path.substring(1)}:${version}"
 }
 
 def resolvePath(String path) {
@@ -286,7 +290,7 @@ def createTSGeneratorConfigForModel(String outputFileName, Project...customProje
             }
     return config
 }
-def createTSGeneratorConfigForClient(String outputFileName, Project...customProjectsToScan) {
+def createTSGeneratorConfigForClient(String outputFileName, File modelInfoJson, Project...customProjectsToScan) {
     def config = createTSGeneratorConfig(true, outputFileName, customProjectsToScan) <<
             {
                 extensions = [
@@ -310,7 +314,7 @@ def createTSGeneratorConfigForClient(String outputFileName, Project...customProj
                         cz.habarta.typescript.generator.ModuleDependency.module(
                                 "@openremote/model",
                                 "Model",
-                                new File("$buildDir/typescript-generator-info.json"),
+                                modelInfoJson,
                                 (String) null,
                                 (String) null
                         )
@@ -374,10 +378,6 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                 "com.fasterxml.jackson.module.paramnames.ParameterNamesModule"
         ]
     }
-}
-
-def resolveDependency(String path) {
-    "io.openremote:openremote-" + path.substring(1) + ":" + version
 }
 
 ext {

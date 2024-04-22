@@ -111,7 +111,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
         LOG.fine("Linking attribute to device '" + deviceAddress + "' and property '" + property + "': " + attributeRef);
 
         Consumer<Object> propertyValueConsumer = propertyValue ->
-            updateLinkedAttribute(new AttributeState(attributeRef, propertyValue));
+            updateLinkedAttribute(attributeRef, propertyValue);
 
         attributePropertyValueConsumers.put(attributeRef, propertyValueConsumer);
         network.addPropertyValueConsumer(deviceAddress, property, propertyValueConsumer);

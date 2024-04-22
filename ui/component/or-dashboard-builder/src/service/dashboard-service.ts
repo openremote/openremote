@@ -9,19 +9,25 @@ export enum DashboardSizeOption {
 export class DashboardService {
 
     public static async create(dashboard?: Dashboard, size: DashboardSizeOption = DashboardSizeOption.DESKTOP, realm: string = manager.displayRealm, post = true): Promise<Dashboard> {
+        const randomId = () => (Math.random() + 1).toString(36).substring(2);
         if(!dashboard) {
-            const randomId = (Math.random() + 1).toString(36).substring(2);
             dashboard = {
                 realm: realm,
                 displayName: this.getDefaultDisplayName(size),
                 template: {
-                    id: randomId,
+                    id: randomId(),
                     columns: this.getDefaultColumns(size),
                     maxScreenWidth: this.getDefaultMaxScreenWidth(size),
                     refreshInterval: DashboardRefreshInterval.OFF,
                     screenPresets: this.getDefaultScreenPresets(size),
                 }
             } as Dashboard;
+        } else {
+            dashboard.id = randomId();
+            if(dashboard.template) {
+                dashboard.template.id = randomId();
+                dashboard.template.widgets?.forEach(w => w.id = randomId());
+            }
         }
 
         if(post) {

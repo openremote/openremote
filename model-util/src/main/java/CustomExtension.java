@@ -21,11 +21,16 @@
 import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
+import cz.habarta.typescript.generator.compiler.ModelTransformer;
+import cz.habarta.typescript.generator.compiler.SymbolTable;
 import cz.habarta.typescript.generator.compiler.TsModelTransformer;
 import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
 import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
+import cz.habarta.typescript.generator.parser.BeanModel;
+import cz.habarta.typescript.generator.parser.Model;
 import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.util.TsIgnoreTypeParams;
 
@@ -88,6 +93,18 @@ public class CustomExtension extends Extension {
                 });
 
                 return model;
+            }),
+            new cz.habarta.typescript.generator.Extension.TransformerDefinition(ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
+                @Override
+                public Model transformModel(SymbolTable symbolTable, Model model) {
+
+                    // Remove attribute state from attribute event (can't do this with annotations)
+                    BeanModel attrEventBean = model.getBean(AttributeEvent.class);
+                    if (attrEventBean != null) {
+                        attrEventBean.getProperties().removeIf(pm -> pm.getName().equals("attributeState"));
+                    }
+                    return model;
+                }
             })
         );
     }

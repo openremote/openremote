@@ -60,6 +60,7 @@ services:
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    shm_size: 128mb
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - manager-data:/storage
@@ -86,7 +87,7 @@ services:
       keycloak:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8405:8404" # Localhost metrics access
+      - "127.0.0.1:8405:8405" # Localhost metrics access
     environment:
       # Set this variable `demo` to auto provision demo assets etc.
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
