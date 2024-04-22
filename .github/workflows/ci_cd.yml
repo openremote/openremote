@@ -321,6 +321,7 @@ jobs:
           deploys = None
           dockerPublishTags = None
           mavenPublishTag = None
+          npmPublishTag = None
           deployEnvironment = None
 
           f = open(".ci_cd/ci_cd.json")
@@ -372,16 +373,16 @@ jobs:
                 if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
                   dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release" and refName in eventConfig:
+            elif eventName == "release" and eventConfig is not None:
 
-              eventConfig = eventConfig[refName]
-              if eventConfig is not None:
-                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
-                if 'distribute' in eventConfig:
-                  if 'docker' in eventConfig['distribute']:
-                     dockerPublishTags = eventConfig['distribute']['docker']
-                  if 'maven' in eventConfig['distribute']:
-                     mavenPublishTag = eventConfig['distribute']['maven']
+              deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
+              if 'distribute' in eventConfig:
+                if 'docker' in eventConfig['distribute']:
+                   dockerPublishTags = eventConfig['distribute']['docker']
+                if 'maven' in eventConfig['distribute']:
+                   mavenPublishTag = eventConfig['distribute']['maven']
+                if 'npm' in eventConfig['distribute']:
+                   npmPublishTag = eventConfig['distribute']['npm']
 
           if dockerPublishTags is not None and isMainRepo == 'true':
             dockerPublishTags = dockerPublishTags.replace("$version", refName)
@@ -395,6 +396,11 @@ jobs:
             mavenPublishTag = mavenPublishTag.replace("$version", refName)
             os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
             os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
+
+          if npmPublishTag is not None and isMainRepo == 'true':
+            npmPublishTag = npmPublishTag.replace("$version", refName)
+            os.system(f" echo 'npm publish version: {npmPublishTag}'")
+            os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
           if deploys is not None:
@@ -495,17 +501,20 @@ jobs:
 
       - name: Define maven publish command
         id: maven-publish-command
-        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.event_name != 'release' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
-          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          command="./gradlew publish -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          if [ "$MAVEN_TAG" != "" ]; then
+             command="$command -PopenremoteVersion=$MAVEN_TAG"
+          fi
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
-          SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_PASSWORD }}
-          SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_SIGNING_KEY }}
-          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD }}
+          MAVEN_SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_PASSWORD || steps.inputs-and-secrets.outputs.MAVEN_SIGNING_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_KEY || steps.inputs-and-secrets.outputs.MAVEN_SIGNING_KEY }}
+          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME || steps.inputs-and-secrets.outputs.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD || steps.inputs-and-secrets.outputs.MAVEN_PASSWORD }}
 
       - name: Define deployment docker build command
         id: deployment-docker-command
@@ -752,6 +761,45 @@ jobs:
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         continue-on-error: true
+
+      - name: Run npm publish command
+        run: |
+          VERSION=$NPM_TAG
+          if [ "$VERSION" == "" ]; then
+            VERSION=$(grep openremoteVersion gradle.properties | sed -E 's/.*=[ ]*//g' )
+          fi
+
+          QUALIFIER=$(sed -E 's/.+-([A-Z]+).*/\1/g' <<< $VERSION)
+          if [ "$QUALIFIER" == "$VERSION" ]; then
+            QUALIFIER=""
+          fi
+
+          if [ "$QUALIFIER" == "" ]; then
+            VERSION="$VERSION"
+            TAG="latest"
+          else
+            if [ "$QUALIFIER" == "SNAPSHOT" ]; then
+              # Add a timestamp to snapshot versions
+              VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
+            else
+              # Separate qualifiers from numbers of alpha, beta, rc versions
+              VERSION=$(sed "s/$QUALIFIER/$QUALIFIER./g" <<< $VERSION)
+            fi
+            VERSION=$(awk '{print tolower($0)}' <<< $VERSION)
+            TAG=$(awk '{print tolower($0)}' <<< $QUALIFIER)
+          fi
+
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
+          find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
+
+          echo "npmRegistryServer: $NPM_REGISTRY_SERVER" >> .yarnrc.yml
+          echo "npmAuthIdent: $NPM_AUTH_IDENT" >> .yarnrc.yml
+
+          yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
+        env:
+          NPM_TAG: ${{ steps.ci-cd-output.outputs.npmTag }}
+          NPM_REGISTRY_SERVER: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_REGISTRY_SERVER || steps.inputs-and-secrets.outputs.NPM_REGISTRY_SERVER }}
+          NPM_AUTH_IDENT: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_IDENT || steps.inputs-and-secrets.outputs.NPM_AUTH_IDENT }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
