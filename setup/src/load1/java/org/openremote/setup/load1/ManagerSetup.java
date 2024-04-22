@@ -147,11 +147,11 @@ public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
             // Wait until all devices created
             int waitCounter = 0;
             while (createdDevices.get() < devices) {
-                if (waitCounter > 1000) {
+                if (waitCounter > 180) {
                     throw new IllegalStateException("Failed to provision all requested devices in the specified time");
                 }
                 waitCounter++;
-                Thread.sleep(1000);
+                Thread.sleep(10000);
             }
         }
     }

@@ -98,11 +98,11 @@ if [ \$? -ne 0 ]; then
 fi
 docker image prune -af 1>/dev/null 2>&1
 
-echo "Waiting for up to 10mins for all services to be healthy"
+echo "Waiting for up to 45mins for all services to be healthy"
 COUNT=1
 STATUSES_OK=false
 IFS=\$'\n'
-while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
+while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 270 ]; do
 
    echo "Checking service health...attempt \$COUNT"
    STATUSES=\$(docker ps --format "{{.Names}} {{.Status}}")
@@ -202,7 +202,7 @@ if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
   if [ -n "$DEVICE_RAMP_RATE" ]; then
     SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
   fi
-  if [ -n "$DEVICE_TIME_BETWEEN_PUBLISHES" ]; then
+  if [ -n "$DEVICE_MILLIS_BETWEEN_PUBLISHES" ]; then
     SETTINGS="$SETTINGS -o settings.env.MILLIS_BETWEEN_PUBLISHES=$DEVICE_MILLIS_BETWEEN_PUBLISHES"
   fi
 

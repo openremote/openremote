@@ -140,7 +140,7 @@
             <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           </net.xmeter.samplers.PubSampler>
           <hashTree>
-            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
               <stringProp name="ConstantTimer.delay">${__P(MILLIS_BETWEEN_PUBLISHES,10000)}</stringProp>
             </ConstantTimer>
             <hashTree/>
@@ -165,7 +165,7 @@
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -180,7 +180,7 @@
               <threadName>true</threadName>
               <dataType>true</dataType>
               <encoding>false</encoding>
-              <assertions>true</assertions>
+              <assertions>false</assertions>
               <subresults>true</subresults>
               <responseData>false</responseData>
               <samplerData>false</samplerData>
@@ -192,9 +192,9 @@
               <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
               <assertionsResultsToSave>0</assertionsResultsToSave>
               <bytes>true</bytes>
-              <sentBytes>true</sentBytes>
               <url>true</url>
               <threadCounts>true</threadCounts>
+              <sampleCount>true</sampleCount>
               <idleTime>true</idleTime>
               <connectTime>true</connectTime>
             </value>

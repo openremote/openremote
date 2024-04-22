@@ -76,7 +76,7 @@ MSYS_NO_PATHCONV=1 docker run --rm -it \
 auto-provisioning.yml
 ```
 
-
+**NOTE: A t4g.medium instance can only handle ~4400 devices; a t4g.large instance ~9000 devices; so anything more requires a larger instance of splitting into multiple deployments.**
 
 ## Console users test (`console-users.yml`)
 Simulates console devices registering with the Manager and subscribing to attribute events over websocket as follows:

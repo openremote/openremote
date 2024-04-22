@@ -78,7 +78,7 @@ services:
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
       interval: 60s
-      retries: 15
+      retries: 45
     depends_on:
       keycloak:
         condition: service_healthy

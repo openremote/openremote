@@ -32,7 +32,7 @@ public class SetupTasks implements org.openremote.model.setup.SetupTasks {
     @Override
     public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
 
-        ExecutorService executor = Executors.newFixedThreadPool(50);
+        ExecutorService executor = Executors.newFixedThreadPool(10);
 
         return Arrays.asList(
             new KeycloakSetup(container, executor),
