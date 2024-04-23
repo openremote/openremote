@@ -10,6 +10,7 @@ import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.dashboard.*
 import org.openremote.model.query.DashboardQuery
+import org.openremote.model.query.filter.RealmPredicate
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -203,6 +204,27 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def restrictedDashboards2 = restrictedUserDashboardResource.getAllRealmDashboards(null, keycloakTestSetup.realmBuilding.name)
         assert restrictedDashboards2.length == 1
         assert restrictedDashboards2[0].displayName == "Dashboard with assets"
+
+
+        /* ------------------------- */
+
+        // Test for cross realm requests
+        when: "the admin superuser in master realm tries requesting a dashboard in the building realm"
+        def dashboardOtherRealmQuery = new DashboardQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+        def dashboardsInOtherRealm = adminUserDashboardResource.query(null, dashboardOtherRealmQuery)
+
+        then: "it returns the building realm dashboard"
+        assert dashboardsInOtherRealm.length == 1
+        assert dashboardsInOtherRealm[0].displayName == "Dashboard with assets"
+
+        when: "the private user in master realm tries requesting a dashboard in the building realm"
+        def sameDashboardOtherRealmQuery = new DashboardQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
+        def sameDashboardsInOtherRealm = privateUser1DashboardResource.query(null, sameDashboardOtherRealmQuery)
+
+        then: "no dashboard should be returned"
+        assert sameDashboardsInOtherRealm.length == 0
+
+
 
         /* ------------------------- */
 

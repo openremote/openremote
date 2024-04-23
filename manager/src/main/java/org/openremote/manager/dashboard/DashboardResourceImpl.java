@@ -34,6 +34,7 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -94,7 +95,18 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         if(query.realm == null || query.realm.name == null) {
             query.realm(new RealmPredicate(getRequestRealmName()));
         }
+
+        // Filter access fields in query object, to prevent cross-realm access
+        if(!isSuperUser() && !(getAuthenticatedRealmName().equals(query.realm.name))) {
+            query.conditions.getDashboard().viewAccess(filterAccess(query.conditions.getDashboard().getViewAccess(), DashboardAccess.PRIVATE, DashboardAccess.SHARED));
+            query.conditions.getDashboard().editAccess(filterAccess(query.conditions.getDashboard().getEditAccess(), DashboardAccess.PRIVATE, DashboardAccess.SHARED));
+        }
+
         return dashboardStorageService.query(query, getUserId());
+    }
+
+    public DashboardAccess[] filterAccess(DashboardAccess[] access, DashboardAccess... filter) {
+        return Arrays.stream(access).filter(a -> Arrays.stream(filter).noneMatch(f -> f.equals(a))).toArray(DashboardAccess[]::new);
     }
 
     @Override
@@ -178,7 +190,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         assetAccess.add(DashboardQuery.AssetAccess.REALM);
 
         // Adjust query object based on user roles/permissions
-        if (isAuthenticated()) {
+        if (isSuperUser() || (isAuthenticated() && realm.equals(getAuthenticatedRealmName()))) {
             assetAccess.add(DashboardQuery.AssetAccess.LINKED);
             if (hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 Collections.addAll(userViewAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
