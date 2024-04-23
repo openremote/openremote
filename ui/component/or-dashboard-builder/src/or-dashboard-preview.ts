@@ -338,7 +338,7 @@ export class OrDashboardPreview extends LitElement {
     // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) {
         this.isLoading = true;
-        await this.waitUntil((_: any) => this.shadowRoot?.getElementById("gridElement") != null)
+        await this.updateComplete;
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
             if(recreate && this.grid != null) {
