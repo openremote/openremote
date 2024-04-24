@@ -22,11 +22,11 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
-import org.openremote.model.rules.AssetState;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
@@ -38,9 +38,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Test an {@link AssetState} with a {@link AssetQuery}.
+ * Test an {@link AttributeInfo} with a {@link AssetQuery}.
  */
-public class AssetQueryPredicate implements Predicate<AssetState<?>> {
+public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
     final protected AssetQuery query;
     final protected TimerService timerService;
@@ -60,7 +60,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
     }
 
     @Override
-    public boolean test(AssetState<?> assetState) {
+    public boolean test(AttributeInfo assetState) {
 
         if (query.ids != null && query.ids.length > 0) {
             if (Arrays.stream(query.ids).noneMatch(id -> assetState.getId().equals(id))) {
@@ -104,7 +104,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
 
         if (query.attributes != null) {
             // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
-            Set<AssetState<?>> matches = asAssetStateMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
+            Set<AttributeInfo> matches = asAttributeMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
             if (matches == null) {
                 return false;
             }
@@ -118,7 +118,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         return true;
     }
 
-    public static Predicate<AssetState<?>> asPredicate(ParentPredicate predicate) {
+    public static Predicate<AttributeInfo> asPredicate(ParentPredicate predicate) {
         return assetState ->
             Objects.equals(predicate.id, assetState.getParentId());
     }
@@ -127,7 +127,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         return givenPath -> Arrays.equals(predicate.path, givenPath);
     }
 
-    public static Predicate<AssetState<?>> asPredicate(RealmPredicate predicate) {
+    public static Predicate<AttributeInfo> asPredicate(RealmPredicate predicate) {
         return assetState ->
             predicate == null || (predicate.name != null && predicate.name.equals(assetState.getRealm()));
     }
@@ -180,28 +180,28 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
     }
 
     /**
-     * A function for matching {@link AssetState}s of an asset; the states must be related to the same asset to allow
+     * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
      * {@link LogicGroup.Operator#AND} to be applied.
      * @return The matched asset states or null if there is no match
      */
     @SuppressWarnings("unchecked")
-    public static Function<Collection<AssetState<?>>, Set<AssetState<?>>> asAssetStateMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
+    public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
         if (groupIsEmpty(condition)) {
             return as -> Collections.EMPTY_SET;
         }
 
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
-        List<Function<Collection<AssetState<?>>, Set<AssetState<?>>>> assetStateMatchers = new ArrayList<>();
-        List<Predicate<AssetState<?>>> attributePredicates = new ArrayList<>();
+        List<Function<Collection<AttributeInfo>, Set<AttributeInfo>>> assetStateMatchers = new ArrayList<>();
+        List<Predicate<AttributeInfo>> attributePredicates = new ArrayList<>();
 
         if (condition.getItems().size() > 0) {
 
             condition.getItems().stream()
                 .forEach(p -> {
-                    attributePredicates.add((Predicate<AssetState<?>>)(Predicate)asPredicate(currentMillisProducer, p));
+                    attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p));
 
-                    AtomicReference<Predicate<AssetState<?>>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
-                    AtomicReference<Predicate<AssetState<?>>> oldValuePredicate = new AtomicReference<>(value -> true);
+                    AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
+                    AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
 
                     if (p.meta != null) {
                         final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
@@ -228,7 +228,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         if (operator == LogicGroup.Operator.AND) {
             // All predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
-                Set<AssetState<?>> matchedAssetStates = new HashSet<>();
+                Set<AttributeInfo> matchedAssetStates = new HashSet<>();
                 boolean allPredicatesMatch = attributePredicates.stream().allMatch(attributePredicate -> {
                     // Find the first match as an attribute predicate shouldn't match more than one asset state
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
@@ -241,7 +241,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         } else {
             // Any of the predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
-                AtomicReference<AssetState<?>> firstMatch = new AtomicReference<>();
+                AtomicReference<AttributeInfo> firstMatch = new AtomicReference<>();
                 boolean anyPredicateMatch = attributePredicates.stream().anyMatch(attributePredicate -> {
                     // Find the first match as an attribute predicate shouldn't match more than one asset state
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
@@ -258,15 +258,15 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         if (condition.groups != null && condition.groups.size() > 0) {
             assetStateMatchers.addAll(
                 condition.groups.stream()
-                    .map(c -> asAssetStateMatcher(currentMillisProducer, c)).toList()
+                    .map(c -> asAttributeMatcher(currentMillisProducer, c)).toList()
             );
         }
 
         return assetStates ->  {
-            Set<AssetState<?>> matchedStates = new HashSet<>();
+            Set<AttributeInfo> matchedStates = new HashSet<>();
 
-            for (Function<Collection<AssetState<?>>, Set<AssetState<?>>> matcher : assetStateMatchers) {
-                Set<AssetState<?>> matcherMatchedStates = matcher.apply(assetStates);
+            for (Function<Collection<AttributeInfo>, Set<AttributeInfo>> matcher : assetStateMatchers) {
+                Set<AttributeInfo> matcherMatchedStates = matcher.apply(assetStates);
 
                 if (matcherMatchedStates != null) {
                     // We have a match

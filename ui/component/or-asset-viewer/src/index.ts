@@ -720,8 +720,11 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             const rows = childAssets.map((childAsset) => {
                 // todo: it's only processing including selected headers here...
                 // move this to the columnFilter option of the table
-                const arr = attrNames.map((attributeName) => {
-                    return childAsset.attributes![attributeName] ? childAsset.attributes![attributeName].value! as string : "";
+                const arr = attrNames.map((attrName) => {
+                    const descriptor = AssetModelUtil.getAttributeDescriptor(attrName, childAssetType);
+                    return childAsset.attributes![attrName]
+                        ? Util.getAttributeValueAsString(childAsset.attributes![attrName], descriptor, asset.type, false)
+                        : "";
                 });
                 arr.unshift(childAsset.name!);
                 return arr;
@@ -739,12 +742,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             showOkCancelDialog(
                 i18next.t("addRemoveAttributes"),
                 html`
-                    <div style="display: grid">
-                        ${availableAttributes.sort().map((attribute) =>
-                            html`<div style="grid-column: 1 / -1;">
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
-                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
-                                </div>`)}
+                    <div style="display: flex; flex-direction: column;">
+                        ${availableAttributes.sort().map((attribute) => html`
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" style="display: inline-flex;"
+                                          .value="${!!selectedAttributes.find((selected) => selected === attribute)}" 
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => 
+                                                  evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
+                            ></or-mwc-input>
+                        `)}
                     </div>
                 `
             ).then((ok) => {
@@ -1514,7 +1519,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     _onEvent(event: SharedEvent) {
         const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).attributeState!.ref!.id == assetId);
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == assetId);
 
         if (!processEvent) {
             return;
@@ -1580,7 +1585,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             // Inject the attribute as we don't subscribe to events from individual attribute inputs
             const attributeEvent = event as AttributeEvent;
-            const attrName = attributeEvent.attributeState!.ref!.name!;
+            const attrName = attributeEvent.ref!.name!;
 
             if (asset && asset.attributes && asset.attributes[attrName]) {
 
@@ -1589,7 +1594,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 // Update attribute within the asset
                 const attr = {...asset.attributes[attrName]};
-                attr.value = attributeEvent.attributeState!.value;
+                attr.value = attributeEvent.value;
                 attr.timestamp = attributeEvent.timestamp;
                 asset.attributes[attrName] = attr;
 

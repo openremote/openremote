@@ -81,15 +81,14 @@ public class NotificationProcessingException extends RuntimeException {
     }
 
     final protected Reason reason;
-    final protected String message;
 
     public NotificationProcessingException(Reason reason) {
         this(reason, null);
     }
 
     public NotificationProcessingException(Reason reason, String message) {
+        super(message);
         this.reason = reason;
-        this.message = message;
     }
 
     public Reason getReason() {
@@ -97,6 +96,14 @@ public class NotificationProcessingException extends RuntimeException {
     }
 
     public String getReasonPhrase() {
-        return getReason() + (message != null ? " (" + message + ")": "");
+        return getReason() + (getMessage() != null ? " (" + getMessage() + ")": "");
+    }
+
+    @Override
+    public String toString() {
+        return NotificationProcessingException.class.getSimpleName() + "{" +
+            "reason=" + reason +
+            ", message='" + getMessage() + '\'' +
+            '}';
     }
 }

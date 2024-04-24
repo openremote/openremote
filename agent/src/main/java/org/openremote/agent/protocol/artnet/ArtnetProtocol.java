@@ -129,7 +129,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
     }
 
     @Override
-    protected ArtnetPacket createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected ArtnetPacket createWriteMessage(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 //        // TODO check for group later here
 //        AttributeRef attributeRef = event.getAttributeRef();
 //
@@ -144,7 +144,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                if(updatedLight != null) {
 //                    ArtnetLightState oldLightState = updatedLight.getLightState();
 //                    //UPDATE LIGHT VALUES (R,G,B FOR EXAMPLE)
-//                    if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Values")) {
+//                    if(event.getAttributeRef().getName().equalsIgnoreCase("Values")) {
 //                        Map<String, Integer> valuesToUpdate = new HashMap<>();
 //                        for(String requiredKey : updatedLight.getRequiredValues()) {
 //                            try {
@@ -160,7 +160,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                        updateLightStateInMemory(lightId, new ArtnetLightState(lightId, valuesToUpdate, oldLightState.getDim(), oldLightState.isEnabled()));
 //                    }
 //                    //UPDATE DIM
-//                    else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
+//                    else if(event.getAttributeRef().getName().equalsIgnoreCase("Dim")) {
 //                        try {
 //                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            int dimValue = node.asInt();
@@ -170,7 +170,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
 //                        }
 //                    }
 //                    //UPDATE ENABLED/DISABLED
-//                    else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
+//                    else if(event.getAttributeRef().getName().equalsIgnoreCase("Switch")) {
 //                        try{
 //                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            boolean enabled = node.asBoolean();

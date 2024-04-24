@@ -26,7 +26,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.impl.ColourRGB;
@@ -76,7 +75,12 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
 
     @Override
     protected synchronized void doStart(Container container) throws Exception {
-        String serialPort = agent.getSerialPort().orElseThrow(() -> new IllegalStateException("Invalid serial port property"));
+        String serialPort = agent.getSerialPort().orElse(null);
+        if (serialPort == null) {
+            LOG.info("No serial port provided for protocol: " + this);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            return;
+        }
         network = new ZWaveNetwork(serialPort, executorService);
         network.addConnectionStatusConsumer(this::setConnectionStatus);
         network.connect();
@@ -103,7 +107,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
 
         Class<?> clazz = attribute.getTypeClass();
         Consumer<Value> sensorValueConsumer = value ->
-            updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
+            updateLinkedAttribute(attributeRef, toAttributeValue(value, clazz));
 
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
         network.addSensorValueConsumer(nodeId, endpoint, linkName, sensorValueConsumer);
@@ -120,7 +124,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (network == null) {
             return;
         }

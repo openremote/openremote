@@ -29,7 +29,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.file.Path;
@@ -286,7 +285,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
                  modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef
         );
         Class<?> clazz = attribute.getTypeClass();
-        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
+        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(attributeRef, toAttributeValue(value, clazz));
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
 
         meshNetwork.addMeshModel(address, modelId, appKeyIndex);
@@ -323,7 +322,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (meshNetwork == null) {
             return;
         }

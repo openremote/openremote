@@ -33,6 +33,7 @@ import org.openremote.model.util.TextUtil;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.SESSION_KEY;
@@ -154,17 +155,21 @@ public class EventSubscriptions {
                     List<T> events = Collections.singletonList(filteredEvent);
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
 
-                    if (sessionSub.subscription.getInternalConsumer() == null) {
+                    if (sessionSub.subscription.isInternal()) {
+                        if (triggeredEventSubscription.getEvents() != null) {
+                            try {
+                                triggeredEventSubscription.getEvents().forEach(e ->
+                                        sessionSub.subscription.getInternalConsumer().accept(e));
+                            } catch (Exception e) {
+                                LOG.log(Level.WARNING, "Internal subscription consumer has thrown an exception: id=" + triggeredEventSubscription.getSubscriptionId(), e);
+                            }
+                        }
+                    } else {
                         Message msg = new DefaultMessage(exchange.getContext());
                         msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
                         msg.setHeader(SESSION_KEY, sessionKey);
                         messageList.add(msg);
-                    } else {
-                        if (triggeredEventSubscription.getEvents() != null) {
-                            triggeredEventSubscription.getEvents().forEach(e ->
-                                sessionSub.subscription.getInternalConsumer().accept(e));
-                        }
                     }
                 }
             }

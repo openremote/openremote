@@ -8,7 +8,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
 import org.snmp4j.PDU;
 
@@ -76,13 +75,13 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
                                 pdu.getVariableBindings().forEach(variableBinding -> {
                                     wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
                                 });
-                                updateLinkedAttribute(new AttributeState(wildCardAttributeRef, wildCardValue));
+                                updateLinkedAttribute(wildCardAttributeRef, wildCardValue);
                             }
 
                             pdu.getVariableBindings().forEach(variableBinding -> {
                                 AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
                                 if (attributeRef != null) {
-                                    updateLinkedAttribute(new AttributeState(attributeRef, variableBinding.toValueString()));
+                                    updateLinkedAttribute(attributeRef, variableBinding.toValueString());
                                 }
                             });
                         });
@@ -120,7 +119,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
         // Nothing to do here
     }
 }

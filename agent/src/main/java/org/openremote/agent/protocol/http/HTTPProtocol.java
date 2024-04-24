@@ -36,17 +36,15 @@ import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.web.QueryParameterInjectorFilter;
 import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
-import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -83,7 +81,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <h1>Dynamic value injection</h1>
  * This allows the {@link HTTPAgentLink#getPath()}} and/or {@link AgentLink#getWriteValue()} to contain the linked
  * {@link Attribute} value when sending requests. To dynamically inject the attribute value use {@value
- * Protocol#DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
+ * Constants#DYNAMIC_VALUE_PLACEHOLDER} as a placeholder and this will be dynamically replaced at request time.
  * <h2>Path example</h2>
  * {@link HTTPAgentLink#getPath()} = "volume/set/{$value}" and request received to set attribute value to 100. Actual
  * path used for the request = "volume/set/100"
@@ -161,9 +159,9 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                     paramNameAndValues.getValue() != null
                         && paramNameAndValues.getValue()
                         .stream()
-                        .anyMatch(val -> val.contains(DYNAMIC_VALUE_PLACEHOLDER)));
+                        .anyMatch(val -> val.contains(Constants.DYNAMIC_VALUE_PLACEHOLDER)));
 
-            boolean dynamicPath = !TextUtil.isNullOrEmpty(path) && path.contains(DYNAMIC_VALUE_PLACEHOLDER);
+            boolean dynamicPath = !TextUtil.isNullOrEmpty(path) && path.contains(Constants.DYNAMIC_VALUE_PLACEHOLDER);
             if (!dynamicPath) {
                 requestTarget = createRequestTarget(path);
             }
@@ -190,7 +188,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                 requestBuilder = requestTarget.request();
             } else {
                 // This means that the path is dynamic
-                String path = this.path.replaceAll(DYNAMIC_VALUE_PLACEHOLDER_REGEXP, value);
+                String path = this.path.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, value);
                 requestBuilder = createRequestTarget(path).request();
             }
 
@@ -426,9 +424,9 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, HTTPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(HTTPAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        HttpClientRequest request = requestMap.get(event.getAttributeRef());
+        HttpClientRequest request = requestMap.get(event.getRef());
 
         if (request != null) {
 
@@ -562,7 +560,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
                 if (hexMode || binaryMode) {
                     byte[] bytes = response.readEntity(byte[].class);
-                    value = hexMode ? ProtocolUtil.bytesToHexString(bytes) : ProtocolUtil.bytesToBinaryString(bytes);
+                    value = hexMode ? ValueUtil.bytesToHexString(bytes) : ValueUtil.bytesToBinaryString(bytes);
                 } else {
                     value = response.readEntity(String.class);
                 }
@@ -576,14 +574,14 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
 
         if (attributeRef != null) {
-            updateLinkedAttribute(new AttributeState(attributeRef, value));
+            updateLinkedAttribute(attributeRef, value);
 
             // Look for any attributes that also want to use this polling response
             synchronized (pollingLinkedAttributeMap) {
                 Set<AttributeRef> linkedRefs = pollingLinkedAttributeMap.get(attributeRef);
                 if (linkedRefs != null) {
                     Object finalValue = value;
-                    linkedRefs.forEach(ref -> updateLinkedAttribute(new AttributeState(ref, finalValue)));
+                    linkedRefs.forEach(ref -> updateLinkedAttribute(ref, finalValue));
                 }
             }
         }

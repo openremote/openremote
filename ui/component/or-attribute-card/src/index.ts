@@ -737,7 +737,7 @@ export class OrAttributeCard extends LitElement {
             } as ReadAttributeEvent
         });
 
-        this.mainValue = currentValue.attributeState!.value;
+        this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
@@ -777,7 +777,7 @@ export class OrAttributeCard extends LitElement {
         }
 
         const attr = this.assetAttributes[0][1];
-        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
+        const roundedVal = +value?.toFixed(this.mainValueDecimals); // + operator prevents str return
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[0].type!);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.assets[0].type));
         this.setLabelSizeByLength(roundedVal.toString());
