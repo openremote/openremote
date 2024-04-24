@@ -52,8 +52,11 @@ services:
       - ./deployment:/deployment
     environment:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      KEYCLOAK_ISSUER_BASE_URI: ${KEYCLOAK_ISSUER_BASE_URI:-https://192.168.5.200/auth}
+      #KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_STRICT: false
+      KC_PROXY_HEADERS: xforwarded
+#      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
 
 
   manager:
