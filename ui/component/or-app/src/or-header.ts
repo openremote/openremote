@@ -360,6 +360,7 @@ export class OrHeader extends LitElement {
     private _eventSubscriptionId?: string;
 
     public _onRealmSelect(realm: string) {
+        this._getAlarmButton().then();
         this.store.dispatch(updateRealm(realm));
     }
 
@@ -503,9 +504,9 @@ export class OrHeader extends LitElement {
         if(manager.isRestrictedUser()){
             // TODO Filter alarms by linked assets
         }
-        if(manager.hasRole("read:alarms") || manager.hasRole("write:alarms")){
+        if(manager.hasRole("read:alarms") || manager.hasRole("read:admin")){
             const response = await manager.rest.api.AlarmResource.getOpenAlarms();
-            let open = response.data.filter((alarm) => alarm.status === AlarmStatus.OPEN && alarm.realm === manager.displayRealm);
+            let open = response.data.filter((alarm) => alarm.realm === manager.displayRealm);
             newAlarms = (open.length > 0);
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';

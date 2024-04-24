@@ -416,7 +416,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return html`
             <div id="wrapper">
                 <!-- Alarm Specific page -->
-
                 <div id="title" class="${this.creationState || this.alarm ? "hidden" : ""}" style="justify-content: space-between; margin-top: 10px; margin-bottom: 10px">
                     <div class="${this.creationState || this.alarm ? "hidden" : ""}">
                         <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
@@ -514,7 +513,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return;
         }
 
-        if (manager.hasRole("read:admin")) {
+        if (manager.hasRole("read:user") || manager.hasRole("read:admin")) {
             const usersResponse = await manager.rest.api.UserResource.query({
                 realmPredicate: {name: manager.displayRealm},
             } as UserQuery);
@@ -543,13 +542,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected async _loadData() {
-        if (this._loading) {
+        if (this._loading || (!manager.hasRole("read:alarms") && !manager.hasRole("write:alarms"))) {
             return;
         }
 
         this._loading = true;
         const response = await manager.rest.api.AlarmResource.getAlarms();
-        if (manager.hasRole("read:admin")) {
+        if (manager.hasRole("read:user") || manager.hasRole("read:admin")) {
             const usersResponse = await manager.rest.api.UserResource.query({
                 realmPredicate: {name: manager.displayRealm},
             } as UserQuery);
@@ -603,15 +602,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     private doDelete(alarmId: any) {
         manager.rest.api.AlarmResource.removeAlarm(alarmId).then(response => {
-            this._data = undefined;
-            this._selectedIds = [];
+            this.reset();
         })
     }
 
     private doMultipleDelete(alarmIds: any[]) {
         manager.rest.api.AlarmResource.removeAlarms(alarmIds).then(response => {
-            this._data = undefined;
-            this._selectedIds = [];
+            this.reset();
         })
     }
 
@@ -723,7 +720,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         this.onAlarmChanged(e);
                                   }}"
                             ></or-mwc-input>
-                            <or-mwc-input class="alarm-input" ?disabled="${!manager.hasRole("read:admin")}"
+                            <or-mwc-input class="alarm-input" ?disabled="${!manager.hasRole("read:user") && !manager.hasRole("read:admin")}"
                                   .label="${i18next.t("alarm.assignee")}"
                                   .type="${InputType.SELECT}"
                                   .options="${this._getUsers().map((obj) => obj.label)}"
@@ -750,7 +747,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     ${when(!(readonly && !this._saveAlarmPromise), () => html`
                         <div class="row" style="justify-content: space-between;">
                             ${when((manager.hasRole("write:alarms")), () => html`
-                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:admin")}"
+                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:alarms")}"
                                           .label="${i18next.t("delete")}"
                                           .type="${InputType.BUTTON}"
                                           @click="${() => this._deleteAlarm(this.alarm)}"
@@ -971,6 +968,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     // Reset selected alarm and go back to the alarm overview
     protected reset() {
+        this._selectedIds = [];
         this.alarm = undefined;
         this.creationState = undefined;
         this._data = undefined;

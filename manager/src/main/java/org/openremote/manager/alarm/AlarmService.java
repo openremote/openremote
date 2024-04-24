@@ -347,13 +347,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append("SELECT sa FROM SentAlarm sa ");
-                sb.append("WHERE sa.status = 'OPEN' ");
-                sb.append("ORDER BY sa.createdOn DESC");
-
-                TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
-
+                TypedQuery<SentAlarm> query = entityManager.createQuery("SELECT sa FROM SentAlarm sa WHERE sa.status = 'OPEN' ORDER BY sa.createdOn DESC", SentAlarm.class);
                 return query.getResultList();
             });
 
@@ -384,21 +378,20 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public void removeAlarm(Long id, String realm) {
         try {
-            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
             persistenceService.doTransaction(entityManager -> entityManager
                     .createQuery("delete SentAlarm where id = :id")
                     .setParameter("id", id)
                     .executeUpdate()
             );
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
         } catch (Exception e) {
-            String msg = "Failed to get alarms";
+            String msg = "Failed to remove alarm";
             throw new IllegalStateException(msg, e);
         }
     }
 
     public void removeAlarms(List<Long> ids, String realm) throws IllegalArgumentException {
         try {
-            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
             StringBuilder builder = new StringBuilder();
             builder.append("delete from SentAlarm n where n.id in :ids");
 
@@ -407,8 +400,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 query.setParameter("ids", ids);
                 query.executeUpdate();
             });
+
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
         } catch (Exception e) {
-            String msg = "Failed to get alarms";
+            String msg = "Failed to remove alarms";
             throw new IllegalStateException(msg, e);
         }
     }
