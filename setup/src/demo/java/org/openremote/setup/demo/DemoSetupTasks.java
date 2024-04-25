@@ -41,7 +41,8 @@ public class DemoSetupTasks implements SetupTasks {
                 new KeycloakDemoSetup(container),
                 new ManagerDemoSetup(container),
                 new RulesDemoSetup(container),
-                new ManagerDemoAgentSetup(container)
+                new ManagerDemoAgentSetup(container),
+                new ManagerDemoDashboardSetup(container)
             );
         }
 
