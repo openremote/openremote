@@ -51,6 +51,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
+import org.openremote.model.util.TextUtil;
 
 import javax.security.auth.Subject;
 import java.net.URI;
@@ -93,6 +94,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1"; // Bug in keycloak default hostname provider means localhost causes problems with dev-proxy profile
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
+    public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
+    public static final String OR_KEYCLOAK_PATH_DEFAULT = "auth";
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
@@ -103,8 +106,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
     public static final int OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
-
-    public static final String KEYCLOAK_AUTH_PATH = "auth";
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
     // The URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
@@ -168,8 +169,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             UriBuilder.fromPath("/")
                 .scheme("http")
                 .host(getString(container.getConfig(), OR_KEYCLOAK_HOST, OR_KEYCLOAK_HOST_DEFAULT))
-                .port(getInteger(container.getConfig(), OR_KEYCLOAK_PORT, OR_KEYCLOAK_PORT_DEFAULT))
-                .path(KEYCLOAK_AUTH_PATH);
+                .port(getInteger(container.getConfig(), OR_KEYCLOAK_PORT, OR_KEYCLOAK_PORT_DEFAULT));
+
+        String keycloakPath = getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
+
+        if (!TextUtil.isNullOrEmpty(keycloakPath)) {
+            keycloakServiceUri.path(keycloakPath);
+        }
+
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
@@ -457,14 +464,15 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             .build(loader);
     }
 
-    protected void enableAuthProxy(WebService webService) {
+    protected void enableAuthProxy(WebService webService, String keycloakPath) {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
 
-        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + KEYCLOAK_AUTH_PATH);
+
+        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
         webService.getRequestHandlers().add(0, pathStartsWithHandler(
             "Keycloak auth proxy",
-            "/" + KEYCLOAK_AUTH_PATH,
+            "/" + keycloakPath,
             authProxyHandler));
     }
 

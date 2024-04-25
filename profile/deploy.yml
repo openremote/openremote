@@ -221,11 +221,10 @@ services:
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
       OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
+      OR_KEYCLOAK_PATH: ${OR_KEYCLOAK_PATH:-auth}
 
-      # Keycloak frontend host name, port and path (defaults: to OR_HOSTNAME:OR_SSL_PORT/auth)
-      KC_HOSTNAME:
-      KC_HOSTNAME_PORT:
-      KC_HOSTNAME_PATH:
+      # Keycloak public URI (only set this if keycloak is not on the same base URI as the manager i.e. not accessible at /auth)
+      OR_KEYCLOAK_PUBLIC_URI:
 
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
@@ -289,9 +288,9 @@ services:
       OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
 
       # Enable/disable Prometheus metrics collection
-      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
+      #OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       # Web server port used to host metrics endpoint
-      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
+      #OR_METRICS_PORT: ${OR_METRICS_PORT:-8405}
 
       # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
       OR_ATTRIBUTE_EVENT_THREADS:
@@ -333,8 +332,8 @@ services:
     #  - "8081:8080" # Web server port
     environment:
 
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
+      # It is important that all services are time synchronized. Bearer tokens are
+      # only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
 
       # Switch to debug to diagnose Keycloak problems; default:
@@ -350,10 +349,11 @@ services:
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
-      KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
-      KC_PROXY: ${KC_PROXY:-edge}
-
+      #KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
+      #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
+      #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
+      #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
+      #KC_PROXY: ${KC_PROXY:-edge}
       # Configure main user credentials (only on first startup)
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-secret}
@@ -364,6 +364,10 @@ services:
       KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
       KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
       KEYCLOAK_WELCOME_THEME: ${KEYCLOAK_WELCOME_THEME:-keycloak}
+      # Use the following to set the issuer to a fixed value (useful when accessing a private instance via a tunnel)
+      # Should also set KC_HOSTNAME to blank, KC_HOSTNAME_STRICT to false and if the keycloak instance is publicly
+      # exposed then the proxy should be configured to validate the host header to prevent abuse
+      #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
