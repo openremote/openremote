@@ -226,13 +226,13 @@ jobs:
           fi
         env:
           REPO_NAME: ${{ github.repository }}
-          
+
       - name: Check deployment build.gradle
         id: check_deployment_gradle
         uses: andstor/file-existence-action@v2
         with:
           files: "deployment/build.gradle"
-          
+
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
         uses: andstor/file-existence-action@v2
@@ -243,7 +243,7 @@ jobs:
         id: check_custom_project
         uses: andstor/file-existence-action@v2
         with:
-          files: "openremote,.gitmodules"
+          files: ".gitmodules"
 
       - name: Check ci_cd existence
         id: check_cicd_json
@@ -331,7 +331,7 @@ jobs:
           if eventName == "schedule":
             eventName = "managerDockerPush"
 
-          if data is not None and eventName in data:              
+          if data is not None and eventName in data:
             eventConfig = data[eventName]
 
             if eventName == "managerDockerPush":
@@ -350,7 +350,7 @@ jobs:
                 if os.path.exists(os.path.expanduser(f"~/manager-tags-old/{key}")):
                   f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
                   oldManifestStr = f.read()
-                  f.close()                  
+                  f.close()
 
                 if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
                   os.system(f"echo 'Manager docker tag has been updated: {key}'")
@@ -479,9 +479,9 @@ jobs:
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
           fi
-            
+
           if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
-            
+
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
               echo "pushRequired=true" >> $GITHUB_OUTPUT
@@ -541,7 +541,7 @@ jobs:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
           DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
-          
+
       - name: Define installDist command
         id: install-command
         shell: bash
@@ -631,7 +631,7 @@ jobs:
 
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
-        run: |          
+        run: |
           # Only need keycloak and postgres services for backend testing
           if [ -z $TEST_UI_COMMAND ]; then
             composeProfile='profile/dev-testing.yml'
@@ -662,7 +662,7 @@ jobs:
           composeProfile='profile/dev-testing.yml'
 
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
-            composeProfile="openremote/$composeProfile"            
+            composeProfile="openremote/$composeProfile"
           fi
 
           # Make temp dir and set mask to 777 as docker seems to run as root
@@ -697,12 +697,12 @@ jobs:
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         shell: python
-        run: |        
+        run: |
           import json
           import os
           import sys
           import subprocess
-          
+
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
 
           # Output inputs and secrets as environment variables for build
@@ -719,7 +719,7 @@ jobs:
 
             os.system(f"echo 'Setting environment variable {key}...'")
             os.putenv(key, value)
-          
+
           buildCmd = os.getenv("CMD")
           result = subprocess.run(f"{buildCmd}", shell=True)
 
@@ -744,11 +744,11 @@ jobs:
 
       - name: Run frontend tests
         if: steps.test-ui-command.outputs.value != ''
-        run: |          
+        run: |
           composeProfile='profile/dev-ui.yml'
 
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
-            composeProfile="openremote/$composeProfile"            
+            composeProfile="openremote/$composeProfile"
           fi
 
           # Start the stack          
@@ -878,7 +878,7 @@ jobs:
 
               if key == "github_token":
                 continue
-              else:                
+              else:
                 os.system(f"echo 'Secret found {key}...'")
                 if key == "SSH_KEY":
                   os.system(f"echo \"{value}\" > ssh.key")
@@ -894,18 +894,18 @@ jobs:
             if os.path.exists(".ci_cd/env/.env"):
               os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
               os.system("cat .ci_cd/env/.env >> temp/env")
-          
+
             # Output environment specific env file if exists
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-            
+
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
               os.putenv("CIDR", ipv4 + '/32')
             elif ipv6 is not None and ipv6 != '':
               os.putenv("CIDR", ipv6 + '/64')
-            
+
             # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             # Uncomment this in combination with the SSH debug step afterwards to debug deployment script
