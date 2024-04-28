@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-dashboard-builder",
-  "version": "1.0.0",
+  "version": "1.2.0-snapshot",
   "description": "OpenRemote Dashboard Builder",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -18,7 +18,7 @@
   "dependencies": {
     "@openremote/core": "workspace:*",
     "@openremote/model": "workspace:*",
-    "@openremote/or-chart": "^1.1.0",
+    "@openremote/or-chart": "workspace:*",
     "@openremote/rest": "workspace:*",
     "gridstack": "^7.2.0",
     "lit": "^2.0.2"

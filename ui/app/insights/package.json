@@ -1,6 +1,6 @@
 {
   "name": "@openremote/insights",
-  "version": "1.0.0",
+  "version": "1.2.0-snapshot",
   "description": "OpenRemote Insights App",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -25,7 +25,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@openremote/or-app": "^1.1.0"
+    "@openremote/or-app": "workspace:*"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"

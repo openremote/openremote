@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-attribute-picker",
-  "version": "1.1.0",
+  "version": "1.2.0-snapshot",
   "description": "OpenRemote attribute picker dialog",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -17,9 +17,9 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-asset-tree": "^1.1.0",
-    "@openremote/or-mwc-components": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-asset-tree": "workspace:*",
+    "@openremote/or-mwc-components": "workspace:*",
+    "@openremote/or-translate": "workspace:*",
     "lit": "^2.0.2"
   },
   "devDependencies": {
