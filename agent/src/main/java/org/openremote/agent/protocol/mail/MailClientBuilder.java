@@ -192,7 +192,7 @@ public class MailClientBuilder {
         return new MailClient(this);
     }
 
-    UsernamePassword getAuth() throws SocketException, NullPointerException {
+    public UsernamePassword getAuth() throws SocketException, NullPointerException {
         Objects.requireNonNull(user, "User must be supplied");
 
         if (oAuthGrant != null) {

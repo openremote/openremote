@@ -22,11 +22,14 @@ package org.openremote.manager.notification;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import org.openremote.agent.protocol.mail.MailClientBuilder;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
@@ -72,7 +75,11 @@ public class EmailNotificationHandler implements NotificationHandler {
         int port = getInteger(container.getConfig(), OR_EMAIL_PORT, OR_EMAIL_PORT_DEFAULT);
         String user = container.getConfig().getOrDefault(OR_EMAIL_USER, null);
         String password = container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null);
+        String clientId = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_CLIENT_ID, null);
+        String clientSecret = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_CLIENT_SECRET, null);
+        boolean useOAuth = !TextUtil.isNullOrEmpty(clientId) && !TextUtil.isNullOrEmpty(clientSecret);
 
+        // Parse map of headers
         String headersStr = container.getConfig().getOrDefault(OR_EMAIL_X_HEADERS, null);
         if (!TextUtil.isNullOrEmpty(headersStr)) {
             headers = Arrays.stream(headersStr.split("\\R"))
@@ -85,24 +92,49 @@ public class EmailNotificationHandler implements NotificationHandler {
 
         defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
-        if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
+        if (!TextUtil.isNullOrEmpty(host) && (useOAuth || (!TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)))) {
+
+            // Init client builder
             boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
             String protocol = startTls ? "smtp" : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
-            Properties props = new Properties();
-            props.put("mail." + protocol + ".auth", true);
-            props.put("mail." + protocol + ".starttls.enable", startTls);
-            props.put("mail." + protocol + ".host", host);
-            props.put("mail." + protocol + ".port", port);
+            MailClientBuilder mailClientBuilder = new MailClientBuilder(
+                    container.getExecutorService(), protocol, host, port
+            );
 
-            mailSession = Session.getInstance(props, new Authenticator() {
+            // Add authentication
+            if(useOAuth) {
+                String oAuthUrl = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_URL, null);
+                String oAuthScopes = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_SCOPES, "");
+                if(!TextUtil.isNullOrEmpty(oAuthUrl)) {
+                    mailClientBuilder.setOAuth(user, new OAuthClientCredentialsGrant(oAuthUrl, clientId, clientSecret, oAuthScopes));
+                } else {
+                    LOG.info("oAuth2 is enabled, but no oAuth2 token URL is configured. Falling back to basic auth.");
+                    mailClientBuilder.setBasicAuth(user, password);
+                }
+
+            } else {
+                mailClientBuilder.setBasicAuth(user, password);
+            }
+
+            // Create session
+            mailSession = Session.getInstance(mailClientBuilder.getProperties(), new Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(user, password);
+                    try {
+                        UsernamePassword cred = mailClientBuilder.getAuth();
+                        return new PasswordAuthentication(cred.getUsername(), cred.getPassword());
+                    } catch (Exception e) {
+                        LOG.severe("Could not authenticate with mail server: " + e.getMessage());
+                        return null;
+                    }
                 }
             });
+            if(container.isDevMode()) {
+                mailSession.setDebug(true);
+            }
 
+            // Initiate transport to test and validate connection
             boolean valid;
-
             try {
                 mailTransport = mailSession.getTransport(protocol);
                 mailTransport.connect();
@@ -110,7 +142,9 @@ public class EmailNotificationHandler implements NotificationHandler {
                 try {
                     mailTransport.close();
                 } catch (Exception ignored) {
+                    // ignored
                 }
+
             } catch (Exception e) {
                 valid = false;
                 LOG.log(Level.SEVERE, "Failed to connect to SMTP server so disabling email notifications", e);
