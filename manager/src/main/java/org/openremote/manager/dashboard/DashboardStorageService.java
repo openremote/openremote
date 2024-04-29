@@ -249,7 +249,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Method to check if a dashboardId actually exists in the database
     // Useful for when query() does not return any accessible dashboard for that user, and check if it does however exist.
-    protected boolean exists(String dashboardId, String realm) {
+    public boolean exists(String dashboardId, String realm) {
         if(dashboardId == null) {
             throw new IllegalArgumentException("No dashboardId is specified.");
         }
@@ -265,7 +265,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
 
     // Creation of initial dashboard (so no updating!)
-    protected Dashboard createNew(Dashboard dashboard) {
+    public Dashboard createNew(Dashboard dashboard) {
         if(dashboard == null) {
             throw new IllegalArgumentException("No dashboard is specified.");
         }
@@ -281,7 +281,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
     // Update of an existing dashboard
-    protected Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
+    public Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
         if(dashboard == null) {
             throw new IllegalArgumentException("No dashboard is specified.");
         }
@@ -314,7 +314,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         }
     }
 
-    protected boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
+    public boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
         if(dashboardId == null) {
             throw new IllegalArgumentException("No dashboardId is specified.");
         }

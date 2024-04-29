@@ -57,8 +57,7 @@ function getDefaultWidgetConfig(): ChartWidgetConfig {
         datapointQuery: {
             type: "lttb",
             fromTimestamp: dates[0].getTime(),
-            toTimestamp: dates[1].getTime(),
-            amountOfPoints: 100
+            toTimestamp: dates[1].getTime()
         },
         chartOptions: {
             options: {
@@ -198,8 +197,7 @@ export class ChartWidget extends OrAssetWidget {
         return {
             type: "lttb",
             fromTimestamp: moment().set('minute', -60).toDate().getTime(),
-            toTimestamp: moment().set('minute', 60).toDate().getTime(),
-            amountOfPoints: 100
+            toTimestamp: moment().set('minute', 60).toDate().getTime()
         }
     }
 }

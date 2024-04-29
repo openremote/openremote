@@ -95,18 +95,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         if(query.realm == null || query.realm.name == null) {
             query.realm(new RealmPredicate(getRequestRealmName()));
         }
-
-        // Filter access fields in query object, to prevent cross-realm access
-        if(!isSuperUser() && !(getAuthenticatedRealmName().equals(query.realm.name))) {
-            query.conditions.getDashboard().viewAccess(filterAccess(query.conditions.getDashboard().getViewAccess(), DashboardAccess.PRIVATE, DashboardAccess.SHARED));
-            query.conditions.getDashboard().editAccess(filterAccess(query.conditions.getDashboard().getEditAccess(), DashboardAccess.PRIVATE, DashboardAccess.SHARED));
+        if(isAuthenticated() && !isSuperUser() && !(getAuthenticatedRealmName().equals(query.realm.name))) {
+            throw new WebApplicationException(FORBIDDEN);
         }
 
         return dashboardStorageService.query(query, getUserId());
-    }
-
-    public DashboardAccess[] filterAccess(DashboardAccess[] access, DashboardAccess... filter) {
-        return Arrays.stream(access).filter(a -> Arrays.stream(filter).noneMatch(f -> f.equals(a))).toArray(DashboardAccess[]::new);
     }
 
     @Override
@@ -184,13 +177,18 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         Set<DashboardAccess> userEditAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getEditAccess()));
         Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(query.conditions.getAsset().getAccess()));
 
-        // (unauthenticated) User always has access to public dashboards
+        // Detect cross realm access
+        if(isAuthenticated() && !isSuperUser() && !realm.equals(getAuthenticatedRealmName())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        // User always has access to public dashboards
         userViewAccess.add(DashboardAccess.PUBLIC);
         userEditAccess.add(DashboardAccess.PUBLIC);
         assetAccess.add(DashboardQuery.AssetAccess.REALM);
 
         // Adjust query object based on user roles/permissions
-        if (isSuperUser() || (isAuthenticated() && realm.equals(getAuthenticatedRealmName()))) {
+        if (isAuthenticated()) {
             assetAccess.add(DashboardQuery.AssetAccess.LINKED);
             if (hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 Collections.addAll(userViewAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
@@ -201,8 +199,10 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             if (isRestrictedUser()) {
                 assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.RESTRICTED));
             }
-        } else {
-            // If not logged in, force only public read/write access
+        }
+
+        // If not logged in, force only public read/write access
+        else {
             userViewAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
             userEditAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
             assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.REALM));

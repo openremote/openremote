@@ -221,8 +221,8 @@ class DashboardTest extends Specification implements ManagerContainerTrait {
         def sameDashboardOtherRealmQuery = new DashboardQuery().realm(new RealmPredicate(keycloakTestSetup.realmBuilding.name))
         def sameDashboardsInOtherRealm = privateUser1DashboardResource.query(null, sameDashboardOtherRealmQuery)
 
-        then: "no dashboard should be returned"
-        assert sameDashboardsInOtherRealm.length == 0
+        then: "it should return 403 forbidden"
+        thrown ForbiddenException
 
 
 
