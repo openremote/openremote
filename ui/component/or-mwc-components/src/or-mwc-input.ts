@@ -1349,6 +1349,9 @@ export class OrMwcInput extends LitElement {
                                     format.asDate = true;
                                     format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
+                                case InputType.NUMBER:
+                                    format.maximumFractionDigits = 20; // default according to Web documentation
+                                    break;
                             }
 
                             // Numbers/dates must be in english locale without commas etc.
