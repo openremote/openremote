@@ -105,11 +105,17 @@ public class EmailNotificationHandler implements NotificationHandler {
             if(useOAuth) {
                 String oAuthUrl = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_URL, null);
                 String oAuthScopes = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_SCOPES, "");
-                if(!TextUtil.isNullOrEmpty(oAuthUrl)) {
-                    mailClientBuilder.setOAuth(user, new OAuthClientCredentialsGrant(oAuthUrl, clientId, clientSecret, oAuthScopes));
-                } else {
+
+                if(TextUtil.isNullOrEmpty(clientId) || TextUtil.isNullOrEmpty(clientSecret)) {
+                    LOG.info("Tried to configure oAuth2, but no client id and/or client secret is present. Falling back to basic auth.");
+                    mailClientBuilder.setBasicAuth(user, password);
+
+                } else if(TextUtil.isNullOrEmpty(oAuthUrl)) {
                     LOG.info("oAuth2 is enabled, but no oAuth2 token URL is configured. Falling back to basic auth.");
                     mailClientBuilder.setBasicAuth(user, password);
+
+                } else {
+                    mailClientBuilder.setOAuth(user, new OAuthClientCredentialsGrant(oAuthUrl, clientId, clientSecret, oAuthScopes));
                 }
 
             } else {
