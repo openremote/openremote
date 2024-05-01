@@ -71,6 +71,10 @@ services:
       # e.g. '--staging'
       LE_EXTRA_ARGS: ${PROXY_EXTRA_ARGS:-}
 
+      # Provide this value if requesting wildcard certs with Route53 DNS zone; this should be the role to assume to
+      # perform route53 operations if calling across AWS accounts
+      #AWS_ROUTE53_ROLE:
+
       # The proxy supports up to 10 custom redirects from hostname to any path on the
       # manager service.
       # e.g. PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld

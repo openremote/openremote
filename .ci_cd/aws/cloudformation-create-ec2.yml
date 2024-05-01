@@ -709,6 +709,12 @@ Resources:
                   echo "EFS Filesystem DNS: ${EFSDNS}"
                   echo "EFS_DNS=${EFSDNS}" >> /etc/environment
                 fi
+            03_route53_role:
+              command: !Sub |
+                # Output Route53 role to /etc/environment for use by proxy container
+                if [ -n "${DNSHostedZoneRoleArn}" ]; then
+                  echo "AWS_ROUTE53_ROLE=${DNSHostedZoneRoleArn}" >> /etc/environment
+                fi
 
         docker_setup:
           packages:
