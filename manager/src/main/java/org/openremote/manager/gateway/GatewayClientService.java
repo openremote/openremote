@@ -44,9 +44,7 @@ import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.event.shared.RealmFilter;
-import org.openremote.model.gateway.GatewayConnection;
-import org.openremote.model.gateway.GatewayConnectionStatusEvent;
-import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.syslog.SyslogCategory;
@@ -60,6 +58,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -79,6 +78,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
+    protected boolean supportsTunneling;
 
     @Override
     public void init(Container container) throws Exception {
@@ -89,6 +89,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         clientEventService = container.getService(ClientEventService.class);
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
+
+        supportsTunneling = getBoolean(container.getConfig(), "OR_GATEWAY_SSH_NAMED_PIPE", false);
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new GatewayClientResourceImpl(timerService, identityService, this)
@@ -302,6 +304,21 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     destroyGatewayClient(connection, clientRealmMap.get(connection.getLocalRealm()));
                     clientRealmMap.put(connection.getLocalRealm(), null);
                 }
+            } else if (event instanceof GatewayCapabilitiesRequestEvent) {
+                LOG.info("Central manager requested specifications / capabilities of the gateway.");
+                sendCentralManagerMessage(
+                        connection.getLocalRealm(),
+                        messageToString(
+                                GatewayCapabilitiesResponseEvent.MESSAGE_PREFIX,
+                                new GatewayCapabilitiesResponseEvent(this.supportsTunneling)
+                        )
+                );
+            } else if (event instanceof TunnelStartEvent) {
+                LOG.info("Central manager requested to start a tunnel.");
+
+            } else if (event instanceof TunnelStopEvent) {
+                LOG.info("Central manager requested to stop the tunnel.");
+
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());
             } else if (event instanceof AssetEvent) {

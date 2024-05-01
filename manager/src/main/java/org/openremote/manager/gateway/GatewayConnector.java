@@ -28,7 +28,7 @@ import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
@@ -213,6 +213,21 @@ public class GatewayConnector {
         return initialSyncInProgress;
     }
 
+    public boolean supportsTunneling() {
+        return gateway.getTunnelingSupported().orElse(false);
+    }
+
+    public void startTunnel(TunnelInfo tunnelInfo) {
+        sendMessageToGateway(new TunnelStartEvent(tunnelInfo));
+    }
+
+    public void stopTunnel(TunnelInfo tunnelInfo) {
+        sendMessageToGateway(new TunnelStopEvent(tunnelInfo));
+        executorService.schedule(() -> {
+            // TODO: Set TUNNELING_SUPPORTED attribute to false if not updated yet.
+        }, 10000, TimeUnit.MILLISECONDS);
+    }
+
     public String getGatewayId() {
         return gatewayId;
     }
@@ -250,6 +265,10 @@ public class GatewayConnector {
 
     synchronized protected void onGatewayEvent(String messageId, SharedEvent e) {
         if (!isConnected()) {
+            return;
+        }
+        if(e instanceof GatewayCapabilitiesResponseEvent) {
+            onGatewayCapabilitiesResponseEvent((GatewayCapabilitiesResponseEvent) e);
             return;
         }
 
@@ -509,6 +528,9 @@ public class GatewayConnector {
         cachedAssetEvents.clear();
         cachedAttributeEvents.clear();
         sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+
+        // Request for gateway info such as tunneling support
+        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
     }
 
     @SuppressWarnings("unchecked")
@@ -687,5 +709,9 @@ public class GatewayConnector {
     protected boolean deleteAssetsLocally(List<String> assetIds) {
         LOG.fine("Removing gateway asset: Gateway ID=" + gatewayId + ", Asset IDs=" + Arrays.toString(assetIds.toArray()));
         return assetStorageService.delete(assetIds, true);
+    }
+
+    protected void onGatewayCapabilitiesResponseEvent(GatewayCapabilitiesResponseEvent e) {
+        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, e.isTunnelingSupported()));
     }
 }

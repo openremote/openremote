@@ -44,6 +44,7 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.TunnelInfo;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.ClientRole;
@@ -100,6 +101,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
+
+    protected TunnelInfo[] tunnelInfos;
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -480,6 +483,42 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         return connector.deleteGatewayAssets(assetIds);
+    }
+
+    public void tryStartTunnel(TunnelInfo tunnelInfo) throws IllegalArgumentException {
+        if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+            throw new IllegalArgumentException("Gateway ID cannot be null or empty");
+        }
+        if(TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
+            throw new IllegalArgumentException("Realm cannot be null or empty");
+        }
+        if(!gatewayConnectorMap.containsKey(tunnelInfo.getGatewayId())) {
+            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " is not known");
+        }
+        GatewayConnector connector = gatewayConnectorMap.get(tunnelInfo.getGatewayId());
+        if(!connector.supportsTunneling()) {
+            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " does not support tunneling");
+        } else {
+            connector.startTunnel(tunnelInfo);
+        }
+    }
+
+    public void tryStopTunnel(TunnelInfo tunnelInfo) {
+        if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+            throw new IllegalArgumentException("Gateway ID cannot be null or empty");
+        }
+        if(TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
+            throw new IllegalArgumentException("Realm cannot be null or empty");
+        }
+        if(!gatewayConnectorMap.containsKey(tunnelInfo.getGatewayId())) {
+            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " is not known");
+        }
+        GatewayConnector connector = gatewayConnectorMap.get(tunnelInfo.getGatewayId());
+        if(!connector.supportsTunneling()) {
+            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " does not support tunneling");
+        } else {
+            connector.stopTunnel(tunnelInfo);
+        }
     }
 
     /**
