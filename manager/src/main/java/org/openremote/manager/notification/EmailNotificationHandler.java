@@ -102,7 +102,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             );
 
             // Add authentication
-            if(useOAuth) {
+            if (useOAuth) {
                 String oAuthUrl = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_URL, null);
                 String oAuthScopes = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_SCOPES, "");
 
@@ -110,7 +110,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                     LOG.info("Tried to configure oAuth2, but no client id and/or client secret is present. Falling back to basic auth.");
                     mailClientBuilder.setBasicAuth(user, password);
 
-                } else if(TextUtil.isNullOrEmpty(oAuthUrl)) {
+                } else if (TextUtil.isNullOrEmpty(oAuthUrl)) {
                     LOG.info("oAuth2 is enabled, but no oAuth2 token URL is configured. Falling back to basic auth.");
                     mailClientBuilder.setBasicAuth(user, password);
 
@@ -127,19 +127,8 @@ public class EmailNotificationHandler implements NotificationHandler {
             }
 
             // Create session
-            mailSession = Session.getInstance(mailClientBuilder.getProperties(), new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    try {
-                        UsernamePassword cred = mailClientBuilder.getAuth();
-                        return new PasswordAuthentication(cred.getUsername(), cred.getPassword());
-                    } catch (Exception e) {
-                        LOG.severe("Could not authenticate with mail server: " + e.getMessage());
-                        return null;
-                    }
-                }
-            });
-            if(container.isDevMode()) {
+            mailSession = Session.getInstance(mailClientBuilder.getProperties());
+            if (container.isDevMode()) {
                 mailSession.setDebug(true);
             }
 
@@ -147,7 +136,8 @@ public class EmailNotificationHandler implements NotificationHandler {
             boolean valid;
             try {
                 mailTransport = mailSession.getTransport(protocol);
-                mailTransport.connect();
+                UsernamePassword usernamePassword = mailClientBuilder.getAuth();
+                mailTransport.connect(usernamePassword.getUsername(), usernamePassword.getPassword());
                 valid = mailTransport.isConnected();
                 try {
                     mailTransport.close();
