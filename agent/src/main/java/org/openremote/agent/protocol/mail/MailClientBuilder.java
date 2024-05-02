@@ -53,6 +53,7 @@ public class MailClientBuilder {
     protected String user;
     protected String password;
     protected boolean deleteMessageOnceProcessed;
+    protected boolean startTls;
     protected Properties properties = new Properties();
 
     public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port) {
@@ -79,6 +80,12 @@ public class MailClientBuilder {
         setProperty("mail.imap.sasl.enable", "true");
         setProperty("auth.login.disable", "true");
         setProperty("auth.plain.disable", "true");
+        return this;
+    }
+
+    public MailClientBuilder setStartTls(boolean startTls) {
+        this.startTls = startTls;
+        setProperty("mail." + protocol + ".starttls.enable", startTls);
         return this;
     }
 
@@ -182,6 +189,10 @@ public class MailClientBuilder {
 
     public boolean isPreferHTML() {
         return preferHTML;
+    }
+
+    public boolean isStartTls() {
+        return startTls;
     }
 
     public Properties getProperties() {

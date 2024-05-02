@@ -122,6 +122,10 @@ public class EmailNotificationHandler implements NotificationHandler {
                 mailClientBuilder.setBasicAuth(user, password);
             }
 
+            if (startTls) {
+                mailClientBuilder.setStartTls(true);
+            }
+
             // Create session
             mailSession = Session.getInstance(mailClientBuilder.getProperties(), new Authenticator() {
                 @Override
