@@ -54,7 +54,7 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = GatewayTunnelStartEvent.class, name = "gateway-tunnel-start"),
     @JsonSubTypes.Type(value = GatewayTunnelStopEvent.class, name = "gateway-tunnel-stop"),
     @JsonSubTypes.Type(value = DeleteAssetsRequestEvent.class, name = "delete-assets-request"),
-    @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets -response")
+    @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets-response")
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
