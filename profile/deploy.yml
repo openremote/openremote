@@ -73,7 +73,11 @@ services:
 
       # Provide this value if requesting wildcard certs with Route53 DNS zone; this should be the role to assume to
       # perform route53 operations if calling across AWS accounts
-      #AWS_ROUTE53_ROLE:
+      AWS_ROUTE53_ROLE:
+
+      # Enable SISH HTTP tunnel forwarding
+      #SISH_HOST: sish
+      #SISH_PORT: 8090
 
       # The proxy supports up to 10 custom redirects from hostname to any path on the
       # manager service.
@@ -412,3 +416,31 @@ services:
     restart: always
     #ports:
     #  - "8082:80" # Web server port
+
+
+  sish:
+    image: antoniomika/sish:latest
+    depends_on:
+      - proxy
+    ports:
+      - "2222:2222"
+      - "9000-10000:9000-10000"
+    volumes:
+      - proxy-data:/etc/letsencrypt
+      - deployment-data:/deployment
+      #--https-request-port-override=8443
+      #--https-certificate-directory=
+    command: |
+      --ssh-address=:2222
+      --http-address=:8090
+      --https=false
+      --verify-ssl=false
+      --idle-connection=false
+      --authentication-keys-directory=/deployment/sish/pubkeys
+      --private-keys-directory=/deployment/sish/keys
+      --port-bind-range="9000-10000"
+      --bind-random-ports=false
+      --bind-random-subdomains=false
+      --domain=${OR_HOSTNAME}
+      --force-requested-subdomains=true
+    restart: always
