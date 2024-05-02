@@ -293,7 +293,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             event = wrapper.getEvent();
         }
 
-        if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+        else if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
         }
 
@@ -309,15 +309,20 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
                         messageToString(
-                                GatewayCapabilitiesResponseEvent.MESSAGE_PREFIX,
-                                new GatewayCapabilitiesResponseEvent(this.supportsTunneling)
+                                EventRequestResponseWrapper.MESSAGE_PREFIX,
+                                new EventRequestResponseWrapper<>(
+                                        messageId,
+                                        new GatewayCapabilitiesResponseEvent(this.supportsTunneling)
+                                )
                         )
                 );
-            } else if (event instanceof TunnelStartEvent) {
+            } else if (event instanceof GatewayTunnelStartEvent) {
                 LOG.info("Central manager requested to start a tunnel.");
+                // TODO; Implement this to start tunnel
 
-            } else if (event instanceof TunnelStopEvent) {
+            } else if (event instanceof GatewayTunnelStopEvent) {
                 LOG.info("Central manager requested to stop the tunnel.");
+                // TODO; Implement this to stop tunnel
 
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());

@@ -1,6 +1,6 @@
 package org.openremote.model.gateway;
 
-public class TunnelInfo {
+public class GatewayTunnelInfo {
 
     protected String id;
     protected String gatewayId;
@@ -8,7 +8,12 @@ public class TunnelInfo {
     protected int targetPort;
     protected String target;
 
-    public TunnelInfo(String id, String gatewayId, String realm) {
+    public GatewayTunnelInfo() {
+        this.targetPort = 443;
+        this.target = "localhost";
+    }
+
+    public GatewayTunnelInfo(String id, String gatewayId, String realm) {
         this.id = id;
         this.gatewayId = gatewayId;
         this.realm = realm;
@@ -16,7 +21,7 @@ public class TunnelInfo {
         this.target = "localhost";
     }
 
-    public TunnelInfo(String id, String gatewayId, String realm, int targetPort, String target) {
+    public GatewayTunnelInfo(String id, String gatewayId, String realm, int targetPort, String target) {
         this.id = id;
         this.gatewayId = gatewayId;
         this.realm = realm;
@@ -44,27 +49,27 @@ public class TunnelInfo {
         return target;
     }
 
-    public TunnelInfo setId(String id) {
+    public GatewayTunnelInfo setId(String id) {
         this.id = id;
         return this;
     }
 
-    public TunnelInfo setGatewayId(String gatewayId) {
+    public GatewayTunnelInfo setGatewayId(String gatewayId) {
         this.gatewayId = gatewayId;
         return this;
     }
 
-    public TunnelInfo setRealm(String realm) {
+    public GatewayTunnelInfo setRealm(String realm) {
         this.realm = realm;
         return this;
     }
 
-    public TunnelInfo setTargetPort(int targetPort) {
+    public GatewayTunnelInfo setTargetPort(int targetPort) {
         this.targetPort = targetPort;
         return this;
     }
 
-    public TunnelInfo setTarget(String target) {
+    public GatewayTunnelInfo setTarget(String target) {
         this.target = target;
         return this;
     }

@@ -217,12 +217,12 @@ public class GatewayConnector {
         return gateway.getTunnelingSupported().orElse(false);
     }
 
-    public void startTunnel(TunnelInfo tunnelInfo) {
-        sendMessageToGateway(new TunnelStartEvent(tunnelInfo));
+    public void startTunnel(GatewayTunnelInfo tunnelInfo) {
+        sendMessageToGateway(new GatewayTunnelStartEvent(tunnelInfo));
     }
 
-    public void stopTunnel(TunnelInfo tunnelInfo) {
-        sendMessageToGateway(new TunnelStopEvent(tunnelInfo));
+    public void stopTunnel(GatewayTunnelInfo tunnelInfo) {
+        sendMessageToGateway(new GatewayTunnelStopEvent(tunnelInfo));
         executorService.schedule(() -> {
             // TODO: Set TUNNELING_SUPPORTED attribute to false if not updated yet.
         }, 10000, TimeUnit.MILLISECONDS);
@@ -530,7 +530,10 @@ public class GatewayConnector {
         sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
 
         // Request for gateway info such as tunneling support
-        sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
+        sendMessageToGateway(new EventRequestResponseWrapper<>(
+                UniqueIdentifierGenerator.generateId(),
+                new GatewayCapabilitiesRequestEvent()
+        ));
     }
 
     @SuppressWarnings("unchecked")

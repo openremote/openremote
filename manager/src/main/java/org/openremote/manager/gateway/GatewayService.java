@@ -24,6 +24,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -33,6 +34,7 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -44,7 +46,7 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
-import org.openremote.model.gateway.TunnelInfo;
+import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.ClientRole;
@@ -92,6 +94,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected RulesetStorageService rulesetStorageService;
     protected RulesService rulesService;
     protected ScheduledExecutorService executorService;
+    protected TimerService timerService;
     /**
      * Maps gateway asset IDs to connections; note that gateway asset IDs are stored lower case so that they can be
      * matched up to the service user client ID (which needs to be all lower case); this could technically cause an
@@ -102,7 +105,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
 
-    protected TunnelInfo[] tunnelInfos;
+    protected GatewayTunnelInfo[] tunnelInfos;
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -166,6 +169,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         executorService = container.getExecutorService();
         rulesetStorageService = container.getService(RulesetStorageService.class);
         rulesService = container.getService(RulesService.class);
+        timerService = container.getService(TimerService.class);
+
+        container.getService(ManagerWebService.class).addApiSingleton(
+                new GatewayServiceResourceImpl(timerService, identityService, this)
+        );
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
@@ -485,40 +493,48 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return connector.deleteGatewayAssets(assetIds);
     }
 
-    public void tryStartTunnel(TunnelInfo tunnelInfo) throws IllegalArgumentException {
+    public void tryStartTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
         if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new IllegalArgumentException("Gateway ID cannot be null or empty");
         }
         if(TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
             throw new IllegalArgumentException("Realm cannot be null or empty");
         }
-        if(!gatewayConnectorMap.containsKey(tunnelInfo.getGatewayId())) {
-            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " is not known");
+        String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
+        if(!gatewayConnectorMap.containsKey(gatewayId)) {
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not known");
         }
-        GatewayConnector connector = gatewayConnectorMap.get(tunnelInfo.getGatewayId());
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
         if(!connector.supportsTunneling()) {
-            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " does not support tunneling");
-        } else {
-            connector.startTunnel(tunnelInfo);
+            throw new IllegalStateException("Gateway ID " + gatewayId + " does not support tunneling");
         }
+        if(!connector.isConnected()) {
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected");
+        }
+
+        connector.startTunnel(tunnelInfo);
     }
 
-    public void tryStopTunnel(TunnelInfo tunnelInfo) {
+    public void tryStopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
         if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new IllegalArgumentException("Gateway ID cannot be null or empty");
         }
         if(TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
             throw new IllegalArgumentException("Realm cannot be null or empty");
         }
-        if(!gatewayConnectorMap.containsKey(tunnelInfo.getGatewayId())) {
-            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " is not known");
+        String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
+        if(!gatewayConnectorMap.containsKey(gatewayId)) {
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not known");
         }
-        GatewayConnector connector = gatewayConnectorMap.get(tunnelInfo.getGatewayId());
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
         if(!connector.supportsTunneling()) {
-            throw new IllegalArgumentException("Gateway ID " + tunnelInfo.getGatewayId() + " does not support tunneling");
-        } else {
-            connector.stopTunnel(tunnelInfo);
+            throw new IllegalStateException("Gateway ID " + gatewayId + " does not support tunneling");
         }
+        if(!connector.isConnected()) {
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected");
+        }
+
+        connector.stopTunnel(tunnelInfo);
     }
 
     /**

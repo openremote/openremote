@@ -13,29 +13,38 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface GatewayServiceResource {
 
     /**
-     *
+     * TODO: write docs
      */
     @GET
     @Path("tunnel/{realm}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    TunnelInfo[] getActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    GatewayTunnelInfo[] getActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
+    /**
+     * TODO: write docs
+     */
     @GET
     @Path("tunnel/{realm}/{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    TunnelInfo getActiveTunnelInfoById(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String tunnelId);
+    @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    GatewayTunnelInfo getActiveTunnelInfoById(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String tunnelId);
 
+    /**
+     * TODO: write docs
+     */
     @POST
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    void startTunnel(TunnelInfo tunnelInfo);
+    void startTunnel(GatewayTunnelInfo tunnelInfo);
 
+    /**
+     * TODO: write docs
+     */
     @DELETE
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    void stopTunnel(TunnelInfo tunnelInfo);
+    void stopTunnel(GatewayTunnelInfo tunnelInfo);
 }
