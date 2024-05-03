@@ -5,21 +5,16 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "exports": {
+    ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "lib/*"
-      ]
-    }
-  },
+  "types": "lib/index.d.ts",
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
-    "serve": "npx tsc -b --clean && npx shx rm -rf dist && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
+    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublishOnly": "npx tsc -b"
