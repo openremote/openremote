@@ -9,7 +9,11 @@
     "./*": "./lib/*.js"
   },
   "typesVersions": {
-    "*": { "*": ["lib/*"] }
+    "*": {
+      "*": [
+        "lib/*"
+      ]
+    }
   },
   "types": "lib/index.d.ts",
   "scripts": {
