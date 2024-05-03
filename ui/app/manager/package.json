@@ -8,6 +8,9 @@
     ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
+  "typesVersions": {
+    "*": { "*": ["lib/*"] }
+  },
   "types": "lib/index.d.ts",
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
