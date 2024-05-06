@@ -52,6 +52,3 @@ services:
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
-
-
-  ssh_client:
