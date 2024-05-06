@@ -37,7 +37,6 @@ public interface GatewayServiceResource {
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo);
 
     /**
@@ -47,6 +46,5 @@ public interface GatewayServiceResource {
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    GatewayTunnelInfo stopTunnel(GatewayTunnelInfo tunnelInfo);
+    void stopTunnel(GatewayTunnelInfo tunnelInfo);
 }

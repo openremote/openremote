@@ -51,6 +51,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
@@ -70,6 +71,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
+    public static final String OR_GATEWAY_TUNNEL_SSH_KEY_FILE = "OR_GATEWAY_TUNNEL_SSH_KEY_FILE";
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected PersistenceService persistenceService;
@@ -79,7 +81,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
-    protected boolean supportsTunneling;
+    protected GatewayTunnelFactory gatewayTunnelFactory;
 
     @Override
     public void init(Container container) throws Exception {
@@ -91,7 +93,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        supportsTunneling = TextUtil.isNullOrEmpty(getString(container.getConfig(), "OR_GATEWAY_SSH_NAMED_PIPE", null));
+        String tunnelKeyFile = getString(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_KEY_FILE, null);
+
+        if (!TextUtil.isNullOrEmpty(tunnelKeyFile)) {
+            File f = new File(tunnelKeyFile);
+            if (f.exists()) {
+                gatewayTunnelFactory = new JSchGatewayTunnelFactory(f);
+                LOG.info("Gateway tunnelling SSH key file found at: " + f.getAbsolutePath());
+            }
+        }
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new GatewayClientResourceImpl(timerService, identityService, this)
@@ -313,13 +323,19 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                                 EventRequestResponseWrapper.MESSAGE_PREFIX,
                                 new EventRequestResponseWrapper<>(
                                         messageId,
-                                        new GatewayCapabilitiesResponseEvent(this.supportsTunneling)
+                                        new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null)
                                 )
                         )
                 );
-            } else if (event instanceof GatewayTunnelStartRequestEvent) {
-                LOG.info("Central manager requested to start a tunnel.");
-                // TODO; Implement this to start tunnel
+            } else if (event instanceof GatewayTunnelStartRequestEvent gatewayTunnelStartRequestEvent) {
+                LOG.info("Start tunnel request received: " + gatewayTunnelStartRequestEvent);
+                String error = null;
+
+                try {
+                    gatewayTunnelFactory.startTunnel(gatewayTunnelStartRequestEvent);
+                } catch (Exception e) {
+                    error = e.getMessage();
+                }
 
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),

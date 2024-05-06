@@ -4,7 +4,16 @@ import org.openremote.model.event.shared.SharedEvent;
 
 public class GatewayTunnelStartResponseEvent extends SharedEvent {
 
-    public GatewayTunnelStartResponseEvent() {
+    protected String error;
 
+    public GatewayTunnelStartResponseEvent() {
+    }
+
+    public GatewayTunnelStartResponseEvent(String error) {
+        this.error = error;
+    }
+
+    public String getError() {
+        return error;
     }
 }

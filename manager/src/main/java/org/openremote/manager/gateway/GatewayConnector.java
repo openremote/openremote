@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.gateway;
 
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.*;
@@ -34,6 +34,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,7 @@ public class GatewayConnector {
     protected final AssetStorageService assetStorageService;
     protected final ScheduledExecutorService executorService;
     protected final AssetProcessingService assetProcessingService;
+    protected final GatewayService gatewayService;
     protected final Map<String, Asset<?>> pendingAssetMerges = new HashMap<>();
     protected final AtomicReference<EventRequestResponseWrapper<DeleteAssetsRequestEvent>> pendingAssetDelete = new AtomicReference<>();
     protected List<AssetEvent> cachedAssetEvents;
@@ -82,6 +84,8 @@ public class GatewayConnector {
     int syncErrors;
     GatewayAsset gateway;
     String expectedSyncResponseName;
+    CompletableFuture<Void> startTunnelFuture;
+    CompletableFuture<Void> stopTunnelFuture;
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
@@ -125,11 +129,13 @@ public class GatewayConnector {
         AssetStorageService assetStorageService,
         AssetProcessingService assetProcessingService,
         ScheduledExecutorService executorService,
+        GatewayService gatewayService,
         GatewayAsset gateway) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
         this.executorService = executorService;
+        this.gatewayService = gatewayService;
         boolean disabled = gateway.getDisabled().orElse(false);
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
@@ -217,21 +223,34 @@ public class GatewayConnector {
         return gateway.getTunnelingSupported().orElse(false);
     }
 
-    public void startTunnel(GatewayTunnelInfo tunnelInfo) {
+    public synchronized CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
+        if (startTunnelFuture != null) {
+            throw new IllegalArgumentException("A start tunnel request is already pending");
+        }
+        startTunnelFuture = new CompletableFuture<>();
+
+        if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
+            // TODO: Allocate TCP port
+            throw new UnsupportedOperationException("Raw TCP support not yet implemented");
+        }
+
         sendMessageToGateway(new EventRequestResponseWrapper<>(
-                UniqueIdentifierGenerator.generateId(),
-                new GatewayTunnelStartRequestEvent(tunnelInfo)
+                tunnelInfo.getId(),
+                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
         ));
+        return startTunnelFuture;
     }
 
-    public void stopTunnel(GatewayTunnelInfo tunnelInfo) {
+    public synchronized CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
+        if (stopTunnelFuture != null) {
+            throw new IllegalArgumentException("A stop tunnel request is already pending");
+        }
+        stopTunnelFuture = new CompletableFuture<>();
         sendMessageToGateway(new EventRequestResponseWrapper<>(
-                UniqueIdentifierGenerator.generateId(),
+                tunnelInfo.getId(),
                 new GatewayTunnelStopRequestEvent(tunnelInfo)
         ));
-        executorService.schedule(() -> {
-            // TODO: Set TUNNELING_SUPPORTED attribute to false if not updated yet.
-        }, 10000, TimeUnit.MILLISECONDS);
+        return stopTunnelFuture;
     }
 
     public String getGatewayId() {
@@ -273,8 +292,8 @@ public class GatewayConnector {
         if (!isConnected()) {
             return;
         }
-        if(e instanceof GatewayCapabilitiesResponseEvent) {
-            onGatewayCapabilitiesResponseEvent((GatewayCapabilitiesResponseEvent) e);
+        if (e instanceof GatewayCapabilitiesResponseEvent) {
+            onGatewayCapabilitiesResponse((GatewayCapabilitiesResponseEvent) e);
             return;
         }
 
@@ -293,6 +312,10 @@ public class GatewayConnector {
                 onAttributeEvent((AttributeEvent) e);
             } else if (e instanceof DeleteAssetsResponseEvent) {
                 onAssetDeleteResponseEvent(messageId, (DeleteAssetsResponseEvent) e);
+            } else if (e instanceof GatewayTunnelStartResponseEvent) {
+                onGatewayTunnelStartResponse((GatewayTunnelStartResponseEvent) e);
+            } else if (e instanceof GatewayTunnelStopResponseEvent) {
+                onGatewayTunnelStopResponse((GatewayTunnelStopResponseEvent) e);
             }
         }
     }
@@ -533,13 +556,14 @@ public class GatewayConnector {
         initialSyncInProgress = false;
         cachedAssetEvents.clear();
         cachedAttributeEvents.clear();
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
 
-        // Request for gateway info such as tunneling support
+        // Request for gateway info such as tunneling support - use a timeout
         sendMessageToGateway(new EventRequestResponseWrapper<>(
-                UniqueIdentifierGenerator.generateId(),
-                new GatewayCapabilitiesRequestEvent()
+            UniqueIdentifierGenerator.generateId(),
+            new GatewayCapabilitiesRequestEvent()
         ));
+
+        executorService.schedule(() -> onGatewayCapabilitiesResponse(null), 5, TimeUnit.SECONDS);
     }
 
     @SuppressWarnings("unchecked")
@@ -720,7 +744,40 @@ public class GatewayConnector {
         return assetStorageService.delete(assetIds, true);
     }
 
-    protected void onGatewayCapabilitiesResponseEvent(GatewayCapabilitiesResponseEvent e) {
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, e.isTunnelingSupported()));
+    synchronized protected void onGatewayCapabilitiesResponse(GatewayCapabilitiesResponseEvent e) {
+        boolean responseReceived = e != null;
+        boolean tunnellingSupported = responseReceived && e.isTunnelingSupported();
+        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
+        // Assume event gets to the DB
+        gateway.setTunnelingSupported(tunnellingSupported);
+        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+        // Assume event gets to the DB
+        gateway.setGatewayStatus(ConnectionStatus.CONNECTED);
+    }
+
+    synchronized protected void onGatewayTunnelStartResponse(GatewayTunnelStartResponseEvent e) {
+        if (startTunnelFuture == null) {
+            return;
+        }
+        CompletableFuture<Void> startTunnelFuture = this.startTunnelFuture;
+        this.startTunnelFuture = null;
+
+        if (e.getError() != null) {
+            startTunnelFuture.completeExceptionally(new RuntimeException(e.getError()));
+        }
+        startTunnelFuture.complete(null);
+    }
+
+    synchronized protected void onGatewayTunnelStopResponse(GatewayTunnelStopResponseEvent e) {
+        if (stopTunnelFuture == null) {
+            return;
+        }
+        CompletableFuture<Void> stopTunnelFuture = this.stopTunnelFuture;
+        this.stopTunnelFuture = null;
+
+        if (e.getError() != null) {
+            stopTunnelFuture.completeExceptionally(new RuntimeException(e.getError()));
+        }
+        stopTunnelFuture.complete(null);
     }
 }

@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.mqtt;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;

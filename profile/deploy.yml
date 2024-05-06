@@ -185,6 +185,11 @@ services:
       # Console applications can register for push notifications through FCM.
       OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
 
+      # Configure the public hostname and port for Gateway SSH tunnelling (if these are set then gateway tunnelling support is enabled)
+      OR_GATEWAY_TUNNEL_SSH_HOSTNAME:
+      OR_GATEWAY_TUNNEL_SSH_PORT:
+      OR_GATEWAY_TUNNEL_TCP_START: # First TCP port that can be allocated for raw TCP connections (should be start of an assigned contiguous block e.g. 9000-10000 = 9000)
+
       # Developer mode (see code for usages of OR_DEV_MODE flag)
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
 

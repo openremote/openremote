@@ -1,40 +1,38 @@
 package org.openremote.model.gateway;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.util.UniqueIdentifierGenerator;
+
+import java.util.Objects;
+
 public class GatewayTunnelInfo {
 
-    protected String id;
+    public enum Type {
+        HTTPS,
+        HTTP,
+        TCP
+    }
+
     protected String gatewayId;
     protected String realm;
-    protected int targetPort;
-    protected String target;
-    protected String protocol;
+    protected int targetPort = 443;
+    protected String target = "localhost";
+    protected Integer assignedPort = null;
+    protected Type type = Type.HTTPS;
 
-    public GatewayTunnelInfo() {
-        this.targetPort = 443;
-        this.target = "localhost";
-        this.protocol = "https";
-    }
-
-    public GatewayTunnelInfo(String id, String gatewayId, String realm) {
-        this.id = id;
-        this.gatewayId = gatewayId;
+    @JsonCreator
+    public GatewayTunnelInfo(String realm, String gatewayId) {
         this.realm = realm;
-        this.targetPort = 443;
-        this.target = "localhost";
-        this.protocol = "https";
+        this.gatewayId = gatewayId;
     }
 
-    public GatewayTunnelInfo(String id, String gatewayId, String realm, int targetPort, String target, String protocol) {
-        this.id = id;
+    public GatewayTunnelInfo(String realm, String gatewayId, Type type, String target, int targetPort) {
         this.gatewayId = gatewayId;
         this.realm = realm;
         this.targetPort = targetPort;
         this.target = target;
-        this.protocol = protocol;
-    }
-
-    public String getId() {
-        return id;
+        this.type = type;
     }
 
     public String getGatewayId() {
@@ -53,13 +51,8 @@ public class GatewayTunnelInfo {
         return target;
     }
 
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public GatewayTunnelInfo setId(String id) {
-        this.id = id;
-        return this;
+    public Type getType() {
+        return type;
     }
 
     public GatewayTunnelInfo setGatewayId(String gatewayId) {
@@ -82,8 +75,40 @@ public class GatewayTunnelInfo {
         return this;
     }
 
-    public GatewayTunnelInfo setProtocol(String protocol) {
-        this.protocol = protocol;
+    public GatewayTunnelInfo setType(Type type) {
+        this.type = type;
         return this;
+    }
+
+    @JsonProperty
+    public String getId() {
+        String seed = gatewayId + target + targetPort;
+        return "gw-" + UniqueIdentifierGenerator.generateId(seed);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GatewayTunnelInfo that = (GatewayTunnelInfo) o;
+        return targetPort == that.targetPort && Objects.equals(gatewayId, that.gatewayId) && Objects.equals(target, that.target);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gatewayId, targetPort, target);
+    }
+
+    @Override
+    public String toString() {
+        return GatewayTunnelInfo.class.getSimpleName() + "{" +
+            "id='" + getId() + '\'' +
+            ", gatewayId='" + gatewayId + '\'' +
+            ", realm='" + realm + '\'' +
+            ", targetPort=" + targetPort +
+            ", target='" + target + '\'' +
+            ", type='" + type + '\'' +
+            ", assignedPort=" + assignedPort +
+            '}';
     }
 }

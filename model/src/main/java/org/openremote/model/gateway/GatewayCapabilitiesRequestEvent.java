@@ -6,6 +6,9 @@ import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Date;
 
+/**
+ * Request the gateway to return a {@link Gatewya}
+ */
 public class GatewayCapabilitiesRequestEvent extends SharedEvent {
 
     @JsonCreator
