@@ -6,6 +6,10 @@ public class GatewayTunnelStopRequestEvent extends SharedEvent {
 
     protected GatewayTunnelInfo info;
 
+    protected GatewayTunnelStopRequestEvent() {
+
+    }
+
     public GatewayTunnelStopRequestEvent(GatewayTunnelInfo info) {
         this.info = info;
     }

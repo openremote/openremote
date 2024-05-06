@@ -519,10 +519,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected.");
         }
 
-        connector.startTunnel(tunnelInfo);
-
         String id = tunnelInfo.getRealm() + "_" + tunnelInfo.getGatewayId() + "_" + tunnelInfo.getTarget() + "_" + tunnelInfo.getTargetPort();
         tunnelInfo.setId(id);
+
+        connector.startTunnel(tunnelInfo);
+
         tunnelInfos.put(id, tunnelInfo);
 
         return tunnelInfo;

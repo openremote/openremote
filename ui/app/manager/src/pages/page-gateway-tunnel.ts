@@ -209,6 +209,8 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                     }
                 }).catch(_error => {
                     showSnackbar(undefined, 'errorOccurred');
+                }).finally(() => {
+                    this._fetchTunnelsTask.run();
                 });
             }
         });

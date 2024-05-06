@@ -6,6 +6,10 @@ public class GatewayTunnelStartRequestEvent extends SharedEvent {
 
     protected GatewayTunnelInfo info;
 
+    protected GatewayTunnelStartRequestEvent() {
+
+    }
+
     public GatewayTunnelStartRequestEvent(GatewayTunnelInfo info) {
         this.info = info;
     }
