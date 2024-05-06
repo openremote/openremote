@@ -8,6 +8,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.gateway.GatewayServiceResource;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.util.TextUtil;
 
 public class GatewayServiceResourceImpl extends ManagerWebResource implements GatewayServiceResource {
 
@@ -20,18 +21,44 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
 
     @Override
     public GatewayTunnelInfo[] getActiveTunnelInfos(RequestParams requestParams, String realm) {
-        return new GatewayTunnelInfo[0];
+        if (TextUtil.isNullOrEmpty(realm)) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+        if (!isAuthenticated() || !realm.equals(getAuthenticatedRealmName())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        return this.gatewayService.getTunnelInfos().stream()
+                .filter(tunnel -> tunnel.getRealm().equals(realm))
+                .toArray(GatewayTunnelInfo[]::new);
     }
 
     @Override
-    public GatewayTunnelInfo getActiveTunnelInfoById(RequestParams requestParams, String realm, String tunnelId) {
-        return null;
+    public GatewayTunnelInfo getActiveTunnelInfoByGatewayId(RequestParams requestParams, String realm, String gatewayId) {
+        if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated() || !realm.equals(getAuthenticatedRealmName())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        if (TextUtil.isNullOrEmpty(gatewayId)) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+        GatewayTunnelInfo[] infos = this.gatewayService.getTunnelInfos().stream()
+                .filter(tunnel -> tunnel.getRealm().equals(realm) && tunnel.getGatewayId().equals(gatewayId))
+                .limit(1)
+                .toArray(GatewayTunnelInfo[]::new);
+
+        if(infos.length == 0) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+
+        return infos[0];
     }
 
     @Override
-    public void startTunnel(GatewayTunnelInfo tunnelInfo) {
+    public GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo) {
+        if(tunnelInfo == null) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
         try {
-            this.gatewayService.tryStartTunnel(tunnelInfo);
+            return this.gatewayService.tryStartTunnel(tunnelInfo);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(e.getMessage(), Response.Status.BAD_REQUEST);
         } catch (IllegalStateException e) {
@@ -40,9 +67,12 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
     }
 
     @Override
-    public void stopTunnel(GatewayTunnelInfo tunnelInfo) {
+    public GatewayTunnelInfo stopTunnel(GatewayTunnelInfo tunnelInfo) {
+        if(tunnelInfo == null) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
         try {
-            this.gatewayService.tryStopTunnel(tunnelInfo);
+            return this.gatewayService.tryStopTunnel(tunnelInfo);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(e.getMessage(), Response.Status.BAD_REQUEST);
         } catch (IllegalStateException e) {

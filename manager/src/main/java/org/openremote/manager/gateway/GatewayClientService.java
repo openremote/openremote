@@ -48,6 +48,7 @@ import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
@@ -58,7 +59,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -90,7 +91,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        supportsTunneling = getBoolean(container.getConfig(), "OR_GATEWAY_SSH_NAMED_PIPE", false);
+        supportsTunneling = TextUtil.isNullOrEmpty(getString(container.getConfig(), "OR_GATEWAY_SSH_NAMED_PIPE", null));
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new GatewayClientResourceImpl(timerService, identityService, this)
@@ -316,13 +317,35 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                                 )
                         )
                 );
-            } else if (event instanceof GatewayTunnelStartEvent) {
+            } else if (event instanceof GatewayTunnelStartRequestEvent) {
                 LOG.info("Central manager requested to start a tunnel.");
                 // TODO; Implement this to start tunnel
 
-            } else if (event instanceof GatewayTunnelStopEvent) {
+                sendCentralManagerMessage(
+                        connection.getLocalRealm(),
+                        messageToString(
+                                EventRequestResponseWrapper.MESSAGE_PREFIX,
+                                new EventRequestResponseWrapper<>(
+                                        messageId,
+                                        new GatewayTunnelStartResponseEvent()
+                                )
+                        )
+                );
+
+            } else if (event instanceof GatewayTunnelStopRequestEvent) {
                 LOG.info("Central manager requested to stop the tunnel.");
                 // TODO; Implement this to stop tunnel
+
+                sendCentralManagerMessage(
+                        connection.getLocalRealm(),
+                        messageToString(
+                                EventRequestResponseWrapper.MESSAGE_PREFIX,
+                                new EventRequestResponseWrapper<>(
+                                        messageId,
+                                        new GatewayTunnelStopResponseEvent()
+                                )
+                        )
+                );
 
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());

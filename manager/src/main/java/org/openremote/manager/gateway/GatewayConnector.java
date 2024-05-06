@@ -218,11 +218,17 @@ public class GatewayConnector {
     }
 
     public void startTunnel(GatewayTunnelInfo tunnelInfo) {
-        sendMessageToGateway(new GatewayTunnelStartEvent(tunnelInfo));
+        sendMessageToGateway(new EventRequestResponseWrapper<>(
+                UniqueIdentifierGenerator.generateId(),
+                new GatewayTunnelStartRequestEvent(tunnelInfo)
+        ));
     }
 
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) {
-        sendMessageToGateway(new GatewayTunnelStopEvent(tunnelInfo));
+        sendMessageToGateway(new EventRequestResponseWrapper<>(
+                UniqueIdentifierGenerator.generateId(),
+                new GatewayTunnelStopRequestEvent(tunnelInfo)
+        ));
         executorService.schedule(() -> {
             // TODO: Set TUNNELING_SUPPORTED attribute to false if not updated yet.
         }, 10000, TimeUnit.MILLISECONDS);

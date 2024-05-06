@@ -51,8 +51,10 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = GatewayConnectionStatusEvent.class, name = "gateway-connection-status"),
     @JsonSubTypes.Type(value = GatewayCapabilitiesRequestEvent.class, name = "gateway-capabilities-request"),
     @JsonSubTypes.Type(value = GatewayCapabilitiesResponseEvent.class, name = "gateway-capabilities-response"),
-    @JsonSubTypes.Type(value = GatewayTunnelStartEvent.class, name = "gateway-tunnel-start"),
-    @JsonSubTypes.Type(value = GatewayTunnelStopEvent.class, name = "gateway-tunnel-stop"),
+    @JsonSubTypes.Type(value = GatewayTunnelStartRequestEvent.class, name = "gateway-tunnel-start-request"),
+    @JsonSubTypes.Type(value = GatewayTunnelStartResponseEvent.class, name = "gateway-tunnel-start-response"),
+    @JsonSubTypes.Type(value = GatewayTunnelStopRequestEvent.class, name = "gateway-tunnel-stop-request"),
+    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response"),
     @JsonSubTypes.Type(value = DeleteAssetsRequestEvent.class, name = "delete-assets-request"),
     @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets-response")
 })

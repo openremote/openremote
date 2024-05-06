@@ -104,8 +104,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
-
-    protected GatewayTunnelInfo[] tunnelInfos;
+    protected Map<String, GatewayTunnelInfo> tunnelInfos = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -265,6 +264,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         gatewayConnectorMap.values().forEach(GatewayConnector::disconnect);
         gatewayConnectorMap.clear();
         assetIdGatewayIdMap.clear();
+        tunnelInfos.clear();
     }
 
     @Override
@@ -493,7 +493,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return connector.deleteGatewayAssets(assetIds);
     }
 
-    public void tryStartTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
+    public Collection<GatewayTunnelInfo> getTunnelInfos() {
+        return this.tunnelInfos.values();
+    }
+
+    public GatewayTunnelInfo tryStartTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
         if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new IllegalArgumentException("Gateway ID cannot be null or empty");
         }
@@ -502,20 +506,29 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
         String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
         if(!gatewayConnectorMap.containsKey(gatewayId)) {
-            throw new IllegalStateException("Gateway ID " + gatewayId + " is not known");
+            LOG.info("Tried starting tunnel for " + gatewayId + ", but it is not known.");
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not known.");
         }
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
         if(!connector.supportsTunneling()) {
-            throw new IllegalStateException("Gateway ID " + gatewayId + " does not support tunneling");
+            LOG.info("Tried starting tunnel for " + gatewayId + ", but it does not support tunneling.");
+            throw new IllegalStateException("Gateway ID " + gatewayId + " does not support tunneling.");
         }
         if(!connector.isConnected()) {
-            throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected");
+            LOG.info("Tried starting tunnel for " + gatewayId + ", but it is not connected.");
+            throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected.");
         }
 
         connector.startTunnel(tunnelInfo);
+
+        String id = tunnelInfo.getRealm() + "_" + tunnelInfo.getGatewayId() + "_" + tunnelInfo.getTarget() + "_" + tunnelInfo.getTargetPort();
+        tunnelInfo.setId(id);
+        tunnelInfos.put(id, tunnelInfo);
+
+        return tunnelInfo;
     }
 
-    public void tryStopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
+    public GatewayTunnelInfo tryStopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
         if(TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new IllegalArgumentException("Gateway ID cannot be null or empty");
         }
@@ -524,17 +537,23 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
         String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
         if(!gatewayConnectorMap.containsKey(gatewayId)) {
+            LOG.info("Tried stopping tunnel for " + gatewayId + ", but it is not known.");
             throw new IllegalStateException("Gateway ID " + gatewayId + " is not known");
         }
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
         if(!connector.supportsTunneling()) {
+            LOG.info("Tried stopping tunnel for " + gatewayId + ", but it does not support tunneling.");
             throw new IllegalStateException("Gateway ID " + gatewayId + " does not support tunneling");
         }
         if(!connector.isConnected()) {
+            LOG.info("Tried stopping tunnel for " + gatewayId + ", but it is not connected.");
             throw new IllegalStateException("Gateway ID " + gatewayId + " is not connected");
         }
 
         connector.stopTunnel(tunnelInfo);
+        tunnelInfos.remove(tunnelInfo.getId());
+
+        return tunnelInfo;
     }
 
     /**

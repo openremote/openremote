@@ -28,7 +28,7 @@ public interface GatewayServiceResource {
     @Path("tunnel/{realm}/{id}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    GatewayTunnelInfo getActiveTunnelInfoById(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String tunnelId);
+    GatewayTunnelInfo getActiveTunnelInfoByGatewayId(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String gatewayId);
 
     /**
      * TODO: write docs
@@ -36,8 +36,9 @@ public interface GatewayServiceResource {
     @POST
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    void startTunnel(GatewayTunnelInfo tunnelInfo);
+    GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo);
 
     /**
      * TODO: write docs
@@ -45,6 +46,7 @@ public interface GatewayServiceResource {
     @DELETE
     @Path("tunnel")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    void stopTunnel(GatewayTunnelInfo tunnelInfo);
+    GatewayTunnelInfo stopTunnel(GatewayTunnelInfo tunnelInfo);
 }

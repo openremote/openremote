@@ -7,10 +7,12 @@ public class GatewayTunnelInfo {
     protected String realm;
     protected int targetPort;
     protected String target;
+    protected String protocol;
 
     public GatewayTunnelInfo() {
         this.targetPort = 443;
         this.target = "localhost";
+        this.protocol = "https";
     }
 
     public GatewayTunnelInfo(String id, String gatewayId, String realm) {
@@ -19,14 +21,16 @@ public class GatewayTunnelInfo {
         this.realm = realm;
         this.targetPort = 443;
         this.target = "localhost";
+        this.protocol = "https";
     }
 
-    public GatewayTunnelInfo(String id, String gatewayId, String realm, int targetPort, String target) {
+    public GatewayTunnelInfo(String id, String gatewayId, String realm, int targetPort, String target, String protocol) {
         this.id = id;
         this.gatewayId = gatewayId;
         this.realm = realm;
         this.targetPort = targetPort;
         this.target = target;
+        this.protocol = protocol;
     }
 
     public String getId() {
@@ -47,6 +51,10 @@ public class GatewayTunnelInfo {
 
     public String getTarget() {
         return target;
+    }
+
+    public String getProtocol() {
+        return protocol;
     }
 
     public GatewayTunnelInfo setId(String id) {
@@ -71,6 +79,11 @@ public class GatewayTunnelInfo {
 
     public GatewayTunnelInfo setTarget(String target) {
         this.target = target;
+        return this;
+    }
+
+    public GatewayTunnelInfo setProtocol(String protocol) {
+        this.protocol = protocol;
         return this;
     }
 }

@@ -2,11 +2,11 @@ package org.openremote.model.gateway;
 
 import org.openremote.model.event.shared.SharedEvent;
 
-public class GatewayTunnelStartEvent extends SharedEvent {
+public class GatewayTunnelStopRequestEvent extends SharedEvent {
 
     protected GatewayTunnelInfo info;
 
-    public GatewayTunnelStartEvent(GatewayTunnelInfo info) {
+    public GatewayTunnelStopRequestEvent(GatewayTunnelInfo info) {
         this.info = info;
     }
 
