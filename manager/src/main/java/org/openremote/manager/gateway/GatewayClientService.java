@@ -343,7 +343,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                                 EventRequestResponseWrapper.MESSAGE_PREFIX,
                                 new EventRequestResponseWrapper<>(
                                         messageId,
-                                        new GatewayTunnelStartResponseEvent()
+                                        new GatewayTunnelStartResponseEvent(error)
                                 )
                         )
                 );
