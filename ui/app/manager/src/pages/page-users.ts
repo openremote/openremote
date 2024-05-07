@@ -614,8 +614,8 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
     }
 
-    protected onServiceUserSearch(ev: OrInputChangedEvent) {
-        const value = (ev.detail.value as string)?.toLowerCase();
+    protected onServiceUserSearch(ev: InputEvent) {
+        const value = (ev.data as string)?.toLowerCase();
         if(!value) {
             this._serviceUserFilter = this.getDefaultUserFilter(true);
         } else {
