@@ -71,7 +71,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
-    public static final String OR_GATEWAY_TUNNEL_SSH_KEY_FILE = "OR_GATEWAY_TUNNEL_SSH_KEY_FILE";
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected PersistenceService persistenceService;
@@ -93,7 +92,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        String tunnelKeyFile = getString(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_KEY_FILE, null);
+        String tunnelKeyFile = getString(container.getConfig(), GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE, null);
 
         if (!TextUtil.isNullOrEmpty(tunnelKeyFile)) {
             File f = new File(tunnelKeyFile);

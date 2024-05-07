@@ -190,6 +190,7 @@ services:
       OR_GATEWAY_TUNNEL_SSH_PORT:
       OR_GATEWAY_TUNNEL_TCP_START: # First TCP port that can be allocated for raw TCP connections (should be start of an assigned contiguous block e.g. 9000-10000 = 9000)
       OR_GATEWAY_TUNNEL_SSH_KEY_FILE: # SSH key file in RSA (not openSSH) format (use ssh-keygen -p -f ~/.ssh/id_rsa -m pem) to convert from openSSH
+      OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE: # Override default rewriting of localhost tunnelling to work within Docker
 
       # Developer mode (see code for usages of OR_DEV_MODE flag)
       OR_DEV_MODE: ${OR_DEV_MODE:-false}

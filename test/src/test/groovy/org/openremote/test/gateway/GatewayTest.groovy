@@ -1,6 +1,6 @@
 package org.openremote.test.gateway
 
-import com.google.common.collect.Lists
+
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
 import org.junit.Ignore
@@ -957,7 +957,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def container = startContainer(defaultConfig() << [(GatewayClientService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
+        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
         def gatewayClientService = container.getService(GatewayClientService)
         def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
         def client = WebTargetBuilder.createClient(container.getExecutorService())
