@@ -348,7 +348,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * Internal asynchronous function to fetch the list of tunnels.
      */
     protected async _fetchTunnels(realm: string = manager.displayRealm, _signal?: AbortSignal): Promise<GatewayTunnelInfo[]> {
-        const response = await manager.rest.api.GatewayServiceResource.getActiveTunnelInfos$GET$gateway_tunnel_realm(realm);
+        const response = await manager.rest.api.GatewayServiceResource.getGatewayActiveTunnelInfos$GET$gateway_tunnel_realm(realm);
         if (response.status !== 200) {
             throw new Error(response.statusText);
         }
