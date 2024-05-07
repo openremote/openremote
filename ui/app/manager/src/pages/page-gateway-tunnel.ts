@@ -1,5 +1,5 @@
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {TemplateResult, html, css, unsafeCSS} from "lit";
+import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {until} from "lit/directives/until.js";
 import {Task} from "@lit/task";
@@ -7,7 +7,7 @@ import {Store} from "@reduxjs/toolkit";
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, manager} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {Asset, AssetQuery, GatewayTunnelInfo} from "@openremote/model";
+import {Asset, AssetQuery, GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
 import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 import {getAssetsRoute} from "../routes";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -88,7 +88,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     protected GATEWAY_TUNNEL_TYPES = ["GatewayAsset"];
 
     // Static value with possible protocol types
-    protected GATEWAY_TUNNEL_PROTOCOL_TYPES = ["https", "http", "tcp"];
+    protected GATEWAY_TUNNEL_PROTOCOL_TYPES: GatewayTunnelInfoType[] = [GatewayTunnelInfoType.HTTPS, GatewayTunnelInfoType.HTTP, GatewayTunnelInfoType.TCP];
 
     @state()
     protected _realm = manager.displayRealm;
@@ -263,10 +263,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('gatewayTunnels.protocol')}" .value="${tunnel.protocol}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
+                    <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('gatewayTunnels.protocol')}" .value="${tunnel.type}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
                                   style="width: 100%"
                                   @or-mwc-input-changed="${(ev) => {
-                                      tunnel.protocol = ev.detail.value;
+                                      tunnel.type = ev.detail.value;
                                       updateActions();
                                   }}"
                     ></or-mwc-input>
@@ -348,7 +348,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * Internal asynchronous function to fetch the list of tunnels.
      */
     protected async _fetchTunnels(realm: string = manager.displayRealm, _signal?: AbortSignal): Promise<GatewayTunnelInfo[]> {
-        const response = await manager.rest.api.GatewayServiceResource.getActiveTunnelInfos(realm);
+        const response = await manager.rest.api.GatewayServiceResource.getActiveTunnelInfos$GET$gateway_tunnel_realm(realm);
         if (response.status !== 200) {
             throw new Error(response.statusText);
         }
@@ -396,7 +396,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         return {
             target: "localhost",
             targetPort: 443,
-            protocol: this.GATEWAY_TUNNEL_PROTOCOL_TYPES?.[0]
+            type: this.GATEWAY_TUNNEL_PROTOCOL_TYPES?.[0]
         }
     }
 
