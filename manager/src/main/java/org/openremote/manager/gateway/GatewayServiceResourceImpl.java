@@ -24,35 +24,68 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
 
     @Override
     public GatewayTunnelInfo[] getActiveTunnelInfos(RequestParams requestParams, String realm) {
-        if (TextUtil.isNullOrEmpty(realm)) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
-        }
-        if (!isAuthenticated() || !realm.equals(getAuthenticatedRealmName())) {
+        if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        if (isRestrictedUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
         return this.gatewayService.getTunnelInfos().stream()
                 .filter(tunnel -> tunnel.getRealm().equals(realm))
                 .toArray(GatewayTunnelInfo[]::new);
     }
 
     @Override
-    public GatewayTunnelInfo getActiveTunnelInfoByGatewayId(RequestParams requestParams, String realm, String gatewayId) {
-        if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated() || !realm.equals(getAuthenticatedRealmName())) {
+    public GatewayTunnelInfo[] getActiveTunnelInfos(RequestParams requestParams, String realm, String gatewayId) {
+        if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
+        if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
         if (TextUtil.isNullOrEmpty(gatewayId)) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
-        GatewayTunnelInfo[] infos = this.gatewayService.getTunnelInfos().stream()
-                .filter(tunnel -> tunnel.getRealm().equals(realm) && tunnel.getGatewayId().equals(gatewayId))
-                .limit(1)
-                .toArray(GatewayTunnelInfo[]::new);
 
-        if(infos.length == 0) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayId)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        return infos[0];
+        return this.gatewayService.getTunnelInfos().stream()
+                .filter(tunnel -> tunnel.getRealm().equals(realm) && tunnel.getGatewayId().equals(gatewayId))
+                .toArray(GatewayTunnelInfo[]::new);
+    }
+
+    @Override
+    public GatewayTunnelInfo getActiveTunnelInfo(RequestParams requestParams, String realm, String gatewayId, String target, int targetPort) {
+        if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        if (!isSuperUser() && !getAuthenticatedRealmName().equals(realm)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        if (TextUtil.isNullOrEmpty(gatewayId)) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), gatewayId)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        return this.gatewayService.getTunnelInfos().stream()
+            .filter(tunnel -> tunnel.getRealm().equals(realm) && tunnel.getGatewayId().equals(gatewayId) && tunnel.getTarget().equals(target) && tunnel.getTargetPort() == targetPort)
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
