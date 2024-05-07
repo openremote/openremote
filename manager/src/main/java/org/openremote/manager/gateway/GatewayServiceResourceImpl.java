@@ -23,7 +23,7 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
     }
 
     @Override
-    public GatewayTunnelInfo[] getGatewayActiveTunnelInfos(RequestParams requestParams, String realm) {
+    public GatewayTunnelInfo[] getAllActiveTunnelInfos(RequestParams requestParams, String realm) {
         if (TextUtil.isNullOrEmpty(realm) || !isAuthenticated()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
