@@ -3,12 +3,17 @@ package org.openremote.test.gateway
 import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
+import org.junit.Ignore
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
+import org.openremote.container.web.WebTargetBuilder
+import org.openremote.manager.gateway.JSchGatewayTunnelFactory
+import org.openremote.model.gateway.GatewayTunnelInfo
+import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -46,6 +51,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.file.Paths
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -750,10 +756,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Verify gateway client service"() {
 
-        given: "the container environment is started with the spy gateway client service"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def services = Lists.newArrayList(defaultServices())
-        def container = startContainer(defaultConfig(), services)
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
@@ -935,6 +940,65 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
+        }
+    }
+
+    /**
+     * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
+     * Change the test url and key path to match the instance to connect to.
+     * Recommended to run profile/dev-proxy.yml profile.
+     */
+    @Ignore
+    def "Verify gateway tunnel factory"() {
+        given: "an ssh private key and the URL of a manager instance with tunnelling configured"
+        def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
+        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHPort = 2222
+
+        and: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig() << [(GatewayClientService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
+        def gatewayClientService = container.getService(GatewayClientService)
+        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
+        def client = WebTargetBuilder.createClient(container.getExecutorService())
+        def tunnelInfo = new GatewayTunnelInfo(
+                "",
+                UniqueIdentifierGenerator.generateId(),
+                GatewayTunnelInfo.Type.HTTPS,
+                "localhost",
+                443)
+        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+
+        expect: "the tunnel factory to be created"
+        tunnelFactory != null
+
+        when: "a tunnel is requested to start"
+        def startEvent = new GatewayTunnelStartRequestEvent(
+                tunnelSSHHost,
+                tunnelSSHPort,
+                null,
+                null,
+                tunnelInfo)
+        tunnelFactory.startTunnel(startEvent)
+
+        then: "the tunnel should be established and be usable"
+        tunnelFactory.sessionMap.containsKey(tunnelInfo)
+        def response = target.request().get()
+        response.status == 200
+
+        when: "the tunnel is stopped"
+        tunnelFactory.stopTunnel(tunnelInfo)
+
+        then: "the tunnel should be destroyed"
+        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
+
+        and: "requests should fail"
+        def response2 = target.request().get()
+        response2.status != 200
+
+        cleanup: "cleanup"
+        if (client != null) {
+            client.close()
         }
     }
 }

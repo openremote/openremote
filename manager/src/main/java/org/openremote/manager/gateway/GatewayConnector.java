@@ -83,6 +83,7 @@ public class GatewayConnector {
     int syncIndex;
     int syncErrors;
     GatewayAsset gateway;
+    String localhostRewrite;
     String expectedSyncResponseName;
     CompletableFuture<Void> startTunnelFuture;
     CompletableFuture<Void> stopTunnelFuture;
@@ -130,7 +131,8 @@ public class GatewayConnector {
         AssetProcessingService assetProcessingService,
         ScheduledExecutorService executorService,
         GatewayService gatewayService,
-        GatewayAsset gateway) {
+        GatewayAsset gateway,
+        String localhostRewrite) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
@@ -141,6 +143,7 @@ public class GatewayConnector {
         this.gatewayId = gateway.getId();
         this.disabled = disabled;
         this.gateway = gateway;
+        this.localhostRewrite = localhostRewrite;
     }
 
     public void sendMessageToGateway(Object message) {
@@ -236,7 +239,7 @@ public class GatewayConnector {
 
         sendMessageToGateway(new EventRequestResponseWrapper<>(
                 tunnelInfo.getId(),
-                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
+                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, localhostRewrite, tunnelInfo)
         ));
         return startTunnelFuture;
     }

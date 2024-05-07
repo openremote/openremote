@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
+import java.util.Locale;
 import java.util.Objects;
 
 public class GatewayTunnelInfo {
@@ -83,7 +84,7 @@ public class GatewayTunnelInfo {
     @JsonProperty
     public String getId() {
         String seed = gatewayId + target + targetPort;
-        return "gw-" + UniqueIdentifierGenerator.generateId(seed);
+        return "gw-" + UniqueIdentifierGenerator.generateId(seed).toLowerCase(Locale.ROOT);
     }
 
     @Override
