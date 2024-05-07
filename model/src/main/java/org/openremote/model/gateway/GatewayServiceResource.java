@@ -19,7 +19,7 @@ public interface GatewayServiceResource {
     @Path("tunnel/{realm}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    GatewayTunnelInfo[] getActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    GatewayTunnelInfo[] getGatewayActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * TODO: write docs
@@ -27,7 +27,7 @@ public interface GatewayServiceResource {
     @GET
     @Path("tunnel/{realm}/{id}")
     @Produces(APPLICATION_JSON)
-    GatewayTunnelInfo[] getActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String gatewayId);
+    GatewayTunnelInfo[] getGatewayActiveTunnelInfos(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("id") String gatewayId);
 
     @GET
     @Path("tunnel/{realm}/{id}/{target}/{targetPort}")

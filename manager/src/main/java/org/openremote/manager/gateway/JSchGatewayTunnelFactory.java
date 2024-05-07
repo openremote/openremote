@@ -21,6 +21,7 @@
 package org.openremote.manager.gateway;
 
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JulLogger;
 import com.jcraft.jsch.Session;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
@@ -48,19 +49,20 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
         synchronized (this) {
             if (jSch == null) {
                 jSch = new JSch();
+                JSch.setLogger(new JulLogger());
                 jSch.addIdentity(sshKeyFile.getAbsolutePath());
             }
         }
 
         GatewayTunnelInfo tunnelInfo = startRequestEvent.getInfo();
         Session session = jSch.getSession(null, startRequestEvent.getSshHostname(), startRequestEvent.getSshPort());
+        session.setTimeout(10000);
         session.setConfig("StrictHostKeyChecking", "no");
         String bindAddress = tunnelInfo.getType() ==  GatewayTunnelInfo.Type.TCP ? null : tunnelInfo.getId();
         int rPort = tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTPS ? 443 : tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTP ? 80 : startRequestEvent.getTcpPort();
-        // Need to rewrite localhost to get outside of docker container
-        String target = "localhost".equals(tunnelInfo.getTarget()) ? "172.17.0.1" : tunnelInfo.getTarget();
-        session.setPortForwardingR(bindAddress, rPort, target, tunnelInfo.getTargetPort());
+        String target = startRequestEvent.getLocalhostRewrite() != null && "localhost".equals(tunnelInfo.getTarget()) ? startRequestEvent.getLocalhostRewrite() : tunnelInfo.getTarget();
         session.connect();
+        session.setPortForwardingR(bindAddress, rPort, target, tunnelInfo.getTargetPort());
         sessionMap.put(tunnelInfo, session);
     }
 
