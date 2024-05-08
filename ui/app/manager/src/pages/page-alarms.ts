@@ -239,8 +239,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _loadedUsers: User[] = [];
 
     protected _loading: boolean = false;
-    protected _assign: boolean = false;
-    protected _userId?: string;
 
     @state()
     public severity?: AlarmSeverity;
@@ -310,7 +308,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        this.reset();
     }
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -318,6 +315,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             this.reset();
         }
         if (changedProperties.has("alarm")) {
+
             this._updateRoute();
         }
         if (changedProperties.has("severity")
@@ -577,6 +575,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
             }
             if(!this.status && this.allActive){
                 this._data = this._data.filter((e) => e.status !== AlarmStatus.CLOSED);
+            }
+            if(this.assign){
+                await this._onAssignCheckChanged(this.assign);
             }
         }
         this._loading = false;
@@ -973,7 +974,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this.creationState = undefined;
         this._data = undefined;
         this._selectedIds = undefined;
-        this._assign = false;
+        this.assign = false;
         if (this._table) {
             this._table = undefined;
         }
