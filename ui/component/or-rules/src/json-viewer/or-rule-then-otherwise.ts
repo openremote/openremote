@@ -104,7 +104,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     if (addAlarm) {
         menu.push({
             text: i18next.t("alarm."),
-            icon: "alert-outline",
+            icon: "bell-outline",
             value: ActionType.ALARM,
             styleMap: {"--or-icon-fill": "#" + ALARM_COLOR}
         } as ListItem);
@@ -332,7 +332,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         }
                         break;
                     case ActionType.ALARM:
-                        buttonIcon = "alert-outline";
+                        buttonIcon = "bell-outline";
                         buttonColor = ALARM_COLOR;
                         break;
                     default:
