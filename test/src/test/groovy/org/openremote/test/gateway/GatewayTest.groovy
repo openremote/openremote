@@ -1,9 +1,7 @@
 package org.openremote.test.gateway
 
-
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
-import org.junit.Ignore
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
@@ -11,10 +9,6 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
 import org.openremote.container.web.WebTargetBuilder
-import org.openremote.manager.gateway.JSchGatewayTunnelFactory
-import org.openremote.model.gateway.GatewayTunnelInfo
-import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
-import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -22,18 +16,13 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
+import org.openremote.manager.gateway.JSchGatewayTunnelFactory
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.impl.LightAsset
-import org.openremote.model.security.User
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.impl.BuildingAsset
-import org.openremote.model.asset.impl.GatewayAsset
-import org.openremote.model.asset.impl.MicrophoneAsset
-import org.openremote.model.asset.impl.RoomAsset
+import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
@@ -43,11 +32,17 @@ import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.GatewayClientResource
 import org.openremote.model.gateway.GatewayConnection
+import org.openremote.model.gateway.GatewayTunnelInfo
+import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.security.User
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
