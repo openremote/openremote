@@ -1,5 +1,6 @@
 package org.openremote.manager.gateway;
 
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
@@ -10,6 +11,7 @@ import org.openremote.model.gateway.GatewayServiceResource;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
+import org.w3c.dom.Text;
 
 public class GatewayServiceResourceImpl extends ManagerWebResource implements GatewayServiceResource {
 
@@ -90,15 +92,22 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
 
     @Override
     public GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo) {
-        if(tunnelInfo == null || TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException();
+        }
+
+        if (tunnelInfo == null || TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
-        String realm = isSuperUser() ? getRequestRealmName() : getAuthenticatedRealmName();
-        tunnelInfo.setRealm(realm);
+        if (TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
+            tunnelInfo.setRealm(getAuthenticatedRealmName());
+        } else if (!isSuperUser() && !tunnelInfo.getRealm().equals(getAuthenticatedRealmName())) {
+            throw new ForbiddenException();
+        }
 
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), tunnelInfo.getGatewayId())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+            throw new ForbiddenException();
         }
 
         try {
@@ -114,15 +123,22 @@ public class GatewayServiceResourceImpl extends ManagerWebResource implements Ga
 
     @Override
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) {
-        if(tunnelInfo == null || TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException();
+        }
+
+        if (tunnelInfo == null || TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
 
-        String realm = isSuperUser() ? getRequestRealmName() : getAuthenticatedRealmName();
-        tunnelInfo.setRealm(realm);
+        if (TextUtil.isNullOrEmpty(tunnelInfo.getRealm())) {
+            tunnelInfo.setRealm(getAuthenticatedRealmName());
+        } else if (!isSuperUser() && !tunnelInfo.getRealm().equals(getAuthenticatedRealmName())) {
+            throw new ForbiddenException();
+        }
 
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), tunnelInfo.getGatewayId())) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+            throw new ForbiddenException();
         }
 
         try {

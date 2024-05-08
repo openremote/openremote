@@ -543,7 +543,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalStateException(msg);
         }
 
-        if (!connector.supportsTunneling()) {
+        if (!connector.isTunnellingSupported()) {
             String msg = "Failed to start tunnel: reason=Not supported by gateway, id=" + gatewayId;
             LOG.info(msg);
             throw new IllegalArgumentException(msg);
@@ -574,7 +574,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
         if (!tunnellingSupported()) {
-            String msg = "Failed to start tunnel: reason=tunnelling is not supported";
+            String msg = "Failed to stop tunnel: reason=tunnelling is not supported";
             LOG.info(msg);
             throw new IllegalArgumentException(msg);
         }
@@ -595,7 +595,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalStateException(msg);
         }
 
-        if (!connector.supportsTunneling()) {
+        if (!connector.isTunnellingSupported()) {
             String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + gatewayId;
             LOG.info(msg);
             throw new IllegalArgumentException(msg);

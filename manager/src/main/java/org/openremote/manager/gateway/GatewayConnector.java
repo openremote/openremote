@@ -34,10 +34,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -86,6 +83,7 @@ public class GatewayConnector {
     String expectedSyncResponseName;
     CompletableFuture<Void> startTunnelFuture;
     CompletableFuture<Void> stopTunnelFuture;
+    Future<?> capabilitiesRequestFuture;
     protected boolean tunnellingSupported;
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
@@ -221,7 +219,7 @@ public class GatewayConnector {
         return initialSyncInProgress;
     }
 
-    public boolean supportsTunneling() {
+    public boolean isTunnellingSupported() {
         return tunnellingSupported;
     }
 
@@ -565,7 +563,7 @@ public class GatewayConnector {
             new GatewayCapabilitiesRequestEvent()
         ));
 
-        executorService.schedule(() -> onGatewayCapabilitiesResponse(null), 5, TimeUnit.SECONDS);
+        capabilitiesRequestFuture = executorService.schedule(() -> onGatewayCapabilitiesResponse(null), 5, TimeUnit.SECONDS);
     }
 
     @SuppressWarnings("unchecked")
@@ -747,11 +745,16 @@ public class GatewayConnector {
     }
 
     synchronized protected void onGatewayCapabilitiesResponse(GatewayCapabilitiesResponseEvent e) {
-        boolean responseReceived = e != null;
-        boolean tunnellingSupported = responseReceived && e.isTunnelingSupported();
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
-        this.tunnellingSupported = tunnellingSupported;
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+        Future<?> capabilitiesRequestFuture = this.capabilitiesRequestFuture;
+        this.capabilitiesRequestFuture = null;
+        if (capabilitiesRequestFuture != null) {
+            capabilitiesRequestFuture.cancel(false);
+            boolean responseReceived = e != null;
+            boolean tunnellingSupported = responseReceived && e.isTunnelingSupported();
+            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
+            this.tunnellingSupported = tunnellingSupported;
+            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+        }
     }
 
     synchronized protected void onGatewayTunnelStartResponse(GatewayTunnelStartResponseEvent e) {
