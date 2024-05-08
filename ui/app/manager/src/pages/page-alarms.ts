@@ -985,7 +985,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public stateChanged(state: AppStateKeyed) {
         if (state.app.page == "alarms") {
-            if(this.realm == state.app.realm){
+            if(!this.realm || this.realm == state.app.realm){
                 if (state.app.params && state.app.params.id) {
                     const parsedId = Number(state.app.params.id);
                     manager.rest.api.AlarmResource.getAlarms().then((alarms) => {
@@ -1002,7 +1002,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 this.realm = state.app.realm;
                 this.requestUpdate('realm');
             }
-
         }
     }
 
