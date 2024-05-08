@@ -16,8 +16,8 @@ public class Alarm {
         OPEN,
         ACKNOWLEDGED,
         IN_PROGRESS,
-        CLOSED,
-        RESOLVED
+        RESOLVED,
+        CLOSED
     }
     public enum Severity {
         LOW,

@@ -22,6 +22,7 @@ import jakarta.persistence.TypedQuery;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.*;
+import org.openremote.model.security.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -137,6 +138,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         try {
             List<Notification.Target> assignee = new ArrayList<>();
             assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
+            User result = persistenceService.doReturningTransaction(entityManager -> {
+                TypedQuery<User> query = entityManager.createQuery("select u from User u where u.id=:id", User.class);
+                query.setParameter("id", alarm.getAssignee());
+                return query.getSingleResult();
+            });
             Notification email = new Notification();
             email.setName("New Alarm")
                     .setMessage(new EmailNotificationMessage()
@@ -144,8 +150,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                             "Description: " + alarm.getContent() + "\n" +
                             "Severity: " + alarm.getSeverity() + "\n" +
                             "Status: " + alarm.getStatus())
-                    .setSubject("New Alarm Notification"))
-                    .setTargets(assignee);
+                    .setSubject("New Alarm Notification")
+                    .setTo(new EmailNotificationMessage.Recipient(result.getFullName(), result.getEmail())));
 
             Notification push = new Notification();
             push.setName("New Alarm")
@@ -159,8 +165,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     )
                     .setTargets(assignee);
 
-            notificationService.sendNotification(push);
-            notificationService.sendNotification(email);
+            notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
+            notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
 
 
             LOGGER.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
