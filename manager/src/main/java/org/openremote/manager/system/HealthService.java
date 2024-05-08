@@ -63,7 +63,7 @@ public class HealthService implements ContainerService {
 
     public static final System.Logger LOG = System.getLogger(HealthService.class.getName());
     public static final String OR_METRICS_PORT = "OR_METRICS_PORT";
-    public static final int OR_METRICS_PORT_DEFAULT = 8404;
+    public static final int OR_METRICS_PORT_DEFAULT = 8405;
     public static final String OR_CAMEL_ROUTE_METRIC_PREFIX = "or_camel_route";
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
     protected boolean metricsEnabled;
