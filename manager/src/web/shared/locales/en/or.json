@@ -325,6 +325,7 @@
   "gatewayTunnel": "Gateway tunnel",
   "gatewayTunnels": {
     "": "Gateway tunnels",
+    "settings": "Gateway settings",
     "id": "ID",
     "gatewayId": "Gateway ID",
     "target": "Target",
