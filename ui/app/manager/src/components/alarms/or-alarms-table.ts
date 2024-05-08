@@ -188,6 +188,33 @@ export class OrAlarmsTable extends OrMwcTable {
         return new Date(lastModified);
     }
 
+    protected sortTemplateRows(cellA: any, cellB: any, cIndex: number, sortDirection: 'ASC' | 'DESC'): number {
+        const valueA: string | undefined = (cellA.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
+        const valueB: string | undefined = (cellB.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
+        if (valueA !== undefined && valueB !== undefined) {
+            if(valueA.includes("alarm.status") && valueB.includes("alarm.status")){
+                const sortingArr = ["alarm.status_OPEN", "alarm.status_ACKNOWLEDGED", "alarm.status_IN_PROGRESS", "alarm.status_RESOLVED", "alarm.status_CLOSED"];
+                if (sortDirection === 'DESC') {
+                    return sortingArr.indexOf(valueB) - sortingArr.indexOf(valueA);
+                } else {
+                    return sortingArr.indexOf(valueA) - sortingArr.indexOf(valueB);
+                }
+            }
+            if(valueA.includes("alarm.severity") && valueB.includes("alarm.severity")){
+                const sortingArr = ["alarm.severity_LOW", "alarm.severity_MEDIUM", "alarm.severity_HIGH"];
+                if (sortDirection === 'DESC') {
+                    return sortingArr.indexOf(valueB) - sortingArr.indexOf(valueA);
+                } else {
+                    return sortingArr.indexOf(valueA) - sortingArr.indexOf(valueB);
+                }
+            }
+
+            return this.sortPrimitiveRows([valueA], [valueB], 0, sortDirection);
+        } else {
+            return 1;
+        }
+    }
+
 
     /* --------------------------------------- */
 
