@@ -725,8 +725,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     break;
                 }
 
-                connector.gateway = gateway;
-
                 // Check if disabled
                 boolean isNowDisabled = gateway.getDisabled().orElse(false);
                 if (isNowDisabled) {

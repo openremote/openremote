@@ -99,6 +99,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             if (f.exists()) {
                 gatewayTunnelFactory = new JSchGatewayTunnelFactory(f);
                 LOG.info("Gateway tunnelling SSH key file found at: " + f.getAbsolutePath());
+            } else {
+                LOG.warning("Gateway tunnelling SSH key file does not exist, tunnelling support disabled: " + f.getAbsolutePath());
             }
         }
 

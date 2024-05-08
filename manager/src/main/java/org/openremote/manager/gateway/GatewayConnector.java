@@ -82,11 +82,11 @@ public class GatewayConnector {
     List<String> syncAssetIds;
     int syncIndex;
     int syncErrors;
-    GatewayAsset gateway;
     String localhostRewrite;
     String expectedSyncResponseName;
     CompletableFuture<Void> startTunnelFuture;
     CompletableFuture<Void> stopTunnelFuture;
+    protected boolean tunnellingSupported;
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
@@ -142,7 +142,6 @@ public class GatewayConnector {
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
         this.disabled = disabled;
-        this.gateway = gateway;
         this.localhostRewrite = localhostRewrite;
     }
 
@@ -223,7 +222,7 @@ public class GatewayConnector {
     }
 
     public boolean supportsTunneling() {
-        return gateway.getTunnelingSupported().orElse(false);
+        return tunnellingSupported;
     }
 
     public synchronized CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
@@ -751,11 +750,8 @@ public class GatewayConnector {
         boolean responseReceived = e != null;
         boolean tunnellingSupported = responseReceived && e.isTunnelingSupported();
         sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
-        // Assume event gets to the DB
-        gateway.setTunnelingSupported(tunnellingSupported);
+        this.tunnellingSupported = tunnellingSupported;
         sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
-        // Assume event gets to the DB
-        gateway.setGatewayStatus(ConnectionStatus.CONNECTED);
     }
 
     synchronized protected void onGatewayTunnelStartResponse(GatewayTunnelStartResponseEvent e) {
