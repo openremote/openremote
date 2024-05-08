@@ -27,8 +27,8 @@ const styling = css`
   }
 
   .alarm-status-text__resolved {
-    color: var(--or-alarm-status-color__resolved);
-    background-color: var(--or-alarm-status-background__resolved);
+    color: var(--or-alarm-status-color__resolved, white);
+    background-color: var(--or-alarm-status-background__resolved, grey);
     border: var(--or-alarm-status-border__resolved);
   }
 
@@ -113,6 +113,7 @@ export class OrAlarmsTable extends OrMwcTable {
 
         // If alarms changes, update content of the table accordingly
         if (changedProps.has("alarms") && this.alarms) {
+            this.selectedRows = [];
             this.rows = this.getTableRows(this.alarms);
         }
 

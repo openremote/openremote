@@ -560,6 +560,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             // Get page count
             this._data = response.data;
             this._data = this._data.filter((e) => e.realm === manager.displayRealm);
+            this._selectedIds = [];
 
             if (this.config?.assignOnly) {
                 const userResponse = await manager.rest.api.UserResource.getCurrent();
@@ -787,7 +788,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getStatusOptions() {
-        return [{label: 'alarm.allActive', value: 'All-active'}, {label: 'alarm.all', value: 'All'}, {label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
+        return [{label: 'alarm.allActive', value: 'All-active'}, {label: 'alarm.all', value: 'All'}, {label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_RESOLVED', value: AlarmStatus.RESOLVED}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
     }
 
     protected _getSeverityOptions() {
@@ -795,7 +796,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getAddStatusOptions() {
-        return [{label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
+        return [{label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_RESOLVED', value: AlarmStatus.RESOLVED}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
     }
 
     protected _getAddSeverityOptions() {
