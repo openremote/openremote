@@ -984,21 +984,24 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public stateChanged(state: AppStateKeyed) {
         if (state.app.page == "alarms") {
-            this.realm = state.app.realm;
-            if (state.app.params && state.app.params.id) {
-                const parsedId = Number(state.app.params.id);
-                manager.rest.api.AlarmResource.getAlarms().then((alarms) => {
-                    this.alarm = alarms.data.find((alarm) => alarm.id === parsedId) as AlarmModel;
-                    this.alarm.loaded = false;
-                    this.alarm.loading = false;
-                    this.alarm.alarmAssetLinks = [];
-                    this.alarm.alarmUserLinks = [];
-                    this.loadAlarm(this.alarm);
-                    this.requestUpdate();
-                })
+            if(this.realm == state.app.realm){
+                if (state.app.params && state.app.params.id) {
+                    const parsedId = Number(state.app.params.id);
+                    manager.rest.api.AlarmResource.getAlarms().then((alarms) => {
+                        this.alarm = alarms.data.find((alarm) => alarm.id === parsedId) as AlarmModel;
+                        this.alarm.loaded = false;
+                        this.alarm.loading = false;
+                        this.alarm.alarmAssetLinks = [];
+                        this.alarm.alarmUserLinks = [];
+                        this.loadAlarm(this.alarm);
+                        this.requestUpdate();
+                    })
+                }
             } else {
-                this.alarm = undefined;
+                this.realm = state.app.realm;
+                this.requestUpdate('realm');
             }
+
         }
     }
 
