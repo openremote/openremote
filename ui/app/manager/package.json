@@ -24,7 +24,7 @@
     "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublishOnly": "npx tsc -b"
+    "prepublish": "npx tsc -b"
   },
   "dependencies": {
     "@openremote/or-app": "workspace:*"

@@ -17,7 +17,7 @@
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublishOnly": "npx tsc -b"
+    "prepublish": "npx tsc -b"
   },
   "dependencies": {
     "@openremote/core": "workspace:*",

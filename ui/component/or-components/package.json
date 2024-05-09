@@ -8,16 +8,10 @@
     ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "lib/*"
-      ]
-    }
-  },
+  "types": "lib/index.d.ts",
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx webpack"
+    "prepublish": "npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
