@@ -58,6 +58,7 @@ public class GatewayConnector {
     public static int SYNC_ASSET_BATCH_SIZE = 20;
     public static final String ASSET_READ_EVENT_NAME_INITIAL = "INITIAL";
     public static final String ASSET_READ_EVENT_NAME_BATCH = "BATCH";
+    public static final long START_TUNNEL_TIMEOUT_MILLIS = 20000;
     protected static final Map<String, Pair<Function<String, String>, Function<String, String>>> ASSET_ID_MAPPERS = new HashMap<>();
     protected final String realm;
     protected final String gatewayId;
@@ -229,7 +230,7 @@ public class GatewayConnector {
                 new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
             ));
 
-            // Wait for response indefinitely as callee can assign a timeout as required
+            // Wait for response indefinitely as timeout handled on CompletableFuture
             try {
                 synchronized (responseRef) {
                     responseRef.wait();
@@ -246,14 +247,16 @@ public class GatewayConnector {
                     eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
                 }
             }
-        }, executorService).whenComplete((result, ex) -> {
-            if (ex instanceof TimeoutException) {
-                timeout.set(true);
-                synchronized (responseRef) {
-                    responseRef.notify();
-                }
-            }
-        });
+        }, executorService)
+                .orTimeout(START_TUNNEL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+                .whenComplete((result, ex) -> {
+                    if (ex instanceof TimeoutException) {
+                        timeout.set(true);
+                        synchronized (responseRef) {
+                            responseRef.notify();
+                        }
+                    }
+                });
     }
 
     public synchronized CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {

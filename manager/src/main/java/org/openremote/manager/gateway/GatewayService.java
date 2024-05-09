@@ -552,20 +552,22 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalArgumentException(msg);
         }
 
-        // Wait for up to 20 seconds for the tunnel to start
         CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
         try {
-            startFuture.get(20, TimeUnit.SECONDS);
+            startFuture.get();
             tunnelInfos.put(tunnelInfo.getId(), tunnelInfo);
             return tunnelInfo;
         } catch (ExecutionException e) {
-            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
-            LOG.log(Level.WARNING, msg, e.getCause());
-            throw new RuntimeException(msg, e.getCause());
-        } catch (InterruptedException | TimeoutException e) {
-            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
-            LOG.warning(msg);
-            throw new RuntimeException(msg);
+            if (e.getCause() instanceof TimeoutException) {
+                String msg = "Failed to start tunnel: A timeout occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+                LOG.log(Level.WARNING, msg);
+            } else {
+                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+                LOG.log(Level.WARNING, msg, e.getCause());
+            }
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
