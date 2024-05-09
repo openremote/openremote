@@ -36,10 +36,7 @@ import org.openremote.model.util.Pair;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.ToIntFunction;
+import java.util.function.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -49,7 +46,7 @@ import java.util.stream.Stream;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
- * Handles all communication between a gateway and the local manager
+ * Handles all communication between a gateway and this manager instance
  */
 public class GatewayConnector {
 
@@ -81,10 +78,10 @@ public class GatewayConnector {
     int syncErrors;
     String localhostRewrite;
     String expectedSyncResponseName;
-    CompletableFuture<Void> startTunnelFuture;
     CompletableFuture<Void> stopTunnelFuture;
     Future<?> capabilitiesRequestFuture;
     protected boolean tunnellingSupported;
+    protected final Map<Class<? extends SharedEvent>, BiConsumer<String, SharedEvent>> eventConsumerMap = new HashMap<>();
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
@@ -98,30 +95,6 @@ public class GatewayConnector {
                 IntStream.rangeClosed('0', '9').boxed()
             ).toList()
         );
-    }
-
-    /**
-     * An easily reversible mathematical way of ensuring gateway asset IDs are unique by incrementing the first two
-     * characters by adding the first two characters of the gateway ID for inbound IDs and the reverse for outbound.
-     */
-    public static String mapAssetId(String gatewayId, String assetId, boolean outbound) {
-        Pair<Function<String, String>, Function<String, String>> gatewayIdMappers = ASSET_ID_MAPPERS.computeIfAbsent(gatewayId, gwId -> {
-            int g1 = gatewayId.charAt(0) % ALPHA_NUMERIC_CHARACTERS.size();
-            int g2 = gatewayId.charAt(1) % ALPHA_NUMERIC_CHARACTERS.size();
-
-            BiFunction<Integer, String, String> mapper = (sign, id) -> {
-                int a1 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(0)) + (sign * g1) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
-                int a2 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(1)) + (sign * g2) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
-                return String.valueOf((char)ALPHA_NUMERIC_CHARACTERS.get(a1).intValue()) + ((char)ALPHA_NUMERIC_CHARACTERS.get(a2).intValue()) + id.substring(2);
-            };
-
-            return new Pair<>(
-                id -> mapper.apply(1, id), // Inbound
-                id -> mapper.apply(-1, id) // Outbound
-            );
-        });
-
-        return outbound ? gatewayIdMappers.value.apply(assetId) : gatewayIdMappers.key.apply(assetId);
     }
 
     public GatewayConnector(
@@ -223,22 +196,54 @@ public class GatewayConnector {
         return tunnellingSupported;
     }
 
-    public synchronized CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
-        if (startTunnelFuture != null) {
-            throw new IllegalArgumentException("A start tunnel request is already pending");
-        }
-        startTunnelFuture = new CompletableFuture<>();
+    public CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
 
-        if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
-            // TODO: Allocate TCP port
-            throw new UnsupportedOperationException("Raw TCP support not yet implemented");
+        final AtomicReference<GatewayTunnelStartResponseEvent> responseRef = new AtomicReference<>();
+
+        synchronized (eventConsumerMap) {
+            if (eventConsumerMap.containsKey(GatewayTunnelStartResponseEvent.class)) {
+                return CompletableFuture.failedFuture(new IllegalArgumentException("A start tunnel request is already pending"));
+            }
+
+            eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (msgID, e) -> {
+                GatewayTunnelStartResponseEvent response = (GatewayTunnelStartResponseEvent) e;
+
+                synchronized (responseRef) {
+                    responseRef.set(response);
+                    responseRef.notify();
+                }
+            });
         }
 
-        sendMessageToGateway(new EventRequestResponseWrapper<>(
+        return CompletableFuture.runAsync(() -> {
+            if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
+                // TODO: Allocate TCP port
+                throw new UnsupportedOperationException("Raw TCP support not yet implemented");
+            }
+            sendMessageToGateway(new EventRequestResponseWrapper<>(
                 tunnelInfo.getId(),
                 new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, localhostRewrite, tunnelInfo)
-        ));
-        return startTunnelFuture;
+            ));
+
+            // Wait for response indefinitely as CompletableFuture uses timeout
+            try {
+                synchronized (responseRef) {
+                    responseRef.wait();
+                }
+
+                GatewayTunnelStartResponseEvent responseEvent = responseRef.get();
+
+                if (responseEvent.getError() != null) {
+                    throw new RuntimeException("Failed to start tunnel: error=" + responseEvent.getError() + ", " + tunnelInfo);
+                }
+
+            } catch (InterruptedException ignored) {
+            } finally {
+                synchronized (eventConsumerMap) {
+                    eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
+                }
+            }
+        }, executorService).orTimeout(10, TimeUnit.SECONDS);
     }
 
     public synchronized CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
@@ -313,9 +318,9 @@ public class GatewayConnector {
             } else if (e instanceof DeleteAssetsResponseEvent) {
                 onAssetDeleteResponseEvent(messageId, (DeleteAssetsResponseEvent) e);
             } else if (e instanceof GatewayTunnelStartResponseEvent) {
-                onGatewayTunnelStartResponse((GatewayTunnelStartResponseEvent) e);
+                eventConsumerMap.computeIfPresent(GatewayTunnelStartResponseEvent.class, (k,v) -> v);
             } else if (e instanceof GatewayTunnelStopResponseEvent) {
-                onGatewayTunnelStopResponse((GatewayTunnelStopResponseEvent) e);
+                eventConsumerMap.computeIfPresent(GatewayTunnelStopResponseEvent.class, (k,v) -> v);
             }
         }
     }
@@ -757,19 +762,6 @@ public class GatewayConnector {
         }
     }
 
-    synchronized protected void onGatewayTunnelStartResponse(GatewayTunnelStartResponseEvent e) {
-        if (startTunnelFuture == null) {
-            return;
-        }
-        CompletableFuture<Void> startTunnelFuture = this.startTunnelFuture;
-        this.startTunnelFuture = null;
-
-        if (e.getError() != null) {
-            startTunnelFuture.completeExceptionally(new RuntimeException(e.getError()));
-        }
-        startTunnelFuture.complete(null);
-    }
-
     synchronized protected void onGatewayTunnelStopResponse(GatewayTunnelStopResponseEvent e) {
         if (stopTunnelFuture == null) {
             return;
@@ -781,5 +773,29 @@ public class GatewayConnector {
             stopTunnelFuture.completeExceptionally(new RuntimeException(e.getError()));
         }
         stopTunnelFuture.complete(null);
+    }
+
+    /**
+     * An easily reversible mathematical way of ensuring gateway asset IDs are unique by incrementing the first two
+     * characters by adding the first two characters of the gateway ID for inbound IDs and the reverse for outbound.
+     */
+    public static String mapAssetId(String gatewayId, String assetId, boolean outbound) {
+        Pair<Function<String, String>, Function<String, String>> gatewayIdMappers = ASSET_ID_MAPPERS.computeIfAbsent(gatewayId, gwId -> {
+            int g1 = gatewayId.charAt(0) % ALPHA_NUMERIC_CHARACTERS.size();
+            int g2 = gatewayId.charAt(1) % ALPHA_NUMERIC_CHARACTERS.size();
+
+            BiFunction<Integer, String, String> mapper = (sign, id) -> {
+                int a1 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(0)) + (sign * g1) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
+                int a2 = (ALPHA_NUMERIC_CHARACTERS.indexOf((int)id.charAt(1)) + (sign * g2) + ALPHA_NUMERIC_CHARACTERS.size()) % ALPHA_NUMERIC_CHARACTERS.size();
+                return String.valueOf((char)ALPHA_NUMERIC_CHARACTERS.get(a1).intValue()) + ((char)ALPHA_NUMERIC_CHARACTERS.get(a2).intValue()) + id.substring(2);
+            };
+
+            return new Pair<>(
+                id -> mapper.apply(1, id), // Inbound
+                id -> mapper.apply(-1, id) // Outbound
+            );
+        });
+
+        return outbound ? gatewayIdMappers.value.apply(assetId) : gatewayIdMappers.key.apply(assetId);
     }
 }
