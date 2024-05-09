@@ -76,7 +76,6 @@ public class GatewayConnector {
     List<String> syncAssetIds;
     int syncIndex;
     int syncErrors;
-    String localhostRewrite;
     String expectedSyncResponseName;
     CompletableFuture<Void> stopTunnelFuture;
     Future<?> capabilitiesRequestFuture;
@@ -102,8 +101,7 @@ public class GatewayConnector {
         AssetProcessingService assetProcessingService,
         ScheduledExecutorService executorService,
         GatewayService gatewayService,
-        GatewayAsset gateway,
-        String localhostRewrite) {
+        GatewayAsset gateway) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
@@ -113,7 +111,6 @@ public class GatewayConnector {
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
         this.disabled = disabled;
-        this.localhostRewrite = localhostRewrite;
     }
 
     public void sendMessageToGateway(Object message) {
@@ -222,7 +219,7 @@ public class GatewayConnector {
             }
             sendMessageToGateway(new EventRequestResponseWrapper<>(
                 tunnelInfo.getId(),
-                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, localhostRewrite, tunnelInfo)
+                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
             ));
 
             // Wait for response indefinitely as CompletableFuture uses timeout

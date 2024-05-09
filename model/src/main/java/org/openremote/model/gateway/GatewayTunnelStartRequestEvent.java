@@ -8,15 +8,13 @@ public class GatewayTunnelStartRequestEvent extends SharedEvent {
     protected String sshHostname;
     protected int sshPort;
     protected Integer tcpPort;
-    protected String localhostRewrite;
     protected GatewayTunnelInfo info;
 
     @JsonCreator
-    public GatewayTunnelStartRequestEvent(String sshHostname, int sshPort, Integer tcpPort, String localhostRewrite, GatewayTunnelInfo info) {
+    public GatewayTunnelStartRequestEvent(String sshHostname, int sshPort, Integer tcpPort, GatewayTunnelInfo info) {
         this.sshHostname = sshHostname;
         this.sshPort = sshPort;
         this.tcpPort = tcpPort;
-        this.localhostRewrite = localhostRewrite;
         this.info = info;
     }
 
@@ -36,18 +34,13 @@ public class GatewayTunnelStartRequestEvent extends SharedEvent {
         return tcpPort;
     }
 
-    public String getLocalhostRewrite() {
-        return localhostRewrite;
-    }
-
     @Override
     public String toString() {
         return GatewayTunnelStartRequestEvent.class.getSimpleName() + "{" +
-            "sshHostname='" + sshHostname + '\'' +
-            ", sshPort=" + sshPort +
-            ", tcpPort=" + tcpPort +
-            ", localhostRewrite='" + localhostRewrite + '\'' +
-            ", info=" + info +
-            '}';
+                "sshHostname='" + sshHostname + '\'' +
+                ", sshPort=" + sshPort +
+                ", tcpPort=" + tcpPort +
+                ", info=" + info +
+                '}';
     }
 }

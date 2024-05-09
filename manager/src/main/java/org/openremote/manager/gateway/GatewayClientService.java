@@ -71,6 +71,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     public static final int PRIORITY = ManagerWebService.PRIORITY - 300;
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayClientService.class.getName());
     public static final String CLIENT_EVENT_SESSION_PREFIX = GatewayClientService.class.getSimpleName() + ":";
+    public static final String OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE = "OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE";
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected PersistenceService persistenceService;
@@ -93,11 +94,12 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         identityService = container.getService(ManagerIdentityService.class);
 
         String tunnelKeyFile = getString(container.getConfig(), GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE, null);
+        String localhostRewrite = getString(container.getConfig(), OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE, null);
 
         if (!TextUtil.isNullOrEmpty(tunnelKeyFile)) {
             File f = new File(tunnelKeyFile);
             if (f.exists()) {
-                gatewayTunnelFactory = new JSchGatewayTunnelFactory(f);
+                gatewayTunnelFactory = new JSchGatewayTunnelFactory(f, localhostRewrite);
                 LOG.info("Gateway tunnelling SSH key file found at: " + f.getAbsolutePath());
             } else {
                 LOG.warning("Gateway tunnelling SSH key file does not exist, tunnelling support disabled: " + f.getAbsolutePath());

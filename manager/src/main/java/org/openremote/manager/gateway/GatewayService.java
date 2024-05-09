@@ -92,7 +92,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     public static final String OR_GATEWAY_TUNNEL_SSH_HOSTNAME = "OR_GATEWAY_TUNNEL_SSH_HOSTNAME";
     public static final String OR_GATEWAY_TUNNEL_SSH_PORT = "OR_GATEWAY_TUNNEL_SSH_PORT";
     public static final String OR_GATEWAY_TUNNEL_TCP_START = "OR_GATEWAY_TUNNEL_TCP_START";
-    public static final String OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE = "OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE";
     public static final int OR_GATEWAY_TUNNEL_TCP_START_DEFAULT = 9000;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
@@ -106,7 +105,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected String tunnelSSHHostname;
     protected int tunnelSSHPort;
     protected int tunnelTCPStart;
-    protected String localhostRewrite;
 
     /**
      * Maps gateway asset IDs to connections; note that gateway asset IDs are stored lower case so that they can be
@@ -227,7 +225,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         tunnelSSHHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_HOSTNAME, null);
         tunnelSSHPort = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_PORT, 0);
         tunnelTCPStart = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_TCP_START, OR_GATEWAY_TUNNEL_TCP_START_DEFAULT);
-        localhostRewrite = getString(container.getConfig(), OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE, null);
     }
 
     @Override
@@ -261,7 +258,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 }
 
                 // Create connector
-                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway, localhostRewrite);
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
 
                 // Get IDs of all assets under this gateway
@@ -714,7 +711,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             case CREATE -> {
                 createUpdateGatewayServiceUser(gateway);
                 synchronized (gatewayConnectorMap) {
-                    GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway, localhostRewrite);
+                    GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
                     gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
                 }
             }

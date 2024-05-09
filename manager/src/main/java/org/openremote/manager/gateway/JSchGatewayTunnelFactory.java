@@ -32,12 +32,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
 
+    protected String localhostRewrite;
     protected File sshKeyFile;
     protected JSch jSch;
     protected final Map<GatewayTunnelInfo, Session> sessionMap = new ConcurrentHashMap<>(2);
 
-    public JSchGatewayTunnelFactory(File sshKeyFile) {
+    public JSchGatewayTunnelFactory(File sshKeyFile, String localhostRewrite) {
         this.sshKeyFile = sshKeyFile;
+        this.localhostRewrite = localhostRewrite;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
         session.setConfig("StrictHostKeyChecking", "no");
         String bindAddress = tunnelInfo.getType() ==  GatewayTunnelInfo.Type.TCP ? null : tunnelInfo.getId();
         int rPort = tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTPS ? 443 : tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTP ? 80 : startRequestEvent.getTcpPort();
-        String target = startRequestEvent.getLocalhostRewrite() != null && "localhost".equals(tunnelInfo.getTarget()) ? startRequestEvent.getLocalhostRewrite() : tunnelInfo.getTarget();
+        String target = localhostRewrite != null && "localhost".equals(tunnelInfo.getTarget()) ? localhostRewrite : tunnelInfo.getTarget();
         session.connect();
         session.setPortForwardingR(bindAddress, rPort, target, tunnelInfo.getTargetPort());
         sessionMap.put(tunnelInfo, session);
