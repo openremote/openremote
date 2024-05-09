@@ -35,6 +35,7 @@ import org.openremote.model.util.Pair;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.logging.Level;
@@ -196,6 +197,7 @@ public class GatewayConnector {
     public CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
 
         final AtomicReference<GatewayTunnelStartResponseEvent> responseRef = new AtomicReference<>();
+        final AtomicBoolean timeout = new AtomicBoolean();
 
         synchronized (eventConsumerMap) {
             if (eventConsumerMap.containsKey(GatewayTunnelStartResponseEvent.class)) {
@@ -208,6 +210,11 @@ public class GatewayConnector {
                 synchronized (responseRef) {
                     responseRef.set(response);
                     responseRef.notify();
+                }
+
+                if (timeout.get()) {
+                    LOG.info("Start tunnel request timed out so will stop the tunnel: " + tunnelInfo);
+                    stopTunnel(tunnelInfo);
                 }
             });
         }
@@ -222,7 +229,7 @@ public class GatewayConnector {
                 new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
             ));
 
-            // Wait for response indefinitely as CompletableFuture uses timeout
+            // Wait for response indefinitely as callee can assign a timeout as required
             try {
                 synchronized (responseRef) {
                     responseRef.wait();
@@ -230,17 +237,23 @@ public class GatewayConnector {
 
                 GatewayTunnelStartResponseEvent responseEvent = responseRef.get();
 
-                if (responseEvent.getError() != null) {
+                if (responseEvent != null && responseEvent.getError() != null) {
                     throw new RuntimeException("Failed to start tunnel: error=" + responseEvent.getError() + ", " + tunnelInfo);
                 }
-
             } catch (InterruptedException ignored) {
             } finally {
                 synchronized (eventConsumerMap) {
                     eventConsumerMap.remove(GatewayTunnelStartResponseEvent.class);
                 }
             }
-        }, executorService).orTimeout(10, TimeUnit.SECONDS);
+        }, executorService).whenComplete((result, ex) -> {
+            if (ex instanceof TimeoutException) {
+                timeout.set(true);
+                synchronized (responseRef) {
+                    responseRef.notify();
+                }
+            }
+        });
     }
 
     public synchronized CompletableFuture<Void> stopTunnel(GatewayTunnelInfo tunnelInfo) {
