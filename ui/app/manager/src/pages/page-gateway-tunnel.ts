@@ -382,6 +382,16 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                             predicateType: "boolean",
                             value: true
                         },
+                    },
+                    {
+                        name: {
+                            predicateType: "string",
+                            value: "gatewayStatus"
+                        },
+                        value: {
+                            predicateType: "string",
+                            value: "CONNECTED"
+                        }
                     }
                 ]
             } : undefined
