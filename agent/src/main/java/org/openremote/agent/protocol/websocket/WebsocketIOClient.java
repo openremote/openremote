@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -110,7 +112,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 String str = textFrame.text();
                 ctx.fireChannelRead(str);
             } else if (frame instanceof PongWebSocketFrame) {
-                LOG.finest("Websocket client pong received");
+                LOG.finest("Received PONG");
             } else if (frame instanceof CloseWebSocketFrame) {
                 ch.close();
             }
@@ -128,6 +130,8 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
+    public static final long PING_MILLIS = 60000;
+    protected ScheduledFuture<?> pingFuture;
     protected boolean useSsl;
     protected URI uri;
     protected SslContext sslCtx;
@@ -228,6 +232,15 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     protected void onHandshakeComplete(ChannelFuture handshakeFuture) {
         super.onConnectedFutureComplete(handshakeFuture, connectedFuture);
+
+        // Start ping task
+        pingFuture = executorService.scheduleWithFixedDelay(() -> {
+            LOG.finest("Sending PING");
+            try {
+                channel.writeAndFlush(new PingWebSocketFrame());
+            } catch (Exception ignored) {
+            }
+        }, PING_MILLIS, PING_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -291,6 +304,16 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         }
 
         return super.doConnect();
+    }
+
+    @Override
+    protected void doDisconnect() {
+        // Cancel ping task
+        if (pingFuture != null) {
+            pingFuture.cancel(false);
+        }
+
+        super.doDisconnect();
     }
 
     @Override

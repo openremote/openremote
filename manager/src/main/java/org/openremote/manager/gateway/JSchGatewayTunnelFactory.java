@@ -45,7 +45,8 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
     @Override
     public void startTunnel(GatewayTunnelStartRequestEvent startRequestEvent) throws Exception {
         if (sessionMap.containsKey(startRequestEvent.getInfo())) {
-            throw new IllegalStateException("Tunnel already exists");
+            // Tunnel already exists so nothing to do here
+            return;
         }
 
         synchronized (this) {
@@ -72,10 +73,8 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws Exception {
         Session session = sessionMap.remove(tunnelInfo);
 
-        if (session == null) {
-            throw new IllegalStateException("No matching existing session found: " + tunnelInfo);
+        if (session != null) {
+            session.disconnect();
         }
-
-        session.disconnect();
     }
 }

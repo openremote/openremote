@@ -354,9 +354,15 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         )
                 );
 
-            } else if (event instanceof GatewayTunnelStopRequestEvent) {
-                LOG.info("Central manager requested to stop the tunnel.");
-                // TODO; Implement this to stop tunnel
+            } else if (event instanceof GatewayTunnelStopRequestEvent stopRequestEvent) {
+                LOG.info("Stop tunnel request received: " +  stopRequestEvent);
+                String error = null;
+
+                try {
+                    gatewayTunnelFactory.stopTunnel(stopRequestEvent.getInfo());
+                } catch (Exception e) {
+                    error = e.getMessage();
+                }
 
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
@@ -364,7 +370,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                                 EventRequestResponseWrapper.MESSAGE_PREFIX,
                                 new EventRequestResponseWrapper<>(
                                         messageId,
-                                        new GatewayTunnelStopResponseEvent()
+                                        new GatewayTunnelStopResponseEvent(error)
                                 )
                         )
                 );
