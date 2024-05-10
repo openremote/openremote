@@ -703,7 +703,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        connector.disconnect();
+        connector.onDisconnect();
     }
 
     protected void processGatewayChange(GatewayAsset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
