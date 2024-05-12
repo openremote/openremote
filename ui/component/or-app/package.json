@@ -43,5 +43,8 @@
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

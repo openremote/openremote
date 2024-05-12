@@ -28,5 +28,8 @@
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "@types/qs": "^6.9.7"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

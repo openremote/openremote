@@ -28,5 +28,8 @@
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "@types/chart.js": "^2.9.34"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
