@@ -789,14 +789,15 @@ jobs:
           find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E "s#\"version\": \".+\",#\"version\": \"$VERSION\",#" {}
           find ui -maxdepth 3 -name package.json | xargs -I{} sed -i -E 's#"(@openremote/.+)": ".+"#"\1": "workspace:*"#g' {}
 
-          echo "npmRegistryServer: $NPM_REGISTRY_SERVER" >> .yarnrc.yml
-          echo "npmAuthIdent: $NPM_AUTH_IDENT" >> .yarnrc.yml
+          echo "npmRegistries:" >> .yarnrc.yml
+          echo "  \"$NPM_REGISTRY_SERVER\":" >> .yarnrc.yml
+          echo "    npmAuthToken: $NPM_AUTH_TOKEN" >> .yarnrc.yml
 
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
           NPM_TAG: ${{ steps.ci-cd-output.outputs.npmTag }}
           NPM_REGISTRY_SERVER: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_REGISTRY_SERVER || steps.inputs-and-secrets.outputs.NPM_REGISTRY_SERVER }}
-          NPM_AUTH_IDENT: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_IDENT || steps.inputs-and-secrets.outputs.NPM_AUTH_IDENT }}
+          NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN || steps.inputs-and-secrets.outputs.NPM_AUTH_TOKEN }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
