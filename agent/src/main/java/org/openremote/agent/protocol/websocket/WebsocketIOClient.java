@@ -35,6 +35,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.web.OAuthFilter;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -49,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -113,6 +115,9 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 ctx.fireChannelRead(str);
             } else if (frame instanceof PongWebSocketFrame) {
                 LOG.finest("Received PONG");
+                if (pingCounter != null) {
+                    pingCounter.set(0);
+                }
             } else if (frame instanceof CloseWebSocketFrame) {
                 ch.close();
             }
@@ -132,6 +137,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
     public static final long PING_MILLIS = 60000;
     protected ScheduledFuture<?> pingFuture;
+    protected AtomicInteger pingCounter;
     protected boolean useSsl;
     protected URI uri;
     protected SslContext sslCtx;
@@ -142,12 +148,17 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     protected String host;
     protected int port;
     protected CompletableFuture<Boolean> connectedFuture;
+    protected boolean pingDisabled;
 
     public WebsocketIOClient(URI uri, Map<String, List<String>> headers, OAuthGrant oAuthGrant) {
+        this(uri, headers, oAuthGrant, false);
+    }
+
+    public WebsocketIOClient(URI uri, Map<String, List<String>> headers, OAuthGrant oAuthGrant, boolean pingDisabled) {
         this.uri = uri;
         this.headers = headers;
         this.oAuthGrant = oAuthGrant;
-
+        this.pingDisabled = pingDisabled;
         String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
         host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
 
@@ -234,13 +245,24 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         super.onConnectedFutureComplete(handshakeFuture, connectedFuture);
 
         // Start ping task
-        pingFuture = executorService.scheduleWithFixedDelay(() -> {
-            LOG.finest("Sending PING");
-            try {
-                channel.writeAndFlush(new PingWebSocketFrame());
-            } catch (Exception ignored) {
-            }
-        }, PING_MILLIS, PING_MILLIS, TimeUnit.MILLISECONDS);
+        if (!pingDisabled) {
+            pingCounter = new AtomicInteger();
+            pingFuture = executorService.scheduleWithFixedDelay(() -> {
+                if (pingCounter.get() > 2) {
+                    LOG.info("No PING response so reconnecting: " + this);
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                    doDisconnect();
+                    scheduleDoConnect(1000);
+                    return;
+                }
+                LOG.finest("Sending PING");
+                try {
+                    channel.writeAndFlush(new PingWebSocketFrame());
+                    pingCounter.incrementAndGet();
+                } catch (Exception ignored) {
+                }
+            }, PING_MILLIS, PING_MILLIS, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Override

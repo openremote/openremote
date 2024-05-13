@@ -210,12 +210,12 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        scheduleDoConnect(false);
+        scheduleDoConnect(100);
     }
 
-    protected void scheduleDoConnect(boolean immediate) {
-        long delay = immediate ? 50 : Math.max(250, RECONNECT_DELAY_INITIAL_MILLIS);
-        long maxDelay = immediate ? 51 : Math.max(delay+1, Math.max(250, RECONNECT_DELAY_MAX_MILLIS));
+    protected void scheduleDoConnect(long initialDelay) {
+        long delay = Math.max(initialDelay, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = Math.max(delay+1, Math.max(250, RECONNECT_DELAY_MAX_MILLIS));
 
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
             .withJitter(Duration.ofMillis(delay))
@@ -286,7 +286,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                     LOG.info("Connection closed un-expectedly: " + getClientUri());
                     onConnectionStatusChanged(ConnectionStatus.CONNECTING);
                     doDisconnect();
-                    scheduleDoConnect(false);
+                    scheduleDoConnect(5000);
                 }
             }
         });
