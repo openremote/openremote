@@ -220,14 +220,21 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return false;
                 }
 
-                Asset<?> asset = assetStorageService.find(assetEvent.getId());
-                if (asset == null) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset doesn't exist: " + assetEvent.getId());
-                    return false;
-                } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + assetEvent.getId());
-                    return false;
+
+                // Check if the asset is in the requested realm - this is a basic check to ensure the asset is in the correct realm
+                // The check is skipped for create events as the asset may not exist yet
+                if (assetEvent.getCause() != AssetEvent.Cause.CREATE)
+                {
+                    Asset<?> asset = assetStorageService.find(assetEvent.getId());
+                    if (asset == null) {
+                        LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset doesn't exist: " + assetEvent.getId());
+                        return false;
+                    } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                        LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + assetEvent.getId());
+                        return false;
+                    }
                 }
+
 
                 if (authContext != null) {
                     // Check restricted user

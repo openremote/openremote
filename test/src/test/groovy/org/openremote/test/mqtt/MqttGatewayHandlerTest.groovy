@@ -73,7 +73,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         when: "a mqtt client publishes a create asset message"
         def responseIdentifier = UniqueIdentifierGenerator.generateId()
         def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
-        def assetName = "gatewayHandlerTestCreationAsset"
+        def assetName = "gatewayHandlerTestAsset";
         def testAsset = new ThingAsset(assetName)
         def payload = ValueUtil.asJSON(testAsset).get()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -83,14 +83,25 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert assetStorageService.find(new AssetQuery().names(assetName)) != null
         }
         //endregion
-
+        
+        //region Asset deletion test
+        when: "a mqtt client publishes a delete asset message"
+        def testAssetId = assetStorageService.find(new AssetQuery().names(assetName)).getId();
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/delete".toString()
+        payload = ""
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        then: "the asset should be deleted"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert assetStorageService.find(testAssetId) == null
+        }
+        //endregion
 
         //region Asset creation test with response
         when: "a mqtt client publishes a create asset message and subscribes to the response topic"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
         def responseTopic = topic + "/response"
-        assetName = "gatewayHandlerTestCreationAssetResponse"
+        assetName = "gatewayHandlerTestAssetResponse"
         testAsset = new ThingAsset(assetName)
         payload = ValueUtil.asJSON(testAsset).get()
 
@@ -114,6 +125,10 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedResponses.clear()
         client.removeAllMessageConsumers()
         //endregion
+
+
+
+
 
         //region asset get test with response
         when: "a mqtt client publishes a get asset message and subscribes to the response topic"
@@ -145,8 +160,29 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the value of the attribute should be updated accordingly"
-        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+        conditions.eventually {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
+        }
+        //endregion
+
+
+
+
+
+        //region multi-attribute update test
+
+        //endregion
+
+
+
+        //region Asset deletion test
+        when: "a mqtt client publishes a delete asset message"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/delete".toString()
+        payload = ""
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        then: "the asset should be deleted"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId) == null
         }
         //endregion
 
