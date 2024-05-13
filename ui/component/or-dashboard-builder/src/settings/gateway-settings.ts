@@ -124,6 +124,16 @@ export class GatewaySettings extends WidgetSettings {
                             predicateType: "boolean",
                             value: true
                         },
+                    },
+                    {
+                        name: {
+                            predicateType: "string",
+                            value: "gatewayStatus"
+                        },
+                        value: {
+                            predicateType: "string",
+                            value: "CONNECTED"
+                        },
                     }
                 ]
             } : undefined

@@ -149,10 +149,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         const rows: TableRow[] = tunnels?.map(tunnel => ({
             content: [
                 tunnel.id,
-                until(this._getTunnelGatewayIdTemplate(tunnel), html`${i18next.t('loading')}`),
+                until(this._getTunnelGatewayIdTemplate(tunnel), html`${i18next.t("loading")}`),
                 tunnel.target,
                 tunnel.targetPort + " ",
-                until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t('loading')}`)
+                until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t("loading")}`)
             ],
             clickable: false,
         } as TableRow)) || [];
@@ -184,7 +184,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         return html`
             <div style="display: flex; justify-content: end; align-items: center; gap: 12px;">
                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" @or-mwc-input-changed="${(ev) => this._onStopTunnelClick(ev, tunnel)}"></or-mwc-input>
-                <or-mwc-input .type="${InputType.BUTTON}" outlined label="open" @or-mwc-input-changed="${(ev) => this._onOpenTunnelClick(ev, tunnel)}"></or-mwc-input>
+                <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.open')}" @or-mwc-input-changed="${(ev) => this._onOpenTunnelClick(ev, tunnel)}"></or-mwc-input>
             </div>
         `
     }
@@ -196,19 +196,19 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     protected _onStopTunnelClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo) {
         ev.stopPropagation();
         showOkCancelDialog(
-            i18next.t('areYouSure'),
-            i18next.t('dashboard.deleteWidgetWarning'), // TODO: Update text
-            i18next.t('delete')
+            i18next.t("areYouSure"),
+            i18next.t("gatewayTunnels.stopWarning"),
+            i18next.t("gatewayTunnels.stop")
         ).then((ok: boolean) => {
             if (ok) {
                 this._stopTunnel(tunnel).then(success => {
                     if (success) {
-                        showSnackbar(undefined, 'success'); // TODO: Update text
+                        showSnackbar(undefined, "gatewayTunnels.closeSuccessful");
                     } else {
-                        showSnackbar(undefined, 'errorOccurred');
+                        showSnackbar(undefined, "errorOccurred");
                     }
                 }).catch(_error => {
-                    showSnackbar(undefined, 'errorOccurred');
+                    showSnackbar(undefined, "errorOccurred");
                 }).finally(() => {
                     this._fetchTunnelsTask.run();
                 });
@@ -229,10 +229,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * meant to start tunneling towards that instance
      */
     protected _onOpenTunnelClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
-        ev.stopPropagation();
-        console.log(tunnel);
-
-        // TODO: Write logic to open tunnel
+        this._navigateToTunnel(tunnel);
     }
 
     /**
@@ -286,9 +283,9 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             `
         }
         dialog = new OrMwcDialog()
-            .setHeading("test")
+            .setHeading(`${i18next.t("add")} ${i18next.t("tunnel")}`)
             .setContent(html`
-                ${until(gatewayListTemplate(), html`${i18next.t('loading')}`)}
+                ${until(gatewayListTemplate(), html`${i18next.t("loading")}`)}
             `);
 
         updateActions();
@@ -311,22 +308,39 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         if (!tunnel.realm) {
             tunnel.realm = manager.displayRealm;
         }
-        this._startTunnel(tunnel).finally(() => {
-            this._fetchTunnelsTask.run();
-        });
+        this._startTunnel(tunnel)
+            .catch(e => {
+                console.error(e)
+                showSnackbar(undefined, i18next.t("errorOccurred"));
+            })
+            .finally(() => {
+                this._fetchTunnelsTask.run();
+            });
     }
 
     /**
      * Function that requests the manager to start a new {@link tunnel}.
      */
     protected async _startTunnel(tunnel: GatewayTunnelInfo): Promise<boolean> {
-        try {
-            const response = await manager.rest.api.GatewayServiceResource.startTunnel(tunnel);
-            return response?.status === 200;
+        const response = await manager.rest.api.GatewayServiceResource.startTunnel(tunnel);
+        return response?.status === 200;
+    }
 
-        } catch (ex) {
-            console.error(ex);
-            return false;
+    /**
+     * Function that opens a web page through the tunnel (in a new browser tab)
+     */
+    protected _navigateToTunnel(info: GatewayTunnelInfo): void {
+        if (!info.realm || !info.gatewayId || !info.target || !info.targetPort) {
+            console.warn("Could not navigate to tunnel, as some provided information was not set.");
+        }
+        switch (info.type) {
+            case GatewayTunnelInfoType.HTTPS:
+            case GatewayTunnelInfoType.HTTP:
+                window.open("https://" + info.id + "." + info.target)?.focus();
+                break;
+            default:
+                console.error("Unknown error when navigating to tunnel.");
+                break;
         }
     }
 

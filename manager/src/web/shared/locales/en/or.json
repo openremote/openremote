@@ -326,13 +326,18 @@
   "gatewayTunnels": {
     "": "Gateway tunnels",
     "settings": "Gateway settings",
+    "start": "Start",
+    "open": "Open",
+    "stop": "Stop",
+    "stopWarning": "This action closes the tunnel, and terminates all active connections.",
     "id": "ID",
     "gatewayId": "Gateway ID",
     "target": "Target",
     "targetPort": "Target port",
     "protocol": "Protocol",
     "createNew": "Add new Gateway tunnel",
-    "selectAsset": "Select gateway asset"
+    "selectAsset": "Select gateway asset",
+    "closeSuccessful": "Closed tunnel successfully"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",

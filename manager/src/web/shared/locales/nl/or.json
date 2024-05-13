@@ -326,12 +326,17 @@
   "gatewayTunnels": {
     "": "Gateway tunnels",
     "id": "ID",
+    "start": "Start",
+    "open": "Open",
+    "stop": "Stop",
+    "stopWarning": "Deze actie sluit de tunnel, en beëindigt alle actieve verbindingen.",
     "gatewayId": "Gateway ID",
     "target": "Target",
     "targetPort": "Target poort",
     "protocol": "Protocol",
     "createNew": "Maak een nieuwe Gateway tunnel",
-    "selectAsset": "Selecteer gateway asset"
+    "selectAsset": "Selecteer gateway asset",
+    "closeSuccessful": "Tunnel gesloten"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
