@@ -674,10 +674,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (connector.isConnected()) {
-            LOG.warning("Gateway already connected so requesting disconnect on new connection: Gateway ID=" + gatewayId);
-            clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.ALREADY_CONNECTED));
-            clientEventService.closeSession(sessionId);
-            return;
+            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: Gateway ID=" + gatewayId);
+            connector.onDisconnect();
         }
 
         if (connector.isDisabled()) {
