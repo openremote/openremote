@@ -59,6 +59,7 @@ import org.openremote.model.value.MetaItemType;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -115,7 +116,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
-    protected Map<String, GatewayTunnelInfo> tunnelInfos = new HashMap<>();
+    protected Map<String, GatewayTunnelInfo> tunnelInfos = new ConcurrentHashMap<>();
+    protected AtomicInteger pendingTunnelCounter = new AtomicInteger();
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -362,7 +364,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         // If the event came from a gateway then we don't want to process it here
         if (getClass().getName().equals(event.getSource())) {
-
             // Clear out agentlink meta so agent interceptor doesn't try intercepting the event
             event.getMeta().remove(MetaItemType.AGENT_LINK);
             return false;
@@ -532,7 +533,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
         String realm = tunnelInfo.getRealm();
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        final GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
 
         if (connector == null || !realm.equals(connector.getRealm())) {
             String msg = "Failed to start tunnel: reason=Gateway disconnected or doesn't exist, id=" + gatewayId;
@@ -552,8 +553,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalArgumentException(msg);
         }
 
-        CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
+        CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo, this::tunnelTCPPortSupplier);
         try {
+            pendingTunnelCounter.incrementAndGet();
             startFuture.get();
             tunnelInfos.put(tunnelInfo.getId(), tunnelInfo);
             return tunnelInfo;
@@ -568,7 +570,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } finally {
+            pendingTunnelCounter.decrementAndGet();
         }
+    }
+
+    protected int tunnelTCPPortSupplier() {
+        return tunnelInfos.size() + pendingTunnelCounter.get();
     }
 
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
@@ -667,25 +675,28 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
-            LOG.warning("Gateway connected but not recognised which shouldn't happen: Gateway ID=" + gatewayId);
+            LOG.warning("Gateway connected but not recognised which shouldn't happen: " + this);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
             clientEventService.closeSession(sessionId);
             return;
         }
 
         if (connector.isConnected()) {
-            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: Gateway ID=" + gatewayId);
-            connector.onDisconnect();
+            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: " + this);
+            connector.disconnect();
         }
 
         if (connector.isDisabled()) {
-            LOG.warning("Gateway is currently disabled so will be ignored: Gateway ID=" + gatewayId);
+            LOG.warning("Gateway is currently disabled so will be ignored: " + this);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             clientEventService.closeSession(sessionId);
             return;
         }
 
-        connector.connect(createConnectorMessageConsumer(sessionId), () -> clientEventService.closeSession(sessionId));
+        connector.connect(createConnectorMessageConsumer(sessionId), () -> {
+            clientEventService.closeSession(sessionId);
+            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
+        });
     }
 
     protected void processGatewayDisconnected(String gatewayClientId) {
