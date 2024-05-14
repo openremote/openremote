@@ -336,7 +336,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                window.open(window.location.protocol + "://" + info.id + "." + window.location.host)?.focus();
+                window.open("//" + info.id + "." + window.location.host)?.focus();
                 break;
             default:
                 console.error("Unknown error when navigating to tunnel.");
