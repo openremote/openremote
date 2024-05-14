@@ -555,7 +555,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
             // This is pretty crude but should be robust enough
-            int assignedPort = Math.toIntExact(pendingTunnelCounter.get() + tunnelInfos.values().stream().filter(ti -> ti.getType() == GatewayTunnelInfo.Type.TCP).count());
+            int assignedPort = tunnelTCPStart + Math.toIntExact(pendingTunnelCounter.get() + tunnelInfos.values().stream().filter(ti -> ti.getType() == GatewayTunnelInfo.Type.TCP).count());
             tunnelInfo.setAssignedPort(assignedPort);
         }
         CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
