@@ -258,7 +258,7 @@ export class GatewayWidget extends OrWidget {
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                window.open("https://" + info.id + "." + info.target)?.focus();
+                window.open("//" + info.id + "." + window.location.host)?.focus();
                 break;
             default:
                 console.error("Unknown error when navigating to tunnel.");

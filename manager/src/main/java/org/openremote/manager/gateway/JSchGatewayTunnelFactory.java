@@ -62,7 +62,7 @@ public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
         session.setTimeout(10000);
         session.setConfig("StrictHostKeyChecking", "no");
         String bindAddress = tunnelInfo.getType() ==  GatewayTunnelInfo.Type.TCP ? null : tunnelInfo.getId();
-        int rPort = tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTPS ? 443 : tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTP ? 80 : startRequestEvent.getTcpPort();
+        int rPort = tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTPS ? 443 : tunnelInfo.getType() == GatewayTunnelInfo.Type.HTTP ? 80 : tunnelInfo.getAssignedPort();
         String target = localhostRewrite != null && "localhost".equals(tunnelInfo.getTarget()) ? localhostRewrite : tunnelInfo.getTarget();
         session.connect();
         session.setPortForwardingR(bindAddress, rPort, target, tunnelInfo.getTargetPort());

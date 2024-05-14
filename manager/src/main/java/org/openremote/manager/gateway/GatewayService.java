@@ -553,7 +553,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             throw new IllegalArgumentException(msg);
         }
 
-        CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo, this::tunnelTCPPortSupplier);
+        if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
+            // This is pretty crude but should be robust enough
+            int assignedPort = Math.toIntExact(pendingTunnelCounter.get() + tunnelInfos.values().stream().filter(ti -> ti.getType() == GatewayTunnelInfo.Type.TCP).count());
+            tunnelInfo.setAssignedPort(assignedPort);
+        }
+        CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
         try {
             pendingTunnelCounter.incrementAndGet();
             startFuture.get();
@@ -573,10 +578,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         } finally {
             pendingTunnelCounter.decrementAndGet();
         }
-    }
-
-    protected int tunnelTCPPortSupplier() {
-        return tunnelInfos.size() + pendingTunnelCounter.get();
     }
 
     public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {

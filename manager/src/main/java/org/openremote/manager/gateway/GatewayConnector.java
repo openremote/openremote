@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.gateway;
 
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.*;
@@ -32,10 +31,10 @@ import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.logging.Level;
@@ -252,7 +251,7 @@ public class GatewayConnector {
             });
     }
 
-    protected CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo, Supplier<Integer> tcpPortSupplier) {
+    protected CompletableFuture<Void> startTunnel(GatewayTunnelInfo tunnelInfo) {
 
         if (!isConnected() || isInitialSyncInProgress()) {
             String msg = "Gateway is not connected or initial sync in progress so cannot start tunnel: " + this;
@@ -278,14 +277,9 @@ public class GatewayConnector {
         }
 
         return CompletableFuture.runAsync(() -> {
-            if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
-                tcpPortSupplier.get();
-                // TODO: Allocate TCP port
-                throw new UnsupportedOperationException("Raw TCP support not yet implemented");
-            }
             sendMessageToGateway(new EventRequestResponseWrapper<>(
                 tunnelInfo.getId(),
-                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), null, tunnelInfo)
+                new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo)
             ));
 
             // Wait for response indefinitely as timeout handled on CompletableFuture

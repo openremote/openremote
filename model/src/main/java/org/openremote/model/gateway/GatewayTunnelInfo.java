@@ -56,6 +56,10 @@ public class GatewayTunnelInfo {
         return type;
     }
 
+    public Integer getAssignedPort() {
+        return assignedPort;
+    }
+
     public GatewayTunnelInfo setGatewayId(String gatewayId) {
         this.gatewayId = gatewayId;
         return this;
@@ -78,6 +82,11 @@ public class GatewayTunnelInfo {
 
     public GatewayTunnelInfo setType(Type type) {
         this.type = type;
+        return this;
+    }
+
+    public GatewayTunnelInfo setAssignedPort(Integer assignedPort) {
+        this.assignedPort = assignedPort;
         return this;
     }
 
