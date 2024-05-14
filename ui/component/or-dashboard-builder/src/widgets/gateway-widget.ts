@@ -52,7 +52,7 @@ export class GatewayWidget extends OrWidget {
 
     protected widgetConfig!: GatewayWidgetConfig;
 
-    protected _activeTunnelTimer?: NodeJS.Timeout;
+    protected _activeTunnelTimer?: number | undefined;
 
     @state()
     protected _loading = false;
@@ -308,7 +308,7 @@ export class GatewayWidget extends OrWidget {
      * Important: This is processed locally within the browser, so it won't be in line with the remote instance nor the Manager backend.
      */
     protected _startTunnelTimer(time = moment().startOf("day")) {
-        this._activeTunnelTimer = setInterval(() => {
+        this._activeTunnelTimer = window.setInterval(() => {
             time = time.add(1, "second");
             if (this._tunnelTimerElem) {
                 this._tunnelTimerElem.textContent = (time.hours() > 0) ? time.format("HH:mm:ss") : time.format("mm:ss");
@@ -320,7 +320,7 @@ export class GatewayWidget extends OrWidget {
      * Function that clears the {@link NodeJS.Timer} containing the current active tunnel session.
      */
     protected _clearTunnelTimer(): void {
-        clearInterval(this._activeTunnelTimer);
+        window.clearInterval(this._activeTunnelTimer);
     }
 
 }
