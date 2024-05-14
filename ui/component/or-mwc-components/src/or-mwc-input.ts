@@ -1522,7 +1522,8 @@ export class OrMwcInput extends LitElement {
                         const mdcSelect = new MDCSelect(component);
                         this._mdcComponent = mdcSelect;
 
-                        if (!this.value) {
+                        const hasValue = (this.value !== null && this.value !== undefined);
+                        if (!hasValue) {
                             mdcSelect.selectedIndex = -1; // Without this first option will be shown as selected
                         }
 
@@ -1831,7 +1832,7 @@ export class OrMwcInput extends LitElement {
 
     protected getSelectedTextValue(options?: [string, string][] | undefined): string {
         const value = this.value;
-        const values = Array.isArray(value) ? value as string[] : value ? [value as string] : undefined;
+        const values = Array.isArray(value) ? value as string[] : value != null ? [value as string] : undefined;
         if (!values) {
             return "";
         }
