@@ -160,7 +160,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return LOG;
     }
 
-     @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public boolean canSubscribe(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {
         if (!isKeycloak) {
@@ -426,7 +426,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> createAssetRequest(connection, topic, body);
                 case GET_TOPIC -> getAssetRequest(connection, topic, body);
-                case UPDATE_TOPIC -> LOG.fine("Received update asset request");
+                case UPDATE_TOPIC -> updateAssetRequest(connection, topic, body);
                 case DELETE_TOPIC -> deleteAssetRequest(connection, topic, body);
             }
         }
@@ -442,7 +442,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Multi attribute operation (edge case - authorization in topic handler)
         if (isMultiAttributeUpdateTopic(topic)) {
-            LOG.fine("Received multi attribute update request " + topic + " " + getConnectionIDString(connection));
+            updateMultiAttributeRequest(connection, topic, body);
         }
     }
 
@@ -538,6 +538,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, realm, asset);
     }
 
+    protected void updateAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body)
+    {
+        String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+        Asset<?> storageAsset = assetStorageService.find(assetId);
+
+        var asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
+        if (asset.isEmpty()) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.MESSAGE_INVALID, "Invalid asset template");
+            LOG.fine("Invalid asset template " + body.toString(StandardCharsets.UTF_8) + " in update asset request " + getConnectionIDString(connection));
+            return;
+        }
+
+        // TODO: Do we need logic here for restricted users? (e.g. only allow updates to certain fields)
+        storageAsset.setName(asset.get().getName());
+        storageAsset.setAttributes(asset.get().getAttributes());
+
+        assetStorageService.merge(storageAsset);
+    }
+
     /**
      * Get asset request topic handler
      */
@@ -552,6 +571,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, topicRealm(topic), asset);
     }
 
+
+    /**
+     * Delete asset request topic handler
+     */
     protected void deleteAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
@@ -587,6 +610,69 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, realm, event);
     }
 
+
+
+    /**
+     * Update multiple attributes request topic handler.
+     * Includes authorization checks for each attribute.
+     * Request is cancelled if any attribute is unauthorized.
+     */
+    @SuppressWarnings({"unchecked"})
+    protected void updateMultiAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body)
+    {
+        String realm = topicRealm(topic);
+        var topicTokens = topic.getTokens();
+        var attributes = ValueUtil.parse(body.toString(StandardCharsets.UTF_8));
+        var authContext = getAuthContextFromConnection(connection);
+
+        if (authContext.isEmpty())
+        {
+            return;
+        }
+
+        if (attributes.isEmpty())
+        {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.MESSAGE_INVALID, "Invalid data provided");
+            LOG.fine("Invalid attribute template " + body.toString(StandardCharsets.UTF_8) + " in update attribute request " + getConnectionIDString(connection));
+            return;
+        }
+
+        var attributeMap = (Map<String, Object>) attributes.get();
+        var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+
+        var isAuthorized = true;
+
+        for (var entry : attributeMap.entrySet()) {
+            var attributeName = entry.getKey();
+            var attributeValue = entry.getValue();
+            var event = new AttributeEvent(assetId, attributeName, attributeValue);
+
+            // Check if the user is authorized to write the attribute
+            if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event))
+            {
+                isAuthorized = false;
+                break;
+            }
+        }
+
+        // If the user is not authorized to update any of the attributes, cancel the request
+        if (!isAuthorized)
+        {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
+            return;
+        }
+
+        for (var entry : attributeMap.entrySet()) {
+            var attributeName = entry.getKey();
+            var attributeValue = entry.getValue();
+            var event = new AttributeEvent(assetId, attributeName, attributeValue);
+            sendAttributeEvent(event);
+
+        }
+
+        publishSuccessResponse(topic, realm, attributeMap);
+    }
+
     /**
      * Get attribute request topic handler
      */
@@ -612,6 +698,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Pattern.matches(ASSET_ID_REGEXP, assetId);
     }
 
+
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     protected boolean authorizeGatewayEvent(GatewayV2Asset gateway, AuthContext authContext, SharedEvent event) {
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
