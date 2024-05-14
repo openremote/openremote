@@ -1,13 +1,10 @@
 package org.openremote.agent.protocol.homeassistant;
 
+import org.openremote.agent.protocol.homeassistant.assets.*;
 import org.openremote.agent.protocol.homeassistant.entities.HomeAssistantBaseEntity;
 import org.openremote.agent.protocol.homeassistant.entities.HomeAssistantEntityStateEvent;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.LightAsset;
-import org.openremote.model.asset.impl.PlugAsset;
-import org.openremote.model.asset.impl.PresenceSensorAsset;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
@@ -59,12 +56,12 @@ public class HomeAssistantEntityProcessor {
     }
 
     // Converts a list of Home Assistant entities to a list of OpenRemote assets
-    public Optional<List<Asset<?>>> convertEntitiesToAssets(List<HomeAssistantBaseEntity> entities) {
+    public Optional<List<HomeAssistantBaseAsset>> convertEntitiesToAssets(List<HomeAssistantBaseEntity> entities) {
         List<String> currentAssets = protocolAssetService.findAssets(new AssetQuery().attributeName("HomeAssistantEntityId")).stream()
                 .map(asset -> asset.getAttributes().get("HomeAssistantEntityId").orElseThrow().getValue().get().toString())
                 .toList();
 
-        List<Asset<?>> assets = new ArrayList<>();
+        List<HomeAssistantBaseAsset> assets = new ArrayList<>();
 
         for (HomeAssistantBaseEntity entity : entities) {
             Map<String, Object> homeAssistantAttributes = entity.getAttributes();
@@ -75,10 +72,10 @@ public class HomeAssistantEntityProcessor {
                 continue;
             }
 
-            Asset<?> asset = initiateAssetClass(homeAssistantAttributes, entityType);
-            asset.getAttributes().getOrCreate(new AttributeDescriptor<>("HomeAssistantEntityId", ValueType.TEXT)).setValue(entityId);
+            HomeAssistantBaseAsset asset = initiateAssetClass(homeAssistantAttributes, entityType, entityId);
 
             handleStateConversion(entity, asset);
+
             for (Map.Entry<String, Object> entry : homeAssistantAttributes.entrySet()) {
                 handleAttributeConversion(entry, asset);
             }
@@ -95,13 +92,14 @@ public class HomeAssistantEntityProcessor {
     }
 
     // Initiates the appropriate asset class based on the given entity type
-    Asset<?> initiateAssetClass(Map<String, Object> homeAssistantAttributes, String entityType) {
+    HomeAssistantBaseAsset initiateAssetClass(Map<String, Object> homeAssistantAttributes, String entityType, String entityId) {
         var friendlyName = (String) homeAssistantAttributes.get("friendly_name");
         return switch (entityType) {
-            case ENTITY_TYPE_LIGHT -> new LightAsset(friendlyName);
-            case ENTITY_TYPE_BINARY_SENSOR -> new PresenceSensorAsset(friendlyName);
-            case ENTITY_TYPE_SWITCH -> new PlugAsset(friendlyName);
-            default -> new ThingAsset(friendlyName);
+            case ENTITY_TYPE_LIGHT -> new HomeAssistantLightAsset(friendlyName, entityId);
+            case ENTITY_TYPE_BINARY_SENSOR -> new HomeAssistantBinarySensorAsset(friendlyName, entityId);
+            case ENTITY_TYPE_SENSOR -> new HomeAssistantSensorAsset(friendlyName, entityId);
+            case ENTITY_TYPE_SWITCH -> new HomeAssistantSwitchAsset(friendlyName, entityId);
+            default -> new HomeAssistantBaseAsset(friendlyName, entityId);
         };
     }
 

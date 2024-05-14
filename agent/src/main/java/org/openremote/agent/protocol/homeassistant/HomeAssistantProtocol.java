@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.homeassistant;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.homeassistant.assets.HomeAssistantBaseAsset;
 import org.openremote.agent.protocol.homeassistant.commands.EntityStateCommandFactory;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
@@ -31,7 +32,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.ValueType;
 
 import java.net.URI;
 import java.util.Map;
@@ -165,13 +165,7 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
             var assets = entityProcessor.convertEntitiesToAssets(entities.get());
             if (assets.isPresent()) {
                 for (var asset : assets.get()) {
-                    var entityId = asset.getAttribute("homeAssistantEntityId");
-                    if (entityId.isEmpty() || entityId.get().getValue().isEmpty())
-                    {
-                        continue;
-                    }
-
-                    String entityType = HomeAssistantEntityProcessor.getEntityTypeFromEntityId((String) entityId.get().getValue().get());
+                    String entityType = HomeAssistantEntityProcessor.getEntityTypeFromEntityId(asset.getEntityId());
                     var parent = getOrCreateParentAsset(assetConsumer, entityType);
                     if (parent.isEmpty())
                         continue;
@@ -187,17 +181,17 @@ public class HomeAssistantProtocol extends AbstractProtocol<HomeAssistantAgent, 
 
     public Optional<Asset<?>> getOrCreateParentAsset(Consumer<AssetTreeNode[]> consumer, String entityType) {
         //find the parent asset based on the entity type (group for entity type attribute) and the parent of the parent has to be the agentId
-        Asset<?> parentAsset = (Asset<?>) assetService.findAssets(new AssetQuery().attributeName("GroupForEntityType")).stream()
+        HomeAssistantBaseAsset parentAsset = (HomeAssistantBaseAsset) assetService.findAssets(new AssetQuery().attributeName("GroupForEntityType")).stream()
                 .filter(a -> a.getAttributes().get("GroupForEntityType").orElseThrow().getValue().flatMap(v -> v.equals(entityType) ? Optional.of(v) : Optional.empty()).isPresent())
                 .findFirst().orElse(null);
 
 
         if (parentAsset == null) {
-            parentAsset = entityProcessor.initiateAssetClass(Map.of("friendly_name", entityType), UniqueIdentifierGenerator.generateId());
+            parentAsset = entityProcessor.initiateAssetClass(Map.of("friendly_name", entityType), entityType, UniqueIdentifierGenerator.generateId());
             parentAsset.setParentId(agent.getId());
             parentAsset.setRealm(agent.getRealm());
-            parentAsset.getAttributes().getOrCreate("GroupForEntityType", ValueType.TEXT).setValue(entityType);
-            parentAsset.getAttributes().getOrCreate("agentId", ValueType.TEXT).setValue(agent.getId());
+            parentAsset.setAgentId(agent.getId());
+            parentAsset.setGroupForEntityType(entityType);
             parentAsset.setId(UniqueIdentifierGenerator.generateId());
 
             AssetTreeNode node = new AssetTreeNode(parentAsset);
