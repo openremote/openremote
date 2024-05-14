@@ -31,8 +31,6 @@ public class HomeAssistantEntityProcessor {
     private final ProtocolAssetService protocolAssetService;
     private final String agentId;
 
-    public static final String HomeAssistantIdentifierAttribute = "HomeAssistantEntityId";
-
     public HomeAssistantEntityProcessor(HomeAssistantProtocol protocol, ProtocolAssetService assetService) {
         this.protocol = protocol;
         this.protocolAssetService = assetService;
@@ -62,8 +60,8 @@ public class HomeAssistantEntityProcessor {
 
     // Converts a list of Home Assistant entities to a list of OpenRemote assets
     public Optional<List<Asset<?>>> convertEntitiesToAssets(List<HomeAssistantBaseEntity> entities) {
-        List<String> currentAssets = protocolAssetService.findAssets(new AssetQuery().attributeName(HomeAssistantIdentifierAttribute)).stream()
-                .map(asset -> asset.getAttributes().get(HomeAssistantIdentifierAttribute).orElseThrow().getValue().get().toString())
+        List<String> currentAssets = protocolAssetService.findAssets(new AssetQuery().attributeName("HomeAssistantEntityId")).stream()
+                .map(asset -> asset.getAttributes().get("HomeAssistantEntityId").orElseThrow().getValue().get().toString())
                 .toList();
 
         List<Asset<?>> assets = new ArrayList<>();
@@ -78,7 +76,7 @@ public class HomeAssistantEntityProcessor {
             }
 
             Asset<?> asset = initiateAssetClass(homeAssistantAttributes, entityType);
-            asset.getAttributes().getOrCreate(new AttributeDescriptor<>(HomeAssistantIdentifierAttribute, ValueType.TEXT)).setValue(entityId);
+            asset.getAttributes().getOrCreate(new AttributeDescriptor<>("HomeAssistantEntityId", ValueType.TEXT)).setValue(entityId);
 
             handleStateConversion(entity, asset);
             for (Map.Entry<String, Object> entry : homeAssistantAttributes.entrySet()) {
@@ -121,15 +119,13 @@ public class HomeAssistantEntityProcessor {
             return;
 
         if (attributeValue instanceof Integer) {
-            Attribute<Integer> attribute = asset.getAttributes().getOrCreate(new AttributeDescriptor<>(attributeKey, ValueType.POSITIVE_INTEGER));
+            Attribute<Integer> attribute = asset.getAttributes().getOrCreate(new AttributeDescriptor<>(attributeKey, ValueType.INTEGER));
+            attribute.setValue((Integer) attributeValue);
 
-            // brightness in hass is 0-255, in openremote it is 0-100
-            if (attributeKey.equals("brightness")) {
-                attribute.setValue((Integer) attributeValue / 255 * 100);
-            } else {
+            if (attributeKey.equals("off_brightness")) { //
+                attribute = asset.getAttributes().getOrCreate(new AttributeDescriptor<>("brightness", ValueType.INTEGER));
                 attribute.setValue((Integer) attributeValue);
             }
-
             return; // skip the rest of the checks
         }
 
@@ -179,15 +175,6 @@ public class HomeAssistantEntityProcessor {
                 continue;
             }
 
-
-            //if the attribute name is brightness we need to convert the value from 0-255 to 0-100
-            if (eventAttribute.getKey().equals("brightness")) {
-                Attribute<Integer> attribute = (Attribute<Integer>) assetAttribute.get();
-                attribute.setValue((Integer) eventAttribute.getValue() / 255 * 100);
-                protocol.handleExternalAttributeChange(new AttributeEvent(asset.getId(), attribute.getName(), attribute.getValue()));
-                continue;
-            }
-
             AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), assetAttribute.get().getName(), eventAttribute.getValue());
             protocol.handleExternalAttributeChange(attributeEvent);
         }
@@ -219,8 +206,8 @@ public class HomeAssistantEntityProcessor {
 
     // Retrieves the appropriate asset based on the given home assistant entity id
     private Asset<?> findAssetByEntityId(String homeAssistantEntityId) {
-        return protocolAssetService.findAssets(new AssetQuery().attributeName(HomeAssistantIdentifierAttribute)).stream()
-                .filter(a -> a.getAttributes().get(HomeAssistantIdentifierAttribute).orElseThrow().getValue().flatMap(v -> v.equals(homeAssistantEntityId) ? Optional.of(v) : Optional.empty()).isPresent())
+        return protocolAssetService.findAssets(new AssetQuery().attributeName("HomeAssistantEntityId")).stream()
+                .filter(a -> a.getAttributes().get("HomeAssistantEntityId").orElseThrow().getValue().flatMap(v -> v.equals(homeAssistantEntityId) ? Optional.of(v) : Optional.empty()).isPresent())
                 .findFirst().orElse(null);
     }
 
