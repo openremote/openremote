@@ -430,6 +430,8 @@ services:
     image: antoniomika/sish:latest
     depends_on:
       - proxy
+    healthcheck:
+      test: ["CMD", "/app/app", "-v"]
     ports:
       - "2222:2222"
       - "9000-10000:9000-10000"
