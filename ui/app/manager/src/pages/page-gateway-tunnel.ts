@@ -221,7 +221,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected async _stopTunnel(tunnel: GatewayTunnelInfo): Promise<boolean> {
         const response = await manager.rest.api.GatewayServiceResource.stopTunnel(tunnel);
-        return response.status === 200;
+        return response.status === 204;
     }
 
     /**
