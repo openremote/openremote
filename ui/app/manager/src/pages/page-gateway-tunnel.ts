@@ -2,6 +2,7 @@ import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, state} from "lit/decorators.js";
 import {until} from "lit/directives/until.js";
+import {when} from "lit/directives/when.js";
 import {Task} from "@lit/task";
 import {Store} from "@reduxjs/toolkit";
 import {i18next} from "@openremote/or-translate";
@@ -142,16 +143,20 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         const columns: TableColumn[] = [
             {title: i18next.t("gatewayTunnels.id"), isSortable: true},
             {title: i18next.t("gatewayTunnels.gatewayId")},
+            {title: i18next.t("gatewayTunnels.type"), isSortable: true},
             {title: i18next.t("gatewayTunnels.target"), isSortable: true, hideMobile: true},
             {title: i18next.t("gatewayTunnels.targetPort"), isSortable: true, hideMobile: true},
+            {title: i18next.t("gatewayTunnels.assignedPort"), isSortable: true, hideMobile: true},
             {title: ""}
         ];
         const rows: TableRow[] = tunnels?.map(tunnel => ({
             content: [
                 tunnel.id,
                 until(this._getTunnelGatewayIdTemplate(tunnel), html`${i18next.t("loading")}`),
+                tunnel.type,
                 tunnel.target,
                 tunnel.targetPort + " ",
+                tunnel.assignedPort + " ",
                 until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t("loading")}`)
             ],
             clickable: false,
@@ -184,7 +189,11 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         return html`
             <div style="display: flex; justify-content: end; align-items: center; gap: 12px;">
                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" @or-mwc-input-changed="${(ev) => this._onStopTunnelClick(ev, tunnel)}"></or-mwc-input>
-                <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.open')}" @or-mwc-input-changed="${(ev) => this._onOpenTunnelClick(ev, tunnel)}"></or-mwc-input>
+                ${when(tunnel.type === GatewayTunnelInfoType.TCP, () => html`
+                    <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.copyAddress')}" @or-mwc-input-changed="${(ev) => this._onCopyTunnelAddressClick(ev, tunnel)}"></or-mwc-input>
+                `, () => html`
+                    <or-mwc-input .type="${InputType.BUTTON}" outlined label="${i18next.t('gatewayTunnels.open')}" @or-mwc-input-changed="${(ev) => this._onOpenTunnelClick(ev, tunnel)}"></or-mwc-input>
+                `)}
             </div>
         `
     }
@@ -222,6 +231,22 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     protected async _stopTunnel(tunnel: GatewayTunnelInfo): Promise<boolean> {
         const response = await manager.rest.api.GatewayServiceResource.stopTunnel(tunnel);
         return response.status === 204;
+    }
+
+    /**
+     * HTML callback event for the 'copy address' button in the tunnels table,
+     * meant for TCP addresses to be copied to the browsers' clipboard.
+     */
+    protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
+        const address = this._getTunnelAddress(tunnel);
+        if(address) {
+            navigator.clipboard.writeText(address).finally(() => {
+                showSnackbar(undefined, i18next.t('gatewayTunnels.copySuccess'));
+            });
+        } else {
+            console.warn("Could not copy tunnel address as it could not be found.");
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+        }
     }
 
     /**
@@ -333,14 +358,28 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         if (!info.realm || !info.gatewayId || !info.target || !info.targetPort) {
             console.warn("Could not navigate to tunnel, as some provided information was not set.");
         }
+        const address = this._getTunnelAddress(info);
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                window.open("//" + info.id + "." + window.location.host)?.focus();
+                window.open(address)?.focus();
                 break;
             default:
                 console.error("Unknown error when navigating to tunnel.");
                 break;
+        }
+    }
+
+    /**
+     * Internal function to get the tunnel address based on {@link GatewayTunnelInfo}
+     */
+    protected _getTunnelAddress(info: GatewayTunnelInfo): string | undefined {
+        switch (info.type) {
+            case GatewayTunnelInfoType.HTTPS:
+            case GatewayTunnelInfoType.HTTP:
+                return "//" + info.id + "." + window.location.host;
+            case GatewayTunnelInfoType.TCP:
+                return info.id + "." + window.location.hostname + ":" + info.assignedPort;
         }
     }
 

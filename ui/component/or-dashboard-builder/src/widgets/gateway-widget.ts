@@ -1,4 +1,4 @@
-import {customElement, state, query} from "lit/decorators.js";
+import {customElement, query, state} from "lit/decorators.js";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import {WidgetSettings} from "../util/widget-settings";
@@ -10,7 +10,7 @@ import manager from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import moment from "moment";
 import {i18next} from "@openremote/or-translate";
-import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 const styling = css`
     #gateway-widget-wrapper {
@@ -90,6 +90,9 @@ export class GatewayWidget extends OrWidget {
     }
 
     disconnectedCallback() {
+        if(this._activeTunnel) {
+            this._stopTunnel(this._activeTunnel);
+        }
         this._clearTunnelTimer();
         super.disconnectedCallback();
     }
@@ -108,7 +111,13 @@ export class GatewayWidget extends OrWidget {
                     ${when(this._loading, () => html`
                         <or-loading-indicator></or-loading-indicator>
                     `, () => {
-                        if (this._activeTunnel) {
+                        if(this.widgetConfig.type === GatewayTunnelInfoType.TCP) {
+                            return html`
+                                <or-mwc-input .type="${InputType.BUTTON}" icon="content-copy" label="${i18next.t('gatewayTunnels.copyAddress')}" outlined .disabled="${disabled}"
+                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCopyTunnelAddressClick(ev)}"
+                                ></or-mwc-input>
+                            `;
+                        } else if (this._activeTunnel) {
                             return html`
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
@@ -119,7 +128,7 @@ export class GatewayWidget extends OrWidget {
                                 <div style="margin-left: 8px;">
                                     <span id="tunnel-timer"></span>
                                 </div>
-                            `
+                            `;
                         } else {
                             return html`
                                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
@@ -131,6 +140,27 @@ export class GatewayWidget extends OrWidget {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * HTML callback function when 'copy address' button is pressed for a TCP tunnel.
+     */
+    protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent) {
+        if (this._isConfigComplete(this.widgetConfig)) {
+            const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+            const address = this._getTunnelAddress(tunnelInfo);
+            if(address) {
+                navigator.clipboard.writeText(address).finally(() => {
+                    showSnackbar(undefined, i18next.t('gatewayTunnels.copySuccess'));
+                });
+            } else {
+                console.warn("Could not copy tunnel address as it could not be found.");
+                showSnackbar(undefined, i18next.t('errorOccurred'));
+            }
+        } else {
+            console.warn("Could not copy tunnel address as configuration is not complete.");
+            showSnackbar(undefined, i18next.t('errorOccurred'));
+        }
     }
 
     /**
@@ -231,6 +261,7 @@ export class GatewayWidget extends OrWidget {
         this._stopTunnel(tunnelInfo)
             .then(() => {
                 this._activeTunnel = undefined;
+                this._clearTunnelTimer();
             })
             .catch(e => {
                 console.warn(e);
@@ -255,14 +286,28 @@ export class GatewayWidget extends OrWidget {
         if (!info.realm || !info.gatewayId || !info.target || !info.targetPort) {
             console.warn("Could not navigate to tunnel, as some provided information was not set.");
         }
+        const address = this._getTunnelAddress(info);
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                window.open("//" + info.id + "." + window.location.host)?.focus();
+                window.open(address)?.focus();
                 break;
             default:
                 console.error("Unknown error when navigating to tunnel.");
                 break;
+        }
+    }
+
+    /**
+     * Internal function to get the tunnel address based on {@link GatewayTunnelInfo}
+     */
+    protected _getTunnelAddress(info: GatewayTunnelInfo): string | undefined {
+        switch (info.type) {
+            case GatewayTunnelInfoType.HTTPS:
+            case GatewayTunnelInfoType.HTTP:
+                return "//" + info.id + "." + window.location.host;
+            case GatewayTunnelInfoType.TCP:
+                return info.id + "." + window.location.hostname + ":" + info.assignedPort;
         }
     }
 
