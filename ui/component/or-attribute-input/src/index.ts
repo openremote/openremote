@@ -602,16 +602,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     public getLabel(): string | undefined {
-        let label;
-
-        if (this.label) {
-            label = this.label;
-        } else if (this.label !== "" && this.label !== null) {
+        if (this.label !== "" && this.label !== null) {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute ? this.attribute!.name : undefined, this._attributeDescriptor);
-            label = Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
+            return Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
         }
-
-        return label;
     }
 
     public isReadonly(): boolean {
