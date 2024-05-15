@@ -676,14 +676,14 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
-            LOG.warning("Gateway connected but not recognised which shouldn't happen: " + this);
+            LOG.warning("Gateway connected but not recognised which shouldn't happen: GatewayID=" + gatewayId);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
             clientEventService.closeSession(sessionId);
             return;
         }
 
         if (connector.isConnected()) {
-            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: " + this);
+            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: " + connector);
             connector.disconnect();
         }
 

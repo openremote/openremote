@@ -511,7 +511,7 @@ public class GatewayConnector {
         if (isInitialResponse) {
 
             // Put assets in hierarchical order
-            Map<String, String> gatewayAssetIdParentIdMap = e.getAssets().stream()
+            Map<String, String> gatewayAssetIdParentIdMap = e.getAssets() == null ? Collections.emptyMap() : e.getAssets().stream()
                 .collect(HashMap::new, (m, v) -> m.put(v.getId(), v.getParentId()), HashMap::putAll);
 
             ToIntFunction<Asset<?>> assetLevelExtractor = asset -> {
@@ -524,7 +524,7 @@ public class GatewayConnector {
                 return level;
             };
 
-            syncAssetIds = e.getAssets()
+            syncAssetIds =  e.getAssets() == null ? Collections.emptyList() : e.getAssets()
                 .stream()
                 .sorted(Comparator.comparingInt(assetLevelExtractor))
                 .map(Asset::getId)
@@ -541,7 +541,7 @@ public class GatewayConnector {
         } else {
 
             List<String> requestedAssetIds = syncAssetIds.stream().skip(syncIndex).limit(SYNC_ASSET_BATCH_SIZE).collect(Collectors.toList());
-            List<Asset<?>> returnedAssets = e.getAssets();
+            List<Asset<?>> returnedAssets = e.getAssets() == null ? Collections.emptyList() : e.getAssets();
 
             // Remove any assets that have been deleted since requested
             cachedAssetEvents.removeIf(
