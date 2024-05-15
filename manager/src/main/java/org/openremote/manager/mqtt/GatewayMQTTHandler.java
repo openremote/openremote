@@ -298,7 +298,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> {
                     AssetEvent event = buildAssetEvent(topicTokens, AssetEvent.Cause.CREATE);
-
                     if (event == null) {
                         return false;
                     }
@@ -350,7 +349,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 }
                 case DELETE_TOPIC -> {
                     AssetEvent event = buildAssetEvent(topicTokens, AssetEvent.Cause.DELETE);
-
                     if (event == null) {
                         return false;
                     }
@@ -376,7 +374,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case GET_TOPIC -> {
                     ReadAttributeEvent event = buildReadAttributeEvent(topicTokens);
-
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Get attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -390,7 +387,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case UPDATE_TOPIC -> {
-
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, buildAttributeEvent(topicTokens, null))) {
                             LOG.fine("Update attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -405,7 +401,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 }
             }
         }
-        // Multi attribute update request (edge case)
+        // Multi attribute update request (edge case) - Always acknowledge the request, authorization is done in the topic handler
         else if (isMultiAttributeUpdateTopic(topic)) {
             LOG.fine("Multi attribute update request " + topic + " " + connectionID);
         } else {
@@ -448,6 +444,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
+
+        // Conditional check for a gateway connection, if so update the gateway status
         if (isGatewayConnection(connection)) {
             findGatewayFromConnection(connection).ifPresent(gatewayAsset -> {
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
@@ -538,6 +536,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishSuccessResponse(topic, realm, asset);
     }
 
+    /**
+     * Update asset request topic handler
+     */
     protected void updateAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body)
     {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -606,7 +607,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
 
         sendAttributeEvent(event);
-
         publishSuccessResponse(topic, realm, event);
     }
 
@@ -667,7 +667,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             var attributeValue = entry.getValue();
             var event = new AttributeEvent(assetId, attributeName, attributeValue);
             sendAttributeEvent(event);
-
         }
 
         publishSuccessResponse(topic, realm, attributeMap);
