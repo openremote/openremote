@@ -125,16 +125,33 @@ publishing {
                         organizationUrl = 'https://openremote.io'
                     }
                 }
+                scm {
+                    connection = 'scm:git:git://github.com/openremote/openremote.git'
+                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+                    url = 'https://github.com/openremote/openremote/tree/master'
+                }
             }
         }
     }
 
     repositories {
         maven {
-            name = 'myRepo'
-            url = layout.buildDirectory.dir("repo")
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
         }
     }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.maven
 }
 
 // Output version.properties file
@@ -144,3 +161,5 @@ task setVersionProperties(type: WriteProperties) {
 }
 publish.mustRunAfter(setVersionProperties)
 publish.dependsOn(setVersionProperties)
+processResources.dependsOn(setVersionProperties)
+sourcesJar.dependsOn(setVersionProperties)

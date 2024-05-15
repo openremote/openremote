@@ -220,6 +220,10 @@ def isCustomProject() {
     findProject(":openremote") != null
 }
 
+def resolveDependency(String path) {
+    "0.0.0".equals(version) ? resolveProject(path) : "io.openremote:openremote-${path.substring(1)}:${version}"
+}
+
 def resolvePath(String path) {
     isCustomProject() ? ":openremote" + path : path
 }
@@ -376,11 +380,8 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
     }
 }
 
-def resolveDependency(String path) {
-    isCustomProject() ? resolveProject(path) : "io.openremote:openremote-" + path.substring(1) + ":" + version
-}
-
 ext {
+    resolveDependency = this.&resolveDependency
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
