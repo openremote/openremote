@@ -155,8 +155,8 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                 until(this._getTunnelGatewayIdTemplate(tunnel), html`${i18next.t("loading")}`),
                 tunnel.type,
                 tunnel.target,
-                tunnel.targetPort + " ",
-                tunnel.assignedPort + " ",
+                tunnel.targetPort + "",
+                !tunnel.assignedPort ? "" : tunnel.assignedPort + "",
                 until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t("loading")}`)
             ],
             clickable: false,
