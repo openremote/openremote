@@ -460,7 +460,14 @@
       "ElectricityProducerWindAsset": "Windturbine asset"
     },
     "meta": {},
-    "attribute": {},
+    "attribute": {
+      "LightAsset": {
+        "brightness": "Helderheid",
+        "colourRGB": "Kleur RGB",
+        "colourTemperature": "Kleur temperatuur",
+        "groupNumber": "Groep nummer"
+      }
+    },
     "value": {
       "unknown": "Onbekend"
     }

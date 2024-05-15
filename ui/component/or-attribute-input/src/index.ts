@@ -441,6 +441,13 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._clearWriteTimeout();
     }
 
+    langChangedCallback = () => {
+        this.updateComplete.finally(() => {
+            this.label = this.getLabel(true);
+            this.requestUpdate();
+        })
+    }
+
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         const shouldUpdate = super.shouldUpdate(_changedProperties);
 
@@ -601,11 +608,17 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
     }
 
-    public getLabel(): string | undefined {
-        if (this.label !== "" && this.label !== null) {
+    public getLabel(force = false): string | undefined {
+        let label;
+
+        if (this.label && !force) {
+            label = this.label;
+        } else if (force || (this.label !== "" && this.label !== null)) {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute ? this.attribute!.name : undefined, this._attributeDescriptor);
-            return Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
+            label = Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
         }
+
+        return label;
     }
 
     public isReadonly(): boolean {
