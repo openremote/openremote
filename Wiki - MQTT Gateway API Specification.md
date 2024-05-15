@@ -42,7 +42,7 @@ Create an asset. Requires a valid [asset template]() as the payload.
 - ```{realm}/{clientId}/operations/assets/{assetId}/get```
 Request the data of the specified assetId.
 - ```{realm}/{clientId}/operations/assets/{assetId}/update```
-Updates the specified asset. Requires a valid [update template]() as the payload.
+Updates the specified asset. Requires a valid [asset template]() as the payload.
 - ```{realm}/{clientId}/operations/assets/{assetId}/delete```
 Deletes the specified asset.
 
