@@ -610,6 +610,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute ? this.attribute!.name : undefined, this._attributeDescriptor);
             label = Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
         }
+
         return label;
     }
 
