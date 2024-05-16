@@ -105,7 +105,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             if (msg instanceof FullHttpResponse) {
                 FullHttpResponse response = (FullHttpResponse) msg;
                 LOG.severe("Websocket client unexpected FullHttpResponse (getStatus=" + response.status() +
-                    ", content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
+                    ", content=" + response.content().toString(CharsetUtil.UTF_8) + "):" + getClientUri());
             }
 
             WebSocketFrame frame = (WebSocketFrame) msg;
@@ -114,7 +114,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 String str = textFrame.text();
                 ctx.fireChannelRead(str);
             } else if (frame instanceof PongWebSocketFrame) {
-                LOG.finest("Received PONG");
+                LOG.finest("Received PONG: " + getClientUri());
                 if (pingCounter != null) {
                     pingCounter.set(0);
                 }
@@ -125,11 +125,10 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            LOG.log(Level.SEVERE, "Websocket client exception caught", cause);
             if (!handshakeFuture.isDone()) {
                 handshakeFuture.setFailure(cause);
+                ctx.close();
             }
-            ctx.close();
             WebsocketIOClient.this.onDecodeException(ctx, cause);
         }
     }
@@ -246,17 +245,18 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
         // Start ping task
         if (!pingDisabled) {
+            LOG.fine("Starting PING task: " + getClientUri());
             pingCounter = new AtomicInteger();
             pingFuture = executorService.scheduleWithFixedDelay(() -> {
-                if (pingCounter.get() > 2) {
-                    LOG.info("No PING response so reconnecting: " + this);
-                    onConnectionStatusChanged(ConnectionStatus.CONNECTING);
-                    doDisconnect();
-                    scheduleDoConnect(1000);
-                    return;
-                }
-                LOG.finest("Sending PING");
                 try {
+                    if (pingCounter.get() > 2) {
+                        LOG.info("No PING response so reconnecting: " + this);
+                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                        doDisconnect();
+                        scheduleDoConnect(1000);
+                        return;
+                    }
+                    LOG.finest("Sending PING: " + getClientUri());
                     channel.writeAndFlush(new PingWebSocketFrame());
                     pingCounter.incrementAndGet();
                 } catch (Exception ignored) {

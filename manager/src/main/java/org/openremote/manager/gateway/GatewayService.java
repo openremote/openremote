@@ -112,7 +112,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
      * matched up to the service user client ID (which needs to be all lower case); this could technically cause an
      * ID collision but for now the odds of that are low enough to not be a concern.
      */
-    protected final Map<String, GatewayConnector> gatewayConnectorMap = new HashMap<>();
+    protected final Map<String, GatewayConnector> gatewayConnectorMap = new ConcurrentHashMap<>();
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
@@ -278,7 +278,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        // TODO: Stop all connectors
         gatewayConnectorMap.values().forEach(GatewayConnector::disconnect);
         gatewayConnectorMap.clear();
         assetIdGatewayIdMap.clear();
@@ -348,15 +347,18 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
 
         if (or(header(SESSION_CLOSE), header(SESSION_CLOSE_ERROR)).matches(exchange)) {
-            processGatewayDisconnected(clientId);
+            String sessionKey = ClientEventService.getSessionKey(exchange);
+            processGatewayDisconnected(clientId, sessionKey);
             return;
         }
 
         // Inbound shared events
         if (body().isInstanceOf(SharedEvent.class).matches(exchange)) {
             exchange.setRouteStop(true);
+            String sessionKey = ClientEventService.getSessionKey(exchange);
             String gatewayId = getGatewayIdFromClientId(clientId);
-            onGatewayClientEventReceived(gatewayId, exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));
+            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+            processGatewayMessage(gatewayId, sessionKey, messageId, exchange.getIn().getBody(SharedEvent.class));
         }
     }
 
@@ -390,9 +392,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     // Push value into asset for service user method
                     gatewayAsset.setDisabled(disabled);
                     createUpdateGatewayServiceUser(gatewayAsset);
-                    if (disabled) {
-                        connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
-                    }
+
                     connector.setDisabled(disabled);
                 }
             } else if (GatewayAsset.CLIENT_SECRET.getName().equals(event.getName())) {
@@ -415,6 +415,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
                 }
                 newSecret = identityProvider.resetSecret(event.getRealm(), gatewayServiceUser.getId(), newSecret);
+
+                // Disconnect current session
+                connector.disconnect();
 
                 // Update the event value with the potentially newly generated secret
                 event.setValue(newSecret);
@@ -643,10 +646,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
      * Check if the specified asset ID or parent ID is a known gateway or descendant of a gateway.
      */
     public String getLocallyRegisteredGatewayId(String assetId, String parentId) {
-        if (!active) {
-            return null;
-        }
-
         String gatewayId = assetIdGatewayIdMap.get(assetId);
 
         if (gatewayId != null) {
@@ -667,11 +666,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     }
 
     protected void processGatewayConnected(String gatewayClientId, String sessionId) {
-
-        if (!active) {
-            return;
-        }
-
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
@@ -682,11 +676,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        if (connector.isConnected()) {
-            LOG.info("Gateway already shown as connected so maybe connection broke, resetting using new connection: " + connector);
-            connector.disconnect();
-        }
-
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: " + this);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
@@ -694,26 +683,31 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             return;
         }
 
-        connector.connect(createConnectorMessageConsumer(sessionId), () -> {
+        connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
             clientEventService.closeSession(sessionId);
             tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
         });
     }
 
-    protected void processGatewayDisconnected(String gatewayClientId) {
-
-        if (!active) {
-            return;
-        }
-
+    protected void processGatewayDisconnected(String gatewayClientId, String sessionId) {
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
+        if (connector != null) {
+            connector.disconnected(sessionId);
+        }
+    }
+
+    protected void processGatewayMessage(String gatewayId, String sessionId, String messageId, SharedEvent event) {
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
         if (connector == null) {
             return;
         }
-
-        connector.onDisconnect();
+        if (!connector.isConnected() || !sessionId.equals(connector.getSessionId())) {
+            LOG.finest("Gateway event received for an obsolete session so ignoring: " + this);
+            return;
+        }
+        connector.onGatewayEvent(messageId, event);
     }
 
     protected void processGatewayChange(GatewayAsset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -722,10 +716,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
             case CREATE -> {
                 createUpdateGatewayServiceUser(gateway);
-                synchronized (gatewayConnectorMap) {
-                    GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
-                    gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
-                }
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
+                gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
             }
             case UPDATE -> {
                 // Check if this gateway has a connector
@@ -758,12 +750,10 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     break;
                 }
 
-                synchronized (gatewayConnectorMap) {
-                    connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
+                connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
-                    if (connector != null) {
-                        connector.disconnect();
-                    }
+                if (connector != null) {
+                    connector.disconnect();
                 }
 
                 removeGatewayServiceUser(gateway);
@@ -857,13 +847,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     protected Consumer<Object> createConnectorMessageConsumer(String sessionId) {
         return msg -> clientEventService.sendToSession(sessionId, msg);
-    }
-
-    protected void onGatewayClientEventReceived(String gatewayId, String messageId, SharedEvent event) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-        if (connector != null) {
-            connector.onGatewayEvent(messageId, event);
-        }
     }
 
     String getTunnelSSHHostname() {

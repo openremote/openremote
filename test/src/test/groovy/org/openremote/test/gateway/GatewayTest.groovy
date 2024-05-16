@@ -96,10 +96,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId(), true)
+            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
             assert gateway.getAttribute("clientId").isPresent()
-            assert !isNullOrEmpty(gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""))
-            assert !isNullOrEmpty(gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""))
+            assert !isNullOrEmpty(gateway.getClientId().orElse(""))
+            assert !isNullOrEmpty(gateway.getClientSecret().orElse(""))
         }
 
         and: "a gateway connector should have been created for this gateway"
@@ -140,13 +140,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        and: "the server should have sent a CONNECTED message and an asset read request"
+        and: "the server should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
             assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
@@ -328,14 +328,17 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "all the gateway assets should be replicated underneath the gateway"
-        assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        conditions.eventually {
+            assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        }
 
         and: "the http client protocol of the gateway agents should not have been linked to the central manager"
         Thread.sleep(500)
@@ -525,26 +528,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the gateway asset is marked as disabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED, true))
 
-        then: "the gateway asset status should become disabled"
+        then: "the gateway asset status should become DISCONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true)
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISABLED
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISCONNECTED
         }
 
         and: "the gateway connector should be marked as disconnected and the gateway client should have been disconnected"
         conditions.eventually {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).disabled
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).connected
-            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
         }
-
-        and: "the central manager should have sent a disconnect event to the client"
-        conditions.eventually {
-            assert clientReceivedMessages.last().contains("gateway-disconnect")
-        }
-        gatewayClient.disconnect()
 
         when: "an attempt is made to add a descendant asset to a gateway that isn't connected"
+        gatewayClient.disconnect()
         def failedAsset = new BuildingAsset("Failed Asset")
             .setId(UniqueIdentifierGenerator.generateId("Failed asset"))
             .setCreatedOn(Date.from(timerService.getNow()))
@@ -619,10 +616,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "the local manager should have sent an asset read request"
@@ -718,10 +715,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent = new EventRequestResponseWrapper(messageId, new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "the gateway should have the correct assets"
@@ -801,8 +799,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
-            gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""),
-            gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""),
+            gateway.getClientId().orElse(""),
+            gateway.getClientSecret().orElse(""),
             false,
             false
         )

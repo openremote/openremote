@@ -215,7 +215,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     protected void scheduleDoConnect(long initialDelay) {
         long delay = Math.max(initialDelay, RECONNECT_DELAY_INITIAL_MILLIS);
-        long maxDelay = Math.max(delay+1, Math.max(250, RECONNECT_DELAY_MAX_MILLIS));
+        long maxDelay = Math.max(delay+1, RECONNECT_DELAY_MAX_MILLIS);
 
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
             .withJitter(Duration.ofMillis(delay))
@@ -310,7 +310,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             if (future.isSuccess()) {
                 LOG.log(Level.INFO, "Connected: " + getClientUri());
             } else if (future.cause() != null) {
-                LOG.log(Level.WARNING, "Connection error: " + getClientUri(), future.cause());
+                LOG.log(Level.INFO, "Connection error: " + getClientUri(), future.cause().getMessage());
             }
 
             connectedFuture.complete(future.isSuccess());
@@ -357,6 +357,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 channel.close();
                 channel = null;
             }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), e);
         } finally {
             if (workerGroup != null) {
                 workerGroup.shutdownGracefully();
@@ -377,7 +379,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             channel.writeAndFlush(message);
             LOG.finest("Message sent to server: " + getClientUri());
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Message send failed: " + getClientUri(), e);
+            LOG.log(Level.INFO, "Message send failed: " + getClientUri(), e);
         }
     }
 
@@ -461,11 +463,11 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: " + getClientUri(), cause);
+        LOG.log(Level.FINE, "Exception occurred on in-bound message '" + cause.getMessage() +"': " + getClientUri());
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: " + getClientUri(), cause);
+        LOG.log(Level.FINE, "Exception occurred on out-bound message '" + cause.getMessage() +"': " + getClientUri());
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {

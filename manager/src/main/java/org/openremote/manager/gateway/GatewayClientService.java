@@ -322,7 +322,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     clientRealmMap.put(connection.getLocalRealm(), null);
                 }
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
-                LOG.info("Central manager requested specifications / capabilities of the gateway.");
+                LOG.fine("Central manager requested specifications / capabilities of the gateway.");
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
                         messageToString(

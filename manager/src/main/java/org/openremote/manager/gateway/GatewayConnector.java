@@ -68,7 +68,8 @@ public class GatewayConnector {
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
     protected Consumer<Object> gatewayMessageConsumer;
-    protected Runnable disconnectRunnable;
+    protected Runnable requestDisconnect;
+    protected final AtomicReference<String> sessionId = new AtomicReference<>();
     protected boolean disabled;
     protected boolean initialSyncInProgress;
     protected ScheduledFuture<?> syncProcessorFuture;
@@ -104,10 +105,9 @@ public class GatewayConnector {
         this.assetProcessingService = assetProcessingService;
         this.executorService = executorService;
         this.gatewayService = gatewayService;
-        boolean disabled = gateway.getDisabled().orElse(false);
+        this.disabled = gateway.getDisabled().orElse(false);
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
-        this.disabled = disabled;
 
         // Setup static inbound event handling
         synchronized(eventConsumerMap) {
@@ -115,9 +115,10 @@ public class GatewayConnector {
             eventConsumerMap.put(AttributeEvent.class, (msgId, e) -> onAttributeEvent((AttributeEvent) e));
             eventConsumerMap.put(DeleteAssetsResponseEvent.class, (msgId, e) -> onAssetDeleteResponseEvent(msgId, (DeleteAssetsResponseEvent) e));
         }
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
 
-    public void sendMessageToGateway(Object message) {
+    protected void sendMessageToGateway(Object message) {
         try {
             if (gatewayMessageConsumer != null) {
                 gatewayMessageConsumer.accept(message);
@@ -128,24 +129,23 @@ public class GatewayConnector {
     }
 
     /**
-     * Start the connector and initiate synchronisation of assets
+     * Connection for this gateway has started so initiate synchronisation of assets
      */
-    public void connect(Consumer<Object> gatewayMessageConsumer, Runnable disconnectRunnable) {
-        synchronized (this) {
-            if (this.gatewayMessageConsumer != null) {
-                return;
+    public void connected(String sessionId, Consumer<Object> gatewayMessageConsumer, Runnable requestDisconnect) {
+
+        synchronized (this.sessionId) {
+            if (getSessionId() != null) {
+                this.requestDisconnect.run();
+                disconnected(getSessionId());
             }
-            this.gatewayMessageConsumer = gatewayMessageConsumer;
+            this.sessionId.set(sessionId);
         }
-
-        this.disconnectRunnable = disconnectRunnable;
-        initialSyncInProgress = true;
-
-
-        LOG.fine("Gateway connector starting: " + this);
-        sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTING));
+        this.gatewayMessageConsumer = gatewayMessageConsumer;
+        this.requestDisconnect = requestDisconnect;
+        LOG.fine("Gateway connector connected: " + this);
 
         // Reinitialise state
+        initialSyncInProgress = true;
         syncProcessorFuture = null;
         cachedAssetEvents = new ArrayList<>();
         cachedAttributeEvents = new ArrayList<>();
@@ -153,50 +153,51 @@ public class GatewayConnector {
         syncIndex = 0;
         syncErrors = 0;
 
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+
         startSync();
     }
 
     /**
-     * Stop the connector and prevent further communication with the gateway
+     * Connection to the edge gateway instance has been disconnected so stop any synchronisation
      */
-    public void disconnect() {
-        synchronized (this) {
-            if (this.gatewayMessageConsumer == null) {
+    protected void disconnected(String sessionId) {
+        synchronized (this.sessionId) {
+            if (!sessionId.equals(this.sessionId.get())) {
                 return;
             }
-            this.gatewayMessageConsumer = null;
+            this.sessionId.set(null);
         }
 
+        LOG.fine("Gateway connector disconnected: " + this);
         if (syncProcessorFuture != null) {
+            LOG.finest("Aborting active sync process: " + this);
             syncProcessorFuture.cancel(true);
         }
 
-        // Wait a short while to disconnect to allow disconnect message to be delivered
-        LOG.fine("Gateway connector disconnected: " + this);
-        executorService.schedule(disconnectRunnable, 1, TimeUnit.SECONDS);
-    }
-
-    protected void onDisconnect() {
-        disconnectRunnable = null;
         initialSyncInProgress = false;
         pendingAssetMerges.clear();
         pendingAssetDelete.set(null);
-        if (isDisabled()) {
-            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISABLED));
-        } else {
-            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+        publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
+    }
+
+    protected void disconnect() {
+        synchronized (this.sessionId) {
+            if (isConnected()) {
+                disconnected(this.getSessionId());
+            }
         }
     }
 
-    public boolean isConnected() {
-        return gatewayMessageConsumer != null;
+    protected boolean isConnected() {
+        return sessionId.get() != null;
     }
 
-    public boolean isInitialSyncInProgress() {
+    protected boolean isInitialSyncInProgress() {
         return initialSyncInProgress;
     }
 
-    public boolean isTunnellingSupported() {
+    protected boolean isTunnellingSupported() {
         return tunnellingSupported;
     }
 
@@ -363,10 +364,6 @@ public class GatewayConnector {
             });
     }
 
-    public String getGatewayId() {
-        return gatewayId;
-    }
-
     public String getRealm() {
         return realm;
     }
@@ -376,31 +373,20 @@ public class GatewayConnector {
     }
 
     public void setDisabled(boolean disabled) {
-        if (this.disabled == disabled) {
-            return;
-        }
-
         this.disabled = disabled;
-
-        if (disabled) {
-            if (isConnected()) {
-                disconnect();
-            }
-            LOG.fine("Gateway connector disabled: " + this);
-        } else {
-            LOG.info("Gateway connector enabled: " + this);
-            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
-        }
+        this.disconnect();
     }
 
-    protected void sendAttributeEvent(AttributeEvent event) {
+    protected String getSessionId() {
+        return sessionId.get();
+    }
+
+    protected void publishAttributeEvent(AttributeEvent event) {
         assetProcessingService.sendAttributeEvent(event, GatewayService.class.getName());
     }
 
     synchronized protected void onGatewayEvent(String messageId, SharedEvent e) {
-        if (!isConnected()) {
-            return;
-        }
+
         if (initialSyncInProgress) {
             if (e instanceof AssetsEvent) {
                 onSyncAssetsResponse(messageId, (AssetsEvent) e);
@@ -461,8 +447,7 @@ public class GatewayConnector {
     protected boolean syncAborted() {
         if (syncErrors == MAX_SYNC_RETRIES) {
             LOG.warning("Gateway sync max retries reached so disconnecting the gateway: " + this);
-            sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.PERMANENT_ERROR));
-            disconnect();
+            requestDisconnect.run();
             return true;
         }
 
@@ -660,8 +645,7 @@ public class GatewayConnector {
                 LOG.warning("An error occurred whilst getting the gateway capabilities, assuming no support: " + this);
             }
             tunnellingSupported = response != null && response.isTunnelingSupported();
-            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
-            sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED));
+            publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.TUNNELING_SUPPORTED, tunnellingSupported));
         });
     }
 
@@ -793,6 +777,7 @@ public class GatewayConnector {
         }
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     synchronized protected void onAssetEvent(AssetEvent e) {
 
         switch (e.getCause()) {
@@ -806,7 +791,6 @@ public class GatewayConnector {
                         String id = pendingAssetMergeEntry.getKey();
                         pendingAssetMergeEntry.setValue(mergedAsset);
 
-                        //noinspection
                         synchronized (id) {
                             // Notify the waiting merge thread
                             id.notify();
@@ -826,7 +810,7 @@ public class GatewayConnector {
 
     protected void onAttributeEvent(AttributeEvent e) {
         // Just push the event through the processing chain
-        sendAttributeEvent(new AttributeEvent(mapAssetId(gatewayId, e.getId(), false), e.getName(), e.getValue().orElse(null), e.getTimestamp()));
+        publishAttributeEvent(new AttributeEvent(mapAssetId(gatewayId, e.getId(), false), e.getName(), e.getValue().orElse(null), e.getTimestamp()));
     }
 
     protected <T extends Asset<?>> T saveAssetLocally(T asset) {
