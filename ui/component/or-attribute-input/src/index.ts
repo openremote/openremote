@@ -441,13 +441,6 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._clearWriteTimeout();
     }
 
-    langChangedCallback = () => {
-        this.updateComplete.finally(() => {
-            this.label = this.getLabel(true);
-            this.requestUpdate();
-        })
-    }
-
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         const shouldUpdate = super.shouldUpdate(_changedProperties);
 
@@ -608,16 +601,15 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
     }
 
-    public getLabel(force = false): string | undefined {
+    public getLabel(): string | undefined {
         let label;
 
-        if (this.label && !force) {
+        if (this.label) {
             label = this.label;
-        } else if (force || (this.label !== "" && this.label !== null)) {
+        } else if (this.label !== "" && this.label !== null) {
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute ? this.attribute!.name : undefined, this._attributeDescriptor);
             label = Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
         }
-
         return label;
     }
 
