@@ -137,8 +137,7 @@ public class GatewayConnector {
 
         synchronized (this.sessionId) {
             if (getSessionId() != null) {
-                this.requestDisconnect.run();
-                disconnected(getSessionId());
+                disconnect();
             }
             this.sessionId.set(sessionId);
         }
@@ -185,7 +184,8 @@ public class GatewayConnector {
     protected void disconnect() {
         synchronized (this.sessionId) {
             if (isConnected()) {
-                disconnected(this.getSessionId());
+                requestDisconnect.run();
+                disconnected(getSessionId());
             }
         }
     }
