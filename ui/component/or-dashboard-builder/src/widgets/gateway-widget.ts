@@ -1,4 +1,4 @@
-import {customElement, query, state} from "lit/decorators.js";
+import {customElement, state} from "lit/decorators.js";
 import {OrWidget, WidgetManifest} from "../util/or-widget";
 import {css, html, PropertyValues, TemplateResult} from "lit";
 import {WidgetSettings} from "../util/widget-settings";
@@ -8,7 +8,6 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
 import manager from "@openremote/core";
 import {when} from "lit/directives/when.js";
-import moment from "moment";
 import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
@@ -25,7 +24,7 @@ const styling = css`
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        gap: 8px;
         max-height: 48px;
         flex-wrap: wrap;
         position: relative;
@@ -52,16 +51,13 @@ export class GatewayWidget extends OrWidget {
 
     protected widgetConfig!: GatewayWidgetConfig;
 
-    protected _activeTunnelTimer?: number | undefined;
-
     @state()
     protected _loading = false;
 
     @state()
     protected _activeTunnel?: GatewayTunnelInfo;
 
-    @query("#tunnel-timer")
-    protected _tunnelTimerElem?: HTMLElement;
+    protected _startedByUser = false;
 
     static getManifest(): WidgetManifest {
         return {
@@ -91,9 +87,12 @@ export class GatewayWidget extends OrWidget {
 
     disconnectedCallback() {
         if(this._activeTunnel) {
-            this._stopTunnel(this._activeTunnel);
+            if(this._startedByUser) {
+                this._stopTunnel(this._activeTunnel);
+            } else {
+                console.warn("Keeping the active tunnel open, as it is not started through the widget.")
+            }
         }
-        this._clearTunnelTimer();
         super.disconnectedCallback();
     }
 
@@ -111,23 +110,23 @@ export class GatewayWidget extends OrWidget {
                     ${when(this._loading, () => html`
                         <or-loading-indicator></or-loading-indicator>
                     `, () => {
-                        if(this.widgetConfig.type === GatewayTunnelInfoType.TCP) {
+                        if(this._activeTunnel) {
                             return html`
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="content-copy" label="${i18next.t('gatewayTunnels.copyAddress')}" outlined .disabled="${disabled}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCopyTunnelAddressClick(ev)}"
-                                ></or-mwc-input>
-                            `;
-                        } else if (this._activeTunnel) {
-                            return html`
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="stop"
+                                
+                                <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
                                 ></or-mwc-input>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.open')}" outlined .disabled="${disabled}"
-                                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev)}"
-                                ></or-mwc-input>
-                                <div style="margin-left: 8px;">
-                                    <span id="tunnel-timer"></span>
-                                </div>
+                                
+                                ${when(this.widgetConfig.type === GatewayTunnelInfoType.TCP, () => html`
+                                    <or-mwc-input .type="${InputType.BUTTON}" icon="content-copy" label="${i18next.t('gatewayTunnels.copyAddress')}" outlined .disabled="${disabled}"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onCopyTunnelAddressClick(ev)}"
+                                    ></or-mwc-input>
+                                `, () => html`
+                                    <or-mwc-input .type="${InputType.BUTTON}" icon="open-in-new" label="${i18next.t('gatewayTunnels.open')}" outlined .disabled="${disabled}"
+                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev)}"
+                                    ></or-mwc-input>
+                                `)}
+                                
                             `;
                         } else {
                             return html`
@@ -209,9 +208,9 @@ export class GatewayWidget extends OrWidget {
                     this._startTunnel(tunnelInfo).then(newTunnel => {
 
                         if (newTunnel) {
-                            console.log("Started a new tunnel!", newTunnel)
+                            console.log("Started a new tunnel!", newTunnel);
                             this._activeTunnel = newTunnel;
-                            this._startTunnelTimer();
+                            this._startedByUser = true;
 
                         } else {
                             console.warn("No new tunnel!");
@@ -261,7 +260,7 @@ export class GatewayWidget extends OrWidget {
         this._stopTunnel(tunnelInfo)
             .then(() => {
                 this._activeTunnel = undefined;
-                this._clearTunnelTimer();
+                this._startedByUser = false;
             })
             .catch(e => {
                 console.warn(e);
@@ -346,26 +345,6 @@ export class GatewayWidget extends OrWidget {
             target: config.target,
             targetPort: config.targetPort
         } as GatewayTunnelInfo;
-    }
-
-    /**
-     * Function that starts a {@link NodeJS.Timer} containing the current active tunnel session.
-     * Important: This is processed locally within the browser, so it won't be in line with the remote instance nor the Manager backend.
-     */
-    protected _startTunnelTimer(time = moment().startOf("day")) {
-        this._activeTunnelTimer = window.setInterval(() => {
-            time = time.add(1, "second");
-            if (this._tunnelTimerElem) {
-                this._tunnelTimerElem.textContent = (time.hours() > 0) ? time.format("HH:mm:ss") : time.format("mm:ss");
-            }
-        }, 1000)
-    }
-
-    /**
-     * Function that clears the {@link NodeJS.Timer} containing the current active tunnel session.
-     */
-    protected _clearTunnelTimer(): void {
-        window.clearInterval(this._activeTunnelTimer);
     }
 
 }
