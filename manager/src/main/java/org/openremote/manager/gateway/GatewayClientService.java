@@ -26,7 +26,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.PersistenceEvent;
@@ -80,7 +79,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
-    protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
+    protected final Map<String, GatewayIOClient> clientRealmMap = new HashMap<>();
     protected GatewayTunnelFactory gatewayTunnelFactory;
 
     @Override
@@ -185,7 +184,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             switch (cause) {
 
                 case UPDATE:
-                    WebsocketIOClient<String> client = clientRealmMap.remove(connection.getLocalRealm());
+                    GatewayIOClient client = clientRealmMap.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
@@ -206,7 +205,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
     }
 
-    protected WebsocketIOClient<String> createGatewayClient(GatewayConnection connection) {
+    protected GatewayIOClient createGatewayClient(GatewayConnection connection) {
 
         if (connection.isDisabled()) {
             LOG.info("Disabled gateway client connection so ignoring: " + connection);
@@ -216,7 +215,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Creating gateway IO client: " + connection);
 
         try {
-            WebsocketIOClient<String> client = new WebsocketIOClient<>(
+            GatewayIOClient client = new GatewayIOClient(
                 new URIBuilder()
                     .setScheme(connection.isSecured() ? "wss" : "ws")
                     .setHost(connection.getHost())
@@ -273,7 +272,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return null;
     }
 
-    protected void destroyGatewayClient(GatewayConnection connection, WebsocketIOClient<String> client) {
+    protected void destroyGatewayClient(GatewayConnection connection, GatewayIOClient client) {
         if (client == null) {
             return;
         }
@@ -428,7 +427,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void sendCentralManagerMessage(String realm, String message) {
-        WebsocketIOClient<String> client;
+        GatewayIOClient client;
 
         synchronized (clientRealmMap) {
             client = clientRealmMap.get(realm);
@@ -498,7 +497,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             return ConnectionStatus.DISABLED;
         }
 
-        WebsocketIOClient<String> client = clientRealmMap.get(realm);
+        GatewayIOClient client = clientRealmMap.get(realm);
         return client != null ? client.getConnectionStatus() : null;
     }
 }

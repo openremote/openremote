@@ -8,6 +8,7 @@ import java.util.Date;
 
 public class GatewayCapabilitiesResponseEvent extends SharedEvent {
 
+    public static final String TYPE = "gateway-capabilities-response";
     protected final boolean tunnelingSupported;
 
     @JsonCreator

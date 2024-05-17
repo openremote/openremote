@@ -31,16 +31,15 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.CharsetUtil;
+import jakarta.ws.rs.ProcessingException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.web.OAuthFilter;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import jakarta.ws.rs.ProcessingException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.URI;
@@ -51,7 +50,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
@@ -98,7 +96,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 } catch (WebSocketHandshakeException e) {
                     handshakeFuture.setFailure(e);
                 }
-                WebsocketIOClient.this.onHandshakeComplete(handshakeFuture);
                 return;
             }
 
@@ -134,6 +131,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
+    protected static ResteasyClient client;
     public static final long PING_MILLIS = 60000;
     protected ScheduledFuture<?> pingFuture;
     protected AtomicInteger pingCounter;
@@ -146,7 +144,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     protected String authHeaderValue;
     protected String host;
     protected int port;
-    protected CompletableFuture<Boolean> connectedFuture;
     protected boolean pingDisabled;
 
     public WebsocketIOClient(URI uri, Map<String, List<String>> headers, OAuthGrant oAuthGrant) {
@@ -183,6 +180,13 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         useSsl = "wss".equalsIgnoreCase(scheme);
     }
 
+    protected synchronized ResteasyClient getClient() {
+        if (client == null) {
+            client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
+        }
+        return client;
+    }
+
     @Override
     protected Class<? extends Channel> getChannelClass() {
         return NioSocketChannel.class;
@@ -204,45 +208,37 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected void initChannel(Channel channel) {
-        try {
-            if (useSsl) {
-                sslCtx = SslContextBuilder.forClient()
-                    .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
-            } else {
-                sslCtx = null;
-            }
-
-            HttpHeaders hdrs = new DefaultHttpHeaders();
-
-            if (this.headers != null) {
-                this.headers.forEach(hdrs::add);
-            }
-
-            if (authHeaderValue != null) {
-                hdrs.set(HttpHeaderNames.AUTHORIZATION, authHeaderValue);
-            }
-
-            // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
-            // If you change it to V00, ping is not supported and remember to change
-            // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
-            handler =
-                new WebSocketClientHandler(
-                    WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, null, true, hdrs));
-
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to initialise channel: "  + getClientUri(), e);
-            setPermanentError(e.getMessage());
-            return;
+    protected void initChannel(Channel channel) throws Exception {
+        if (useSsl) {
+            sslCtx = SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+        } else {
+            sslCtx = null;
         }
+
+        HttpHeaders hdrs = new DefaultHttpHeaders();
+
+        if (this.headers != null) {
+            this.headers.forEach(hdrs::add);
+        }
+
+        if (authHeaderValue != null) {
+            hdrs.set(HttpHeaderNames.AUTHORIZATION, authHeaderValue);
+        }
+
+        // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
+        // If you change it to V00, ping is not supported and remember to change
+        // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
+        handler =
+            new WebSocketClientHandler(
+                WebSocketClientHandshakerFactory.newHandshaker(
+                    uri, WebSocketVersion.V13, null, true, hdrs));
+
 
         super.initChannel(channel);
     }
 
-    protected void onHandshakeComplete(ChannelFuture handshakeFuture) {
-        super.onConnectedFutureComplete(handshakeFuture, connectedFuture);
-
+    protected void onHandshakeComplete() {
         // Start ping task
         if (!pingDisabled) {
             LOG.fine("Starting PING task: " + getClientUri());
@@ -251,7 +247,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 try {
                     if (pingCounter.get() > 2) {
                         LOG.info("No PING response so reconnecting: " + this);
-                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
                         doDisconnect();
                         scheduleDoConnect(1000);
                         return;
@@ -297,15 +292,13 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected Future<Boolean> doConnect() {
+    protected Future<Void> doConnect() {
 
         if (oAuthGrant != null) {
             LOG.fine("Retrieving OAuth access token: "  + getClientUri());
 
-            ResteasyClient client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
-
             try {
-                OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
+                OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
                 authHeaderValue = oAuthFilter.getAuthHeader();
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new RuntimeException("Returned access token is null");
@@ -313,15 +306,9 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 LOG.fine("Retrieved access token via OAuth: " + getClientUri());
 
             } catch (SocketException | ProcessingException e) {
-                LOG.log(Level.SEVERE, "Failed to retrieve OAuth access token for '" + getClientUri() + "': Connection error");
-                return CompletableFuture.completedFuture(false);
+                return CompletableFuture.failedFuture(new RuntimeException("Failed to retrieve OAuth access token for '" + getClientUri() + "': Connection error"));
             } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to retrieve OAuth access token: " + getClientUri());
-                return CompletableFuture.completedFuture(false);
-            } finally {
-                if (client != null) {
-                    client.close();
-                }
+                return CompletableFuture.failedFuture(new RuntimeException("Failed to retrieve OAuth access token '" + getClientUri() + "': " + e.getMessage()));
             }
         }
 
@@ -339,8 +326,15 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected CompletableFuture<Boolean> createConnectedFuture() {
-        connectedFuture = new CompletableFuture<>();
-        return connectedFuture;
+    protected CompletableFuture<Void> createConnectedFuture(final ChannelFuture channelStartFuture) {
+        CompletableFuture<Void> connectedFuture = super.createConnectedFuture(channelStartFuture);
+        return connectedFuture.thenRunAsync(() -> {
+            ChannelPromise handshakeFuture = handler.handshakeFuture;
+            handshakeFuture.awaitUninterruptibly();
+
+            if (handshakeFuture.isSuccess()) {
+                onHandshakeComplete();
+            }
+        });
     }
 }

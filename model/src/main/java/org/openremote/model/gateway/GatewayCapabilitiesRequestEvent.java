@@ -7,9 +7,11 @@ import org.openremote.model.event.shared.SharedEvent;
 import java.util.Date;
 
 /**
- * Request the gateway to return a {@link Gatewya}
+ * Request the gateway to return a {@link GatewayCapabilitiesResponseEvent}
  */
 public class GatewayCapabilitiesRequestEvent extends SharedEvent {
+
+    public static final String TYPE = "gateway-capabilities-request";
 
     @JsonCreator
     public GatewayCapabilitiesRequestEvent(@JsonProperty("timestamp") Date timestamp) {

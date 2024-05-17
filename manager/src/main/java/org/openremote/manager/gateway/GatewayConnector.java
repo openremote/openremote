@@ -94,7 +94,7 @@ public class GatewayConnector {
         );
     }
 
-    public GatewayConnector(
+    protected GatewayConnector(
         AssetStorageService assetStorageService,
         AssetProcessingService assetProcessingService,
         ScheduledExecutorService executorService,
@@ -131,7 +131,9 @@ public class GatewayConnector {
     /**
      * Connection for this gateway has started so initiate synchronisation of assets
      */
-    public void connected(String sessionId, Consumer<Object> gatewayMessageConsumer, Runnable requestDisconnect) {
+    protected void connected(String sessionId, Consumer<Object> gatewayMessageConsumer, Runnable requestDisconnect) {
+
+        LOG.fine("Gateway connector connected: " + this);
 
         synchronized (this.sessionId) {
             if (getSessionId() != null) {
@@ -142,7 +144,6 @@ public class GatewayConnector {
         }
         this.gatewayMessageConsumer = gatewayMessageConsumer;
         this.requestDisconnect = requestDisconnect;
-        LOG.fine("Gateway connector connected: " + this);
 
         // Reinitialise state
         initialSyncInProgress = true;
@@ -364,15 +365,15 @@ public class GatewayConnector {
             });
     }
 
-    public String getRealm() {
+    protected String getRealm() {
         return realm;
     }
 
-    public boolean isDisabled() {
+    protected boolean isDisabled() {
         return disabled;
     }
 
-    public void setDisabled(boolean disabled) {
+    protected void setDisabled(boolean disabled) {
         this.disabled = disabled;
         this.disconnect();
     }
