@@ -15,8 +15,6 @@ dependencies {
     // Log4J redirect to SLF4J
     api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
-
     api "io.undertow:undertow-servlet:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
@@ -47,7 +45,6 @@ dependencies {
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
-    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
     api "org.apache.camel:camel-micrometer:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }

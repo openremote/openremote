@@ -9,7 +9,7 @@ import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService

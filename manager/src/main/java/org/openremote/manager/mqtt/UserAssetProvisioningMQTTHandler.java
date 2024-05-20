@@ -26,7 +26,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.provisioning.ProvisioningService;
 import org.openremote.manager.security.ManagerIdentityService;
