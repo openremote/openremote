@@ -54,7 +54,9 @@ Updates the attributes of the specified asset based on the payload, allows for m
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/get```
 Request the attribute data of the specified asset.
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/{attributeName}/get```
-Request the specified attribute value of the specified asset.
+Request the specified attribute data of the specified asset.
+- ```{realm}/{clientId}/operations/assets/{assetId}/attributes/{attributeName}/get-value```
+Request only the value of the specified attribute of the specified asset.
 
 ### Events (Subscribing)
 Events are subscription topics that allow for subscribing to various events such as new Assets 
@@ -98,4 +100,4 @@ All attribute events for direct children of the specified asset with the specifi
 
 
 ### Device Provisioning
-Device provisioning is a process that allows for the automatic provisioning of Assets, using X.509 certificates.
+Device provisioning is a process that allows for the automatic provisioning of OpenRemote Assets, using X.509 certificates.

@@ -37,7 +37,9 @@ import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import java.util.*;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -84,7 +86,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         executorService = container.getExecutorService();
 
         if (!identityService.isKeycloakEnabled()) {
-            LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
+            LOG.warning("Gateway connections disabled: Not supported when not using Keycloak identity provider");
             active = false;
         } else {
             active = true;
@@ -106,6 +108,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         switch (persistenceEvent.getCause()) {
 
             case CREATE -> {
+                gateway.setDisabled(false); // Ensure gateway is enabled when created, user can disable it later if needed
                 createUpdateGatewayServiceUser(gateway);
             }
             case UPDATE -> {
