@@ -307,9 +307,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 EventRequestResponseWrapper.class);
             messageId = wrapper.getMessageId();
             event = wrapper.getEvent();
-        }
-
-        else if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+        } else if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
         }
 

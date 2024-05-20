@@ -392,7 +392,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     // Push value into asset for service user method
                     gatewayAsset.setDisabled(disabled);
                     createUpdateGatewayServiceUser(gatewayAsset);
-
                     connector.setDisabled(disabled);
                 }
             } else if (GatewayAsset.CLIENT_SECRET.getName().equals(event.getName())) {

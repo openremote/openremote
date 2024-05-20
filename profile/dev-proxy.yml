@@ -37,7 +37,6 @@ services:
     # Following options are useful for tunnelling functionality do not use on public instance
     environment:
       KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
-      KC_HOSTNAME:
       KC_HOSTNAME_STRICT: false
     depends_on:
       postgresql:

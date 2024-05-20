@@ -52,10 +52,9 @@ services:
       - ./deployment:/deployment
     environment:
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      # Following options are useful for tunnelling functionality do not use on public instance
-      KC_HOSTNAME:
-      KEYCLOAK_ISSUER_BASE_URI: https://${OR_HOSTNAME}/auth
-      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+
 
   manager:
 #    privileged: true
