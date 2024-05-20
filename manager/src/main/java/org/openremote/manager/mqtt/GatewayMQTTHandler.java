@@ -136,6 +136,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                             if (subscriberInfo != null) {
                                 TriggeredEventSubscription<?> event = exchange.getIn().getBody(TriggeredEventSubscription.class);
                                 Consumer<SharedEvent> eventConsumer = subscriberInfo.topicSubscriptionMap.get(event.getSubscriptionId());
+                                //TODO: Prevent event being accepted if the eventConsumer is a disabled gateway asset service user
                                 if (eventConsumer != null) {
                                     eventConsumer.accept(event.getEvents().get(0));
                                 }
@@ -272,15 +273,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         GatewayV2Asset gatewayAsset = null;
-        // Check if its a disabled gateway connection
         if (isGatewayConnection(connection)) {
-            LOG.fine("Gateway connection " + getConnectionIDString(connection));
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
+
             if (gatewayAsset == null) {
                 LOG.finer("Gateway not found for connection " + getConnectionIDString(connection));
                 return false;
             }
-            if (isGatewayDisabled(gatewayAsset)) {
+
+            if (gatewayAsset.getDisabled().orElse(false)) {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
                 return false;
             }
@@ -728,14 +729,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return false;
     }
 
-    protected boolean isGatewayDisabled(GatewayV2Asset gatewayAsset) {
-        return gatewayAsset.getDisabled().orElse(true);
-    }
-
     protected Optional<GatewayV2Asset> findGatewayFromConnection(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
             return Optional.ofNullable((GatewayV2Asset) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
-                    .attributeValue(GatewayV2Asset.CLIENT_ID.getName(), connection.getClientID())));
+                    .attributeValue("clientId", connection.getClientID())));
         }
         return Optional.empty();
     }

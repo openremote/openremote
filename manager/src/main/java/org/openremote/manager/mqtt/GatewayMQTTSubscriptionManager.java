@@ -255,9 +255,7 @@ public class GatewayMQTTSubscriptionManager {
             }
             return topicStr;
         };
-
         LOG.info("Creating event subscription consumer for topic " + topicStr);
-
 
         return ev -> {
             LOG.info("Received event " + ev + " for topic " + topicStr);
