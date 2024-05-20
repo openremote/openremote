@@ -459,6 +459,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .withHeaders(headers)
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncSend();
+
+        subscriptionManager.removeSubscriberInfo(connection);
     }
 
     @Override
@@ -475,6 +477,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .withHeaders(headers)
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncSend();
+
+          subscriptionManager.removeSubscriberInfo(connection);
     }
 
     @Override

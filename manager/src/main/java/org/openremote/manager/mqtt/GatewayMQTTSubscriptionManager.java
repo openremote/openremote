@@ -71,6 +71,12 @@ public class GatewayMQTTSubscriptionManager {
         removeSubscriberInfo(connection, topic);
     }
 
+    public void removeSubscriberInfo(RemotingConnection connection) {
+        synchronized (connectionSubscriberInfoMap) {
+            connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
+        }
+    }
+
     // Add the event subscription and consumer to the connectionSubscriberInfoMap
     protected void subscribeToTopic(EventSubscription subscription, Map<String, Object> headers) {
         messageBrokerService.getFluentProducerTemplate()
