@@ -47,6 +47,16 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
     };
 }
 
+export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "lan-connect",
+        value: "gateway-tunnel",
+        href: "gateway-tunnel",
+        text: "gatewayTunnels.",
+        roles: ["write:admin", "read:admin"]
+    }
+}
+
 export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
         icon: "web",

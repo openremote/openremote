@@ -345,6 +345,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     }
 
     public synchronized KeycloakDeployment getKeycloakDeployment(String realm, String clientId) {
+        if (realm == null || clientId == null) {
+            return null;
+        }
         try {
             return keycloakDeploymentCache.get(new KeycloakRealmClient(realm, clientId));
         } catch (Exception ex) {
