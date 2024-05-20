@@ -37,7 +37,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
