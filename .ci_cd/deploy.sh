@@ -235,7 +235,7 @@ fi
 CONTAINER_IDS=\$(docker ps -q)
 if [ -n "\$CONTAINER_IDS" ]; then
   echo "Stopping existing stack"
-  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+  docker-compose -f temp/docker-compose.yml -p or down --remove-orphans 2> /dev/null
 
   if [ \$? -ne 0 ]; then
     echo "Deployment failed to stop the existing stack"

@@ -251,7 +251,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public String getFrontendUrl() {
+    public String getFrontendURI() {
         return null;
     }
 

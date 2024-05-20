@@ -23,8 +23,6 @@ import io.undertow.util.Headers;
 import jakarta.persistence.Query;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.io.IOUtils;
@@ -39,7 +37,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -93,9 +91,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
     public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
-    public static final String KC_HOSTNAME = "KC_HOSTNAME";
-    public static final String KC_HOSTNAME_PATH = "KC_HOSTNAME_PATH";
-    public static final String KC_HOSTNAME_PORT = "KC_HOSTNAME_PORT";
+    public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
+    public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -105,7 +102,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected ConsoleAppService consoleAppService;
     protected String keycloakAdminPassword;
     protected Container container;
-    protected String frontendUrl;
+    protected String frontendURI;
     protected List<String> validRedirectUris;
 
     @Override
@@ -113,21 +110,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         super.init(container);
         this.container = container;
 
-        String hostname = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
-        int port = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1); // Should just be called port
-        String keycloakHostname = getString(container.getConfig(), KC_HOSTNAME, hostname);
-        int keycloakPort = getInteger(container.getConfig(), KC_HOSTNAME_PORT, port);
-        String keycloakHostnamePath = getString(container.getConfig(), KC_HOSTNAME_PATH, "auth");
-
-        URIBuilder uriBuilder = new URIBuilder().setHost(keycloakHostname).setPath(keycloakHostnamePath);
-        if (keycloakPort > 0) {
-            uriBuilder.setPort(keycloakPort);
-        }
-
+        String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, OR_KEYCLOAK_PUBLIC_URI_DEFAULT);
         try {
-            frontendUrl = uriBuilder.build().toString();
+            URIBuilder uriBuilder = new URIBuilder(keycloakPublicUri);
+            frontendURI = uriBuilder.build().toString();
         } catch (URISyntaxException e) {
-            LOG.log(Level.SEVERE, "Failed to build Keycloak host URI", e);
+            LOG.log(Level.SEVERE, "Failed to build Keycloak public URI", e);
             throw new RuntimeException(e);
         }
 
@@ -149,7 +137,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void start(Container container) {
         super.start(container);
         if (container.isDevMode()) {
-            enableAuthProxy(container.getService(WebService.class));
+            String keycloakPath = getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
+            enableAuthProxy(container.getService(WebService.class), keycloakPath);
         }
     }
 
@@ -1150,8 +1139,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public String getFrontendUrl() {
-        return frontendUrl;
+    public String getFrontendURI() {
+        return frontendURI;
     }
 
     protected void configureRealm(RealmRepresentation realmRepresentation) {

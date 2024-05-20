@@ -186,8 +186,6 @@ public class GatewayConnection {
             ", host='" + host + '\'' +
             ", port=" + port +
             ", realm='" + realm + '\'' +
-            ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
             ", secured=" + secured +
             ", disabled=" + disabled +
             '}';

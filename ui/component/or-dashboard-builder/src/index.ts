@@ -30,6 +30,7 @@ import {KpiWidget} from "./widgets/kpi-widget";
 import {MapWidget} from "./widgets/map-widget";
 import {AttributeInputWidget} from "./widgets/attribute-input-widget";
 import {TableWidget} from "./widgets/table-widget";
+import {GatewayWidget} from "./widgets/gateway-widget";
 
 // language=CSS
 const styling = css`
@@ -216,6 +217,7 @@ export function registerWidgetTypes() {
     widgetTypes.set("map", MapWidget.getManifest());
     widgetTypes.set("attributeinput", AttributeInputWidget.getManifest());
     widgetTypes.set("table", TableWidget.getManifest());
+    widgetTypes.set("gateway", GatewayWidget.getManifest());
 }
 
 @customElement("or-dashboard-builder")

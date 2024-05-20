@@ -71,6 +71,14 @@ services:
       # e.g. '--staging'
       LE_EXTRA_ARGS: ${PROXY_EXTRA_ARGS:-}
 
+      # Provide this value if requesting wildcard certs with Route53 DNS zone; this should be the role to assume to
+      # perform route53 operations if calling across AWS accounts
+      AWS_ROUTE53_ROLE:
+
+      # Enable SISH HTTP tunnel forwarding
+      #SISH_HOST: sish
+      #SISH_PORT: 8090
+
       # The proxy supports up to 10 custom redirects from hostname to any path on the
       # manager service.
       # e.g. PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
@@ -177,6 +185,14 @@ services:
       # Console applications can register for push notifications through FCM.
       OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
 
+      # Configure the central instance for Gateway SSH tunnelling (if these are set then gateway tunnelling support is enabled on the central instance)
+      OR_GATEWAY_TUNNEL_SSH_HOSTNAME:
+      OR_GATEWAY_TUNNEL_SSH_PORT:
+      OR_GATEWAY_TUNNEL_TCP_START: # First TCP port that can be allocated for raw TCP connections (should be start of an assigned contiguous block e.g. 9000-10000 = 9000)
+      # Configure the edge instance for Gateway SSH tunnelling (if SSH_KEY_FILE is set ten gateway tunnelling support is enabled on te edge instance)
+      OR_GATEWAY_TUNNEL_SSH_KEY_FILE: # SSH key file in RSA (not openSSH) format (use ssh-keygen -p -f ~/.ssh/id_rsa -m pem) to convert from openSSH
+      OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE: # Override default rewriting of localhost tunnelling to work within Docker
+
       # Developer mode (see code for usages of OR_DEV_MODE flag)
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
 
@@ -221,11 +237,10 @@ services:
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
       OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
+      OR_KEYCLOAK_PATH: ${OR_KEYCLOAK_PATH:-auth}
 
-      # Keycloak frontend host name, port and path (defaults: to OR_HOSTNAME:OR_SSL_PORT/auth)
-      KC_HOSTNAME:
-      KC_HOSTNAME_PORT:
-      KC_HOSTNAME_PATH:
+      # Keycloak public URI (only set this if keycloak is not on the same base URI as the manager i.e. not accessible at /auth)
+      OR_KEYCLOAK_PUBLIC_URI:
 
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
@@ -291,7 +306,7 @@ services:
       # Enable/disable Prometheus metrics collection
       OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
       # Web server port used to host metrics endpoint
-      OR_METRICS_PORT: ${OR_METRICS_PORT:-8404}
+      OR_METRICS_PORT: ${OR_METRICS_PORT:-8405}
 
       # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
       OR_ATTRIBUTE_EVENT_THREADS:
@@ -333,8 +348,8 @@ services:
     #  - "8081:8080" # Web server port
     environment:
 
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
+      # It is important that all services are time synchronized. Bearer tokens are
+      # only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
 
       # Switch to debug to diagnose Keycloak problems; default:
@@ -354,10 +369,11 @@ services:
       # Configure web server
       KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
       KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
-      KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
-      KC_HOSTNAME_ADMIN:
-      KC_PROXY: ${KC_PROXY:-edge}
-
+      #KC_HOSTNAME_PATH: ${KC_HOSTNAME_PATH:-auth}
+      #KC_HOSTNAME_ADMIN: ${KC_HOSTNAME_ADMIN:-}
+      #KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-true}
+      #KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
+      #KC_PROXY: ${KC_PROXY:-edge}
       # Configure main user credentials (only on first startup)
       KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       # Custom startup options (see keycloak documentation)
@@ -367,6 +383,10 @@ services:
       KEYCLOAK_DEFAULT_THEME: ${KEYCLOAK_DEFAULT_THEME:-openremote}
       KEYCLOAK_ACCOUNT_THEME: ${KEYCLOAK_ACCOUNT_THEME:-openremote}
       KEYCLOAK_WELCOME_THEME: ${KEYCLOAK_WELCOME_THEME:-keycloak}
+      # Use the following to set the issuer to a fixed value (useful when accessing a private instance via a tunnel)
+      # Should also set KC_HOSTNAME to blank, KC_HOSTNAME_STRICT to false and if the keycloak instance is publicly
+      # exposed then the proxy should be configured to validate the host header to prevent abuse
+      #KEYCLOAK_ISSUER_BASE_URI: 'https://192.168.1.2/auth'
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:-}
@@ -410,3 +430,33 @@ services:
     restart: always
     #ports:
     #  - "8082:80" # Web server port
+
+
+  sish:
+    image: antoniomika/sish:latest
+    depends_on:
+      - proxy
+    healthcheck:
+      test: ["CMD", "/app/app", "-v"]
+    ports:
+      - "2222:2222"
+      - "9000-10000:9000-10000"
+    volumes:
+      - proxy-data:/etc/letsencrypt
+      - deployment-data:/deployment
+      #--https-request-port-override=8443
+      #--https-certificate-directory=
+    command: |
+      --ssh-address=:2222
+      --http-address=:8090
+      --https=false
+      --verify-ssl=false
+      --idle-connection=false
+      --authentication-keys-directory=/deployment/sish/pubkeys
+      --private-keys-directory=/deployment/sish/keys
+      --port-bind-range="9000-10000"
+      --bind-random-ports=false
+      --bind-random-subdomains=false
+      --domain=${OR_HOSTNAME}
+      --force-requested-subdomains=true
+    restart: always

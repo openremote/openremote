@@ -37,6 +37,10 @@ services:
       KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
     ports:
       - "8081:8080"
+    # Following options are useful for tunnelling functionality do not use on public instance
+    environment:
+      KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
+      KC_HOSTNAME_STRICT: false
     depends_on:
       postgresql:
         condition: service_healthy
