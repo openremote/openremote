@@ -3,7 +3,7 @@ package org.openremote.test.assets
 
 import jakarta.ws.rs.WebApplicationException
 import org.jboss.resteasy.api.validation.ViolationReport
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.RoomAsset

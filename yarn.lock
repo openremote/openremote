@@ -1542,10 +1542,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lit-labs/ssr-dom-shim@npm:^1.0.0, @lit-labs/ssr-dom-shim@npm:^1.1.0":
+"@lit-labs/ssr-dom-shim@npm:^1.0.0, @lit-labs/ssr-dom-shim@npm:^1.1.0, @lit-labs/ssr-dom-shim@npm:^1.2.0":
   version: 1.2.0
   resolution: "@lit-labs/ssr-dom-shim@npm:1.2.0"
   checksum: 10c0/016168cf6901ab343462c13fb168dda6d549f8b42680aa394e6b7cd0af7cce51271e00dbfa5bbbe388912bf89cbb8f941a21cc3ec9bf95d6a84b6241aa9e5a72
+  languageName: node
+  linkType: hard
+
+"@lit/reactive-element@npm:^1.0.0 || ^2.0.0":
+  version: 2.0.4
+  resolution: "@lit/reactive-element@npm:2.0.4"
+  dependencies:
+    "@lit-labs/ssr-dom-shim": "npm:^1.2.0"
+  checksum: 10c0/359cc19ea9ee8b65e1417eb9c12f40dddba8f0a5ab32f0e5facaecee6060629e44eb4ca27d9af945fe6eda8c033aa636abaa5f0c4e6a529b224d78674acf47ba
   languageName: node
   linkType: hard
 
@@ -1555,6 +1564,15 @@ __metadata:
   dependencies:
     "@lit-labs/ssr-dom-shim": "npm:^1.0.0"
   checksum: 10c0/10f1d25e24e32feb21c4c6f9e11d062901241602e12c4ecf746b3138f87fed4d8394194645514d5c1bfd5f33f3fd56ee8ef41344e2cb4413c40fe4961ec9d419
+  languageName: node
+  linkType: hard
+
+"@lit/task@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@lit/task@npm:1.0.0"
+  dependencies:
+    "@lit/reactive-element": "npm:^1.0.0 || ^2.0.0"
+  checksum: 10c0/6d776e17620c4bb53a07a17c21f25237480f1d2bc461e54fa9eb387074900d4d04e77aa7ed8a519d2af4ae11c31b8f8edf991d372b5ea45c4934422967fb9f11
   languageName: node
   linkType: hard
 
@@ -2410,6 +2428,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-app@workspace:ui/component/or-app"
   dependencies:
+    "@lit/task": "npm:^1.0.0"
     "@openremote/core": "workspace:*"
     "@openremote/or-asset-tree": "npm:^1.1.0"
     "@openremote/or-asset-viewer": "npm:^1.1.0"

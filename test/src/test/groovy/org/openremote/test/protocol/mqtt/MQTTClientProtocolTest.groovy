@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.mqtt.MQTTAgent
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink
 import org.openremote.agent.protocol.mqtt.MQTTProtocol
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
