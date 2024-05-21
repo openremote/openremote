@@ -19,15 +19,6 @@ volumes:
   manager-data:
   postgresql-data:
 
-x-logging: &awslogs
-  logging:
-    driver: awslogs
-    options:
-      awslogs-region: ${AWS_REGION:-eu-west-1}
-      awslogs-group: ${OR_HOSTNAME}
-      awslogs-create-group: 'true'
-      tag: "{{.Name}}/{{.ID}}"
-
 services:
 
   proxy:

@@ -76,7 +76,8 @@ MSYS_NO_PATHCONV=1 docker run --rm -it \
 auto-provisioning.yml
 ```
 
-**NOTE: A t4g.medium instance can only handle ~4400 devices; a t4g.large instance ~9000 devices; so anything more requires a larger instance of splitting into multiple deployments.**
+**NOTE: A t4g.medium instance can only handle ~4000 devices; a t4g.large instance ~9000 devices; so anything more
+requires a larger instance or splitting into multiple deployments.**
 
 ## Console users test (`console-users.yml`)
 Simulates console devices registering with the Manager and subscribing to attribute events over websocket as follows:
@@ -110,3 +111,15 @@ usage e.g.:
 ```bash
 ./run.sh test1.example.com test2.example.com test3.example.com
 ```
+
+## Auto provisioning device settle test (`auto-provisioning-settle-test.yml`)
+Simulates auto provisioning devices connecting to the Manager via MQTT similar to the above auto provisioning test but
+each device will keep retrying auto provisioning until a successful response is received with the intention to find the
+time required for the system to settle down after a full restart. The test will run indefinitely and must be manually
+stopped.
+
+#### Test variables
+* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
+* THREAD_COUNT - Number of threads/users/devices (default: `1000`)
+* RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
+* MILLIS_BETWEEN_PUBLISHES - How long to wait between each time the 2 attributes are published in milliseconds (default: `10000`)

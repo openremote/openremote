@@ -10,23 +10,19 @@
 #
 # `DEPLOYMENT1_DO_NOTHING` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
 # `DEPLOYMENT1_RESTART_ONLY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
-# `CONSOLE_THREAD_COUNT` (default: unset) - Console user test `THREAD_COUNT` (set to `0` to skip deployment 2 test)
-# `CONSOLE_DURATION` (default: unset) - Console user test `DURATION`
-# `CONSOLE_RAMP_RATE` (default: unset) - Console user test `RAMP_RATE`
-# `DEVICE_THREAD_COUNT` (default: unset) - Auto provisioning device test `THREAD_COUNT` (set to `0` to skip deployment 3 test)
-# `DEVICE_DURATION` (default: unset) - Auto provisioning device test `DURATION`
-# `DEVICE_RAMP_RATE` (default: unset) - Auto provisioning device test `RAMP_RATE`
-# `DEVICE_MILLIS_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `MILLIS_BETWEEN_PUBLISHES`
-
+# `DEPLOYMENT2_THREAD_COUNT` (default: unset) - Override console user test `THREAD_COUNT` (set to `0` to skip deployment 2 test)
+# `DEPLOYMENT2_DURATION` (default: unset) - Override console user test `DURATION`
+# `DEPLOYMENT2_RAMP_RATE` (default: unset) - Override console user test `RAMP_RATE`
+# `DEPLOYMENT2_WAIT_FOR_EXIT` (default: true) - Set to false to not wait for deployment 2 test runner container to exit
+# `DEPLOYMENT3_THREAD_COUNT` (default: unset) - Override auto provisioning device test `THREAD_COUNT` (set to `0` to skip deployment 3 test)
+# `DEPLOYMENT3_DURATION` (default: unset) - Override auto provisioning device test `DURATION`
+# `DEPLOYMENT3_RAMP_RATE` (default: unset) - Override auto provisioning device test `RAMP_RATE`
+# `DEPLOYMENT3_MILLIS_BETWEEN_PUBLISHES` (default: unset) - Auto provisioning device test `MILLIS_BETWEEN_PUBLISHES`
+# `DEPLOYMENT3_USE_SETTLE_TEST` (default: false) - Set to true to use auto-provisioning-settle-test.yml instead of auto-provisioning.yml
+# `DEPLOYMENT3_WAIT_FOR_EXIT` (default: true) - Set to false to not wait for deployment 3 test runner container to exit
 
 SSH_PREFIX="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 SCP_PREFIX="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-DEPLOYMENT1_DOCKER_UP="docker compose -p test -f deployment1/test-load1.yml up -d"
-DEPLOYMENT1_DOCKER_DOWN="docker compose -p test -f deployment1/test-load1.yml down && docker volume rm test_postgresql-data test_manager-data"
-DEPLOYMENT2_DOCKER_EXEC="docker compose -p test -f deployment1/test-load1.yml up -d"
-DEPLOYMENT3_DOCKER_EXEC="docker compose -p test -f deployment1/test-load1.yml up -d"
-DEVICE_PREFIX=device
-TEMP_CERT_DIR=tmp
 SERVER1=${1,,}
 SERVER2=${2,,}
 SERVER3=${3,,}
@@ -51,9 +47,7 @@ cd ../../
 cd test
 mkdir -p build/deployment1/manager/extensions build/deployment2/results build/deployment3/results
 cp ../setup/build/libs/openremote-load1-setup-0.0.0.jar build/deployment1/manager/extensions
-cp -r load1/deployment1 build
-cp load1/console-users.jmx load1/console-users.yml build/deployment2
-cp load1/auto-provisioning.jmx load1/devices.csv load1/auto-provisioning.yml build/deployment3
+cp -r load1/deployment1 load1/deployment2 load1/deployment3 build
 cd build
 
 if [ "$DEPLOYMENT1_DO_NOTHING" == "true" ]; then
@@ -143,16 +137,16 @@ EOF
 fi
 
 # DEPLOYMENT 2
-if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
+if [ "$DEPLOYMENT2_THREAD_COUNT" != "0" ]; then
   SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
-  if [ -n "$CONSOLE_THREAD_COUNT" ]; then
-    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$CONSOLE_THREAD_COUNT"
+  if [ -n "$DEPLOYMENT2_THREAD_COUNT" ]; then
+    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEPLOYMENT2_THREAD_COUNT"
   fi
-  if [ -n "$CONSOLE_DURATION" ]; then
-    SETTINGS="$SETTINGS -o settings.env.DURATION=$CONSOLE_DURATION"
+  if [ -n "$DEPLOYMENT2_DURATION" ]; then
+    SETTINGS="$SETTINGS -o settings.env.DURATION=$DEPLOYMENT2_DURATION"
   fi
-  if [ -n "$CONSOLE_RAMP_RATE" ]; then
-    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$CONSOLE_RAMP_RATE"
+  if [ -n "$DEPLOYMENT2_RAMP_RATE" ]; then
+    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEPLOYMENT2_RAMP_RATE"
   fi
 
   COMMAND="cd deployment2; docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml; cd .."
@@ -191,28 +185,34 @@ else
 fi
 
 # DEPLOYMENT 3
-if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
+if [ "$DEPLOYMENT3_THREAD_COUNT" != "0" ]; then
   SETTINGS="-o settings.env.MANAGER_HOSTNAME=$SERVER1"
-  if [ -n "$DEVICE_THREAD_COUNT" ]; then
-    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEVICE_THREAD_COUNT"
+  if [ -n "$DEPLOYMENT3_THREAD_COUNT" ]; then
+    SETTINGS="$SETTINGS -o settings.env.THREAD_COUNT=$DEPLOYMENT3_THREAD_COUNT"
   fi
-  if [ -n "$DEVICE_DURATION" ]; then
-    SETTINGS="$SETTINGS -o settings.env.DURATION=$DEVICE_DURATION"
+  if [ -n "$DEPLOYMENT3_DURATION" ]; then
+    SETTINGS="$SETTINGS -o settings.env.DURATION=$DEPLOYMENT3_DURATION"
   fi
-  if [ -n "$DEVICE_RAMP_RATE" ]; then
-    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEVICE_RAMP_RATE"
+  if [ -n "$DEPLOYMENT3_RAMP_RATE" ]; then
+    SETTINGS="$SETTINGS -o settings.env.RAMP_RATE=$DEPLOYMENT3_RAMP_RATE"
   fi
-  if [ -n "$DEVICE_MILLIS_BETWEEN_PUBLISHES" ]; then
-    SETTINGS="$SETTINGS -o settings.env.MILLIS_BETWEEN_PUBLISHES=$DEVICE_MILLIS_BETWEEN_PUBLISHES"
+  if [ -n "$DEPLOYMENT3_MILLIS_BETWEEN_PUBLISHES" ]; then
+    SETTINGS="$SETTINGS -o settings.env.MILLIS_BETWEEN_PUBLISHES=$DEPLOYMENT3_MILLIS_BETWEEN_PUBLISHES"
   fi
 
-  COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml; cd .."
+  DEPLOYMENT3_TEST_FILE="auto-provisioning.yml"
+  if [ -n "$DEPLOYMENT3_USE_SETTLE_TEST" ]; then
+    echo "Running auto provisioning settle test"
+    DEPLOYMENT3_TEST_FILE="auto-provisioning-settle-test.yml"
+  fi
+
+  COMMAND="cd deployment3; docker run --rm -d --name deployment3 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS $DEPLOYMENT3_TEST_FILE; cd .."
   echo "Deployment 3 launch command: $COMMAND"
 
   if [ "$SERVER3" == "localhost" ]; then
     echo "Deploying on localhost deployment3"
     cd deployment3
-    MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment3 -v $PWD:/bzt-configs -v $PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS auto-provisioning.yml
+    MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment3 -v $PWD:/bzt-configs -v $PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS $DEPLOYMENT3_TEST_FILE
     cd ..
   else
     echo "Copying files to remote host deployment3 -> $SERVER3"
@@ -243,7 +243,7 @@ fi
 
 echo "Waiting for test runners to finish"
 
-if [ "$CONSOLE_THREAD_COUNT" != "0" ]; then
+if [ "$DEPLOYMENT2_THREAD_COUNT" != "0" ] && [ "$DEPLOYMENT2_WAIT_FOR_EXIT" != "false" ]; then
   if [ "$SERVER2" == "localhost" ]; then
     while [ -n "$(docker ps -q -f name=deployment2)" ]; do
       echo "Waiting for deployment 2 container to exit..."
@@ -266,7 +266,7 @@ EOF
   fi
 fi
 
-if [ "$DEVICE_THREAD_COUNT" != "0" ]; then
+if [ "$DEPLOYMENT3_THREAD_COUNT" != "0" ] && [ "$DEPLOYMENT3_WAIT_FOR_EXIT" != "false" ]; then
   if [ "$SERVER3" == "localhost" ]; then
     while [ -n "$(docker ps -q -f name=deployment3)" ]; do
       echo "Waiting for deployment 3 container to exit..."
