@@ -28,23 +28,23 @@ import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
-public class GatewayMQTTSubscriptionManager {
+public class GatewayMQTTEventSubscriptionManager {
 
-    private static final Logger LOG = Logger.getLogger(GatewayMQTTSubscriptionManager.class.getName());
-    private final ConcurrentMap<String, GatewaySubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
+    private static final Logger LOG = Logger.getLogger(GatewayMQTTEventSubscriptionManager.class.getName());
+    private final ConcurrentMap<String, GatewayEventSubscriberInfo> eventSubscriberInfoMap = new ConcurrentHashMap<>();
     private final MessageBrokerService messageBrokerService;
     private final MQTTBrokerService mqttBrokerService;
 
-    public GatewayMQTTSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
+    public GatewayMQTTEventSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
         this.messageBrokerService = messageBrokerService;
         this.mqttBrokerService = mqttBrokerService;
     }
 
-    public ConcurrentMap<String, GatewaySubscriberInfo> getConnectionSubscriberInfoMap() {
-        return connectionSubscriberInfoMap;
+    public ConcurrentMap<String, GatewayEventSubscriberInfo> getEventSubscriberInfoMap() {
+        return eventSubscriberInfoMap;
     }
 
-    public void subscribe(RemotingConnection connection, Topic topic, Class subscriptionClass) {
+    public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass) {
 
         if (subscriptionClass != AssetEvent.class && subscriptionClass != AttributeEvent.class) {
             LOG.warning("Invalid subscription class " + subscriptionClass);
@@ -60,31 +60,43 @@ public class GatewayMQTTSubscriptionManager {
 
         EventSubscription subscription = new EventSubscription(subscriptionClass, assetFilter, subscriptionId);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        subscribeToTopic(subscription, headers);
-        Consumer<SharedEvent> subscriptionConsumer = getEventSubscriptionConsumer(topic);
-
+        sendSubscriptionToBroker(subscription, headers);
+        Consumer<SharedEvent> subscriptionConsumer = buildEventSubscriptionConsumer(topic);
         addSubscriberInfo(connection, topic, subscriptionConsumer);
     }
 
-    public void unsubscribe(RemotingConnection connection, Topic topic) {
-        unsubscribeFromTopic(connection, topic);
+    public void removeSubscription(RemotingConnection connection, Topic topic) {
+        cancelSubscriptionFromBroker(connection, topic);
         removeSubscriberInfo(connection, topic);
     }
 
-    public void removeSubscriberInfo(RemotingConnection connection) {
-        synchronized (connectionSubscriberInfoMap) {
-            connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
+    public void removeAllSubscriptions(RemotingConnection connection) {
+        synchronized (eventSubscriberInfoMap) {
+            eventSubscriberInfoMap.remove(getConnectionIDString(connection));
         }
     }
 
-    // Add the event subscription and consumer to the connectionSubscriberInfoMap
-    protected void subscribeToTopic(EventSubscription subscription, Map<String, Object> headers) {
+    protected void sendSubscriptionToBroker(EventSubscription subscription, Map<String, Object> headers) {
         messageBrokerService.getFluentProducerTemplate()
                 .withHeaders(headers)
                 .withBody(subscription)
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncSend();
 
+    }
+
+    protected void cancelSubscriptionFromBroker(RemotingConnection connection, Topic topic) {
+        String subscriptionId = topic.toString();
+        boolean isAssetTopic = eventSubscriberInfoMap.get(getConnectionIDString(connection))
+                .topicSubscriptionMap.get(topic.getString()) instanceof AssetEvent;
+
+        Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
+        CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(prepareHeaders(topicRealm(topic), connection))
+                .withBody(cancelEventSubscription)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {
@@ -203,28 +215,11 @@ public class GatewayMQTTSubscriptionManager {
     }
 
 
-    protected void unsubscribeFromTopic(RemotingConnection connection, Topic topic) {
-        String subscriptionId = topic.toString();
-
-        //determine the event class based on the event consumer in the subscription map
-        boolean isAssetTopic = connectionSubscriberInfoMap.get(getConnectionIDString(connection))
-                .topicSubscriptionMap.get(topic.getString()) instanceof AssetEvent;
-
-        Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
-        CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(prepareHeaders(topicRealm(topic), connection))
-                .withBody(cancelEventSubscription)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
-    }
-
-
     protected void addSubscriberInfo(RemotingConnection connection, Topic topic, Consumer<SharedEvent> subscriptionConsumer) {
-        synchronized (connectionSubscriberInfoMap) {
-            connectionSubscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
+        synchronized (eventSubscriberInfoMap) {
+            eventSubscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
                 if (subscriberInfo == null) {
-                    return new GatewaySubscriberInfo(topic.getString(), subscriptionConsumer);
+                    return new GatewayEventSubscriberInfo(topic.getString(), subscriptionConsumer);
                 } else {
                     subscriberInfo.add(topic.getString(), subscriptionConsumer);
                     return subscriberInfo;
@@ -235,8 +230,8 @@ public class GatewayMQTTSubscriptionManager {
 
 
     protected void removeSubscriberInfo(RemotingConnection connection, Topic topic) {
-        synchronized (connectionSubscriberInfoMap) {
-            connectionSubscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
+        synchronized (eventSubscriberInfoMap) {
+            eventSubscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
                 if (subscriberInfo.remove(topic.getString()) == 0) {
                     return null;
                 }
@@ -248,7 +243,7 @@ public class GatewayMQTTSubscriptionManager {
     /**
      * Returns a consumer that publishes asset events to the specified topic
      */
-    protected Consumer<SharedEvent> getEventSubscriptionConsumer(Topic topic) {
+    protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
         String topicStr = topic.toString();
         String replaceToken = topicStr.endsWith("+") ? "#" : null;
@@ -276,10 +271,10 @@ public class GatewayMQTTSubscriptionManager {
     }
 
 
-    public static class GatewaySubscriberInfo {
+    public static class GatewayEventSubscriberInfo {
         public Map<String, Consumer<SharedEvent>> topicSubscriptionMap;
 
-        public GatewaySubscriberInfo(String topic, Consumer<SharedEvent> subscriptionConsumer) {
+        public GatewayEventSubscriberInfo(String topic, Consumer<SharedEvent> subscriptionConsumer) {
             this.topicSubscriptionMap = new HashMap<>();
             this.topicSubscriptionMap.put(topic, subscriptionConsumer);
         }
