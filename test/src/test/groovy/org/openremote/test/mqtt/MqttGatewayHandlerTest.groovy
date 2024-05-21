@@ -257,7 +257,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedResponses.clear()
         client.removeAllMessageConsumers()
         //endregion
-        
+
         //region Test: Retrieve Attribute Value
         when: "a mqtt client publishes a get attribute value message for a specific asset and attribute and subscribes to the corresponding response topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/get-value".toString()

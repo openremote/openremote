@@ -537,6 +537,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
+
+        //TODO: We should check if there's an active subscription, so we dont waste resources
+
         AssetEvent event = new AssetEvent(AssetEvent.Cause.CREATE, asset, null);
         mqttBrokerService.publishMessage(getResponseTopic(topic), event, MqttQoS.AT_MOST_ONCE);
     }
