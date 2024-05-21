@@ -7,17 +7,15 @@ import javax.annotation.Nullable;
 public class MQTTErrorResponse extends MQTTResponseMessage {
 
     public enum Error {
-        MESSAGE_INVALID,
+        BAD_REQUEST,
         NOT_FOUND,
         FORBIDDEN,
         UNAUTHORIZED,
-        SERVER_ERROR,
+        INTERNAL_SERVER_ERROR,
     }
 
     protected Error error;
     protected String message;
-
-
 
     @JsonCreator()
     public MQTTErrorResponse(Error error, @Nullable String message) {
