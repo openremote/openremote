@@ -1660,6 +1660,10 @@ export class OrMwcInput extends LitElement {
             }
         }
 
+        if(_changedProperties.has("label")) {
+            (this._mdcComponent as any)?.layout?.(); // Adjusts the dimensions and positions for all sub-elements.
+        }
+
         if (this.autoValidate) {
             this.reportValidity();
         }

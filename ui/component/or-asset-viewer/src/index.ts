@@ -1147,6 +1147,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return !!this.editMode && this._assetInfo && this._assetInfo.modified;
     }
 
+    /**
+     * When language is changed, we clear the cached templates,
+     * so can be rendered differently according to the selected language.
+     */
+    langChangedCallback = () => {
+        if(this._assetInfo) {
+            this._assetInfo.attributeTemplateMap = {};
+            this.requestUpdate("_assetInfo");
+        }
+    }
+
     shouldUpdate(changedProperties: PropertyValues): boolean {
 
         if (this._isReadonly()) {

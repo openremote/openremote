@@ -34,6 +34,10 @@ services:
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
+    # Following options are useful for tunnelling functionality do not use on public instance
+    environment:
+      KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
+      KC_HOSTNAME_STRICT: false
     depends_on:
       postgresql:
         condition: service_healthy

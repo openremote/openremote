@@ -126,33 +126,11 @@ if (project == rootProject) {
                             OR_SETUP_TYPE: "demo"
                     ]
                 }
-                "Demo Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.demo" : ".setup.demo")
-                    envs = [
-                            OR_SETUP_TYPE: "demo",
-                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "-1"
-                    ]
-                }
                 "Test Setup"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.integration" : ".setup.integration")
                 }
-                "Test Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.integration" : ".setup.integration")
-                    envs = [
-                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "-1"
-                    ]
-                }
                 "Empty"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
-                }
-                "Empty with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
-                    envs = [
-                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            OR_SSL_PORT: "-1"
-                    ]
                 }
             }
         }
