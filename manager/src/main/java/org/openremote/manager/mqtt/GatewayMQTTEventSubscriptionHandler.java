@@ -28,14 +28,14 @@ import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
-public class GatewayMQTTEventSubscriptionManager {
+public class GatewayMQTTEventSubscriptionHandler {
 
-    private static final Logger LOG = Logger.getLogger(GatewayMQTTEventSubscriptionManager.class.getName());
+    private static final Logger LOG = Logger.getLogger(GatewayMQTTEventSubscriptionHandler.class.getName());
     private final ConcurrentMap<String, GatewayEventSubscriberInfo> eventSubscriberInfoMap = new ConcurrentHashMap<>();
     private final MessageBrokerService messageBrokerService;
     private final MQTTBrokerService mqttBrokerService;
 
-    public GatewayMQTTEventSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
+    public GatewayMQTTEventSubscriptionHandler(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
         this.messageBrokerService = messageBrokerService;
         this.mqttBrokerService = mqttBrokerService;
     }

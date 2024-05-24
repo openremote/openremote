@@ -96,7 +96,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
-    protected GatewayMQTTEventSubscriptionManager eventSubscriptionManager;
+    protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
     protected final ConcurrentHashMap<Topic, RemotingConnection> responseTopicSubscriptions = new ConcurrentHashMap<>();
     protected boolean isKeycloak;
 
@@ -119,7 +119,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
-        eventSubscriptionManager = new GatewayMQTTEventSubscriptionManager(messageBrokerService, mqttBrokerService);
+        eventSubscriptionManager = new GatewayMQTTEventSubscriptionHandler(messageBrokerService, mqttBrokerService);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
@@ -132,11 +132,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         ))
                         .process(exchange -> {
                             String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                            GatewayMQTTEventSubscriptionManager.GatewayEventSubscriberInfo eventSubscriberInfo = eventSubscriptionManager.getEventSubscriberInfoMap().get(connectionID);
+                            GatewayMQTTEventSubscriptionHandler.GatewayEventSubscriberInfo eventSubscriberInfo = eventSubscriptionManager.getEventSubscriberInfoMap().get(connectionID);
                             if (eventSubscriberInfo != null) {
                                 TriggeredEventSubscription<?> event = exchange.getIn().getBody(TriggeredEventSubscription.class);
                                 Consumer<SharedEvent> eventConsumer = eventSubscriberInfo.topicSubscriptionMap.get(event.getSubscriptionId());
-                                //TODO: Prevent event being accepted if the eventConsumer is a disabled gateway asset service user
                                 if (eventConsumer != null) {
                                     eventConsumer.accept(event.getEvents().get(0));
                                 }
@@ -182,7 +181,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         if (isEventsTopic(topic)) {
             // TODO: Gateway connection subscription authorization (gateway filters must be relative to the gateway asset)
-            AssetFilter<?> filter = GatewayMQTTEventSubscriptionManager.buildAssetFilter(topic);
+            AssetFilter<?> filter = GatewayMQTTEventSubscriptionHandler.buildAssetFilter(topic);
             if (filter == null) {
                 LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
                 return false;
@@ -538,8 +537,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         AssetEvent event = new AssetEvent(AssetEvent.Cause.UPDATE, storageAsset, null);
         publishResponse(topic, event);
-
-
     }
 
     /**
