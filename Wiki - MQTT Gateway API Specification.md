@@ -22,27 +22,29 @@ Clients can configure a last will topic and payload as defined in the MQTT speci
 publish topic/payload so it is possible to update an attribute when the client connection is closed un-expectedly; 
 the client must have permission to access to the specified attribute.
 
-***
+
 ## MQTT API Specification
 
 ### Operations (Publish)
 Operations are publish topics that provide Asset management functionality, 
-each operation topic has an associated *response* topic that can be subscribed to which will receive a success or error response.
+each operation topic has an associated **response** topic that can be subscribed to which will receive a success response or error response.
 
 #### Notes:
-- Each operations topic has corresponding response topic suffix, this can be subscribed to beforehand. 
-Example:```{realm}/{clientId}/operations/assets/{responseIdentifier}/create/response```
+- Each operations topic has corresponding **response topic** suffix, this can be subscribed to beforehand. 
+> Response topic example:
+> ```{realm}/{clientId}/operations/assets/{responseIdentifier}/create/response```
 - Payloads will always use JSON encoding.
-- Using a Gateway Asset V2 Service User will ensure that all operations are performed on behalf of the Gateway Asset.
-Meaning the Gateway Asset is the parent of all assets created by the Service User.
+- Using a **Gateway Asset V2 Service User** will ensure that all operations are performed on behalf of the Gateway Asset.
+This Service User can only manage assets part of the Gateway Asse hierarchy.
 
 ##### [Assets](https://github.com/openremote/openremote/blob/master/model/src/main/java/org/openremote/model/asset/Asset.java)
 - ```{realm}/{clientId}/operations/assets/{responseIdentifier}/create``` 
-Create an asset. Requires a valid [asset template]() as the payload.
+Creates an asset, requires a valid [asset template](#asset-templates) as the payload. The response identifier is used to correlate the response to the request, requires a subscription to the response topic to receive the response.
 - ```{realm}/{clientId}/operations/assets/{assetId}/get```
-Request the data of the specified assetId.
+Request the data of the specified assetId, requires subscription to the response topic to receive the data.
 - ```{realm}/{clientId}/operations/assets/{assetId}/update```
-Updates the specified asset. Requires a valid [asset template]() as the payload.
+Updates the specified asset, requires a valid [asset template](#asset-templates) as the payload.
+
 - ```{realm}/{clientId}/operations/assets/{assetId}/delete```
 Deletes the specified asset.
 
@@ -50,13 +52,14 @@ Deletes the specified asset.
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/{attributeName}/update``` 
 Updates the specified attribute of the specified asset.
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/update```
-Updates the attributes of the specified asset based on the payload, allows for multi-attribute updating.
+Updates the attributes of the specified asset based on the payload, allows for multi-attribute updating. Example: [multi attribute payload](#multi-attribute-update-payload).
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/get```
 Request the attribute data of the specified asset.
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/{attributeName}/get```
-Request the specified attribute data of the specified asset.
+Request the specified attribute data of the specified asset. The attribute data contains the full attribute object.
 - ```{realm}/{clientId}/operations/assets/{assetId}/attributes/{attributeName}/get-value```
-Request only the value of the specified attribute of the specified asset.
+Request only the value of the specified attribute of the specified asset. The value is the raw value of the attribute.
+
 
 ### Events (Subscribing)
 Events are subscription topics that allow for subscribing to various events such as new Assets 
@@ -65,8 +68,7 @@ Subscription events allow filtering through the usage of MQTT wildcard masks (+ 
 
 ### Notes:
 - The response from the subscriptions are encoded in JSON.
-- Using a Gateway Asset V2 Service User will enforce the Gateway Asset as the parent, 
-so the filters will be relative to the Gateway Asset rather than the realm.
+- Using a **Gateway Asset V2 Service User** will enforce filters being relative to the associated Gateway Asset rather than the realm. This Service User can only receive event data from assets part of the Gateway Asset hierarchy.
 
 ##### [AssetEvent](https://github.com/openremote/openremote/blob/master/model/src/main/java/org/openremote/model/asset/AssetEvent.java)
 - ```{realm}/{clientId}/events/assets/#```
@@ -99,5 +101,36 @@ All attribute events for descendants of the specified asset with the specified a
 All attribute events for direct children of the specified asset with the specified attribute name.
 
 
-### Device Provisioning
-Device provisioning is a process that allows for the automatic provisioning of OpenRemote Assets, using X.509 certificates.
+***
+### Examples & Extra Information
+
+#### [Asset Templates](#asset-templates)
+> - Asset Templates are JSON objects that define the structure of an asset.
+> - Asset templates can be obtained through the [Swagger API](https://staging.demo.openremote.io/swagger) by retrieving the asset data of an existing asset.
+> ##### Example of an Asset Template
+>```json
+>{
+>  "type": "PresenceSensorAsset",
+>  "name":"Hallway A Presence Sensor",
+>  "location":"",
+>  "attributes": {
+>    "presence": 0,
+>    "notes": ""
+>  }
+>}
+>```
+Exact Asset Templates can be retrieved from the Swagger API by retrieving the asset data of an existing asset. [Swagger API](https://staging.demo.openremote.io/swagger)
+***
+
+#### [Multi-Attribute Update Payload](#multi-attribute-update-payload)
+> - The multi-attribute update payload is a JSON object that contains the attribute names and values to be updated.
+> - The attribute names and values are key-value pairs.
+> - The attribute names must match the attribute names of the asset.
+> - The attribute values must match the data type of the attribute.
+> ##### Example of a Multi-Attribute Update Payload
+> ```json
+> {
+>  "presence": 1,
+>  "notes": "Motion detected"
+> }
+> ```
