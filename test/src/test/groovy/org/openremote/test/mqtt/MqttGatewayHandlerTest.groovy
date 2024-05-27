@@ -281,7 +281,391 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
         //region Test: Update Multiple Asset Attributes
+
+
+
+
         //endregion
+
+
+        //region Test: Subscribe to an events topic
+        when: "a mqtt client subscribes to an events topic"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+
+        then: "then a subscription should exist"
+        conditions.eventually {
+            assert client.topicConsumerMap.get(topic) != null
+            assert client.topicConsumerMap.get(topic).size() == 1
+        }
+        //endregion
+
+        //region Test: Unsubscribe from an events topic
+        when: "a mqtt client unsubscribes from an events topic"
+        client.removeMessageConsumer(topic, messageConsumer)
+
+        then: "then the subscription should be removed"
+        conditions.eventually {
+            assert client.topicConsumerMap.get(topic) == null
+        }
+        //endregion
+
+        //region Test: Subscribe All Asset Events Realm
+        when: "a mqtt client subscribes to all asset events of the realm"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+        ThingAsset testAssetThree = new ThingAsset("gatewayHandlerTestAssetThree")
+        testAssetThree.setRealm(keycloakTestSetup.realmBuilding.name)
+        testAssetThree.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(testAssetThree)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.CREATE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Update Event On Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of the realm and an asset is updated"
+        testAssetThree.setName("gatewayHandlerTestAssetThreeUpdated")
+        assetStorageService.merge(testAssetThree)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Delete Event On Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of the realm and an asset is deleted"
+        List<String> assetIdsToRemove = new ArrayList<>()
+        assetIdsToRemove.add(testAssetThree.getId())
+        assetStorageService.delete(assetIdsToRemove)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.DELETE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers();
+        //endregion
+
+        //region Test: Subscribe All Asset Events Direct Children of Realm
+        when: "a mqtt client subscribes to all asset events of the realm's direct children"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        testAssetThree = new ThingAsset("gatewayHandlerTestAssetThree")
+        testAssetThree.setRealm(keycloakTestSetup.realmBuilding.name)
+        testAssetThree.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(testAssetThree) // direct descendant
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.CREATE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Don't Receive Non-Direct Descendant Asset Events
+        when: "a mqtt client subscribes to all asset events of the realm's direct descendants and an asset is created that is not a direct descendant"
+        ThingAsset testAssetThreeChild = new ThingAsset("gatewayHandlerTestAssetThreeChild")
+        testAssetThreeChild.setRealm(keycloakTestSetup.realmBuilding.name)
+        testAssetThreeChild.setParent(testAssetThree)
+        testAssetThreeChild.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(testAssetThreeChild)
+
+        then: "then the asset event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Update Event On Direct Descendant Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of the realm's direct descendants and a direct descendant asset is updated"
+        testAssetThree.setName("gatewayHandlerTestAssetThreeUpdated")
+        assetStorageService.merge(testAssetThree)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        assetIdsToRemove.clear()
+        assetIdsToRemove.add(testAssetThreeChild.getId())
+        assetStorageService.delete(assetIdsToRemove) // cleanup, delete child asset
+        //endregion
+
+        //region Test: Receive Delete Event On Direct Descendant Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of the realm's direct descendants and a direct descendant asset is deleted"
+        assetIdsToRemove.clear()
+        assetIdsToRemove.add(testAssetThree.getId())
+        assetStorageService.delete(assetIdsToRemove)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.DELETE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetThree.getName()
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers();
+        //endregion
+
+        //region Test: Subscribe All Asset Events Specific Asset
+        when: "a mqtt client subscribes to all asset events of a specific asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        var apartment1Hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+        var name = apartment1Hallway.getName()
+        apartment1Hallway.setNotes("Updated notes")
+        assetStorageService.merge(apartment1Hallway)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset.getName() == name
+            assert asset.getNotes().get() == "Updated notes"
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers()
+        //endregion
+
+        //region Test: Subscribe All Asset Events Specific Asset Descendants
+        when: "a mqtt client subscribes to all asset events of a specific asset's descendants"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        var apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
+        ThingAsset childAsset = new ThingAsset("gatewayHandlerTestChildAsset")
+        childAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        childAsset.setParent(apartment1)
+        childAsset.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(childAsset)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.CREATE
+            def asset = event.getAsset()
+            assert asset.getName() == childAsset.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+
+        //region Test: Receive Create Event On Specific Asset Descendants Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is created"
+        ThingAsset childChildAsset = new ThingAsset("gatewayHandlerTestChildChildAsset")
+        childChildAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        childChildAsset.setParent(childAsset)
+        childChildAsset.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(childChildAsset)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.CREATE
+            def asset = event.getAsset()
+            assert asset.getName() == childChildAsset.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Update Event On Specific Asset Descendants Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is updated"
+        childChildAsset.setName("gatewayHandlerTestChildChildAssetUpdated")
+        assetStorageService.merge(childChildAsset)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset.getName() == childChildAsset.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Delete Event On Specific Asset Descendants Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is deleted"
+        assetIdsToRemove.clear()
+        assetIdsToRemove.add(childAsset.getId())
+        assetIdsToRemove.add(childChildAsset.getId())
+        assetStorageService.delete(assetIdsToRemove)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 2 // two events, one for each asset
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.DELETE
+            assert receivedEvents.get(1) instanceof AssetEvent
+            event = receivedEvents.get(1) as AssetEvent
+            assert event.cause == AssetEvent.Cause.DELETE
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers();
+        //endregion
+
+        //region Test: Subscribe All Asset Events Specific Asset Direct Children
+        when: "a mqtt client subscribes to all asset events of a specific asset's direct children"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
+        childAsset = new ThingAsset("gatewayHandlerTestChildAsset")
+        childAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        childAsset.setParent(apartment1)
+        childAsset.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(childAsset)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.CREATE
+            def asset = event.getAsset()
+            assert asset.getName() == childAsset.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Don't Receive Non-Direct Children Asset Events
+        when: "a mqtt client subscribes to all asset events of a specific asset's direct children and a non-direct descendant asset is created"
+        childChildAsset = new ThingAsset("gatewayHandlerTestChildChildAsset")
+        childChildAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        childChildAsset.setParent(childAsset)
+        childChildAsset.setId(UniqueIdentifierGenerator.generateId())
+        assetStorageService.merge(childChildAsset) // non-direct descendant
+
+        assetIdsToRemove.clear()
+        assetIdsToRemove.add(childChildAsset.getId())
+        assetStorageService.delete(assetIdsToRemove) // another event, delete the child child asset (should not be received)
+
+        then: "then the asset event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Update Event On Specific Asset Direct Children Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of a specific asset's direct children and a direct child asset is updated"
+        childAsset.setName("gatewayHandlerTestChildAssetUpdated")
+        assetStorageService.merge(childAsset)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset.getName() == childAsset.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Receive Delete Event On Specific Asset Direct Children Asset Events Subscription
+        when: "a mqtt client is subscribed to all asset events of a specific asset's direct children and a direct child asset is deleted"
+        assetIdsToRemove.clear()
+        assetIdsToRemove.add(childAsset.getId())
+        assetStorageService.delete(assetIdsToRemove)
+
+        then: "then the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.DELETE
+            def asset = event.getAsset()
+            assert asset.getName() == childAsset.getName()
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers();
+        //endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         cleanup: "disconnect the clients"
         if (client != null) {

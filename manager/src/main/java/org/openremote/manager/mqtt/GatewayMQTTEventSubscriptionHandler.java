@@ -149,11 +149,11 @@ public class GatewayMQTTEventSubscriptionHandler {
             boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
             boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
-            // if the topic has an assetId and is valid
-            if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-                // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
-                var path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
+            // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
+            var path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
 
+            // if the topic has an assetId
+            if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
                 // realm/clientId/events/assets/{assetId}/attributes/+
                 // all attribute events for the specified asset
                 if (attributeName.equals("+")) {
@@ -182,20 +182,34 @@ public class GatewayMQTTEventSubscriptionHandler {
                     return null;
                 }
             }
-            // realm/clientId/events/assets/+/attributes/{attributeName}/#
-            // All attribute events of the realm with the specified attributeName
-
-            // realm/clientId/events/assets/+/attributes/{attributeName}/+
-            // All attribute events for direct children of the realm with the specified attributeName
-
-            // realm/clientId/events/assets/+/attributes/#
-            // All attribute events of the realm
-
-            // realm/clientId/events/assets/+/attributes/+
-            // All attribute events of direct children of the realm
+            // if the topic has a wildcard assetId
             else {
-                return null;
+                // realm/clientId/events/assets/+/attributes/{attributeName}/#
+                // All attribute events of the realm with the specified attributeName
+                if (assetId.equals("+") && attributeNameIsNotWildcardOrEmpty && path.equals("#")) {
+                    attributeNames.add(attributeName);
+                }
+                // realm/clientId/events/assets/+/attributes/{attributeName}/+
+                // All attribute events for direct children of the realm with the specified attributeName
+                else if (assetId.equals("+") && attributeNameIsNotWildcardOrEmpty && path.equals("+")) {
+                    parentIds.add(null);
+                    attributeNames.add(attributeName);
+                }
+                // realm/clientId/events/assets/#
+                // All attribute events of the realm
+                else if (assetId.equals("#")) {
+                }
+                // realm/clientId/events/assets/+
+                // All attribute events of direct children of the realm
+                else if (assetId.equals("+")) {
+                    parentIds.add(null);
+                }
+                // unsupported topic-filter
+                else {
+                    return null;
+                }
             }
+
         }
 
         AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm);
@@ -244,28 +258,44 @@ public class GatewayMQTTEventSubscriptionHandler {
      * Returns a consumer that publishes asset events to the specified topic
      */
     protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
+
+        // Always publish asset/attribute messages with QoS 0
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
-        String topicStr = topic.toString();
-        String replaceToken = topicStr.endsWith("+") ? "#" : null;
 
-        Function<SharedEvent, String> topicExpander = ev -> {
-            if (replaceToken != null && ev instanceof AssetEvent) {
-                return topicStr.replace(replaceToken, ((AssetEvent) ev).getId());
-            } else if (replaceToken != null && ev instanceof AttributeEvent) {
-                return topicStr.replace(replaceToken, ((AttributeEvent) ev).getName());
+        // Build topic expander (replace wildcards) so it isn't computed for each event
+        Function<SharedEvent, String> topicExpander;
+
+        if (isAssetsTopic(topic)) {
+            String topicStr = topic.toString();
+            String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
+            topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent) ev).getId()) : topicStr;
+        } else {
+            String topicStr = topic.toString();
+            boolean injectAttributeName = TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX));
+
+            if (injectAttributeName) {
+                topicStr = topicStr.replaceFirst("\\" + TOKEN_SINGLE_LEVEL_WILDCARD, "\\$");
             }
-            return topicStr;
-        };
-        LOG.info("Creating event subscription consumer for topic " + topicStr);
 
+            String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
+            String finalTopicStr = topicStr;
+            topicExpander = ev -> {
+                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent) ev).getId()) : finalTopicStr;
+                if (injectAttributeName) {
+                    expanded = expanded.replace("$", ((AttributeEvent) ev).getName());
+                }
+                return expanded;
+            };
+        }
         return ev -> {
-            LOG.info("Received event " + ev + " for topic " + topicStr);
-            if (ev instanceof AssetEvent) {
-                LOG.info("Publishing asset event " + ev + " to topic " + topicExpander.apply(ev));
-                mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
-            } else if (ev instanceof AttributeEvent) {
-                LOG.info("Publishing attribute event " + ev + " to topic " + topicExpander.apply(ev));
-                mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+            if (isAssetsTopic(topic)) {
+                if (ev instanceof AssetEvent) {
+                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                }
+            } else {
+                if (ev instanceof AttributeEvent attributeEvent) {
+                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                }
             }
         };
     }
