@@ -195,15 +195,18 @@ public class GatewayMQTTEventSubscriptionHandler {
                     parentIds.add(null);
                     attributeNames.add(attributeName);
                 }
-                // realm/clientId/events/assets/#
-                // All attribute events of the realm
-                else if (assetId.equals("#")) {
-                }
-                // realm/clientId/events/assets/+
+                // realm/clientId/events/assets/+/attributes/#
                 // All attribute events of direct children of the realm
-                else if (assetId.equals("+")) {
+                else if (assetId.equals("+") && attributeName.equals("#")) {
+                    // no filter needed
+                }
+
+                // realm/clientId/events/assets/+/attributes/+
+                // All attribute events of direct children of the realm
+                else if (assetId.equals("+") && attributeName.equals("+")) {
                     parentIds.add(null);
                 }
+
                 // unsupported topic-filter
                 else {
                     return null;
@@ -265,29 +268,42 @@ public class GatewayMQTTEventSubscriptionHandler {
         // Build topic expander (replace wildcards) so it isn't computed for each event
         Function<SharedEvent, String> topicExpander;
 
+
+
         if (isAssetsTopic(topic)) {
             String topicStr = topic.toString();
+            // replace the assetId token with the actual assetId (if its multi-level or single-level wildcard)
             String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
             topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent) ev).getId()) : topicStr;
         } else {
             String topicStr = topic.toString();
-            boolean injectAttributeName = TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX));
+            var topicTokens = topic.getTokens();
 
-            if (injectAttributeName) {
-                topicStr = topicStr.replaceFirst("\\" + TOKEN_SINGLE_LEVEL_WILDCARD, "\\$");
+            // replace the assetId token with the actual assetId (INDEX: 4)
+            if (topicTokens.get(ASSET_ID_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD))
+            {
+                topicTokens.set(ASSET_ID_TOKEN_INDEX, "$assetId");
+            }
+            // replace the attributeName token with the actual attributeName (INDEX: 6)
+            if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD))
+            {
+                topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
             }
 
-            String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
-            String finalTopicStr = topicStr;
             topicExpander = ev -> {
-                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent) ev).getId()) : finalTopicStr;
-                if (injectAttributeName) {
-                    expanded = expanded.replace("$", ((AttributeEvent) ev).getName());
+                String expanded = String.join("/", topicTokens);
+                if (expanded.contains("$")) {
+                    if (ev instanceof AttributeEvent attributeEvent) {
+                        expanded = expanded.replace("$assetId", attributeEvent.getId());
+                        expanded = expanded.replace("$attributeName", attributeEvent.getName());
+                    }
                 }
                 return expanded;
             };
         }
+
         return ev -> {
+            LOG.info("Publishing event to topic: " + topicExpander.apply(ev));
             if (isAssetsTopic(topic)) {
                 if (ev instanceof AssetEvent) {
                     mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);

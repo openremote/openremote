@@ -2,6 +2,7 @@ package org.openremote.test.mqtt
 
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
@@ -657,6 +658,28 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         receivedEvents.clear()
         client.removeAllMessageConsumers();
+        //endregion
+
+        //region Test: subscribe All Attribute Events Realm
+        when: "a mqtt client subscribes to all attribute events of the realm"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        def attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", true)
+        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            def event = receivedEvents.get(0) as AttributeEvent
+            assert event.getName() == "presenceDetected"
+            assert event.value.get() == true
+        }
+        receivedEvents.clear()
         //endregion
 
 
