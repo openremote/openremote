@@ -105,6 +105,9 @@ export class OrAlarmsTable extends OrMwcTable {
         multiSelect: !this.readonly
     };
 
+    protected sortIndex = 5;
+    protected sortDirection: "ASC" | "DESC" = "DESC";
+
     static get styles() {
         return [...super.styles, styling];
     }

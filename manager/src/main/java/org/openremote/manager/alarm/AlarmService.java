@@ -122,7 +122,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 sentAlarm.setId(query.getSingleResult());
 
                 clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-                if(alarm.getAssignee() != null && alarm.getSeverity() == Alarm.Severity.HIGH){
+                if(alarm.getSeverity() == Alarm.Severity.HIGH){
                     sendAssigneeNotification(alarm);
                 }
                 return sentAlarm;
@@ -137,6 +137,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     private void sendAssigneeNotification(Alarm alarm) {
         try {
             List<Notification.Target> assignee = new ArrayList<>();
+            if(alarm.getAssignee().isEmpty()){
+                // TODO Get users by role??
+                return;
+            }
             assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
             User result = persistenceService.doReturningTransaction(entityManager -> {
                 TypedQuery<User> query = entityManager.createQuery("select u from User u where u.id=:id", User.class);

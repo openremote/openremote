@@ -42,9 +42,7 @@ export function pageAlarmsProvider(store: Store<AppStateKeyed>, config?: PageAla
         name: "alarms",
         routes: ["alarms", "alarms/:id"],
         pageCreator: () => {
-            const page = new PageAlarms(store);
-            if (config) page.config = config;
-            return page;
+            return new PageAlarms(store);
         }
     };
 }
@@ -268,9 +266,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
     protected _tableElem!: HTMLDivElement;
     protected _table?: OrMwcTable;
     protected _refresh?: number;
-    protected _pageCount?: number;
-    protected _currentPage: number = 1;
-
     @state()
     protected _selectedIds?: number[];
 
@@ -315,7 +310,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
             this.reset();
         }
         if (changedProperties.has("alarm")) {
-
             this._updateRoute();
         }
         if (changedProperties.has("severity")
@@ -998,6 +992,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         this.loadAlarm(this.alarm);
                         this.requestUpdate();
                     })
+                }
+                else {
+                    this.reset();
                 }
             } else {
                 this.realm = state.app.realm;
