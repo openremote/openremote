@@ -1,6 +1,5 @@
 package org.openremote.test.gateway
 
-import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HTTPAgent
@@ -9,7 +8,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -17,18 +16,13 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
+import org.openremote.manager.gateway.JSchGatewayTunnelFactory
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.impl.LightAsset
-import org.openremote.model.security.User
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.impl.BuildingAsset
-import org.openremote.model.asset.impl.GatewayAsset
-import org.openremote.model.asset.impl.MicrophoneAsset
-import org.openremote.model.asset.impl.RoomAsset
+import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
@@ -38,14 +32,21 @@ import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.GatewayClientResource
 import org.openremote.model.gateway.GatewayConnection
+import org.openremote.model.gateway.GatewayTunnelInfo
+import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.security.User
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.file.Paths
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -95,10 +96,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId(), true)
+            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
             assert gateway.getAttribute("clientId").isPresent()
-            assert !isNullOrEmpty(gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""))
-            assert !isNullOrEmpty(gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""))
+            assert !isNullOrEmpty(gateway.getClientId().orElse(""))
+            assert !isNullOrEmpty(gateway.getClientSecret().orElse(""))
         }
 
         and: "a gateway connector should have been created for this gateway"
@@ -139,13 +140,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        and: "the server should have sent a CONNECTED message and an asset read request"
+        and: "the server should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
             assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
@@ -327,14 +328,17 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "all the gateway assets should be replicated underneath the gateway"
-        assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        conditions.eventually {
+            assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        }
 
         and: "the http client protocol of the gateway agents should not have been linked to the central manager"
         Thread.sleep(500)
@@ -524,26 +528,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the gateway asset is marked as disabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED, true))
 
-        then: "the gateway asset status should become disabled"
+        then: "the gateway asset status should become DISCONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true)
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISABLED
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISCONNECTED
         }
 
         and: "the gateway connector should be marked as disconnected and the gateway client should have been disconnected"
         conditions.eventually {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).disabled
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).connected
-            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
         }
-
-        and: "the central manager should have sent a disconnect event to the client"
-        conditions.eventually {
-            assert clientReceivedMessages.last().contains("gateway-disconnect")
-        }
-        gatewayClient.disconnect()
 
         when: "an attempt is made to add a descendant asset to a gateway that isn't connected"
+        gatewayClient.disconnect()
         def failedAsset = new BuildingAsset("Failed Asset")
             .setId(UniqueIdentifierGenerator.generateId("Failed asset"))
             .setCreatedOn(Date.from(timerService.getNow()))
@@ -618,10 +616,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "the local manager should have sent an asset read request"
@@ -717,10 +715,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent = new EventRequestResponseWrapper(messageId, new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "the gateway should have the correct assets"
@@ -750,10 +749,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Verify gateway client service"() {
 
-        given: "the container environment is started with the spy gateway client service"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def services = Lists.newArrayList(defaultServices())
-        def container = startContainer(defaultConfig(), services)
+        def container = startContainer(defaultConfig(), defaultServices())
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
@@ -801,8 +799,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
-            gateway.getAttribute("clientId").flatMap{it.getValue()}.orElse(""),
-            gateway.getAttribute("clientSecret").flatMap{it.getValue()}.orElse(""),
+            gateway.getClientId().orElse(""),
+            gateway.getClientSecret().orElse(""),
             false,
             false
         )
@@ -935,6 +933,65 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
+        }
+    }
+
+    /**
+     * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
+     * Change the test url and key path to match the instance to connect to.
+     * Recommended to run profile/dev-proxy.yml profile.
+     */
+    @Ignore
+    def "Verify gateway tunnel factory"() {
+        given: "an ssh private key and the URL of a manager instance with tunnelling configured"
+        def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
+        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHPort = 2222
+
+        and: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
+        def gatewayClientService = container.getService(GatewayClientService)
+        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
+        def client = WebTargetBuilder.createClient(container.getExecutorService())
+        def tunnelInfo = new GatewayTunnelInfo(
+                "",
+                UniqueIdentifierGenerator.generateId(),
+                GatewayTunnelInfo.Type.HTTPS,
+                "localhost",
+                443)
+        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+
+        expect: "the tunnel factory to be created"
+        tunnelFactory != null
+
+        when: "a tunnel is requested to start"
+        def startEvent = new GatewayTunnelStartRequestEvent(
+                tunnelSSHHost,
+                tunnelSSHPort,
+                null,
+                null,
+                tunnelInfo)
+        tunnelFactory.startTunnel(startEvent)
+
+        then: "the tunnel should be established and be usable"
+        tunnelFactory.sessionMap.containsKey(tunnelInfo)
+        def response = target.request().get()
+        response.status == 200
+
+        when: "the tunnel is stopped"
+        tunnelFactory.stopTunnel(tunnelInfo)
+
+        then: "the tunnel should be destroyed"
+        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
+
+        and: "requests should fail"
+        def response2 = target.request().get()
+        response2.status != 200
+
+        cleanup: "cleanup"
+        if (client != null) {
+            client.close()
         }
     }
 }

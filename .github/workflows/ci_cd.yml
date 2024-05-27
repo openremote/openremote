@@ -841,17 +841,24 @@ jobs:
                       os.system(f"echo '{value}'\"'\"'' >> {envFile}")
                   else:
                       os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> {envFile}")
-
+            
+            # Output new line
+            os.system(f"echo '\n' >> {envFile}")
+          
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
               os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
               os.system("cat .ci_cd/env/.env >> temp/env")
+              # Output new line
+              os.system(f"echo '\n' >> {envFile}")
           
             # Output environment specific env file if exists
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
-              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-            
+              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")          
+              # Output new line
+              os.system(f"echo '\n' >> {envFile}")
+          
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
               os.putenv("CIDR", ipv4 + '/32')

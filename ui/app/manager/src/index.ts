@@ -9,6 +9,7 @@ import {
     headerItemConfiguration,
     headerItemExport,
     headerItemGatewayConnection,
+    headerItemGatewayTunnel,
     headerItemInsights,
     headerItemLanguage,
     headerItemLogout,
@@ -44,6 +45,7 @@ import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
 import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
+import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -65,6 +67,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageMapProvider(store),
     pageAssetsProvider(store),
     pageGatewayProvider(store),
+    pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
     pageRulesProvider(store),
@@ -87,6 +90,7 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     gateway: headerItemGatewayConnection(orApp),
+    gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
     account: headerItemAccount(orApp),
