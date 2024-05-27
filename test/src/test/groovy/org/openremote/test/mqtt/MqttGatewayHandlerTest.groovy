@@ -281,10 +281,16 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
         //region Test: Update Multiple Asset Attributes
+        when: "a mqtt client publishes an update message for multiple attributes of a specific asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/update"
+        payload = "{\"motionSensor\": 80, \"presenceDetected\": \"true\"}"
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-
-
-
+        then: "the values of the attributes should be updated accordingly"
+        conditions.eventually {
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 80d
+            assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("presenceDetected").get().value.orElse(false) == true
+        }
         //endregion
 
 
@@ -653,20 +659,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        
         cleanup: "disconnect the clients"
         if (client != null) {
             client.disconnect()
