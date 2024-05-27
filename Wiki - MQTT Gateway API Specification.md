@@ -72,27 +72,27 @@ Subscription events allow filtering through the usage of MQTT wildcard masks (+ 
 
 ##### [AssetEvent](https://github.com/openremote/openremote/blob/master/model/src/main/java/org/openremote/model/asset/AssetEvent.java)
 - ```{realm}/{clientId}/events/assets/#```
-Subscribes to all Asset Events of the realm.
+All asset events of the realm.
 - ```{realm}/{clientId}/events/assets/+```
-Subscribes to all Asset events for direct children of the realm.
+All asset events for direct children of the realm.
 - ```{realm}/{clientId}/events/assets/{assetId}```
-Subscribes to all Asset events for the specified asset.
+All asset events for the specified asset.
 - ```{realm}/{clientId}/events/assets/{assetId}/#```
-Subscribes to all Asset events for the descendants of the specified asset.
+All asset events for the descendants of the specified asset.
 - ```{realm}/{clientId}/events/assets/{assetId}/+```
-Subscribes to all Asset events for the direct children of the specified asset.
+All asset events for the direct children of the specified asset.
 
 ##### [AttributeEvent](https://github.com/openremote/openremote/blob/master/model/src/main/java/org/openremote/model/attribute/AttributeEvent.java)
 - ```{realm}/{clientId}/events/assets/+/attributes/#```
-Subscribes to all Attribute Events of the realm.
+All attribute events of the realm.
 - ```{realm}/{clientId}/events/assets/+/attributes/+```
-Subscribes to all Attribute events for direct children of the realm.
+All attribute events for direct children of the realm.
 - ```{realm}/{clientId}/events/assets/+/attributes/{attributeName}/#```
-All attribute events for the specified attribute name.
+All attribute events of the realm for the specified attribute name.
 - ```{realm}/{clientId}/events/assets/+/attributes/{attributeName}/+```
-All attribute events for direct children with the specified attribute name.
+All attribute events for direct children of the realm with the specified attribute name.
 - ```{realm}/{clientId}/events/assets/{assetId}/attributes/+```
-Subscribes to all Attribute events for the direct children of the specified asset.
+All attribute events for the direct children of the specified asset.
 - ```{realm}/{clientId}/events/assets/{assetId}/attributes/{attributeName}```
 All attribute events for the specified asset with the specified attribute name.
 - ```{realm}/{clientId}/events/assets/{assetId}/attributes/{attributeName}/#```

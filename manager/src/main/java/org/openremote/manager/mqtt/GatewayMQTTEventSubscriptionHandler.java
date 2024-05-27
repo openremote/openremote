@@ -269,7 +269,6 @@ public class GatewayMQTTEventSubscriptionHandler {
         Function<SharedEvent, String> topicExpander;
 
 
-
         if (isAssetsTopic(topic)) {
             String topicStr = topic.toString();
             // replace the assetId token with the actual assetId (if its multi-level or single-level wildcard)
@@ -280,13 +279,11 @@ public class GatewayMQTTEventSubscriptionHandler {
             var topicTokens = topic.getTokens();
 
             // replace the assetId token with the actual assetId (INDEX: 4)
-            if (topicTokens.get(ASSET_ID_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD))
-            {
+            if (topicTokens.get(ASSET_ID_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD)) {
                 topicTokens.set(ASSET_ID_TOKEN_INDEX, "$assetId");
             }
             // replace the attributeName token with the actual attributeName (INDEX: 6)
-            if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD))
-            {
+            if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD)) {
                 topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
             }
 
@@ -296,7 +293,15 @@ public class GatewayMQTTEventSubscriptionHandler {
                     if (ev instanceof AttributeEvent attributeEvent) {
                         expanded = expanded.replace("$assetId", attributeEvent.getId());
                         expanded = expanded.replace("$attributeName", attributeEvent.getName());
+
+                        // handle the last token if it is a wildcard
+                        String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
+                        if (replaceToken != null) {
+                            expanded = expanded.replace(replaceToken, ((AttributeEvent) ev).getId());
+                        }
                     }
+
+
                 }
                 return expanded;
             };
