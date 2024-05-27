@@ -19,9 +19,12 @@
  */
 package org.openremote.manager.mqtt;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
@@ -49,6 +52,7 @@ import org.openremote.model.util.ValueUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -99,6 +103,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
     protected final ConcurrentHashMap<Topic, RemotingConnection> responseTopicSubscriptions = new ConcurrentHashMap<>();
     protected boolean isKeycloak;
+
+
+    protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
+            .maximumSize(100000)
+            .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
+            .build();
 
     @Override
     public void start(Container container) throws Exception {
@@ -272,6 +282,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
 
+        // Check if user has been authorized for the topic before (cache, 30s expiration)
+        String cacheKey = getConnectionIDString(connection);
+        if (isCacheAuthorized(cacheKey, topic))
+        {
+            return true;
+        }
+
         boolean isRestrictedUser = identityProvider.isRestrictedUser(authContext);
         boolean hasWriteAssetsRole = authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID);
         String connectionID = getConnectionIDString(connection);
@@ -383,6 +400,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        addToAuthorizationCache(cacheKey, topic); // cache the authorization for 30s
         return true;
     }
 
@@ -434,6 +452,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Remove all event subscriptions for the connection
         eventSubscriptionManager.removeAllSubscriptions(connection);
+
+        // Invalidate the authorization cache for the connection
+        authorizationCache.invalidate(getConnectionIDString(connection));
     }
 
     @Override
@@ -453,6 +474,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Remove all event subscriptions for the connection
         eventSubscriptionManager.removeAllSubscriptions(connection);
+
+        // Invalidate the authorization cache for the connection
+        authorizationCache.invalidate(getConnectionIDString(connection));
     }
 
     @Override
@@ -833,6 +857,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected static boolean isGatewayConnection(RemotingConnection connection) {
         return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
+    }
+
+    protected void addToAuthorizationCache(String cacheKey, Topic topic) {
+        ConcurrentHashSet<String> set;
+        synchronized (authorizationCache) {
+            ConcurrentHashSet<String>  act = authorizationCache.getIfPresent(cacheKey);
+            if (act != null) {
+                set = act;
+            } else {
+                set = new ConcurrentHashSet<>();
+                authorizationCache.put(cacheKey, set);
+            }
+        }
+        set.add(topic.getString());
+    }
+
+    protected boolean isCacheAuthorized(String cacheKey, Topic topic) {
+        ConcurrentHashSet<String> set = authorizationCache.getIfPresent(cacheKey);
+        return set != null && set.contains(topic.getString());
     }
 
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {

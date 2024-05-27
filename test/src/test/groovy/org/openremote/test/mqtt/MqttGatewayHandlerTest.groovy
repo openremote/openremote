@@ -659,7 +659,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-        
+
         cleanup: "disconnect the clients"
         if (client != null) {
             client.disconnect()
