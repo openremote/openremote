@@ -91,8 +91,8 @@ All attribute events for direct children of the realm.
 All attribute events of the realm for the specified attribute name.
 - ```{realm}/{clientId}/events/assets/+/attributes/{attributeName}/+```
 All attribute events for direct children of the realm with the specified attribute name.
-- ```{realm}/{clientId}/events/assets/{assetId}/attributes/+```
-All attribute events for the direct children of the specified asset.
+- ```{realm}/{clientId}/events/assets/{assetId}/attributes```
+All attribute events for the specified asset.
 - ```{realm}/{clientId}/events/assets/{assetId}/attributes/{attributeName}```
 All attribute events for the specified asset with the specified attribute name.
 - ```{realm}/{clientId}/events/assets/{assetId}/attributes/{attributeName}/#```

@@ -808,8 +808,44 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
+        //region Test: Subscribe to all attribute events of a specific asset
+        when: "a mqtt client subscribes to all attribute events of a specific asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes".toString()
 
-        //TODO: Rest of the attribute event tests
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+
+         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            def event = receivedEvents.get(0) as AttributeEvent
+            assert event.getName() == "presenceDetected"
+            assert event.value.get() == true
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Don't receive attribute events of a different asset on specific asset attribute events subscription
+        when: "a mqtt client is subscribed to all attribute events of a specific asset and an attribute of a different asset is updated"
+        asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
+        asset1.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
+        assetStorageService.merge(asset1)
+
+        then: "then the attribute event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        client.removeAllMessageConsumers()
+        //endregion
+
+
 
 
         cleanup: "disconnect the clients"

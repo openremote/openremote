@@ -154,9 +154,9 @@ public class GatewayMQTTEventSubscriptionHandler {
 
             // if the topic has an assetId
             if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-                // realm/clientId/events/assets/{assetId}/attributes/+
+                // realm/clientId/events/assets/{assetId}/attributes
                 // all attribute events for the specified asset
-                if (attributeName.equals("+")) {
+                if (attributeName.isEmpty()) {
                     assetIds.add(assetId);
                 } else if (attributeNameIsNotWildcardOrEmpty) {
                     attributeNames.add(attributeName);
@@ -268,6 +268,8 @@ public class GatewayMQTTEventSubscriptionHandler {
         // Build topic expander (replace wildcards) so it isn't computed for each event
         Function<SharedEvent, String> topicExpander;
 
+        // get the tokens of the topic
+        var topicTokens = topic.getTokens();
 
         if (isAssetsTopic(topic)) {
             String topicStr = topic.toString();
@@ -276,15 +278,22 @@ public class GatewayMQTTEventSubscriptionHandler {
             topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent) ev).getId()) : topicStr;
         } else {
             String topicStr = topic.toString();
-            var topicTokens = topic.getTokens();
 
-            // replace the assetId token with the actual assetId (INDEX: 4)
-            if (topicTokens.get(ASSET_ID_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD)) {
-                topicTokens.set(ASSET_ID_TOKEN_INDEX, "$assetId");
+
+            if (topicTokens.size() > 4) {
+                // replace the assetId token with the actual assetId (INDEX: 4)
+                if (topicTokens.get(ASSET_ID_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD)) {
+                    topicTokens.set(ASSET_ID_TOKEN_INDEX, "$assetId");
+                }
             }
-            // replace the attributeName token with the actual attributeName (INDEX: 6)
-            if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD)) {
-                topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
+
+
+            if (topicTokens.size() > 6)
+            {
+                // replace the attributeName token with the actual attributeName (INDEX: 6)
+                if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD)) {
+                    topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
+                }
             }
 
             topicExpander = ev -> {
