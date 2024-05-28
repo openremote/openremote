@@ -8,7 +8,6 @@ import {getBuildingAsset} from "../../demo-core/src/util";
 manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    keycloakUrl: "http://localhost:8080/auth",
     managerUrl: "http://localhost:8080",
     realm: "smartcity"
 })

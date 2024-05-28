@@ -16,8 +16,8 @@ public class Alarm {
         OPEN,
         ACKNOWLEDGED,
         IN_PROGRESS,
-        CLOSED,
-        RESOLVED
+        RESOLVED,
+        CLOSED
     }
     public enum Severity {
         LOW,
@@ -34,6 +34,8 @@ public class Alarm {
     protected Status status;
     protected String assigneeId;
     protected String realm;
+    protected String sourceId;
+    protected Source source;
 
     @JsonCreator
     public Alarm(@JsonProperty("title") String title,
@@ -95,6 +97,24 @@ public class Alarm {
 
     public  Alarm setRealm(String realm) {
         this.realm = realm;
+        return this;
+    }
+
+    public Source getSource() {
+        return source;
+    }
+
+    public Alarm setSource(Source source) {
+        this.source = source;
+        return this;
+    }
+
+    public String getSourceId() {
+        return sourceId;
+    }
+
+    public Alarm setSourceId(String sourceId) {
+        this.sourceId = sourceId;
         return this;
     }
 

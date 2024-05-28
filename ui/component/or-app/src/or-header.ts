@@ -354,11 +354,13 @@ export class OrHeader extends LitElement {
     @state()
     private alarmButton = 'bell-outline';
 
+    @state()
     private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
 
     private _eventSubscriptionId?: string;
 
     public _onRealmSelect(realm: string) {
+        this._getAlarmButton().then();
         this.store.dispatch(updateRealm(realm));
     }
 
@@ -499,13 +501,12 @@ export class OrHeader extends LitElement {
 
     protected async _getAlarmButton() {
         let newAlarms= false;
-        console.log('Event triggered');
         if(manager.isRestrictedUser()){
             // TODO Filter alarms by linked assets
         }
-        if(manager.hasRole("read:alarms") || manager.hasRole("write:alarms")){
+        if(manager.hasRole("read:alarms") || manager.hasRole("read:admin")){
             const response = await manager.rest.api.AlarmResource.getOpenAlarms();
-            let open = response.data.filter((alarm) => alarm.status === AlarmStatus.OPEN);
+            let open = response.data.filter((alarm) => alarm.realm === manager.displayRealm);
             newAlarms = (open.length > 0);
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';

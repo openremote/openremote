@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.util.TsIgnore;
@@ -30,6 +30,5 @@ import org.openremote.model.util.TsIgnore;
 @TsIgnore
 public abstract class Alarms {
     public abstract Long create(Alarm alarm, String userId);
-    public abstract void linkAssets(ArrayList<String> assetIds, Long alarmId);
-    public abstract void assignUser(String userId, Long alarmId);
+    public abstract void linkAssets(List<String> assetIds, Long alarmId);
 }

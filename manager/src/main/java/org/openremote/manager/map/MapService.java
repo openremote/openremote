@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriInfo;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -36,6 +37,7 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -303,17 +305,17 @@ public class MapService implements ContainerService {
     /**
      * Dynamically build Mapbox GL settings based on mapsettings.json
      */
-    public ObjectNode getMapSettings(String realm, UriBuilder baseUriBuilder) {
-
-        if (mapSettings.containsKey(realm)) {
-            return mapSettings.get(realm);
+    public ObjectNode getMapSettings(String realm, URI host) {
+        String realmUriKey = realm + host.toString();
+        if (mapSettings.containsKey(realmUriKey)) {
+            return mapSettings.get(realmUriKey);
         }
 
         if (mapConfig == null) {
             return null;
         }
 
-        final ObjectNode settings = mapSettings.computeIfAbsent(realm, r -> {
+        final ObjectNode settings = mapSettings.computeIfAbsent(realmUriKey, r -> {
             if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
                 return mapConfig.deepCopy();
@@ -346,7 +348,7 @@ public class MapService implements ContainerService {
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
 
@@ -363,7 +365,7 @@ public class MapService implements ContainerService {
         // Set sprite URL to shared folder
         Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
             String spriteUri =
-                    baseUriBuilder.clone()
+                    UriBuilder.fromUri(host)
                             .replacePath(MAP_SHARED_DATA_BASE_URI)
                             .path(sprite)
                             .build().toString();
@@ -373,7 +375,7 @@ public class MapService implements ContainerService {
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
         Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
             String glyphsUri =
-                    baseUriBuilder.clone()
+                    UriBuilder.fromUri(host)
                             .replacePath(MAP_SHARED_DATA_BASE_URI)
                             .build().toString() + "/fonts/" + glyphs;
             settings.put("glyphs", glyphsUri);
@@ -385,20 +387,20 @@ public class MapService implements ContainerService {
     /**
      * Dynamically build Mapbox JS settings based on mapsettings.json
      */
-    public ObjectNode getMapSettingsJs(String realm, UriBuilder baseUriBuilder) {
-
-        if (mapSettingsJs.containsKey(realm)) {
-            return mapSettingsJs.get(realm);
+    public ObjectNode getMapSettingsJs(String realm, URI host) {
+        String realmUriKey = realm + host.toString();
+        if (mapSettingsJs.containsKey(realmUriKey)) {
+            return mapSettingsJs.get(realmUriKey);
         }
 
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realm, r -> ValueUtil.JSON.createObjectNode());
+        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
 
         if (!metadata.isValid() || mapConfig.isEmpty()) {
             return settings;
         }
 
         ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = baseUriBuilder.clone().replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
+        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
         tilesArray.insert(0, tileUrl);
 
         settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);

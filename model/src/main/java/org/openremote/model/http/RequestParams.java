@@ -48,11 +48,15 @@ public class RequestParams {
         return authorization.split(" ")[1];
     }
 
+    public URI getExternalSchemeHostAndPort() {
+        return getExternalBaseUriBuilder().replacePath("").build();
+    }
+
     /**
      * Handles reverse proxying and returns the request base URI
      */
-    public UriBuilder getExternalRequestBaseUri() {
-        URI uri = this.uriInfo.getRequestUri();
+    public UriBuilder getExternalBaseUriBuilder() {
+        URI uri = this.uriInfo.getBaseUri();
         String scheme = TextUtil.isNullOrEmpty(this.forwardedProtoHeader) ? uri.getScheme() : this.forwardedProtoHeader;
         int port = uri.getPort();
         String host = uri.getHost();

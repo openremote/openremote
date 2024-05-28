@@ -1,18 +1,18 @@
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-icon";
-import {style} from "./style";
-import {Dashboard} from "@openremote/model";
-import manager from "@openremote/core";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import "@openremote/or-mwc-components/or-mwc-menu";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {i18next} from "@openremote/or-translate";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
-import {DashboardService, DashboardSizeOption} from "./service/dashboard-service";
-import {isAxiosError} from "@openremote/rest";
+import {css, html, LitElement, PropertyValues} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
+import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
+import '@openremote/or-icon';
+import {style} from './style';
+import {Dashboard} from '@openremote/model';
+import manager from '@openremote/core';
+import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
+import '@openremote/or-mwc-components/or-mwc-menu';
+import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
+import {i18next} from '@openremote/or-translate';
+import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
+import {style as OrAssetTreeStyle} from '@openremote/or-asset-tree';
+import {DashboardService, DashboardSizeOption} from './service/dashboard-service';
+import {isAxiosError} from '@openremote/rest';
 
 // language=css
 const treeStyling = css`
@@ -28,7 +28,7 @@ const treeStyling = css`
     }
 `;
 
-@customElement("or-dashboard-tree")
+@customElement('or-dashboard-tree')
 export class OrDashboardTree extends LitElement {
 
     static get styles() {
@@ -64,7 +64,7 @@ export class OrDashboardTree extends LitElement {
 
             // Prevent any update since it is not necessary in its current state.
             // However, do update when dashboard is saved (aka when hasChanged is set back to false)
-            if (changedProperties.has("hasChanged") && this.hasChanged) {
+            if (changedProperties.has('hasChanged') && this.hasChanged) {
                 return false;
             }
         }
@@ -75,11 +75,11 @@ export class OrDashboardTree extends LitElement {
         if (!this.dashboards) {
             this.getAllDashboards();
         }
-        if (changedProperties.has("dashboards") && changedProperties.get("dashboards") != null) {
-            this.dispatchEvent(new CustomEvent("updated", {detail: this.dashboards}));
+        if (changedProperties.has('dashboards') && changedProperties.get('dashboards') != null) {
+            this.dispatchEvent(new CustomEvent('updated', {detail: this.dashboards}));
         }
-        if (changedProperties.has("selected")) {
-            this.dispatchEvent(new CustomEvent("select", {detail: this.selected}));
+        if (changedProperties.has('selected')) {
+            this.dispatchEvent(new CustomEvent('select', {detail: this.selected}));
         }
     }
 
@@ -95,14 +95,14 @@ export class OrDashboardTree extends LitElement {
                 this.dashboards = result.data;
             }).catch(reason => {
                 console.error(reason);
-                showSnackbar(undefined, "errorOccurred");
+                showSnackbar(undefined, 'errorOccurred');
             });
     }
 
     // Selects the dashboard (id).
     // Will emit a "select" event during the lifecycle
     private selectDashboard(id: string | Dashboard | undefined) {
-        if (typeof id === "string") {
+        if (typeof id === 'string') {
             this.selected = this.dashboards?.find(dashboard => dashboard.id === id);
         } else {
             this.selected = id;
@@ -113,22 +113,60 @@ export class OrDashboardTree extends LitElement {
     // Dispatch a "created" event, to let parent elements know a new dashboard has been created.
     // It will automatically select the newly created dashboard.
     private createDashboard(size: DashboardSizeOption) {
-        DashboardService.create(undefined, size, this.realm).then(dashboard => {
+        DashboardService.create(undefined, size, this.realm).then(d => {
             if (!this.dashboards) {
-                this.dashboards = [dashboard] as Dashboard[];
+                this.dashboards = [d] as Dashboard[];
             } else {
-                this.dashboards.push(dashboard);
-                this.requestUpdate("dashboards");
+                this.dashboards.push(d);
+                this.requestUpdate('dashboards');
             }
-            this.dispatchEvent(new CustomEvent("created", {detail: {dashboard}}));
-            this.selectDashboard(dashboard);
+            this.dispatchEvent(new CustomEvent('created', {detail: {d}}));
+            this.selectDashboard(d);
 
         }).catch(e => {
             console.error(e);
             if (isAxiosError(e) && e.response?.status === 404) {
-                showSnackbar(undefined, "noDashboardFound");
+                showSnackbar(undefined, 'noDashboardFound');
             } else {
-                showSnackbar(undefined, "errorOccurred");
+                showSnackbar(undefined, 'errorOccurred');
+            }
+        });
+    }
+
+    protected duplicateDashboard(dashboard: Dashboard) {
+        if (dashboard?.id !== null) {
+            if(this.hasChanged) {
+                this.showDiscardChangesModal().then(ok => {
+                    if(ok) {
+                        this._doDuplicateDashboard(dashboard);
+                    }
+                })
+            } else {
+                this._doDuplicateDashboard(dashboard);
+            }
+        } else {
+            console.warn("Tried duplicating a NULL dashboard!");
+        }
+    }
+
+    protected _doDuplicateDashboard(dashboard: Dashboard) {
+        const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
+        newDashboard.displayName = (newDashboard.displayName + ' copy');
+        DashboardService.create(newDashboard, undefined, this.realm).then(d => {
+            if (!this.dashboards) {
+                this.dashboards = [d] as Dashboard[];
+            } else {
+                this.dashboards.push(d);
+                this.requestUpdate('dashboards');
+            }
+            this.dispatchEvent(new CustomEvent('created', {detail: {d}}));
+            this.selectDashboard(d.id);
+        }).catch(e => {
+            console.error(e);
+            if (isAxiosError(e) && e.response?.status === 404) {
+                showSnackbar(undefined, 'noDashboardFound');
+            } else {
+                showSnackbar(undefined, 'errorOccurred');
             }
         });
     }
@@ -139,7 +177,7 @@ export class OrDashboardTree extends LitElement {
                 this.getAllDashboards();
             }).catch(reason => {
                 console.error(reason);
-                showSnackbar(undefined, "errorOccurred");
+                showSnackbar(undefined, 'errorOccurred');
             });
         }
     }
@@ -151,15 +189,17 @@ export class OrDashboardTree extends LitElement {
     protected onDashboardClick(dashboardId: string) {
         if (dashboardId !== this.selected?.id) {
             if (this.hasChanged) {
-                showOkCancelDialog(i18next.t("areYouSure"), i18next.t("confirmContinueDashboardModified"), i18next.t("discard")).then((ok: boolean) => {
-                    if (ok) {
-                        this.selectDashboard(dashboardId);
-                    }
-                });
+                this.showDiscardChangesModal().then(ok => {
+                    if(ok) this.selectDashboard(dashboardId);
+                })
             } else {
                 this.selectDashboard(dashboardId);
             }
         }
+    }
+
+    protected showDiscardChangesModal(): Promise<boolean> {
+        return showOkCancelDialog(i18next.t('areYouSure'), i18next.t('confirmContinueDashboardModified'), i18next.t('discard'));
     }
 
     // Element render method
@@ -175,15 +215,15 @@ export class OrDashboardTree extends LitElement {
                 });
                 if (myDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
-                        items.push({icon: "view-dashboard", text: d.displayName, value: d.id});
+                    myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
+                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
                     });
                     dashboardItems.push(items);
                 }
                 if (otherDashboards.length > 0) {
                     const items: ListItem[] = [];
-                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName!) : 0).forEach(d => {
-                        items.push({icon: "view-dashboard", text: d.displayName, value: d.id});
+                    otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
+                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
                     });
                     dashboardItems.push(items);
                 }
@@ -198,14 +238,19 @@ export class OrDashboardTree extends LitElement {
                 <!-- Controls header -->
                 ${this.showControls ? html`
                     <div id="header-btns">
-                        ${this.selected !== null ? html`
+                        ${this.selected != null ? html`
                             <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => {
                                 this.selectDashboard(undefined);
                             }}"></or-mwc-input>
                             ${!this.readonly ? html`
+                                <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy"
+                                              @or-mwc-input-changed="${() => {
+                                                  this.duplicateDashboard(this.selected!);
+                                              }}"
+                                ></or-mwc-input>
                                 <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
                                     if (this.selected != null) {
-                                        showOkCancelDialog(i18next.t("areYouSure"), i18next.t("dashboard.deletePermanentWarning", {dashboard: this.selected.displayName}), i18next.t("delete")).then((ok: boolean) => {
+                                        showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
                                             if (ok) {
                                                 this.deleteDashboard(this.selected!);
                                             }
@@ -232,7 +277,7 @@ export class OrDashboardTree extends LitElement {
                         return (items != null && items.length > 0) ? html`
                             <div style="padding: 8px 0;">
                                 <span style="font-weight: 500; padding-left: 14px; color: #000000;">
-                                    <or-translate value="${(index === 0 ? "dashboard.myDashboards" : "dashboard.createdByOthers")}"></or-translate>
+                                    <or-translate value="${(index === 0 ? 'dashboard.myDashboards' : 'dashboard.createdByOthers')}"></or-translate>
                                  </span>
                                 <div id="list-container" style="overflow: hidden;">
                                     <ol id="list">

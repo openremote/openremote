@@ -15,7 +15,7 @@ create table ALARM (
   ID                 int8                     not null,
   REALM              varchar(255)             not null,
   TITLE              varchar(255)             not null,
-  CONTENT            varchar(4096)            not null,
+  CONTENT            varchar(4096),
   SEVERITY           varchar(15)              not null,
   STATUS             varchar(15)              not null,
   SOURCE             varchar(50)              not null,

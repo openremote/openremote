@@ -4,21 +4,13 @@ import org.openremote.model.alarm.Alarm
 import org.openremote.model.alarm.Alarm.Severity
 import org.openremote.model.alarm.SentAlarm
 import org.openremote.model.alarm.AlarmResource
-import org.openremote.container.persistence.PersistenceService
-import org.openremote.manager.alarm.AlarmService
-import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.http.RequestParams
-import org.openremote.protocol.zwave.model.commandclasses.CCAlarmV2
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
-import spock.util.concurrent.PollingConditions
 import spock.lang.Unroll
 import spock.lang.Shared
-
-import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -26,11 +18,10 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.model.util.ValueUtil.parse
 import jakarta.ws.rs.WebApplicationException
 
 class AlarmTest extends Specification implements ManagerContainerTrait{
-    @Shared 
+    @Shared
     static AlarmResource adminResource
 
     @Shared
@@ -119,7 +110,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         where:
         title | content | severity | status
         null | "Test Description" | Severity.LOW | Alarm.Status.OPEN
-        "Another Alarm" | null | Severity.MEDIUM | Alarm.Status.RESOLVED
         "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
     }
 
@@ -158,26 +148,26 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     }
 
     // Update alarm as admin
-     @Unroll
-     def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
-         when:
-         def updatable = adminResource.getAlarms(null)[0]
-         adminResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
-         def updated = adminResource.getAlarms(null)[0]
+    @Unroll
+    def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+        when:
+        def updatable = adminResource.getAlarms(null)[0]
+        adminResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
+        def updated = adminResource.getAlarms(null)[0]
 
-         then:
-         assert updated != null
-         assert updated.title == title
-         assert updated.content == content
-         assert updated.severity == severity
-         assert updated.status == status
+        then:
+        assert updated != null
+        assert updated.title == title
+        assert updated.content == content
+        assert updated.severity == severity
+        assert updated.status == status
 
 
-         where:
-         title | content | severity | status
-         "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
-         "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
-     }
+        where:
+        title | content | severity | status
+        "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
+        "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
+    }
 
     @Unroll
     def "should not update an alarm with id 'null'"() {

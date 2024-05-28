@@ -1,14 +1,11 @@
 package org.openremote.manager.alarm;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.*;
 import org.openremote.model.alarm.Alarm.Status;
-import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -22,10 +19,10 @@ import org.openremote.manager.event.ClientEventService;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.*;
+import org.openremote.model.security.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -34,16 +31,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-
-import static java.util.logging.Level.FINE;
-import static org.openremote.model.alarm.Alarm.HEADER_SOURCE;
 import static org.openremote.model.alarm.Alarm.Source.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
 
-    public static final String ALARM_QUEUE = "seda://AlarmQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-    private static final Logger LOG = Logger.getLogger(org.openremote.manager.alarm.AlarmService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(org.openremote.manager.alarm.AlarmService.class.getName());
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -129,14 +122,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 sentAlarm.setId(query.getSingleResult());
 
                 clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-                if(alarm.getAssignee() != null && alarm.getSeverity() == Alarm.Severity.HIGH){
+                if(alarm.getSeverity() == Alarm.Severity.HIGH){
                     sendAssigneeNotification(alarm);
                 }
                 return sentAlarm;
             });
         } catch (Exception e) {
             String msg = "Failed to create alarm: " + (alarm != null ? alarm.getTitle() : ' ');
-            LOG.log(Level.WARNING, msg, e);
+            LOGGER.log(Level.WARNING, msg, e);
             return new SentAlarm();
         }
     }
@@ -144,73 +137,61 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     private void sendAssigneeNotification(Alarm alarm) {
         try {
             List<Notification.Target> assignee = new ArrayList<>();
+            if(alarm.getAssignee().isEmpty()){
+                // TODO Get users by role??
+                return;
+            }
             assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
+            User result = persistenceService.doReturningTransaction(entityManager -> {
+                TypedQuery<User> query = entityManager.createQuery("select u from User u where u.id=:id", User.class);
+                query.setParameter("id", alarm.getAssignee());
+                return query.getSingleResult();
+            });
             Notification email = new Notification();
-            email.setName("New Alarm");
-            email.setMessage(new EmailNotificationMessage()
+            email.setName("New Alarm")
+                    .setMessage(new EmailNotificationMessage()
                     .setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
                             "Description: " + alarm.getContent() + "\n" +
                             "Severity: " + alarm.getSeverity() + "\n" +
                             "Status: " + alarm.getStatus())
-                    .setSubject("New Alarm Notification"));
-            email.setTargets(assignee);
+                    .setSubject("New Alarm Notification")
+                    .setTo(new EmailNotificationMessage.Recipient(result.getFullName(), result.getEmail())));
 
             Notification push = new Notification();
-            push.setName("New Alarm");
-            push.setMessage(
+            push.setName("New Alarm")
+                    .setMessage(
                     new PushNotificationMessage()
                             .setTitle("Alarm: " + alarm.getTitle())
-                            .setBody("Add alarm info here.") // TODO: Add alarm info to body
-            );
-            push.setTargets(assignee);
+                            .setBody("Assigned to alarm: " + alarm.getTitle() + "\n" +
+                                    "Description: " + alarm.getContent() + "\n" +
+                                    "Severity: " + alarm.getSeverity() + "\n" +
+                                    "Status: " + alarm.getStatus())
+                    )
+                    .setTargets(assignee);
 
-            boolean resultPush = notificationService.sendNotification(push);
-            boolean resultEmail = notificationService.sendNotification(email);
+            notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
+            notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
 
 
-            LOG.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
-
-            System.out.println(resultPush);
-            System.out.println(resultEmail);
+            LOGGER.info("Notifying user of new alarm: " + alarm.getTitle() + ": " + alarm.getAssignee());
 
         } catch (Exception e) {
             String msg = "Failed to send email concerning alarm: " + alarm.getTitle();
-            LOG.log(Level.WARNING, msg, e);
-        }
-    }
-
-    public void setAlarmAcknowledged(String id) {
-        setAlarmAcknowledged(id, timerService.getCurrentTimeMillis());
-    }
-
-    public void setAlarmAcknowledged(String id, long timestamp) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET acknowledgedOn=:timestamp WHERE id =:id");
-            query.setParameter("id", id);
-            query.setParameter("timestamp", new Date(timestamp));
-            query.executeUpdate();
-        });
-    }
-
-    public void updateAlarmStatus(String id, String status) {
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET status=:status WHERE id =:id");
-            query.setParameter("id", id);
-            query.setParameter("status", status);
-            query.executeUpdate();
-        });
-        if(status == Status.ACKNOWLEDGED.toString()){
-            this.setAlarmAcknowledged(id);
+            LOGGER.log(Level.WARNING, msg, e);
         }
     }
 
     public void assignUser(Long alarmId, String userId){
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
-            query.setParameter("id", alarmId);
-            query.setParameter("assigneeId", userId);
-            query.executeUpdate();
-        });
+        try {
+            persistenceService.doTransaction(entityManager -> {
+                Query query = entityManager.createQuery("UPDATE SentAlarm SET assigneeId=:assigneeId WHERE id =:id");
+                query.setParameter("id", alarmId);
+                query.setParameter("assigneeId", userId);
+                query.executeUpdate();
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void updateAlarm(Long id, SentAlarm alarm) {
@@ -229,15 +210,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
         } catch (Exception e) {
             String msg = "Failed to update alarm: " + alarm.getTitle();
-            LOG.log(Level.WARNING, msg, e);
+            LOGGER.log(Level.WARNING, msg, e);
         }
     }
 
     public void assignUser(Long alarmId, String userId, String realm) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing user alarm link");
-            }
             PreparedStatement st;
 
             try {
@@ -252,17 +230,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create user alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
     public List<AlarmUserLink> getUserLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting user alarm links");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -281,23 +254,17 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
                 TypedQuery<AlarmUserLink> query = entityManager.createQuery(sb.toString(), AlarmUserLink.class);
                 parameters.forEach(query::setParameter);
-                List<AlarmUserLink> result = query.getResultList();
-                return result;
+                return query.getResultList();
             });
 
         } catch (Exception e) {
             String msg = "Failed to get user alarm links";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
-}
+    }
 
-    public void linkAssets(ArrayList<String> assetIds, String realm, Long alarmId) {
+    public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing asset alarm link");
-            }
-
             try {
                 PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
                 for (String assetId : assetIds) {
@@ -311,18 +278,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create asset alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
-    public void linkAssets(ArrayList<AlarmAssetLink> links) {
+    public void linkAssets(List<AlarmAssetLink> links) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Storing asset alarm link");
-            }
-
             try {
                 PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
                 for (AlarmAssetLink link : links) {
@@ -336,52 +298,42 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             } catch (Exception e) {
                 String msg = "Failed to create asset alarm link";
-                LOG.log(Level.WARNING, msg, e);
                 throw new IllegalStateException(msg, e);
             }
         }));
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-            if (LOG.isLoggable(FINE)) {
-                LOG.fine("Getting asset alarm links");
-            }
+        try {
+            return persistenceService.doReturningTransaction(entityManager -> {
+                StringBuilder sb = new StringBuilder();
+                Map<String, Object> parameters = new HashMap<>(2);
+                sb.append("select al from AlarmAssetLink al where 1=1");
 
-            try {
-                return persistenceService.doReturningTransaction(entityManager -> {
-                    StringBuilder sb = new StringBuilder();
-                    Map<String, Object> parameters = new HashMap<>(2);
-                    sb.append("select al from AlarmAssetLink al where 1=1");
+                if (!isNullOrEmpty(realm)) {
+                    sb.append(" and al.id.realm = :realm");
+                    parameters.put("realm", realm);
+                }
+                if (alarmId != null) {
+                    sb.append(" and al.id.sentalarmId = :alarmId");
+                    parameters.put("alarmId", alarmId);
+                }
+                sb.append(" order by al.createdOn desc");
 
-                    if (!isNullOrEmpty(realm)) {
-                        sb.append(" and al.id.realm = :realm");
-                        parameters.put("realm", realm);
-                    }
-                    if (alarmId != null) {
-                        sb.append(" and al.id.sentalarmId = :alarmId");
-                        parameters.put("alarmId", alarmId);
-                    }
-                    sb.append(" order by al.createdOn desc");
+                TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
+                parameters.forEach(query::setParameter);
 
-                    TypedQuery<AlarmAssetLink> query = entityManager.createQuery(sb.toString(), AlarmAssetLink.class);
-                    parameters.forEach(query::setParameter);
+                return query.getResultList();
 
-                    return query.getResultList();
+            });
 
-                });
-
-            } catch (Exception e) {
-                String msg = "Failed to get asset alarm links";
-                LOG.log(Level.WARNING, msg, e);
-                throw new IllegalStateException(msg, e);
-            }
+        } catch (Exception e) {
+            String msg = "Failed to get asset alarm links";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
     public List<SentAlarm> getAlarmsByAssetId(String assetId) throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting alarms by assetId");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
                 StringBuilder sb = new StringBuilder();
@@ -398,73 +350,71 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         } catch (Exception e) {
             String msg = "Failed to get alarms by assetId";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
     }
 
     public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Getting Open alarms");
-        }
-
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append("SELECT sa FROM SentAlarm sa ");
-                sb.append("WHERE sa.status = 'OPEN' ");
-                sb.append("ORDER BY sa.createdOn DESC");
-
-                TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
-
+                TypedQuery<SentAlarm> query = entityManager.createQuery("SELECT sa FROM SentAlarm sa WHERE sa.status = 'OPEN' ORDER BY sa.createdOn DESC", SentAlarm.class);
                 return query.getResultList();
             });
 
         } catch (Exception e) {
             String msg = "Failed to get open alarms";
-            LOG.log(Level.WARNING, msg, e);
             throw new IllegalStateException(msg, e);
         }
     }
 
-    public SentAlarm getSentAlarm(String alarmId) {
-        return persistenceService.doReturningTransaction(em -> em.find(SentAlarm.class, alarmId));
-    }
-
     public List<SentAlarm> getAlarms() throws IllegalArgumentException {
-        StringBuilder builder = new StringBuilder();
-        builder.append("select n from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
-        builder.append(" order by n.createdOn desc");
-        return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
-            return query.getResultList();
+        try {
+            StringBuilder builder = new StringBuilder();
+            builder.append("select n from SentAlarm n where 1=1");
+            List<Object> parameters = new ArrayList<>();
+            builder.append(" order by n.createdOn desc");
+            return persistenceService.doReturningTransaction(entityManager -> {
+                TypedQuery<SentAlarm> query = entityManager.createQuery(builder.toString(), SentAlarm.class);
+                IntStream.range(0, parameters.size())
+                        .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
+                return query.getResultList();
 
-        });
+            });
+        } catch (Exception e) {
+            String msg = "Failed to get alarms";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
-    public void removeAlarm(Long id) {
-        persistenceService.doTransaction(entityManager -> entityManager
-                .createQuery("delete SentAlarm where id = :id")
-                .setParameter("id", id)
-                .executeUpdate()
-        );
+    public void removeAlarm(Long id, String realm) {
+        try {
+            persistenceService.doTransaction(entityManager -> entityManager
+                    .createQuery("delete SentAlarm where id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate()
+            );
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
+        } catch (Exception e) {
+            String msg = "Failed to remove alarm";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
-    public void removeAlarms(List<Long> ids) throws IllegalArgumentException {
+    public void removeAlarms(List<Long> ids, String realm) throws IllegalArgumentException {
+        try {
+            StringBuilder builder = new StringBuilder();
+            builder.append("delete from SentAlarm n where n.id in :ids");
 
-        StringBuilder builder = new StringBuilder();
-        builder.append("delete from SentAlarm n where 1=1");
-        List<Object> parameters = new ArrayList<>();
+            persistenceService.doTransaction(entityManager -> {
+                Query query = entityManager.createQuery(builder.toString());
+                query.setParameter("ids", ids);
+                query.executeUpdate();
+            });
 
-        persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery(builder.toString());
-            IntStream.range(0, parameters.size())
-                    .forEach(i -> query.setParameter(i + 1, parameters.get(i)));
-            query.executeUpdate();
-        });
-
+            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
+        } catch (Exception e) {
+            String msg = "Failed to remove alarms";
+            throw new IllegalStateException(msg, e);
+        }
     }
 }
