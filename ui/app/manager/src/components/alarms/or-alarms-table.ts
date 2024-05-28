@@ -16,53 +16,53 @@ export interface AlarmTableColumn extends TableColumn {
 
 const styling = css`
   .alarm-text {
-    padding: 4px;
+    padding: 4px 6px;
     border-radius: 5px;
   }
 
   .alarm-status-text__closed {
     color: var(--or-alarm-status-color__closed, grey);
     background-color: var(--or-alarm-status-background__closed);
-    border: var(--or-alarm-status-border__closed, 1px grey solid);
+    border: var(--or-alarm-status-border__closed, 1px #8590A2 solid);
   }
 
   .alarm-status-text__resolved {
     color: var(--or-alarm-status-color__resolved, white);
-    background-color: var(--or-alarm-status-background__resolved, grey);
+    background-color: var(--or-alarm-status-background__resolved, #22A06B);
     border: var(--or-alarm-status-border__resolved);
   }
 
   .alarm-status-text__acknowledged {
     color: var(--or-alarm-status-color__acknowledged);
     background-color: var(--or-alarm-status-background__acknowledged);
-    border: var(--or-alarm-status-border__acknowledged, 1px mediumblue solid);
+    border: var(--or-alarm-status-border__acknowledged, 1px #8F7EE7 solid);
   }
 
   .alarm-status-text__in-progress {
     color: var(--or-alarm-status-color__in-progress, white);
-    background-color: var(--or-alarm-status-background__in-progress, green);
+    background-color: var(--or-alarm-status-background__in-progress, #388BFF);
     border: var(--or-alarm-status-border__in-progress);
   }
 
   .alarm-status-text__open {
     color: var(--or-alarm-status-color__open, white);
-    background-color: var(--or-alarm-status-background__open, mediumblue);
+    background-color: var(--or-alarm-status-background__open, #8F7EE7);
     border: var(--or-alarm-status-border__open);
   }
 
     .alarm-severity-text__low {
         color: white;
-        background-color: mediumblue;
+        background-color: #388BFF;
     }
 
     .alarm-severity-text__medium {
         color: white;
-        background-color: darkorange;
+        background-color: #ffab00;
     }
 
     .alarm-severity-text__high {
         color: white;
-        background-color: red;
+        background-color: #ff5630;
     }
 `;
 

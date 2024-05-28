@@ -75,19 +75,44 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
 
                 #title {
-                    padding: 0;
+                    padding: 0 20px;
                     font-size: 18px;
                     font-weight: bold;
-                    width: 100%;
-                    margin: 10px 0 0 0;
+                    margin: 10px 0;
                     display: flex;
                     align-items: center;
                     color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    justify-content: space-between;
+                }
+                
+                #title-alarm {
+                    display: flex; 
+                    align-items:center; 
+                    justify-content: flex-start; 
+                    width: calc(100% - 52px); 
+                    max-width: 1000px; 
+                    margin: 20px auto; 
+                    font-size: 18px; 
+                    font-weight: bold;
+                }
+                
+                .breadcrumb-container {
+                    width: calc(100% - 52px);
+                    max-width: 1000px;
+                    margin: 10px 20px 0 34px;
+                    display: flex;
+                    align-items: center;
                 }
 
-                #title or-icon {
-                    margin-right: 10px;
-                    margin-left: 14px;
+                .breadcrumb-clickable {
+                    cursor: pointer;
+                    color: ${unsafeCSS(DefaultColor4)};
+                }
+
+                .breadcrumb-arrow {
+                    margin: 0 5px -3px 5px;
+                    --or-icon-width: 16px;
+                    --or-icon-height: 16px;
                 }
 
                 .panel {
@@ -116,22 +141,19 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
 
                 .alarm-input {
-                    margin-bottom: 10px;
+                    margin-bottom: 12px;
                 }
 
                 #status-select, #severity-select {
                     width: 180px;
-                    padding: 0 10px;
                 }
 
                 #controls {
                     flex: 0;
                     display: flex;
-                    /*flex-wrap: wrap;*/
                     flex-direction: row;
                     justify-content: space-between;
-                    /*margin: var(--internal-or-log-viewer-controls-margin);*/
-                    padding: 0 10px 0px 10px;
+                    align-items: center;
                 }
 
                 .controls-left {
@@ -140,21 +162,19 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     width: 100%;
                 }
 
-                #controls > * {
-                    /*margin-top: 0px;*/
+                .controls-left > *{
+                    padding-right: 20px;
                 }
                 
                 h5 {
                     margin-top: 12px;
-                    margin-bottom: 5px;
+                    margin-bottom: 6px;
                 }
 
                 or-icon {
                     vertical-align: middle;
                     --or-icon-width: 20px;
                     --or-icon-height: 20px;
-                    margin-right: 2px;
-                    margin-left: 20px;
                 }
                 
                 #table-container {
@@ -167,7 +187,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     flex-direction: row;
                     margin: auto;
                     flex: 1 1 0;
-                    gap: 12px;
+                    gap: 16px;
                     width: 100%;
                 }
 
@@ -184,7 +204,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 }
                 
                 #prop-panel {
-                    min-width: 33%;
+                    min-width: 32%;
                     height: fit-content; 
                 }
 
@@ -192,25 +212,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     display: none;
                     margin: 0 !important;
                 }
-                
-                .breadcrumb-container {
-                    padding: 0 20px;
-                    width: calc(100% - 40px);
-                    max-width: 1360px;
-                    margin-top: 10px;
-                    display: flex;
-                    align-items: center;
-                }
 
-                .breadcrumb-clickable {
-                    cursor: pointer;
-                    color: ${unsafeCSS(DefaultColor4)};
-                }
-
-                .breadcrumb-arrow {
-                    margin: 0 5px -3px 5px;
-                    --or-icon-width: 16px;
-                    --or-icon-height: 16px;
+                #title.hidden {
+                    display: none;
+                    margin: 0 !important;
                 }
             `];
     }
@@ -408,9 +413,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
         return html`
             <div id="wrapper">
                 <!-- Alarm Specific page -->
-                <div id="title" class="${this.creationState || this.alarm ? "hidden" : ""}" style="justify-content: space-between; margin-top: 10px; margin-bottom: 10px">
-                    <div class="${this.creationState || this.alarm ? "hidden" : ""}">
-                        <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
+                <div id="title" class="${this.creationState || this.alarm ? "hidden" : ""}">
+                    <div class="${this.creationState || this.alarm ? "hidden" : ""}" style="display: flex; align-items: center;">
+                        <or-icon icon="bell-outline" style="padding: 0 10px 0 4px;"></or-icon>
                         <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
                     </div>
                     <div>
@@ -426,7 +431,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                         @or-mwc-input-changed="${() => (this._deleteAlarms())}"
                                 ></or-mwc-input>
                             </div>
-                            <hr class="${this._selectedIds?.length > 0 ? "" : "hidden"}">
+                            <div class="${this._selectedIds?.length > 0 ? "" : "hidden"}" style="height:40px; border-right: 1px solid #e0e0e0; margin-right: 4px;"></div>
                             <div class="${this.creationState || this.alarm ? "hidden" : "controls-left"}">
                                 <or-mwc-input .type="${InputType.CHECKBOX}" id="assign-check"
                                               ?disabled="${disabled}" .label="${i18next.t("alarm.assignedToMe")}"
@@ -447,8 +452,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             <div class="${this.creationState || this.alarm || assignOnly || readonly ? "hidden" : "panel-title"}"
                                  style="justify-content: flex-end;">
                                 <or-mwc-input
-                                        raised
-                                        style="padding: 0px 10px; margin: 0;"
                                         type="${InputType.BUTTON}"
                                         icon="plus"
                                         label="${i18next.t("alarm.add")}"
@@ -569,7 +572,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 this._data = this._data.filter((e) => e.status === this.status);
             }
             if(!this.status && this.allActive){
-                this._data = this._data.filter((e) => e.status !== AlarmStatus.CLOSED);
+                this._data = this._data.filter((e) => e.status !== AlarmStatus.RESOLVED && e.status !== AlarmStatus.CLOSED);
             }
             if(this.assign){
                 await this._onAssignCheckChanged(this.assign);
@@ -641,17 +644,15 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     <span style="margin-left: 2px;"
                     >${this.alarm != undefined ? this.alarm.id : i18next.t("alarm.creatingAlarm")}</span>
                 </div>
-                <div style="justify-content: flex-start; margin-top: 10px; margin-bottom: 10px">
-                    <div style="font-size: 18px; font-weight: bold;">
-                        <or-icon icon="bell-outline" style="margin-left: 20px"></or-icon>
-                        <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
-                    </div>
+                <div id="title-alarm">
+                    <or-icon icon="bell-outline" style="margin-right: 10px; margin-left: 14px;"></or-icon>
+                    <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
                 </div>
                        
                 <div class="panel" style="margin-top: 0">
                     <div class="row">
                         <div class="column" id="details-panel">
-                            <h5>${i18next.t("details").toUpperCase()}</h5>
+                            <h5>${i18next.t("details")}</h5>
                             <!-- alarm details -->
                             <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                       .label="${i18next.t("alarm.title")}" required
@@ -666,7 +667,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                       .label="${i18next.t("alarm.content")}"
                                       .type="${InputType.TEXTAREA}"
                                       .value="${alarm.content}"
-                                      rows="11"
+                                      rows="12"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                         alarm.content = e.detail.value;
                                         this.onAlarmChanged(e);
@@ -674,7 +675,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             ></or-mwc-input>
                         </div>
                         <div class="column" id="prop-panel">
-                            <h5>${i18next.t("properties").toUpperCase()}</h5>
+                            <h5>${i18next.t("properties")}</h5>
                             <or-mwc-input class="alarm-input hidden" ?disabled="${true}"
                                           ?comfortable=${!this.creationState}
                                   .label="${i18next.t("createdOn")}"
@@ -741,7 +742,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     </div>
                     <!-- Bottom controls (save/update and delete button) -->
                     ${when(!(readonly && !this._saveAlarmPromise), () => html`
-                        <div class="row" style="justify-content: space-between;">
+                        <div class="row" style="justify-content: space-between; margin-top: 10px;">
                             ${when((manager.hasRole("write:alarms")), () => html`
                                 <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:alarms")}"
                                           .label="${i18next.t("delete")}"
@@ -1015,10 +1016,13 @@ export class PageAlarms extends Page<AppStateKeyed> {
         const saveBtn = this.shadowRoot.getElementById("savebtn") as OrMwcInput;
 
         if (formElement) {
-            const saveDisabled = Array.from(formElement.children)
+            saveBtn.disabled = Array.from(formElement.children)
                 .filter((e) => e instanceof OrMwcInput)
                 .some((input) => !(input as OrMwcInput).valid);
-            saveBtn.disabled = saveDisabled;
+        }
+
+        if (!this.alarm.title){
+            saveBtn.disabled = true;
         }
     }
 }
