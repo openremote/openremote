@@ -16,8 +16,6 @@ import {getNewUserRoute, getUsersRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import {ref, Ref, createRef} from 'lit/directives/ref.js';
-import {debounce} from "lodash";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -532,9 +530,9 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <div class="panel-title" style="justify-content: space-between;">
                             <p>${i18next.t("regularUser_plural")}</p>
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <or-mwc-input type="${InputType.TEXT}" placeholder="${i18next.t('search')}" live 
+                                <or-mwc-input type="${InputType.TEXT}" placeholder="${i18next.t('search')}" 
                                               style="margin: 0; text-transform: none;" iconTrailing="magnify" compact outlined
-                                              @or-mwc-input-changed="${debounce((ev) => this.onRegularUserSearch(ev), 150)}"
+                                              @input="${(ev) => this.onRegularUserSearch(ev)}"
                                 ></or-mwc-input>
                                 <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
                                               @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(false)}}"
@@ -551,7 +549,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             <p>${i18next.t("serviceUser_plural")}</p>
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <or-mwc-input style="margin: 0; text-transform: none;" type="${InputType.TEXT}" iconTrailing="magnify" placeholder="${i18next.t('search')}" compact outlined
-                                              @or-mwc-input-changed="${debounce((ev) => this.onServiceUserSearch(ev), 150)}"
+                                              @input="${(ev) => this.onServiceUserSearch(ev)}"
                                 ></or-mwc-input>
                                 <or-mwc-input style="margin: 0;" type="${InputType.BUTTON}" icon="plus" label="${i18next.t('add')} ${i18next.t("user")}"
                                               @or-mwc-input-changed="${() => this.creationState = {userModel: this.getNewUserModel(true)}}"
@@ -600,8 +598,8 @@ export class PageUsers extends Page<AppStateKeyed> {
         return (users) => users;
     }
 
-    protected onRegularUserSearch(ev: OrInputChangedEvent) {
-        const value = (ev.detail.value as string)?.toLowerCase();
+    protected onRegularUserSearch(ev: InputEvent) {
+        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
         if(!value) {
             this._userFilter = this.getDefaultUserFilter(false);
         } else {
@@ -616,8 +614,8 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
     }
 
-    protected onServiceUserSearch(ev: OrInputChangedEvent) {
-        const value = (ev.detail.value as string)?.toLowerCase();
+    protected onServiceUserSearch(ev: InputEvent) {
+        const value = (ev.target as OrMwcInput).nativeValue?.toLowerCase();
         if(!value) {
             this._serviceUserFilter = this.getDefaultUserFilter(true);
         } else {
