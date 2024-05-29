@@ -13,11 +13,13 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.BuildingAsset
+import org.openremote.model.asset.impl.GatewayV2Asset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.query.AssetQuery
+import org.openremote.model.security.User
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -954,7 +956,47 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //TODO: Gateway V2 Asset Service User Tests, filters and operations should be 'relative to the gateway' and not 'relative to the realm'
+        // create the gateway asset so we can test the gateway v2 asset service user connection/behavior
+        when: "a gateway v2 asset is created a service user should be created"
+        def tempGatewayAsset = new GatewayV2Asset("gatewayV2Asset")
+        tempGatewayAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        tempGatewayAsset.setId(UniqueIdentifierGenerator.generateId())
+        def gatewayAsset = assetStorageService.merge(tempGatewayAsset)
+
+        then: "then the gateway v2 asset should be created with a service user"
+        conditions.eventually {
+            assert gatewayAsset != null
+            assert gatewayAsset.getClientId().isPresent()
+            assert gatewayAsset.getClientSecret().isPresent()
+            // assert the service user exists in keycloak
+            assert keycloakTestSetup.keycloakProvider.getUserByUsername(keycloakTestSetup.realmBuilding.name,
+                    User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get()) != null
+
+        }
+
+        //region Test: Connect to MQTT Broker with Gateway V2 Asset Service User
+        def gatewayClientId = gatewayAsset.getClientId().get()
+        def gatewayMqttUsername = keycloakTestSetup.realmBuilding.name + ":" + gatewayClientId // realm:clientId
+        def gatewayServiceUsername = User.SERVICE_ACCOUNT_PREFIX + gatewayClientId // service-account-clientId
+        def gatewayClientSecret = gatewayAsset.getClientSecret().get() // password
+        def gatewayUser = keycloakTestSetup.keycloakProvider.getUserByUsername(keycloakTestSetup.realmBuilding.name, gatewayServiceUsername)
+
+        when: "a mqtt client connects to the mqtt broker with gateway service user"
+        client.disconnect(); // disconnect the previous client
+        client = new MQTT_IOClient(gatewayClientId, mqttHost, mqttPort, false, true,
+                new UsernamePassword(gatewayMqttUsername, gatewayClientSecret), null, null)
+        client.connect()
+
+        then: "mqtt connection should exist"
+        conditions.eventually {
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert mqttBrokerService.getUserConnections(gatewayUser.getId()).size() == 1
+            def connection = mqttBrokerService.getUserConnections(gatewayUser.getId())[0]
+            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
+        }
+        //endregion
+
+        //TODO: Gateway V2 Asset Service User Tests, filters and operations should be 'relative to the gateway' and not 'relative to the realm
 
 
         cleanup: "disconnect the clients"
