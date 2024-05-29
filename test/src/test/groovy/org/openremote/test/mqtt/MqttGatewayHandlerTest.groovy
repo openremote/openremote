@@ -917,7 +917,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Don't receive attribute of different asset on asset direct children attribute events sub with attribute name
+        //region Test: Don't receive attribute of different asset children on asset direct children attribute events sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's direct children with a specific attribute name and an attribute of a non-direct child asset is updated"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
