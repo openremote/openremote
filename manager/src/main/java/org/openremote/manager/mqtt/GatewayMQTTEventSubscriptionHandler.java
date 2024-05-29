@@ -288,8 +288,7 @@ public class GatewayMQTTEventSubscriptionHandler {
             }
 
 
-            if (topicTokens.size() > 6)
-            {
+            if (topicTokens.size() > 6) {
                 // replace the attributeName token with the actual attributeName (INDEX: 6)
                 if (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD)) {
                     topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
@@ -302,15 +301,12 @@ public class GatewayMQTTEventSubscriptionHandler {
                     if (ev instanceof AttributeEvent attributeEvent) {
                         expanded = expanded.replace("$assetId", attributeEvent.getId());
                         expanded = expanded.replace("$attributeName", attributeEvent.getName());
-
-                        // handle the last token if it is a wildcard
-                        String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
-                        if (replaceToken != null) {
-                            expanded = expanded.replace(replaceToken, ((AttributeEvent) ev).getId());
-                        }
                     }
-
-
+                }
+                // handle the last token if it is a wildcard, replace it with the actual assetId/attributeName/id
+                String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
+                if (replaceToken != null && ev instanceof AttributeEvent) {
+                    expanded = expanded.replace(replaceToken, ((AttributeEvent) ev).getId());
                 }
                 return expanded;
             };

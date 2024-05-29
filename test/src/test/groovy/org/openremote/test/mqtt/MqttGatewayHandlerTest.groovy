@@ -845,7 +845,116 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
+        //region Test: Subscribe to all attribute events of a specific asset's descendants with a specific attribute name
+        when: "a mqtt client subscribes to all attribute events of a specific asset's descendants with a specific attribute name"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
 
+        client.addMessageConsumer(topic, messageConsumer)
+
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should be received"
+
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            def event = receivedEvents.get(0) as AttributeEvent
+            assert event.getName() == "motionSensor"
+            assert event.value.get() == 80
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Don't receive attribute events of a different asset's descendants on specific asset descendants attribute events subscription with a specific attribute name
+        when: "a mqtt client is subscribed to all attribute events of a specific asset's descendants with a specific attribute name and an attribute of a non-descendant asset is updated"
+        asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
+        asset1.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
+        assetStorageService.merge(asset1)
+
+        then: "then the attribute event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        //endregion
+
+
+        //region Test: Don't receive attribute events of a different attribute name on specific asset descendants attribute events subscription with a specific attribute name
+        when: "a mqtt client is subscribed to all attribute events of a specific asset's descendants with a specific attribute name and an attribute of a descendant asset is updated with a different name"
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        client.removeAllMessageConsumers()
+        //endregion
+
+        //region Test: Subscribe to all attribute events of a specific asset's direct children with a specific attribute name
+        when: "a mqtt client subscribes to all attribute events of a specific asset's direct children with a specific attribute name"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/attributes/motionSensor/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            def event = receivedEvents.get(0) as AttributeEvent
+            assert event.getName() == "motionSensor"
+            assert event.value.get() == 80
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers()
+        //endregion
+
+        //region Test: Don't receive attribute events of a different asset's direct children on specific asset direct children attribute events subscription with a specific attribute name
+        when: "a mqtt client is subscribed to all attribute events of a specific asset's direct children with a specific attribute name and an attribute of a non-direct child asset is updated"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        client.removeAllMessageConsumers()
+        //endregion
+
+        //region Test: Don't receive attribute events of a different attribute name on specific asset direct children attribute events subscription with a specific attribute name
+        when: "a mqtt client is subscribed to all attribute events of a specific asset's direct children with a specific attribute name and an attribute of a direct child asset is updated with a different name"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/attributes/presenceDetected/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80")
+        ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
+
+        then: "then the attribute event should not be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        client.removeAllMessageConsumers()
+        //endregion
+
+
+        //TODO: Gateway V2 Asset Service User Tests, filters and operations should be 'relative to the gateway' and not 'relative to the realm'
 
 
         cleanup: "disconnect the clients"
