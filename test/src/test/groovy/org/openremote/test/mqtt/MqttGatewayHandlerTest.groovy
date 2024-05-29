@@ -55,7 +55,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
 
-        //region Test: Connect to the MQTT broker
+        //region Test: Connect to MQTT broker
         when: "a mqtt client connects with valid credentials"
         mqttClientId = UniqueIdentifierGenerator.generateId()
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
@@ -70,7 +70,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Create an asset
+        //region Test: Pub create asset
         when: "a mqtt client publishes a create message for with a valid thing asset template"
         def responseIdentifier = UniqueIdentifierGenerator.generateId()
         def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
@@ -84,7 +84,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Create an asset and receive a response
+        //region Test: Pub asset and sub response
         when: "a mqtt client publishes a create asset message and subscribes to corresponding response topic"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
@@ -113,7 +113,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Update an asset
+        //region Test: Pub update asset
         when: "a mqtt client publishes an update message for a specific asset"
         def testAssetId = assetStorageService.find(new AssetQuery().names(testAssetOne.getName())).getId();
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/update".toString()
@@ -128,7 +128,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Update an asset and receive a response
+        //region Test: Pub update asset and sub response
         when: "a mqtt client publishes an update message for a specific asset and subscribes to the corresponding response topic"
         testAssetId = assetStorageService.find(new AssetQuery().names(testAssetTwo.getName())).getId();
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/update".toString()
@@ -158,7 +158,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Delete an asset
+        //region Test: Pub delete asset
         when: "a mqtt client publishes a delete message for a specific asset (assetOne)"
         testAssetId = assetStorageService.find(new AssetQuery().names(testAssetOne.getName())).getId();
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/delete".toString()
@@ -170,7 +170,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Delete an asset and receive a response
+        //region Test: Pub delete asset and sub response
         when: "a mqtt client publishes a delete message for a specific asset and subscribes to the corresponding response topic (assetTwo)"
         testAssetId = assetStorageService.find(new AssetQuery().names(testAssetTwo.getName())).getId();
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/delete".toString()
@@ -199,7 +199,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Retrieve asset and receive it as a response
+        //region Test: Pub get asset and sub response
         when: "a mqtt client publishes a get asset message for a specific asset and subscribes to the corresponding response topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$managerTestSetup.smartBuildingId/get".toString()
         responseTopic = topic + "/response"
@@ -224,7 +224,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Update the attribute of an asset
+        //region Test: Pub update attribute
         when: "a mqtt client publishes an update message for a specific asset and attribute"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/update".toString()
         payload = "60"
@@ -236,7 +236,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Update the attribute of an asset and receive a response
+        //region Test: Pub update attribute and sub response
         when: "a mqtt client publishes an update message for a specific asset and attribute and subscribes to the corresponding response topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/update".toString()
         responseTopic = topic + "/response"
@@ -261,7 +261,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: retrieve the value of an attribute
+        //region Test: Pub get value attribute and sub response
         when: "a mqtt client publishes a get attribute value message for a specific asset and attribute and subscribes to the corresponding response topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/get-value".toString()
         responseTopic = topic + "/response"
@@ -283,7 +283,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Update multiple attributes of an asset
+        //region Test: Pub update multiple attributes
         when: "a mqtt client publishes an update message for multiple attributes of a specific asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/update"
         payload = "{\"motionSensor\": 80, \"presenceDetected\": \"true\"}"
@@ -297,7 +297,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Subscribe to the events topic
+        //region Test: Sub events topic
         when: "a mqtt client subscribes to an events topic"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -312,7 +312,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Unsubscribe from the events topic
+        //region Test: Unsub events topic
         when: "a mqtt client unsubscribes from an events topic"
         client.removeMessageConsumer(topic, messageConsumer)
 
@@ -322,7 +322,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Subscribe to all asset events of the realm
+        //region Test: Sub all asset events of realm
         when: "a mqtt client subscribes to all asset events of the realm"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -347,7 +347,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive an update event on asset events subscription
+        //region Test: Receive update on asset events sub
         when: "a mqtt client is subscribed to all asset events of the realm and an asset is updated"
         testAssetThree.setName("gatewayHandlerTestAssetThreeUpdated")
         assetStorageService.merge(testAssetThree)
@@ -365,7 +365,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive a delete event on asset events subscription
+        //region Test: Receive delete on asset events sub
         when: "a mqtt client is subscribed to all asset events of the realm and an asset is deleted"
         List<String> assetIdsToRemove = new ArrayList<>()
         assetIdsToRemove.add(testAssetThree.getId())
@@ -385,7 +385,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-        //region Test: Subscribe to all asset events of the realm's direct children
+        //region Test: Sub all asset events realm's direct children
         when: "a mqtt client subscribes to all asset events of the realm's direct children"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -411,7 +411,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive non-direct children asset events on direct children asset events subscription
+        //region Test: Don't receive non-direct events on direct children asset sub
         when: "a mqtt client subscribes to all asset events of the realm's direct descendants and an asset is created that is not a direct descendant"
         ThingAsset testAssetThreeChild = new ThingAsset("gatewayHandlerTestAssetThreeChild")
         testAssetThreeChild.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -426,7 +426,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive update event on direct children asset events subscription
+        //region Test: Receive update on direct children asset sub
         when: "a mqtt client is subscribed to all asset events of the realm's direct descendants and a direct descendant asset is updated"
         testAssetThree.setName("gatewayHandlerTestAssetThreeUpdated")
         assetStorageService.merge(testAssetThree)
@@ -447,7 +447,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetStorageService.delete(assetIdsToRemove) // cleanup, delete child asset
         //endregion
 
-        //region Test: Receive delete event on direct children asset events subscription
+        //region Test: Receive delete on direct children asset sub
         when: "a mqtt client is subscribed to all asset events of the realm's direct descendants and a direct descendant asset is deleted"
         assetIdsToRemove.clear()
         assetIdsToRemove.add(testAssetThree.getId())
@@ -467,7 +467,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-        //region Test: Subscribe to all asset events of a specific asset
+        //region Test: Sub all asset events of specific asset
         when: "a mqtt client subscribes to all asset events of a specific asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -494,7 +494,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all asset events of a specific asset's descendants
+        //region Test: Sub all asset events of asset's descendants
         when: "a mqtt client subscribes to all asset events of a specific asset's descendants"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -522,7 +522,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Receive create asset event on specific asset descendants asset events subscription
+        //region Test: Receive create on asset descendants events sub
         when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is created"
         ThingAsset childChildAsset = new ThingAsset("gatewayHandlerTestChildChildAsset")
         childChildAsset.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -542,7 +542,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive update asset event on specific asset descendants asset events subscription
+        //region Test: Receive update on asset descendants events sub
         when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is updated"
         childChildAsset.setName("gatewayHandlerTestChildChildAssetUpdated")
         assetStorageService.merge(childChildAsset)
@@ -559,7 +559,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive delete asset event on specific asset descendants asset events subscription
+        //region Test: Receive delete on asset descendants events sub
         when: "a mqtt client is subscribed to all asset events of a specific asset's descendants and a descendant asset is deleted"
         assetIdsToRemove.clear()
         assetIdsToRemove.add(childAsset.getId())
@@ -580,7 +580,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-        //region Test: Subscribe to all asset events of a specific asset's direct children
+        //region Test: Sub all asset events of asset's direct children
         when: "a mqtt client subscribes to all asset events of a specific asset's direct children"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -607,7 +607,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive non-direct children asset events on direct children asset events subscription
+        //region Test: Don't receive non-direct attribute on direct children events sub
         when: "a mqtt client subscribed to all asset events of a specific asset's direct children and a non-direct descendant asset is created"
         childChildAsset = new ThingAsset("gatewayHandlerTestChildChildAsset")
         childChildAsset.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -626,7 +626,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive update event on specific asset direct children asset events subscription
+        //region Test: Receive update on asset direct children events sub
         when: "a mqtt client is subscribed to all asset events of a specific asset's direct children and a direct child asset is updated"
         childAsset.setName("gatewayHandlerTestChildAssetUpdated")
         assetStorageService.merge(childAsset)
@@ -643,7 +643,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Receive delete event on specific asset direct children asset events subscription
+        //region Test: Receive delete on asset direct children events sub
         when: "a mqtt client is subscribed to all asset events of a specific asset's direct children and a direct child asset is deleted"
         assetIdsToRemove.clear()
         assetIdsToRemove.add(childAsset.getId())
@@ -662,7 +662,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers();
         //endregion
 
-        //region Test: Subscribe to all attribute events of the realm
+        //region Test: Sub all attribute events of realm
         when: "a mqtt client subscribes to all attribute events of the realm"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -684,7 +684,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive asset events on attribute events subscription
+        //region Test: Don't receive asset events on attribute sub
         when: "a mqtt client is subscribed to all attribute events of the realm and an asset is created"
         testAssetThree = new ThingAsset("gatewayHandlerTestAssetThree")
         testAssetThree.setRealm(keycloakTestSetup.realmBuilding.name)
@@ -702,7 +702,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events of the realm's direct children
+        //region Test: Sub all attribute events of realm's direct children
         when: "a mqtt client subscribes to all attribute events of the realm's direct children"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -725,7 +725,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive non-direct children attribute events on direct children attribute events subscription
+        //region Test: Don't receive non-direct children attribute on direct children events sub
         when: "a mqtt client subscribed to all attribute events of the realm's direct children and an attribute is created that is not a direct descendant"
         def asset2 = assetStorageService.find(managerTestSetup.apartment1HallwayId)
         asset2.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
@@ -738,7 +738,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events with a specific attribute name
+        //region Test: Sub all attribute events with attribute name
         when: "a mqtt client subscribes to all attribute events with a specific attribute name"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/motionSensor/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -760,7 +760,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive attribute events with a different attribute name on specific attribute events subscription
+        //region Test: Don't receive attribute with a different name on event sub with attribute name
         when: "a mqtt client subscribed to all attribute events with a specific name and an attribute is updated with a different name"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
         ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
@@ -772,7 +772,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events of the realm's direct children with a specific attribute name
+        //region Test: Sub all attribute events of realm's direct children with attribute name
         when: "a mqtt client subscribes to all attribute events with a specific name of the realm's direct children"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/temp/+".toString()
 
@@ -796,7 +796,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive non-direct children attribute events on direct children attribute events subscription with a specific attribute name
+        //region Test: Don't receive non-direct children attribute on direct children events sub with attribute name
         when: "a mqtt client subscribed to all attribute events with a specific name of the realm's direct children and an attribute is created that is not a direct descendant"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
         ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
@@ -808,7 +808,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events of a specific asset
+        //region Test: Sub all attribute events of asset
         when: "a mqtt client subscribes to all attribute events of a specific asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes".toString()
 
@@ -818,7 +818,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         client.addMessageConsumer(topic, messageConsumer)
 
-         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
+        attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
         ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
 
         then: "then the attribute event should be received"
@@ -832,7 +832,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive attribute events of a different asset on specific asset attribute events subscription
+        //region Test: Don't receive attribute of different asset on asset events sub
         when: "a mqtt client is subscribed to all attribute events of a specific asset and an attribute of a different asset is updated"
         asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
         asset1.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
@@ -845,7 +845,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events of a specific asset's descendants with a specific attribute name
+        //region Test: Sub all attribute events of asset's descendants with attribute name
         when: "a mqtt client subscribes to all attribute events of a specific asset's descendants with a specific attribute name"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -869,7 +869,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive attribute events of a different asset's descendants on specific asset descendants attribute events subscription with a specific attribute name
+        //region Test: Don't receive attribute of different asset on asset descendants sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's descendants with a specific attribute name and an attribute of a non-descendant asset is updated"
         asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
         asset1.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
@@ -882,7 +882,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Don't receive attribute events of a different attribute name on specific asset descendants attribute events subscription with a specific attribute name
+        //region Test: Don't receive attribute of different attribute on asset descendants sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's descendants with a specific attribute name and an attribute of a descendant asset is updated with a different name"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
         ((SimulatorProtocol) agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
@@ -894,7 +894,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Subscribe to all attribute events of a specific asset's direct children with a specific attribute name
+        //region Test: Sub all attribute events of asset's direct children with attribute name
         when: "a mqtt client subscribes to all attribute events of a specific asset's direct children with a specific attribute name"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/attributes/motionSensor/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -917,7 +917,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Don't receive attribute events of a different asset's direct children on specific asset direct children attribute events subscription with a specific attribute name
+        //region Test: Don't receive attribute of different asset on asset direct children attribute events sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's direct children with a specific attribute name and an attribute of a non-direct child asset is updated"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -935,7 +935,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-        //region Test: Don't receive attribute events of a different attribute name on specific asset direct children attribute events subscription with a specific attribute name
+        //region Test: Don't receive attribute of different attribute on asset direct children attribute events sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's direct children with a specific attribute name and an attribute of a direct child asset is updated with a different name"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/attributes/presenceDetected/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
