@@ -2,9 +2,8 @@ package org.openremote.manager.datapoint;
 
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
-import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -23,7 +22,6 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 
-import jakarta.persistence.EntityManager;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;

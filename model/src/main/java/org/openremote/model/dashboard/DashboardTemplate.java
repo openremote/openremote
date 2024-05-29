@@ -32,6 +32,7 @@ public class DashboardTemplate {
     public DashboardTemplate() {
 
     }
+
     public DashboardTemplate(DashboardScreenPreset[] screenPresets) {
         this.columns = 1;
         this.maxScreenWidth = 1;
@@ -39,17 +40,57 @@ public class DashboardTemplate {
         this.screenPresets = screenPresets;
     }
 
-    public void setId(String id) { this.id = id; }
-    public void setColumns(int columns) { this.columns = columns; }
-    public void setMaxScreenWidth(int maxScreenWidth) { this.maxScreenWidth = maxScreenWidth; }
-    public void setRefreshInterval(DashboardRefreshInterval interval) { this.refreshInterval = interval; }
-    public void setScreenPresets(DashboardScreenPreset[] screenPresets) { this.screenPresets = screenPresets; }
-    public void setWidgets(DashboardWidget[] widgets) { this.widgets = widgets; }
+    public DashboardTemplate setId(String id) {
+        this.id = id;
+        return this;
+    }
 
-    public String getId() { return id; }
-    public int getColumns() { return columns; }
-    public int getMaxScreenWidth() { return maxScreenWidth; }
-    public DashboardRefreshInterval getRefreshInterval() { return this.refreshInterval; }
-    public DashboardScreenPreset[] getScreenPresets() { return screenPresets; }
-    public DashboardWidget[] getWidgets() { return widgets; }
+    public DashboardTemplate setColumns(int columns) {
+        this.columns = columns;
+        return this;
+    }
+
+    public DashboardTemplate setMaxScreenWidth(int maxScreenWidth) {
+        this.maxScreenWidth = maxScreenWidth;
+        return this;
+    }
+
+    public DashboardTemplate setRefreshInterval(DashboardRefreshInterval interval) {
+        this.refreshInterval = interval;
+        return this;
+    }
+
+    public DashboardTemplate setScreenPresets(DashboardScreenPreset[] screenPresets) {
+        this.screenPresets = screenPresets;
+        return this;
+    }
+
+    public DashboardTemplate setWidgets(DashboardWidget[] widgets) {
+        this.widgets = widgets;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public int getColumns() {
+        return columns;
+    }
+
+    public int getMaxScreenWidth() {
+        return maxScreenWidth;
+    }
+
+    public DashboardRefreshInterval getRefreshInterval() {
+        return this.refreshInterval;
+    }
+
+    public DashboardScreenPreset[] getScreenPresets() {
+        return screenPresets;
+    }
+
+    public DashboardWidget[] getWidgets() {
+        return widgets;
+    }
 }

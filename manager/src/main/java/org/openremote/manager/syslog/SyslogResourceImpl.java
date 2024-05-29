@@ -27,7 +27,7 @@ import org.openremote.model.util.Pair;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-import java.net.URI;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -65,16 +65,13 @@ public class SyslogResourceImpl extends WebResource implements SyslogResource {
         long lastPage = (result.key / perPage) + 1L;
         Response.ResponseBuilder rb = Response.ok(result.value.toArray(new SyslogEvent[0]));
 
-        URI requestBaseUri = requestParams.getExternalRequestBaseUri().build(); // This gives request base from in front of proxy
-        UriBuilder requestUriBuilder = requestParams.uriInfo.getRequestUriBuilder();
-        requestUriBuilder.scheme(requestBaseUri.getScheme()).host(requestBaseUri.getHost()).port(requestBaseUri.getPort());
+        UriBuilder requestUriBuilder = requestParams.getExternalBaseUriBuilder();
 
         if (page != lastPage) {
             rb.link(requestUriBuilder.replaceQueryParam("page", page + 1).build(), "next");
         }
 
         rb.link(requestUriBuilder.replaceQueryParam("page", lastPage).build(), "last");
-
         return rb.build();
     }
 

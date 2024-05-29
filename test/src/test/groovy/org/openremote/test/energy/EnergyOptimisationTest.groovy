@@ -1,16 +1,11 @@
 package org.openremote.test.energy
 
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.energy.EnergyOptimiser
-import org.openremote.model.asset.impl.ElectricitySupplierAsset
-import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.util.Pair
 import spock.lang.Specification
 
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.function.Function
 import java.util.stream.IntStream

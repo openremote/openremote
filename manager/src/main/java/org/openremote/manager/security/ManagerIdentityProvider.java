@@ -105,7 +105,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     /**
      * Returns the frontend URL to be used for frontend apps to authenticate
      */
-    String getFrontendUrl();
+    String getFrontendURI();
 
     /*
      * BELOW ARE STATIC HELPER METHODS
