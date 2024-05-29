@@ -883,7 +883,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-
         //region Test: Don't receive attribute of different attribute on asset descendants sub with attribute name
         when: "a mqtt client is subscribed to all attribute events of a specific asset's descendants with a specific attribute name and an attribute of a descendant asset is updated with a different name"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true")
@@ -955,7 +954,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
         //endregion
 
-
         // create the gateway asset so we can test the gateway v2 asset service user connection/behavior
         when: "a gateway v2 asset is created a service user should be created"
         def tempGatewayAsset = new GatewayV2Asset("gatewayV2Asset")
@@ -971,7 +969,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             // assert the service user exists in keycloak
             assert keycloakTestSetup.keycloakProvider.getUserByUsername(keycloakTestSetup.realmBuilding.name,
                     User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get()) != null
-
         }
 
         //region Test: Connect to MQTT Broker with Gateway V2 Asset Service User
@@ -997,7 +994,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
         //TODO: Gateway V2 Asset Service User Tests, filters and operations should be 'relative to the gateway' and not 'relative to the realm
-
 
         cleanup: "disconnect the clients"
         if (client != null) {
