@@ -8,9 +8,15 @@
 version: '2.4'
 
 volumes:
-  proxy-data:
   manager-data:
+  proxy-data:
   postgresql-data:
+  efs-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=${EFS_DNS},rw,nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport"
+      device: ":/"
 
 services:
 
@@ -80,7 +86,7 @@ services:
       OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
-
+      OR_MAP_TILES_PATH: '/efs/europe.mbtiles'
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:
       OR_OPEN_WEATHER_API_APP_ID:
