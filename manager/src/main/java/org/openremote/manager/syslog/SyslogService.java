@@ -19,6 +19,16 @@
  */
 package org.openremote.manager.syslog;
 
+import io.netty.buffer.Unpooled;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import org.openremote.agent.protocol.io.IOServer;
+import org.openremote.agent.protocol.tcp.AbstractTCPServer;
+import org.openremote.agent.protocol.tcp.TCPStringServer;
+import org.openremote.agent.protocol.udp.UDPStringServer;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.MapAccess;
 import org.openremote.model.Container;
@@ -27,6 +37,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogEvent;
@@ -34,6 +45,9 @@ import org.openremote.model.syslog.SyslogLevel;
 import org.openremote.model.util.Pair;
 
 import jakarta.persistence.TypedQuery;
+
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -42,6 +56,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -101,10 +117,28 @@ public class SyslogService extends Handler implements ContainerService {
         int maxAgeDays = MapAccess.getInteger(container.getConfig(), OR_SYSLOG_MAX_AGE_DAYS, OR_SYSLOG_MAX_AGE_DAYS_DEFAULT);
         SyslogLevel syslogLevel = Optional.ofNullable(MapAccess.getString(container.getConfig(), OR_SYSLOG_LOG_LEVEL, null)).map(SyslogLevel::valueOf).orElse(OR_SYSLOG_LOG_LEVEL_DEFAULT);
         config = new SyslogConfig(syslogLevel, SyslogCategory.values(), maxAgeDays * 24 * 60);
+
+
     }
+
+	public void initTcpServer(){
+		UDPStringServer echoServer = new UDPStringServer(new InetSocketAddress("0.0.0.0", 1514), ";", Integer.MAX_VALUE, true);
+		echoServer.addMessageConsumer((s, datagramChannel, inetSocketAddress) -> LOG.warning(s));
+		echoServer.addConnectionStatusConsumer(connectionStatus -> LOG.warning(String.valueOf(connectionStatus)));
+
+
+//		IOServer.IoServerMessageConsumer<String, SocketChannel, InetSocketAddress> consumer = new SyslogMessageConsumer();
+
+
+		echoServer.start();
+		LOG.finest("started");
+	}
 
     @Override
     public void start(Container container) throws Exception {
+
+		initTcpServer();
+
         if (persistenceService != null) {
 
             TimerService timerService = container.getService(TimerService.class);

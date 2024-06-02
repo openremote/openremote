@@ -12,6 +12,12 @@ volumes:
   manager-data:
   postgresql-data:
 
+x-logging: &default-logging
+  driver: syslog
+  options:
+    syslog-address: "tcp://manager:1514"
+    syslog-facility: "daemon"
+
 services:
 
   proxy:
