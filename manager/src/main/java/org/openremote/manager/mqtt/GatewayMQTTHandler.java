@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import jakarta.persistence.EntityManager;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -30,6 +31,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -48,6 +50,7 @@ import org.openremote.model.mqtt.MQTTErrorResponse;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaItemType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -136,6 +139,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         eventSubscriptionManager = new GatewayMQTTEventSubscriptionHandler(messageBrokerService, mqttBrokerService);
+        assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
@@ -159,6 +163,37 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         });
             }
         });
+    }
+
+    public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+        if (event.getSource() != null) {
+            // If event is from the GatewayMQTTHandler don't intercept, these are allowed to go through by default
+            if (event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
+                LOG.info("Prevented intercept from GatewayMQTTHandler");
+                event.getMeta().remove(MetaItemType.AGENT_LINK);
+                return false;
+            }
+        }
+
+        // TODO: Figure out if we want a specific topic for this? e.g. master/<clientId>/acknowledgements - gateway would acknowledge the event by publishing to the operations topic
+        // If the event is from a descendant of a Gateway asset, then the event needs to be acknowledged by the gateway
+//        if (event.getParentId() != null) {
+//            Asset<?> gateway = assetStorageService.find(event.getParentId());
+//            if (gateway instanceof GatewayV2Asset) {
+//                LOG.info("Intercepted attribute event from Gateway asset descendant: " + gateway.getId());
+//                var clientId = ((GatewayV2Asset) gateway).getClientId();
+//
+//                if (clientId.isPresent()) {
+//                    var assetId = event.getId();
+//                    // Publish the event to the acknowledgement request topic
+//                    var topic = String.join("/", gateway.getRealm(), clientId.get(), EVENTS_TOPIC, ASSETS_TOPIC, assetId, ATTRIBUTES_TOPIC);
+//                    mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_MOST_ONCE);
+//                }
+//                return true;
+//            }
+//        }
+
+        return false;
     }
 
     @Override
@@ -209,8 +244,22 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
+
         if (isEventsTopic(topic)) {
-            // Gateways are restricted to their own assets
+            var topicTokens = topic.getTokens();
+
+            // topics above 4 tokens require the assets token to be present
+            if (topicTokens.size() > 4 && !topicTokens.get(ASSETS_TOKEN_INDEX).equals(ASSETS_TOPIC)) {
+                LOG.finest("Invalid topic " + topic + " for subscribing, based on length the assets token is missing");
+                return false;
+            }
+            // topics above 6 tokens require the attributes token to be present
+            if (topicTokens.size() > 6 && !topicTokens.get(ATTRIBUTES_TOKEN_INDEX).equals(ATTRIBUTES_TOPIC)) {
+                LOG.finest("Invalid topic " + topic + " for subscribing, based on length the attributes token is missing");
+                return false;
+            }
+
+            // If the gatewayAsset is found the assetId provided has to be a descendant of the gateway asset
             if (gatewayAsset != null) {
                 if (topicHasValidAssetId(topic)) {
                     var assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -220,9 +269,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
             }
-
-            // NOTE: No need to cache authorization for event subscriptions, as they are not frequent
-            // canPublish does use the cache for operations topics
 
             // build the asset filter from the topic, the gateway asset can be null
             AssetFilter<?> filter = GatewayMQTTEventSubscriptionHandler.buildAssetFilter(topic, gatewayAsset);
