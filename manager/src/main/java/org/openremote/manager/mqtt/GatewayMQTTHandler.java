@@ -65,6 +65,12 @@ import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 
+/**
+ * MQTT handler for gateway connections.
+ * This handler uses the ClientEventService to publish and subscribe to asset and attribute events;
+ * converting subscription topics into AssetFilters to ensure only the correct events are returned for the subscription.
+ * Provides CRUD operations for assets and attributes. Takes into account GatewayAsset Service Users.
+ */
 @SuppressWarnings("unused, rawtypes")
 public class GatewayMQTTHandler extends MQTTHandler {
 

@@ -28,6 +28,11 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDStrin
 import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
+
+/**
+ * Handles the subscription of GatewayMQTTHandler clients to asset and attribute events, the handler adds the subscription to the broker and
+ * the subscriber info map, the subscriber info map is used to keep track of the subscriptions for each connection
+ */
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
 public class GatewayMQTTEventSubscriptionHandler {
 
@@ -41,10 +46,19 @@ public class GatewayMQTTEventSubscriptionHandler {
         this.mqttBrokerService = mqttBrokerService;
     }
 
+
     public ConcurrentMap<String, GatewayEventSubscriberInfo> getEventSubscriberInfoMap() {
         return eventSubscriberInfoMap;
     }
 
+    /**
+     * Adds a subscription for the specified topic, the subscription will be added to the broker and the subscriber info map
+     *
+     * @param connection        the connection to add the subscription for
+     * @param topic             the topic to subscribe to  (e.g. realm/clientId/events/assets/+/attributes/+/#)
+     * @param subscriptionClass the class of the subscription (AssetEvent.class or AttributeEvent.class)
+     * @param relativeToAsset   the asset to build the filter relative to, can be null
+     */
     public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass, Asset<?> relativeToAsset) {
 
         if (subscriptionClass != AssetEvent.class && subscriptionClass != AttributeEvent.class) {
@@ -66,11 +80,22 @@ public class GatewayMQTTEventSubscriptionHandler {
         addSubscriberInfo(connection, topic, subscriptionConsumer);
     }
 
+    /**
+     * Removes a subscription for the specified topic, the subscription will be removed from the broker and the subscriber info map
+     *
+     * @param connection the connection to remove the subscription for
+     * @param topic      the topic to remove the subscription for
+     */
     public void removeSubscription(RemotingConnection connection, Topic topic) {
         cancelSubscriptionFromBroker(connection, topic);
         removeSubscriberInfo(connection, topic);
     }
 
+    /**
+     * Removes all subscriptions for the specified connection
+     *
+     * @param connection the connection to remove all subscriptions for
+     */
     public void removeAllSubscriptions(RemotingConnection connection) {
         synchronized (eventSubscriberInfoMap) {
             eventSubscriberInfoMap.remove(getConnectionIDString(connection));
@@ -117,12 +142,10 @@ public class GatewayMQTTEventSubscriptionHandler {
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
-
         // enforce relativeTo asset filter, used for gateway connections (they only receive events for their assets)
         if (relativeToAsset != null) {
             paths.add(relativeToAsset.getId()); // filter by path, only descendants of the asset
         }
-
 
         if (isAssetsTopic) {
             var assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
@@ -272,7 +295,10 @@ public class GatewayMQTTEventSubscriptionHandler {
     }
 
     /**
-     * Returns a consumer that publishes asset events to the specified topic
+     * Builds a consumer that publishes the event to the specified topic
+     *
+     * @param topic the topic to publish the event to
+     * @return the consumer that publishes the event to the topic
      */
     protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
 
