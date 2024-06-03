@@ -129,8 +129,8 @@ export const style = css`
         height: 2px;
     }
     .in-between-element.over {
-        padding: 8px 0;
-        margin: -8px 0;
+        padding: 5px 0;
+        margin: -5px 0;
     }
     .end-element {
         height: 44px;
