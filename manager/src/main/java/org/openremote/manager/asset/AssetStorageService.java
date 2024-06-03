@@ -44,6 +44,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
@@ -750,6 +751,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // The parent should be in the same realm
                 if (!parent.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset parent must be in the same realm: asset=" + asset;
+                    LOG.warning(msg);
+                    throw new IllegalStateException(msg);
+                }
+
+                Asset<?> existingParent = existingAsset != null ? find(em, existingAsset.getParentId(), true) : null;
+                // Child cannot be moved out of a Gateway V2 Asset
+                if (existingParent instanceof GatewayV2Asset) {
+                    String msg = "Asset cannot be moved out of a Gateway V2 Asset: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
