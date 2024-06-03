@@ -504,6 +504,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     ClientMessage message = internalSession.createMessage(false);
                     message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
                     message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
+                    LOG.log(DEBUG, "Publishing message to MQTT client: topic=" + topic + ", data=" + data);
                     producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
                 }
             }

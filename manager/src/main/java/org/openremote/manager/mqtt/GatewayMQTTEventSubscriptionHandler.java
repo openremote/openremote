@@ -3,6 +3,7 @@ package org.openremote.manager.mqtt;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
@@ -44,14 +45,14 @@ public class GatewayMQTTEventSubscriptionHandler {
         return eventSubscriberInfoMap;
     }
 
-    public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass) {
+    public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass, Asset<?> relativeToAsset) {
 
         if (subscriptionClass != AssetEvent.class && subscriptionClass != AttributeEvent.class) {
             LOG.warning("Invalid subscription class " + subscriptionClass);
             return;
         }
         String subscriptionId = topic.toString();
-        AssetFilter assetFilter = buildAssetFilter(topic);
+        AssetFilter assetFilter = buildAssetFilter(topic, relativeToAsset);
 
         if (assetFilter == null) {
             LOG.warning("Invalid asset filter for topic " + topic);
@@ -99,7 +100,13 @@ public class GatewayMQTTEventSubscriptionHandler {
                 .asyncSend();
     }
 
-    protected static AssetFilter<?> buildAssetFilter(Topic topic) {
+    /***
+     * Builds an asset filter based on the topic, the filter is used to filter asset events based on the topic filter pattern
+     * @param topic the topic to build the filter for
+     * @param relativeToAsset the asset to build the filter relative to, can be null
+     * @return the asset filter or null if the topic is invalid
+     */
+    protected static AssetFilter<?> buildAssetFilter(Topic topic, Asset<?> relativeToAsset) {
         var topicTokens = topic.getTokens();
         boolean isAttributesTopic = isAttributesTopic(topic);
         boolean isAssetsTopic = isAssetsTopic(topic) && !isAttributesTopic;
@@ -109,6 +116,13 @@ public class GatewayMQTTEventSubscriptionHandler {
         List<String> parentIds = new ArrayList<>();
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
+
+
+        // enforce relativeTo asset filter, used for gateway connections (they only receive events for their assets)
+        if (relativeToAsset != null) {
+            paths.add(relativeToAsset.getId()); // filter by path, only descendants of the asset
+        }
+
 
         if (isAssetsTopic) {
             var assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";

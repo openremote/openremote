@@ -184,14 +184,42 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        GatewayV2Asset gatewayAsset = null;
+        if (isGatewayConnection(connection)) {
+            gatewayAsset = findGatewayFromConnection(connection).orElse(null);
+            if (gatewayAsset == null) {
+                LOG.finer("Gateway not found for connection " + getConnectionIDString(connection));
+                return false;
+            }
+
+            if (gatewayAsset.getDisabled().orElse(false)) {
+                LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
+                return false;
+            }
+        }
+
         if (!isEventsTopic(topic) && !isOperationResponseTopic(topic)) {
             LOG.finest("Invalid topic " + topic + " for subscribing - must be " + EVENTS_TOPIC + " or  a operations " + RESPONSE_TOPIC + " topic");
             return false;
         }
 
         if (isEventsTopic(topic)) {
-            // TODO: Gateway connection subscription authorization (gateway filters must be relative to the gateway asset)
-            AssetFilter<?> filter = GatewayMQTTEventSubscriptionHandler.buildAssetFilter(topic);
+            // Gateways are restricted to their own assets
+            if (gatewayAsset != null) {
+                if (topicHasValidAssetId(topic)) {
+                    var assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+                    if (!isAssetDescendantOfGateway(assetId, gatewayAsset)) {
+                        LOG.finest("Asset not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
+                        return false;
+                    }
+                }
+            }
+
+            // NOTE: No need to cache authorization for event subscriptions, as they are not frequent
+            // canPublish does use the cache for operations topics
+
+            // build the asset filter from the topic, the gateway asset can be null
+            AssetFilter<?> filter = GatewayMQTTEventSubscriptionHandler.buildAssetFilter(topic, gatewayAsset);
             if (filter == null) {
                 LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
                 return false;
@@ -211,8 +239,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
         if (isEventsTopic(topic)) {
+            GatewayV2Asset gatewayAsset = findGatewayFromConnection(connection).orElse(null);
             var eventClass = isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class;
-            eventSubscriptionManager.addSubscription(connection, topic, eventClass);
+            // if the gateway asset is found, the subscription will be relative to the asset
+            eventSubscriptionManager.addSubscription(connection, topic, eventClass, gatewayAsset);
         }
     }
 
@@ -284,8 +314,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Check if user has been authorized for the topic before (cache, 30s expiration)
         String cacheKey = getConnectionIDString(connection);
-        if (isCacheAuthorized(cacheKey, topic))
-        {
+        if (isCacheAuthorized(cacheKey, topic)) {
             return true;
         }
 
@@ -862,7 +891,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected void addToAuthorizationCache(String cacheKey, Topic topic) {
         ConcurrentHashSet<String> set;
         synchronized (authorizationCache) {
-            ConcurrentHashSet<String>  act = authorizationCache.getIfPresent(cacheKey);
+            ConcurrentHashSet<String> act = authorizationCache.getIfPresent(cacheKey);
             if (act != null) {
                 set = act;
             } else {
