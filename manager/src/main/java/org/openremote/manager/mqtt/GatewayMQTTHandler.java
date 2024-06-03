@@ -272,7 +272,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/update
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
-
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
                 topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes

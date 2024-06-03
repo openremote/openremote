@@ -834,7 +834,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Don't receive attribute of different asset on asset events sub
+        //region Test: Don't receive attribute of different asset on events sub
         when: "a mqtt client is subscribed to all attribute events of a specific asset and an attribute of a different asset is updated"
         asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
         asset1.addAttributes(new Attribute<>("temp", TEXT, "hello world"))
@@ -993,7 +993,75 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //TODO: Gateway V2 Asset Service User Tests, filters and operations should be 'relative to the gateway' and not 'relative to the realm
+
+        //region Test: Gateway Service User - Pub Create Asset
+        when: "a mqtt client associated with a gateway service user publishes a create asset message"
+        responseIdentifier = UniqueIdentifierGenerator.generateId()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
+        def testAssetGateway = new ThingAsset("testAssetGatewayOne")
+        testAssetGateway.setRealm(keycloakTestSetup.realmBuilding.name)
+        testAssetGateway.setId(UniqueIdentifierGenerator.generateId())
+        payload = ValueUtil.asJSON(testAssetGateway).get()
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should be created and be a direct child of the gateway asset"
+        conditions.eventually {
+            def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAssetGateway.getName()))
+            assert asset != null
+            assert asset.getName() == testAssetGateway.getName()
+            assert asset.getParentId() == gatewayAsset.getId(); // the asset should be a child of the gateway asset
+        }
+        //endregion
+
+
+        //region Test: Gateway Service User - Subscribe to All Asset Events
+        when: "a mqtt client associated with a gateway service user subscribes to asset events"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+
+        then: "the subscription should exist"
+        conditions.eventually {
+            assert client.topicConsumerMap.get(topic) != null
+            assert client.topicConsumerMap.get(topic).size() == 1
+        }
+        //endregion
+
+        //region Test: Gateway Service User - Receive Asset Event
+        when: "a mqtt client associated with a gateway service user is subscribed to asset events and an asset is updated"
+        testAssetGateway = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAssetGateway.getName()))
+        testAssetGateway.setName("testAssetGatewayOneUpdated")
+        assetStorageService.merge(testAssetGateway)
+
+        then: "the asset event should be received"
+        conditions.eventually {
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AssetEvent
+            def event = receivedEvents.get(0) as AssetEvent
+            assert event.cause == AssetEvent.Cause.UPDATE
+            def asset = event.getAsset()
+            assert asset instanceof ThingAsset
+            assert asset.getName() == testAssetGateway.getName()
+        }
+        receivedEvents.clear()
+        //endregion
+
+        //region Test: Gateway Service User - Don't Receive Asset Event of non-descendant
+        when: "a mqtt client associated with a gateway service user is subscribed to asset events and an asset is updated that is not a descendant"
+        asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
+        asset1.setName("smartBuildingUpdated")
+        assetStorageService.merge(asset1)
+
+        then: "the asset event should not be received, since the asset is not a descendant of the gateway asset"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+        }
+        receivedEvents.clear()
+        client.removeAllMessageConsumers()
+        //endregion
+
 
         cleanup: "disconnect the clients"
         if (client != null) {

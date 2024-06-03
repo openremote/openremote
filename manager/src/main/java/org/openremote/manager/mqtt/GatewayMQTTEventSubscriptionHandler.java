@@ -142,11 +142,6 @@ public class GatewayMQTTEventSubscriptionHandler {
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
-        // enforce relativeTo asset filter, used for gateway connections (they only receive events for their assets)
-        if (relativeToAsset != null) {
-            paths.add(relativeToAsset.getId()); // filter by path, only descendants of the asset
-        }
-
         if (isAssetsTopic) {
             var assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
             var path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
@@ -253,6 +248,14 @@ public class GatewayMQTTEventSubscriptionHandler {
         }
 
         AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm);
+
+
+        // enforce relativeTo asset filter, used for gateway connections (they only receive events for their assets)
+        if (relativeToAsset != null) {
+            LOG.info("Building asset filter relative to asset: " + relativeToAsset.getId());
+            paths.add(relativeToAsset.getId()); // filter by path, only descendants of the asset
+        }
+
         if (!assetIds.isEmpty()) {
             assetFilter.setAssetIds(assetIds.toArray(new String[0]));
         }
