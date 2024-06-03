@@ -122,7 +122,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
-        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode == "true") : false;
+        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode === "true" && manager.hasRole(ClientRole.WRITE_INSIGHTS)) : false;
         this._dashboardId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
     }
 
