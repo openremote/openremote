@@ -110,7 +110,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected final ConcurrentHashMap<Topic, RemotingConnection> responseTopicSubscriptions = new ConcurrentHashMap<>();
     protected boolean isKeycloak;
 
-
+    // Cache for authorization checks, only used by the canPublish method, publishes are frequent
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
             .maximumSize(100000)
             .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
@@ -666,6 +666,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
+        // Check if the attributes are valid
         if (attributes.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid data provided");
             LOG.fine("Invalid attribute template " + body.toString(StandardCharsets.UTF_8) + " in update attribute request " + getConnectionIDString(connection));
@@ -674,9 +675,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         var attributeMap = (Map<String, Object>) attributes.get();
         var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-
         var isAuthorized = true;
 
+        // check each event for authorization (clientEventService)
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
@@ -695,7 +696,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
+        // Temporary list to store the events for the response
         List<AttributeEvent> events = new ArrayList<>();
+        // Send the attribute events
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
@@ -703,7 +706,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             sendAttributeEvent(event);
             events.add(event);
         }
-
         publishResponse(topic, events);
     }
 
