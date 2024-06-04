@@ -53,7 +53,6 @@ import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -94,7 +93,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String GET_TOPIC = "get";
     public static final String GET_VALUE_TOPIC = "get-value";
 
-    // TODO: gateway topics - <realm>/<clientId>/gateway/events/<pending/ack>/<ackId>
+    // Gateway topics
     public static final String GATEWAY_TOPIC = "gateway";
     public static final String GATEWAY_ACK_TOPIC = "ack";
     public static final String GATEWAY_EVENTS_TOPIC = "events";
@@ -122,14 +121,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
-    protected final ConcurrentHashMap<Topic, RemotingConnection> responseTopicSubscriptions = new ConcurrentHashMap<>();
     protected boolean isKeycloak;
 
     // Cache for pending gateway events, used to store events that need to be acknowledged by the gateway
-    // TODO: QoS1? - Look into QoS1 for gateway events.
-    protected final Cache<String, SharedEvent> pendingGatewayEvents = CacheBuilder.newBuilder()
+    protected final Cache<String, SharedEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
             .maximumSize(100000)
-            .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
+            .expireAfterWrite(120, TimeUnit.SECONDS)
             .build();
 
     // Cache for authorization checks, used by the canPublish method, publishes are frequent
@@ -544,10 +541,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAssetsMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
-                case CREATE_TOPIC -> createAssetRequest(connection, topic, body);
-                case GET_TOPIC -> getAssetRequest(connection, topic, body);
-                case UPDATE_TOPIC -> updateAssetRequest(connection, topic, body);
-                case DELETE_TOPIC -> deleteAssetRequest(connection, topic, body);
+                case CREATE_TOPIC -> handleCreateAsset(connection, topic, body);
+                case GET_TOPIC -> handleGetAsset(connection, topic, body);
+                case UPDATE_TOPIC -> handleUpdateAsset(connection, topic, body);
+                case DELETE_TOPIC -> handleDeleteAsset(connection, topic, body);
             }
         }
 
@@ -555,20 +552,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAttributesMethodTopic(topic)) {
             var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
-                case GET_TOPIC -> getAttributeRequest(connection, topic, body, false);
-                case GET_VALUE_TOPIC -> getAttributeRequest(connection, topic, body, true);
-                case UPDATE_TOPIC -> updateAttributeRequest(connection, topic, body);
+                case GET_TOPIC -> handleGetAttribute(connection, topic, body, false);
+                case GET_VALUE_TOPIC -> handleGetAttribute(connection, topic, body, true);
+                case UPDATE_TOPIC -> handleUpdateAttribute(connection, topic, body);
             }
         }
 
         // Multi attribute operation (authorization in topic handler)
         if (isMultiAttributeUpdateTopic(topic)) {
-            updateMultiAttributeRequest(connection, topic, body);
+            handleUpdateMultiAttribute(connection, topic, body);
         }
 
         // Handle gateway events acknowledgement
         if (isGatewayEventsTopic(topic)) {
-            acknowledgeGatewayEventRequest(connection, topic);
+            handleGatewayEventAcknowledgement(connection, topic);
         }
     }
 
@@ -641,8 +638,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Create asset request topic handler
+     * Creates an asset from the provided template and stores it in the asset storage service.
+     * If the connection is a gateway connection, the asset is associated with the gateway asset.
      */
-    protected void createAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleCreateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         String realm = topicRealm(topic);
 
@@ -679,8 +678,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Update asset request topic handler
+     * Updates the asset with the provided template and merges it in the asset storage service.
      */
-    protected void updateAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleUpdateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> storageAsset = assetStorageService.find(assetId);
 
@@ -702,8 +702,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Get asset request topic handler
+     * Publishes the asset object based on the request.
+     * If the asset is not found, an error response is published.
      */
-    protected void getAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleGetAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
@@ -718,8 +720,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Delete asset request topic handler
+     * Deletes the asset and all its descendants from the asset storage service.
+     * If the asset is not found, an error response is published.
      */
-    protected void deleteAssetRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleDeleteAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
@@ -743,8 +747,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Update attribute request topic handler
+     * Updates the attribute with the provided value and publishes the attribute event.
      */
-    protected void updateAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleUpdateAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
         String realm = topicRealm(topic);
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
         sendAttributeEvent(event);
@@ -758,7 +763,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Request is cancelled if any attribute is unauthorized.
      */
     @SuppressWarnings({"unchecked"})
-    protected void updateMultiAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleUpdateMultiAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
         String realm = topicRealm(topic);
         var topicTokens = topic.getTokens();
         var attributes = ValueUtil.parse(body.toString(StandardCharsets.UTF_8));
@@ -814,8 +819,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     /**
      * Get attribute request topic handler
      * Publishes the attribute value or the full attribute object based on the request. (get or get-value)
+     * If the attribute is not found, an error response is published.
      */
-    protected void getAttributeRequest(RemotingConnection connection, Topic topic, ByteBuf body, boolean publishValueOnly) {
+    protected void handleGetAttribute(RemotingConnection connection, Topic topic, ByteBuf body, boolean publishValueOnly) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
         Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
@@ -833,25 +839,28 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
-    protected void acknowledgeGatewayEventRequest(RemotingConnection connection, Topic topic) {
+    /**
+     * Handle gateway events acknowledgement
+     * Acknowledges the gateway event and publishes the intercepted attribute event.
+     */
+    protected void handleGatewayEventAcknowledgement(RemotingConnection connection, Topic topic) {
         String ackId = topicTokenIndexToString(topic, GATEWAY_ACK_ID_TOKEN_INDEX);
         if (ackId == null) {
             LOG.fine("Invalid acknowledgement id " + getConnectionIDString(connection));
             return;
         }
 
-        SharedEvent event = pendingGatewayEvents.getIfPresent(ackId);
+        SharedEvent event = eventsPendingGatewayAcknowledgement.getIfPresent(ackId);
         if (event == null) {
-            LOG.fine("Gateway event not found for ackId " + ackId);
+            LOG.fine("Gateway event not found for the provided acknowledgement id " + ackId);
             return;
         }
 
         if (event instanceof AttributeEvent) {
-            // Update the event source to prevent it from being intercepted.
             ((AttributeEvent) event).setSource(GatewayMQTTHandler.class.getSimpleName());
             sendAttributeEvent((AttributeEvent) event);
-            synchronized (pendingGatewayEvents) {
-                pendingGatewayEvents.invalidate(ackId);
+            synchronized (eventsPendingGatewayAcknowledgement) {
+                eventsPendingGatewayAcknowledgement.invalidate(ackId);
             }
         }
     }
@@ -927,10 +936,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected void publishPendingGatewayEvent(SharedEvent event, GatewayV2Asset gateway) {
         String eventKey = UniqueIdentifierGenerator.generateId();
         String topic = String.join("/", gateway.getRealm(), gateway.getClientId().get(), GATEWAY_TOPIC, GATEWAY_EVENTS_TOPIC, GATEWAY_PENDING_TOPIC, eventKey);
-        mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_MOST_ONCE);
+        mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_LEAST_ONCE);
 
-        synchronized (pendingGatewayEvents) {
-            pendingGatewayEvents.put(eventKey, event);
+        synchronized (eventsPendingGatewayAcknowledgement) {
+            eventsPendingGatewayAcknowledgement.put(eventKey, event);
         }
     }
 
