@@ -50,7 +50,6 @@ import org.openremote.model.mqtt.MQTTErrorResponse;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.MetaItemType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -80,9 +79,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
 
     // main topics
-    public static final String EVENTS_TOPIC = "events"; // subscription topics
-    public static final String OPERATIONS_TOPIC = "operations"; // publish topics (request-response)
+    public static final String EVENTS_TOPIC = "events"; // subscriptions
+    public static final String OPERATIONS_TOPIC = "operations"; // publish
     public static final String RESPONSE_TOPIC = "response"; // response suffix for operations topics
+
+    // hierarchy topics
     public static final String ATTRIBUTES_TOPIC = "attributes";
     public static final String ASSETS_TOPIC = "assets";
 
@@ -93,12 +94,23 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String GET_TOPIC = "get";
     public static final String GET_VALUE_TOPIC = "get-value";
 
+    // TODO: gateway topics - <realm>/<clientId>/gateway/events/<pending/ack>/<ackId>
+    public static final String GATEWAY_TOPIC = "gateway";
+    public static final String GATEWAY_ACK_TOPIC = "ack";
+    public static final String GATEWAY_EVENTS_TOPIC = "events";
+    public static final String GATEWAY_PENDING_TOPIC = "pending";
+
     // index tokens
+    public static final int GATEWAY_TOKEN_INDEX = 2;
     public static final int OPERATIONS_TOKEN_INDEX = 2;
     public static final int EVENTS_TOKEN_INDEX = 2;
+    public static final int GATEWAY_EVENTS_TOKEN_INDEX = 3;
     public static final int ASSETS_TOKEN_INDEX = 3;
+    public static final int GATEWAY_PENDING_TOKEN_INDEX = 4;
+    public static final int GATEWAY_ACK_TOKEN_INDEX = 4;
     public static final int ASSET_ID_TOKEN_INDEX = 4;
     public static final int RESPONSE_ID_TOKEN_INDEX = 4;
+    public static final int GATEWAY_ACK_ID_TOKEN_INDEX = 5;
     public static final int ASSETS_METHOD_TOKEN = 5;
     public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
@@ -113,7 +125,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected final ConcurrentHashMap<Topic, RemotingConnection> responseTopicSubscriptions = new ConcurrentHashMap<>();
     protected boolean isKeycloak;
 
-    // Cache for authorization checks, only used by the canPublish method, publishes are frequent
+    // Cache for pending gateway events, used to store events that need to be acknowledged by the gateway
+    // TODO: QoS1? - Look into QoS1 for gateway events.
+    protected final Cache<String, SharedEvent> pendingGatewayEvents = CacheBuilder.newBuilder()
+            .maximumSize(100000)
+            .expireAfterWrite(30000, TimeUnit.MILLISECONDS)
+            .build();
+
+    // Cache for authorization checks, used by the canPublish method, publishes are frequent
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
             .maximumSize(100000)
             .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
@@ -165,34 +184,23 @@ public class GatewayMQTTHandler extends MQTTHandler {
         });
     }
 
+    // Intercepts events from the AssetProcessingService, if the event is from a descendant of a Gateway asset
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+        // If the source is the GatewayMQTTHandler, then don't intercept the event
         if (event.getSource() != null) {
-            // If event is from the GatewayMQTTHandler don't intercept, these are allowed to go through by default
             if (event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
-                LOG.info("Prevented intercept from GatewayMQTTHandler");
-                event.getMeta().remove(MetaItemType.AGENT_LINK);
                 return false;
             }
         }
-
-        // TODO: Figure out if we want a specific topic for this? e.g. master/<clientId>/acknowledgements - gateway would acknowledge the event by publishing to the operations topic
-        // If the event is from a descendant of a Gateway asset, then the event needs to be acknowledged by the gateway
-//        if (event.getParentId() != null) {
-//            Asset<?> gateway = assetStorageService.find(event.getParentId());
-//            if (gateway instanceof GatewayV2Asset) {
-//                LOG.info("Intercepted attribute event from Gateway asset descendant: " + gateway.getId());
-//                var clientId = ((GatewayV2Asset) gateway).getClientId();
-//
-//                if (clientId.isPresent()) {
-//                    var assetId = event.getId();
-//                    // Publish the event to the acknowledgement request topic
-//                    var topic = String.join("/", gateway.getRealm(), clientId.get(), EVENTS_TOPIC, ASSETS_TOPIC, assetId, ATTRIBUTES_TOPIC);
-//                    mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_MOST_ONCE);
-//                }
-//                return true;
-//            }
-//        }
-
+        // If the event is from a descendant of a Gateway asset, then the event published to pending gateway events
+        if (event.getParentId() != null) {
+            Asset<?> gateway = assetStorageService.find(event.getParentId());
+            if (gateway instanceof GatewayV2Asset) {
+                LOG.finest("Intercepted attribute event from Gateway asset descendant: " + gateway.getId());
+                publishPendingGatewayEvent(event, (GatewayV2Asset) gateway);
+                return true;
+            }
+        }
         return false;
     }
 
@@ -203,7 +211,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public boolean topicMatches(Topic topic) {
-        return isOperationsTopic(topic) || isEventsTopic(topic);
+        return isOperationsTopic(topic) || isEventsTopic(topic) || isGatewayEventsTopic(topic);
     }
 
     @Override
@@ -239,15 +247,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
 
-        if (!isEventsTopic(topic) && !isOperationResponseTopic(topic)) {
-            LOG.finest("Invalid topic " + topic + " for subscribing - must be " + EVENTS_TOPIC + " or  a operations " + RESPONSE_TOPIC + " topic");
+        if (!isEventsTopic(topic) && !isOperationResponseTopic(topic) && !isGatewayEventsTopic(topic)) {
+            LOG.finest("Invalid topic " + topic + " for subscribing");
             return false;
         }
 
+        var topicTokens = topic.getTokens();
 
         if (isEventsTopic(topic)) {
-            var topicTokens = topic.getTokens();
-
             // topics above 4 tokens require the assets token to be present
             if (topicTokens.size() > 4 && !topicTokens.get(ASSETS_TOKEN_INDEX).equals(ASSETS_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for subscribing, based on length the assets token is missing");
@@ -285,6 +292,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return false;
             }
         }
+
+        // Gateway pending events topic
+        if (isGatewayEventsTopic(topic)) {
+            if (gatewayAsset == null) {
+                LOG.finest("Gateway not found for connection, cannot subscribe to gateway events topic " + getConnectionIDString(connection));
+                return false;
+            }
+
+            if (topicTokens.size() > 4 && !topicTokens.get(GATEWAY_PENDING_TOKEN_INDEX).equals(GATEWAY_PENDING_TOPIC)) {
+                LOG.finest("Invalid topic " + topic + " for subscribing, the pending topic is missing");
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -293,7 +314,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isEventsTopic(topic)) {
             GatewayV2Asset gatewayAsset = findGatewayFromConnection(connection).orElse(null);
             var eventClass = isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class;
-            // if the gateway asset is found, the subscription will be relative to the asset
+            // if the gateway asset is found, the subscription will be relative to the asset, otherwise realm relative.
             eventSubscriptionManager.addSubscription(connection, topic, eventClass, gatewayAsset);
         }
     }
@@ -307,25 +328,29 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public Set<String> getPublishListenerTopics() {
-        String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + OPERATIONS_TOPIC + "/";
+
+        //<realm>/<clientId>/
+        String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
 
         return Set.of(
+                // <realm>/<clientId>/gateway/events/ack/<ackId>
+                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_ACK_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD,
                 // <realm>/<clientId>/operations/assets/<responseId>/create
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/get
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/update
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get-value
-                topicBase + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
         );
     }
 
@@ -343,7 +368,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        if (!isOperationsTopic(topic)) {
+        if (!isOperationsTopic(topic) && !isGatewayEventsTopic(topic)) {
             LOG.finest("Invalid topic " + topic + " for publishing, must be " + OPERATIONS_TOPIC);
             return false;
         }
@@ -374,8 +399,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String connectionID = getConnectionIDString(connection);
         List<String> topicTokens = topic.getTokens();
 
+
+        // Acknowledgement of gateway events
+        if (isGatewayEventsTopic(topic)) {
+            if (gatewayAsset == null) {
+                LOG.finest("Gateway not found for connection, cannot publish to gateway events topic " + connectionID);
+                return false;
+            }
+            if (topicTokens.size() > 4 && !topicTokens.get(GATEWAY_ACK_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
+                LOG.finest("Invalid topic " + topic + " for publishing, the ack topic is missing");
+                return false;
+            }
+            var ackId = topicTokenIndexToString(topic, GATEWAY_ACK_ID_TOKEN_INDEX);
+            if (ackId == null) {
+                LOG.finest("Invalid topic " + topic + " for publishing, the acknowledgement id is missing");
+                return false;
+            }
+        }
         // Asset operations
-        if (isAssetsMethodTopic(topic)) {
+        else if (isAssetsMethodTopic(topic)) {
             String method = topicTokens.get(ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> {
@@ -480,7 +522,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        addToAuthorizationCache(cacheKey, topic); // cache the authorization for 30s
+        ConcurrentHashSet<String> set;
+        synchronized (authorizationCache) {
+            ConcurrentHashSet<String> act = authorizationCache.getIfPresent(cacheKey);
+            if (act != null) {
+                set = act;
+            } else {
+                set = new ConcurrentHashSet<>();
+                authorizationCache.put(cacheKey, set);
+            }
+        }
+        set.add(topic.getString());
         return true;
     }
 
@@ -512,6 +564,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // Multi attribute operation (authorization in topic handler)
         if (isMultiAttributeUpdateTopic(topic)) {
             updateMultiAttributeRequest(connection, topic, body);
+        }
+
+        // Handle gateway events acknowledgement
+        if (isGatewayEventsTopic(topic)) {
+            acknowledgeGatewayEventRequest(connection, topic);
         }
     }
 
@@ -776,6 +833,29 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
+    protected void acknowledgeGatewayEventRequest(RemotingConnection connection, Topic topic) {
+        String ackId = topicTokenIndexToString(topic, GATEWAY_ACK_ID_TOKEN_INDEX);
+        if (ackId == null) {
+            LOG.fine("Invalid acknowledgement id " + getConnectionIDString(connection));
+            return;
+        }
+
+        SharedEvent event = pendingGatewayEvents.getIfPresent(ackId);
+        if (event == null) {
+            LOG.fine("Gateway event not found for ackId " + ackId);
+            return;
+        }
+
+        if (event instanceof AttributeEvent) {
+            // Update the event source to prevent it from being intercepted.
+            ((AttributeEvent) event).setSource(GatewayMQTTHandler.class.getSimpleName());
+            sendAttributeEvent((AttributeEvent) event);
+            synchronized (pendingGatewayEvents) {
+                pendingGatewayEvents.invalidate(ackId);
+            }
+        }
+    }
+
     protected boolean topicHasValidAssetId(Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         if (assetId == null) {
@@ -842,6 +922,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected void publishResponse(Topic topic, Object response) {
         mqttBrokerService.publishMessage(getResponseTopic(topic), response, MqttQoS.AT_MOST_ONCE);
+    }
+
+    protected void publishPendingGatewayEvent(SharedEvent event, GatewayV2Asset gateway) {
+        String eventKey = UniqueIdentifierGenerator.generateId();
+        String topic = String.join("/", gateway.getRealm(), gateway.getClientId().get(), GATEWAY_TOPIC, GATEWAY_EVENTS_TOPIC, GATEWAY_PENDING_TOPIC, eventKey);
+        mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_MOST_ONCE);
+
+        synchronized (pendingGatewayEvents) {
+            pendingGatewayEvents.put(eventKey, event);
+        }
     }
 
     protected void sendAttributeEvent(AttributeEvent event) {
@@ -933,6 +1023,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Objects.equals(topicTokenIndexToString(topic, EVENTS_TOKEN_INDEX), EVENTS_TOPIC);
     }
 
+    protected static boolean isGatewayEventsTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, GATEWAY_TOKEN_INDEX), GATEWAY_TOPIC) && Objects.equals(topicTokenIndexToString(topic, GATEWAY_EVENTS_TOKEN_INDEX), GATEWAY_EVENTS_TOPIC);
+    }
+
+
     public static String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
@@ -941,19 +1036,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
 
-    protected void addToAuthorizationCache(String cacheKey, Topic topic) {
-        ConcurrentHashSet<String> set;
-        synchronized (authorizationCache) {
-            ConcurrentHashSet<String> act = authorizationCache.getIfPresent(cacheKey);
-            if (act != null) {
-                set = act;
-            } else {
-                set = new ConcurrentHashSet<>();
-                authorizationCache.put(cacheKey, set);
-            }
-        }
-        set.add(topic.getString());
-    }
 
     protected boolean isCacheAuthorized(String cacheKey, Topic topic) {
         ConcurrentHashSet<String> set = authorizationCache.getIfPresent(cacheKey);
