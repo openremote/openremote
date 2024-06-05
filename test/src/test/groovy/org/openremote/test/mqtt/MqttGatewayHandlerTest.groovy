@@ -994,7 +994,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Gateway Service User - Pub Create Asset
+        //region Test: Gateway Service User - Pub create asset
         when: "a mqtt client associated with a gateway service user publishes a create asset message"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
@@ -1014,7 +1014,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         //endregion
 
 
-        //region Test: Gateway Service User - Subscribe to All Asset Events
+        //region Test: Gateway Service User - Subscribe to all asset events
         when: "a mqtt client associated with a gateway service user subscribes to asset events"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
@@ -1029,7 +1029,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         //endregion
 
-        //region Test: Gateway Service User - Receive Asset Event
+        //region Test: Gateway Service User - Receive update on asset events sub
         when: "a mqtt client associated with a gateway service user is subscribed to asset events and an asset is updated"
         testAssetGateway = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAssetGateway.getName()))
         testAssetGateway.setName("testAssetGatewayOneUpdated")
@@ -1048,7 +1048,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedEvents.clear()
         //endregion
 
-        //region Test: Gateway Service User - Don't Receive Asset Event of non-descendant
+        //region Test: Gateway Service User - Don't receive asset update of non-descendant
         when: "a mqtt client associated with a gateway service user is subscribed to asset events and an asset is updated that is not a descendant"
         asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
         asset1.setName("smartBuildingUpdated")
@@ -1060,6 +1060,23 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         receivedEvents.clear()
         client.removeAllMessageConsumers()
+        //endregion
+
+
+        //region Test: Gateway Service User - Subscribe to attribute events pending acknowledgement
+        when: "a mqtt client associated with a gateway service user subscribes to pending gateway attribute events"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/$GatewayMQTTHandler.GATEWAY_PENDING_TOPIC/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+
+        client.addMessageConsumer(topic, messageConsumer)
+
+        then: "the subscription should exist"
+        conditions.eventually {
+            assert client.topicConsumerMap.get(topic) != null
+            assert client.topicConsumerMap.get(topic).size() == 1
+        }
         //endregion
 
 
