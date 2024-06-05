@@ -657,6 +657,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
         Asset<?> asset = optionalAsset.get();
+
+        // Check if asset doesn't already exist
+        if (asset.getId() != null) {
+            Asset<?> existingAsset = assetStorageService.find(asset.getId());
+            if (existingAsset != null && existingAsset.getRealm().equals(realm)) {
+                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset ID conflict, use %UNIQUE_ID% in the template to generate a unique ID");
+                return;
+            }
+        }
+
+        // Set the asset id and realm
         asset.setId(UniqueIdentifierGenerator.generateId());
         asset.setRealm(realm);
 
@@ -696,7 +707,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         storageAsset.setName(asset.get().getName());
         storageAsset.setAttributes(asset.get().getAttributes());
         assetStorageService.merge(storageAsset);
-
 
         AssetEvent event = new AssetEvent(AssetEvent.Cause.UPDATE, storageAsset, null);
         publishResponse(topic, event);
