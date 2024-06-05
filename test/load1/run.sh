@@ -266,6 +266,12 @@ EOF
   fi
 fi
 
+if [ -z "$DEPLOYMENT3_WAIT_FOR_EXIT" ]; then
+  if [ "$DEPLOYMENT3_USE_SETTLE_TEST" == "true" ]; then
+    DEPLOYMENT3_WAIT_FOR_EXIT=false
+  fi
+fi
+
 if [ "$DEPLOYMENT3_THREAD_COUNT" != "0" ] && [ "$DEPLOYMENT3_WAIT_FOR_EXIT" != "false" ]; then
   if [ "$SERVER3" == "localhost" ]; then
     while [ -n "$(docker ps -q -f name=deployment3)" ]; do

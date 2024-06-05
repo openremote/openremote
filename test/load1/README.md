@@ -111,6 +111,10 @@ usage e.g.:
 ```bash
 ./run.sh test1.example.com test2.example.com test3.example.com
 ```
+With options to not redeploy `deployment1`, skip `deployment2` and use the settle test for `deployment3`:
+```bash
+DEPLOYMENT1_DO_NOTHING=true DEPLOYMENT2_THREAD_COUNT=0 DEPLOYMENT3_THREAD_COUNT=10000 DEPLOYMENT3_RAMP_RATE=500 DEPLOYMENT3_USE_SETTLE_TEST=true ./run.sh test1.example.com unused test3.example.com
+```
 
 ## Auto provisioning device settle test (`auto-provisioning-settle-test.yml`)
 Simulates auto provisioning devices connecting to the Manager via MQTT similar to the above auto provisioning test but

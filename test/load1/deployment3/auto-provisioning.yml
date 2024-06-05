@@ -3,10 +3,10 @@ settings:
     JMETER_VERSION: # Set by environment variable in docker image
     JMETER_PLUGIN_MANAGER_VERSION: # Set by environment variable in docker image
     MANAGER_HOSTNAME: # Must be supplied
-    THREAD_COUNT:
-    RAMP_RATE:
-    DURATION:
-    MILLIS_BETWEEN_PUBLISHES:
+    THREAD_COUNT: 10000
+    RAMP_RATE: 50
+    DURATION: 300
+    MILLIS_BETWEEN_PUBLISHES: 10000
 
 reporting:
   - module: final-stats

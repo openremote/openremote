@@ -36,7 +36,7 @@ rules.add()
                     ).collect(Collectors.groupingBy{state -> state.id})
                     .forEach{id, states ->
                         // See if either attribute has changed for this asset
-                        if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))}) {
+                        if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))} && states.size() == 2) {
                             def value1 = states[0].value.orElse(0) as float
                             def value2 = states[1].value.orElse(0) as float
                             def calculated = value1+value2
