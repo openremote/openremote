@@ -119,7 +119,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     LOG.finest("Processing: " + notification.getName());
 
                     if (notification.getMessage() == null) {
-                        throw new NotificationProcessingException(MISSING_MESSAGE, "Notification message must be set");
+                        throw new NotificationProcessingException(MISSING_CONTENT, "Notification message must be set");
                     }
 
                     Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Notification.Source.class);
@@ -328,6 +328,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             IntStream.rangeClosed(1, parameters.size())
                     .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
+
         });
     }
 
