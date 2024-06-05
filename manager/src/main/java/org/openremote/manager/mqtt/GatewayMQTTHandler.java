@@ -671,7 +671,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             asset.setRealm(realm);
         }
 
-        // if it is a gateway connection the asset needs to be associated with the respective gateway asset.
+        // If it a gateway user connection, the associated gateway asset will always be the parent.
         if (isGatewayConnection(connection)) {
             Optional<GatewayV2Asset> gateway = findGatewayFromConnection(connection);
             gateway.ifPresent(gatewayAsset -> asset.setParentId(gatewayAsset.getId()));
