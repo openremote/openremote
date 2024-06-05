@@ -1065,7 +1065,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         //region Test: Gateway Service User - Subscribe to attribute events pending acknowledgement
         when: "a mqtt client associated with a gateway service user subscribes to pending gateway attribute events"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/$GatewayMQTTHandler.GATEWAY_PENDING_TOPIC/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -1076,6 +1076,19 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
+        }
+        //endregion
+
+        //region Test: Gateway Service User - Try acknowledge non-pending attribute event
+        when: "a mqtt client associated with a gateway service user tries to acknowledge a non-pending attribute event"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending/asd123/ack".toString()
+        payload = ""
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "nothing should happen, since the ackId does not exist. The client should remain connected"
+        conditions.eventually {
+            assert receivedEvents.size() == 0
+            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
         }
         //endregion
 

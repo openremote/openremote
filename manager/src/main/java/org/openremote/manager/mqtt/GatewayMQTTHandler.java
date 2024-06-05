@@ -108,8 +108,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int GATEWAY_PENDING_TOKEN_INDEX = 4;
     public static final int ASSET_ID_TOKEN_INDEX = 4;
     public static final int RESPONSE_ID_TOKEN_INDEX = 4;
-    public static final int GATEWAY_ACK_ID_TOKEN_INDEX = 4;
-    public static final int GATEWAY_ACK_TOKEN_INDEX = 5;
+    public static final int GATEWAY_ACK_ID_TOKEN_INDEX = 5;
+    public static final int GATEWAY_ACK_TOKEN_INDEX = 6;
     public static final int ASSETS_METHOD_TOKEN = 5;
     public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
@@ -332,8 +332,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
 
         return Set.of(
-                // <realm>/<clientId>/gateway/events/ack/<ackId>
-                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GATEWAY_ACK_TOPIC,
+                // <realm>/<clientId>/gateway/events/pending/<ackId>/ack
+                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_PENDING_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GATEWAY_ACK_TOPIC,
                 // <realm>/<clientId>/operations/assets/<responseId>/create
                 topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
@@ -405,7 +405,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 LOG.finest("Gateway not found for connection, cannot publish to gateway events topic " + connectionID);
                 return false;
             }
-            if (topicTokens.size() > 5 && !topicTokens.get(GATEWAY_ACK_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
+            if (topicTokens.size() > 6 && !topicTokens.get(GATEWAY_ACK_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for publishing, the ack suffix topic is missing");
                 return false;
             }
