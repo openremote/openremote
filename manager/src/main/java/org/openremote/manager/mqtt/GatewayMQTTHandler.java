@@ -648,6 +648,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String realm = topicRealm(topic);
 
         String assetTemplate = payloadContent;
+        // replace placeholders with unique identifiers
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, UniqueIdentifierGenerator.generateId());
 
         Optional<Asset> optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
@@ -658,18 +659,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
         Asset<?> asset = optionalAsset.get();
 
-        // Check if asset doesn't already exist
-        if (asset.getId() != null) {
+        // ensure the asset ID is unique and not conflicting.
+        if (asset.getId() != null && !asset.getId().isEmpty()) {
             Asset<?> existingAsset = assetStorageService.find(asset.getId());
             if (existingAsset != null && existingAsset.getRealm().equals(realm)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset ID conflict, use %UNIQUE_ID% in the template to generate a unique ID");
+                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset ID conflict");
                 return;
             }
+        } else {
+            asset.setId(UniqueIdentifierGenerator.generateId());
+            asset.setRealm(realm);
         }
-
-        // Set the asset id and realm
-        asset.setId(UniqueIdentifierGenerator.generateId());
-        asset.setRealm(realm);
 
         // if it is a gateway connection the asset needs to be associated with the respective gateway asset.
         if (isGatewayConnection(connection)) {
