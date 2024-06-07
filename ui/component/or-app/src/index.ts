@@ -17,6 +17,7 @@ import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from 
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
+import { getQueryParameter } from "@openremote/core/src/util";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -32,19 +33,6 @@ declare var MANAGER_URL: string | undefined;
 declare var KEYCLOAK_URL: string | undefined;
 
 export {HeaderConfig, DEFAULT_LANGUAGES};
-
-export function getRealmQueryParameter(): string | undefined {
-    if(location.search && location.search !== "") {
-        return Util.getQueryParameter(location.search, "realm");
-    }
-
-    if(location.hash) {
-        const index = location.hash.indexOf("?");
-        if(index > -1) {
-            return Util.getQueryParameter(location.hash.substring(index + 1), "realm");
-        }
-    }
-}
 
 export function getDefaultManagerConfig() {
     return normaliseConfig(DEFAULT_MANAGER_CONFIG);
@@ -204,7 +192,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
         if (!managerConfig.realm) {
             // Use realm query parameter if no specific realm provided
-            managerConfig.realm = getRealmQueryParameter();
+            managerConfig.realm = getQueryParameter("realm");
+        }
+        if (!managerConfig.defaultLanguage) {
+            managerConfig.defaultLanguage = getQueryParameter("lang")?.toLowerCase();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);
