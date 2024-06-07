@@ -17,7 +17,6 @@ import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from 
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Auth, ManagerConfig, Realm} from "@openremote/model";
 import {pageOfflineProvider} from "./page-offline";
-import { getQueryParameter } from "@openremote/core/src/util";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -192,10 +191,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
         if (!managerConfig.realm) {
             // Use realm query parameter if no specific realm provided
-            managerConfig.realm = getQueryParameter("realm");
+            managerConfig.realm = Util.getQueryParameter("realm");
         }
         if (!managerConfig.defaultLanguage) {
-            managerConfig.defaultLanguage = getQueryParameter("lang")?.toLowerCase();
+            managerConfig.defaultLanguage = Util.getQueryParameter("lang")?.toLowerCase();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);

@@ -16,7 +16,7 @@ import "./pages/page-mobile-splash";
 import {pageMobileSplashProvider, SplashConfig} from "./pages/page-mobile-splash";
 import "./pages/page-mobile-geofences";
 import {pageMobileGeofencesProvider} from "./pages/page-mobile-geofences";
-import { getQueryParameter } from "@openremote/core/src/util";
+import { Util } from "@openremote/core";
 
 const onboardingConfig:OnboardingConfig  = {
     pages: [
@@ -71,10 +71,10 @@ const managerConfig: ManagerConfig = {
     managerUrl: MANAGER_URL,
     auth: Auth.NONE,
     autoLogin: false,
-    realm: getQueryParameter("realm"),
+    realm: Util.getQueryParameter("realm"),
     consoleAutoEnable: false,
     loadTranslations: ["app", "or"],
-    defaultLanguage: getQueryParameter("lang") || "en",
+    defaultLanguage: Util.getQueryParameter("lang") || "en",
 };
 
 const appConfig: AppConfig<RootState> = {
