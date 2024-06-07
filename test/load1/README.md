@@ -6,6 +6,7 @@
 * Bash shell
 * See wiki for toolchain requirements (if running the manager locally)
 
+
 ## Setup
 To run the tests you will need the Manager instance being tested to be deployed with the
 `load1` setup; the setup does the following:
@@ -19,9 +20,8 @@ skip every N'th device using (OR_SETUP_DEVICES_SKIP_COUNT: default = 10); this a
 when they connect during load testing thus simulating a more real world situation where a large percentage of devices would have provisioned slowly over 
 time as they are first powered up 
 
-
-
-### Deploying the `load1` Setup
+## Deployment 1
+### The `load1` Setup
 The OpenRemote Manager instance under test must be running with `load1` setup and must be accessible
 to the test runners. Three options for running the manager with the required setup:
 
@@ -44,6 +44,33 @@ cp load1/auto-provisioning.jmx load1/auto-provisioning.yml build/deployment3
 cd build
 ```
 
+## Deployment 2
+### Console users test (`console-users.yml`)
+Simulates console devices registering with the Manager and subscribing to attribute events over websocket as follows:
+
+* Get OAuth2 token from keycloak
+* Make websocket connection
+* Subscribe to attribute events
+* Listen for attribute events in a continuous loop until `DURATION` seconds elapse
+
+#### Test variables
+* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
+* THREAD_COUNT - Number of threads/users/devices (default: `1000`)
+* RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
+* DURATION - How long each thread should run for in seconds (default: `300`)
+
+#### Run the test
+Add test variable overrides as required by copy/pasting the `-o settings.env.XXX` line:
+```bash
+mkdir -p test/load1/results; \
+MSYS_NO_PATHCONV=1 docker run --rm -it \
+-v $PWD/test/load1:/bzt-configs \
+-v $PWD/test/load1/results:/tmp/artifacts openremote/jmeter-taurus \
+-o settings.env.MANAGER_HOSTNAME=192.168.1.123 \
+console-users.yml
+```
+
+## Deployment 3
 ### Auto provisioning device test (`auto-provisioning.yml`)
 Simulates auto provisioning devices connecting to the Manager via MQTT as follows:
 
@@ -79,20 +106,17 @@ auto-provisioning.yml
 **NOTE: A t4g.medium instance can only handle ~4000 devices; a t4g.large instance ~9000 devices; so anything more
 requires a larger instance or splitting into multiple deployments.**
 
-## Console users test (`console-users.yml`)
-Simulates console devices registering with the Manager and subscribing to attribute events over websocket as follows:
-
-* Get OAuth2 token from keycloak
-* Make websocket connection
-* Subscribe to attribute events
-* Listen for attribute events in a continuous loop until `DURATION` seconds elapse
-
+### Auto provisioning device settle test (`auto-provisioning-settle-test.yml`)
+Simulates auto provisioning devices connecting to the Manager via MQTT similar to the above auto provisioning test but
+each device will keep retrying auto provisioning until a successful response is received with the intention to find the
+time required for the system to settle down after a full restart. The test will only stop when all devices have
+provisioned successfully and start publishing attribute events.
 
 #### Test variables
 * MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
 * THREAD_COUNT - Number of threads/users/devices (default: `1000`)
 * RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
-* DURATION - How long each thread should run for in seconds (default: `300`)
+* MILLIS_BETWEEN_PUBLISHES - How long to wait between each time the 2 attributes are published in milliseconds (default: `10000`)
 
 #### Run the test
 Add test variable overrides as required by copy/pasting the `-o settings.env.XXX` line:
@@ -102,7 +126,7 @@ MSYS_NO_PATHCONV=1 docker run --rm -it \
 -v $PWD/test/load1:/bzt-configs \
 -v $PWD/test/load1/results:/tmp/artifacts openremote/jmeter-taurus \
 -o settings.env.MANAGER_HOSTNAME=192.168.1.123 \
-console-users.yml
+auto-provisioning-settle-test.yml
 ```
 
 ## Full test script `run.sh`
@@ -115,15 +139,3 @@ With options to not redeploy `deployment1`, skip `deployment2` and use the settl
 ```bash
 DEPLOYMENT1_DO_NOTHING=true DEPLOYMENT2_THREAD_COUNT=0 DEPLOYMENT3_THREAD_COUNT=10000 DEPLOYMENT3_RAMP_RATE=500 DEPLOYMENT3_USE_SETTLE_TEST=true ./run.sh test1.example.com unused test3.example.com
 ```
-
-## Auto provisioning device settle test (`auto-provisioning-settle-test.yml`)
-Simulates auto provisioning devices connecting to the Manager via MQTT similar to the above auto provisioning test but
-each device will keep retrying auto provisioning until a successful response is received with the intention to find the
-time required for the system to settle down after a full restart. The test will run indefinitely and must be manually
-stopped.
-
-#### Test variables
-* MANAGER_HOSTNAME - The hostname/IP address of the OpenRemote Manager under test (default: `localhost`)
-* THREAD_COUNT - Number of threads/users/devices (default: `1000`)
-* RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
-* MILLIS_BETWEEN_PUBLISHES - How long to wait between each time the 2 attributes are published in milliseconds (default: `10000`)

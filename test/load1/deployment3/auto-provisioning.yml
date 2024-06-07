@@ -6,7 +6,7 @@ settings:
     THREAD_COUNT: 10000
     RAMP_RATE: 50
     DURATION: 300
-    MILLIS_BETWEEN_PUBLISHES: 10000
+    MILLIS_BETWEEN_PUBLISHES: 300000
 
 reporting:
   - module: final-stats

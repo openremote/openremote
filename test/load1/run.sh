@@ -21,8 +21,8 @@
 # `DEPLOYMENT3_USE_SETTLE_TEST` (default: false) - Set to true to use auto-provisioning-settle-test.yml instead of auto-provisioning.yml
 # `DEPLOYMENT3_WAIT_FOR_EXIT` (default: true) - Set to false to not wait for deployment 3 test runner container to exit
 
-SSH_PREFIX="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-SCP_PREFIX="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SSH_PREFIX="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -q"
+SCP_PREFIX="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error -q"
 SERVER1=${1,,}
 SERVER2=${2,,}
 SERVER3=${3,,}
@@ -158,6 +158,8 @@ if [ "$DEPLOYMENT2_THREAD_COUNT" != "0" ]; then
     MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment2 -v \$PWD:/bzt-configs -v \$PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS console-users.yml
     cd ..
   else
+    rm -rf deployment2/results
+    $SSH_PREFIX $SERVER2 "rm -rf ~/deployment2"
     echo "Copying files to remote host deployment2 -> $SERVER2"
     $SCP_PREFIX -r deployment2 $SERVER2:~
     echo "Deploying on remote host deployment2 -> $SERVER2"
@@ -215,11 +217,14 @@ if [ "$DEPLOYMENT3_THREAD_COUNT" != "0" ]; then
     MSYS_NO_PATHCONV=1 docker run --rm -d --name deployment3 -v $PWD:/bzt-configs -v $PWD/results:/tmp/artifacts openremote/jmeter-taurus $SETTINGS $DEPLOYMENT3_TEST_FILE
     cd ..
   else
+    rm -rf deployment3/results
+    $SSH_PREFIX $SERVER3 "sudo rm -rf ~/deployment3"
     echo "Copying files to remote host deployment3 -> $SERVER3"
     $SCP_PREFIX -r deployment3 $SERVER3:~
     echo "Deploying on remote host deployment3 -> $SERVER3"
     $SSH_PREFIX $SERVER3 << EOF
 
+rm -rf deployment3/results
 $COMMAND
 
 if [ \$? -ne 0 ]; then
@@ -263,12 +268,8 @@ done
 echo "Deployment 2 container has finished"
 
 EOF
-  fi
-fi
-
-if [ -z "$DEPLOYMENT3_WAIT_FOR_EXIT" ]; then
-  if [ "$DEPLOYMENT3_USE_SETTLE_TEST" == "true" ]; then
-    DEPLOYMENT3_WAIT_FOR_EXIT=false
+    echo "Copying results"
+    $SCP_PREFIX -r $SERVER2:~/deployment2/results ../build/deployment2/
   fi
 fi
 
@@ -280,7 +281,6 @@ if [ "$DEPLOYMENT3_THREAD_COUNT" != "0" ] && [ "$DEPLOYMENT3_WAIT_FOR_EXIT" != "
     done
 
     echo "Deployment 3 container has finished"
-
   else
     $SSH_PREFIX $SERVER3 << EOF
 
@@ -292,5 +292,7 @@ done
 echo "Deployment 3 container has finished"
 
 EOF
+    echo "Copying results"
+    $SCP_PREFIX -r $SERVER3:~/deployment3/results ../build/deployment3/
   fi
 fi

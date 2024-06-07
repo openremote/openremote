@@ -27,7 +27,7 @@
         </elementProp>
       </SetupThreadGroup>
       <hashTree>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs" enabled="true">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs">
           <stringProp name="scriptLanguage">groovy</stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
@@ -40,7 +40,14 @@ inputFile.eachLine { line -&gt;
    idAndDevice = line.split(&quot;,&quot;)
    certs.add(idAndDevice[1])
 }
-props.put(&quot;certs&quot;, certs)</stringProp>
+props.put(&quot;certs&quot;, certs)
+
+// Store thread count
+def threadCount = Integer.parseInt(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;)
+props.put(&quot;THREAD_COUNT&quot;, threadCount)
+
+// Store global var for tracking device init successes - decrement this on each device start and increment on publish success
+props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(threadCount))</stringProp>
         </JSR223Sampler>
         <hashTree/>
       </hashTree>
@@ -59,12 +66,16 @@ props.put(&quot;certs&quot;, certs)</stringProp>
       <hashTree>
         <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert" enabled="true">
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
-            <stringProp name="script">if (vars.get(&quot;cert&quot;) == null) {
+            <stringProp name="script">// Decrement successes counter
+props.get(&quot;successes&quot;).decrementAndGet()
+
+if (vars.get(&quot;cert&quot;) == null) {
   vars.put(&quot;cert&quot;, props.get(&quot;certs&quot;)[ctx.getThreadNum()])
+  vars.putObject(&quot;threadCount&quot;, props.get(&quot;THREAD_COUNT&quot;))
 }</stringProp>
             <stringProp name="scriptLanguage">groovy</stringProp>
           </JSR223Sampler>
@@ -179,6 +190,21 @@ props.put(&quot;certs&quot;, certs)</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
+        <hashTree>
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Increment successes counter and stop test if all devices are in successful state
+if (props.get(&quot;successes&quot;).incrementAndGet() &gt;= vars.getObject(&quot;threadCount&quot;)) {
+	ctx.getEngine().stopTest(true)
+}
+</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Sampler>
+          <hashTree/>
+        </hashTree>
         <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">true</boolProp>
           <intProp name="LoopController.loops">-1</intProp>
@@ -195,7 +221,7 @@ props.put(&quot;certs&quot;, certs)</stringProp>
             <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           </net.xmeter.samplers.PubSampler>
           <hashTree>
-            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+            <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
               <stringProp name="ConstantTimer.delay">${__P(MILLIS_BETWEEN_PUBLISHES,10000)}</stringProp>
             </ConstantTimer>
             <hashTree/>
@@ -223,7 +249,7 @@ props.put(&quot;certs&quot;, certs)</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
