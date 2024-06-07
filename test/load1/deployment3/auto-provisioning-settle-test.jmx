@@ -27,7 +27,7 @@
         </elementProp>
       </SetupThreadGroup>
       <hashTree>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs" enabled="true">
           <stringProp name="scriptLanguage">groovy</stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
@@ -51,7 +51,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(t
         </JSR223Sampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub">
         <boolProp name="ThreadGroup.delayedStart">true</boolProp>
         <stringProp name="ThreadGroup.num_threads">${__groovy(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;,)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__groovy(Math.max(1\,(int)((props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;).toInteger() / (props.get(&quot;RAMP_RATE&quot;) ?: &quot;50&quot;).toInteger())),)}</stringProp>
@@ -64,9 +64,9 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(t
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller"/>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert">
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert" enabled="true">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
@@ -81,11 +81,11 @@ if (vars.get(&quot;cert&quot;) == null) {
           </JSR223Sampler>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect" enabled="true">
+        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect">
           <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
-          <stringProp name="mqtt.conn_timeout">10</stringProp>
+          <stringProp name="mqtt.conn_timeout">60</stringProp>
           <stringProp name="mqtt.protocol">SSL</stringProp>
           <stringProp name="mqtt.ws_path"></stringProp>
           <boolProp name="mqtt.dual_ssl_authentication">false</boolProp>
@@ -192,7 +192,7 @@ if (vars.get(&quot;cert&quot;) == null) {
         <hashTree/>
         <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
         <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes">
+          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes" enabled="true">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
@@ -249,7 +249,7 @@ if (props.get(&quot;successes&quot;).incrementAndGet() &gt;= vars.getObject(&quo
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>
