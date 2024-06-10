@@ -985,6 +985,16 @@ export class Manager implements EventProviderFactory {
                 this.login();
             }
         }
+
+        // Send the console a message to clear the login page that was visited earlier.
+        // This prevents navigating back to an authentication screen.
+        this._clearWebHistory();
+    }
+
+    /** Function that clears the `WebView` history of a console. It will not delete the history on regular browsers. */
+    protected _clearWebHistory(): void {
+        console.log("Clearing web history..."); // TODO: Remove this (added temporarily for testing)
+        this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
     }
 
     // NOTE: The below works with Keycloak 2.x JS API - They made breaking changes in newer versions

@@ -390,6 +390,19 @@ export class Console {
         }
     }
 
+    /**
+     * Function that allows sending of custom types and messages towards the console.
+     * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
+     */
+    public _doSendGenericMessage(type: string, msg: any) {
+        console.log(`Sending generic message of type (${type}), with msg (${msg})`); // TODO: Remove this (added temporarily for testing)
+        if (this.isMobile) {
+            this._postNativeShellMessage({type: type, data: msg });
+        } else {
+            console.warn("Failed to send generic message to console.")
+        }
+    }
+
     public _doSendProviderMessage(msg: any) {
         if (this.isMobile) {
             this._postNativeShellMessage({type: "provider", data: msg});
