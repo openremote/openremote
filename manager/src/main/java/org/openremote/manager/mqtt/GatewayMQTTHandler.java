@@ -822,6 +822,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
             var event = new AttributeEvent(assetId, attributeName, attributeValue);
+            event.setSource(GatewayMQTTHandler.class.getSimpleName());
             sendAttributeEvent(event);
             events.add(event);
         }
