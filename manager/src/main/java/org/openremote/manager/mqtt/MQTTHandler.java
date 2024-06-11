@@ -64,7 +64,7 @@ public abstract class MQTTHandler {
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
-    
+
     /**
      * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
      * initialised and started first.
@@ -124,7 +124,7 @@ public abstract class MQTTHandler {
                 // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
                 // Need to be able to get connection/auth from the message somehow
                 if (connection == null) {
-                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
+                    LOG.log(DEBUG, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
@@ -304,8 +304,8 @@ public abstract class MQTTHandler {
 
     protected static Optional<AuthContext> getAuthContextFromConnection(RemotingConnection connection) {
         return Optional.ofNullable(getSubjectFromConnection(connection))
-                .map(MQTTHandler::getSecurityContextFromSubject)
-                .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
+            .map(MQTTHandler::getSecurityContextFromSubject)
+            .map(DefaultMQTTHandler::getAuthContextFromSecurityContext);
     }
 
     protected static AuthContext getAuthContextFromSecurityContext(KeycloakSecurityContext securityContext) {

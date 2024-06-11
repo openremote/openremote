@@ -26,7 +26,6 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
@@ -46,6 +45,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -97,26 +97,22 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        // Nothing to do
     }
 
     @Override
     public void stop(Container container) throws Exception {
+        // Nothing to do
     }
 
 
     protected void processGatewayChange(GatewayV2Asset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
-        switch (persistenceEvent.getCause()) {
-
-            case CREATE -> {
-                gateway.setDisabled(false); // Ensure gateway is enabled when created, user can disable it later if needed
-                createUpdateGatewayServiceUser(gateway);
-            }
-            case UPDATE -> {
-                break;
-            }
-            case DELETE -> {
-                removeGatewayServiceUser(gateway);
-            }
+        if (Objects.requireNonNull(persistenceEvent.getCause()) == PersistenceEvent.Cause.CREATE) {
+            gateway.setDisabled(false); // Ensure gateway is enabled when created
+            createUpdateGatewayServiceUser(gateway);
+        }
+        else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+            removeGatewayServiceUser(gateway);
         }
     }
 
@@ -129,7 +125,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
             User gatewayUser = identityProvider.getUserByUsername(gateway.getRealm(), User.SERVICE_ACCOUNT_PREFIX + clientId);
             boolean userExists = gatewayUser != null;
 
-            if (gatewayUser == null || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false) || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null))) {
+            if (gatewayUser == null || Objects.equals(gatewayUser.getEnabled(), gateway.getDisabled().orElse(false)) || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null))) {
 
                 gatewayUser = identityProvider.createUpdateUser(gateway.getRealm(), new User()
                         .setServiceAccount(true)
@@ -139,7 +135,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
             }
 
             if (!userExists && gatewayUser != null) {
-                identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), Constants.KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
+                identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
             }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
@@ -173,6 +169,10 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return getClass().getSimpleName() + "{" +
                 "active=" + active +
                 '}';
+    }
+
+    protected static boolean isGatewayClientId(String clientId) {
+        return clientId != null && clientId.startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
 
     @Override
