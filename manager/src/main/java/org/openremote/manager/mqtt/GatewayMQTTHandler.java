@@ -184,18 +184,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
-        if (event.getSource() != null) {
-            // Ignore events from the GatewayMQTTHandler
-            if (event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
-                return false;
-            }
+        if (event.getSource() != null && event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
+            return false;
         }
+
         // If the event is from a descendant of a Gateway asset, then publish to pending gateway events topic
         if (event.getParentId() != null) {
             Asset<?> gateway = assetStorageService.find(event.getParentId());
-            if (gateway instanceof GatewayV2Asset) {
+            if (gateway instanceof GatewayV2Asset gatewayAsset) {
                 LOG.finest("Intercepted attribute event from Gateway asset descendant: " + gateway.getId());
-                publishPendingGatewayEvent(event, (GatewayV2Asset) gateway);
+                publishPendingGatewayEvent(event, gatewayAsset);
                 return true;
             }
         }
@@ -415,12 +413,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
-                            LOG.fine("Create asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, event)) {
+                        LOG.fine("Create asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Create asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
@@ -431,12 +428,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
-                            LOG.fine("Get asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, event)) {
+                        LOG.fine("Get asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
@@ -447,12 +443,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
-                            LOG.fine("Update asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, event)) {
+                        LOG.fine("Update asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Update asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
@@ -464,17 +459,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
-                            LOG.fine("Delete asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, event)) {
+                        LOG.fine("Delete asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Delete asset request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
                     }
                 }
+                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
         // Attribute operations
@@ -486,12 +481,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
-                            LOG.fine("Get attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, event)) {
+                        LOG.fine("Get attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Get attribute request was not authorised for this user and topic: topic=" + topic + ", " + connectionID);
                         return false;
@@ -502,17 +496,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     if (event == null) {
                         return false;
                     }
-                    if (isGatewayConnection(connection)) {
-                        if (!authorizeGatewayEvent(gatewayAsset, authContext, buildAttributeEvent(topicTokens, null))) {
-                            LOG.fine("Update attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
-                            return false;
-                        }
+                    if (isGatewayConnection(connection) && !authorizeGatewayEvent(gatewayAsset, authContext, buildAttributeEvent(topicTokens, null))) {
+                        LOG.fine("Update attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
+                        return false;
                     }
+
                     if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Update attribute request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
                     }
                 }
+                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
         // Multi attribute update request (edge case) - Acknowledge the publish request.
@@ -539,16 +533,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-        List<String> topicTokens = topic.getTokens();
-
         // Asset operations
         if (isAssetsMethodTopic(topic)) {
             String method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> handleCreateAsset(connection, topic, body);
-                case GET_TOPIC -> handleGetAsset(connection, topic, body);
+                case GET_TOPIC -> handleGetAsset(connection, topic);
                 case UPDATE_TOPIC -> handleUpdateAsset(connection, topic, body);
-                case DELETE_TOPIC -> handleDeleteAsset(connection, topic, body);
+                case DELETE_TOPIC -> handleDeleteAsset(connection, topic);
+                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
 
@@ -556,9 +549,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isAttributesMethodTopic(topic)) {
             String method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
-                case GET_TOPIC -> handleGetAttribute(connection, topic, body, false);
-                case GET_VALUE_TOPIC -> handleGetAttribute(connection, topic, body, true);
-                case UPDATE_TOPIC -> handleUpdateAttribute(connection, topic, body);
+                case GET_TOPIC -> handleGetAttribute(connection, topic, false);
+                case GET_VALUE_TOPIC -> handleGetAttribute(connection, topic, true);
+                case UPDATE_TOPIC -> handleUpdateAttribute(topic, body);
+                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
         // Multi attribute operation (authorization in topic handler)
@@ -575,9 +569,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @Override
     public void onConnectionLost(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
-            findGatewayFromConnection(connection).ifPresent(gatewayAsset -> {
-                updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
-            });
+            findGatewayFromConnection(connection).ifPresent(gatewayAsset -> updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED));
         }
 
         Map<String, Object> headers = prepareHeaders(null, connection);
@@ -597,9 +589,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @Override
     public void onDisconnect(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
-            findGatewayFromConnection(connection).ifPresent(gatewayAsset -> {
-                updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
-            });
+            findGatewayFromConnection(connection).ifPresent(gatewayAsset -> updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED));
         }
 
         Map<String, Object> headers = prepareHeaders(null, connection);
@@ -656,7 +646,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // replace placeholders with unique identifiers
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, UniqueIdentifierGenerator.generateId());
 
-        Optional<Asset> optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
+        var optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
         if (optionalAsset.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid asset template");
             LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + getConnectionIDString(connection));
@@ -702,7 +692,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> storageAsset = assetStorageService.find(assetId);
 
-        Optional<Asset> asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
+        var asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
         if (asset.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid asset template");
             LOG.fine("Invalid asset template " + body.toString(StandardCharsets.UTF_8) + " in update asset request " + getConnectionIDString(connection));
@@ -722,7 +712,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Publishes the asset object based on the request.
      * If the asset is not found, an error response is published.
      */
-    protected void handleGetAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleGetAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
@@ -740,7 +730,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Deletes the asset and all its descendants from the asset storage service.
      * If the asset is not found, an error response is published.
      */
-    protected void handleDeleteAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
+    protected void handleDeleteAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
@@ -766,8 +756,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Update attribute request topic handler
      * Updates the attribute with the provided value and publishes the attribute event.
      */
-    protected void handleUpdateAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
-        String realm = topicRealm(topic);
+    protected void handleUpdateAttribute(Topic topic, ByteBuf body) {
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
         sendAttributeEvent(event);
         publishResponse(topic, event);
@@ -834,7 +823,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Publishes the attribute value or the full attribute object based on the request. (get or get-value)
      * If the attribute is not found, an error response is published.
      */
-    protected void handleGetAttribute(RemotingConnection connection, Topic topic, ByteBuf body, boolean publishValueOnly) {
+    protected void handleGetAttribute(RemotingConnection connection, Topic topic, boolean publishValueOnly) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
         Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
@@ -869,10 +858,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        if (event instanceof AttributeEvent) {
+        if (event instanceof AttributeEvent attributeEvent) {
             // We set the source to the MQTT handler to prevent the event from being intercepted again
-            ((AttributeEvent) event).setSource(GatewayMQTTHandler.class.getSimpleName());
-            sendAttributeEvent((AttributeEvent) event);
+            attributeEvent.setSource(GatewayMQTTHandler.class.getSimpleName());
+            sendAttributeEvent(attributeEvent);
             synchronized (eventsPendingGatewayAcknowledgement) {
                 eventsPendingGatewayAcknowledgement.invalidate(ackId);
             }
@@ -884,13 +873,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // check whether the Asset associated with the read event is a descendant of the gateway
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
-        }
-        else if (event instanceof AssetEvent assetEvent) {
+        } else if (event instanceof AssetEvent assetEvent) {
             // create events allowed by default for the gateway, we don't know the assetId yet.
             if (assetEvent.getCause() == AssetEvent.Cause.CREATE) {
                 return true;
             }
-             // check whether the Asset associated with the event is a descendant of the gateway
+            // check whether the Asset associated with the event is a descendant of the gateway
             return isAssetDescendantOfGateway(assetEvent.getId(), gateway);
         }
         // check whether the asset associated with the read attribute event is a descendant of the gateway
