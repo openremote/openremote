@@ -234,10 +234,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isGatewayConnection(connection)) {
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
             if (gatewayAsset == null) {
-                LOG.finer("Gateway not found for connection " + getConnectionIDString(connection));
                 return false;
             }
-
             if (gatewayAsset.getDisabled().orElse(false)) {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
                 return false;
@@ -263,7 +261,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return false;
             }
 
-            // If the gatewayAsset is found the assetId provided has to be a descendant of the gateway asset
+            // If a gateway asset is present, the subscription will be relative to the asset, otherwise realm relative.
+            // TODO: Do we want the gateway to subscribe to events? (Whats the use case?)
             if (gatewayAsset != null) {
                 String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
                 if (assetId == null || !Pattern.matches(ASSET_ID_REGEXP, assetId)) {
@@ -368,19 +367,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         if (!isOperationsTopic(topic) && !isGatewayEventsTopic(topic)) {
-            LOG.finest("Invalid topic " + topic + " for publishing, must be " + OPERATIONS_TOPIC);
+            LOG.finest("Invalid topic provided " + topic + " for publishing");
             return false;
         }
 
         GatewayV2Asset gatewayAsset = null;
         if (isGatewayConnection(connection)) {
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
-
             if (gatewayAsset == null) {
-                LOG.finer("Gateway not found for connection " + getConnectionIDString(connection));
                 return false;
             }
-
             if (gatewayAsset.getDisabled().orElse(false)) {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
                 return false;
@@ -512,10 +508,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
-        // Multi attribute update request (edge case) - Acknowledge the publish request.
-        // Authorization is done in the topic handler
+        // Multi attribute update request, authorization is handled in the respective handler function
         else if (isMultiAttributeUpdateTopic(topic)) {
-            LOG.fine("Multi attribute update request " + topic + " " + connectionID);
+            LOG.finest("Multi attribute update request " + topic + " " + connectionID);
         } else {
             return false;
         }
@@ -536,6 +531,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+
         // Asset operations
         if (isAssetsMethodTopic(topic)) {
             String method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
@@ -558,6 +554,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
             }
         }
+
         // Multi attribute operation (authorization in topic handler)
         if (isMultiAttributeUpdateTopic(topic)) {
             handleUpdateMultiAttribute(connection, topic, body);
@@ -646,7 +643,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String realm = topicRealm(topic);
 
         String assetTemplate = payloadContent;
-        // replace placeholders with unique identifiers
         assetTemplate = assetTemplate.replaceAll(UNIQUE_ID_PLACEHOLDER, UniqueIdentifierGenerator.generateId());
 
         var optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
@@ -657,7 +653,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
         Asset<?> asset = optionalAsset.get();
 
-        // ensure the asset ID is unique and not conflicting.
+        // check for asset ID conflict
         if (asset.getId() != null && !asset.getId().isEmpty()) {
             Asset<?> existingAsset = assetStorageService.find(asset.getId());
             if (existingAsset != null && existingAsset.getRealm().equals(realm)) {
@@ -669,10 +665,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
             asset.setRealm(realm);
         }
 
-        // If it a gateway user connection, the associated gateway asset will always be the parent.
+        // If it a gateway user connection, the respective gateway asset will always be the parent.
         if (isGatewayConnection(connection)) {
             Optional<GatewayV2Asset> gateway = findGatewayFromConnection(connection);
-            gateway.ifPresent(gatewayAsset -> asset.setParentId(gatewayAsset.getId()));
+            if (gateway.isEmpty()) {
+                LOG.warning("Gateway not found, this should not be possible. Connection: " + getConnectionIDString(connection));
+                return;
+            }
+            asset.setParentId(gateway.get().getId());
         }
 
         try {
@@ -718,6 +718,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected void handleGetAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
+
+        // TODO: Check whether this can even happen, the clientEventService might already cover this case (ReadAssetEvent)
         if (asset == null) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
             LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
@@ -831,6 +833,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
         Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
 
+        // TODO: Check whether this can even happen, the clientEventService might already cover this case (ReadAttributeEvent)
         if (attribute.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Attribute not found");
             LOG.fine("Attribute not found " + assetId + " " + attributeName + " " + getConnectionIDString(connection));
@@ -972,7 +975,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
-            LOG.fine("Failed to build AssetEvent, Asset not found " + assetId);
+            LOG.fine("Failed to build AssetEvent, asset doesn't exist " + assetId);
             return null;
         }
         return new AssetEvent(cause, asset, null);
