@@ -374,6 +374,7 @@ export class Manager implements EventProviderFactory {
 
         // Don't let console registration error prevent loading
         const consoleSuccess = await this.doConsoleInit();
+        console.log(`Done with console initialisation. Result is ${consoleSuccess}`); // TODO: Remove this (added temporarily for testing)
         if(consoleSuccess) {
             // Send the console a message to clear the web history, so no pages outside the app can be accessed.
             // For example, this prevents navigating back to an authentication screen.
