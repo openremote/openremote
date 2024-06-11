@@ -266,12 +266,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
             // If the gatewayAsset is found the assetId provided has to be a descendant of the gateway asset
             if (gatewayAsset != null) {
-                if (topicHasValidAssetId(topic)) {
-                    var assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
-                    if (!isAssetDescendantOfGateway(assetId, gatewayAsset)) {
-                        LOG.finest("Asset not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
-                        return false;
-                    }
+                var assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+                if (assetId == null || !Pattern.matches(ASSET_ID_REGEXP, assetId)) {
+                    return false;
+                }
+                if (!isAssetDescendantOfGateway(assetId, gatewayAsset)) {
+                    LOG.finest("Asset not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
+                    return false;
                 }
             }
 
@@ -402,11 +403,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
             if (topicTokens.size() > 6 && !topicTokens.get(GATEWAY_ACK_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for publishing, the ack suffix topic is missing");
-                return false;
-            }
-            var ackId = topicTokenIndexToString(topic, GATEWAY_ACK_ID_TOKEN_INDEX);
-            if (ackId == null) {
-                LOG.finest("Invalid topic " + topic + " for publishing, the acknowledgement id is missing");
                 return false;
             }
         }
@@ -885,15 +881,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
     }
-
-    protected boolean topicHasValidAssetId(Topic topic) {
-        String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
-        if (assetId == null) {
-            return false;
-        }
-        return Pattern.matches(ASSET_ID_REGEXP, assetId);
-    }
-
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     protected boolean authorizeGatewayEvent(GatewayV2Asset gateway, AuthContext authContext, SharedEvent event) {

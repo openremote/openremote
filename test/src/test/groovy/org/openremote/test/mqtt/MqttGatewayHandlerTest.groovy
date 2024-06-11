@@ -1,5 +1,6 @@
 package org.openremote.test.mqtt
 
+
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.container.util.UniqueIdentifierGenerator
@@ -670,11 +671,9 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             def connection = mqttBrokerService.getUserConnections(gatewayUser.getId())[0]
             assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
-        //endregion
 
 
-        //region Test: Gateway Service User - Publish create asset
-        when: "a mqtt client associated with a gateway service user publishes a create asset message"
+        when: "a gateway service user publishes a create asset message"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
         testAsset = new ThingAsset("mqttGatewayHandlerTestAsset")
@@ -692,7 +691,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
 
-        when: "a mqtt client associated with a gateway service user subscribes to pending gateway attribute events"
+        when: "a gateway service user subscribes to pending gateway attribute events"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedPendingEvents.put(msg.topic, ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
@@ -732,7 +731,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         receivedPendingEvents.clear()
 
-        when: "a mqtt client associated with a gateway service publishes an attribute update operation"
+        when: "a gateway service publishes an attribute update operation"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/attributes/notes/update"
         payload = "hello gateway updated"
         client.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -745,10 +744,39 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         client.removeAllMessageConsumers()
 
+        when: "a gateway service user publishes a update attribute operation for an asset that is not a descendant and subscribes to the response"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/update"
+        payload = "hello gateway"
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedResponses.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+        }
+        client.addMessageConsumer(topic + "/response", messageConsumer)
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the attribute should not be updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerTestSetup.smartBuildingId)
+            assert asset.getAttribute("notes").get().value.orElse(null) != "hello gateway"
+            assert receivedResponses.size() == 0
+        }
+        receivedResponses.clear()
+        client.removeAllMessageConsumers()
 
 
+        when: "a gateway service user publishes a get attribute operation for an asset that is not a descendant and subscribes to the response"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get"
+        payload = ""
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedResponses.add(ValueUtil.parse(msg.payload, Double.class).orElse(null))
+        }
+        client.addMessageConsumer(topic + "/response", messageConsumer)
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-
+        then: "the attribute value should not be received on the response topic"
+        conditions.eventually {
+            assert receivedResponses.size() == 0
+        }
+        receivedResponses.clear()
 
 
 
