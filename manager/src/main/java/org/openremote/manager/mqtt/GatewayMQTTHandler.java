@@ -123,6 +123,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
     protected boolean isKeycloak;
 
+    // TODO: Either we use a cache like this, or we have the gateway republish the event (which causes an increase in data usage)
     // Cache for pending gateway events, used to temporarily store events that need to be acknowledged by the gateway
     protected final Cache<String, SharedEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
             .maximumSize(100000)
@@ -312,6 +313,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isEventsTopic(topic)) {
             GatewayV2Asset gatewayAsset = findGatewayFromConnection(connection).orElse(null);
             var eventClass = isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class;
+
+            // TODO: Should be allow gateways to subscribe to events? They already have a separate topic for pending events that they need to acknowledge. (Whats the use case?)
             // if the gateway asset is found, the subscription will be relative to the asset, otherwise realm relative.
             eventSubscriptionManager.addSubscription(connection, topic, eventClass, gatewayAsset);
         }

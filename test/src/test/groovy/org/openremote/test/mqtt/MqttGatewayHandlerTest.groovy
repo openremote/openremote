@@ -1,9 +1,7 @@
 package org.openremote.test.mqtt
 
-
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
@@ -41,9 +39,9 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
     @SuppressWarnings("GroovyAccessibility")
     def "Mqtt gateway handler test"() {
         given: "the container environment is started"
-        List<Object> receivedResponses = []
-        List<Object> receivedEvents = []
-        HashMap<String, Object> receivedPendingEvents = new HashMap<>()
+        List<Object> receivedResponses = [] // request responses
+        List<Object> receivedEvents = [] // events from subscriptions
+        HashMap<String, Object> receivedPendingEvents = new HashMap<>() // pending gateway events
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
@@ -54,7 +52,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         def assetStorageService = container.getService(AssetStorageService.class)
         def clientEventService = container.getService(ClientEventService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def agentService = container.getService(AgentService.class)
         def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
         def password = keycloakTestSetup.serviceUser.secret
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
