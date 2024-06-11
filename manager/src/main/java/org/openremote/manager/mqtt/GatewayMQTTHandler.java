@@ -1008,7 +1008,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return new ReadAssetEvent(assetId);
     }
 
-
     public static boolean isAssetsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
                 && !isAttributesTopic(topic); // it is considered an asset topic as long it does not contain attributes
@@ -1056,7 +1055,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Objects.equals(topicTokenIndexToString(topic, GATEWAY_TOKEN_INDEX), GATEWAY_TOPIC) && Objects.equals(topicTokenIndexToString(topic, GATEWAY_EVENTS_TOKEN_INDEX), GATEWAY_EVENTS_TOPIC);
     }
 
-
     public static String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
@@ -1064,7 +1062,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected static boolean isGatewayConnection(RemotingConnection connection) {
         return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
-
 
     protected boolean isCacheAuthorized(String cacheKey, Topic topic) {
         ConcurrentHashSet<String> set = authorizationCache.getIfPresent(cacheKey);
