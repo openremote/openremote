@@ -8,6 +8,7 @@ public class MQTTErrorResponse extends MQTTResponseMessage {
 
     public enum Error {
         BAD_REQUEST,
+        CONFLICT,
         NOT_FOUND,
         FORBIDDEN,
         UNAUTHORIZED,

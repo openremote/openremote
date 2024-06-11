@@ -672,7 +672,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (asset.getId() != null && !asset.getId().isEmpty()) {
             Asset<?> existingAsset = assetStorageService.find(asset.getId());
             if (existingAsset != null && existingAsset.getRealm().equals(realm)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset ID conflict");
+                publishErrorResponse(topic, MQTTErrorResponse.Error.CONFLICT, "Asset ID conflict");
                 return;
             }
         } else {

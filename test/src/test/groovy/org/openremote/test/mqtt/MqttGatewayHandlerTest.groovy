@@ -18,6 +18,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.UsernamePassword
+import org.openremote.model.mqtt.MQTTErrorResponse
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.security.User
 import org.openremote.model.util.ValueUtil
@@ -98,6 +99,29 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         receivedResponses.clear()
         client.removeAllMessageConsumers()
+
+        when: "a mqtt client publishes an asset create operation and the asset already exists"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
+        responseTopic = topic + "/response"
+        testAsset = assetStorageService.find(new AssetQuery().names(testAsset.getName()))
+        payload = ValueUtil.asJSON(testAsset).get()
+
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedResponses.add(ValueUtil.parse(msg.payload, MQTTErrorResponse.class).orElse(null))
+        }
+        client.addMessageConsumer(responseTopic, messageConsumer)
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should not be created and an error response should be received"
+        conditions.eventually {
+            assert receivedResponses.size() == 1
+            assert receivedResponses.get(0) instanceof MQTTErrorResponse
+            def errorResponse = receivedResponses.get(0) as MQTTErrorResponse
+            assert errorResponse.getError() == MQTTErrorResponse.Error.CONFLICT
+        }
+        receivedResponses.clear()
+        client.removeAllMessageConsumers()
+
 
         when: "a mqtt client publishes an asset update operation and subscribes to the response"
         def testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId();
@@ -706,6 +730,25 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway"
         }
+        receivedPendingEvents.clear()
+
+        when: "a mqtt client associated with a gateway service publishes an attribute update operation"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/attributes/notes/update"
+        payload = "hello gateway updated"
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the attribute should be updated and not be in the pending events"
+        conditions.eventually {
+            assert receivedPendingEvents.size() == 0
+            def asset = assetStorageService.find(testAsset.getId())
+            assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway updated"
+        }
+        client.removeAllMessageConsumers()
+
+
+
+
+
 
 
 
