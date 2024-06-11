@@ -250,7 +250,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        var topicTokens = topic.getTokens();
+        List<String> topicTokens = topic.getTokens();
 
         if (isEventsTopic(topic)) {
             // topics above 4 tokens require the assets token to be present
@@ -266,7 +266,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
             // If the gatewayAsset is found the assetId provided has to be a descendant of the gateway asset
             if (gatewayAsset != null) {
-                var assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
+                String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
                 if (assetId == null || !Pattern.matches(ASSET_ID_REGEXP, assetId)) {
                     return false;
                 }
@@ -543,7 +543,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Asset operations
         if (isAssetsMethodTopic(topic)) {
-            var method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
+            String method = topicTokenIndexToString(topic, ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
                 case CREATE_TOPIC -> handleCreateAsset(connection, topic, body);
                 case GET_TOPIC -> handleGetAsset(connection, topic, body);
@@ -554,7 +554,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Attribute operations
         if (isAttributesMethodTopic(topic)) {
-            var method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
+            String method = topicTokenIndexToString(topic, ATTRIBUTES_METHOD_TOKEN_INDEX);
             switch (Objects.requireNonNull(method)) {
                 case GET_TOPIC -> handleGetAttribute(connection, topic, body, false);
                 case GET_VALUE_TOPIC -> handleGetAttribute(connection, topic, body, true);
@@ -580,7 +580,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             });
         }
 
-        var headers = prepareHeaders(null, connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(SESSION_CLOSE_ERROR, true);
         messageBrokerService.getFluentProducerTemplate()
                 .withHeaders(headers)
@@ -602,7 +602,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             });
         }
 
-        var headers = prepareHeaders(null, connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(SESSION_CLOSE, true);
         messageBrokerService.getFluentProducerTemplate()
                 .withHeaders(headers)
@@ -628,7 +628,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.CONNECTED);
             });
         }
-        var headers = prepareHeaders(null, connection);
+        Map<String, Object> headers = prepareHeaders(null, connection);
         headers.put(SESSION_OPEN, true);
         Runnable closeRunnable = () -> {
             if (mqttBrokerService != null) {
@@ -702,7 +702,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> storageAsset = assetStorageService.find(assetId);
 
-        var asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
+        Optional<Asset> asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
         if (asset.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid asset template");
             LOG.fine("Invalid asset template " + body.toString(StandardCharsets.UTF_8) + " in update asset request " + getConnectionIDString(connection));
@@ -782,9 +782,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @SuppressWarnings({"unchecked"})
     protected void handleUpdateMultiAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
         String realm = topicRealm(topic);
-        var topicTokens = topic.getTokens();
-        var attributes = ValueUtil.parse(body.toString(StandardCharsets.UTF_8));
-        var authContext = getAuthContextFromConnection(connection);
+        List<String> topicTokens = topic.getTokens();
+        Optional<Object> attributes = ValueUtil.parse(body.toString(StandardCharsets.UTF_8));
+        Optional<AuthContext> authContext = getAuthContextFromConnection(connection);
 
         if (authContext.isEmpty()) {
             return;
@@ -797,14 +797,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        var attributeMap = (Map<String, Object>) attributes.get();
-        var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        var isAuthorized = true;
+        Map<String, Object> attributeMap = (Map<String, Object>) attributes.get();
+        String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
+        boolean isAuthorized = true;
 
         // check each event for authorization
-        for (var entry : attributeMap.entrySet()) {
-            var attributeName = entry.getKey();
-            var attributeValue = entry.getValue();
+        for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
+            String attributeName = entry.getKey();
+            Object attributeValue = entry.getValue();
             AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue);
 
             if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event)) {
@@ -819,9 +819,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
         // Temporary list to store the events for the response
         List<AttributeEvent> events = new ArrayList<>();
-        for (var entry : attributeMap.entrySet()) {
-            var attributeName = entry.getKey();
-            var attributeValue = entry.getValue();
+        for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
+            String attributeName = entry.getKey();
+            Object attributeValue = entry.getValue();
             AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue).setSource(GatewayMQTTHandler.class.getSimpleName());
             sendAttributeEvent(event);
             events.add(event);

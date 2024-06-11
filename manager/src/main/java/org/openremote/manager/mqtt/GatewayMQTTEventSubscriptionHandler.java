@@ -132,7 +132,7 @@ public class GatewayMQTTEventSubscriptionHandler {
      * @return the asset filter or null if the topic is invalid
      */
     protected static AssetFilter<?> buildAssetFilter(Topic topic, Asset<?> relativeToAsset) {
-        var topicTokens = topic.getTokens();
+        List<String> topicTokens = topic.getTokens();
         boolean isAttributesTopic = isAttributesTopic(topic);
         boolean isAssetsTopic = isAssetsTopic(topic) && !isAttributesTopic;
 
@@ -143,8 +143,8 @@ public class GatewayMQTTEventSubscriptionHandler {
         List<String> attributeNames = new ArrayList<>();
 
         if (isAssetsTopic) {
-            var assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
-            var path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
+            String assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
+            String path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
 
             // realm/clientId/events/assets/#
             // all asset events of the realm
@@ -176,13 +176,13 @@ public class GatewayMQTTEventSubscriptionHandler {
                 return null;
             }
         } else if (isAttributesTopic) {
-            var assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
-            var attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
+            String assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
+            String attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
             boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
             boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
             // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
-            var path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
+            String path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
 
             // if the topic has an assetId
             if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
@@ -312,7 +312,7 @@ public class GatewayMQTTEventSubscriptionHandler {
         Function<SharedEvent, String> topicExpander;
 
         // get the tokens of the topic
-        var topicTokens = topic.getTokens();
+        List<String> topicTokens = topic.getTokens();
 
         if (isAssetsTopic(topic)) {
             String topicStr = topic.toString();
