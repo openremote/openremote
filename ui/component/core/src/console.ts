@@ -380,13 +380,17 @@ export class Console {
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
-        if (this.shellAndroid) {
-            // @ts-ignore
-            return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
-        }
-        if (this.shellApple) {
-            // @ts-ignore
-            return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+        try {
+            if (this.shellAndroid) {
+                // @ts-ignore
+                return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+            }
+            if (this.shellApple) {
+                // @ts-ignore
+                return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+            }
+        } catch (e) {
+            console.error("Failed to send shell message towards console", e);
         }
     }
 
@@ -395,11 +399,12 @@ export class Console {
      * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
      */
     public _doSendGenericMessage(type: string, msg: any) {
-        console.log(`Sending generic message of type (${type}), with msg (${msg})`); // TODO: Remove this (added temporarily for testing)
+        const payload = { type: type, data: msg };
+        console.log("Sending generic message to console; ", payload); // TODO: Remove this (added temporarily for testing)
         if (this.isMobile) {
-            this._postNativeShellMessage({type: type, data: msg });
+            this._postNativeShellMessage(payload);
         } else {
-            console.warn("Failed to send generic message to console.")
+            console.warn("Failed to send generic message to console.", payload)
         }
     }
 
