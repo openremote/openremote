@@ -4,7 +4,7 @@ package org.openremote.test.console
 import com.google.firebase.messaging.Message
 import jakarta.ws.rs.WebApplicationException
 import org.openremote.container.timer.TimerService
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
