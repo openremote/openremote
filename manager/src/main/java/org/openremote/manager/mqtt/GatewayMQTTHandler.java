@@ -123,8 +123,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
     protected boolean isKeycloak;
 
-    // Cache for pending gateway events, used to store events that need to be acknowledged by the gateway
-    // Stored maximum of 24 hours, prevent large memory usage, events processed after 24 hours are considered lost
+    // Cache for pending gateway events, used to temporarily store events that need to be acknowledged by the gateway
     protected final Cache<String, SharedEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
             .maximumSize(100000)
             .expireAfterWrite(24, TimeUnit.HOURS)
@@ -182,15 +181,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
         });
     }
 
-    // Intercepts events from the AssetProcessingService, if the event is from a descendant of a Gateway asset
+
+    // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
-        // If the source is the GatewayMQTTHandler, then don't intercept the event
         if (event.getSource() != null) {
+            // Ignore events from the GatewayMQTTHandler
             if (event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
                 return false;
             }
         }
-        // If the event is from a descendant of a Gateway asset, then the event published to pending gateway events
+        // If the event is from a descendant of a Gateway asset, then publish to pending gateway events topic
         if (event.getParentId() != null) {
             Asset<?> gateway = assetStorageService.find(event.getParentId());
             if (gateway instanceof GatewayV2Asset) {
@@ -291,7 +291,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
 
-        // Pending events for gateway acknowledgement
+        // Pending events for gateway acknowledgement, requires the gateway asset to be present
         if (isGatewayEventsTopic(topic) && gatewayAsset != null) {
             if (topicTokens.size() > 4 && !topicTokens.get(GATEWAY_PENDING_TOKEN_INDEX).equals(GATEWAY_PENDING_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for subscribing, the pending topic is missing");
@@ -327,10 +327,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public Set<String> getPublishListenerTopics() {
-
         //<realm>/<clientId>/
         String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
-
         return Set.of(
                 // <realm>/<clientId>/gateway/events/pending/<ackId>/ack
                 topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_PENDING_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GATEWAY_ACK_TOPIC,
@@ -393,11 +391,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return true;
         }
 
-        boolean isRestrictedUser = identityProvider.isRestrictedUser(authContext);
-        boolean hasWriteAssetsRole = authContext.hasResourceRole(WRITE_ASSETS_ROLE, KEYCLOAK_CLIENT_ID);
         String connectionID = getConnectionIDString(connection);
         List<String> topicTokens = topic.getTokens();
-
 
         // Acknowledgement of gateway events
         if (isGatewayEventsTopic(topic)) {
@@ -437,6 +432,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 }
                 case GET_TOPIC -> {
                     ReadAssetEvent event = buildReadAssetEvent(topicTokens);
+                    if (event == null) {
+                        return false;
+                    }
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Get asset request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -489,6 +487,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
             switch (Objects.requireNonNull(method)) {
                 case GET_TOPIC, GET_VALUE_TOPIC -> {
                     ReadAttributeEvent event = buildReadAttributeEvent(topicTokens);
+                    if (event == null) {
+                        return false;
+                    }
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, event)) {
                             LOG.fine("Get attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
@@ -501,20 +502,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
                     }
                 }
                 case UPDATE_TOPIC -> {
+                    AttributeEvent event = buildAttributeEvent(topicTokens, null);
+                    if (event == null) {
+                        return false;
+                    }
                     if (isGatewayConnection(connection)) {
                         if (!authorizeGatewayEvent(gatewayAsset, authContext, buildAttributeEvent(topicTokens, null))) {
                             LOG.fine("Update attribute request was not authorised for this gateway user and topic: topic=" + topic + " " + connectionID);
                             return false;
                         }
                     }
-                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, buildAttributeEvent(topicTokens, null))) {
+                    if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
                         LOG.fine("Update attribute request was not authorised for this user and topic: topic=" + topic + " " + connectionID);
                         return false;
                     }
                 }
             }
         }
-        // Multi attribute update request (edge case) - Acknowledge the publish request. Authorization is done in the topic handler
+        // Multi attribute update request (edge case) - Acknowledge the publish request.
+        // Authorization is done in the topic handler
         else if (isMultiAttributeUpdateTopic(topic)) {
             LOG.fine("Multi attribute update request " + topic + " " + connectionID);
         } else {
@@ -559,7 +565,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 case UPDATE_TOPIC -> handleUpdateAttribute(connection, topic, body);
             }
         }
-
         // Multi attribute operation (authorization in topic handler)
         if (isMultiAttributeUpdateTopic(topic)) {
             handleUpdateMultiAttribute(connection, topic, body);
@@ -619,12 +624,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public void onConnect(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
             findGatewayFromConnection(connection).ifPresent(gatewayAsset -> {
+                if (gatewayAsset.getDisabled().orElse(false)) {
+                    LOG.fine("Gateway is disabled " + getConnectionIDString(connection));
+                    mqttBrokerService.doForceDisconnect(connection);
+                    return;
+                }
                 updateGatewayStatus(gatewayAsset, ConnectionStatus.CONNECTED);
             });
         }
         var headers = prepareHeaders(null, connection);
         headers.put(SESSION_OPEN, true);
-
         Runnable closeRunnable = () -> {
             if (mqttBrokerService != null) {
                 LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
@@ -796,13 +805,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         var assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         var isAuthorized = true;
 
-        // check each event for authorization (clientEventService)
+        // check each event for authorization
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
             var event = new AttributeEvent(assetId, attributeName, attributeValue);
 
-            // Check if the user is authorized to write the attribute
             if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event)) {
                 isAuthorized = false;
                 break;
@@ -817,7 +825,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Temporary list to store the events for the response
         List<AttributeEvent> events = new ArrayList<>();
-        // Send the attribute events
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
@@ -894,12 +901,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (event instanceof ReadAssetEvent readEvent) {
             return isAssetDescendantOfGateway(readEvent.getAssetId(), gateway);
         }
-        // check whether the Asset associated with the event is a descendant of the gateway
         else if (event instanceof AssetEvent assetEvent) {
             // create events allowed by default for the gateway, we don't know the assetId yet.
             if (assetEvent.getCause() == AssetEvent.Cause.CREATE) {
                 return true;
             }
+             // check whether the Asset associated with the event is a descendant of the gateway
             return isAssetDescendantOfGateway(assetEvent.getId(), gateway);
         }
         // check whether the asset associated with the read attribute event is a descendant of the gateway
@@ -909,7 +916,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return false;
             }
             return isAssetDescendantOfGateway(asset.getId(), gateway);
-
         }
         // check whether the asset associated with the attribute event is a descendant of the gateway
         else if (event instanceof AttributeEvent attributeEvent) {
