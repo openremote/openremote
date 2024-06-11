@@ -805,27 +805,24 @@ public class GatewayMQTTHandler extends MQTTHandler {
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
-            var event = new AttributeEvent(assetId, attributeName, attributeValue);
+            AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue);
 
             if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event)) {
                 isAuthorized = false;
                 break;
             }
         }
-
         // If the user is not authorized to update any of the attributes, cancel the request
         if (!isAuthorized) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
             return;
         }
-
         // Temporary list to store the events for the response
         List<AttributeEvent> events = new ArrayList<>();
         for (var entry : attributeMap.entrySet()) {
             var attributeName = entry.getKey();
             var attributeValue = entry.getValue();
-            var event = new AttributeEvent(assetId, attributeName, attributeValue);
-            event.setSource(GatewayMQTTHandler.class.getSimpleName());
+            AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue).setSource(GatewayMQTTHandler.class.getSimpleName());
             sendAttributeEvent(event);
             events.add(event);
         }
