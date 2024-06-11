@@ -3,7 +3,6 @@ package org.openremote.test.mqtt
 
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -22,6 +21,7 @@ import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.mqtt.MQTTErrorResponse
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.security.User
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
