@@ -140,7 +140,7 @@ public class ManagerWebService extends WebService {
         Info info = new Info()
                 .title("OpenRemote Manager REST API")
                 .version("3.0.0")
-                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [wiki](https://github.com/openremote/openremote/wiki) for more info.")
+                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
                 .contact(new Contact()
                         .email("info@openremote.io"))
                 .license(new License()
