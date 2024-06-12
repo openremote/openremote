@@ -53,6 +53,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.*;
@@ -112,6 +113,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 // Route messages destined for MQTT clients
                 from(CLIENT_OUTBOUND_QUEUE)
                     .routeId("ClientOutbound-DefaultMQTTHandler")
+                    .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
                     .filter(and(
                         header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
                         body().isInstanceOf(TriggeredEventSubscription.class)

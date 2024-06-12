@@ -19,8 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
@@ -326,21 +327,23 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @Override
     public String toString() {
-        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
             ", ref=" + ref +
             ", realm=" + realm +
             ", source=" + source +
-            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
+            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
             "}";
     }
 
-    public String toStringWithValueType() {
+    public String toStringWithValue() {
+        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + timestamp.toInstant() +
             ", ref=" + ref +
-            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
+            ", realm=" + realm +
+            ", source=" + source +
+            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }
 }

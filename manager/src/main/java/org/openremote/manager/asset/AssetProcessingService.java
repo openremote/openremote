@@ -229,11 +229,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     .logExhausted(false)
                     .logStackTrace(false)
                     .process(exchange -> {
-                        AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                         Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
 
                         if (exception instanceof RejectedExecutionException || (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage()))) {
-                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this event is full");
+                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this message is full");
                             if (queueFullCounter != null) {
                                 queueFullCounter.increment();
                             }
@@ -246,15 +245,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             return;
                         }
 
-                        StringBuilder error = new StringBuilder("Error processing from ");
-
-                        if (event.getSource() != null) {
-                            error.append(event.getSource());
-                        } else {
-                            error.append("N/A");
-                        }
-
-                        error.append(": ").append(event.toStringWithValueType());
+                        Object body = exchange.getIn().getBody();
+                        StringBuilder error = new StringBuilder("Route '")
+                            .append(exchange.getFromRouteId())
+                            .append("' error processing message: ")
+                            .append(body);
 
                         if (exception instanceof AssetProcessingException processingException) {
                             error.append(" ").append(" - ").append(processingException.getMessage());

@@ -64,7 +64,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(t
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller"/>
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
         <hashTree>
           <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert" enabled="true">
             <stringProp name="cacheKey">true</stringProp>
@@ -103,7 +103,12 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.conn_attempt_max">0</stringProp>
           <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
         </net.xmeter.samplers.ConnectSampler>
-        <hashTree/>
+        <hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+            <stringProp name="ConstantTimer.delay">1000</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+        </hashTree>
         <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response" enabled="true">
           <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
@@ -163,7 +168,7 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.sample_condition_value_opt">20000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
             <stringProp name="ConstantTimer.delay">1000</stringProp>
           </ConstantTimer>
           <hashTree/>
@@ -249,7 +254,7 @@ if (props.get(&quot;successes&quot;).incrementAndGet() &gt;= vars.getObject(&quo
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
           <boolProp name="ResultCollector.error_logging">true</boolProp>
           <objProp>
             <name>saveConfig</name>

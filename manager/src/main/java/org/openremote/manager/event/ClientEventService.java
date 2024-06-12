@@ -391,6 +391,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Split publish messages for individual subscribers
         from(PUBLISH_QUEUE)
             .routeId("ClientOutbound-Splitter")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .split(method(eventSubscriptions, "splitForSubscribers"))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
@@ -406,6 +407,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Route messages destined for websocket clients
         from(CLIENT_OUTBOUND_QUEUE)
             .routeId("ClientOutbound-Websocket")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .filter(header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_WEBSOCKET))
             .process(exchange -> {
                 String sessionKey = exchange.getIn().getHeader(SESSION_KEY, String.class);
