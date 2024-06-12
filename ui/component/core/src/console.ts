@@ -380,13 +380,30 @@ export class Console {
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
-        if (this.shellAndroid) {
-            // @ts-ignore
-            return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+        try {
+            if (this.shellAndroid) {
+                // @ts-ignore
+                return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+            }
+            if (this.shellApple) {
+                // @ts-ignore
+                return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+            }
+        } catch (e) {
+            console.error("Failed to send shell message towards console", e);
         }
-        if (this.shellApple) {
-            // @ts-ignore
-            return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+    }
+
+    /**
+     * Function that allows sending of custom types and messages towards the console.
+     * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
+     */
+    public _doSendGenericMessage(type: string, msg: any) {
+        const payload = { type: type, data: msg };
+        if (this.isMobile) {
+            this._postNativeShellMessage(payload);
+        } else {
+            console.warn("Failed to send generic message to console.", payload)
         }
     }
 
