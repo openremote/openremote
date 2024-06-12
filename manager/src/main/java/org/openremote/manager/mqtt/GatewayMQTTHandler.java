@@ -46,6 +46,7 @@ import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.mqtt.MQTTErrorResponse;
+import org.openremote.model.mqtt.MQTTGatewayEventMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.UniqueIdentifierGenerator;
@@ -97,7 +98,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final String GATEWAY_TOPIC = "gateway";
     public static final String GATEWAY_EVENTS_TOPIC = "events";
     public static final String GATEWAY_PENDING_TOPIC = "pending";
-    public static final String GATEWAY_ACK_TOPIC = "ack";
+    public static final String GATEWAY_ACK_TOPIC = "acknowledge";
 
     // index tokens
     public static final int GATEWAY_TOKEN_INDEX = 2;
@@ -106,10 +107,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int GATEWAY_EVENTS_TOKEN_INDEX = 3;
     public static final int ASSETS_TOKEN_INDEX = 3;
     public static final int GATEWAY_PENDING_TOKEN_INDEX = 4;
+    public static final int GATEWAY_ACKNOWLEDGE_TOKEN_INDEX = 4;
     public static final int ASSET_ID_TOKEN_INDEX = 4;
     public static final int RESPONSE_ID_TOKEN_INDEX = 4;
-    public static final int GATEWAY_ACK_ID_TOKEN_INDEX = 5;
-    public static final int GATEWAY_ACK_TOKEN_INDEX = 6;
     public static final int ASSETS_METHOD_TOKEN = 5;
     public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
@@ -123,9 +123,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
     protected boolean isKeycloak;
 
-    // TODO: Either we use a cache like this, or we have the gateway republish the event (which causes an increase in data usage)
-    // Cache for pending gateway events, used to temporarily store events that need to be acknowledged by the gateway
-    protected final Cache<String, SharedEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
+    // Temporarily holds events that require gateway acknowledgement
+    protected final Cache<String, AttributeEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
             .maximumSize(100000)
             .expireAfterWrite(24, TimeUnit.HOURS)
             .build();
@@ -230,6 +229,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
+        if (!isEventsTopic(topic) && !isOperationResponseTopic(topic) && !isGatewayEventsTopic(topic)) {
+            LOG.finest("Invalid topic " + topic + " for subscribing");
+            return false;
+        }
+
         GatewayV2Asset gatewayAsset = null;
         if (isGatewayConnection(connection)) {
             gatewayAsset = findGatewayFromConnection(connection).orElse(null);
@@ -240,11 +244,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
                 return false;
             }
-        }
-
-        if (!isEventsTopic(topic) && !isOperationResponseTopic(topic) && !isGatewayEventsTopic(topic)) {
-            LOG.finest("Invalid topic " + topic + " for subscribing");
-            return false;
         }
 
         List<String> topicTokens = topic.getTokens();
@@ -261,13 +260,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return false;
             }
 
-            // If a gateway asset is present, the subscription will be relative to the asset, otherwise realm relative.
-            // TODO: Do we want the gateway to subscribe to events? (Whats the use case?)
             if (gatewayAsset != null) {
                 String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
                 if (assetId == null || !Pattern.matches(ASSET_ID_REGEXP, assetId)) {
                     return false;
                 }
+                // Check if the asset is a descendant of the gateway asset
                 if (!isAssetDescendantOfGateway(assetId, gatewayAsset)) {
                     LOG.finest("Asset not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
                     return false;
@@ -289,20 +287,18 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return false;
             }
         }
-
         // Pending events for gateway acknowledgement, requires the gateway asset to be present
-        if (isGatewayEventsTopic(topic) && gatewayAsset != null) {
-            if (topicTokens.size() > 4 && !topicTokens.get(GATEWAY_PENDING_TOKEN_INDEX).equals(GATEWAY_PENDING_TOPIC)) {
+        else if (isGatewayEventsTopic(topic) && gatewayAsset != null) {
+            if (topicTokens.size() != 5 || !topicTokens.get(GATEWAY_PENDING_TOKEN_INDEX).equals(GATEWAY_PENDING_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for subscribing, the pending topic is missing");
                 return false;
             }
-
-            // last topic has to be single level wildcard (e.g. ../pending/+)
-            if (!topicTokens.get(topicTokens.size() - 1).equals(TOKEN_SINGLE_LEVEL_WILDCARD)) {
-                LOG.finest("Invalid topic " + topic + " for subscribing, the last token is not a single level wildcard");
-                return false;
-            }
         }
+        // Operation response topic, requires the operations and response tokens to be present
+        else {
+            return isOperationResponseTopic(topic);
+        }
+
 
         return true;
     }
@@ -331,8 +327,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         //<realm>/<clientId>/
         String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
         return Set.of(
-                // <realm>/<clientId>/gateway/events/pending/<ackId>/ack
-                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_PENDING_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GATEWAY_ACK_TOPIC,
+
+                // <realm>/<clientId>/gateway/events/acknowledge
+                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC  + "/" + GATEWAY_ACK_TOPIC,
+
+
                 // <realm>/<clientId>/operations/assets/<responseId>/create
                 topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
@@ -393,17 +392,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
         List<String> topicTokens = topic.getTokens();
 
         // Acknowledgement of gateway events
-        if (isGatewayEventsTopic(topic)) {
-            if (gatewayAsset == null) {
-                LOG.finest("Gateway not found for connection, cannot publish to gateway events topic " + connectionID);
-                return false;
-            }
-            if (topicTokens.size() > 6 && !topicTokens.get(GATEWAY_ACK_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
-                LOG.finest("Invalid topic " + topic + " for publishing, the ack suffix topic is missing");
+        if (isGatewayEventsTopic(topic) && gatewayAsset != null) {
+            if (topicTokens.size() != 5 || !topicTokens.get(GATEWAY_ACKNOWLEDGE_TOKEN_INDEX).equals(GATEWAY_ACK_TOPIC)) {
+                LOG.fine("Invalid topic " + topic + " for publishing, the acknowledge topic is missing");
                 return false;
             }
         }
         // Asset operations
+        // TODO: Prevent regular service users from making changes to gateway assets
         else if (isAssetsMethodTopic(topic)) {
             String method = topicTokens.get(ASSETS_METHOD_TOKEN);
             switch (Objects.requireNonNull(method)) {
@@ -562,7 +558,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         // Handle gateway events acknowledgement
         if (isGatewayEventsTopic(topic)) {
-            handleGatewayEventAcknowledgement(connection, topic);
+            handleGatewayEventAcknowledgement(connection, body);
         }
     }
 
@@ -851,27 +847,26 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Handle gateway events acknowledgement
      * Acknowledges the gateway event and publishes the intercepted attribute event.
      */
-    protected void handleGatewayEventAcknowledgement(RemotingConnection connection, Topic topic) {
-        String ackId = topicTokenIndexToString(topic, GATEWAY_ACK_ID_TOKEN_INDEX);
+    protected void handleGatewayEventAcknowledgement(RemotingConnection connection, ByteBuf body) {
+        // Acknowledgement id is the body of the message
+        String ackId = body.toString(StandardCharsets.UTF_8);
         if (ackId == null) {
-            LOG.fine("Invalid acknowledgement id " + getConnectionIDString(connection));
+            LOG.fine("Invalid gateway event message " + getConnectionIDString(connection));
             return;
         }
 
-        SharedEvent event = eventsPendingGatewayAcknowledgement.getIfPresent(ackId);
+        AttributeEvent event = eventsPendingGatewayAcknowledgement.getIfPresent(ackId);
         if (event == null) {
-            LOG.fine("Gateway event not found for the provided acknowledgement id " + ackId);
+            LOG.fine("Gateway event not found for the provided acknowledgement id " + ackId + " connection " + getConnectionIDString(connection));
             return;
         }
 
-        if (event instanceof AttributeEvent attributeEvent) {
-            // We set the source to the MQTT handler to prevent the event from being intercepted again
-            attributeEvent.setSource(GatewayMQTTHandler.class.getSimpleName());
-            sendAttributeEvent(attributeEvent);
-            synchronized (eventsPendingGatewayAcknowledgement) {
-                eventsPendingGatewayAcknowledgement.invalidate(ackId);
-            }
+        event.setSource(GatewayMQTTHandler.class.getSimpleName());
+        sendAttributeEvent(event);
+        synchronized (eventsPendingGatewayAcknowledgement) {
+            eventsPendingGatewayAcknowledgement.invalidate(ackId);
         }
+
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -931,13 +926,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
         mqttBrokerService.publishMessage(getResponseTopic(topic), response, MqttQoS.AT_MOST_ONCE);
     }
 
-    protected void publishPendingGatewayEvent(SharedEvent event, GatewayV2Asset gateway) {
-        String eventKey = UniqueIdentifierGenerator.generateId();
-        String topic = String.join("/", gateway.getRealm(), gateway.getClientId().get(), GATEWAY_TOPIC, GATEWAY_EVENTS_TOPIC, GATEWAY_PENDING_TOPIC, eventKey);
-        mqttBrokerService.publishMessage(topic, event, MqttQoS.AT_LEAST_ONCE);
+    protected void publishPendingGatewayEvent(AttributeEvent event, GatewayV2Asset gateway) {
+        String eventId = UniqueIdentifierGenerator.generateId();
+        MQTTGatewayEventMessage gatewayEvent = new MQTTGatewayEventMessage(eventId, event);
+
+        String topic = String.join("/", gateway.getRealm(), gateway.getClientId().get(), GATEWAY_TOPIC, GATEWAY_EVENTS_TOPIC, GATEWAY_PENDING_TOPIC);
+        mqttBrokerService.publishMessage(topic, gatewayEvent, MqttQoS.AT_LEAST_ONCE);
 
         synchronized (eventsPendingGatewayAcknowledgement) {
-            eventsPendingGatewayAcknowledgement.put(eventKey, event);
+            eventsPendingGatewayAcknowledgement.put(eventId, event);
         }
     }
 

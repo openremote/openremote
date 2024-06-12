@@ -17,6 +17,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.mqtt.MQTTErrorResponse
+import org.openremote.model.mqtt.MQTTGatewayEventMessage
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.security.User
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -41,7 +42,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         given: "the container environment is started"
         List<Object> receivedResponses = [] // request responses
         List<Object> receivedEvents = [] // events from subscriptions
-        HashMap<String, Object> receivedPendingEvents = new HashMap<>() // pending gateway events
+        List<MQTTGatewayEventMessage> receivedPendingGatewayEvents = []
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
@@ -689,9 +690,9 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a gateway service user subscribes to pending gateway attribute events"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending".toString()
         messageConsumer = { MQTTMessage<String> msg ->
-            receivedPendingEvents.put(msg.topic, ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
+            receivedPendingGatewayEvents.add(ValueUtil.parse(msg.payload, MQTTGatewayEventMessage.class).orElse(null))
         }
         client.addMessageConsumer(topic, messageConsumer)
 
@@ -706,27 +707,38 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         then: "the pending attribute event should be received"
         conditions.eventually {
-            assert receivedPendingEvents.size() == 1
-            def event = receivedPendingEvents.values().stream().findFirst().get()
-            assert event instanceof AttributeEvent
-            assert event.getName() == "notes"
-            assert event.value.get() == "hello gateway"
+            assert receivedPendingGatewayEvents.size() == 1
+            def gatewayEventMessage = receivedPendingGatewayEvents.get(0)
+            assert gatewayEventMessage instanceof MQTTGatewayEventMessage
+            assert gatewayEventMessage.getEvent().getName() == "notes"
+            assert gatewayEventMessage.getEvent().getValue().get() == "hello gateway"
             // ensure the event hasn't actually been processed yet
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) != "hello gateway"
         }
 
-        when: "a pending attribute event is acknowledged"
-        topic = receivedPendingEvents.keySet().stream().findFirst().get() + "/ack"
+        when: "a pending attribute event is acknowledged with the incorrect ackId"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
+        def ackId = UniqueIdentifierGenerator.generateId()
+        client.sendMessage(new MQTTMessage<String>(topic, ackId))
 
-        client.sendMessage(new MQTTMessage<String>(topic, ""))
+        then: "the pending attribute event should not be processed"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asset = assetStorageService.find(testAsset.getId())
+            assert asset.getAttribute("notes").get().value.orElse(null) != "hello gateway"
+        }
+
+        when: "a pending attribute event is acknowledged"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
+        ackId = receivedPendingGatewayEvents.get(0).getAckId()
+        client.sendMessage(new MQTTMessage<String>(topic, ackId))
 
         then: "the pending attribute event should be processed"
         conditions.eventually {
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway"
         }
-        receivedPendingEvents.clear()
+        receivedPendingGatewayEvents.clear()
 
         when: "a gateway service publishes an attribute update operation"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/attributes/notes/update"
@@ -735,7 +747,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         then: "the attribute should be updated and not be in the pending events"
         conditions.eventually {
-            assert receivedPendingEvents.size() == 0
+            assert receivedPendingGatewayEvents.size() == 0
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway updated"
         }
