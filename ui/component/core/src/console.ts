@@ -400,7 +400,6 @@ export class Console {
      */
     public _doSendGenericMessage(type: string, msg: any) {
         const payload = { type: type, data: msg };
-        console.log("Sending generic message to console; ", payload); // TODO: Remove this (added temporarily for testing)
         if (this.isMobile) {
             this._postNativeShellMessage(payload);
         } else {
