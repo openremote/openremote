@@ -21,7 +21,7 @@ package org.openremote.setup.integration;
 
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;

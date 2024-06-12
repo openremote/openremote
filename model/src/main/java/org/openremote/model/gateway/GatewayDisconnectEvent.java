@@ -26,7 +26,7 @@ import org.openremote.model.event.shared.SharedEvent;
 import java.util.Date;
 
 /**
- * Used to indicate to a connected gateway should should disconnect
+ * Used to indicate to a connected gateway should disconnect
  * with the {@link #reason} indicating why the disconnect has been
  * requested.
  */

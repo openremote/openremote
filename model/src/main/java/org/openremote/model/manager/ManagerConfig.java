@@ -42,5 +42,5 @@ public class ManagerConfig {
     protected MapType mapType;
     protected Object configureTranslationsOptions;
     protected Object basicLoginProvider;
-
+    protected String defaultLanguage;
 }
