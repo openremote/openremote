@@ -177,7 +177,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             keycloakServiceUri.path(keycloakPath);
         }
 
-
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
         ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
@@ -219,10 +218,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .setReuseXForwarded(true)
                 .build();
         }
-
-        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
-        waitForKeycloak();
-        LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
     @Override
@@ -302,45 +297,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             if (target == this.keycloakTarget) {
                 realmsResourcePool.offer(realmsResource);
             }
-        }
-    }
-
-    protected void waitForKeycloak() {
-        boolean keycloakAvailable = false;
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
-        ResteasyWebTarget target = targetBuilder.build();
-        KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
-
-        while (!keycloakAvailable) {
-            LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
-            try {
-                pingKeycloak(keycloakResource);
-                keycloakAvailable = true;
-            } catch (Exception ex) {
-                LOG.info("Keycloak server not available, waiting...");
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    protected void pingKeycloak(KeycloakResource resource) throws Exception {
-        Response response = null;
-
-        try {
-            response = resource.getWelcomePage();
-            if (response != null &&
-                (response.getStatusInfo().getFamily() == SUCCESSFUL
-                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
-                return;
-            }
-            throw new Exception();
-        } finally {
-            if (response != null)
-                response.close();
         }
     }
 
