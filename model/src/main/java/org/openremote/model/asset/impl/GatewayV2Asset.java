@@ -84,4 +84,21 @@ public class GatewayV2Asset extends Asset<GatewayV2Asset> {
         getAttributes().getOrCreate(DISABLED).setValue(disabled);
         return this;
     }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != getClass()) {
+            return false;
+        }
+        GatewayV2Asset other = (GatewayV2Asset) obj;
+        return id.equals(other.id);
+    }
 }

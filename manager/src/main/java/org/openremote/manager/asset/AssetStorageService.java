@@ -37,6 +37,7 @@ import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.event.EventSubscriptionAuthorizer;
 import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.gateway.GatewayV2Service;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -44,7 +45,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
@@ -233,6 +233,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected GatewayV2Service gatewayV2Service;
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -318,6 +319,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        gatewayV2Service = container.getService(GatewayV2Service.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
@@ -648,11 +650,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> {
 
             long startTime = System.currentTimeMillis();
+
             String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
 
             if (!skipGatewayCheck && gatewayId != null) {
                 LOG.fine("Sending asset merge request to gateway: Gateway ID=" + gatewayId);
                 return gatewayService.mergeGatewayAsset(gatewayId, asset);
+            }
+
+            // GatewayV2Service
+            String gatewayV2Id = gatewayV2Service.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+            if (!skipGatewayCheck && gatewayV2Id != null) {
+                String msg = "GatewayV2Asset does not support direct CRUD operations on its descendants " + asset;
+                LOG.warning(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Validate realm
@@ -743,14 +754,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // The parent should be in the same realm
                 if (!parent.getRealm().equals(asset.getRealm())) {
                     String msg = "Asset parent must be in the same realm: asset=" + asset;
-                    LOG.warning(msg);
-                    throw new IllegalStateException(msg);
-                }
-
-                Asset<?> existingParent = existingAsset != null ? find(em, existingAsset.getParentId(), true) : null;
-                // Child cannot be moved out of a Gateway V2 Asset
-                if (existingParent instanceof GatewayV2Asset) {
-                    String msg = "Asset cannot be moved out of a Gateway V2 Asset: asset=" + asset;
                     LOG.warning(msg);
                     throw new IllegalStateException(msg);
                 }
@@ -861,6 +864,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         List<String> ids = new ArrayList<>(assetIds);
         Map<String, List<String>> gatewayIdAssetIdMap = new HashMap<>();
+
+        // GatewayV2Service
+        if (!skipGatewayCheck)
+        {
+            // Prevent the deletion of assets that are descendants of gateway assets
+            // Unless the asset list also contains the gateway asset
+            boolean listHasGatewayAsset = ids.stream().anyMatch(id -> gatewayV2Service.isRegisteredGateway(id));
+            if (!listHasGatewayAsset)
+            {
+                for (String assetId : ids){
+                    String gatewayId = gatewayV2Service.getLocallyRegisteredGatewayId(assetId, null);
+                    if (gatewayId != null) {
+                        LOG.info("Asset is descendant of gateway asset, direct deletion is not allowed: Asset ID=" + assetId);
+                        return false;
+                    }
+                }
+            }
+        }
 
         if (!skipGatewayCheck) {
             List<String> gatewayIds = ids.stream().filter(id -> gatewayService.isLocallyRegisteredGateway(id)).toList();

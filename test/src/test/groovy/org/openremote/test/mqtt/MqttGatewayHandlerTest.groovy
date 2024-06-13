@@ -773,10 +773,10 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a gateway service user publishes a get attribute operation for an asset that is not a descendant and subscribes to the response"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get-value"
         payload = ""
         messageConsumer = { MQTTMessage<String> msg ->
-            receivedResponses.add(ValueUtil.parse(msg.payload, Double.class).orElse(null))
+            receivedResponses.add(ValueUtil.parse(msg.payload, String.class).orElse(null))
         }
         client.addMessageConsumer(topic + "/response", messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))

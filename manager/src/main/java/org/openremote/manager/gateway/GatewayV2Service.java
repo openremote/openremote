@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.gateway;
 
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -31,14 +32,13 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.GatewayV2Asset;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Locale;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,6 +56,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     public static final int PRIORITY = HIGH_PRIORITY + 100;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayV2Service.class.getName());
+    protected final Map<GatewayV2Asset, List<String>> gatewayAssetsMap = new HashMap<>();
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected ManagerIdentityService identityService;
@@ -95,14 +96,37 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         }
     }
 
+
     @Override
     public void start(Container container) throws Exception {
-        // Nothing to do
+        if (!active) {
+            return;
+        }
+        List<GatewayV2Asset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayV2Asset.class))
+                .stream()
+                .map(GatewayV2Asset.class::cast)
+                .toList();
+
+        if (gateways.isEmpty()) {
+            return;
+        }
+
+        // Fill the map with the gateway id and the list of asset ids for each gateway
+        for (GatewayV2Asset gateway : gateways) {
+            List<Asset<?>> gatewayAssets = assetStorageService
+                    .findAll(
+                            new AssetQuery()
+                                    .parents(gateway.getId())
+                                    .select(new AssetQuery.Select().excludeAttributes())
+                                    .recursive(true));
+
+            gatewayAssetsMap.put(gateway, gatewayAssets.stream().map(Asset::getId).toList());
+        }
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        // Nothing to do
+        gatewayAssetsMap.clear();
     }
 
 
@@ -110,11 +134,42 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         if (Objects.requireNonNull(persistenceEvent.getCause()) == PersistenceEvent.Cause.CREATE) {
             gateway.setDisabled(false); // Ensure gateway is enabled when created
             createUpdateGatewayServiceUser(gateway);
-        }
-        else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+            synchronized (gatewayAssetsMap) {
+                gatewayAssetsMap.put(gateway, new ArrayList<>());
+            }
+
+        } else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
             removeGatewayServiceUser(gateway);
+            synchronized (gatewayAssetsMap) {
+                gatewayAssetsMap.remove(gateway);
+            }
         }
     }
+
+    protected void processGatewayChildAssetChange(String gatewayId, Asset<?> childAsset, PersistenceEvent<Asset<?>> persistenceEvent) {
+
+        switch (persistenceEvent.getCause()) {
+            case CREATE -> {
+                synchronized (gatewayAssetsMap) {
+                    gatewayAssetsMap.keySet().stream()
+                            .filter(gateway -> gateway.getId().equals(gatewayId))
+                            .findFirst()
+                            .ifPresent(gateway -> gatewayAssetsMap.get(gateway).add(childAsset.getId()));
+                }
+            }
+            case DELETE -> {
+                synchronized (gatewayAssetsMap) {
+                    gatewayAssetsMap.keySet().stream()
+                            .filter(gateway -> gateway.getId().equals(gatewayId))
+                            .findFirst()
+                            .ifPresent(gateway -> gatewayAssetsMap.get(gateway).remove(childAsset.getId()));
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
 
     protected void createUpdateGatewayServiceUser(GatewayV2Asset gateway) {
         LOG.info("Creating/updating gateway service user for gateway id: " + gateway.getId());
@@ -163,7 +218,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         identityProvider.deleteClient(gateway.getRealm(), id);
     }
 
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -171,8 +225,75 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 '}';
     }
 
-    protected static boolean isGatewayClientId(String clientId) {
-        return clientId != null && clientId.startsWith(GATEWAY_CLIENT_ID_PREFIX);
+
+    /**
+     * Get the gateway id for the asset if it is a descendant of a gateway asset
+     *
+     * @param assetId  the asset id to check
+     * @param parentId the parent id to check (can be null)
+     * @return the gateway id if the asset is a gateway or a descendant of a gateway asset or null if not
+     */
+    public String getLocallyRegisteredGatewayId(String assetId, String parentId) {
+        // check if the parentId is any of the gateway assets
+        if (parentId != null) {
+            return gatewayAssetsMap.keySet().stream()
+                    .filter(gateway -> gateway.getId().equals(parentId))
+                    .findFirst()
+                    .map(GatewayV2Asset::getId)
+                    .orElse(null);
+        }
+
+        // check if the asset is a descendant of any gateway asset
+        for (Map.Entry<GatewayV2Asset, List<String>> entry : gatewayAssetsMap.entrySet()) {
+            if (entry.getValue().contains(assetId)) {
+                return entry.getKey().getId(); // returns the gateway id
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if the asset is a registered gateway
+     * @param assetId the asset id to check
+     * @return true if the asset is a registered gateway
+     */
+    public boolean isRegisteredGateway(String assetId) {
+        return gatewayAssetsMap.keySet().stream().anyMatch(gateway -> gateway.getId().equals(assetId));
+    }
+
+
+    /**
+     * Check if the asset is a descendant of any gateway asset
+     * @param assetId the asset id to check
+     * @return true if the asset is a descendant of any gateway asset
+     */
+    public boolean isGatewayDescendant(String assetId) {
+        return gatewayAssetsMap.values().stream().anyMatch(list -> list.contains(assetId));
+    }
+
+    /**
+     * Check if the asset is a descendant of a specific gateway asset
+     *
+     * @param assetId   the asset id to check
+     * @param gatewayId the gateway id to check
+     * @return true if the asset is a descendant of the gateway asset
+     */
+    public boolean isGatewayDescendant(String assetId, String gatewayId) {
+        return gatewayAssetsMap.keySet().stream()
+                .filter(gateway -> gateway.getId().equals(gatewayId))
+                .anyMatch(gateway -> gatewayAssetsMap.get(gateway).contains(assetId));
+    }
+
+    public GatewayV2Asset getGatewayFromMQTTConnection(RemotingConnection connection) {
+        if (isGatewayConnection(connection)) {
+            return (GatewayV2Asset) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
+                    .attributeValue("clientId", connection.getClientID()));
+        }
+        return null;
+    }
+
+    protected static boolean isGatewayConnection(RemotingConnection connection) {
+        return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
 
     @Override
@@ -185,13 +306,18 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                                 @SuppressWarnings("unchecked")
                                 PersistenceEvent<Asset<?>> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                                 Asset<?> eventAsset = persistenceEvent.getEntity();
-
-                                if (!(eventAsset instanceof GatewayV2Asset)) {
-                                    return;
+                                if (eventAsset instanceof GatewayV2Asset gatewayAsset) {
+                                    processGatewayChange(gatewayAsset, persistenceEvent);
+                                } else {
+                                    String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
+                                    if (gatewayId != null) {
+                                        processGatewayChildAssetChange(gatewayId, eventAsset, persistenceEvent);
+                                    }
                                 }
-                                processGatewayChange((GatewayV2Asset) eventAsset, persistenceEvent);
+
                             }
                     );
+
 
         }
     }
