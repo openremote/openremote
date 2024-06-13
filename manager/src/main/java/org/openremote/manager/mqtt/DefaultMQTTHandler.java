@@ -574,14 +574,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
             if (isAssetTopic) {
                 if (ev instanceof AssetEvent) {
-                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
                 if (ev instanceof AttributeEvent attributeEvent) {
                     if (isValueSubscription) {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
+                        publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
                     } else {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                        publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                     }
                 }
             }

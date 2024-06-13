@@ -124,7 +124,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected EmbeddedActiveMQ server;
     protected ActiveMQORSecurityManager securityManager;
     protected ClientProducer producer;
-    protected ClientSessionInternal internalSession;
 
     @Override
     public int getPriority() {
@@ -485,8 +484,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 
-    public boolean disconnectSession(String sessionID) {
-        RemotingConnection connection = connectionIDConnectionMap.get(sessionID);
+    public boolean disconnectSession(String connectionID) {
+        RemotingConnection connection = connectionIDConnectionMap.get(connectionID);
         if (connection != null) {
             LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
             doForceDisconnect(connection);
@@ -494,22 +493,6 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         }
 
         return false;
-    }
-
-    public void publishMessage(String topic, Object data, MqttQoS qoS) {
-        try {
-            if (internalSession != null) {
-                // Artemis' sessions are not threadsafe
-                synchronized (internalSession) {
-                    ClientMessage message = internalSession.createMessage(false);
-                    message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
-                    message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
-                }
-            }
-        } catch (Exception e) {
-            LOG.log(WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
-        }
     }
 
     public WildcardConfiguration getWildcardConfiguration() {
@@ -574,13 +557,25 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         return connection;
     }
 
-    public void notifyConnectionAuthenticated(RemotingConnection connection) {
+    protected void notifyConnectionAuthenticated(RemotingConnection connection) {
         if (connection.getSubject() != null) {
             // Notify handlers that connection authenticated
             LOG.log(DEBUG, "Client connection authenticated: " + connectionToString(connection));
             for (MQTTHandler handler : getCustomHandlers()) {
                 handler.onConnectionAuthenticated(connection);
             }
+        }
+    }
+
+    public ClientSession createSession() {
+
+    }
+
+    public void authenticateConnection(RemotingConnection connection, String realm, String username, String password) {
+        if (connection != null) {
+            connection.setSubject(null); // Clear existing subject
+            securityManager.authenticate(realm + ":" + username, password, connection, null);
+            notifyConnectionAuthenticated(connection);
         }
     }
 }

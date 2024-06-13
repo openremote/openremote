@@ -216,7 +216,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         ProvisioningMessage provisioningMessage = ValueUtil.parse(payloadContent, ProvisioningMessage.class)
             .orElseGet(() -> {
                 LOG.info("Failed to parse message from client: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-                mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
+                publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.MESSAGE_INVALID), MqttQoS.AT_MOST_ONCE);
                 return null;
             });
 
@@ -261,7 +261,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (TextUtil.isNullOrEmpty(provisioningMessage.getCert())) {
             LOG.warning("Certificate is missing from X509 provisioning message: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -271,7 +271,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             clientCertificate = ProvisioningUtil.getX509Certificate(provisioningMessage.getCert());
         } catch (CertificateException e) {
             LOG.log(Level.WARNING, "Failed to parse X.509 certificate: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection), e);
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CERTIFICATE_INVALID), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -279,14 +279,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (matchingConfig == null) {
             LOG.fine("No matching provisioning config found for X.509 certificate");
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNAUTHORIZED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         // Check if config is disabled
         if (matchingConfig.isDisabled()) {
             LOG.fine("Matching provisioning config is disabled for X.509 certificate");
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -296,13 +296,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (TextUtil.isNullOrEmpty(certUniqueId)) {
             LOG.info(() -> "X.509 certificate missing unique ID in subject CN: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         if (TextUtil.isNullOrEmpty(uniqueId) || !certUniqueId.equals(uniqueId)) {
             LOG.info(() -> "X.509 certificate unique ID doesn't match topic unique ID: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.UNIQUE_ID_MISMATCH), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
@@ -316,13 +316,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             serviceUser = getCreateClientServiceUser(realm, identityProvider, uniqueId, matchingConfig);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection), e);
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         if (!serviceUser.getEnabled()) {
             LOG.info(() -> "Service user exists and has been disabled so cannot continue: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
             return;
         }
         LOG.finest("Service user exists and is enabled");
@@ -336,20 +336,18 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             if (asset != null) {
                 if (!matchingConfig.getRealm().equals(asset.getRealm())) {
                     LOG.warning("Client asset realm mismatch");
-                    mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
+                    publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.ASSET_ERROR), MqttQoS.AT_MOST_ONCE);
                     return;
                 }
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve/create asset: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection) + ", config=" + matchingConfig, e);
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
 
         // Authenticate the connection using this service user's credentials - this will also update the connection's subject
-        connection.setSubject(null); // Clear existing anonymous subject
-        mqttBrokerService.securityManager.authenticate(realm + ":" + serviceUser.getUsername(), serviceUser.getSecret(), connection, null);
-        mqttBrokerService.notifyConnectionAuthenticated(connection);
+        mqttBrokerService.authenticateConnection(connection, realm, serviceUser.getUsername(), serviceUser.getSecret());
 
         provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
             if (connections == null) {
@@ -360,7 +358,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         });
 
         LOG.fine("Client successfully provisioned");
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
+        publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 
     protected X509ProvisioningConfig getMatchingX509ProvisioningConfig(RemotingConnection connection, X509Certificate clientCertificate) {
