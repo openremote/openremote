@@ -291,7 +291,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // Pending events for gateway acknowledgement, requires the gateway asset to be present
         else if (isGatewayEventsTopic(topic) && gatewayAsset != null) {
             if (topicTokens.size() != 5 || !topicTokens.get(GATEWAY_PENDING_TOKEN_INDEX).equals(GATEWAY_PENDING_TOPIC)) {
-                LOG.finest("Invalid topic " + topic + " for subscribing, the pending topic is missing");
+                LOG.finest("Invalid topic " + topic + " for subscribing, ensure the topic structure is correct");
                 return false;
             }
         }
@@ -326,7 +326,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         //<realm>/<clientId>/
         String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
         return Set.of(
-
                 // <realm>/<clientId>/gateway/events/acknowledge
                 topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_ACK_TOPIC,
 
@@ -437,7 +436,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 case GET_TOPIC -> handleGetAsset(connection, topic);
                 case UPDATE_TOPIC -> handleUpdateAsset(connection, topic, body);
                 case DELETE_TOPIC -> handleDeleteAsset(connection, topic);
-                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
+                default -> LOG.warning("Unexpected asset operation method: " + Objects.requireNonNull(method));
             }
         }
 
@@ -448,7 +447,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 case GET_TOPIC -> handleGetAttribute(connection, topic, false);
                 case GET_VALUE_TOPIC -> handleGetAttribute(connection, topic, true);
                 case UPDATE_TOPIC -> handleUpdateAttribute(topic, body);
-                default -> LOG.warning("Unexpected operations method: " + Objects.requireNonNull(method));
+                default -> LOG.warning("Unexpected attribute operation  method: " + Objects.requireNonNull(method));
             }
         }
 
@@ -561,7 +560,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
 
-        // TODO: Prevent regular users from reading gateway descendants?
+        // TODO: Prevent regular users from reading gateway descendants? Probably not
         if (event instanceof AssetEvent assetEvent) {
             // if we have an gateway asset then the asset must be a descendant of the gateway asset
             if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null
@@ -729,7 +728,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishResponse(topic, asset);
     }
 
-
     /**
      * Delete asset request topic handler
      * Deletes the asset and all its descendants from the asset storage service.
@@ -767,11 +765,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         publishResponse(topic, event);
     }
 
-
     /**
-     * Update multiple attributes request topic handler.
-     * Includes authorization checks for each attribute.
-     * Request is cancelled if any attribute is unauthorized.
+     * handle multi attribute operations, includes authorization for each provided attribute
+     * authorization edge case - authorization is normally handled in canPublish
+     * however, we need to run authorization on the payload here rather than topic structure
      */
     @SuppressWarnings({"unchecked"})
     protected void handleUpdateMultiAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -790,27 +787,29 @@ public class GatewayMQTTHandler extends MQTTHandler {
             LOG.fine("Invalid attribute template " + body.toString(StandardCharsets.UTF_8) + " in update attribute request " + getConnectionIDString(connection));
             return;
         }
-
         Map<String, Object> attributeMap = (Map<String, Object>) attributes.get();
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
-        boolean isAuthorized = true;
+        GatewayV2Asset gateway = gatewayV2Service.getGatewayFromMQTTConnection(connection);
 
-        // check each event for authorization
         for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
             String attributeName = entry.getKey();
             Object attributeValue = entry.getValue();
             AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue);
 
+            // Gateways cannot modify anything besides their own descendants
+            if (gateway != null && !gatewayV2Service.isGatewayDescendant(assetId, gateway.getId()))
+            {
+                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
+                return;
+            }
+
+            // cancel the request if any of the events cannot be authorized
             if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event)) {
-                isAuthorized = false;
-                break;
+                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
+                return;
             }
         }
-        // If the user is not authorized to update any of the attributes, cancel the request
-        if (!isAuthorized) {
-            publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
-            return;
-        }
+
         // Temporary list to store the events for the response
         List<AttributeEvent> events = new ArrayList<>();
         for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
@@ -849,7 +848,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Handle gateway events acknowledgement
-     * Acknowledges the gateway event and publishes the intercepted attribute event.
+     * Acknowledges the gateway event and processes the acknowledged event.
      */
     protected void handleGatewayEventAcknowledgement(RemotingConnection connection, ByteBuf body) {
         // Acknowledgement id is the body of the message
