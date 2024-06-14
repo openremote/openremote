@@ -238,7 +238,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         // check whether the assetId can be found in the gateway child assets
         for (Map.Entry<GatewayV2Asset, List<String>> entry : gatewayAssetsMap.entrySet()) {
             if (entry.getValue().contains(assetId)) {
-                gatewayId = entry.getKey().getId(); // returns the gateway id
+                gatewayId = entry.getKey().getId();
             }
         }
 
