@@ -121,7 +121,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
-    protected GatewayMQTTEventSubscriptionHandler eventSubscriptionManager;
+    protected GatewayMQTTEventSubscriptionHandler eventSubscriptionHandler;
     protected GatewayV2Service gatewayV2Service;
     protected boolean isKeycloak;
 
@@ -157,7 +157,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         gatewayV2Service = container.getService(GatewayV2Service.class);
-        eventSubscriptionManager = new GatewayMQTTEventSubscriptionHandler(messageBrokerService, mqttBrokerService);
+        eventSubscriptionHandler = new GatewayMQTTEventSubscriptionHandler(messageBrokerService, mqttBrokerService);
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
@@ -171,7 +171,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         ))
                         .process(exchange -> {
                             String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                            GatewayMQTTEventSubscriptionHandler.GatewayEventSubscriberInfo eventSubscriberInfo = eventSubscriptionManager.getEventSubscriberInfoMap().get(connectionID);
+                            GatewayMQTTEventSubscriptionHandler.GatewayEventSubscriberInfo eventSubscriberInfo = eventSubscriptionHandler.getEventSubscriberInfoMap().get(connectionID);
                             if (eventSubscriberInfo != null) {
                                 TriggeredEventSubscription<?> event = exchange.getIn().getBody(TriggeredEventSubscription.class);
                                 Consumer<SharedEvent> eventConsumer = eventSubscriberInfo.topicSubscriptionMap.get(event.getSubscriptionId());
@@ -192,7 +192,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         String gatewayId = gatewayV2Service.getRegisteredGatewayId(event.getId(), event.getParentId());
-
         // If the event is from a descendant of a Gateway asset, then publish to pending gateway events topic
         if (gatewayId != null) {
             Asset<?> gateway = assetStorageService.find(gatewayId);
@@ -213,6 +212,33 @@ public class GatewayMQTTHandler extends MQTTHandler {
     @Override
     public boolean topicMatches(Topic topic) {
         return isOperationsTopic(topic) || isEventsTopic(topic) || isGatewayEventsTopic(topic);
+    }
+
+    @Override
+    public Set<String> getPublishListenerTopics() {
+        //<realm>/<clientId>/
+        String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
+        return Set.of(
+                // <realm>/<clientId>/gateway/events/acknowledge
+                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_ACK_TOPIC,
+
+                // <realm>/<clientId>/operations/assets/<responseId>/create
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/delete
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/get
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/update
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
+                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get-value
+                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
+        );
     }
 
     @Override
@@ -242,7 +268,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         if (gatewayAsset != null) {
             if (gatewayAsset.getDisabled().orElse(false)) {
-                LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
+                LOG.finer("Subscription not allowed, gateway is disabled " + getConnectionIDString(connection));
                 return false;
             }
         }
@@ -252,12 +278,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isEventsTopic(topic)) {
             // topics above 4 tokens require the assets token to be present
             if (topicTokens.size() > 4 && !topicTokens.get(ASSETS_TOKEN_INDEX).equals(ASSETS_TOPIC)) {
-                LOG.finest("Invalid topic " + topic + " for subscribing, based on length the assets token is missing");
+                LOG.finest("Invalid topic " + topic + " for subscribing, the assets token is missing");
                 return false;
             }
             // topics above 6 tokens require the attributes token to be present
             if (topicTokens.size() > 6 && !topicTokens.get(ATTRIBUTES_TOKEN_INDEX).equals(ATTRIBUTES_TOPIC)) {
-                LOG.finest("Invalid topic " + topic + " for subscribing, based on length the attributes token is missing");
+                LOG.finest("Invalid topic " + topic + " for subscribing, the attributes token is missing");
                 return false;
             }
 
@@ -268,7 +294,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 }
                 // Check if the asset is a descendant of the gateway asset
                 if (!gatewayV2Service.isGatewayDescendant(assetId, gatewayAsset.getId())) {
-                    LOG.finest("Asset not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
+                    LOG.finest("Subscription not allowed, asset is not descendant of gateway " + assetId + " " + getConnectionIDString(connection));
                     return false;
                 }
             }
@@ -311,42 +337,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
             var eventClass = isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class;
             // if the gateway asset is found, the subscription will be relative to the asset, otherwise realm relative.
-            eventSubscriptionManager.addSubscription(connection, topic, eventClass, gatewayAsset);
+            eventSubscriptionHandler.addSubscription(connection, topic, eventClass, gatewayAsset);
         }
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         if (isEventsTopic(topic)) {
-            eventSubscriptionManager.removeSubscription(connection, topic);
+            eventSubscriptionHandler.removeSubscription(connection, topic);
         }
-    }
-
-    @Override
-    public Set<String> getPublishListenerTopics() {
-        //<realm>/<clientId>/
-        String topicBase = TOKEN_SINGLE_LEVEL_WILDCARD + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/";
-        return Set.of(
-                // <realm>/<clientId>/gateway/events/acknowledge
-                topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_ACK_TOPIC,
-
-                // <realm>/<clientId>/operations/assets/<responseId>/create
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/delete
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + DELETE_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/get
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/update
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/update
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + UPDATE_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/attributes
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + UPDATE_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_TOPIC,
-                // <realm>/<clientId>/operations/assets/<assetId>/attributes/<attributeName>/get-value
-                topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + ATTRIBUTES_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + GET_VALUE_TOPIC
-        );
     }
 
     @Override
@@ -369,7 +368,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        // check if the gateway asset is disabled
+        // check if we have a gateway asset and it is disabled
         if (gatewayAsset != null) {
             if (gatewayAsset.getDisabled().orElse(false)) {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
@@ -478,7 +477,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .asyncSend();
 
         // Remove all event subscriptions for the connection
-        eventSubscriptionManager.removeAllSubscriptions(connection);
+        eventSubscriptionHandler.removeAllSubscriptions(connection);
 
         // Invalidate the authorization cache for the connection
         authorizationCache.invalidate(getConnectionIDString(connection));
@@ -499,7 +498,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .asyncSend();
 
         // Remove all event subscriptions for the connection
-        eventSubscriptionManager.removeAllSubscriptions(connection);
+        eventSubscriptionHandler.removeAllSubscriptions(connection);
 
         // Invalidate the authorization cache for the connection
         authorizationCache.invalidate(getConnectionIDString(connection));
@@ -657,8 +656,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         try {
             // if it is a gateway user we set the asset parent to the gateway asset, and skip the gatewayCheck on merge
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
+
             if (gatewayAsset != null) {
                 asset.setParentId(gatewayAsset.getId());
+                //TODO: Link asset
                 assetStorageService.merge(asset, true, true, null);
             } else {
                 assetStorageService.merge(asset);
@@ -866,7 +867,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // Acknowledgement id is the body of the message
         String ackId = body.toString(StandardCharsets.UTF_8);
         if (ackId == null) {
-            LOG.fine("Invalid gateway event message " + getConnectionIDString(connection));
+            LOG.fine("Invalid gateway acknowledgement, acknowledgement id is missing " + getConnectionIDString(connection));
             return;
         }
 

@@ -234,21 +234,34 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
      * @return the gateway id if the asset is a gateway or a descendant of a gateway asset or null if not
      */
     public String getRegisteredGatewayId(String assetId, String parentId) {
-        // check if the parentId is any of the gateway assets
+        String gatewayId = null;
+        // check whether the assetId can be found in the gateway child assets
+        for (Map.Entry<GatewayV2Asset, List<String>> entry : gatewayAssetsMap.entrySet()) {
+            if (entry.getValue().contains(assetId)) {
+                gatewayId = entry.getKey().getId(); // returns the gateway id
+            }
+        }
+
+        if (gatewayId != null) {
+            return gatewayId;
+        }
+
+        // check whether the parentId can be found in one of the gateway keys
         if (parentId != null) {
-            return gatewayAssetsMap.keySet().stream()
+            gatewayId = gatewayAssetsMap.keySet().stream()
                     .filter(gateway -> gateway.getId().equals(parentId))
                     .findFirst()
                     .map(GatewayV2Asset::getId)
                     .orElse(null);
+
+            if (gatewayId != null)
+            {
+                return gatewayId;
+            }
+            // check whether the parentId is a descendant of a gateway asset
+            return getRegisteredGatewayId(parentId, null);
         }
 
-        // check if the asset is a descendant of any gateway asset
-        for (Map.Entry<GatewayV2Asset, List<String>> entry : gatewayAssetsMap.entrySet()) {
-            if (entry.getValue().contains(assetId)) {
-                return entry.getKey().getId(); // returns the gateway id
-            }
-        }
         return null;
     }
 
