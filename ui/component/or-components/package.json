@@ -2,13 +2,9 @@
   "name": "@openremote/or-components",
   "version": "1.2.0-snapshot",
   "description": "OpenRemote basic UI components",
-  "main": "dist/umd/index.bundle.js",
-  "module": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
     "./*": "./lib/*.js"
   },
-  "types": "lib/index.d.ts",
   "typesVersions": {
     "*": {
       "*": [
@@ -18,7 +14,7 @@
   },
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx webpack"
+    "prepack": "npx tsc -b"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

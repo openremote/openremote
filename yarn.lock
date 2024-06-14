@@ -2664,9 +2664,9 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
+    http-link-header: "npm:^1.1.3"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
-    parse-link-header: "npm:^2.0.0"
     url: "npm:^0.11.0"
   languageName: unknown
   linkType: soft
@@ -6170,6 +6170,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"http-link-header@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "http-link-header@npm:1.1.3"
+  checksum: 10/fae99528f5477eb3cd054b56db5d2d95496bde2d8ce6a85f145f523eb5050051fc9723b293e07135c86fcfaca0a38f7d0c6232bd4191725dc767a30744e0c804
+  languageName: node
+  linkType: hard
+
 "http-parser-js@npm:>=0.5.1":
   version: 0.5.8
   resolution: "http-parser-js@npm:0.5.8"
@@ -7828,15 +7835,6 @@ __metadata:
     json-parse-even-better-errors: "npm:^2.3.0"
     lines-and-columns: "npm:^1.1.6"
   checksum: 10/62085b17d64da57f40f6afc2ac1f4d95def18c4323577e1eced571db75d9ab59b297d1d10582920f84b15985cbfc6b6d450ccbf317644cfa176f3ed982ad87e2
-  languageName: node
-  linkType: hard
-
-"parse-link-header@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "parse-link-header@npm:2.0.0"
-  dependencies:
-    xtend: "npm:~4.0.1"
-  checksum: 10/36d0d44433ec3ee80c001fe54dd29268924f06352ed82a29e4060dbd8bb28a330cf7ea7adf4815f73e0684baaf36440ac010d599094eb24130c07fc87424450c
   languageName: node
   linkType: hard
 
@@ -9981,7 +9979,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xtend@npm:^4.0.0, xtend@npm:^4.0.1, xtend@npm:~4.0.1":
+"xtend@npm:^4.0.0, xtend@npm:^4.0.1":
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: 10/ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a

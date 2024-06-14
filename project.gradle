@@ -400,37 +400,36 @@ ext.npmCommand = {
 }
 
 // Add yarn tasks
-task yarnInstall(type: Exec){
+task yarnInstall(type: Exec) {
     commandLine npmCommand("yarn"), "install"
 }
-task yarnInstallForce(type: Exec){
+task yarnInstallForce(type: Exec) {
     commandLine npmCommand("yarn"), "install", "--force"
 }
-
-task npmClean(type: Exec){
+task npmClean(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "clean"
 }
-task npmBuild(type: Exec){
+task npmBuild(type: Exec) {
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "build"
 }
-task npmTest(type: Exec){
+task npmTest(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "test"
 }
-task npmServe(type: Exec){
+task npmServe(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "run", "serve"
 }
-task npmPrepare(type: Exec){
+task npmPrepare(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("yarn"), "pack"
 }
-task npmPublish(type: Exec){
+task npmPublish(type: Exec) {
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "npm", "publish"
+    commandLine npmCommand("yarn"), "npm", "publish", "--access", "public"
 }
 task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
