@@ -426,11 +426,11 @@ task npmServe(type: Exec){
 }
 task npmPrepare(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "run", "prepublishOnly"
+    commandLine npmCommand("yarn"), "pack"
 }
 task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("yarn"), "publish"
+    commandLine npmCommand("yarn"), "npm", "publish"
 }
 task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()

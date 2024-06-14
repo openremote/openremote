@@ -13,7 +13,7 @@
     "copyMdiFont": "node mdi-font-copy.js",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepublish": "npx webpack"
+    "prepack": "npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
