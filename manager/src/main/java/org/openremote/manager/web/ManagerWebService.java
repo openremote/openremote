@@ -125,18 +125,18 @@ public class ManagerWebService extends WebService {
         OpenAPI oas = new OpenAPI()
                 .servers(Collections.singletonList(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
                 .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
-                        new OAuthFlows().clientCredentials(
+                        new OAuthFlows().authorizationCode(
+                            new OAuthFlow()
+                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
+                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token"))
+                        .clientCredentials(
                                 // for service users
                                 new OAuthFlow()
-                                        .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                        .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                        .scopes(new Scopes().addString("serviceUser", "serviceUser"))
-                        ).password(
-                                new OAuthFlow()
-                                        .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                        .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                        .scopes(new Scopes().addString("openid", "openid"))
-                        )
+                                    .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                    .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                    .scopes(new Scopes().addString("serviceUser", "serviceUser"))
+                            )
                 )).security(Collections.singletonList(new SecurityRequirement().addList("openid")));
 
         Info info = new Info()
