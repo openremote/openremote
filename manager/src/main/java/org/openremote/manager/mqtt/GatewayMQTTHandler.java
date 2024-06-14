@@ -296,6 +296,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
         // Operation response topic, requires the operations and response tokens to be present
+        // TODO: Do we need additional authorization checks for operation response topics?
         else {
             return isOperationResponseTopic(topic);
         }
@@ -532,12 +533,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Authorize a published asset operation (CRUD) based on the topic structure.
-     *
-     * @param topic        the topic to authorize
-     * @param authContext  the authentication context
-     * @param gatewayAsset the gateway asset if the connection is a gateway connection (null otherwise)
-     * @return true if the asset event is authorized
+     * Authorize a published asset operation (CRUD) based on the topic structure
      */
     protected boolean authorizeAssetOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
         var topicTokens = topic.getTokens();
@@ -559,8 +555,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-
-        // TODO: Prevent regular users from reading gateway descendants? Probably not
         if (event instanceof AssetEvent assetEvent) {
             // if we have an gateway asset then the asset must be a descendant of the gateway asset
             if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
@@ -585,11 +579,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
 
     /**
-     * Authorize a published attribute operation (READ, UPDATE) based on the topic structure.
-     *
-     * @param topic       the topic to authorize
-     * @param authContext the authentication context
-     * @return true if the attribute event is authorized
+     * Authorize a published attribute operation based on the topic structure.
      */
     protected boolean authorizeAttributeOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
         var topicTokens = topic.getTokens();
