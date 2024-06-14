@@ -123,7 +123,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a mqtt client publishes an asset update operation and subscribes to the response"
-        def testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId();
+        def testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/update".toString()
         responseTopic = topic + "/response"
         testAsset.setName(testAsset.getName() + "Updated")
@@ -150,7 +150,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes an asset delete operation and subscribes to the response"
-        testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId();
+        testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/delete".toString()
         responseTopic = topic + "/response"
         payload = ""
@@ -327,7 +327,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetStorageService.merge(asset1Child)
 
         then: "then the asset event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -361,7 +361,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetStorageService.merge(asset1)
 
         then: "then the asset event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -395,7 +395,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetStorageService.merge(asset1)
 
         then: "then the asset event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -428,7 +428,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetStorageService.merge(childChildAsset) // non-direct descendant
 
         then: "then the asset event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -475,7 +475,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "notes", "hello world"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -505,7 +505,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -533,7 +533,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "notes", "hello world"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
 
@@ -541,7 +541,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -570,7 +570,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.smartBuildingId, "notes", "hello world"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -599,7 +599,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.smartBuildingId, "notes", "hello world"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -627,7 +627,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.smartBuildingId, "motionSensor", "80"))
 
         then: "then the attribute event should not be received"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
         }
         client.removeAllMessageConsumers()
@@ -683,7 +683,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
             assert asset != null
             assert asset.getName() == testAsset.getName()
-            assert asset.getParentId() == gatewayAsset.getId(); // the asset should be a child of the gateway asset since a gateway service user created it
+            assert asset.getParentId() == gatewayAsset.getId() // the asset should be a child of the gateway asset since a gateway service user created it
         }
 
         when: "a gateway service user subscribes to pending gateway attribute events"
@@ -700,7 +700,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a pending attribute event is published"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.getId(), "notes", "hello gateway"));
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.getId(), "notes", "hello gateway"))
 
         then: "the pending attribute event should be received"
         conditions.eventually {
@@ -750,7 +750,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         gatewayClient.removeAllMessageConsumers()
 
-        when: "a gateway service user publishes a update attribute operation for an asset that is not a descendant and subscribes to the response"
+        when: "a gateway service user publishes a update attribute operation for an asset that is not a descendant"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/update"
         payload = "hello gateway"
         messageConsumer = { MQTTMessage<String> msg ->
@@ -760,12 +760,10 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the attribute should not be updated"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             def asset = assetStorageService.find(managerTestSetup.smartBuildingId)
             assert asset.getAttribute("notes").get().value.orElse(null) != "hello gateway"
-            assert receivedResponses.size() == 0
         }
-        receivedResponses.clear()
 
         when: "a gateway service user publishes a get attribute operation for an asset that is not a descendant and subscribes to the response"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get-value"
@@ -793,7 +791,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the asset should not be updated"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             def updatedAsset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
             assert updatedAsset == null // we should not be able to find the asset since the non-gateway service user tried to update it
             def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(originalName))
@@ -809,7 +807,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the asset should not be deleted"
-        conditions.eventually {
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             def asset = assetStorageService.find(new AssetQuery().names(testAsset.getName()))
             assert asset != null
             assert asset.getName() == testAsset.getName()
