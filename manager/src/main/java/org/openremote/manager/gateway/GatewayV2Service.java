@@ -227,7 +227,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
 
 
     /**
-     * Get the gateway id for the asset if it is a descendant of a gateway asset
+     * Try and get the gateway id of the provided assetId or parentId
      *
      * @param assetId  the asset id to check
      * @param parentId the parent id to check (can be null)

@@ -85,9 +85,13 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(responseTopic, messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the asset should be created and the asset event should be received on the response topic"
+        then: "the asset should be created"
         conditions.eventually {
             assert assetStorageService.find(new AssetQuery().names(testAsset.getName())) != null
+        }
+
+        and: "a response should be received"
+        conditions.eventually {
             assert receivedResponses.size() == 1
             assert receivedResponses.get(0) instanceof AssetEvent
             def event = receivedResponses.get(0) as AssetEvent
@@ -111,7 +115,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(responseTopic, messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the asset should not be created and an error response should be received"
+        then: "an error response should be received"
         conditions.eventually {
             assert receivedResponses.size() == 1
             assert receivedResponses.get(0) instanceof MQTTErrorResponse
@@ -138,6 +142,10 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         then: "the asset should be updated and the response should be received"
         conditions.eventually {
             assert assetStorageService.find(testAssetId).getName() == testAsset.getName()
+        }
+
+        and: "a response should be received"
+        conditions.eventually {
             assert receivedResponses.size() == 1
             assert receivedResponses.get(0) instanceof AssetEvent
             def event = receivedResponses.get(0) as AssetEvent
@@ -146,6 +154,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert asset instanceof ThingAsset
             assert asset.getName() == testAsset.getName()
         }
+
         receivedResponses.clear()
         client.removeAllMessageConsumers()
 
@@ -161,9 +170,13 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(responseTopic, messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the asset should be deleted and the response should be received"
+        then: "the asset should be deleted"
         conditions.eventually {
             assert assetStorageService.find(testAssetId) == null
+        }
+
+        and: "a response should be received"
+        conditions.eventually {
             assert receivedResponses.size() == 1
             assert receivedResponses.get(0) instanceof AssetEvent
             def event = receivedResponses.get(0) as AssetEvent
@@ -208,9 +221,13 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.addMessageConsumer(responseTopic, messageConsumer)
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the value of the attribute should be updated and the response should be received"
+        then: "the value of the attribute should be updated"
         conditions.eventually {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
+        }
+
+        and: "a response should be received"
+        conditions.eventually {
             assert receivedResponses.size() == 1
             assert receivedResponses.get(0) instanceof AttributeEvent
             def event = receivedResponses.get(0) as AttributeEvent
@@ -634,17 +651,21 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         // create the gateway asset so we can test the gateway v2 asset service user connection/behavior
-        when: "a gateway v2 asset is created a service user should be created"
+        when: "a gateway v2 asset is created"
         def tempGatewayAsset = new GatewayV2Asset("gatewayV2Asset")
         tempGatewayAsset.setRealm(keycloakTestSetup.realmBuilding.name)
         tempGatewayAsset.setId(UniqueIdentifierGenerator.generateId())
         def gatewayAsset = assetStorageService.merge(tempGatewayAsset)
 
-        then: "then the gateway v2 asset should be created with a service user"
+        then: "the gateway v2 asset should exist"
         conditions.eventually {
             assert gatewayAsset != null
             assert gatewayAsset.getClientId().isPresent()
             assert gatewayAsset.getClientSecret().isPresent()
+        }
+
+        and: "a service user is created for the gateway asset"
+        conditions.eventually {
             assert keycloakTestSetup.keycloakProvider.getUserByUsername(keycloakTestSetup.realmBuilding.name,
                     User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get()) != null
         }
@@ -709,7 +730,10 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert gatewayEventMessage instanceof MQTTGatewayEventMessage
             assert gatewayEventMessage.getEvent().getName() == "notes"
             assert gatewayEventMessage.getEvent().getValue().get() == "hello gateway"
-            // ensure the event hasn't actually been processed yet
+        }
+
+        and: "the attribute event should not have been processed yet"
+        conditions.eventually {
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) != "hello gateway"
         }
@@ -742,11 +766,15 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         payload = "hello gateway updated"
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the attribute should be updated and not be in the pending events"
+        then: "the attribute should be updated"
         conditions.eventually {
-            assert receivedPendingGatewayEvents.size() == 0
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway updated"
+        }
+
+        and: "the attribute event should not be received as a pending event"
+        conditions.eventually {
+            assert receivedPendingGatewayEvents.size() == 0
         }
         gatewayClient.removeAllMessageConsumers()
 
