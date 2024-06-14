@@ -75,6 +75,11 @@ public class ManagerWebService extends WebService {
         List<String> _default;
     }
 
+    private static abstract class StringSchemaMixin {
+        @JsonProperty("enum")
+        protected List<String> _enum;
+    }
+
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";
     public static final String OR_APP_DOCROOT_DEFAULT = "manager/src/web";
@@ -104,10 +109,7 @@ public class ManagerWebService extends WebService {
     public int getPriority() {
         return PRIORITY;
     }
-    private static abstract class StringSchemaMixin {
-        @JsonProperty("enum")
-        protected List<String> _enum;
-    }
+
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
