@@ -2,6 +2,7 @@
   "name": "@openremote/demo-or-thermostat",
   "version": "1.2.0-snapshot",
   "description": "Component Demo",
+  "private": true,
   "scripts": {
     "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
