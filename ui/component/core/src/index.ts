@@ -102,6 +102,10 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.consoleAutoEnable = true;
     }
 
+    if (normalisedConfig.applyConfigToAdmin === undefined) {
+        normalisedConfig.applyConfigToAdmin = true;
+    }
+
     if (!normalisedConfig.eventProviderType) {
         normalisedConfig.eventProviderType = EventProviderType.WEBSOCKET;
     }
