@@ -233,7 +233,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
      * @param parentId the parent id to check (can be null)
      * @return the gateway id if the asset is a gateway or a descendant of a gateway asset or null if not
      */
-    public String getLocallyRegisteredGatewayId(String assetId, String parentId) {
+    public String getRegisteredGatewayId(String assetId, String parentId) {
         // check if the parentId is any of the gateway assets
         if (parentId != null) {
             return gatewayAssetsMap.keySet().stream()
@@ -279,9 +279,9 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
      * @return true if the asset is a descendant of the gateway asset
      */
     public boolean isGatewayDescendant(String assetId, String gatewayId) {
-        return gatewayAssetsMap.keySet().stream()
-                .filter(gateway -> gateway.getId().equals(gatewayId))
-                .anyMatch(gateway -> gatewayAssetsMap.get(gateway).contains(assetId));
+        return gatewayAssetsMap.entrySet().stream()
+                .filter(entry -> entry.getKey().getId().equals(gatewayId))
+                .anyMatch(entry -> entry.getValue().contains(assetId));
     }
 
     public GatewayV2Asset getGatewayFromMQTTConnection(RemotingConnection connection) {
@@ -309,7 +309,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                                 if (eventAsset instanceof GatewayV2Asset gatewayAsset) {
                                     processGatewayChange(gatewayAsset, persistenceEvent);
                                 } else {
-                                    String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
+                                    String gatewayId = getRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
                                     if (gatewayId != null) {
                                         processGatewayChildAssetChange(gatewayId, eventAsset, persistenceEvent);
                                     }

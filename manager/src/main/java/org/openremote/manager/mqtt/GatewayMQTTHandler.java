@@ -191,7 +191,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        String gatewayId = gatewayV2Service.getLocallyRegisteredGatewayId(event.getId(), event.getParentId());
+        String gatewayId = gatewayV2Service.getRegisteredGatewayId(event.getId(), event.getParentId());
 
         // If the event is from a descendant of a Gateway asset, then publish to pending gateway events topic
         if (gatewayId != null) {
@@ -563,14 +563,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // TODO: Prevent regular users from reading gateway descendants? Probably not
         if (event instanceof AssetEvent assetEvent) {
             // if we have an gateway asset then the asset must be a descendant of the gateway asset
-            if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null
-                    && gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
+            if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " asset request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
             }
             // if we don't have a gateway asset then the asset must not be a descendant of any gateway asset
-            if ((method.equals(UPDATE_TOPIC) || method.equals(DELETE_TOPIC)) && gatewayAsset == null
-                    && gatewayV2Service.isGatewayDescendant(assetEvent.getId())) {
+            if ((method.equals(UPDATE_TOPIC) || method.equals(DELETE_TOPIC)) && gatewayAsset == null && gatewayV2Service.isGatewayDescendant(assetEvent.getId())) {
                 LOG.fine(method + " asset request was not authorised, cannot modify/delete gateway descendants as non gateway, topic: topic=" + topic);
                 return false;
             }
@@ -619,8 +617,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             //TODO: Prevent non-gateway users from updating gateway descendants attributes?
         }
 
-        if (event instanceof ReadAttributeEvent readAttributeEvent)
-        {
+        if (event instanceof ReadAttributeEvent readAttributeEvent) {
             // if we have a gateway asset then the attribute related asset must be a descendant of the gateway asset
             if (gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(readAttributeEvent.getAttributeRef().getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " attribute request was not authorised for this gateway user and topic: topic=" + topic);
@@ -703,7 +700,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         storageAsset.setName(asset.get().getName());
         storageAsset.setAttributes(asset.get().getAttributes());
-        assetStorageService.merge(storageAsset);
+
+        try {
+            // if it is a gateway user we need to skip the gatewayCheck on merge
+            GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
+            if (gatewayAsset != null) {
+                assetStorageService.merge(storageAsset, true, true, null);
+            } else {
+                assetStorageService.merge(storageAsset);
+            }
+        } catch (Exception e) {
+            LOG.warning("Failed to update asset " + asset + " " + getConnectionIDString(connection));
+            publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to process asset");
+            return;
+        }
 
         AssetEvent event = new AssetEvent(AssetEvent.Cause.UPDATE, storageAsset, null);
         publishResponse(topic, event);
@@ -712,7 +722,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     /**
      * Get asset request topic handler
      * Publishes the asset object based on the request.
-     * If the asset is not found, an error response is published.
      */
     protected void handleGetAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -731,7 +740,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     /**
      * Delete asset request topic handler
      * Deletes the asset and all its descendants from the asset storage service.
-     * If the asset is not found, an error response is published.
      */
     protected void handleDeleteAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -749,6 +757,21 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         .parents(asset.getId())).stream().map(Asset::getId).toList(
         ));
         assetsToDelete.add(asset.getId()); // ensure the parent is also included in the deletion
+
+        try {
+            // if it is a gateway user we need to skip the gatewayCheck on delete
+            GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
+            if (gatewayAsset != null) {
+                assetStorageService.delete(assetsToDelete, true);
+            } else {
+                assetStorageService.delete(assetsToDelete);
+            }
+        } catch (Exception e) {
+            LOG.warning("Failed to delete asset " + asset + " " + getConnectionIDString(connection));
+            publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to delete asset");
+            return;
+        }
+
         assetStorageService.delete(assetsToDelete);
 
         AssetEvent event = new AssetEvent(AssetEvent.Cause.DELETE, asset, null);
@@ -797,8 +820,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue);
 
             // Gateways cannot modify anything besides their own descendants
-            if (gateway != null && !gatewayV2Service.isGatewayDescendant(assetId, gateway.getId()))
-            {
+            if (gateway != null && !gatewayV2Service.isGatewayDescendant(assetId, gateway.getId())) {
                 publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
                 return;
             }

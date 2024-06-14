@@ -659,7 +659,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // GatewayV2Service
-            String gatewayV2Id = gatewayV2Service.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+            String gatewayV2Id = gatewayV2Service.getRegisteredGatewayId(asset.getId(), asset.getParentId());
             if (!skipGatewayCheck && gatewayV2Id != null) {
                 String msg = "GatewayV2Asset does not support direct CRUD operations on its descendants " + asset;
                 LOG.warning(msg);
@@ -874,7 +874,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!listHasGatewayAsset)
             {
                 for (String assetId : ids){
-                    String gatewayId = gatewayV2Service.getLocallyRegisteredGatewayId(assetId, null);
+                    String gatewayId = gatewayV2Service.getRegisteredGatewayId(assetId, null);
                     if (gatewayId != null) {
                         LOG.info("Asset is descendant of gateway asset, direct deletion is not allowed: Asset ID=" + assetId);
                         return false;

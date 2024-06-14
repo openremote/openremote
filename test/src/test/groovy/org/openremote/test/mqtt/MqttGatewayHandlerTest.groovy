@@ -44,7 +44,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         List<Object> receivedEvents = [] // events from subscriptions
         List<MQTTGatewayEventMessage> receivedPendingGatewayEvents = []
         MQTT_IOClient client = null
-        MQTT_IOClient newClient = null
+        MQTT_IOClient gatewayClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -649,7 +649,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
                     User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get()) != null
         }
 
-
         def gatewayClientId = gatewayAsset.getClientId().get()
         def gatewayMqttUsername = keycloakTestSetup.realmBuilding.name + ":" + gatewayClientId // realm:clientId
         def gatewayServiceUsername = User.SERVICE_ACCOUNT_PREFIX + gatewayClientId // service-account-clientId
@@ -657,14 +656,13 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         def gatewayUser = keycloakTestSetup.keycloakProvider.getUserByUsername(keycloakTestSetup.realmBuilding.name, gatewayServiceUsername)
 
         when: "a mqtt client connects to the mqtt broker with gateway service user"
-        client.disconnect(); // disconnect the previous client
-        client = new MQTT_IOClient(gatewayClientId, mqttHost, mqttPort, false, true,
+        gatewayClient = new MQTT_IOClient(gatewayClientId, mqttHost, mqttPort, false, true,
                 new UsernamePassword(gatewayMqttUsername, gatewayClientSecret), null, null)
-        client.connect()
+        gatewayClient.connect()
 
         then: "mqtt connection should exist"
         conditions.eventually {
-            assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
+            assert gatewayClient.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(gatewayUser.getId()).size() == 1
             def connection = mqttBrokerService.getUserConnections(gatewayUser.getId())[0]
             assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
@@ -678,7 +676,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
         testAsset.setId(UniqueIdentifierGenerator.generateId())
         payload = ValueUtil.asJSON(testAsset).get()
-        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the asset should be created and be a direct child of the gateway asset"
         conditions.eventually {
@@ -688,18 +686,17 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert asset.getParentId() == gatewayAsset.getId(); // the asset should be a child of the gateway asset since a gateway service user created it
         }
 
-
         when: "a gateway service user subscribes to pending gateway attribute events"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedPendingGatewayEvents.add(ValueUtil.parse(msg.payload, MQTTGatewayEventMessage.class).orElse(null))
         }
-        client.addMessageConsumer(topic, messageConsumer)
+        gatewayClient.addMessageConsumer(topic, messageConsumer)
 
         then: "the subscription should exist"
         conditions.eventually {
-            assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
+            assert gatewayClient.topicConsumerMap.get(topic) != null
+            assert gatewayClient.topicConsumerMap.get(topic).size() == 1
         }
 
         when: "a pending attribute event is published"
@@ -720,7 +717,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         when: "a pending attribute event is acknowledged with the incorrect ackId"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
         def ackId = UniqueIdentifierGenerator.generateId()
-        client.sendMessage(new MQTTMessage<String>(topic, ackId))
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, ackId))
 
         then: "the pending attribute event should not be processed"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
@@ -731,7 +728,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         when: "a pending attribute event is acknowledged"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
         ackId = receivedPendingGatewayEvents.get(0).getAckId()
-        client.sendMessage(new MQTTMessage<String>(topic, ackId))
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, ackId))
 
         then: "the pending attribute event should be processed"
         conditions.eventually {
@@ -743,7 +740,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         when: "a gateway service publishes an attribute update operation"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/attributes/notes/update"
         payload = "hello gateway updated"
-        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the attribute should be updated and not be in the pending events"
         conditions.eventually {
@@ -751,7 +748,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getAttribute("notes").get().value.orElse(null) == "hello gateway updated"
         }
-        client.removeAllMessageConsumers()
+        gatewayClient.removeAllMessageConsumers()
 
         when: "a gateway service user publishes a update attribute operation for an asset that is not a descendant and subscribes to the response"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/update"
@@ -759,8 +756,8 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         messageConsumer = { MQTTMessage<String> msg ->
             receivedResponses.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
-        client.addMessageConsumer(topic + "/response", messageConsumer)
-        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        gatewayClient.addMessageConsumer(topic + "/response", messageConsumer)
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the attribute should not be updated"
         conditions.eventually {
@@ -769,8 +766,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert receivedResponses.size() == 0
         }
         receivedResponses.clear()
-        client.removeAllMessageConsumers()
-
 
         when: "a gateway service user publishes a get attribute operation for an asset that is not a descendant and subscribes to the response"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get-value"
@@ -778,23 +773,78 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         messageConsumer = { MQTTMessage<String> msg ->
             receivedResponses.add(ValueUtil.parse(msg.payload, String.class).orElse(null))
         }
-        client.addMessageConsumer(topic + "/response", messageConsumer)
-        client.sendMessage(new MQTTMessage<String>(topic, payload))
+        gatewayClient.addMessageConsumer(topic + "/response", messageConsumer)
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the attribute value should not be received on the response topic"
         conditions.eventually {
             assert receivedResponses.size() == 0
         }
         receivedResponses.clear()
+        gatewayClient.removeAllMessageConsumers()
 
 
+        when: "a non-gateway service user publishes an asset update operation for a gateways descendant asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        def originalName = testAsset.getName()
+        testAsset.setName(testAsset.getName() + "Updated")
+        payload = ValueUtil.asJSON(testAsset).get()
+
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should not be updated"
+        conditions.eventually {
+            def updatedAsset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
+            assert updatedAsset == null // we should not be able to find the asset since the non-gateway service user tried to update it
+            def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(originalName))
+            assert asset != null
+            assert asset.getName() == originalName
+        }
+        testAsset.setName(originalName) // reset the name
+
+        when: "a non-gateway service user publishes an asset delete operation for a gateways descendant asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"
+        payload = ""
+
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should not be deleted"
+        conditions.eventually {
+            def asset = assetStorageService.find(new AssetQuery().names(testAsset.getName()))
+            assert asset != null
+            assert asset.getName() == testAsset.getName()
+        }
+
+        when: "a gateway service user publishes a update asset operation"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        testAsset.setName(testAsset.getName() + "Updated")
+        payload = ValueUtil.asJSON(testAsset).get()
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should be updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(testAsset.getId())
+            assert asset.getName() == testAsset.getName()
+        }
+
+        when: "a gateway service user publishes a delete asset operation"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"
+        payload = ""
+
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should be deleted"
+        conditions.eventually {
+            def storedAsset = assetStorageService.find(testAsset.getId())
+            assert storedAsset == null
+        }
 
         cleanup: "disconnect the clients"
         if (client != null) {
             client.disconnect()
         }
-        if (newClient != null) {
-            newClient.disconnect()
+        if (gatewayClient != null) {
+            gatewayClient.disconnect()
         }
     }
 }
