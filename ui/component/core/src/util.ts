@@ -63,7 +63,7 @@ export interface GeoNotification {
 }
 
 export function getBrowserLanguage(): string {
-    return navigator.language.split("-")[0] || "en";
+    return navigator.language.split("-")[0]?.toLowerCase() || "en";
 }
 
 export function getQueryParameters(queryStr: string): any {
