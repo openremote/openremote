@@ -62,6 +62,10 @@ export interface GeoNotification {
     notification?: PushNotificationMessage;
 }
 
+export function getBrowserLanguage(): string {
+    return navigator.language.split("-")[0] || "en";
+}
+
 export function getQueryParameters(queryStr: string): any {
     return Qs.parse(queryStr, {ignoreQueryPrefix: true});
 }

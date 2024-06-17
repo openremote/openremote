@@ -194,7 +194,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             managerConfig.realm = Util.getQueryParameter("realm");
         }
         if (!managerConfig.defaultLanguage) {
-            managerConfig.defaultLanguage = Util.getQueryParameter("lang")?.toLowerCase();
+            managerConfig.defaultLanguage = Util.getBrowserLanguage().toLowerCase();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);

@@ -74,7 +74,7 @@ const managerConfig: ManagerConfig = {
     realm: Util.getQueryParameter("realm"),
     consoleAutoEnable: false,
     loadTranslations: ["app", "or"],
-    defaultLanguage: Util.getQueryParameter("lang") || "en",
+    defaultLanguage: Util.getBrowserLanguage(),
 };
 
 const appConfig: AppConfig<RootState> = {
