@@ -279,6 +279,11 @@ services:
       # the rules engine.
       OR_SCHEDULED_TASKS_THREADS_MAX: ${OR_SCHEDULED_TASKS_THREADS_MAX:-4}
 
+      # The minimum number of threads that will be used to process incoming auto provisioning messages
+      OR_AUTO_PROVISIONING_THREADS_MIN:
+      # The maximum number of threads that will be used to process incoming auto provisioning messages
+      OR_AUTO_PROVISIONING_THREADS_MAX:
+
       # When asset attributes are enabled for rule events, each value update will be a temporary
       # fact in rules. You can set the global default expiration time span used when no other
       # attribute-level configuration exists. Default is 1 hour.

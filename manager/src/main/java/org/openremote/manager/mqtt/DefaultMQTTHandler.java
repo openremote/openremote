@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -104,8 +105,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {

@@ -21,12 +21,13 @@ package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.RoutingType;
 import org.apache.activemq.artemis.api.core.client.ClientConsumer;
 import org.apache.activemq.artemis.api.core.client.ClientMessage;
+import org.apache.activemq.artemis.api.core.client.ClientProducer;
 import org.apache.activemq.artemis.api.core.client.ClientSession;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.reader.MessageUtil;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
@@ -51,7 +52,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.TRACE;
+import static java.lang.System.Logger.Level.WARNING;
 import static org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil.MQTT_QOS_LEVEL_KEY;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
@@ -70,6 +72,7 @@ public abstract class MQTTHandler {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
     protected ClientSession clientSession;
+    protected ClientProducer producer;
 
     /**
      * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
@@ -89,7 +92,7 @@ public abstract class MQTTHandler {
     /**
      * Called when the system starts to allow for initialisation.
      */
-    public void init(Container container) throws Exception {
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
@@ -110,6 +113,9 @@ public abstract class MQTTHandler {
     public void start(Container container) throws Exception {
 
         clientSession = mqttBrokerService.createSession();
+
+        // Create producer
+        producer = clientSession.createProducer();
 
         Set<String> publishListenerTopics = getPublishListenerTopics();
         if (publishListenerTopics != null) {
@@ -142,12 +148,12 @@ public abstract class MQTTHandler {
 
                 // TODO: This is not ideal as publish has been accepted and then we drop the message if the client has disconnected before it is processed
                 // Need to be able to get connection/auth from the message somehow
-                if (connection == null) {
+                if (connection == null || !connection.getTransportConnection().isOpen()) {
                     LOG.log(TRACE, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
                     return;
                 }
 
-                getLogger().fine("Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
+                getLogger().fine(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
                 onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
             });
         } catch (Exception e) {
@@ -250,7 +256,7 @@ public abstract class MQTTHandler {
                     ClientMessage message = clientSession.createMessage(false);
                     message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
                     message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, server.getConfiguration().getWildcardConfiguration()), message);
+                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.getWildcardConfiguration()), message);
                 }
             }
         } catch (Exception e) {
