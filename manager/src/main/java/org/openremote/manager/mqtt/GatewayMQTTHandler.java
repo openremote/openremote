@@ -69,15 +69,13 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 
 
 /**
- * MQTT handler for gateway connections.
- * This handler uses the ClientEventService to publish and subscribe to asset and attribute events;
- * converting subscription topics into AssetFilters to ensure only the correct events are returned for the subscription.
- * Provides CRUD operations for assets and attributes. Takes into account GatewayAsset Service Users.
+ * MQTT Gateway API Handler
+ * Exposes CRUD operations for assets and attributes, and event subscriptions for assets and attributes
+ * Can be used by service users to interact with the manager via MQTT
+ * Gateway V2 Asset service users are restricted to their own descendants and need to acknowledge attribute events from the manager
  */
 @SuppressWarnings("unused, rawtypes")
 public class GatewayMQTTHandler extends MQTTHandler {
-
-    public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
 
     // main topics
     public static final String EVENTS_TOPIC = "events"; // subscriptions
@@ -121,9 +119,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
-    protected GatewayMQTTEventSubscriptionHandler eventSubscriptionHandler;
+    protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected GatewayV2Service gatewayV2Service;
     protected boolean isKeycloak;
+
 
     // Temporarily holds events that require gateway acknowledgement
     protected final Cache<String, AttributeEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
@@ -157,7 +156,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         gatewayV2Service = container.getService(GatewayV2Service.class);
-        eventSubscriptionHandler = new GatewayMQTTEventSubscriptionHandler(messageBrokerService, mqttBrokerService);
+        subscriptionManager = new GatewayMQTTSubscriptionManager(messageBrokerService, mqttBrokerService);
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
@@ -171,7 +170,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                         ))
                         .process(exchange -> {
                             String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                            GatewayMQTTEventSubscriptionHandler.GatewayEventSubscriberInfo eventSubscriberInfo = eventSubscriptionHandler.getEventSubscriberInfoMap().get(connectionID);
+                            GatewayMQTTSubscriptionManager.GatewayEventSubscriberInfo eventSubscriberInfo = subscriptionManager.getSubscriberInfoMap().get(connectionID);
                             if (eventSubscriberInfo != null) {
                                 TriggeredEventSubscription<?> event = exchange.getIn().getBody(TriggeredEventSubscription.class);
                                 Consumer<SharedEvent> eventConsumer = eventSubscriberInfo.topicSubscriptionMap.get(event.getSubscriptionId());
@@ -221,7 +220,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return Set.of(
                 // <realm>/<clientId>/gateway/events/acknowledge
                 topicBase + GATEWAY_TOPIC + "/" + GATEWAY_EVENTS_TOPIC + "/" + GATEWAY_ACK_TOPIC,
-
                 // <realm>/<clientId>/operations/assets/<responseId>/create
                 topicBase + OPERATIONS_TOPIC + "/" + ASSETS_TOPIC + "/" + TOKEN_SINGLE_LEVEL_WILDCARD + "/" + CREATE_TOPIC,
                 // <realm>/<clientId>/operations/assets/<assetId>/delete
@@ -300,7 +298,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
 
             // build the asset filter from the topic, the gateway asset can be null
-            AssetFilter<?> filter = GatewayMQTTEventSubscriptionHandler.buildAssetFilter(topic, gatewayAsset);
+            AssetFilter<?> filter = GatewayMQTTSubscriptionManager.buildAssetFilter(topic, gatewayAsset);
             if (filter == null) {
                 LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
                 return false;
@@ -322,7 +320,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
         // Operation response topic, requires the operations and response tokens to be present
-        // TODO: Do we need additional authorization checks for operation response topics?
         else {
             return isOperationResponseTopic(topic);
         }
@@ -336,15 +333,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (isEventsTopic(topic)) {
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
             var eventClass = isAssetsTopic(topic) ? AssetEvent.class : AttributeEvent.class;
-            // if the gateway asset is found, the subscription will be relative to the asset, otherwise realm relative.
-            eventSubscriptionHandler.addSubscription(connection, topic, eventClass, gatewayAsset);
+            subscriptionManager.addSubscription(connection, topic, eventClass, gatewayAsset);
         }
     }
 
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         if (isEventsTopic(topic)) {
-            eventSubscriptionHandler.removeSubscription(connection, topic);
+            subscriptionManager.removeSubscription(connection, topic);
         }
     }
 
@@ -368,8 +364,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        // check if we have a gateway asset and it is disabled
-        if (gatewayAsset != null) {
+        if (gatewayAsset != null) { // check if we have a gateway asset and it is disabled
             if (gatewayAsset.getDisabled().orElse(false)) {
                 LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
                 return false;
@@ -378,8 +373,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         String connectionID = getConnectionIDString(connection);
         // Check if user has been authorized for the topic before (cache, 30s expiration)
-        if (isCacheAuthorized(connectionID, topic)) {
-            return true;
+        if (authorizationCache.getIfPresent(connectionID) != null) {
+            if (Objects.requireNonNull(authorizationCache.getIfPresent(connectionID)).contains(topic.getString())) {
+                return true;
+            }
         }
 
         List<String> topicTokens = topic.getTokens();
@@ -464,44 +461,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
-        GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        if (gatewayAsset != null) {
-            updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
-        }
-
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_CLOSE_ERROR, true);
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
-
-        // Remove all event subscriptions for the connection
-        eventSubscriptionHandler.removeAllSubscriptions(connection);
-
-        // Invalidate the authorization cache for the connection
-        authorizationCache.invalidate(getConnectionIDString(connection));
+        handleDisconnect(connection);
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
-        GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        if (gatewayAsset != null) {
-            updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
-        }
-
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_CLOSE, true);
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
-
-        // Remove all event subscriptions for the connection
-        eventSubscriptionHandler.removeAllSubscriptions(connection);
-
-        // Invalidate the authorization cache for the connection
-        authorizationCache.invalidate(getConnectionIDString(connection));
+        handleDisconnect(connection);
     }
 
     @Override
@@ -531,6 +496,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 asyncSend();
     }
 
+    // Handle disconnect - connection lost event
+    protected void handleDisconnect(RemotingConnection connection)
+    {
+        GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
+        if (gatewayAsset != null) {
+            updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
+        }
+
+        Map<String, Object> headers = prepareHeaders(null, connection);
+        headers.put(SESSION_CLOSE, true);
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(headers)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
+
+        subscriptionManager.removeAllSubscriptions(connection);
+        authorizationCache.invalidate(getConnectionIDString(connection));
+    }
+
     /**
      * Authorize a published asset operation (CRUD) based on the topic structure
      */
@@ -555,7 +539,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         if (event instanceof AssetEvent assetEvent) {
-            // if we have an gateway asset then the asset must be a descendant of the gateway asset
+            // if we have a gateway asset then the asset must be a descendant of the gateway asset
             if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " asset request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
@@ -603,7 +587,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 LOG.fine(method + " attribute request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
             }
-            //TODO: Prevent non-gateway users from updating gateway descendants attributes?
         }
 
         if (event instanceof ReadAttributeEvent readAttributeEvent) {
@@ -624,8 +607,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Create asset request topic handler
-     * Creates an asset from the provided template and stores it in the asset storage service.
-     * If the connection is a gateway connection, the asset is associated with the gateway asset.
      */
     protected void handleCreateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
@@ -659,7 +640,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
             if (gatewayAsset != null) {
                 asset.setParentId(gatewayAsset.getId());
-                //TODO: Link asset
                 assetStorageService.merge(asset, true, true, null);
             } else {
                 assetStorageService.merge(asset);
@@ -676,7 +656,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Update asset request topic handler
-     * Updates the asset with the provided template and merges it in the asset storage service.
      */
     protected void handleUpdateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -712,7 +691,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Get asset request topic handler
-     * Publishes the asset object based on the request.
      */
     protected void handleGetAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -730,7 +708,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Delete asset request topic handler
-     * Deletes the asset and all its descendants from the asset storage service.
      */
     protected void handleDeleteAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -750,7 +727,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         assetsToDelete.add(asset.getId()); // ensure the parent is also included in the deletion
 
         try {
-            // if it is a gateway user we need to skip the gatewayCheck on delete
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
             if (gatewayAsset != null) {
                 assetStorageService.delete(assetsToDelete, true);
@@ -771,7 +747,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Update attribute request topic handler
-     * Updates the attribute with the provided value and publishes the attribute event.
      */
     protected void handleUpdateAttribute(Topic topic, ByteBuf body) {
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
@@ -781,8 +756,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * handle multi attribute operations, includes authorization for each provided attribute
-     * authorization edge case - authorization is normally handled in canPublish
-     * however, we need to run authorization on the payload here rather than topic structure
+     * we need to run authorization checks on the payload here rather than topic structure
      */
     @SuppressWarnings({"unchecked"})
     protected void handleUpdateMultiAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -837,8 +811,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     /**
      * Get attribute request topic handler
-     * Publishes the attribute value or the full attribute object based on the request. (get or get-value)
-     * If the attribute is not found, an error response is published.
      */
     protected void handleGetAttribute(RemotingConnection connection, Topic topic, boolean publishValueOnly) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -860,8 +832,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Handle gateway events acknowledgement
-     * Acknowledges the gateway event and processes the acknowledged event.
+     * Handle gateway events acknowledgement, publishes the event to the inbound que when acknowledged
      */
     protected void handleGatewayEventAcknowledgement(RemotingConnection connection, ByteBuf body) {
         // Acknowledgement id is the body of the message
@@ -1005,10 +976,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
-    protected boolean isCacheAuthorized(String cacheKey, Topic topic) {
-        ConcurrentHashSet<String> set = authorizationCache.getIfPresent(cacheKey);
-        return set != null && set.contains(topic.getString());
-    }
 
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
@@ -1018,7 +985,4 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return headers;
     }
 
-
 }
-
-

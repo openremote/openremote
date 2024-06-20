@@ -30,34 +30,30 @@ import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
 
 /**
- * Handles the subscription of GatewayMQTTHandler clients to asset and attribute events, the handler adds the subscription to the broker and
- * the subscriber info map, the subscriber info map is used to keep track of the subscriptions for each connection
+ * Manages MQTT subscriptions for the MQTT Gateway API, it is responsible for adding and removing subscriptions for both the asset and attribute topics
+ * Subscriptions are added to the broker and the subscriber info map, the subscriber info map is used to keep track of the subscriptions for each connection
+ *
  */
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
-public class GatewayMQTTEventSubscriptionHandler {
+public class GatewayMQTTSubscriptionManager {
 
-    private static final Logger LOG = Logger.getLogger(GatewayMQTTEventSubscriptionHandler.class.getName());
-    private final ConcurrentMap<String, GatewayEventSubscriberInfo> eventSubscriberInfoMap = new ConcurrentHashMap<>();
+    private static final Logger LOG = Logger.getLogger(GatewayMQTTSubscriptionManager.class.getName());
+    private final ConcurrentMap<String, GatewayEventSubscriberInfo> subscriberInfoMap = new ConcurrentHashMap<>();
     private final MessageBrokerService messageBrokerService;
     private final MQTTBrokerService mqttBrokerService;
 
-    public GatewayMQTTEventSubscriptionHandler(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
+    public GatewayMQTTSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
         this.messageBrokerService = messageBrokerService;
         this.mqttBrokerService = mqttBrokerService;
     }
 
-
-    public ConcurrentMap<String, GatewayEventSubscriberInfo> getEventSubscriberInfoMap() {
-        return eventSubscriberInfoMap;
+    public ConcurrentMap<String, GatewayEventSubscriberInfo> getSubscriberInfoMap() {
+        return subscriberInfoMap;
     }
 
     /**
      * Adds a subscription for the specified topic, the subscription will be added to the broker and the subscriber info map
-     *
-     * @param connection        the connection to add the subscription for
-     * @param topic             the topic to subscribe to  (e.g. realm/clientId/events/assets/+/attributes/+/#)
-     * @param subscriptionClass the class of the subscription (AssetEvent.class or AttributeEvent.class)
-     * @param relativeToAsset   the asset to build the filter relative to, can be null
+     * @param relativeToAsset the asset to build the filter relative to, can be null
      */
     public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass, Asset<?> relativeToAsset) {
 
@@ -82,38 +78,10 @@ public class GatewayMQTTEventSubscriptionHandler {
 
     /**
      * Removes a subscription for the specified topic, the subscription will be removed from the broker and the subscriber info map
-     *
-     * @param connection the connection to remove the subscription for
-     * @param topic      the topic to remove the subscription for
      */
     public void removeSubscription(RemotingConnection connection, Topic topic) {
-        cancelSubscriptionFromBroker(connection, topic);
-        removeSubscriberInfo(connection, topic);
-    }
-
-    /**
-     * Removes all subscriptions for the specified connection
-     *
-     * @param connection the connection to remove all subscriptions for
-     */
-    public void removeAllSubscriptions(RemotingConnection connection) {
-        synchronized (eventSubscriberInfoMap) {
-            eventSubscriberInfoMap.remove(getConnectionIDString(connection));
-        }
-    }
-
-    protected void sendSubscriptionToBroker(EventSubscription subscription, Map<String, Object> headers) {
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
-                .withBody(subscription)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
-
-    }
-
-    protected void cancelSubscriptionFromBroker(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
-        boolean isAssetTopic = eventSubscriberInfoMap.get(getConnectionIDString(connection))
+        boolean isAssetTopic = subscriberInfoMap.get(getConnectionIDString(connection))
                 .topicSubscriptionMap.get(topic.getString()) instanceof AssetEvent;
 
         Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
@@ -123,13 +91,42 @@ public class GatewayMQTTEventSubscriptionHandler {
                 .withBody(cancelEventSubscription)
                 .to(CLIENT_INBOUND_QUEUE)
                 .asyncSend();
+
+        synchronized (subscriberInfoMap) {
+            subscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
+                if (subscriberInfo.remove(topic.getString()) == 0) {
+                    return null;
+                }
+                return subscriberInfo;
+            });
+        }
     }
+
+    /**
+     * Removes all subscriptions for the specified connection
+     */
+    public void removeAllSubscriptions(RemotingConnection connection) {
+        synchronized (subscriberInfoMap) {
+            subscriberInfoMap.remove(getConnectionIDString(connection));
+        }
+    }
+
+    /**
+     * Sends the EventSubscription to the internal broker
+     */
+    protected void sendSubscriptionToBroker(EventSubscription subscription, Map<String, Object> headers) {
+        messageBrokerService.getFluentProducerTemplate()
+                .withHeaders(headers)
+                .withBody(subscription)
+                .to(CLIENT_INBOUND_QUEUE)
+                .asyncSend();
+
+    }
+
 
     /***
      * Builds an asset filter based on the topic, the filter is used to filter asset events based on the topic filter pattern
-     * @param topic the topic to build the filter for
      * @param relativeToAsset the asset to build the filter relative to, can be null
-     * @return the asset filter or null if the topic is invalid
      */
     protected static AssetFilter<?> buildAssetFilter(Topic topic, Asset<?> relativeToAsset) {
         List<String> topicTokens = topic.getTokens();
@@ -146,29 +143,19 @@ public class GatewayMQTTEventSubscriptionHandler {
             String assetId = topicTokens.size() > ASSET_ID_TOKEN_INDEX ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
             String path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
 
-            // realm/clientId/events/assets/#
-            // all asset events of the realm
             if (assetId.equals("#")) {
             }
-            // realm/clientId/events/assets/+
-            // all asset events of direct children of the realm
             else if (assetId.equals("+")) {
                 parentIds.add(null);
             }
             // topic has a valid assetId
             else if (Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-                // realm/clientId/events/assets/{assetId}/#
-                // all asset events for descendants of the asset
                 if (path.equals("#")) {
                     paths.add(assetId);
                 }
-                // realm/clientId/events/assets/{assetId}/+
-                // all asset events for direct children of the asset
                 else if (path.equals("+")) {
                     parentIds.add(assetId);
                 }
-                // realm/clientId/events/assets/{assetId}
-                // all asset events of the specified asset
                 else {
                     assetIds.add(assetId);
                 }
@@ -181,30 +168,23 @@ public class GatewayMQTTEventSubscriptionHandler {
             boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
             boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
-            // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/<<path>>
             String path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
 
             // if the topic has an assetId
             if (assetIdIsNotWildcardOrEmpty && Pattern.matches(ASSET_ID_REGEXP, assetId)) {
-                // realm/clientId/events/assets/{assetId}/attributes
-                // all attribute events for the specified asset
                 if (attributeName.isEmpty()) {
                     assetIds.add(assetId);
                 } else if (attributeNameIsNotWildcardOrEmpty) {
                     attributeNames.add(attributeName);
 
-                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/#
-                    // all attribute events of descendants of the asset with the specified attribute name
                     if (path.equals("#")) {
                         paths.add(assetId);
                     }
-                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}/+
-                    // all attribute events of direct children of the asset with the specified attribute name
+
                     else if (path.equals("+")) {
                         parentIds.add(assetId);
                     }
-                    // realm/clientId/events/assets/{assetId}/attributes/{attributeName}
-                    // all attribute events of the asset with the specified attribute name
+
                     else {
                         assetIds.add(assetId);
                     }
@@ -216,29 +196,19 @@ public class GatewayMQTTEventSubscriptionHandler {
             }
             // if the topic has a wildcard assetId
             else {
-                // realm/clientId/events/assets/+/attributes/{attributeName}/#
-                // All attribute events of the realm with the specified attributeName
                 if (assetId.equals("+") && attributeNameIsNotWildcardOrEmpty && path.equals("#")) {
                     attributeNames.add(attributeName);
                 }
-                // realm/clientId/events/assets/+/attributes/{attributeName}/+
-                // All attribute events for direct children of the realm with the specified attributeName
                 else if (assetId.equals("+") && attributeNameIsNotWildcardOrEmpty && path.equals("+")) {
                     parentIds.add(null);
                     attributeNames.add(attributeName);
                 }
-                // realm/clientId/events/assets/+/attributes/#
-                // All attribute events of direct children of the realm
                 else if (assetId.equals("+") && attributeName.equals("#")) {
                     // no filter needed
                 }
-
-                // realm/clientId/events/assets/+/attributes/+
-                // All attribute events of direct children of the realm
                 else if (assetId.equals("+") && attributeName.equals("+")) {
                     parentIds.add(null);
                 }
-
                 // unsupported topic-filter
                 else {
                     return null;
@@ -269,10 +239,9 @@ public class GatewayMQTTEventSubscriptionHandler {
         return assetFilter;
     }
 
-
     protected void addSubscriberInfo(RemotingConnection connection, Topic topic, Consumer<SharedEvent> subscriptionConsumer) {
-        synchronized (eventSubscriberInfoMap) {
-            eventSubscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
+        synchronized (subscriberInfoMap) {
+            subscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
                 if (subscriberInfo == null) {
                     return new GatewayEventSubscriberInfo(topic.getString(), subscriptionConsumer);
                 } else {
@@ -283,23 +252,8 @@ public class GatewayMQTTEventSubscriptionHandler {
         }
     }
 
-
-    protected void removeSubscriberInfo(RemotingConnection connection, Topic topic) {
-        synchronized (eventSubscriberInfoMap) {
-            eventSubscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
-                if (subscriberInfo.remove(topic.getString()) == 0) {
-                    return null;
-                }
-                return subscriberInfo;
-            });
-        }
-    }
-
     /**
      * Builds a consumer that publishes the event to the specified topic
-     *
-     * @param topic the topic to publish the event to
-     * @return the consumer that publishes the event to the topic
      */
     protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
         // Always publish asset/attribute messages with QoS 0
@@ -364,7 +318,6 @@ public class GatewayMQTTEventSubscriptionHandler {
             return null;
         }
     }
-
 
     public static class GatewayEventSubscriberInfo {
         public Map<String, Consumer<SharedEvent>> topicSubscriptionMap;
