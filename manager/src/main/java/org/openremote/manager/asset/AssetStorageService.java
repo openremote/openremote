@@ -348,6 +348,47 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
         });
 
+        clientEventService.addEventAuthorizer((requestedRealm, authContext, event) -> {
+              if (!(event instanceof AssetEvent assetEvent)) {
+                return false;
+              }
+
+              // Restricted users cannot create, delete or update assets
+              if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+                  return false;
+              }
+
+              if (authContext != null && authContext.isSuperUser()) {
+                return true;
+              }
+
+              if (authContext != null && !identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
+                requestedRealm)) {
+                LOG.info("Realm is not present or is inactive: realm=" + requestedRealm + ", username=" + authContext.getUsername());
+                return false;
+              }
+
+              if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.info("User doesn't have required role '" + ClientRole.WRITE_ASSETS + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                return false;
+              }
+
+              // Check if asset exists and is in the correct realm
+              // If the asset is being created, the realm is taken from the event
+              if (assetEvent.getCause() != AssetEvent.Cause.CREATE) {
+                Asset<?> asset = find(assetEvent.getId());
+                if (asset == null) {
+                    LOG.info("Asset not found: ref=" + assetEvent.getId());
+                    return false;
+                } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                    LOG.info("Asset realm does not match authenticated realm: ref=" + assetEvent.getId());
+                    return false;
+                }
+            }
+            return true;
+        });
+
+
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
