@@ -457,12 +457,16 @@ export class OrDashboardBuilder extends LitElement {
 
     selectDashboard(dashboard: Dashboard | undefined) {
         if(this.dashboards != null) {
+
+            // If switching between dashboards, check if there were changes, and reset to 'initialDashboardJSON' if needed.
             if(this.selectedDashboard && this.initialDashboardJSON) {
-                const indexOf = this.dashboards.indexOf(this.selectedDashboard);
-                if(indexOf) {
-                    this.dashboards[indexOf] = JSON.parse(this.initialDashboardJSON) as Dashboard;
+                const index = this.dashboards.indexOf(this.selectedDashboard);
+                if(index && JSON.stringify(this.selectedDashboard) !== this.initialDashboardJSON) {
+                    this.dashboards[index] = JSON.parse(this.initialDashboardJSON) as Dashboard;
                 }
             }
+
+            // Update selected dashboard
             this.selectedDashboard = (dashboard ? this.dashboards.find((x) => { return x.id == dashboard.id; }) : undefined);
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
@@ -608,8 +612,8 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title" style="display: flex; align-items: center;">
-                                    <or-icon class="showMobile" style="margin-right: 10px;" icon="chevron-left" @click="${() => { this.selectedDashboard = undefined; }}"></or-icon>
-                                    <or-icon class="hideMobile" style="margin-right: 10px;" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
+                                    <or-icon class="showMobile" style="margin-right: 10px; cursor: pointer;" icon="chevron-left" @click="${() => { this.selectedDashboard = undefined; }}"></or-icon>
+                                    <or-icon class="hideMobile" style="margin-right: 10px; cursor: pointer;" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">

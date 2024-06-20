@@ -102,6 +102,10 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.consoleAutoEnable = true;
     }
 
+    if (normalisedConfig.applyConfigToAdmin === undefined) {
+        normalisedConfig.applyConfigToAdmin = true;
+    }
+
     if (!normalisedConfig.eventProviderType) {
         normalisedConfig.eventProviderType = EventProviderType.WEBSOCKET;
     }
@@ -452,7 +456,7 @@ export class Manager implements EventProviderFactory {
         // Look for language preference in local storage
         const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
-            lng: language || this.config.defaultLanguage || "en",
+            lng: !language || language === "null" ? this.config.defaultLanguage || "en" : language, // somehow language is "null" sometimes
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
