@@ -42,7 +42,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaItem;
@@ -147,109 +146,66 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // TODO: Introduce caching here similar to ActiveMQ auth caching
         clientEventService.addEventAuthorizer((requestedRealm, authContext, event) -> {
 
+            if (!(event instanceof AttributeEvent attributeEvent)) {
+                return false;
+            }
+
             if (authContext != null && authContext.isSuperUser()) {
                 return true;
             }
 
             // Check realm against user
             if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
-                    requestedRealm)) {
+                requestedRealm)) {
                 LOG.log(System.Logger.Level.INFO, "Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
                 return false;
             }
 
-            // Attribute Events
-            if (event instanceof AttributeEvent attributeEvent) {
-                LOG.log(System.Logger.Level.DEBUG, () -> "Authorizing attribute event: " + attributeEvent);
-                // Users must have write attributes role
-                if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                        Constants.KEYCLOAK_CLIENT_ID)) {
-                    LOG.log(System.Logger.Level.DEBUG, "User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                    return false;
-                }
-
-                // Have to load the asset and attribute to perform additional checks - should permissions be moved out of the
-                // asset model (possibly if the performance is determined to be not good enough)
-                // TODO: Use a targeted query to retrieve just the info we need
-                Asset<?> asset = assetStorageService.find(attributeEvent.getId());
-                Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getName()).orElse(null) : null;
-
-                if (asset == null || !asset.hasAttribute(attributeEvent.getName())) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef());
-                    return false;
-                } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef());
-                    return false;
-                }
-
-                if (authContext != null) {
-                    // Check restricted user
-                    if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
-                        // Must be asset linked to user
-                        if (!assetStorageService.isUserAsset(authContext.getUserId(),
-                                attributeEvent.getId())) {
-                            LOG.log(System.Logger.Level.DEBUG, () -> "Restricted user is not linked to asset '" + attributeEvent.getId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                            return false;
-                        }
-
-                        if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                            LOG.log(System.Logger.Level.DEBUG, () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                            return false;
-                        }
-                    }
-                } else {
-                    // Check attribute has public write flag for anonymous write
-                    if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                        LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getRef() + "': username=null");
-                        return false;
-                    }
-                }
-                return true;
+            // Users must have write attributes role
+            if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
+                Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.log(System.Logger.Level.DEBUG, "User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                return false;
             }
-            // Asset Events
-            else if (event instanceof AssetEvent assetEvent) {
-                LOG.log(System.Logger.Level.DEBUG, () -> "Authorizing asset event: " + assetEvent);
-                if (!(assetEvent.getCause() == AssetEvent.Cause.DELETE || assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE)) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as cause is not supported: " + assetEvent.getCause());
-                    return false;
-                }
 
-                if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(),
-                        Constants.KEYCLOAK_CLIENT_ID)) {
-                    LOG.log(System.Logger.Level.DEBUG, "User doesn't have required role '" + ClientRole.WRITE_ASSETS + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                    return false;
-                }
+            // Have to load the asset and attribute to perform additional checks - should permissions be moved out of the
+            // asset model (possibly if the performance is determined to be not good enough)
+            // TODO: Use a targeted query to retrieve just the info we need
+            Asset<?> asset = assetStorageService.find(attributeEvent.getId());
+            Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getName()).orElse(null) : null;
 
-
-                // Check if the asset is in the requested realm - this is a basic check to ensure the asset is in the correct realm
-                // The check is skipped for create events as the asset may not exist yet
-                if (assetEvent.getCause() != AssetEvent.Cause.CREATE)
-                {
-                    Asset<?> asset = assetStorageService.find(assetEvent.getId());
-                    if (asset == null) {
-                        LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset doesn't exist: " + assetEvent.getId());
-                        return false;
-                    } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                        LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + assetEvent.getId());
-                        return false;
-                    }
-                }
-
-
-                if (authContext != null) {
-                    // Check restricted user
-                    if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
-                        // Must be asset linked to user
-                        if (!assetStorageService.isUserAsset(authContext.getUserId(),
-                                assetEvent.getId())) {
-                            LOG.log(System.Logger.Level.DEBUG, () -> "Restricted user is not linked to asset '" + assetEvent.getId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
-                            return false;
-                        }
-                    }
-                }
-                return true;
+            if (asset == null || !asset.hasAttribute(attributeEvent.getName())) {
+                LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef());
+                return false;
+            } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef());
+                return false;
             }
-            return false;
+
+            if (authContext != null) {
+                // Check restricted user
+                if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+                    // Must be asset linked to user
+                    if (!assetStorageService.isUserAsset(authContext.getUserId(),
+                        attributeEvent.getId())) {
+                        LOG.log(System.Logger.Level.DEBUG, () -> "Restricted user is not linked to asset '" + attributeEvent.getId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        return false;
+                    }
+
+                    if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
+                        LOG.log(System.Logger.Level.DEBUG, () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                        return false;
+                    }
+                }
+            } else {
+                // Check attribute has public write flag for anonymous write
+                if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
+                    LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getRef() + "': username=null");
+                    return false;
+                }
+            }
+
+            return true;
         });
 
         // Get dynamic route count for event processing (multithreaded event processing but guaranteeing events for the same asset end up in the same route)
