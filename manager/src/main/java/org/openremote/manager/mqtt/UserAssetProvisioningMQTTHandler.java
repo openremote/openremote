@@ -132,6 +132,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
                 .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
                 .setMaxSizeMessages(1000)
+                .setPageLimitMessages(0L)
                 .setDefaultConsumerWindowSize(-1)
         );
     }
