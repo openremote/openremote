@@ -226,13 +226,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     }
 
 
-    /**
-     * Try and get the gateway id of the provided assetId or parentId
-     *
-     * @param assetId  the asset id to check
-     * @param parentId the parent id to check (can be null)
-     * @return the gateway id if the asset is a gateway or a descendant of a gateway asset or null if not
-     */
     public String getRegisteredGatewayId(String assetId, String parentId) {
         String gatewayId = null;
         // check whether the assetId can be found in the gateway child assets
@@ -265,32 +258,17 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return null;
     }
 
-    /**
-     * Check if the asset is a registered gateway
-     * @param assetId the asset id to check
-     * @return true if the asset is a registered gateway
-     */
     public boolean isRegisteredGateway(String assetId) {
         return gatewayAssetsMap.keySet().stream().anyMatch(gateway -> gateway.getId().equals(assetId));
     }
 
 
-    /**
-     * Check if the asset is a descendant of any gateway asset
-     * @param assetId the asset id to check
-     * @return true if the asset is a descendant of any gateway asset
-     */
+
     public boolean isGatewayDescendant(String assetId) {
         return gatewayAssetsMap.values().stream().anyMatch(list -> list.contains(assetId));
     }
 
-    /**
-     * Check if the asset is a descendant of a specific gateway asset
-     *
-     * @param assetId   the asset id to check
-     * @param gatewayId the gateway id to check
-     * @return true if the asset is a descendant of the gateway asset
-     */
+    // Check whether the asset is a descendant of a specified gatewayId
     public boolean isGatewayDescendant(String assetId, String gatewayId) {
         return gatewayAssetsMap.entrySet().stream()
                 .filter(entry -> entry.getKey().getId().equals(gatewayId))
