@@ -127,9 +127,9 @@ export class GatewayWidget extends OrWidget {
                     ${when(this._loading, () => html`
                         <or-loading-indicator></or-loading-indicator>
                     `, () => {
-            if(this._activeTunnel) {
-                return html`
-                                
+                        if (this._activeTunnel) {
+                            return html`
+
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
                                 ></or-mwc-input>
@@ -145,14 +145,14 @@ export class GatewayWidget extends OrWidget {
                                 `)}
                                 
                             `;
-            } else {
-                return html`
+                        } else {
+                            return html`
                                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
                             `;
-            }
-        })}
+                        }
+                    })}
                 </div>
             </div>
         `;
