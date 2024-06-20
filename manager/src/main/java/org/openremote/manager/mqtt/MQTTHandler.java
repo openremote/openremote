@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**

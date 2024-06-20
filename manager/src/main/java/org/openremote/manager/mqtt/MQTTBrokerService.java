@@ -55,6 +55,7 @@ import org.keycloak.adapters.jaas.AbstractKeycloakLoginModule;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -70,7 +71,6 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.security.User;
 import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
 import javax.security.auth.Subject;
