@@ -117,6 +117,7 @@ provisioned successfully and start publishing attribute events.
 * THREAD_COUNT - Number of threads/users/devices (default: `1000`)
 * RAMP_RATE - Number of thread/users/devices to add / second (default: `50`)
 * MILLIS_BETWEEN_PUBLISHES - How long to wait between each time the 2 attributes are published in milliseconds (default: `10000`)
+* RESTART_DELAY_MILLIS - Max amount of time to wait when an error occurs before the device will re-connect (a random value between 0 and this value will be used)
 
 #### Run the test
 Add test variable overrides as required by copy/pasting the `-o settings.env.XXX` line:

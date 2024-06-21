@@ -43,15 +43,18 @@ inputFile.eachLine { line -&gt;
 props.put(&quot;certs&quot;, certs)
 
 // Store thread count
-def threadCount = Integer.parseInt(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;)
+def threadCount = props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;
+if (threadCount instanceof String) {
+	threadCount = Integer.parseInt(threadCount)
+}
 props.put(&quot;THREAD_COUNT&quot;, threadCount)
 
 // Store global var for tracking device init successes - decrement this on each device start and increment on publish success
-props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(threadCount))</stringProp>
+props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0))</stringProp>
         </JSR223Sampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="mqtt-client-auto-provision-pub" enabled="true">
         <boolProp name="ThreadGroup.delayedStart">true</boolProp>
         <stringProp name="ThreadGroup.num_threads">${__groovy(props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;,)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__groovy(Math.max(1\,(int)((props.get(&quot;THREAD_COUNT&quot;) ?: &quot;1000&quot;).toInteger() / (props.get(&quot;RAMP_RATE&quot;) ?: &quot;50&quot;).toInteger())),)}</stringProp>
@@ -64,28 +67,11 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(t
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
-        <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Output device cert" enabled="true">
-            <stringProp name="cacheKey">true</stringProp>
-            <stringProp name="filename"></stringProp>
-            <stringProp name="parameters"></stringProp>
-            <stringProp name="script">// Decrement successes counter
-props.get(&quot;successes&quot;).decrementAndGet()
-
-if (vars.get(&quot;cert&quot;) == null) {
-  vars.put(&quot;cert&quot;, props.get(&quot;certs&quot;)[ctx.getThreadNum()])
-  vars.putObject(&quot;threadCount&quot;, props.get(&quot;THREAD_COUNT&quot;))
-}</stringProp>
-            <stringProp name="scriptLanguage">groovy</stringProp>
-          </JSR223Sampler>
-          <hashTree/>
-        </hashTree>
         <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect">
           <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
-          <stringProp name="mqtt.conn_timeout">60</stringProp>
+          <stringProp name="mqtt.conn_timeout">10</stringProp>
           <stringProp name="mqtt.protocol">SSL</stringProp>
           <stringProp name="mqtt.ws_path"></stringProp>
           <boolProp name="mqtt.dual_ssl_authentication">false</boolProp>
@@ -104,12 +90,33 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.reconn_attempt_max">0</stringProp>
         </net.xmeter.samplers.ConnectSampler>
         <hashTree>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
-            <stringProp name="ConstantTimer.delay">1000</stringProp>
-          </ConstantTimer>
+          <JSR223Timer guiclass="TestBeanGUI" testclass="JSR223Timer" testname="Connect Delay Timer" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Decrement successes counter only if already succeeded - this is used to track when to stop the test
+if (vars.get(&quot;success&quot;) != null) {
+	props.get(&quot;successes&quot;).decrementAndGet()
+	vars.remove(&quot;success&quot;)
+}
+
+if (vars.get(&quot;cert&quot;) == null) {
+	vars.put(&quot;cert&quot;, props.get(&quot;certs&quot;)[ctx.getThreadNum()])
+	vars.putObject(&quot;threadCount&quot;, props.get(&quot;THREAD_COUNT&quot;))
+	return 0
+}
+
+// After the first iteration we want to simulate a random pause between next reconnection
+int upper = 60000
+int lower = 1
+def delay = (int) (Math.random() * (upper - lower)) + lower;
+log.info(&quot;CONNECT DELAY=${delay}ms&quot;)
+return delay</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223Timer>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response" enabled="true">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response">
           <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -120,8 +127,13 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
           <stringProp name="mqtt.sample_condition_value_opt">20000</stringProp>
         </net.xmeter.samplers.SubSampler>
-        <hashTree/>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="true">
+        <hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+            <stringProp name="ConstantTimer.delay">1000</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+        </hashTree>
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning">
           <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/request</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -132,18 +144,7 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="false">
-          <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/request</stringProp>
-          <stringProp name="mqtt.qos_level">0</stringProp>
-          <boolProp name="mqtt.add_timestamp">false</boolProp>
-          <stringProp name="mqtt.message_type">String</stringProp>
-          <stringProp name="mqtt.message_type_fixed_length">1024</stringProp>
-          <stringProp name="mqtt.message_to_sent">{&quot;type&quot;:&quot;x509&quot;,&quot;cert&quot;:&quot;${__P(${__V(cert${__threadNum})})}&quot;}</stringProp>
-          <boolProp name="mqtt.retained_message">false</boolProp>
-          <stringProp name="mqtt.connect_name">mqttconn</stringProp>
-        </net.xmeter.samplers.PubSampler>
-        <hashTree/>
-        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response" enabled="true"/>
+        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response"/>
         <hashTree>
           <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Regular Expression Extractor" enabled="true">
             <stringProp name="RegexExtractor.useHeaders">false</stringProp>
@@ -168,7 +169,7 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.sample_condition_value_opt">20000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
             <stringProp name="ConstantTimer.delay">1000</stringProp>
           </ConstantTimer>
           <hashTree/>
@@ -195,21 +196,22 @@ if (vars.get(&quot;cert&quot;) == null) {
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only Controller" enabled="true"/>
-        <hashTree>
-          <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes" enabled="true">
-            <stringProp name="cacheKey">true</stringProp>
-            <stringProp name="filename"></stringProp>
-            <stringProp name="parameters"></stringProp>
-            <stringProp name="script">// Increment successes counter and stop test if all devices are in successful state
-if (props.get(&quot;successes&quot;).incrementAndGet() &gt;= vars.getObject(&quot;threadCount&quot;)) {
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes" enabled="true">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">// Increment successes counter and stop test if all devices are in successful state
+def current = props.get(&quot;successes&quot;).incrementAndGet()
+vars.put(&quot;success&quot;, &quot;&quot;)
+log.info(&quot;CHECKING SUCCESSES: current=${current}&quot;)
+
+if (current &gt;= vars.getObject(&quot;threadCount&quot;)) {
+	log.info(&quot;All threads are successful so stopping test&quot;)
 	ctx.getEngine().stopTest(true)
-}
-</stringProp>
-            <stringProp name="scriptLanguage">groovy</stringProp>
-          </JSR223Sampler>
-          <hashTree/>
-        </hashTree>
+}</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
         <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">true</boolProp>
           <intProp name="LoopController.loops">-1</intProp>
@@ -254,8 +256,8 @@ if (props.get(&quot;successes&quot;).incrementAndGet() &gt;= vars.getObject(&quo
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
-          <boolProp name="ResultCollector.error_logging">true</boolProp>
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
             <value class="SampleSaveConfiguration">
