@@ -124,6 +124,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected Configuration serverConfiguration;
     protected EmbeddedActiveMQ server;
     protected ActiveMQORSecurityManager securityManager;
+    protected ServerLocator serverLocator;
+    protected ClientSessionFactory sessionFactory;
 
     @Override
     public int getPriority() {
@@ -174,8 +176,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
             new AddressSettings()
-                .setDeadLetterAddress(SimpleString.toSimpleString("ActiveMQ.DLQ"))
-                .setExpiryAddress(SimpleString.toSimpleString("ActiveMQ.expired"))
+                .setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
+                .setExpiryAddress(SimpleString.of("ActiveMQ.expired"))
                 .setAutoDeleteCreatedQueues(true)
                 .setAutoDeleteAddresses(true)
                 // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
@@ -254,12 +256,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
 
                 if (isSubscribe) {
-                    onSubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                    onSubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 } else {
-                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.convertCoreAddressToMqttTopicFilter(topic, wildcardConfiguration));
+                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 }
             }
         });
+
+        // Don't use producer flow control
+        serverLocator = ActiveMQClient.createServerLocator("vm://0").setProducerWindowSize(-1);
+        sessionFactory = serverLocator.createSessionFactory();
 
         // Start each custom handler
         for (MQTTHandler handler : customHandlers) {
@@ -562,10 +568,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         ClientSessionInternal session = null;
 
         try {
-            ServerLocator serverLocator = ActiveMQClient.createServerLocator("vm://0");
-            ClientSessionFactory factory = serverLocator.createSessionFactory();
             String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-            session = (ClientSessionInternal) factory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+            session = (ClientSessionInternal) sessionFactory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
             session.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
             ServerSession serverSession = server.getActiveMQServer().getSessionByID(session.getName());
             serverSession.disableSecurity();

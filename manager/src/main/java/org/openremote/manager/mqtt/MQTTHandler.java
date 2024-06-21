@@ -138,11 +138,11 @@ public abstract class MQTTHandler {
     protected void addPublishConsumer(String topic) throws Exception {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
-            String coreTopic = MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.wildcardConfiguration);
-            clientSession.createQueue(new QueueConfiguration(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
+            String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
+            clientSession.createQueue(QueueConfiguration.of(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = clientSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
-                Topic publishTopic = Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(message.getAddress(), mqttBrokerService.wildcardConfiguration));
+                Topic publishTopic = Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(message.getAddress(), mqttBrokerService.wildcardConfiguration));
                 String clientID = message.getStringProperty(MessageUtil.CONNECTION_ID_PROPERTY_NAME);
                 RemotingConnection connection = mqttBrokerService.getConnectionFromClientID(clientID);
 
@@ -256,7 +256,7 @@ public abstract class MQTTHandler {
                     ClientMessage message = clientSession.createMessage(false);
                     message.putIntProperty(MQTT_QOS_LEVEL_KEY, qoS.value());
                     message.writeBodyBufferBytes(ValueUtil.asJSON(data).map(String::getBytes).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)));
-                    producer.send(MQTTUtil.convertMqttTopicFilterToCoreAddress(topic, mqttBrokerService.getWildcardConfiguration()), message);
+                    producer.send(MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.getWildcardConfiguration()), message);
                 }
             }
         } catch (Exception e) {
