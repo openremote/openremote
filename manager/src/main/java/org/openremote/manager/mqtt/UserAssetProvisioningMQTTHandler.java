@@ -314,7 +314,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         boolean isGatewayAsset = matchingConfig.getAssetTemplate().contains("GatewayV2Asset");
 
         // Skip Service User Creation for Gateway Assets
-        if (isGatewayAsset) {
+        if (!isGatewayAsset) {
             String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
             if (serviceUsername.length() > 255) {
                 // Keycloak has a 255 character limit on clientId
