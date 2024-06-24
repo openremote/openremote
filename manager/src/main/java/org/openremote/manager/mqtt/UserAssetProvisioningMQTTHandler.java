@@ -314,7 +314,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         boolean isGatewayAsset = matchingConfig.getAssetTemplate().contains("GatewayV2Asset");
 
         // Skip Service User Creation for Gateway Assets
-        if (!isGatewayAsset) {
+        if (isGatewayAsset) {
             String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
             if (serviceUsername.length() > 255) {
                 // Keycloak has a 255 character limit on clientId
@@ -372,14 +372,17 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        // Get the service user of the gateway asset
+        // Get the GatewayAsset service user if its a gateway asset
         if (isGatewayAsset)
         {
             GatewayV2Asset gatewayAsset = assetStorageService.find(assetId, GatewayV2Asset.class);
             if (gatewayAsset != null)
             {
                 asset = gatewayAsset;
-                serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get());
+                if (gatewayAsset.getClientId().isPresent())
+                {
+                    serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get());
+                }
             }
         }
 
