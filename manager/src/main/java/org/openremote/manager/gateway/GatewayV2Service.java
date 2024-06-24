@@ -192,17 +192,17 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
             }
 
+
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
                 gateway.setClientId(clientId);
                 gateway.setClientSecret(secret);
                 assetStorageService.merge(gateway);
             }
 
-            LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
             return gatewayUser;
 
         } catch (Exception e) {
-            LOG.warning("Failed to create client for gateway '" + gateway.getId());
+            LOG.warning("Failed to create client for gateway '" + gateway.getId() + "': " + e.getMessage());
         }
         return null;
     }
