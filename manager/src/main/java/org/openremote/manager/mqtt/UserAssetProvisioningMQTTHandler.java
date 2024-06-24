@@ -26,7 +26,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.provisioning.ProvisioningService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -36,13 +35,16 @@ import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
+import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
@@ -307,39 +309,43 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         }
 
         String realm = matchingConfig.getRealm();
+        User serviceUser = null;
 
-        // Get/create service user
-        String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
-        if (serviceUsername.length() > 255) {
-            // Keycloak has a 255 character limit on clientId
-            serviceUsername = serviceUsername.substring(0, 254);
-        }
-        User serviceUser;
+        boolean isGatewayAsset = matchingConfig.getAssetTemplate().contains("GatewayV2Asset");
 
-        try {
-            LOG.finest("Checking service user for this client");
-            serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + serviceUsername);
-
-            if (serviceUser != null) {
-                if (!serviceUser.getEnabled()) {
-                    LOG.info(() -> "Service user exists and has been disabled so cannot continue: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
-                    mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
-                    return;
-                }
-                LOG.finest("Service user exists and is enabled");
-            } else {
-                LOG.fine("Creating service user");
-                serviceUser = createClientServiceUser(realm, serviceUsername, matchingConfig);
-                LOG.fine("Service user has been created: username=" + serviceUser.getUsername());
+        // Skip Service User Creation for Gateway Assets
+        if (!isGatewayAsset) {
+            String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
+            if (serviceUsername.length() > 255) {
+                // Keycloak has a 255 character limit on clientId
+                serviceUsername = serviceUsername.substring(0, 254);
             }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection), e);
-            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
-            return;
+
+            try {
+                LOG.finest("Checking service user for this client");
+                serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + serviceUsername);
+
+                if (serviceUser != null) {
+                    if (!serviceUser.getEnabled()) {
+                        LOG.info(() -> "Service user exists and has been disabled so cannot continue: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
+                        mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.USER_DISABLED), MqttQoS.AT_MOST_ONCE);
+                        return;
+                    }
+                    LOG.finest("Service user exists and is enabled");
+                } else {
+                    LOG.fine("Creating service user");
+                    serviceUser = createClientServiceUser(realm, serviceUsername, matchingConfig);
+                    LOG.fine("Service user has been created: username=" + serviceUser.getUsername());
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection), e);
+                mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+                return;
+            }
         }
+
 
         Asset<?> asset;
-
         // Prepend realm name to unique ID to generate asset ID to further improve uniqueness
         String assetId = UniqueIdentifierGenerator.generateId(matchingConfig.getRealm() + uniqueId);
 
@@ -365,6 +371,23 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
             return;
         }
+
+        // Get the GatewayAsset service user if its a gateway asset
+        if (isGatewayAsset)
+        {
+            GatewayV2Asset gatewayAsset = assetStorageService.find(assetId, GatewayV2Asset.class);
+            if (gatewayAsset != null)
+            {
+                serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId());
+            }
+        }
+
+        if (serviceUser == null) {
+            LOG.log(Level.WARNING, "Failed to retrieve/create service user: topic=" + topic + ", " + MQTTBrokerService.connectionToString(connection));
+            mqttBrokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_ERROR), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
 
         // Authenticate the connection using this service user's credentials - this will also update the connection's subject
         connection.setSubject(null); // Clear existing anonymous subject
@@ -456,8 +479,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         return serviceUser;
     }
 
-    protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
-        LOG.finest("Creating client asset: realm=" + realm + ", username=" + serviceUser.getUsername());
+    protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, @Nullable User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
+        LOG.finest("Creating client asset: realm=" + realm );
 
         if (TextUtil.isNullOrEmpty(provisioningConfig.getAssetTemplate())) {
             return null;
@@ -478,7 +501,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         assetStorageService.merge(asset);
 
-        if (provisioningConfig.isRestrictedUser()) {
+        if (provisioningConfig.isRestrictedUser() && serviceUser != null) {
             assetStorageService.storeUserAssetLinks(Collections.singletonList(new UserAssetLink(realm, serviceUser.getId(), assetId)));
         }
 
