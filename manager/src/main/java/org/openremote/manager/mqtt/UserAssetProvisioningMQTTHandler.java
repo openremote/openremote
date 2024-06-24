@@ -372,13 +372,14 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        // Get the GatewayAsset service user if its a gateway asset
+        // Get the service user of the gateway asset
         if (isGatewayAsset)
         {
             GatewayV2Asset gatewayAsset = assetStorageService.find(assetId, GatewayV2Asset.class);
             if (gatewayAsset != null)
             {
-                serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId());
+                asset = gatewayAsset;
+                serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get());
             }
         }
 
