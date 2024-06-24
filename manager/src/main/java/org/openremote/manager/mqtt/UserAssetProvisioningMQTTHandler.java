@@ -27,6 +27,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.gateway.GatewayV2Service;
 import org.openremote.manager.provisioning.ProvisioningService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -111,6 +112,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
+    protected GatewayV2Service gatewayV2Service;
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
 
@@ -120,6 +122,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         provisioningService = container.getService(ProvisioningService.class);
         timerService = container.getService(TimerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        gatewayV2Service = container.getService(GatewayV2Service.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
 
         if (!identityService.isKeycloakEnabled()) {
@@ -372,18 +375,9 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        // Get the GatewayAsset service user if its a gateway asset
-        if (isGatewayAsset)
+        if (asset instanceof GatewayV2Asset gatewayV2Asset)
         {
-            GatewayV2Asset gatewayAsset = assetStorageService.find(assetId, GatewayV2Asset.class);
-            if (gatewayAsset != null)
-            {
-                asset = gatewayAsset;
-                if (gatewayAsset.getClientId().isPresent())
-                {
-                    serviceUser = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().get());
-                }
-            }
+            serviceUser = gatewayV2Service.createUpdateGatewayServiceUser(gatewayV2Asset);
         }
 
         if (serviceUser == null) {

@@ -40,7 +40,6 @@ import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
@@ -171,7 +170,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     }
 
 
-    protected void createUpdateGatewayServiceUser(GatewayV2Asset gateway) {
+    public User createUpdateGatewayServiceUser(GatewayV2Asset gateway) {
         LOG.info("Creating/updating gateway service user for gateway id: " + gateway.getId());
         String clientId = getGatewayClientId(gateway.getId());
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
@@ -199,14 +198,13 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 assetStorageService.merge(gateway);
             }
 
-            try {
-                LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to merge registered gateway: " + gateway.getId(), e);
-            }
+            LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
+            return gatewayUser;
+
         } catch (Exception e) {
             LOG.warning("Failed to create client for gateway '" + gateway.getId());
         }
+        return null;
     }
 
     protected void removeGatewayServiceUser(GatewayV2Asset gateway) {
