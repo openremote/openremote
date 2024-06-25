@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.security;
 
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.mqtt.MQTTBrokerService;
@@ -29,17 +28,17 @@ import org.openremote.model.Container;
 import java.util.Locale;
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.MapAccess.getString;
+
 public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
     protected ManagerIdentityProvider identityProvider;
-    protected PersistenceService persistenceService;
 
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-        persistenceService = container.getService(PersistenceService.class);
         MQTTBrokerService mqttBrokerService = container.getService(MQTTBrokerService.class);
         ManagerWebService managerWebService = container.getService(ManagerWebService.class);
 
@@ -56,18 +55,20 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     @Override
-    public ManagerIdentityProvider createIdentityProvider(Container container, String identityProviderType) {
+    public ManagerIdentityProvider createIdentityProvider(Container container) {
         if (identityProvider == null) {
+            String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER, OR_IDENTITY_PROVIDER_DEFAULT);
+
             switch (identityProviderType.toLowerCase(Locale.ROOT)) {
-                case "keycloak":
+                case "keycloak" -> {
                     LOG.info("Enabling Keycloak identity provider");
                     this.identityProvider = new ManagerKeycloakIdentityProvider();
-                    break;
-                case "basic":
+                }
+                case "basic" -> {
                     LOG.info("Enabling basic identity provider");
                     this.identityProvider = new ManagerBasicIdentityProvider();
-                    break;
-                default:
+                }
+                default ->
                     throw new UnsupportedOperationException("Unknown identity provider: " + identityProviderType);
             }
         }

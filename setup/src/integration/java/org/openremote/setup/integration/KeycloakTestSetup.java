@@ -21,7 +21,7 @@ package org.openremote.setup.integration;
 
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.RoleRepresentation;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;

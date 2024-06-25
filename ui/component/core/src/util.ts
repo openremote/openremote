@@ -62,12 +62,27 @@ export interface GeoNotification {
     notification?: PushNotificationMessage;
 }
 
+export function getBrowserLanguage(): string {
+    return navigator.language.split("-")[0] || "en";
+}
+
 export function getQueryParameters(queryStr: string): any {
     return Qs.parse(queryStr, {ignoreQueryPrefix: true});
 }
 
-export function getQueryParameter(queryStr: string, parameter: string): any | undefined {
-    const parsed = getQueryParameters(queryStr);
+export function getQueryParameter(parameter: string): any | undefined {
+    let parsed;
+
+    if (location.search && location.search !== "") {
+        parsed = getQueryParameters(location.search);
+    }
+
+    if (location.hash) {
+        const index = location.hash.indexOf("?");
+        if (index > -1) {
+            parsed = getQueryParameters(location.hash.substring(index + 1));
+        }
+    }
     return parsed ? parsed[parameter] : undefined;
 }
 

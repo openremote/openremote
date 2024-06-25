@@ -30,7 +30,7 @@ import org.keycloak.representations.idm.RoleRepresentation
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService

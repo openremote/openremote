@@ -33,19 +33,6 @@ declare var KEYCLOAK_URL: string | undefined;
 
 export {HeaderConfig, DEFAULT_LANGUAGES};
 
-export function getRealmQueryParameter(): string | undefined {
-    if(location.search && location.search !== "") {
-        return Util.getQueryParameter(location.search, "realm");
-    }
-
-    if(location.hash) {
-        const index = location.hash.indexOf("?");
-        if(index > -1) {
-            return Util.getQueryParameter(location.hash.substring(index + 1), "realm");
-        }
-    }
-}
-
 export function getDefaultManagerConfig() {
     return normaliseConfig(DEFAULT_MANAGER_CONFIG);
 }
@@ -204,7 +191,10 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
         if (!managerConfig.realm) {
             // Use realm query parameter if no specific realm provided
-            managerConfig.realm = getRealmQueryParameter();
+            managerConfig.realm = Util.getQueryParameter("realm");
+        }
+        if (!managerConfig.defaultLanguage) {
+            managerConfig.defaultLanguage = Util.getBrowserLanguage();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);
