@@ -5,6 +5,8 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <DNSCacheManager guiclass="DNSCachePanel" testclass="DNSCacheManager" testname="DNS Cache Manager">
@@ -14,7 +16,7 @@
         <boolProp name="DNSCacheManager.isCustomResolver">false</boolProp>
       </DNSCacheManager>
       <hashTree/>
-      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group">
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -25,7 +27,7 @@
         </elementProp>
       </SetupThreadGroup>
       <hashTree>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Read certs" enabled="true">
           <stringProp name="scriptLanguage">groovy</stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="filename"></stringProp>
@@ -65,7 +67,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect">
+        <net.xmeter.samplers.ConnectSampler guiclass="net.xmeter.gui.ConnectSamplerUI" testclass="net.xmeter.samplers.ConnectSampler" testname="connect" enabled="true">
           <stringProp name="mqtt.server">${__P(MANAGER_HOSTNAME,localhost)}</stringProp>
           <stringProp name="mqtt.port">8883</stringProp>
           <stringProp name="mqtt.version">3.1</stringProp>
@@ -92,7 +94,7 @@ props.put(&quot;successes&quot;, new java.util.concurrent.atomic.AtomicInteger(0
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
-            <stringProp name="script">// Decrement successes counter only if already succeeded - this is used to track when to stop the test
+            <stringProp name="script">// Decrement successes counter only if previously succeeded - this is used to track when to stop the test
 if (vars.get(&quot;success&quot;) != null) {
 	props.get(&quot;successes&quot;).decrementAndGet()
 	vars.remove(&quot;success&quot;)
@@ -114,7 +116,7 @@ return delay</stringProp>
           </JSR223Timer>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe provisioning response" enabled="true">
           <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/response</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -131,7 +133,7 @@ return delay</stringProp>
           </ConstantTimer>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning">
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish provisioning" enabled="true">
           <stringProp name="mqtt.topic_name">provisioning/device${__threadNum}/request</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -142,7 +144,7 @@ return delay</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response"/>
+        <net.xmeter.samplers.AsyncResponseSampler guiclass="net.xmeter.gui.AsyncResponseSamplerUI" testclass="net.xmeter.samplers.AsyncResponseSampler" testname="Check provisioning response" enabled="true"/>
         <hashTree>
           <RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="Regular Expression Extractor" enabled="true">
             <stringProp name="RegexExtractor.useHeaders">false</stringProp>
@@ -155,7 +157,7 @@ return delay</stringProp>
           </RegexExtractor>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe attributes">
+        <net.xmeter.samplers.SubSampler guiclass="net.xmeter.gui.SubSamplerUI" testclass="net.xmeter.samplers.SubSampler" testname="Subscribe attributes" enabled="true">
           <stringProp name="mqtt.topic_name">master/device${__threadNum}/attributevalue/+/${assetId}</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -167,12 +169,12 @@ return delay</stringProp>
           <stringProp name="mqtt.sample_condition_value_opt">20000</stringProp>
         </net.xmeter.samplers.SubSampler>
         <hashTree>
-          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
             <stringProp name="ConstantTimer.delay">1000</stringProp>
           </ConstantTimer>
           <hashTree/>
         </hashTree>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall">
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall" enabled="true">
           <stringProp name="mqtt.topic_name">master/device${__threadNum}/writeattributevalue/rainfall/${assetId}</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -183,7 +185,7 @@ return delay</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature">
+        <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature" enabled="true">
           <stringProp name="mqtt.topic_name">master/device${__threadNum}/writeattributevalue/temperature/${assetId}</stringProp>
           <stringProp name="mqtt.qos_level">0</stringProp>
           <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -194,7 +196,7 @@ return delay</stringProp>
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.PubSampler>
         <hashTree/>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Check successes" enabled="true">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
@@ -210,12 +212,12 @@ if (current &gt;= vars.getObject(&quot;threadCount&quot;)) {
           <stringProp name="scriptLanguage">groovy</stringProp>
         </JSR223Sampler>
         <hashTree/>
-        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">true</boolProp>
           <intProp name="LoopController.loops">-1</intProp>
         </LoopController>
         <hashTree>
-          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall">
+          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish rainfall" enabled="true">
             <stringProp name="mqtt.topic_name">master/device${__threadNum}/writeattributevalue/rainfall/${assetId}</stringProp>
             <stringProp name="mqtt.qos_level">0</stringProp>
             <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -231,7 +233,7 @@ if (current &gt;= vars.getObject(&quot;threadCount&quot;)) {
             </ConstantTimer>
             <hashTree/>
           </hashTree>
-          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature">
+          <net.xmeter.samplers.PubSampler guiclass="net.xmeter.gui.PubSamplerUI" testclass="net.xmeter.samplers.PubSampler" testname="Publish temperature" enabled="true">
             <stringProp name="mqtt.topic_name">master/device${__threadNum}/writeattributevalue/temperature/${assetId}</stringProp>
             <stringProp name="mqtt.qos_level">0</stringProp>
             <boolProp name="mqtt.add_timestamp">false</boolProp>
@@ -250,11 +252,11 @@ if (current &gt;= vars.getObject(&quot;threadCount&quot;)) {
             <hashTree/>
           </hashTree>
         </hashTree>
-        <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect">
+        <net.xmeter.samplers.DisConnectSampler guiclass="net.xmeter.gui.DisConnectSamplerUI" testclass="net.xmeter.samplers.DisConnectSampler" testname="disconnect" enabled="true">
           <stringProp name="mqtt.connect_name">mqttconn</stringProp>
         </net.xmeter.samplers.DisConnectSampler>
         <hashTree/>
-        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
