@@ -238,11 +238,9 @@ fetch(configURL).then(async (result) => {
         const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
         if(realmAppConfig) {
             const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
-            pages.forEach(pageProvider => {
-                if(!headerPaths.includes(pageProvider.name)) {
-                    pages.push(pages.splice(pages.indexOf(pageProvider), 1)[0]);
-                }
-            })
+            orAppConfig.pages = pages
+                .filter(pageProvider => headerPaths.includes(pageProvider.name))
+                .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
         }
 
         // Check local storage for set language, otherwise use language set in config
