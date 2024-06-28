@@ -539,7 +539,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         if (event instanceof AssetEvent assetEvent) {
+
             // if we have a gateway asset then the asset must be a descendant of the gateway asset
+            // cannot check on create as the asset does not exist yet and we dont have access to the payload
             if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " asset request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
@@ -549,6 +551,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 LOG.fine(method + " asset request was not authorised, cannot modify/delete gateway descendants as non gateway, topic: topic=" + topic);
                 return false;
             }
+
+            // if we dont have gateway asset and were updating an asset then the parentId should not be a descendant of a gateway or the gateway itself
+            if (method.equals(UPDATE_TOPIC)  && gatewayAsset == null && gatewayV2Service.isGatewayOrDescendant(assetEvent.getParentId())) {
+                LOG.fine(method + " asset request was not authorised, cannot modify parent non-gateway asset be a child of a gateway asset: topic=" + topic);
+                return false;
+            }
+
         }
 
         // perform the event write authorization check
@@ -635,11 +644,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         try {
-            // if it is a gateway user we set the asset parent to the gateway asset, and skip the gatewayCheck on merge
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-
             if (gatewayAsset != null) {
-                asset.setParentId(gatewayAsset.getId());
+                // if the asset has no parent, set the parent to the gateway asset
+                if (asset.getParentId() == null) {
+                    asset.setParentId(gatewayAsset.getId());
+                }
+                // if the asset has a parent, check if it is a descendant of the gateway asset or the gateway itself
+                else if (!gatewayV2Service.isGatewayOrDescendant(asset.getParentId())) {
+                    publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Provided parentId is not a descendant of the associated gateway or the gateway itself");
+                    return;
+                }
                 assetStorageService.merge(asset, true, true, null);
             } else {
                 assetStorageService.merge(asset);
@@ -668,13 +683,17 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
+        GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         storageAsset.setName(asset.get().getName());
         storageAsset.setAttributes(asset.get().getAttributes());
+        storageAsset.setParentId(asset.get().getParentId());
 
         try {
-            // if it is a gateway user we need to skip the gatewayCheck on merge
-            GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
             if (gatewayAsset != null) {
+                if (!gatewayV2Service.isGatewayOrDescendant(asset.get().getParentId())) {
+                    publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Provided parentId is not a descendant of the associated gateway or the gateway itself");
+                    return;
+                }
                 assetStorageService.merge(storageAsset, true, true, null);
             } else {
                 assetStorageService.merge(storageAsset);
