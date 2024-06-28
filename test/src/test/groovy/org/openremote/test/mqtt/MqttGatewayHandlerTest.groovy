@@ -690,22 +690,46 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
 
-        when: "a gateway service user publishes a create asset message"
+        when: "a gateway service user publishes a create asset message with a parent that is not its descendant or itself"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
         testAsset = new ThingAsset("mqttGatewayHandlerTestAsset")
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
         testAsset.setId(UniqueIdentifierGenerator.generateId())
+        testAsset.setParentId(managerTestSetup.smartBuildingId)
         payload = ValueUtil.asJSON(testAsset).get()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "the asset should be created and be a direct child of the gateway asset"
+        then: "the asset should not be created"
+        conditions.eventually {
+            def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
+            assert asset == null
+        }
+
+
+        when: "a gateway service user publishes a create asset message without a parentId"
+        responseIdentifier = UniqueIdentifierGenerator.generateId()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
+        testAsset = new ThingAsset("mqttGatewayHandlerTestAsset")
+        testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
+        testAsset.setId(UniqueIdentifierGenerator.generateId())
+        testAsset.setParentId(null)
+        payload = ValueUtil.asJSON(testAsset).get()
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset should be created"
         conditions.eventually {
             def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
             assert asset != null
-            assert asset.getName() == testAsset.getName()
-            assert asset.getParentId() == gatewayAsset.getId() // the asset should be a child of the gateway asset since a gateway service user created it
+            asset.getName() == testAsset.getName()
         }
+
+        and: "the asset should be a direct child of the gateway asset"
+        conditions.eventually {
+            def asset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
+            assert asset.getParentId() == gatewayAsset.getId()
+        }
+
 
         when: "a gateway service user subscribes to pending gateway attribute events"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending".toString()
@@ -721,6 +745,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a pending attribute event is published"
+        testAsset = (ThingAsset) assetStorageService.find(new AssetQuery().names(testAsset.getName()))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(testAsset.getId(), "notes", "hello gateway"))
 
         then: "the pending attribute event should be received"
@@ -828,6 +853,19 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         testAsset.setName(originalName) // reset the name
 
+        when: "a non-gateway service user publishes an asset update that changes the parentId of a non-gateway descendant to a gateway asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
+        asset1.setParentId(gatewayAsset.getId())
+        payload = ValueUtil.asJSON(testAsset).get()
+        client.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset parent should not be updated"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            def asset = assetStorageService.find(asset1.getId())
+            assert asset.getParentId() != gatewayAsset.getId()
+        }
+
         when: "a non-gateway service user publishes an asset delete operation for a gateways descendant asset"
         topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"
         payload = ""
@@ -851,6 +889,18 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             def asset = assetStorageService.find(testAsset.getId())
             assert asset.getName() == testAsset.getName()
+        }
+
+        when: "a gateway service user publishes a update asset that changes the parentId to a non-gateway associated asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        testAsset.setParentId(managerTestSetup.smartBuildingId)
+        payload = ValueUtil.asJSON(testAsset).get()
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset parent should not be updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(testAsset.getId())
+            assert asset.getParentId() == gatewayAsset.getId()
         }
 
         when: "a gateway service user publishes a delete asset operation"

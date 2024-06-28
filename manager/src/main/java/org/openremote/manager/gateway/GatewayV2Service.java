@@ -275,6 +275,10 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 .anyMatch(entry -> entry.getValue().contains(assetId));
     }
 
+    public boolean isGatewayOrDescendant(String assetId) {
+        return isRegisteredGateway(assetId) || isGatewayDescendant(assetId);
+    }
+
     public GatewayV2Asset getGatewayFromMQTTConnection(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
             return (GatewayV2Asset) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
