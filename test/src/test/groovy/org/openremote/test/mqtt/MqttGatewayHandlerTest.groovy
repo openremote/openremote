@@ -891,17 +891,32 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
             assert asset.getName() == testAsset.getName()
         }
 
-        when: "a gateway service user publishes a update asset that changes the parentId to a non-gateway associated asset"
+        when: "a gateway service user publishes an asset update asset that moves the asset out of the gateway's hierarchy"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
-        testAsset.setParentId(managerTestSetup.smartBuildingId)
+        testAsset.setParentId(managerTestSetup.apartment1HallwayId)
         payload = ValueUtil.asJSON(testAsset).get()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
         then: "the asset parent should not be updated"
         conditions.eventually {
             def asset = assetStorageService.find(testAsset.getId())
+            assert asset.getParentId() != managerTestSetup.apartment1HallwayId
             assert asset.getParentId() == gatewayAsset.getId()
         }
+
+        when: "a gateway service user publishes an asset update that moves a non-gateway asset to the gateways hierarchy"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/update"
+        asset1 = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+        asset1.setParentId(gatewayAsset.getId())
+        payload = ValueUtil.asJSON(asset1).get()
+        gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
+
+        then: "the asset parent should not be updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+            assert asset.getParentId() != gatewayAsset.getId()
+        }
+
 
         when: "a gateway service user publishes a delete asset operation"
         topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"

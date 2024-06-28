@@ -96,7 +96,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         }
     }
 
-
     @Override
     public void start(Container container) throws Exception {
         if (!active) {
@@ -128,7 +127,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     public void stop(Container container) throws Exception {
         gatewayAssetsMap.clear();
     }
-
 
     protected void processGatewayChange(GatewayV2Asset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
         if (Objects.requireNonNull(persistenceEvent.getCause()) == PersistenceEvent.Cause.CREATE) {
@@ -169,7 +167,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
             }
         }
     }
-
 
     protected void createUpdateGatewayServiceUser(GatewayV2Asset gateway) {
         LOG.info("Creating/updating gateway service user for gateway id: " + gateway.getId());
@@ -225,7 +222,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 '}';
     }
 
-
     public String getRegisteredGatewayId(String assetId, String parentId) {
         String gatewayId = null;
         // check whether the assetId can be found in the gateway child assets
@@ -262,10 +258,12 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return gatewayAssetsMap.keySet().stream().anyMatch(gateway -> gateway.getId().equals(assetId));
     }
 
-
-
     public boolean isGatewayDescendant(String assetId) {
         return gatewayAssetsMap.values().stream().anyMatch(list -> list.contains(assetId));
+    }
+
+    public boolean isGatewayOrDescendant(String assetId) {
+        return isRegisteredGateway(assetId) || isGatewayDescendant(assetId);
     }
 
     // Check whether the asset is a descendant of a specified gatewayId
@@ -273,10 +271,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return gatewayAssetsMap.entrySet().stream()
                 .filter(entry -> entry.getKey().getId().equals(gatewayId))
                 .anyMatch(entry -> entry.getValue().contains(assetId));
-    }
-
-    public boolean isGatewayOrDescendant(String assetId) {
-        return isRegisteredGateway(assetId) || isGatewayDescendant(assetId);
     }
 
     public GatewayV2Asset getGatewayFromMQTTConnection(RemotingConnection connection) {
@@ -312,8 +306,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
 
                             }
                     );
-
-
         }
     }
 }

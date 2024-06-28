@@ -183,7 +183,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         });
     }
 
-
     // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
         if (event.getSource() != null && event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
@@ -324,7 +323,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return isOperationResponseTopic(topic);
         }
 
-
         return true;
     }
 
@@ -420,6 +418,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             }
         }
         set.add(topic.getString());
+
         return true;
     }
 
@@ -497,8 +496,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     // Handle disconnect - connection lost event
-    protected void handleDisconnect(RemotingConnection connection)
-    {
+    protected void handleDisconnect(RemotingConnection connection) {
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         if (gatewayAsset != null) {
             updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
@@ -519,7 +517,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Authorize a published asset operation (CRUD) based on the topic structure
      */
     protected boolean authorizeAssetOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
-        var topicTokens = topic.getTokens();
+        List<String> topicTokens = topic.getTokens();
         String method = topicTokens.get(ASSETS_METHOD_TOKEN);
         SharedEvent event;
 
@@ -538,26 +536,19 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        if (event instanceof AssetEvent assetEvent) {
-
-            // if we have a gateway asset then the asset must be a descendant of the gateway asset
-            // cannot check on create as the asset does not exist yet and we dont have access to the payload
-            if (assetEvent.getCause() != AssetEvent.Cause.CREATE && gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
-                LOG.fine(method + " asset request was not authorised for this gateway user and topic: topic=" + topic);
-                return false;
+        if (event instanceof AssetEvent assetEvent && assetEvent.getCause() != AssetEvent.Cause.CREATE) {
+            if (gatewayAsset != null) {
+                // ensure a gateway user cannot update/delete an asset that is not a descendant of the gateway
+                if (!gatewayV2Service.isGatewayDescendant(assetEvent.getId(), gatewayAsset.getId())) {
+                    LOG.fine(method + " asset request was not authorised for this gateway user and topic: topic=" + topic);
+                    return false;
+                }
+            } else {
+                if (gatewayV2Service.isGatewayDescendant(assetEvent.getId())) {
+                    LOG.fine(method + " cannot modify the structure of gateway related assets as a non-gateway user, topic: topic=" + topic);
+                    return false;
+                }
             }
-            // if we don't have a gateway asset then the asset must not be a descendant of any gateway asset
-            if ((method.equals(UPDATE_TOPIC) || method.equals(DELETE_TOPIC)) && gatewayAsset == null && gatewayV2Service.isGatewayDescendant(assetEvent.getId())) {
-                LOG.fine(method + " asset request was not authorised, cannot modify/delete gateway descendants as non gateway, topic: topic=" + topic);
-                return false;
-            }
-
-            // if we dont have gateway asset and were updating an asset then the parentId should not be a descendant of a gateway or the gateway itself
-            if (method.equals(UPDATE_TOPIC)  && gatewayAsset == null && gatewayV2Service.isGatewayOrDescendant(assetEvent.getParentId())) {
-                LOG.fine(method + " asset request was not authorised, cannot modify parent non-gateway asset be a child of a gateway asset: topic=" + topic);
-                return false;
-            }
-
         }
 
         // perform the event write authorization check
@@ -574,7 +565,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
      * Authorize a published attribute operation based on the topic structure.
      */
     protected boolean authorizeAttributeOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
-        var topicTokens = topic.getTokens();
+        List<String> topicTokens = topic.getTokens();
         String method = topicTokens.get(ATTRIBUTES_METHOD_TOKEN_INDEX);
         SharedEvent event;
         switch (Objects.requireNonNull(method)) {
@@ -627,7 +618,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         var optionalAsset = ValueUtil.parse(assetTemplate, Asset.class);
         if (optionalAsset.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid asset template");
-            LOG.fine("Invalid asset template " + payloadContent + " in create asset request " + getConnectionIDString(connection));
+            LOG.info("Bad request, invalid asset template " + payloadContent + " in create asset request " + getConnectionIDString(connection));
             return;
         }
         Asset<?> asset = optionalAsset.get();
@@ -635,7 +626,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
         if (asset.getId() != null && !asset.getId().isEmpty()) {
             Asset<?> existingAsset = assetStorageService.find(asset.getId());
             if (existingAsset != null && existingAsset.getRealm().equals(realm)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.CONFLICT, "Asset ID conflict");
+                publishErrorResponse(topic, MQTTErrorResponse.Error.CONFLICT, "Asset ID already exists");
+                LOG.info("Conflict, asset ID already exists " + asset.getId() + " " + getConnectionIDString(connection));
                 return;
             }
         } else {
@@ -646,22 +638,34 @@ public class GatewayMQTTHandler extends MQTTHandler {
         try {
             GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
             if (gatewayAsset != null) {
-                // if the asset has no parent, set the parent to the gateway asset
+                // dont allow gateway users to create assets under anything other than the gateway itself or its descendants
+                boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId(), gatewayAsset.getId());
+                boolean parentIsGateway = asset.getParentId() != null && gatewayAsset.getId().equals(asset.getParentId());
+
                 if (asset.getParentId() == null) {
                     asset.setParentId(gatewayAsset.getId());
-                }
-                // if the asset has a parent, check if it is a descendant of the gateway asset or the gateway itself
-                else if (!gatewayV2Service.isGatewayOrDescendant(asset.getParentId())) {
-                    publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Provided parentId is not a descendant of the associated gateway or the gateway itself");
+                } else if (!parentIsDescendantOfGateway && !parentIsGateway) {
+                    publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Gateway users can only create assets under the gateway or its descendants");
+                    LOG.info("Bad request, gateway users can only create assets under the gateway or its descendants");
                     return;
                 }
                 assetStorageService.merge(asset, true, true, null);
             } else {
+                // dont allow non gateway users to create assets under a gateway or its descendants
+                boolean parentIsGateway = asset.getParentId() != null && gatewayV2Service.isRegisteredGateway(asset.getParentId());
+                boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId());
+
+                if (parentIsGateway || parentIsDescendantOfGateway) {
+                    publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Non gateway users cannot create assets under a gateway or its descendants");
+                    LOG.info("Bad request, non gateway users cannot create assets under a gateway or its descendants");
+                    return;
+                }
+
                 assetStorageService.merge(asset);
             }
         } catch (Exception e) {
-            LOG.warning("Failed to merge asset " + asset + " " + getConnectionIDString(connection));
             publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to process asset");
+            LOG.warning("Failed to merge asset " + asset + " " + getConnectionIDString(connection));
             return;
         }
 
@@ -679,9 +683,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         var asset = ValueUtil.parse(body.toString(StandardCharsets.UTF_8), Asset.class);
         if (asset.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid asset template");
-            LOG.fine("Invalid asset template " + body.toString(StandardCharsets.UTF_8) + " in update asset request " + getConnectionIDString(connection));
+            LOG.info("Bad request, Invalid asset template " + body.toString(StandardCharsets.UTF_8) + " in update asset request " + getConnectionIDString(connection));
             return;
         }
+
+        boolean parentIdChanged = !Objects.equals(storageAsset.getParentId(), asset.get().getParentId());
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         storageAsset.setName(asset.get().getName());
@@ -690,17 +696,33 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         try {
             if (gatewayAsset != null) {
-                if (!gatewayV2Service.isGatewayOrDescendant(asset.get().getParentId())) {
-                    publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Provided parentId is not a descendant of the associated gateway or the gateway itself");
-                    return;
+                if (parentIdChanged) {
+                    // Prevent assets from being moved to a parent that is not a descendant of the gateway or the gateway itself
+                    boolean parentIsDescendantOfGateway = storageAsset.getParentId() != null && gatewayV2Service.isGatewayDescendant(storageAsset.getParentId(), gatewayAsset.getId());
+                    boolean parentIsGateway = storageAsset.getParentId() != null && gatewayAsset.getId().equals(storageAsset.getParentId());
+
+                    if (!parentIsDescendantOfGateway && !parentIsGateway) {
+                        publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Gateway users can only move assets under the gateway or its descendants");
+                        LOG.info("Bad request, gateway users can only move assets under the gateway or its descendants");
+                        return;
+                    }
                 }
+                // gateway exists, skip the gateway check
                 assetStorageService.merge(storageAsset, true, true, null);
             } else {
+                if (parentIdChanged) {
+                    // Prevent assets from being moved to a parent that is a gateway or its descendants
+                    if (storageAsset.getParentId() != null && gatewayV2Service.isGatewayOrDescendant(storageAsset.getParentId())) {
+                        publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Non gateway users cannot move assets under a gateway or its descendants");
+                        LOG.info("Bad request, non gateway users cannot move assets under a gateway or its descendants");
+                        return;
+                    }
+                }
                 assetStorageService.merge(storageAsset);
             }
         } catch (Exception e) {
-            LOG.warning("Failed to update asset " + asset + " " + getConnectionIDString(connection));
             publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to process asset");
+            LOG.warning("Failed to update asset " + asset + " " + getConnectionIDString(connection));
             return;
         }
 
@@ -715,10 +737,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
         Asset<?> asset = assetStorageService.find(assetId);
 
-        // TODO: Check whether this can even happen, the clientEventService might already cover this case (ReadAssetEvent)
         if (asset == null) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
-            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
+            LOG.info("Asset not found " + assetId + " " + getConnectionIDString(connection));
             return;
         }
 
@@ -733,7 +754,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Asset not found");
-            LOG.fine("Asset not found " + assetId + " " + getConnectionIDString(connection));
+            LOG.info("Asset not found " + assetId + " " + getConnectionIDString(connection));
             return;
         }
 
@@ -753,8 +774,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 assetStorageService.delete(assetsToDelete);
             }
         } catch (Exception e) {
-            LOG.warning("Failed to delete asset " + asset + " " + getConnectionIDString(connection));
             publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to delete asset");
+            LOG.warning("Failed to delete asset " + asset + " " + getConnectionIDString(connection));
             return;
         }
 
@@ -791,7 +812,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         // Check if the attributes are valid
         if (attributes.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Invalid data provided");
-            LOG.fine("Invalid attribute template " + body.toString(StandardCharsets.UTF_8) + " in update attribute request " + getConnectionIDString(connection));
+            LOG.info("Bad request, invalid attribute template " + body.toString(StandardCharsets.UTF_8) + " in update attribute request " + getConnectionIDString(connection));
             return;
         }
         Map<String, Object> attributeMap = (Map<String, Object>) attributes.get();
@@ -805,13 +826,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
             // Gateways cannot modify anything besides their own descendants
             if (gateway != null && !gatewayV2Service.isGatewayDescendant(assetId, gateway.getId())) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
+                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "One or more attribute updates were not authorized");
+                LOG.info("Unauthorized, gateway users can only modify their own descendants " + getConnectionIDString(connection));
                 return;
             }
 
             // cancel the request if any of the events cannot be authorized
             if (!clientEventService.authorizeEventWrite(realm, authContext.get(), event)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "Unauthorized to update attributes");
+                publishErrorResponse(topic, MQTTErrorResponse.Error.UNAUTHORIZED, "One or more attribute updates were not authorized");
+                LOG.info("Unauthorized, one or more attribute updates were not authorized " + getConnectionIDString(connection));
                 return;
             }
         }
@@ -825,6 +848,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
             sendAttributeEvent(event);
             events.add(event);
         }
+
         publishResponse(topic, events);
     }
 
@@ -836,7 +860,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         String attributeName = topicTokenIndexToString(topic, ATTRIBUTE_NAME_TOKEN_INDEX);
         Optional<Attribute<Object>> attribute = assetStorageService.find(assetId).getAttribute(attributeName);
 
-        // TODO: Check whether this can even happen, the clientEventService might already cover this case (ReadAttributeEvent)
         if (attribute.isEmpty()) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.NOT_FOUND, "Attribute not found");
             LOG.fine("Attribute not found " + assetId + " " + attributeName + " " + getConnectionIDString(connection));
@@ -994,7 +1017,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
-
 
     protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
         Map<String, Object> headers = new HashMap<>();
