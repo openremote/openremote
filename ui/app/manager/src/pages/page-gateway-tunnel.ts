@@ -379,7 +379,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             case GatewayTunnelInfoType.HTTP:
                 return "//" + info.id + "." + window.location.host;
             case GatewayTunnelInfoType.TCP:
-                return info.id + "." + window.location.hostname + ":" + info.assignedPort;
+                return window.location.hostname + ":" + info.assignedPort;
         }
     }
 
