@@ -635,32 +635,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
             asset.setRealm(realm);
         }
 
-        try {
-            GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-            if (gatewayAsset != null) {
-                // dont allow gateway users to create assets under anything other than the gateway itself or its descendants
-                boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId(), gatewayAsset.getId());
-                boolean parentIsGateway = asset.getParentId() != null && gatewayAsset.getId().equals(asset.getParentId());
+        GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
 
+        // Check if the provided parent is allowed for the asset
+        if (asset.getParentId() != null)
+        {
+            if (!authorizeParentId(asset, gatewayAsset)) {
+                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be created with the provided parent ID");
+                LOG.info("The asset cannot be created with the provided parent ID " + getConnectionIDString(connection));
+                return;
+            }
+        }
+
+        try {
+            if (gatewayAsset != null) {
                 if (asset.getParentId() == null) {
                     asset.setParentId(gatewayAsset.getId());
-                } else if (!parentIsDescendantOfGateway && !parentIsGateway) {
-                    publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Gateway users can only create assets under the gateway or its descendants");
-                    LOG.info("Bad request, gateway users can only create assets under the gateway or its descendants");
-                    return;
                 }
                 assetStorageService.merge(asset, true, true, null);
             } else {
-                // dont allow non gateway users to create assets under a gateway or its descendants
-                boolean parentIsGateway = asset.getParentId() != null && gatewayV2Service.isRegisteredGateway(asset.getParentId());
-                boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId());
-
-                if (parentIsGateway || parentIsDescendantOfGateway) {
-                    publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Non gateway users cannot create assets under a gateway or its descendants");
-                    LOG.info("Bad request, non gateway users cannot create assets under a gateway or its descendants");
-                    return;
-                }
-
                 assetStorageService.merge(asset);
             }
         } catch (Exception e) {
@@ -694,30 +687,20 @@ public class GatewayMQTTHandler extends MQTTHandler {
         storageAsset.setAttributes(asset.get().getAttributes());
         storageAsset.setParentId(asset.get().getParentId());
 
+
+        if (parentIdChanged)
+        {
+            if (!authorizeParentId(storageAsset, gatewayAsset)) {
+                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be updated with the provided parent ID");
+                LOG.info("Asset cannot be updated with the provided parent ID " + getConnectionIDString(connection));
+                return;
+            }
+        }
+
         try {
             if (gatewayAsset != null) {
-                if (parentIdChanged) {
-                    // Prevent assets from being moved to a parent that is not a descendant of the gateway or the gateway itself
-                    boolean parentIsDescendantOfGateway = storageAsset.getParentId() != null && gatewayV2Service.isGatewayDescendant(storageAsset.getParentId(), gatewayAsset.getId());
-                    boolean parentIsGateway = storageAsset.getParentId() != null && gatewayAsset.getId().equals(storageAsset.getParentId());
-
-                    if (!parentIsDescendantOfGateway && !parentIsGateway) {
-                        publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Gateway users can only move assets under the gateway or its descendants");
-                        LOG.info("Bad request, gateway users can only move assets under the gateway or its descendants");
-                        return;
-                    }
-                }
-                // gateway exists, skip the gateway check
                 assetStorageService.merge(storageAsset, true, true, null);
             } else {
-                if (parentIdChanged) {
-                    // Prevent assets from being moved to a parent that is a gateway or its descendants
-                    if (storageAsset.getParentId() != null && gatewayV2Service.isGatewayOrDescendant(storageAsset.getParentId())) {
-                        publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Non gateway users cannot move assets under a gateway or its descendants");
-                        LOG.info("Bad request, non gateway users cannot move assets under a gateway or its descendants");
-                        return;
-                    }
-                }
                 assetStorageService.merge(storageAsset);
             }
         } catch (Exception e) {
@@ -965,6 +948,23 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         return new ReadAssetEvent(assetId);
+    }
+
+
+    protected boolean authorizeParentId(Asset<?> asset, GatewayV2Asset gatewayAsset) {
+        if (gatewayAsset != null) {
+            // Prevent assets from being moved to a parent that is not a descendant of the gateway or the gateway itself
+            boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId(), gatewayAsset.getId());
+            boolean parentIsGateway = asset.getParentId() != null && gatewayAsset.getId().equals(asset.getParentId());
+
+            return parentIsDescendantOfGateway || parentIsGateway;
+        } else {
+            // Prevent assets from being moved to a parent that is a gateway or its descendants
+            boolean parentIsGateway = asset.getParentId() != null && gatewayV2Service.isRegisteredGateway(asset.getParentId());
+            boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId());
+
+            return !parentIsGateway && !parentIsDescendantOfGateway;
+        }
     }
 
     public static boolean isAssetsTopic(Topic topic) {
