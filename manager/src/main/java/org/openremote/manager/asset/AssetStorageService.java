@@ -37,6 +37,7 @@ import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.event.EventSubscriptionAuthorizer;
 import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.gateway.GatewayV2Service;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -232,6 +233,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected GatewayV2Service gatewayV2Service;
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -317,6 +319,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        gatewayV2Service = container.getService(GatewayV2Service.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
@@ -344,6 +347,47 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
         });
+
+        clientEventService.addEventAuthorizer((requestedRealm, authContext, event) -> {
+              if (!(event instanceof AssetEvent assetEvent)) {
+                return false;
+              }
+
+              // Restricted users cannot create, delete or update assets
+              if (authContext != null && identityService.getIdentityProvider().isRestrictedUser(authContext)) {
+                  return false;
+              }
+
+              if (authContext != null && authContext.isSuperUser()) {
+                return true;
+              }
+
+              if (authContext != null && !identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
+                requestedRealm)) {
+                LOG.info("Realm is not present or is inactive: realm=" + requestedRealm + ", username=" + authContext.getUsername());
+                return false;
+              }
+
+              if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.info("User doesn't have required role '" + ClientRole.WRITE_ASSETS + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                return false;
+              }
+
+              // Check if asset exists and is in the correct realm
+              // If the asset is being created, the realm is taken from the event
+              if (assetEvent.getCause() != AssetEvent.Cause.CREATE) {
+                Asset<?> asset = find(assetEvent.getId());
+                if (asset == null) {
+                    LOG.info("Asset not found: ref=" + assetEvent.getId());
+                    return false;
+                } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
+                    LOG.info("Asset realm does not match authenticated realm: ref=" + assetEvent.getId());
+                    return false;
+                }
+            }
+            return true;
+        });
+
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
@@ -647,11 +691,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> {
 
             long startTime = System.currentTimeMillis();
+
             String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
 
             if (!skipGatewayCheck && gatewayId != null) {
                 LOG.fine("Sending asset merge request to gateway: Gateway ID=" + gatewayId);
                 return gatewayService.mergeGatewayAsset(gatewayId, asset);
+            }
+
+            // GatewayV2Service
+            String gatewayV2Id = gatewayV2Service.getRegisteredGatewayId(asset.getId(), asset.getParentId());
+            if (!skipGatewayCheck && gatewayV2Id != null) {
+                String msg = "GatewayV2Asset does not support direct CRUD operations on its descendants " + asset;
+                LOG.warning(msg);
+                throw new IllegalStateException(msg);
             }
 
             // Validate realm
@@ -852,6 +905,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         List<String> ids = new ArrayList<>(assetIds);
         Map<String, List<String>> gatewayIdAssetIdMap = new HashMap<>();
+
+        // GatewayV2Service
+        if (!skipGatewayCheck)
+        {
+            // Prevent the deletion of assets that are descendants of gateway assets
+            // Unless the asset list also contains the gateway asset
+            boolean listHasGatewayAsset = ids.stream().anyMatch(id -> gatewayV2Service.isRegisteredGateway(id));
+            if (!listHasGatewayAsset)
+            {
+                for (String assetId : ids){
+                    String gatewayId = gatewayV2Service.getRegisteredGatewayId(assetId, null);
+                    if (gatewayId != null) {
+                        LOG.info("Asset is descendant of gateway asset, direct deletion is not allowed: Asset ID=" + assetId);
+                        return false;
+                    }
+                }
+            }
+        }
 
         if (!skipGatewayCheck) {
             List<String> gatewayIds = ids.stream().filter(id -> gatewayService.isLocallyRegisteredGateway(id)).toList();

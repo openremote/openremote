@@ -23,6 +23,7 @@ org.openremote.manager.notification.EmailNotificationHandler
 org.openremote.manager.datapoint.AssetPredictedDatapointService
 org.openremote.manager.gateway.GatewayService
 org.openremote.manager.gateway.GatewayClientService
+org.openremote.manager.gateway.GatewayV2Service
 org.openremote.manager.mqtt.MQTTBrokerService
 org.openremote.manager.asset.AssetModelService
 org.openremote.manager.energy.EnergyOptimisationService
