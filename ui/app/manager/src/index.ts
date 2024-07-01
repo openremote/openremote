@@ -233,6 +233,16 @@ fetch(configURL).then(async (result) => {
             });
         }
 
+        // When the page is not present in the header, move the PageProvider to the end of the array.
+        // This is to prevent the landing page for the user not being visible in the header
+        const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
+        if(realmAppConfig) {
+            const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
+            orAppConfig.pages = pages
+                .filter(pageProvider => headerPaths.includes(pageProvider.name))
+                .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
+        }
+
         // Check local storage for set language, otherwise use language set in config
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
             if (value) {
