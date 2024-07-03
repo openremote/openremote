@@ -316,6 +316,12 @@ export class Manager implements EventProviderFactory {
 
         let success = await this.loadManagerInfo();
 
+        // Create console as we need to access storage during auth
+        const orConsole = new Console(this._config.realm!, this._config.consoleAutoEnable!, () => {
+            this._emitEvent(OREvent.CONSOLE_READY);
+        });
+        this._console = orConsole;
+
         if (this._config.auth === Auth.BASIC) {
             // BASIC auth will likely require UI so lets init translation at least
             success = await this.doTranslateInit() && success;
@@ -744,13 +750,7 @@ export class Manager implements EventProviderFactory {
 
     protected async doConsoleInit(): Promise<boolean> {
         try {
-            const orConsole = new Console(this._config.realm!, this._config.consoleAutoEnable!, () => {
-                this._emitEvent(OREvent.CONSOLE_READY);
-            });
-
-            this._console = orConsole;
-
-            await orConsole.initialise();
+            await this.console.initialise();
             this._emitEvent(OREvent.CONSOLE_INIT);
             return true;
         } catch (e) {
@@ -785,7 +785,7 @@ export class Manager implements EventProviderFactory {
 
     public logout(redirectUrl?: string) {
         if (this._keycloak) {
-            if (this.console.isMobile) {
+            if (this.isMobile()) {
                 this.console.storeData("REFRESH_TOKEN", null);
             }
             this._keycloak.logout(redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : undefined);
@@ -977,7 +977,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected isMobile(): boolean {
-        return this.console && this.console.isMobile;
+        return !!this.console;// && this.console.isMobile;
     }
 
     public isKeycloak(): boolean {
@@ -985,34 +985,28 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _onAuthenticated() {
-        // If native shell is enabled, we need an offline refresh token
-        if (this.console && this.console.isMobile && this.config.auth === Auth.KEYCLOAK) {
-
-            if (this._keycloak && this._keycloak.refreshTokenParsed?.typ === "Offline") {
-                console.debug("Storing offline refresh token");
-                this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
-            } else {
-                this.login();
-            }
+        // If native shell is enabled store offline token
+        if (this.isMobile() && this.config.auth === Auth.KEYCLOAK && this._keycloak && this._keycloak.refreshTokenParsed?.typ === "Offline") {
+            console.debug("Storing offline refresh token");
+            this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
         }
     }
 
     // NOTE: The below works with Keycloak 2.x JS API - They made breaking changes in newer versions
     // so this will need updating.
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
-
         try {
             // Initialise keycloak
             this._keycloak = new Keycloak({
                 clientId: this._config.clientId,
                 realm: this._config.realm,
-                url: this._config.keycloakUrl,
-
+                url: this._config.keycloakUrl
             });
 
             this._keycloak!.onAuthSuccess = () => {
                 // clear auth reconnect timer after success
                 this._finishAuthReconnectTimer(true);
+                this._onAuthenticated();
             };
 
             this._keycloak!.onAuthError = () => {
@@ -1023,23 +1017,22 @@ export class Manager implements EventProviderFactory {
                 console.debug("Keycloak failed to refresh the access token.");
                 this._setAuthDisconnected(true);
             }
-
+            await new Promise(r => setTimeout(r, 5000));
             // Try to use a stored offline refresh token if defined
             const offlineToken = await this._getNativeOfflineRefreshToken();
 
             const authenticated = await this._keycloak!.init({
                 checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
-                onLoad: this._config.autoLogin ? "login-required" : "check-sso",
+                onLoad: "check-sso",
                 refreshToken: offlineToken
             });
 
             if (authenticated) {
-
                 this._name = this._keycloak.tokenParsed?.name;
                 this._username = this._keycloak.tokenParsed?.preferred_username;
 
-                // Update the access token every 10s (note keycloak will only update if expiring within configured
-                // time period.
+                // Check the access token periodically (note keycloak will only update if expiring within configured
+                // time period).
                 if (this._keycloakUpdateTokenInterval) {
                     clearInterval(this._keycloakUpdateTokenInterval);
                     delete this._keycloakUpdateTokenInterval;
@@ -1052,7 +1045,8 @@ export class Manager implements EventProviderFactory {
                         });
                     }
                 }, 10000);
-                this._onAuthenticated();
+            } else if (this.config.autoLogin) {
+                this.login();
             }
             this._setAuthenticated(authenticated);
             return true;
@@ -1065,14 +1059,14 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async updateKeycloakAccessToken(): Promise<boolean | void> {
-
-        // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-        // TODO: Improve this, see https://github.com/openremote/openremote/issues/1233
-        const promise = this._keycloak!.updateToken(30) as Promise<boolean>;
+        const promise = this._keycloak!.updateToken(20) as Promise<boolean>;
         promise.then(tokenRefreshed => {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-        }).catch(() => {
-            console.error("Access token update failed.");
+            if (tokenRefreshed) {
+                this._onAuthenticated();
+            }
+        }).catch((e) => {
+            console.error("Access token update failed: " + e);
             this._setAuthDisconnected(true);
         });
 
@@ -1085,7 +1079,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
-        if (this.console && this.console.isMobile) {
+        if (this.isMobile()) {
             return await this.console.retrieveData("REFRESH_TOKEN");
         }
     }
