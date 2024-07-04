@@ -111,6 +111,8 @@ export class GatewayWidget extends OrWidget {
                         console.log("Existing tunnel found!", info);
                         this._setActiveTunnel(info, true)
                     }
+                }).catch(e => {
+                    console.error(e);
                 }).finally(() => {
                     this._loading = false;
                 });
