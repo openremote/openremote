@@ -282,13 +282,11 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
  * @return {Object}        Return a new object who represent the diff
  */
 export function difference(object?: any, base?: any): any {
-    function changes(object?: any, base?: any) {
-        return transform(object, function(result: any, value, key: string | number | symbol) {
-            if (!objectsEqual(value, base?.[key])) {
-                result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
-            }
-        });
-    }
+    const changes = (object: any, base: any) => transform(object, function(result: any, value, key: string | number | symbol) {
+        if (!objectsEqual(value, base?.[key])) {
+            result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
+        }
+    });
     return changes(object, base);
 }
 

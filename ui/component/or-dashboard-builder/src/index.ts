@@ -332,21 +332,19 @@ export class OrDashboardBuilder extends LitElement {
 
             // Check for dashboard changes
             const initialDashboard = this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined;
-            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, initialDashboard);
-            if(!dashboardEqual) {
+            const dashboardDiff = Util.difference(this.selectedDashboard, initialDashboard);
+            if(Object.keys(dashboardDiff).length > 0) {
                 this.hasChanged = true;
-                const diff = Util.difference(this.selectedDashboard, initialDashboard);
-                console.debug("Dashboard has detected changes! Diff:", diff);
+                console.debug("Dashboard has detected changes! Diff:", dashboardDiff);
             }
 
             // Check for template changes
             else {
                 const initialTemplate = this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined;
-                const templateEqual = Util.objectsEqual(this.currentTemplate, initialTemplate);
-                if(!templateEqual) {
+                const templateDiff = Util.difference(this.currentTemplate, initialTemplate);
+                if(Object.keys(templateDiff).length > 0) {
                     this.hasChanged = true;
-                    const diff = Util.difference(this.currentTemplate, initialTemplate);
-                    console.debug("Template has detected changes! Diff:", diff);
+                    console.debug("Template has detected changes! Diff:", templateDiff);
                 } else {
 
                     // If no changes detected between dashboard nor template

@@ -7,6 +7,7 @@ import {DashboardWidget} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "./util/or-widget";
 import {WidgetService} from "./service/widget-service";
 import {WidgetConfig} from "./util/widget-config";
+import {Util} from "@openremote/core";
 
 /* ------------------------------------ */
 
@@ -73,7 +74,7 @@ export class OrDashboardWidgetContainer extends LitElement {
             const oldVal = changedProps.get('widget') as DashboardWidget | undefined;
             const idChanged = oldVal?.id !== this.widget?.id;
             const nameChanged = oldVal?.displayName !== this.widget?.displayName;
-            const configChanged = JSON.stringify(oldVal?.widgetConfig) !== JSON.stringify(this.getWidgetConfig());
+            const configChanged = !Util.objectsEqual(oldVal?.widgetConfig, this.getWidgetConfig());
             if (!(idChanged || nameChanged || configChanged)) {
                 changed.delete('widget');
             }
