@@ -329,9 +329,30 @@ export class OrDashboardBuilder extends LitElement {
 
         // On any update (except widget selection), check whether hasChanged should be updated.
         if(!(changedProps.size === 1 && changedProps.has('selectedWidget'))) {
-            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined);
-            const templateEqual = Util.objectsEqual(this.currentTemplate, this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined);
-            this.hasChanged = (!dashboardEqual || !templateEqual);
+
+            // Check for dashboard changes
+            const initialDashboard = this.initialDashboardJSON ? JSON.parse(this.initialDashboardJSON) : undefined;
+            const dashboardEqual = Util.objectsEqual(this.selectedDashboard, initialDashboard);
+            if(!dashboardEqual) {
+                this.hasChanged = true;
+                const diff = Util.difference(this.selectedDashboard, initialDashboard);
+                console.debug("Dashboard has detected changes! Diff:", diff);
+            }
+
+            // Check for template changes
+            else {
+                const initialTemplate = this.initialTemplateJSON ? JSON.parse(this.initialTemplateJSON) : undefined;
+                const templateEqual = Util.objectsEqual(this.currentTemplate, initialTemplate);
+                if(!templateEqual) {
+                    this.hasChanged = true;
+                    const diff = Util.difference(this.currentTemplate, initialTemplate);
+                    console.debug("Template has detected changes! Diff:", diff);
+                } else {
+
+                    // If no changes detected between dashboard nor template
+                    this.hasChanged = false;
+                }
+            }
         }
 
         // Support for realm switching
