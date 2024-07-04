@@ -29,7 +29,7 @@ import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import {isEqual, transform} from "lodash";
+import {transform} from "lodash";
 
 export class Deferred<T> {
 
@@ -284,7 +284,7 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
 export function difference(object?: any, base?: any): any {
     function changes(object?: any, base?: any) {
         return transform(object, function(result: any, value, key: string | number | symbol) {
-            if (!isEqual(value, base?.[key])) {
+            if (!objectsEqual(value, base?.[key])) {
                 result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
             }
         });
