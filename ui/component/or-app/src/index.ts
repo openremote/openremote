@@ -425,15 +425,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if(!this._offline) {
                 this._store.dispatch((setOffline(true)))
             }
+            this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
         } else if(event === OREvent.ONLINE) {
             if(this._offline) {
                 this._showOfflineFallback = false;
                 this._completeOfflineFallbackTimer(); // complete fallback timer
                 this._store.dispatch((setOffline(false)));
             }
-        } else if(event === OREvent.RECONNECT_FAILED) {
-            this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
-
         } else if(event === OREvent.CONSOLE_VISIBLE) {
             this._store.dispatch((setVisibility(true)));
 

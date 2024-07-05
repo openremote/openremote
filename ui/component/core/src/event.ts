@@ -19,8 +19,7 @@ import {
 export enum EventProviderStatus {
     DISCONNECTED = "DISCONNECTED",
     CONNECTED = "CONNECTED",
-    CONNECTING = "CONNECTING",
-    RECONNECT_FAILED = "RECONNECT_FAILED"
+    CONNECTING = "CONNECTING"
 }
 
 export interface EventProvider {
@@ -114,6 +113,10 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public connect(): Promise<boolean> {
+        if (this._reconnectTimer) {
+            window.clearTimeout(this._reconnectTimer);
+            this._reconnectTimer = null;
+        }
         if (this._status === EventProviderStatus.CONNECTED) {
             return Promise.resolve(true);
         }
@@ -133,11 +136,6 @@ abstract class EventProviderImpl implements EventProvider {
                 const deferred = this._connectingDeferred;
                 this._connectingDeferred = null;
 
-                if (this._reconnectTimer) {
-                    window.clearTimeout(this._reconnectTimer);
-                    this._reconnectTimer = null;
-                }
-
                 if (connected) {
                     console.debug("Connected to event service: " + this.endpointUrl);
                     this._reconnectDelayMillis = WebSocketEventProvider.MIN_RECONNECT_DELAY;
@@ -149,6 +147,7 @@ abstract class EventProviderImpl implements EventProvider {
                 } else {
                     console.debug("Failed to connect to event service: " + this.endpointUrl);
                     this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+                    this._scheduleReconnect();
                 }
 
                 deferred.resolve(connected);
@@ -563,15 +562,7 @@ abstract class EventProviderImpl implements EventProvider {
                 return;
             }
 
-            this.connect().then(connected => {
-                if (!connected) {
-                    this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
-                    this._scheduleReconnect();
-                }
-            }).catch(error => {
-                this._onStatusChanged(EventProviderStatus.RECONNECT_FAILED);
-                this._scheduleReconnect();
-            });
+            this.connect();
         }, this._reconnectDelayMillis);
 
         if (this._reconnectDelayMillis < WebSocketEventProvider.MAX_RECONNECT_DELAY) {
@@ -627,10 +618,6 @@ export class WebSocketEventProvider extends EventProviderImpl {
 
         this._webSocket = new WebSocket(authorisedUrl);
         this._connectDeferred = new Deferred();
-
-        if(manager.isTokenExpired()) {
-            this._connectDeferred.resolve(false);
-        }
 
         this._webSocket!.onopen = () => {
             if (this._connectDeferred) {
