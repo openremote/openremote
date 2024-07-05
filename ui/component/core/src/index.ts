@@ -6,7 +6,17 @@ import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEvent
 import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {AssetModelUtil, Auth, ConsoleAppConfig, EventProviderType, ManagerConfig, MapType, Role, User, UsernamePassword} from "@openremote/model";
+import {
+    AssetModelUtil,
+    Auth,
+    ConsoleAppConfig,
+    EventProviderType,
+    ManagerConfig,
+    MapType,
+    Role,
+    User,
+    UsernamePassword
+} from "@openremote/model";
 import * as Util from "./util";
 import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
 import Keycloak from 'keycloak-js';
@@ -375,6 +385,10 @@ export class Manager implements EventProviderFactory {
             }
         }
 
+        if (!success) {
+            return false;
+        }
+
         if (success) {
             success = this.doRestApiInit();
         }
@@ -540,6 +554,10 @@ export class Manager implements EventProviderFactory {
                 return false;
         }
 
+        if (!success) {
+            return false;
+        }
+
         // Add interceptor to inject authorization header on each request
         rest.addRequestInterceptor(
             (config: AxiosRequestConfig) => {
@@ -599,7 +617,7 @@ export class Manager implements EventProviderFactory {
         switch (status) {
             case EventProviderStatus.DISCONNECTED:
                 this._eventsDisconnected = true;
-                this._onDisconnect();
+                this._onDisconnect(false);
                 break;
             case EventProviderStatus.CONNECTED:
                 this._eventsDisconnected = false;
@@ -859,38 +877,31 @@ export class Manager implements EventProviderFactory {
 
     protected async loadAndInitialiseKeycloak(): Promise<boolean> {
         try {
-            // Initialise keycloak
-            this._keycloak = new Keycloak({
-                clientId: this._config.clientId,
-                realm: this._config.realm,
-                url: this._config.keycloakUrl
-            });
+            if (!this._keycloak) {
+                // Initialise keycloak
+                this._keycloak = new Keycloak({
+                    clientId: this._config.clientId,
+                    realm: this._config.realm,
+                    url: this._config.keycloakUrl
+                });
 
-            this._keycloak!.onAuthSuccess = () => {
-                if (!this._keycloakUpdateTokenInterval) {
-                    this._keycloakUpdateTokenInterval = window.setInterval(() => {
-                        this.updateKeycloakAccessToken().catch(() => {
-                            console.error("Could not update keycloak access token during regular interval.");
-                        });
-                    }, 10000);
-                }
-                // If native shell is enabled store offline token
-                if (this.isMobile() && this._keycloak?.refreshTokenParsed?.typ === "Offline") {
-                    console.debug("Storing offline refresh token");
-                    this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
-                }
-                this._onAuthenticated();
-            };
+                this._keycloak!.onAuthSuccess = () => {
+                    this._createTokenUpdateInterval();
 
-            this._keycloak!.onAuthError = () => {
-                // Nothing to do here
-            };
+                    // If native shell is enabled store offline token
+                    if (this.isMobile() && this._keycloak?.refreshTokenParsed?.typ === "Offline") {
+                        console.debug("Storing offline refresh token");
+                        this.console.storeData("REFRESH_TOKEN", this._keycloak!.refreshToken);
+                    }
+                    this._onAuthenticated();
+                };
 
-            this._keycloak!.onAuthRefreshError = () => {
-                console.debug("Keycloak failed to refresh the access token.");
-                this._onDisconnect();
+                this._keycloak!.onAuthError = () => {
+                    // Nothing to do here for now
+                };
             }
-            await new Promise(r => setTimeout(r, 5000));
+
+            //await new Promise(r => setTimeout(r, 5000));
             // Try to use a stored offline refresh token if defined
             const offlineToken = await this._getNativeOfflineRefreshToken();
 
@@ -905,6 +916,7 @@ export class Manager implements EventProviderFactory {
                 this._username = this._keycloak.tokenParsed?.preferred_username;
             } else if (this.config.autoLogin) {
                 this.login();
+                return false;
             }
             return true;
         } catch (error) {
@@ -915,23 +927,32 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async updateKeycloakAccessToken(): Promise<boolean | void> {
-        const promise = this._keycloak!.updateToken(20) as Promise<boolean>;
-        promise.then(tokenRefreshed => {
-            console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-            if (tokenRefreshed) {
-                this._onAuthenticated();
-            }
-        }).catch(() => {
-            // This is handled by onAuthRefreshError callback
-        });
+    protected _createTokenUpdateInterval() {
+        if (!this._keycloakUpdateTokenInterval) {
+            this._keycloakUpdateTokenInterval = window.setInterval(async () => {
+                await this._updateKeycloakAccessToken().catch(() => {
+                    console.debug("Keycloak failed to refresh the access token");
+                    this._onDisconnect(true);
+                });
+            }, 10000);
+        }
+    }
 
-        // Using Promise.race() with a timeout of 15 seconds
-        // Since the timeout will never resolve, we assume only a boolean can be returned.
-        let timer: NodeJS.Timeout;
-        return Promise.race(
-            [promise, new Promise((_r, rej) => timer = setTimeout(rej, 15000))]
-        ).finally(() => clearTimeout(timer)) as Promise<boolean | void>;
+    protected async _updateKeycloakAccessToken(): Promise<boolean> {
+        const tokenRefreshed = await this._keycloak!.updateToken(20);
+        console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+        if (tokenRefreshed) {
+            this._onAuthenticated();
+        }
+        return tokenRefreshed;
+
+        // RT: Not sure what the below was trying to achieve so commented out for now
+        // // Using Promise.race() with a timeout of 15 seconds
+        // // Since the timeout will never resolve, we assume only a boolean can be returned.
+        // let timer: NodeJS.Timeout;
+        // return Promise.race(
+        //     [promise, new Promise((_r, rej) => timer = setTimeout(rej, 15000))]
+        // ).finally(() => clearTimeout(timer)) as Promise<boolean | void>;
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
@@ -984,10 +1005,44 @@ export class Manager implements EventProviderFactory {
      * Disconnect can occur when events status changes to offline and/or keycloak token refresh fails
      * we just try to reach keycloak and then get a new token as well as wait for the events status to change
      */
-    protected _onDisconnect() {
+    protected async _onDisconnect(authError: boolean) {
+
+        const eventError = !authError;
         this._emitEvent(OREvent.OFFLINE);
 
+        let keycloakOffline = !await this.isKeycloakReachable();
+        const eventsOffline = this.events && this.events.status === EventProviderStatus.CONNECTING;
 
+        // Cancel token refresh timer
+        if (this._keycloakUpdateTokenInterval) {
+            window.clearTimeout(this._keycloakUpdateTokenInterval);
+            this._keycloakUpdateTokenInterval = undefined;
+        }
+
+        // Priority is waiting for keycloak to be back online
+        while (keycloakOffline) {
+            keycloakOffline = !await this.isKeycloakReachable();
+            // Sleep
+            await new Promise(r => setTimeout(r, 3000));
+        }
+
+        // Check if access token can be refreshed
+        try {
+            await this._updateKeycloakAccessToken();
+            // Reinstate token update interval
+            this._createTokenUpdateInterval();
+        } catch (e) {
+            // token refresh failed so redo auth
+            const noLogin = await this.loadAndInitialiseKeycloak()
+            if (!noLogin) {
+                // We have been redirected to login page so nothing to do here
+                return;
+            }
+        }
+
+        // Check events
+
+        this._emitEvent(OREvent.ONLINE);
     }
 
     // Public method for reconnecting
@@ -1046,80 +1101,18 @@ export class Manager implements EventProviderFactory {
     }
 
 
-    // Checks whether keycloak is reachable using a simple HTTP request.
-    // Since the keycloak JS adapter doesn't give us details of the HTTP responses they get, we test it manually using this.
-    // Resolves or throws exception.
-    protected async isKeycloakReachable(): Promise<void> {
+    // Checks whether keycloak is reachable using a simple HTTP HEAD request since the keycloak JS adapter doesn't give
+    // us details of the HTTP responses they get, we test it manually using this.
+    protected async isKeycloakReachable(timeoutMillis: number = 2000) {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2000);
+        const timeout = setTimeout(() => controller.abort(), timeoutMillis);
         try {
-            await fetch(this._config.keycloakUrl! + "/health/ready", {method: 'HEAD', mode: 'no-cors', signal: controller.signal});
-            return Promise.resolve();
+            const result = await fetch(this._config.keycloakUrl!, {method: 'HEAD', mode: 'no-cors', signal: controller.signal});
+            return true;
         } catch (e) {
-            return Promise.reject(e);
+            return false;
         } finally {
             clearTimeout(timeout);
-        }
-    }
-
-    // Function that tries to update the token, whilst making sure the authentication service is available.
-    // It first checks the connection to keycloak, and then tries to update the access token.
-    // Mostly used during "reconnect" logic, since it isn't necessary to 'double check' service availability in most cases.
-    // TODO: Currently only applies to Keycloak, not implemented for basic auth.
-    protected async _tryUpdateAccessToken(): Promise<boolean> {
-        let authOffline = false;
-        if(this.isKeycloak()) {
-
-            console.debug("Attempting to update keycloak access token...");
-            this._emitEvent(OREvent.CONNECTING); // emit event every time a reconnect attempt is made
-
-            // Check if keycloak service is available / can be accessed.
-            await this.isKeycloakReachable().catch(() => {
-                authOffline = true;
-                console.error("Could not reach keycloak service! Aborting token update.");
-            });
-            if(!authOffline) {
-
-                // Update token
-                await this.updateKeycloakAccessToken().catch((e) => {
-                    authOffline = true;
-                    console.error(e);
-                });
-            }
-        }
-
-        // Update _authDisconnected respectively
-        this._setAuthDisconnected(authOffline);
-
-        return authOffline;
-    }
-
-
-    // Function that tries to reconnect the EventProvider (such as WebSocket)
-    protected _tryReconnectEvents() {
-        if(this.events?.status !== EventProviderStatus.CONNECTED) {
-
-            // If disconnected, proceed in trying to reconnect EventProvider...
-            if(this.events?.status === EventProviderStatus.DISCONNECTED) {
-                this._connectEvents();
-            }
-
-                // If already "connecting" the EventProvider, wait for attempt to finish, otherwise execute connectEvents() directly.
-            // We subscribe to its status change, and unsubscribe after we get a callback that it got DISCONNECTED. (or a timeout of 4 seconds has gone by)
-            else if(this.events?.status === EventProviderStatus.CONNECTING) {
-                const callback = (status: EventProviderStatus) => {
-                    if (status === EventProviderStatus.DISCONNECTED) {
-                        this.events?.unsubscribeStatusChange(callback);
-                        this._connectEvents();
-                    }
-                };
-                // Subscribe to status change, and add timeout of 4 seconds to automatically unsubscribe.
-                this.events.subscribeStatusChange(callback);
-                setTimeout(() => {
-                    this.events?.unsubscribeStatusChange(callback)
-                }, 4000);
-
-            }
         }
     }
 }
