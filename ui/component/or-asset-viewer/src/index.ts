@@ -720,8 +720,11 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             const rows = childAssets.map((childAsset) => {
                 // todo: it's only processing including selected headers here...
                 // move this to the columnFilter option of the table
-                const arr = attrNames.map((attributeName) => {
-                    return childAsset.attributes![attributeName] ? childAsset.attributes![attributeName].value! as string : "";
+                const arr = attrNames.map((attrName) => {
+                    const descriptor = AssetModelUtil.getAttributeDescriptor(attrName, childAssetType);
+                    return childAsset.attributes![attrName]
+                        ? Util.getAttributeValueAsString(childAsset.attributes![attrName], descriptor, asset.type, false)
+                        : "";
                 });
                 arr.unshift(childAsset.name!);
                 return arr;
@@ -739,12 +742,14 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             showOkCancelDialog(
                 i18next.t("addRemoveAttributes"),
                 html`
-                    <div style="display: grid">
-                        ${availableAttributes.sort().map((attribute) =>
-                            html`<div style="grid-column: 1 / -1;">
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
-                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
-                                </div>`)}
+                    <div style="display: flex; flex-direction: column;">
+                        ${availableAttributes.sort().map((attribute) => html`
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" style="display: inline-flex;"
+                                          .value="${!!selectedAttributes.find((selected) => selected === attribute)}" 
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => 
+                                                  evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
+                            ></or-mwc-input>
+                        `)}
                     </div>
                 `
             ).then((ok) => {
@@ -796,7 +801,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
-        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
+        return html`<or-mwc-table id="linked-users-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
                                   @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => { 
                                       hostElement.dispatchEvent(new OrAssetViewerLoadUserEvent(assetLinkInfos[ev.detail.index].userId));
                                   }}">
@@ -936,7 +941,7 @@ async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAsse
 
     const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
         .then((response) => {
-            return response.data.filter(role => role.composite).map(r => r.name!);
+            return response.data.filter(role => role.composite && role.assigned).map(r => r.name!);
         })
         .catch((err) => {
             console.info('User not allowed to get roles', err);
@@ -1140,6 +1145,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     public isModified() {
         return !!this.editMode && this._assetInfo && this._assetInfo.modified;
+    }
+
+    /**
+     * When language is changed, we clear the cached templates,
+     * so can be rendered differently according to the selected language.
+     */
+    langChangedCallback = () => {
+        if(this._assetInfo) {
+            this._assetInfo.attributeTemplateMap = {};
+            this.requestUpdate("_assetInfo");
+        }
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {

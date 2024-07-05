@@ -441,6 +441,11 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this._clearWriteTimeout();
     }
 
+    langChangedCallback = () => {
+        this._updateTemplate();
+        this.requestUpdate();
+    }
+
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
         const shouldUpdate = super.shouldUpdate(_changedProperties);
 

@@ -50,7 +50,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectNode getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
             getRequestRealmName(),
-            requestParams.getExternalRequestBaseUri()
+            requestParams.getExternalSchemeHostAndPort()
         );
     }
 
@@ -58,7 +58,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectNode getSettingsJs(RequestParams requestParams) {
         return mapService.getMapSettingsJs(
             getAuthenticatedRealmName(),
-            requestParams.getExternalRequestBaseUri()
+            requestParams.getExternalSchemeHostAndPort()
         );
     }
 

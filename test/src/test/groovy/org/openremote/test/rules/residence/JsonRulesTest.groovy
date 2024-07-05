@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler

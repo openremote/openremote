@@ -25,7 +25,7 @@ import io.undertow.servlet.api.DeploymentManager
 import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService

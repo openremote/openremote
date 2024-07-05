@@ -5,7 +5,7 @@ import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Gateway;
 import org.openremote.agent.protocol.tradfri.device.event.EventHandler;
 import org.openremote.agent.protocol.tradfri.device.event.GatewayEvent;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;

@@ -102,6 +102,10 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         normalisedConfig.consoleAutoEnable = true;
     }
 
+    if (normalisedConfig.applyConfigToAdmin === undefined) {
+        normalisedConfig.applyConfigToAdmin = true;
+    }
+
     if (!normalisedConfig.eventProviderType) {
         normalisedConfig.eventProviderType = EventProviderType.WEBSOCKET;
     }
@@ -373,7 +377,13 @@ export class Manager implements EventProviderFactory {
         }
 
         // Don't let console registration error prevent loading
-        await this.doConsoleInit();
+        const consoleSuccess = await this.doConsoleInit();
+        if(consoleSuccess) {
+            // Send the console a message to clear the web history, so no pages outside the app can be accessed.
+            // For example, this prevents navigating back to an authentication screen.
+            this._clearWebHistory();
+        }
+
         success = await this.doTranslateInit() && success;
 
         if (success) {
@@ -446,7 +456,7 @@ export class Manager implements EventProviderFactory {
         // Look for language preference in local storage
         const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
-            lng: language || "en",
+            lng: !language || language === "null" ? this.config.defaultLanguage || "en" : language, // somehow language is "null" sometimes
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
@@ -1159,6 +1169,12 @@ export class Manager implements EventProviderFactory {
             }
         }
     }
+
+    /** Function that clears the `WebView` history of a console. It will not delete the history on regular browsers. */
+    protected _clearWebHistory(): void {
+        this.console?._doSendGenericMessage("CLEAR_WEB_HISTORY", undefined);
+    }
+
 }
 
 export const manager = new Manager(); // Needed for webpack bundling
