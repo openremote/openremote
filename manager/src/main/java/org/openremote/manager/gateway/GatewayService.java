@@ -684,7 +684,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
             clientEventService.closeSession(sessionId);
-            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
+            tunnelInfos.values().removeIf(tunnelInfo -> {
+                if(tunnelInfo.getGatewayId().equals(gatewayId)) {
+                    this.stopTunnel(tunnelInfo);
+                    return true;
+                }
+                return false;
+            });
         });
     }
 
