@@ -165,6 +165,8 @@ jobs:
         id: ip-address
         shell: bash
         run: |
+          curl v4.ident.me
+          curl v6.ident.me
           PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
           PUBLIC_IPV6=$(curl v6.ident.me 2>/dev/null)
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
