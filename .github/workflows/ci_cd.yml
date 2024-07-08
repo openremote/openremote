@@ -166,10 +166,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          curl -sf ident.me 2>&1 || true
-          curl -sf v6.ident.me 2>&1 || true
-          PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
-          PUBLIC_IPV6=$(curl v6.ident.me 2>/dev/null)
+          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
+          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
           echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
           echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT 
 
