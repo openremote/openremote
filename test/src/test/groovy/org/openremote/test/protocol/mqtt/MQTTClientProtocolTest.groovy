@@ -139,5 +139,52 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValue()}.orElse(null) == 19.5d
         }
+
+
+    }
+
+
+    @SuppressWarnings("GroovyAccessibility")
+    def "Check MQTT client protocol SSL support"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+        def brokerService = container.getService(MQTTBrokerService.class)
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def clientEventService = container.getService(ClientEventService.class)
+        def mqttHost = brokerService.host
+        def mqttPort = brokerService.port
+
+        when: "an MQTT client agent is created to connect to this tests manager"
+        def clientId = UniqueIdentifierGenerator.generateId()
+        def agent = new MQTTAgent("Test agent")
+                .setRealm(Constants.MASTER_REALM)
+                .setClientId(clientId)
+                .setHost("test.mosquitto.org")
+                .setSecureMode(true)
+                .setCertificateAlias("a4")
+                .setPort(8884)
+//                .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
+
+        and: "the agent is added to the asset service"
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should authenticate and the agent status should become CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id, Agent.class)
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "the agent is connected, show the SSL certificates used"
+        def protocol = agent.getProtocolInstance() as MQTTProtocol;
+        then: "test"
+        protocol.properties;
     }
 }
