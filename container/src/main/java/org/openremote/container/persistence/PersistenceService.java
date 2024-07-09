@@ -603,6 +603,20 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         return storageDir;
     }
 
+    /**
+     * Will resolve relative paths relative to {@link #getStorageDir()}
+     */
+    public Path resolvePath(String path) {
+        return resolvePath(Path.of(path));
+    }
+
+    /**
+     * Will resolve relative paths relative to {@link #getStorageDir()}
+     */
+    public Path resolvePath(Path path) {
+        return getStorageDir().resolve(path);
+    }
+
     public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
         return Arrays.stream(clazz.getDeclaredFields())
             .filter(field -> ((field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(EmbeddedId.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class)) && (excludeFields == null || !excludeFields.contains(field.getName())))
