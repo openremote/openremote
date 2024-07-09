@@ -146,7 +146,6 @@ abstract class EventProviderImpl implements EventProvider {
                     }, 0);
                 } else {
                     console.debug("Failed to connect to event service: " + this.endpointUrl);
-                    this._onStatusChanged(EventProviderStatus.DISCONNECTED);
                     this._scheduleReconnect();
                 }
 
@@ -536,12 +535,15 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
-        this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+        if (this._status === EventProviderStatus.CONNECTED) {
+            this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+        }
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);
             this._pendingSubscription = null;
         }
 
+        this._onStatusChanged(EventProviderStatus.CONNECTING);
         this._scheduleReconnect();
     }
 
