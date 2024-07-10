@@ -311,6 +311,14 @@ services:
       # Set the number of concurrent attribute event processors (defaults to number of CPU cores)
       OR_ATTRIBUTE_EVENT_THREADS:
 
+      # Set the persistence storage dir (must also be volume mapped)
+      OR_STORAGE_DIR:
+
+      # Set the path to the keycloak credentials grant file generated at setup to allow the manager to communicate with
+      # the Keycloak admin API; this means OR_ADMIN_PASSWORD can be changed without breaking connection to Keycloak
+      # relative paths are resolved relative to OR_STORAGE_DIR
+      OR_KEYCLOAK_GRANT_FILE:
+
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS: 30
