@@ -4,6 +4,7 @@ import javax.net.ssl.*;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.logging.Logger;
 
 public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
@@ -61,20 +62,9 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		@Override
 		public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
-			// Check if the requested alias exists
-			for (String type: keyType){
-				String[] aliases = getClientAliases(type, issuers);
-				if (aliases == null) continue;
-
-				for (String alias : aliases) {
-					if (alias.equals(this.userRequestedAlias)) {
-						return alias;
-					}
-				}
-			}
-
-			// If the requested alias does not exist, return null or a default alias
-			return keyManager.chooseClientAlias(keyType, issuers, socket);
+			String alias = keyManager.chooseClientAlias(keyType,issuers,socket);
+			Logger.getLogger(this.getClass().getName()).warning("Client Alias selected: "+alias);
+			return alias;
 		}
 
 		@Override
@@ -83,8 +73,19 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 		}
 
 		@Override
-		public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket) {
-			return keyManager.chooseServerAlias(keyType, issuers, socket);
+		public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
+			return this.userRequestedAlias;
+		}
+
+		@Override
+		public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
+			return super.chooseEngineServerAlias(keyType, issuers, engine);
+		}
+
+		public String chooseServerAlias(String keyType, Principal[] issuers, java.net.Socket socket) {
+			String alias = keyManager.chooseServerAlias(keyType,issuers,socket);
+			Logger.getLogger(this.getClass().getName()).warning("Server Alias selected: "+alias);
+			return alias;
 		}
 
 		@Override

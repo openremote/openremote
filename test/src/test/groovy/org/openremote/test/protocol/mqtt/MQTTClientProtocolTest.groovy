@@ -148,7 +148,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     def "Check MQTT client protocol SSL support"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 100, delay: 0.2)
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -169,7 +169,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 .setClientId(clientId)
                 .setHost("test.mosquitto.org")
                 .setSecureMode(true)
-                .setCertificateAlias("a4")
+                .setCertificateAlias("a5")
                 .setPort(8884)
 //                .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
 

@@ -19,6 +19,10 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
+import com.hivemq.client.mqtt.MqttClientSslConfig;
+import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
+import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
+import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.util.KeyStoreUtil;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.util.UniqueIdentifierGenerator;
@@ -32,16 +36,8 @@ import javax.net.ssl.*;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
-import java.nio.file.Paths;
 import java.security.KeyStore;
-import java.security.Principal;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.PKIXParameters;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.function.Consumer;
@@ -91,7 +87,9 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
     @Override
     protected MQTT_IOClient doCreateIoClient() throws Exception {
-        String host = agent.getHost().orElse(null);
+	    System.setProperty("javax.net.debug", "ssl,handshake");
+
+	    String host = agent.getHost().orElse(null);
         int port = agent.getPort().orElseGet(() -> {
             if (agent.isSecureMode().orElse(false)) {
                 return agent.isWebsocketMode().orElse(false) ? 443 : 8883;
@@ -121,10 +119,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         }
 
 
-	    File keyStoreFile = new File(this.getClass().getResource("keystore.jks").toURI());
 	    File trustStoreFile = new File(this.getClass().getResource("truststore.jks").toURI());
 
-//		KeyManagerFactory keyManagerFactory = KeyStoreUtil.keyManagerFromKeystore(keyStoreFile, "secret", "secret");
 		TrustManagerFactory userTmFactory = KeyStoreUtil.trustManagerFromKeystore(trustStoreFile, "secret");
 
 
@@ -149,48 +145,62 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 	    TrustManagerFactory defaultTmFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 	    defaultTmFactory.init((KeyStore) null);
 
-	    System.setProperty("javax.net.debug", "ssl,handshake");
 //	    KeyManagerFactory keyManagerFactory = CustomKeyManagerFactory.getInstance(agent.getCertificateAlias());
 //	    KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 //	    X509KeyManager customKeyManager = new CustomX509KeyManager((X509KeyManager) keyManagers[0], agent.getCertificateAlias());
 
 	    // Initialize CustomKeyManagerFactory
 	    KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias());
+//	    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
 	    keyManagerFactory.init(keyStore, "secret".toCharArray());
 
 
 
 	    // Create SSLContext and initialize it with key managers and trust managers
-//	    SSLContext sslContext = SSLContext.getInstance("TLS");
-//	    sslContext.init(new KeyManager[]{customKeyManager}, defaultTmFactory.getTrustManagers(), null);
-//	    sslContext.init(keyManagerFactory.getKeyManagers(), userTmFactory.getTrustManagers(), null);
+	    SSLContext sslContext = SSLContext.getInstance("TLS");
+	    sslContext.init(keyManagerFactory.getKeyManagers(), userTmFactory.getTrustManagers(), null);
 
-		// Create an SSLSocketFactory from the SSLContext
-//	    SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+//		 Create an SSLSocketFactory from the SSLContext
+	    SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
-	    // Connect to a server using the SSLSocketFactory
-//	    try (SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket("certauth.cryptomix.com", 443)) {
+//	     Connect to a server using the SSLSocketFactory
+	    try (SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket("certauth.cryptomix.com", 443)) {
+		    sslSocket.setNeedClientAuth(true);
+		    SSLSession sslSession = sslSocket.getSession();
+		    X509Certificate[] serverCertChain = (X509Certificate[]) sslSession.getPeerCertificates();
 
-//		    SSLSession sslSession = sslSocket.getSession();
-//		    X509Certificate[] serverCertChain = (X509Certificate[]) sslSession.getPeerCertificates();
-//		    System.out.println("Server Certificate Chain:");
-//		    for (X509Certificate cert : serverCertChain) {
-//			    System.out.println(cert);
-//		    }
-//
-//		    // Send a simple HTTP GET request
-//		    OutputStream outputStream = sslSocket.getOutputStream();
-//		    outputStream.write("GET /json/ HTTP/1.1\r\nHost: certauth.cryptomix.com\r\n\r\n".getBytes());
-//		    outputStream.flush();
-//
-//		    // Read the response
-//		    InputStream inputStream = sslSocket.getInputStream();
-//		    int data;
-//		    while ((data = inputStream.read()) != -1) {
-//			    System.out.print(String.valueOf((char) data));
-//		    }
-//	    }
+		    // Send a simple HTTP GET request
+		    OutputStream outputStream = sslSocket.getOutputStream();
+		    outputStream.write("GET /json/ HTTP/1.1\r\nHost: certauth.cryptomix.com\r\n\r\n".getBytes());
+		    outputStream.flush();
+
+		    // Read the response
+		    InputStream inputStream = sslSocket.getInputStream();
+		    int data;
+		    while ((data = inputStream.read()) != -1) {
+			    System.out.print(String.valueOf((char) data));
+		    }
+	    }
+
+		// Create a testing
+
+	    Mqtt3ClientBuilder testBuilder = Mqtt3Client.builder();
+		testBuilder = testBuilder
+				.sslConfig(MqttClientSslConfig.builder()
+						.keyManagerFactory(keyManagerFactory)
+						.trustManagerFactory(userTmFactory)
+						.build())
+				.serverHost("test.mosquitto.org")
+				.serverPort(8884)
+				.addConnectedListener(mqttClientConnectedContext -> {
+					LOG.warning("MQTT CLIENT TEST CONNECTED");
+				})
+				.addDisconnectedListener(mqttClientDisconnectedContext -> {
+					LOG.warning("MQTT CLIENT TEST DISCONNECTED");
+				});
+	    Mqtt3BlockingClient testClient = testBuilder.buildBlocking();
+		testClient.connect();
 
 	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, userTmFactory);
     }
@@ -217,60 +227,6 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     public String getProtocolName() {
         return "MQTT Client";
     }
-
-	// Custom X509KeyManager to intercept and print certificate chain
-//	static class CustomX509KeyManager implements X509KeyManager {
-//		private final X509KeyManager originalKeyManager;
-//		private final String userDefinedAlias;
-//
-//		CustomX509KeyManager(X509KeyManager originalKeyManager, String userDefinedAlias) {
-//			this.originalKeyManager = originalKeyManager;
-//			this.userDefinedAlias = userDefinedAlias;
-//		}
-//
-//		@Override
-//		public String[] getClientAliases(String keyType, Principal[] issuers) {
-//			return originalKeyManager.getClientAliases(keyType, issuers);
-//		}
-//
-//		@Override
-//		public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
-//			// Check if the requested alias exists
-//			for (String type: keyType){
-//				String[] aliases = getClientAliases(type, issuers);
-//				if (aliases == null) continue;
-//
-//				for (String alias : aliases) {
-//					if (alias.equals(this.userDefinedAlias)) {
-//						return alias;
-//					}
-//				}
-//			}
-//
-//			// If the requested alias does not exist, return null or a default alias
-//			return originalKeyManager.chooseClientAlias(keyType, issuers, socket);
-//		}
-//
-//		@Override
-//		public String[] getServerAliases(String keyType, Principal[] issuers) {
-//			return originalKeyManager.getServerAliases(keyType, issuers);
-//		}
-//
-//		@Override
-//		public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket) {
-//			return originalKeyManager.chooseServerAlias(keyType, issuers, socket);
-//		}
-//
-//		@Override
-//		public X509Certificate[] getCertificateChain(String alias) {
-//			return originalKeyManager.getCertificateChain(alias);
-//		}
-//
-//		@Override
-//		public PrivateKey getPrivateKey(String alias) {
-//			return originalKeyManager.getPrivateKey(alias);
-//		}
-//	}
 }
 
 
