@@ -118,91 +118,24 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
 
+	    TrustManagerFactory trustManagerFactory = null;
+		KeyManagerFactory keyManagerFactory = null;
+		if(agent.isSecureMode().orElse(false)){
+			File trustStoreFile = new File(this.getClass().getResource("truststore.jks").toURI());
+			trustManagerFactory = KeyStoreUtil.trustManagerFromKeystore(trustStoreFile, "secret");
+//			trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+//			trustManagerFactory.init((KeyStore) null);
 
-	    File trustStoreFile = new File(this.getClass().getResource("truststore.jks").toURI());
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			try (InputStream keyStoreStream = this.getClass().getResourceAsStream("keystore.jks")) {
+				keyStore.load(keyStoreStream, "secret".toCharArray());
+			}
+			keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias());
+		    // KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+			keyManagerFactory.init(keyStore, "secret".toCharArray());
+		}
 
-		TrustManagerFactory userTmFactory = KeyStoreUtil.trustManagerFromKeystore(trustStoreFile, "secret");
-
-
-	    KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-	    try (InputStream keyStoreStream = this.getClass().getResourceAsStream("keystore.jks")) {
-		    keyStore.load(keyStoreStream, "secret".toCharArray());
-	    }
-//
-//	    // Load the truststore
-//	    KeyStore trustStore = KeyStore.getInstance("JKS");
-//	    try (InputStream trustStoreStream = this.getClass().getResourceAsStream("truststore.jks")) {
-//		    trustStore.load(trustStoreStream, "secret".toCharArray());
-//	    }
-//
-//	    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-//	    keyManagerFactory.init(keyStore, "secret".toCharArray());
-//		KeyManagerFactory fac = CustomKeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-//	    // Initialize the TrustManagerFactory
-//	    TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//	    trustManagerFactory.init(trustStore);
-
-	    TrustManagerFactory defaultTmFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-	    defaultTmFactory.init((KeyStore) null);
-
-//	    KeyManagerFactory keyManagerFactory = CustomKeyManagerFactory.getInstance(agent.getCertificateAlias());
-//	    KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
-//	    X509KeyManager customKeyManager = new CustomX509KeyManager((X509KeyManager) keyManagers[0], agent.getCertificateAlias());
-
-	    // Initialize CustomKeyManagerFactory
-	    KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias());
-//	    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-
-	    keyManagerFactory.init(keyStore, "secret".toCharArray());
-
-
-
-	    // Create SSLContext and initialize it with key managers and trust managers
-	    SSLContext sslContext = SSLContext.getInstance("TLS");
-	    sslContext.init(keyManagerFactory.getKeyManagers(), userTmFactory.getTrustManagers(), null);
-
-//		 Create an SSLSocketFactory from the SSLContext
-	    SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-//	     Connect to a server using the SSLSocketFactory
-	    try (SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket("certauth.cryptomix.com", 443)) {
-		    sslSocket.setNeedClientAuth(true);
-		    SSLSession sslSession = sslSocket.getSession();
-		    X509Certificate[] serverCertChain = (X509Certificate[]) sslSession.getPeerCertificates();
-
-		    // Send a simple HTTP GET request
-		    OutputStream outputStream = sslSocket.getOutputStream();
-		    outputStream.write("GET /json/ HTTP/1.1\r\nHost: certauth.cryptomix.com\r\n\r\n".getBytes());
-		    outputStream.flush();
-
-		    // Read the response
-		    InputStream inputStream = sslSocket.getInputStream();
-		    int data;
-		    while ((data = inputStream.read()) != -1) {
-			    System.out.print(String.valueOf((char) data));
-		    }
-	    }
-
-		// Create a testing
-
-	    Mqtt3ClientBuilder testBuilder = Mqtt3Client.builder();
-		testBuilder = testBuilder
-				.sslConfig(MqttClientSslConfig.builder()
-						.keyManagerFactory(keyManagerFactory)
-						.trustManagerFactory(userTmFactory)
-						.build())
-				.serverHost("test.mosquitto.org")
-				.serverPort(8884)
-				.addConnectedListener(mqttClientConnectedContext -> {
-					LOG.warning("MQTT CLIENT TEST CONNECTED");
-				})
-				.addDisconnectedListener(mqttClientDisconnectedContext -> {
-					LOG.warning("MQTT CLIENT TEST DISCONNECTED");
-				});
-	    Mqtt3BlockingClient testClient = testBuilder.buildBlocking();
-		testClient.connect();
-
-	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, userTmFactory);
+	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
     }
 
     @Override
