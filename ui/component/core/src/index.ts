@@ -316,7 +316,7 @@ export class Manager implements EventProviderFactory {
 
     public async init(config: ManagerConfig): Promise<boolean> {
         if (this._config) {
-            console.log("Already initialised");
+            console.debug("Already initialised");
         }
 
         this._config = normaliseConfig(config);
@@ -379,7 +379,7 @@ export class Manager implements EventProviderFactory {
             // If failed then we can assume keycloak auth requested but unavailable
             if (!success && !this._config.skipFallbackToBasicAuth) {
                 // Try fallback to BASIC
-                console.log("Falling back to basic auth");
+                console.debug("Falling back to basic auth");
                 this._config.auth = Auth.BASIC;
                 success = await this.doAuthInit();
             }
@@ -714,7 +714,7 @@ export class Manager implements EventProviderFactory {
     protected async initialiseBasicAuth(): Promise<boolean> {
 
         if (!this.config.basicLoginProvider) {
-            console.log("No basicLoginProvider defined on config so cannot display login UI");
+            console.debug("No basicLoginProvider defined on config so cannot display login UI");
             return false;
         }
 
@@ -751,7 +751,7 @@ export class Manager implements EventProviderFactory {
             result = await this.config.basicLoginProvider(result.username, result.password);
 
             if (result.cancel) {
-                console.log("Basic authentication cancelled by user");
+                console.debug("Basic authentication cancelled by user");
                 break;
             }
 
@@ -773,7 +773,7 @@ export class Manager implements EventProviderFactory {
                 if (!success) {
                     // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
                     if (userResponse.status === 401 || userResponse.status === 403) {
-                        console.log("Basic authentication invalid credentials, trying again");
+                        console.debug("Basic authentication invalid credentials, trying again");
                     }
                 }
             } catch (e) {
@@ -781,14 +781,14 @@ export class Manager implements EventProviderFactory {
             }
 
             if (success) {
-                console.log("Basic authentication successful");
+                console.debug("Basic authentication successful");
                 authenticated = true;
 
                 // Get user roles
                 const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
-                console.log("Unknown response so aborting");
+                console.debug("Unknown response so aborting");
                 this._basicIdentity = undefined;
                 break;
             }
@@ -959,7 +959,7 @@ export class Manager implements EventProviderFactory {
     protected _setError(error: ORError) {
         this._error = error;
         this._emitEvent(OREvent.ERROR);
-        console.log("Error set: " + error);
+        console.warn("Error set: " + error);
     }
 
     /** Function that clears the `WebView` history of a console. It will not delete the history on regular browsers. */
@@ -972,6 +972,10 @@ export class Manager implements EventProviderFactory {
      * we just try to reach keycloak and then get a new token as well as wait for the events status to change
      */
     protected async _onDisconnect() {
+        if (this._disconnected) {
+            return;
+        }
+        console.debug("Disconnected");
         this._disconnected = true;
 
         // Cancel token refresh timer
@@ -985,6 +989,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected _onReconnected() {
+        console.debug("Reconnected");
         this._disconnected = false;
 
         // Reinstate token update interval
@@ -1001,20 +1006,24 @@ export class Manager implements EventProviderFactory {
         if (!this._disconnected) {
             return;
         }
-
+        
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
         }
 
         const tryReconnect = async () => {
+            console.debug("Attempting reconnect");
             let keycloakOffline = !await this.isKeycloakReachable();
 
             if (keycloakOffline) {
+                console.debug("Keycloak is unreachable");
                 return false;
             }
-
+            console.debug("Keycloak is reachable");
+            
             // Check if access token can be refreshed
+            console.debug("Checking keycloak access token");
             try {
                 await this._updateKeycloakAccessToken();
             } catch (e) {
@@ -1025,14 +1034,17 @@ export class Manager implements EventProviderFactory {
                 try {
                     await this._updateKeycloakAccessToken();
                 } catch (e) {
+                    console.debug("Cannot update access token so sending to login");
                     this.login();
                     return;
                 }
+                console.debug("Keycloak access token is valid");
                 return true;
             }
 
             // Check events
             const eventsOffline = this.events && this.events.status === EventProviderStatus.CONNECTING;
+            console.debug("If event provider offline then attempting reconnect: offline=" + eventsOffline);
             // Force reconnect attempt now if needed
             return !eventsOffline || await this.events?.connect();
         };
@@ -1046,7 +1058,8 @@ export class Manager implements EventProviderFactory {
 
         if (!connected) {
             // Schedule reconnect again
-            reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000)
+            reattemptDelayMillis = Math.min(Manager.MAX_RECONNECT_DELAY, reattemptDelayMillis + 3000);
+            console.debug("Scheduling another reconnect attempt in (ms): " + reattemptDelayMillis);
             this._reconnectTimer = window.setTimeout(() => this.reconnect(reattemptDelayMillis), reattemptDelayMillis);
             return;
         }
