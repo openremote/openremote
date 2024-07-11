@@ -37,7 +37,6 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -57,6 +56,7 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.InputStream;
@@ -64,7 +64,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -73,7 +72,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
@@ -88,7 +88,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String DEFAULT_REALM_KEYCLOAK_THEME = "DEFAULT_REALM_KEYCLOAK_THEME";
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
-    public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
+    public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
 
@@ -144,16 +144,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected OAuthGrant getStoredCredentials(Container container) {
         // Try and load keycloak proxy credentials from the file system
         String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
-        Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : Paths.get(grantFile);
+        Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : persistenceService.resolvePath(grantFile);
         OAuthGrant grant = null;
 
         if (grantPath != null && Files.isReadable(grantPath)) {
-            LOG.info("Loading OR_KEYCLOAK_GRANT_FILE: " + grantFile);
+            LOG.info("Loading OR_KEYCLOAK_GRANT_FILE: " + grantPath);
 
             try (InputStream is = Files.newInputStream(grantPath)) {
                 String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
                 grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
-                    LOG.warning("Failed to load OR_KEYCLOAK_GRANT_FILE: " + grantFile);
+                    LOG.warning("Failed to load OR_KEYCLOAK_GRANT_FILE: " + grantPath);
                     return null;
                 });
             } catch (Exception ex) {
@@ -171,33 +171,39 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return null;
         }
 
+        Path grantPath = persistenceService.resolvePath(grantFile);
+
         // Create a new super user for the keycloak proxy so admin user can be modified if desired
         User keycloakProxyUser = new User()
             .setUsername(MANAGER_CLIENT_ID)
             .setEnabled(true)
             .setSystemAccount(true);
-        String password = UniqueIdentifierGenerator.generateId();
-        keycloakProxyUser = createUpdateUser(MASTER_REALM, keycloakProxyUser, password, true);
-
-        // Make this proxy user a super user by giving them admin realm role
-        updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));
-
-        // Use same details as default keycloak grant but change the username and password to our new user
-        OAuthPasswordGrant grant = getDefaultKeycloakGrant(container);
-        grant.setUsername(keycloakProxyUser.getUsername()).setPassword(password);
-        Path grantPath = Paths.get(grantFile);
+        // Make password complex enough to hopefully meet any password policy that is set in keycloak
+        String password = UniqueIdentifierGenerator.generateId() + "$*#@$";
 
         try {
+            keycloakProxyUser = createUpdateUser(MASTER_REALM, keycloakProxyUser, password, true);
+
+            // Make this proxy user a super user by giving them admin realm role
+            updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));
+
+            // Use same details as default keycloak grant but change the username and password to our new user
+            OAuthPasswordGrant grant = getDefaultKeycloakGrant(container);
+            grant.setUsername(keycloakProxyUser.getUsername()).setPassword(password);
+
+            // Ensure the directory path exists
+            grantPath.getParent().toFile().mkdirs();
+
             Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING);
+
+            return grant;
         } catch (Exception e) {
-            LOG.info("Failed to write " + OR_KEYCLOAK_GRANT_FILE + ": " + grantFile);
+            LOG.info("Failed to write " + OR_KEYCLOAK_GRANT_FILE + ": " + grantPath);
             return null;
         }
-
-        return grant;
     }
 
     @Override
@@ -1164,7 +1170,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             emailConfig.put("user", container.getConfig().getOrDefault(OR_EMAIL_USER, null));
             emailConfig.put("password", container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null));
             emailConfig.put("auth", container.getConfig().containsKey(OR_EMAIL_USER) ? "true" : "false");
-            emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT)));
+            emailConfig.put("starttls", Boolean.toString(getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT)));
             emailConfig.put("ssl", Boolean.toString(!getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT) && getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT).equals("smtps")));
             emailConfig.put("from", getString(container.getConfig(), OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT));
             realmRepresentation.setSmtpServer(emailConfig);
