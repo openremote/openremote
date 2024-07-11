@@ -19,12 +19,10 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.hivemq.client.mqtt.MqttClientSslConfig;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
 import com.hivemq.client.util.KeyStoreUtil;
 import org.apache.http.client.utils.URIBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.security.KeystoreService;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -35,21 +33,22 @@ import org.openremote.model.util.ValueUtil;
 import javax.net.ssl.*;
 import java.io.File;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.security.KeyStore;
-import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.syslog.SyslogCategory.getLogger;
 
 public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTAgent, String, MQTT_IOClient, MQTTAgentLink> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MQTTProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
+
+	protected KeystoreService keystoreService;
 
     protected MQTTProtocol(MQTTAgent agent) {
         super(agent);
@@ -66,7 +65,14 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         });
     }
 
-    @Override
+	@Override
+	protected void doStart(Container container) throws Exception {
+		keystoreService = container.getService(KeystoreService.class);
+		if (keystoreService == null) throw new Exception("Couldn't load KeystoreService");
+		super.doStart(container);
+	}
+
+	@Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) {
         agentLink.getSubscriptionTopic().ifPresent(topic -> {
             AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
@@ -121,15 +127,11 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 	    TrustManagerFactory trustManagerFactory = null;
 		KeyManagerFactory keyManagerFactory = null;
 		if(agent.isSecureMode().orElse(false)){
-			File trustStoreFile = new File(this.getClass().getResource("truststore.jks").toURI());
-			trustManagerFactory = KeyStoreUtil.trustManagerFromKeystore(trustStoreFile, "secret");
-//			trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//			trustManagerFactory.init((KeyStore) null);
+			KeyStore keyStore = keystoreService.getClientKeyStore(this.agent.getRealm());
+			KeyStore trustStore = keystoreService.getClientTrustStore(this.agent.getRealm());
 
-			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			try (InputStream keyStoreStream = this.getClass().getResourceAsStream("keystore.jks")) {
-				keyStore.load(keyStoreStream, "secret".toCharArray());
-			}
+			trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+			trustManagerFactory.init(trustStore);
 			keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias());
 		    // KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			keyManagerFactory.init(keyStore, "secret".toCharArray());

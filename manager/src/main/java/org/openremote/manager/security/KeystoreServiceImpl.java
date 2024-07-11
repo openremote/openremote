@@ -2,7 +2,7 @@ package org.openremote.manager.security;
 
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
+import org.openremote.model.security.KeystoreService;
 import org.openremote.model.security.Realm;
 
 import java.io.*;
@@ -26,20 +26,17 @@ import static org.openremote.container.util.MapAccess.getString;
  * the correct certificates.
  * </p>
  */
-public class KeystoreService implements ContainerService {
+public class KeystoreServiceImpl implements KeystoreService {
 
-	protected static PersistenceService persistenceService;
-	protected static ManagerIdentityService identityService;
+	protected PersistenceService persistenceService;
+	protected ManagerIdentityService identityService;
 
-	public static final String OR_KEYSTORE_PASSWORD = "OR_KEYSTORE_PASSWORD";
-	public static String OR_KEYSTORE_PASSWORD_DEFAULT;
-	public static String keyStorePassword;
-
-	public static final Logger LOG = Logger.getLogger(KeystoreService.class.getName());
+	public String OR_KEYSTORE_PASSWORD_DEFAULT;
+	public String keyStorePassword;
 
 	@Override
 	public int getPriority() {
-		return ManagerIdentityService.PRIORITY + 1000;
+		return ManagerIdentityService.PRIORITY + 10;
 	}
 
 	@Override
@@ -50,10 +47,6 @@ public class KeystoreService implements ContainerService {
 		OR_KEYSTORE_PASSWORD_DEFAULT = getString(container.getConfig(), "OR_ADMIN_PASSWORD", "secret");
 
 		keyStorePassword = getString(container.getConfig(), OR_KEYSTORE_PASSWORD, OR_KEYSTORE_PASSWORD_DEFAULT);
-
-		//Get all realms
-
-
 	}
 
 	@Override
@@ -74,13 +67,13 @@ public class KeystoreService implements ContainerService {
 
 				// Initialize KeyStore
 				try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
-				    keyStore.load(fis, keyStorePassword.toCharArray()); // Assuming keystorePassword is defined elsewhere
+				    keyStore.load(fis, getKeystorePassword()); // Assuming keystorePassword is defined elsewhere
 				} catch (Exception e) {
 				    getLogger().severe("Couldn't find KeyStore file " + storePath + ", initializing new KeyStore");
-				    keyStore.load(null, keyStorePassword.toCharArray());
+				    keyStore.load(null, getKeystorePassword());
 				    // Save the newly created KeyStore
 				    try (OutputStream os = new FileOutputStream(keyStoreFile)) {
-				        keyStore.store(os, keyStorePassword.toCharArray());
+				        keyStore.store(os, getKeystorePassword());
 				    } catch (Exception saveException) {
 				        getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 				    }
@@ -88,32 +81,37 @@ public class KeystoreService implements ContainerService {
 			}
 		}
 	}
+	public KeyStore getClientTrustStore(String realm) {
+		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "truststore");
+		try {
+			return KeyStore.getInstance(storePath.toFile(), getKeystorePassword());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public KeyStore getClientKeyStore(String realm) {
+		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "keystore");
+		try {
+			return KeyStore.getInstance(storePath.toFile(), getKeystorePassword());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public char[] getKeystorePassword(){
+		return this.keyStorePassword.toCharArray();
+	}
+
 
 	@Override
 	public void stop(Container container) throws Exception {
 
 	}
 
-	public static KeyStore getClientKeyStore(String realm) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "keystore");
-		try {
-			return KeyStore.getInstance(storePath.toFile(), keyStorePassword.toCharArray());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
 
-	public static KeyStore getClientTrustStore(String realm) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "truststore");
-		try {
-			return KeyStore.getInstance(storePath.toFile(), keyStorePassword.toCharArray());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-
-	private Logger getLogger(){return LOG;}
+	@Override
+	public Logger getLogger(){return LOG;}
 
 
 }
