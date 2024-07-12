@@ -127,14 +127,14 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 	    TrustManagerFactory trustManagerFactory = null;
 		KeyManagerFactory keyManagerFactory = null;
 		if(agent.isSecureMode().orElse(false)){
-			KeyStore keyStore = keystoreService.getClientKeyStore(this.agent.getRealm());
-			KeyStore trustStore = keystoreService.getClientTrustStore(this.agent.getRealm());
+			KeyStore keyStore = keystoreService.getKeyStore(this.agent.getRealm(), KeystoreService.KeyStoreType.CLIENT_KEYSTORE);
+			KeyStore trustStore = keystoreService.getKeyStore(this.agent.getRealm(), KeystoreService.KeyStoreType.CLIENT_TRUSTSTORE);
 
 			trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(trustStore);
-			keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias());
+			keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias().orElseThrow());
 		    // KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-			keyManagerFactory.init(keyStore, "secret".toCharArray());
+			keyManagerFactory.init(keyStore, keystoreService.getKeystorePassword());
 		}
 
 	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);

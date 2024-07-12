@@ -52,11 +52,11 @@ public class KeystoreServiceImpl implements KeystoreService {
 	@Override
 	public void start(Container container) throws Exception {
 		List<Realm> realmList = Arrays.stream(identityService.getIdentityProvider().getRealms()).toList();
-		List<String> storeTypes = List.of("keystore", "truststore");
+		List<String> storeTypes = Arrays.stream(KeyStoreType.values()).map(KeyStoreType::getFileName).toList();
 		for (Realm realm : realmList) {
 			for (String storeType : storeTypes){
 				Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm.getName() + "." + storeType);
-				getLogger().warning("Looking into: " + storePath.toString());
+				getLogger().warning("Accessing: " + storePath.toString());
 				KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 				File keyStoreFile = storePath.toAbsolutePath().toFile();
 
@@ -81,8 +81,9 @@ public class KeystoreServiceImpl implements KeystoreService {
 			}
 		}
 	}
-	public KeyStore getClientTrustStore(String realm) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "truststore");
+	@Override
+	public KeyStore getKeyStore(String realm, KeyStoreType type) {
+		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
 		try {
 			return KeyStore.getInstance(storePath.toFile(), getKeystorePassword());
 		} catch (Exception e) {
@@ -90,12 +91,13 @@ public class KeystoreServiceImpl implements KeystoreService {
 		}
 	}
 
-	public KeyStore getClientKeyStore(String realm) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + "keystore");
+	@Override
+		public void StoreKeystore(KeyStore keystore, String realm, KeyStoreType type) {
+		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
 		try {
-			return KeyStore.getInstance(storePath.toFile(), getKeystorePassword());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+			keystore.store(new FileOutputStream(storePath.toString()), getKeystorePassword());
+		} catch (Exception saveException) {
+			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 		}
 	}
 
