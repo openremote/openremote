@@ -84,6 +84,8 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 					return this.userRequestedAlias;
 				}
 			}
+			//TODO: Not sure how this should be handled. This would mean that the keypair with userRequestedAlias
+			//      either wasn't found, or didn't match up with the KeyType, or does not have the correct issuer.
 			return keyManager.chooseEngineClientAlias(keyType, issuers, engine);
 		}
 
