@@ -1,10 +1,14 @@
 package org.openremote.agent.protocol.mqtt;
 
 import javax.net.ssl.*;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
@@ -62,9 +66,7 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		@Override
 		public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
-			String alias = keyManager.chooseClientAlias(keyType,issuers,socket);
-			Logger.getLogger(this.getClass().getName()).warning("Client Alias selected: "+alias);
-			return alias;
+			return keyManager.chooseClientAlias(keyType,issuers,socket);
 		}
 
 		@Override
@@ -74,18 +76,24 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		@Override
 		public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
-			return this.userRequestedAlias;
+			for (String key : keyType) {
+				String[] aliasArray = keyManager.getClientAliases(key, issuers);
+				if (aliasArray == null) continue;
+ 				List<String> aliases = Arrays.stream(aliasArray).toList();
+				if (aliases.contains(this.userRequestedAlias)){
+					return this.userRequestedAlias;
+				}
+			}
+			return keyManager.chooseEngineClientAlias(keyType, issuers, engine);
 		}
 
 		@Override
 		public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
-			return super.chooseEngineServerAlias(keyType, issuers, engine);
+			return keyManager.chooseEngineServerAlias(keyType, issuers, engine);
 		}
 
 		public String chooseServerAlias(String keyType, Principal[] issuers, java.net.Socket socket) {
-			String alias = keyManager.chooseServerAlias(keyType,issuers,socket);
-			Logger.getLogger(this.getClass().getName()).warning("Server Alias selected: "+alias);
-			return alias;
+			return keyManager.chooseServerAlias(keyType,issuers,socket);
 		}
 
 		@Override
