@@ -72,6 +72,11 @@ public class GatewayConnection {
     @Column(name = "DISABLED")
     protected boolean disabled;
 
+    /**
+     * Filters are applied in order and the first to match the {@link org.openremote.model.attribute.AttributeEvent} will
+     * be applied; if a catch all filter is to be used (i.e. {@link GatewayAttributeFilter#matcher == null}) it should
+     * be last in the list.
+     */
     @Column(name = "ATTRIBUTE_FILTERS")
     @JdbcTypeCode(SqlTypes.JSON)
     protected List<GatewayAttributeFilter> attributeFilters;
@@ -187,6 +192,15 @@ public class GatewayConnection {
 
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
+    }
+
+    public List<GatewayAttributeFilter> getAttributeFilters() {
+        return attributeFilters;
+    }
+
+    public GatewayConnection setAttributeFilters(List<GatewayAttributeFilter> attributeFilters) {
+        this.attributeFilters = attributeFilters;
+        return this;
     }
 
     @Override

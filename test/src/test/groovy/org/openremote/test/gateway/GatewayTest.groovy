@@ -30,10 +30,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
-import org.openremote.model.gateway.GatewayClientResource
-import org.openremote.model.gateway.GatewayConnection
-import org.openremote.model.gateway.GatewayTunnelInfo
-import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
+import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
@@ -752,6 +749,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
+        def timerService = container.getService(TimerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
@@ -796,12 +794,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway client connection is created to connect the city realm to the gateway in the building realm"
         def gatewayConnection = new GatewayConnection(
+            managerTestSetup.realmCityName,
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
             gateway.getClientId().orElse(""),
             gateway.getClientSecret().orElse(""),
             false,
+            null,
             false
         )
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
@@ -909,7 +909,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "we subscribe to attribute events"
         List<AttributeEvent> attributeEvents = []
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
+        def subscriptionId = clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
             attributeEvents.add(attributeEvent)
         })
 
@@ -933,6 +933,60 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
+        }
+
+        when: "attribute filters are added to the gateway connection and persisted"
+        long currentTime = timerService.getCurrentTimeMillis()
+        gatewayConnection.setAttributeFilters([
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(LightAsset.class)).setValueChange(true),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(PeopleCounterAsset.class).attributeNames(PeopleCounterAsset.COUNT_TOTAL.name, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name))
+                    .setDelta(1.5d),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().names("Microphone 2")).setDuration("PT1M"),
+                // Ignore any other attribute
+                new GatewayAttributeFilter().setSkipAlways(true)
+        ])
+        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
+        def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
+        attributeEvents.clear()
+
+        then: "the gateway connection IO client should have been replaced"
+        conditions.eventually {
+            gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
+            gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+        }
+//
+//        and: "the mirrored assets should have been updated due to asset synchronisation"
+//        conditions.eventually {
+//            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name}
+//            def mirroredLight2 = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light2Id, false))
+//            assert mirroredLight2 != null
+//            assert mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap{it.getValue()}.orElse(false)
+//            assert mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap{it.getTimestamp()}.orElse(0L) > currentTime
+//        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a filter"
+        currentTime = timerService.getCurrentTimeMillis()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF.name, true, currentTime))
+
+        then: "the value should not have been forwarded to the central instance as the value hasn't changed"
+        new PollingConditions(initialDelay: 1, delay: 1, timeout: 10).eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false) && it.timestamp == currentTime}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a filter"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, false))
+
+        then: "the value should now have been forwarded to the central instance as the value has changed"
+        conditions.eventually {
+            def mirroredLight2 = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light2Id, false))
+            assert mirroredLight2 != null
+            assert !mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap{it.getValue()}.orElse(true)
+        }
+
+        cleanup: "Remove any subscriptions created"
+        if (clientEventService != null && subscriptionId != null) {
+            clientEventService.cancelInternalSubscription(subscriptionId)
         }
     }
 
