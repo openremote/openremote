@@ -1,24 +1,18 @@
 package org.openremote.manager.security;
 
 import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
-import org.openremote.agent.protocol.mqtt.CustomX509TrustManager;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
-import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactorySpi;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
 import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.security.Realm;
 
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -36,7 +30,7 @@ import static org.openremote.container.util.MapAccess.getString;
  * the correct certificates.
  * </p>
  */
-public class KeystoreServiceImpl implements KeyStoreService {
+public class KeyStoreServiceImpl implements KeyStoreService {
 
 	protected PersistenceService persistenceService;
 	protected ManagerIdentityService identityService;
@@ -77,13 +71,13 @@ public class KeystoreServiceImpl implements KeyStoreService {
 
 				// Initialize KeyStore
 				try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
-				    keyStore.load(fis, getKeystorePassword()); // Assuming keystorePassword is defined elsewhere
+				    keyStore.load(fis, getKeyStorePassword()); // Assuming keystorePassword is defined elsewhere
 				} catch (Exception e) {
 				    getLogger().severe("Couldn't find KeyStore file " + storePath + ", initializing new KeyStore");
-				    keyStore.load(null, getKeystorePassword());
+				    keyStore.load(null, getKeyStorePassword());
 				    // Save the newly created KeyStore
 				    try (OutputStream os = new FileOutputStream(keyStoreFile)) {
-				        keyStore.store(os, getKeystorePassword());
+				        keyStore.store(os, getKeyStorePassword());
 				    } catch (Exception saveException) {
 				        getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 				    }
@@ -95,23 +89,23 @@ public class KeystoreServiceImpl implements KeyStoreService {
 	public KeyStore getKeyStore(String realm, KeyStoreType type) {
 		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
 		try {
-			return KeyStore.getInstance(storePath.toFile(), getKeystorePassword());
+			return KeyStore.getInstance(storePath.toFile(), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-		public void StoreKeystore(KeyStore keystore, String realm, KeyStoreType type) {
+		public void StoreKeyStore(KeyStore keystore, String realm, KeyStoreType type) {
 		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
 		try {
-			keystore.store(new FileOutputStream(storePath.toString()), getKeystorePassword());
+			keystore.store(new FileOutputStream(storePath.toString()), getKeyStorePassword());
 		} catch (Exception saveException) {
 			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 		}
 	}
 
-	public char[] getKeystorePassword(){
+	public char[] getKeyStorePassword(){
 		return this.keyStorePassword.toCharArray();
 	}
 
@@ -119,7 +113,7 @@ public class KeystoreServiceImpl implements KeyStoreService {
 	public KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception {
 		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
 		try {
-			keyManagerFactory.init(getKeyStore(realm, KeyStoreType.CLIENT_KEYSTORE), getKeystorePassword());
+			keyManagerFactory.init(getKeyStore(realm, KeyStoreType.CLIENT_KEYSTORE), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new Exception("Could not retrieve KeyManagerFactory: "+e.getMessage());
 		}
@@ -147,7 +141,6 @@ public class KeystoreServiceImpl implements KeyStoreService {
 	}
 
 
-	@Override
 	public Logger getLogger(){return LOG;}
 
 

@@ -31,7 +31,6 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -45,7 +44,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
 
-	protected KeyStoreService keystoreService;
+	protected KeyStoreService keyStoreService;
 
     protected MQTTProtocol(MQTTAgent agent) {
         super(agent);
@@ -64,8 +63,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
 	@Override
 	protected void doStart(Container container) throws Exception {
-		keystoreService = container.getService(KeyStoreService.class);
-		if (keystoreService == null) throw new Exception("Couldn't load KeystoreService");
+		keyStoreService = container.getService(KeyStoreService.class);
+		if (keyStoreService == null) throw new Exception("Couldn't load KeyStoreService");
 		super.doStart(container);
 	}
 
@@ -125,8 +124,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 	    TrustManagerFactory trustManagerFactory = null;
 		KeyManagerFactory keyManagerFactory = null;
 		if(agent.isSecureMode().orElse(false)){
-			trustManagerFactory = keystoreService.getTrustManagerFactory(agent.getRealm());
-			keyManagerFactory = keystoreService.getKeyManagerFactory(agent.getRealm(), agent.getCertificateAlias().orElseThrow());
+			trustManagerFactory = keyStoreService.getTrustManagerFactory(agent.getRealm());
+			keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm(), agent.getCertificateAlias().orElseThrow());
 		}
 
 	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
