@@ -949,10 +949,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
         attributeEvents.clear()
 
-        then: "the gateway connection IO client should have been replaced"
+        then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
         conditions.eventually {
-            gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
-            gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+            GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert connector != null
+            assert !connector.initialSyncInProgress
         }
 //
 //        and: "the mirrored assets should have been updated due to asset synchronisation"
