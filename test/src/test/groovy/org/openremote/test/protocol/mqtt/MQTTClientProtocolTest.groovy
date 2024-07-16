@@ -28,7 +28,6 @@ import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
-import org.bouncycastle.util.encoders.UTF8
 import org.bouncycastle.util.io.pem.PemObject
 import org.bouncycastle.util.io.pem.PemWriter
 import org.junit.AssumptionViolatedException
@@ -44,7 +43,6 @@ import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.security.KeystoreServiceImpl
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.syslog.SyslogService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -53,7 +51,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
-import org.openremote.model.security.KeystoreService
+import org.openremote.model.security.KeyStoreService
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -214,8 +212,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def keyAlias = "testalias"
 
 
-        KeyStore clientKeystore = keystoreService.getKeyStore(Constants.MASTER_REALM, KeystoreService.KeyStoreType.CLIENT_KEYSTORE)
-        KeyStore clientTruststore = keystoreService.getKeyStore(Constants.MASTER_REALM, KeystoreService.KeyStoreType.CLIENT_TRUSTSTORE)
+        KeyStore clientKeystore = keystoreService.getKeyStore(Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
+        KeyStore clientTruststore = keystoreService.getKeyStore(Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
 
         // Create keystore and keypair
         clientKeystore = createKeystore(clientKeystore, keyAlias, keyPassword)
@@ -247,8 +245,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
         clientKeystore = importCertificate(clientKeystore, keyAlias, signedCertPem, keystorePassword.toCharArray())
 
-        keystoreService.StoreKeystore(clientKeystore, Constants.MASTER_REALM, KeystoreService.KeyStoreType.CLIENT_KEYSTORE)
-        keystoreService.StoreKeystore(clientTruststore, Constants.MASTER_REALM, KeystoreService.KeyStoreType.CLIENT_TRUSTSTORE)
+        keystoreService.StoreKeystore(clientKeystore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
+//        keystoreService.StoreKeystore(clientTruststore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
 
         when: "an MQTT client agent is created to connect to this tests manager"
         def clientId = UniqueIdentifierGenerator.generateId()

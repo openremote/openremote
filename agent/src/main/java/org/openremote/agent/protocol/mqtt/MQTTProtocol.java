@@ -19,10 +19,9 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.hivemq.client.util.KeyStoreUtil;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.Container;
-import org.openremote.model.security.KeystoreService;
+import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -31,8 +30,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
-import java.io.File;
-import java.io.InputStream;
 import java.net.URI;
 import java.security.KeyStore;
 import java.util.*;
@@ -48,7 +45,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
 
-	protected KeystoreService keystoreService;
+	protected KeyStoreService keystoreService;
 
     protected MQTTProtocol(MQTTAgent agent) {
         super(agent);
@@ -67,7 +64,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
 	@Override
 	protected void doStart(Container container) throws Exception {
-		keystoreService = container.getService(KeystoreService.class);
+		keystoreService = container.getService(KeyStoreService.class);
 		if (keystoreService == null) throw new Exception("Couldn't load KeystoreService");
 		super.doStart(container);
 	}
@@ -124,17 +121,12 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
 
+		//It's fine if they're null, they're not going to be used when creating the client
 	    TrustManagerFactory trustManagerFactory = null;
 		KeyManagerFactory keyManagerFactory = null;
 		if(agent.isSecureMode().orElse(false)){
-			KeyStore keyStore = keystoreService.getKeyStore(this.agent.getRealm(), KeystoreService.KeyStoreType.CLIENT_KEYSTORE);
-			KeyStore trustStore = keystoreService.getKeyStore(this.agent.getRealm(), KeystoreService.KeyStoreType.CLIENT_TRUSTSTORE);
-
-			trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-			trustManagerFactory.init(trustStore);
-			keyManagerFactory = new CustomKeyManagerFactory(agent.getCertificateAlias().orElseThrow());
-		    // KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-			keyManagerFactory.init(keyStore, keystoreService.getKeystorePassword());
+			trustManagerFactory = keystoreService.getTrustManagerFactory(agent.getRealm());
+			keyManagerFactory = keystoreService.getKeyManagerFactory(agent.getRealm(), agent.getCertificateAlias().orElseThrow());
 		}
 
 	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);

@@ -3,18 +3,21 @@ package org.openremote.model.security;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.security.KeyStore;
 import java.util.logging.Logger;
 
-public interface KeystoreService extends ContainerService {
+public interface KeyStoreService extends ContainerService {
 	String OR_KEYSTORE_PASSWORD = "OR_KEYSTORE_PASSWORD";
-	Logger LOG = Logger.getLogger(KeystoreService.class.getName());
+	Logger LOG = Logger.getLogger(KeyStoreService.class.getName());
 
 	KeyStore getKeyStore(String realm, KeyStoreType type);
 	void StoreKeystore(KeyStore keyStore, String realm, KeyStoreType type);
 	char[] getKeystorePassword();
+
+	public KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception;
+	public TrustManagerFactory getTrustManagerFactory(String realm) throws Exception;
 
 	@Override
 	int getPriority();

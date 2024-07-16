@@ -1,14 +1,24 @@
 package org.openremote.manager.security;
 
+import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
+import org.openremote.agent.protocol.mqtt.CustomX509TrustManager;
+import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
+import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactorySpi;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
-import org.openremote.model.security.KeystoreService;
+import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.security.Realm;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -26,7 +36,7 @@ import static org.openremote.container.util.MapAccess.getString;
  * the correct certificates.
  * </p>
  */
-public class KeystoreServiceImpl implements KeystoreService {
+public class KeystoreServiceImpl implements KeyStoreService {
 
 	protected PersistenceService persistenceService;
 	protected ManagerIdentityService identityService;
@@ -103,6 +113,31 @@ public class KeystoreServiceImpl implements KeystoreService {
 
 	public char[] getKeystorePassword(){
 		return this.keyStorePassword.toCharArray();
+	}
+
+	@Override
+	public KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception {
+		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
+		try {
+			keyManagerFactory.init(getKeyStore(realm, KeyStoreType.CLIENT_KEYSTORE), getKeystorePassword());
+		} catch (Exception e) {
+			throw new Exception("Could not retrieve KeyManagerFactory: "+e.getMessage());
+		}
+
+		return keyManagerFactory;
+	}
+
+	@Override
+	public TrustManagerFactory getTrustManagerFactory(String realm) throws Exception {
+
+		CustomX509TrustManagerFactory tmf = new CustomX509TrustManagerFactory(getKeyStore(realm, KeyStoreType.CLIENT_TRUSTSTORE), (KeyStore) null);
+		try {
+			tmf.init((KeyStore) null);
+		} catch (Exception e) {
+			throw new Exception("Could not retrieve KeyManagerFactory: "+e.getMessage());
+		}
+
+		return tmf;
 	}
 
 
