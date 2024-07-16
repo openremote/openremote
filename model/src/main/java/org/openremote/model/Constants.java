@@ -147,4 +147,5 @@ public interface Constants {
     String UNITS_RPM = "rpm";
     String UNITS_PART_PER_MILLION = "ppm";
     String UNITS_CARBON = "carbon";
+    String UNITS_VAR = "var";
 }
