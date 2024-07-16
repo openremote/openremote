@@ -89,8 +89,6 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
     @Override
     protected MQTT_IOClient doCreateIoClient() throws Exception {
-	    System.setProperty("javax.net.debug", "ssl,handshake");
-
 	    String host = agent.getHost().orElse(null);
         int port = agent.getPort().orElseGet(() -> {
             if (agent.isSecureMode().orElse(false)) {
