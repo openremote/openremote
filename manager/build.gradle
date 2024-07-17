@@ -57,6 +57,8 @@ dependencies {
     implementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
+
+    implementation "com.github.mwiede:jsch:$jSchVersion"
 }
 
 jar {

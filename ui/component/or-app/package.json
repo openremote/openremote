@@ -20,6 +20,7 @@
     "prepack": "npx tsc -b"
   },
   "dependencies": {
+    "@lit/task": "^1.0.0",
     "@openremote/core": "workspace:*",
     "@openremote/or-asset-tree": "workspace:*",
     "@openremote/or-asset-viewer": "workspace:*",

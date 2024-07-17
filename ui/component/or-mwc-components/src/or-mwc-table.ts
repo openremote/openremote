@@ -288,12 +288,12 @@ export class OrMwcTable extends LitElement {
     protected render() {
         const tableClasses = {
             "mdc-data-table": true,
-            "mdc-data-table__paginated": !!this.config.pagination,
+            "mdc-data-table__paginated": !!this.config.pagination?.enable,
             "mdc-data-table__fullheight": !!this.config.fullHeight,
             "has-sticky-first-column": !!this.config.stickyFirstColumn
         }
         // Only show pagination if enabled in config, and when "the amount of rows doesn't fit on the page".
-        const showPagination = this.config.pagination && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
+        const showPagination = this.config.pagination?.enable && (!!this.rowsTemplate || (this.rows && (this.rows.length > this.paginationSize)));
         const tableWidth = this.shadowRoot?.firstElementChild?.clientWidth;
         return html`
             <div class="${classMap(tableClasses)}">
@@ -347,7 +347,7 @@ export class OrMwcTable extends LitElement {
                         <!-- Table content, where either the template or an array of rows is displayed -->
                         <tbody class="mdc-data-table__content">
                         ${when(this.rowsTemplate, () => {
-                            if (this.config.pagination) { // if paginated, filter out the rows by index by manually collecting a list of <tr> elements.
+                            if (this.config.pagination?.enable) { // if paginated, filter out the rows by index by manually collecting a list of <tr> elements.
                                 this.updateComplete.then(async () => {
                                     const elem = await this.getTableElem(false);
                                     const rows = elem?.querySelectorAll('tr');
@@ -360,7 +360,7 @@ export class OrMwcTable extends LitElement {
                             return html`${this.rowsTemplate}`;
                         }, () => {
                             return this.rows ? (this.rows as any[])
-                                            .filter((row, index) => (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
+                                            .filter((row, index) => !this.config.pagination?.enable || (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
                                             .map((item: TableRow | string[]) => {
                                                 const content: (string | number | TemplateResult)[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
                                                 const styles = {

@@ -21,6 +21,11 @@ const treeStyling = css`
         flex-direction: row;
         padding-right: 5px;
     }
+    
+    #content {
+        flex: 1;
+        overflow: hidden auto;
+    }
 
     .node-container {
         align-items: center;

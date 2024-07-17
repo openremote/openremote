@@ -35,7 +35,7 @@ import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
 import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAck;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.Container;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
