@@ -461,7 +461,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected int getEventProcessingRouteNumber(String assetId) {
-        int charCode = Character.codePointAt(assetId, 0);
+        int charCode = Character.codePointAt(assetId, 0) + Character.codePointAt(assetId, 1);
         return (charCode % eventProcessingThreadCount) + 1;
     }
 
