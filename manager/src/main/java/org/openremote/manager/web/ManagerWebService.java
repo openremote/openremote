@@ -27,6 +27,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.security.*;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.servers.ServerVariable;
@@ -53,6 +54,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,9 +70,14 @@ import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
 
-    protected interface ServerVariableMixin {
-        @JsonProperty
-         String getDefault();
+    private static abstract class ServerVariableMixin {
+        @JsonProperty("default")
+        List<String> _default;
+    }
+
+    private static abstract class StringSchemaMixin {
+        @JsonProperty("enum")
+        protected List<String> _enum;
     }
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
@@ -102,6 +109,7 @@ public class ManagerWebService extends WebService {
     public int getPriority() {
         return PRIORITY;
     }
+
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
@@ -110,27 +118,36 @@ public class ManagerWebService extends WebService {
 
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
+        Json.mapper().addMixIn(StringSchema.class, StringSchemaMixin.class);
         Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
 
         // Add swagger resource
         OpenAPI oas = new OpenAPI()
-            .servers(Collections.singletonList(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
-            .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
-                new OAuthFlows().authorizationCode(
-                    new OAuthFlow()
-                        .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
-                        .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                        .tokenUrl("/auth/realms/master/protocol/openid-connect/token"))))
-            .security(Collections.singletonList(new SecurityRequirement().addList("openid")));
+                .servers(Collections.singletonList(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
+                .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
+                        new OAuthFlows().authorizationCode(
+                            new OAuthFlow()
+                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
+                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token"))
+                        .clientCredentials(
+                                // for service users
+                                new OAuthFlow()
+                                    .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                    .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                    .scopes(new Scopes().addString("serviceUser", "serviceUser"))
+                            )
+                )).security(Collections.singletonList(new SecurityRequirement().addList("openid")));
 
         Info info = new Info()
-            .title("OpenRemote Manager REST API")
-            .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [wiki](https://github.com/openremote/openremote/wiki) for more info.")
-            .contact(new Contact()
-                .email("info@openremote.io"))
-            .license(new License()
-                .name("AGPL 3.0")
-                .url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
+                .title("OpenRemote Manager REST API")
+                .version("3.0.0")
+                .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
+                .contact(new Contact()
+                        .email("info@openremote.io"))
+                .license(new License()
+                        .name("AGPL 3.0")
+                        .url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
 
         oas.info(info);
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()

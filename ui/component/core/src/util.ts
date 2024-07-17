@@ -29,6 +29,7 @@ import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
+import {transform} from "lodash";
 
 export class Deferred<T> {
 
@@ -60,6 +61,10 @@ export class Deferred<T> {
 export interface GeoNotification {
     predicate: GeofencePredicate;
     notification?: PushNotificationMessage;
+}
+
+export function getBrowserLanguage(): string {
+    return navigator.language.split("-")[0] || "en";
 }
 
 export function getQueryParameters(queryStr: string): any {
@@ -269,6 +274,20 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
     }
 
     return false;
+}
+/**
+ * Deep diff between two object, using lodash
+ * @param  {Object} object Object compared
+ * @param  {Object} base   Object to compare with
+ * @return {Object}        Return a new object who represent the diff
+ */
+export function difference(object?: any, base?: any): any {
+    const changes = (object: any, base: any) => transform(object, function(result: any, value, key: string | number | symbol) {
+        if (!objectsEqual(value, base?.[key])) {
+            result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
+        }
+    });
+    return changes(object, base);
 }
 
 export function arrayRemove<T>(arr: T[], item: T) {
