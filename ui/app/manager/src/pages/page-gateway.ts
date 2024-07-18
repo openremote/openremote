@@ -3,7 +3,7 @@ import {customElement, state} from "lit/decorators.js";
 import i18next from "i18next";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
-import {createRef, Ref, ref} from 'lit/directives/ref.js';
+import {createRef, Ref, ref} from "lit/directives/ref.js";
 import "@openremote/or-components/or-panel";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator} from "@openremote/model";
@@ -182,10 +182,6 @@ export class PageGateway extends Page<AppStateKeyed>  {
         return "gatewayConnection";
     }
 
-    constructor(store: Store<AppStateKeyed>) {
-        super(store);
-    }
-
     connectedCallback() {
         super.connectedCallback();
         this._readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
@@ -236,7 +232,6 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected render(): TemplateResult | void {
         const connection = this._connection;
         const disabled = this._loading || this._readonly;
-        const customDataSharing = this._isDataSharingCustom(connection);
 
         return html`
             <div id="wrapper">
@@ -253,19 +248,19 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     ${until(this._getContentTemplate(() => this._getSettingsColumns(connection, disabled)))}
                 </or-panel>
                 
-                <or-panel ?disabled="${disabled}" heading="${i18next.t('dataSharing')}">
+                <or-panel ?disabled="${disabled}" heading="${i18next.t("dataSharing")}">
                     <div class="gateway-status-header">
                         <or-mwc-input .type="${InputType.BUTTON}" label="JSON" outlined icon="pencil"
                                       @or-mwc-input-changed="${() => this._openConnectionJSONEditor(connection)}"
                         ></or-mwc-input>
                     </div>
-                    ${until(this._getContentTemplate(() => this._getRateLimitingColumns(connection, customDataSharing, disabled)))}
+                    ${until(this._getContentTemplate(() => this._getDataSharingColumns(connection, this._isDataSharingCustom(connection), disabled)))}
                 </or-panel>
             </div>
         `;
     }
 
-    protected async _getTitleTemplate(connection?: GatewayConnection, status?: ConnectionStatus, disabled = true): Promise<TemplateResult> {
+    protected async _getTitleTemplate(connection?: GatewayConnection, _status?: ConnectionStatus, disabled = true): Promise<TemplateResult> {
         return html`
             <div id="title">
                 <div>
@@ -282,7 +277,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     <or-mwc-input label="save" ?disabled="${!this._dirty || disabled}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>
                 </div>
             </div>
-        `
+        `;
     }
 
     protected async _getContentTemplate(content: () => Promise<TemplateResult>): Promise<TemplateResult> {
@@ -332,14 +327,15 @@ export class PageGateway extends Page<AppStateKeyed>  {
      * Returns an HTML {@link TemplateResult} with the controls to limit the rate of {@link AttributeEvent}s in the {@link GatewayConnection}.
      * Think of an attribute picker, and a number control to define the interval (in minutes).
      */
-    protected async _getRateLimitingColumns(connection: GatewayConnection, isCustom = false, disabled = true): Promise<TemplateResult> {
+    protected async _getDataSharingColumns(connection: GatewayConnection, isCustom = false, disabled = true): Promise<TemplateResult> {
         const controlsDisabled = isCustom || disabled;
         const filterChecked = connection.attributeFilters?.find(filter => filter.matcher !== undefined);
-        const buttonDisabled = controlsDisabled || !filterChecked;
+        const filterDisabled = controlsDisabled || !filterChecked;
         const interval = connection.attributeFilters?.[0]?.duration ? moment.duration(connection.attributeFilters[0].duration).get("minutes") : undefined;
         const intervalDisabled = controlsDisabled || interval === undefined;
-        const attrAmountArr = connection.attributeFilters?.map(filter => (filter.matcher?.attributes?.items as any)?.length || 0);
+        const attrAmountArr = connection.attributeFilters?.map(filter => filter.matcher?.attributes?.items?.length || 0);
         const attrAmount = attrAmountArr?.reduce((a, b) => a + b, 0);
+        const controlStyling = controlsDisabled ? "--mdc-theme-text-primary-on-background: lightgray; color: lightgray" : undefined;
         return html`
             <div id="gateway-column-3" class="gateway-column">
                 ${when(isCustom, () => html`
@@ -347,32 +343,21 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 `, () => html`
                     <div></div>
                 `)}
-                <div class="gateway-sharing-control">
-                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_attribute")}" .type="${InputType.CHECKBOX}" ?disabled="${controlsDisabled}" .value="${controlsDisabled ? undefined : filterChecked}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      if(connection.attributeFilters?.length > 0) {
-                                          connection.attributeFilters.forEach((filter) => {
-                                              if(e.detail.value) {
-                                                  filter.matcher = {};
-                                              } else {
-                                                  delete filter.matcher;
-                                              }
-                                          });
-                                          this._updateAttributeFilters(connection.attributeFilters);
-                                      } else {
-                                          this._updateAttributeFilters(e.detail.value ? [{ matcher: {} }] as GatewayAttributeFilter[] : undefined);
-                                      }
-                                  }}"
+                <div class="gateway-sharing-control" style="${controlStyling}">
+                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_attribute")}" .type="${InputType.CHECKBOX}"
+                                  ?disabled="${controlsDisabled}" .value="${controlsDisabled ? undefined : filterChecked}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onLimitAttributesCheck(e)}"
                     ></or-mwc-input>
                     <div class="gateway-sharing-control-child">
-                        <or-mwc-input .type="${InputType.BUTTON}" raised ?disabled="${buttonDisabled}"
-                                      label="${attrAmount || 0} ${i18next.t('gateway.limit_sharing_types_selected')}"
+                        <or-mwc-input .type="${InputType.BUTTON}" raised ?disabled="${filterDisabled}"
+                                      label="${attrAmount || 0} ${i18next.t("gateway.limit_sharing_types_selected")}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onLimitAttributesButtonClick(e)}"
                         ></or-mwc-input>
                     </div>
                 </div>
-                <div class="gateway-sharing-control">
-                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_rate")}" .type="${InputType.CHECKBOX}" ?disabled="${controlsDisabled}" .value="${!controlsDisabled && interval !== undefined}"
+                <div class="gateway-sharing-control"  style="${controlStyling}">
+                    <or-mwc-input .label="${i18next.t("gateway.limit_sharing_rate")}" .type="${InputType.CHECKBOX}"
+                                  ?disabled="${controlsDisabled}" .value="${!controlsDisabled && interval !== undefined}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onAttributesIntervalUpdate(e.detail.value ? 1 : undefined)}"
                     ></or-mwc-input>
                     <div class="gateway-sharing-control-child">
@@ -388,10 +373,29 @@ export class PageGateway extends Page<AppStateKeyed>  {
     }
 
     /**
+     * HTML callback for checking the "limit data sharing by attribute" checkbox.
+     */
+    protected _onLimitAttributesCheck(ev: OrInputChangedEvent) {
+        const attrFilters = this._connection.attributeFilters;
+        if(attrFilters?.length > 0) {
+            attrFilters?.forEach(filter => {
+                if(ev.detail.value) {
+                    filter.matcher = {};
+                } else {
+                    delete filter.matcher;
+                }
+            });
+            this._updateAttributeFilters(attrFilters);
+        } else {
+            this._updateAttributeFilters(ev.detail.value ? [{ matcher: {} }] as GatewayAttributeFilter[] : undefined);
+        }
+    }
+
+    /**
      * HTML callback for clicking the "X attributes selected" button.
      * Here, it opens an attribute picker and handles its callback.
      */
-    protected _onLimitAttributesButtonClick(ev: OrInputChangedEvent) {
+    protected _onLimitAttributesButtonClick(_ev: OrInputChangedEvent) {
         const selectedAttrs = this._getAttrDescriptorMapFromFilters(this._connection.attributeFilters);
         const dialog = showDialog(new OrAssetTypeAttributePicker().setSelectedAttributes(selectedAttrs).setMultiSelect(true));
         dialog.addEventListener(OrAssetTypeAttributePickerPickedEvent.NAME, (ev) => {
@@ -401,19 +405,19 @@ export class PageGateway extends Page<AppStateKeyed>  {
             const filters = Array.from(assetTypeMap.entries()).map(entry => ({
                 duration: duration?.toISOString(),
                 matcher: {
-                    types: [entry[0]],
+                    types: [entry[0]] as string[],
                     attributes: {
-                        items: entry[1]?.map(attr => ({
+                        items: entry[1]?.map((attr: AttributeDescriptor) => ({
                             name: {predicateType: "string", value: attr.name},
                             negated: true
                         })),
                         operator: LogicGroupOperator.OR
                     }
                 }
-            }) as GatewayAttributeFilter)
+            }) as GatewayAttributeFilter);
 
             this._updateAttributeFilters(filters);
-        })
+        });
     }
 
     /**
@@ -432,12 +436,12 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 } else {
                     delete filter.duration;
                 }
-            })
+            });
 
         } else if(duration) {
             attributeFilters.push({
-                duration: duration.toISOString(),
-            })
+                duration: duration.toISOString()
+            });
         }
         this._updateAttributeFilters(attributeFilters);
     }
@@ -455,11 +459,11 @@ export class PageGateway extends Page<AppStateKeyed>  {
             const key = filter.matcher?.types?.[0] as string | undefined;
             const values = (filter.matcher?.attributes?.items as any)?.map((attr: AttributePredicate) => ({
                 name: attr.name.value
-            }))
+            }));
             if(key && values) {
                 map.set(key, values);
             }
-        })
+        });
         return map;
     }
 
@@ -483,7 +487,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected _setConnectionProperty(propName: string, value: any) {
         this._connection[propName] = value;
         this._dirty = true;
-        this.requestUpdate('_connection');
+        this.requestUpdate("_connection");
     }
 
     protected _reset() {
@@ -534,11 +538,11 @@ export class PageGateway extends Page<AppStateKeyed>  {
         if(connection.attributeFilters.length === 0) {
             return false;
         }
-        const excludedKeys = ['duration', 'matcher', 'durationParsedMillis']
+        const excludedKeys = ['duration', 'matcher', 'durationParsedMillis'];
         const customFilter = connection.attributeFilters.find(filter => {
             const unknownKeys = Object.keys(filter).filter(key => !excludedKeys.includes(key));
             return unknownKeys.length > 0;
-        })
+        });
         return !!customFilter;
 
     }
@@ -572,7 +576,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                             // Verify if the JSON is an array. If so; simply accept the format.
                             if(!Array.isArray(parsed)) {
                                 console.warn("Could not parse JSON to GatewayAttributeFilter[], as it was not an array.");
-                                showSnackbar(undefined, i18next.t('errorOccurred'));
+                                showSnackbar(undefined, i18next.t("errorOccurred"));
                                 return;
                             }
                         }
@@ -580,7 +584,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
                     } catch (e) {
                         console.error(e);
-                        showSnackbar(undefined, i18next.t('errorOccurred'));
+                        showSnackbar(undefined, i18next.t("errorOccurred"));
                     }
                 }}
             ])

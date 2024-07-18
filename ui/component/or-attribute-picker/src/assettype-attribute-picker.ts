@@ -107,9 +107,15 @@ export class AssetTypeAttributePicker extends AttributePicker {
         let descriptors: AttributeDescriptor[] | undefined = typeInfo.attributeDescriptors;
 
         // Apply necessary filtering
-        if (this.attributeFilter !== undefined) descriptors = descriptors?.filter(this.attributeFilter);
-        if (this.showOnlyDatapointAttrs) descriptors = descriptors?.filter(d => d.meta?.[WellknownMetaItems.STOREDATAPOINTS]);
-        if (this.showOnlyRuleStateAttrs) descriptors = descriptors?.filter(d => d.meta?.[WellknownMetaItems.RULESTATE]);
+        if (this.attributeFilter !== undefined) {
+            descriptors = descriptors?.filter(this.attributeFilter);
+        }
+        if (this.showOnlyDatapointAttrs) {
+            descriptors = descriptors?.filter(d => d.meta?.[WellknownMetaItems.STOREDATAPOINTS]);
+        }
+        if (this.showOnlyRuleStateAttrs) {
+            descriptors = descriptors?.filter(d => d.meta?.[WellknownMetaItems.RULESTATE]);
+        }
 
         this._loadedAttributeTypes = descriptors || [];
         return descriptors || [];
@@ -225,7 +231,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
                 data: descriptor
             }
         }).sort((a, b) => {
-            return (a.data.descriptorType === "agent" ? 0 : 1) - (b.data.descriptorType === 'agent' ? 0 : 1) || a.text.localeCompare(b.text);
+            return (a.data.descriptorType === "agent" ? 0 : 1) - (b.data.descriptorType === "agent" ? 0 : 1) || a.text.localeCompare(b.text);
         });
 
         if (withNoneValue) {
