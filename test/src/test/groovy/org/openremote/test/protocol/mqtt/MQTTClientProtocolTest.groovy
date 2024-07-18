@@ -209,7 +209,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def keystorePassword = "secret"
         def keyPassword = "secret"
 
-        def keyAlias = "testalias"
+        def aliasName = "testalias"
+        def keyAlias = Constants.MASTER_REALM + "." + aliasName
 
 
         KeyStore clientKeystore = keyStoreService.getKeyStore(Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
@@ -256,7 +257,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 .setPort(mqttPort)
                 .setHost(mqttHost)
                 .setSecureMode(true)
-                .setCertificateAlias(keyAlias)
+                .setCertificateAlias(aliasName)
 //                .setUsernamePassword(new UsernamePassword(keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)

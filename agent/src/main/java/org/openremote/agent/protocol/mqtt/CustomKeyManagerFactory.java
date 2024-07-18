@@ -9,7 +9,11 @@ import java.security.Security;
 
 public class CustomKeyManagerFactory extends KeyManagerFactory {
 
-	public CustomKeyManagerFactory(String userRequestedAlias) {
-		super(new CustomKeyManagerFactorySpi(userRequestedAlias), new Provider("CustomKeyManagerFactory", 1.0, "Custom Key Manager Factory") {}, KeyManagerFactory.getDefaultAlgorithm());
+	public CustomKeyManagerFactory(String userRequestedAlias, String realm) {
+		super(
+				new CustomKeyManagerFactorySpi(userRequestedAlias, realm),
+				new Provider("CustomKeyManagerFactory", 1.0, "Custom Key Manager Factory") {},
+				KeyManagerFactory.getDefaultAlgorithm()
+		);
 	}
 }

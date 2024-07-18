@@ -11,7 +11,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.List;
@@ -56,38 +55,50 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	@Override
 	public void start(Container container) throws Exception {
 		List<Realm> realmList = Arrays.stream(identityService.getIdentityProvider().getRealms()).toList();
-		List<String> storeTypes = Arrays.stream(KeyStoreType.values()).map(KeyStoreType::getFileName).toList();
-		for (Realm realm : realmList) {
-			for (String storeType : storeTypes){
-				Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm.getName() + "." + storeType);
-				getLogger().warning("Accessing: " + storePath.toString());
-				KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-				File keyStoreFile = storePath.toAbsolutePath().toFile();
+		List<KeyStoreType> storeTypes = Arrays.stream(KeyStoreType.values()).toList();
+		for (KeyStoreType storeType : storeTypes){
+			String storeFilename = storeType.getFileName();
 
-				// Ensure parent directories exist
-				if (keyStoreFile.getParentFile() != null && !keyStoreFile.getParentFile().exists()) {
-				    keyStoreFile.getParentFile().mkdirs();
+			// If the store does not exist, check if there is an environment variable. If it's there, check if it does
+			// exist, if it's not, create your own.
+			if(!storeExists(storeType)){
+				String OR_STORE_FILE = getString(container.getConfig(), storeType.getEnvironmentVariableName(), null);
+				if (OR_STORE_FILE != null){
+					if (new File(OR_STORE_FILE).exists()){
+						continue;
+					}
 				}
+			}
 
-				// Initialize KeyStore
-				try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
-				    keyStore.load(fis, getKeyStorePassword()); // Assuming keystorePassword is defined elsewhere
-				} catch (Exception e) {
-				    getLogger().severe("Couldn't find KeyStore file " + storePath + ", initializing new KeyStore");
-				    keyStore.load(null, getKeyStorePassword());
-				    // Save the newly created KeyStore
-				    try (OutputStream os = new FileOutputStream(keyStoreFile)) {
-				        keyStore.store(os, getKeyStorePassword());
-				    } catch (Exception saveException) {
-				        getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
-				    }
+			Path storePath = getStorePath(storeType);
+//			Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", storeType + "."+"p12");
+			getLogger().warning("Accessing: " + storePath);
+			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+			File keyStoreFile = storePath.toAbsolutePath().toFile();
+
+			// Ensure parent directories exist
+			if (keyStoreFile.getParentFile() != null && !keyStoreFile.getParentFile().exists()) {
+				keyStoreFile.getParentFile().mkdirs();
+			}
+
+			// Initialize KeyStore
+			try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
+				keyStore.load(fis, getKeyStorePassword()); // Assuming keystorePassword is defined elsewhere
+			} catch (Exception e) {
+				getLogger().severe("Couldn't find KeyStore file " + storePath + ", initializing new KeyStore");
+				keyStore.load(null, getKeyStorePassword());
+				// Save the newly created KeyStore
+				try (OutputStream os = new FileOutputStream(keyStoreFile)) {
+					keyStore.store(os, getKeyStorePassword());
+				} catch (Exception saveException) {
+					getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 				}
 			}
 		}
 	}
 	@Override
 	public KeyStore getKeyStore(String realm, KeyStoreType type) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
+		Path storePath = persistenceService.resolvePath("keystores").resolve(type.getFileName() + "."+"p12");
 		try {
 			return KeyStore.getInstance(storePath.toFile(), getKeyStorePassword());
 		} catch (Exception e) {
@@ -97,7 +108,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
 	@Override
 		public void StoreKeyStore(KeyStore keystore, String realm, KeyStoreType type) {
-		Path storePath = Paths.get(persistenceService.getStorageDir().toString(), "keystores", realm + "." + type.getFileName());
+		Path storePath = persistenceService.resolvePath("keystores").resolve(type.getFileName() + "."+"p12");
 		try {
 			keystore.store(new FileOutputStream(storePath.toString()), getKeyStorePassword());
 		} catch (Exception saveException) {
@@ -111,7 +122,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
 	@Override
 	public KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception {
-		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
+		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias, realm);
 		try {
 			keyManagerFactory.init(getKeyStore(realm, KeyStoreType.CLIENT_KEYSTORE), getKeyStorePassword());
 		} catch (Exception e) {
@@ -119,6 +130,14 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		}
 
 		return keyManagerFactory;
+	}
+
+	private Boolean storeExists(KeyStoreType type){
+		return new File(getStorePath(type).toAbsolutePath().toUri()).exists();
+	}
+
+	private Path getStorePath(KeyStoreType type){
+		return persistenceService.resolvePath("keystores").resolve(type.getFileName() + "."+"p12");
 	}
 
 	@Override

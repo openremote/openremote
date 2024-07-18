@@ -1,5 +1,7 @@
 package org.openremote.agent.protocol.mqtt;
 
+import org.openremote.model.security.KeyStoreService;
+
 import javax.net.ssl.*;
 import java.lang.reflect.Array;
 import java.net.Socket;
@@ -7,6 +9,8 @@ import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -14,9 +18,11 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 	private X509ExtendedKeyManager keyManager;
 	private final String userRequestedAlias;
+	private String realm;
 
-	public CustomKeyManagerFactorySpi(String userRequestedAlias) {
+	public CustomKeyManagerFactorySpi(String userRequestedAlias, String realm) {
 		this.userRequestedAlias = userRequestedAlias;
+		this.realm = realm;
 	}
 
 	@Override
@@ -31,7 +37,7 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		for (KeyManager keyManager : factory.getKeyManagers()) {
 			if (keyManager instanceof X509ExtendedKeyManager) {
-				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, userRequestedAlias);
+				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, userRequestedAlias, this.realm);
 				return;
 			}
 		}
@@ -53,10 +59,13 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		private final X509ExtendedKeyManager keyManager;
 		private final String userRequestedAlias;
+		private final String realm;
+		private static final Logger LOG = Logger.getLogger(CustomX509KeyManager.class.getName());
 
-		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String userRequestedAlias) {
+		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String userRequestedAlias, String realm) {
 			this.keyManager = keyManager;
 			this.userRequestedAlias = userRequestedAlias;
+			this.realm = realm;
 		}
 
 		@Override
@@ -79,15 +88,22 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 			for (String key : keyType) {
 				String[] aliasArray = keyManager.getClientAliases(key, issuers);
 				if (aliasArray == null) continue;
- 				List<String> aliases = Arrays.stream(aliasArray).toList();
-				if (aliases.contains(this.userRequestedAlias)){
-					return this.userRequestedAlias;
+				Optional<String> found = Arrays.stream(aliasArray).filter(this::isCorrectAlias).findFirst();
+				if(found.isPresent()){
+					return found.get();
 				}
 			}
 			//TODO: Not sure how this should be handled. This would mean that the keypair with userRequestedAlias
 			//      either wasn't found, or didn't match up with the KeyType, or does not have the correct issuer.
-			return keyManager.chooseEngineClientAlias(keyType, issuers, engine);
+			//      for now, log the issue that the certificate wasn't found, and then return null.
+
+			LOG.severe("Could not find a certificate with Alias "+ this.userRequestedAlias);
+			return null;
 		}
+
+		private boolean isCorrectAlias(String s) {
+			return KeyStoreService.isRequestedAlias(s, this.realm, this.userRequestedAlias);
+ 		}
 
 		@Override
 		public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
