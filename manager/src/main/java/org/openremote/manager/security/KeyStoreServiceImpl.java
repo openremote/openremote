@@ -59,7 +59,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		for (KeyStoreType storeType : storeTypes){
 			String storeFilename = storeType.getFileName();
 
-			// If the store does not exist, check if there is an environment variable. If it's there, check if it does
+			// If the store does not exist, check if there is an environment variable present. If it's there, check if it does
 			// exist, if it's not, create your own.
 			if(!storeExists(storeType)){
 				String OR_STORE_FILE = getString(container.getConfig(), storeType.getEnvironmentVariableName(), null);
@@ -107,7 +107,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	}
 
 	@Override
-		public void StoreKeyStore(KeyStore keystore, String realm, KeyStoreType type) {
+		public void storeKeyStore(KeyStore keystore, String realm, KeyStoreType type) {
 		Path storePath = persistenceService.resolvePath("keystores").resolve(type.getFileName() + "."+"p12");
 		try {
 			keystore.store(new FileOutputStream(storePath.toString()), getKeyStorePassword());

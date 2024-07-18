@@ -13,7 +13,7 @@ public interface KeyStoreService extends ContainerService {
 	Logger LOG = Logger.getLogger(KeyStoreService.class.getName());
 
 	KeyStore getKeyStore(String realm, KeyStoreType type);
-	void StoreKeyStore(KeyStore keyStore, String realm, KeyStoreType type);
+	void storeKeyStore(KeyStore keyStore, String realm, KeyStoreType type);
 	char[] getKeyStorePassword();
 
 	KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception;

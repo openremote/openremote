@@ -246,8 +246,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
         clientKeystore = importCertificate(clientKeystore, keyAlias, signedCertPem, keystorePassword.toCharArray())
 
-        keyStoreService.StoreKeyStore(clientKeystore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
-        keyStoreService.StoreKeyStore(clientTruststore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
+        keyStoreService.storeKeyStore(clientKeystore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
+        keyStoreService.storeKeyStore(clientTruststore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
 
         when: "an MQTT client agent is created to connect to this tests manager"
         def clientId = UniqueIdentifierGenerator.generateId()
