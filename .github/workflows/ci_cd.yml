@@ -163,7 +163,13 @@ jobs:
 
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.3
+        shell: bash
+        run: |
+          set -e
+          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
+          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
+          echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
+          echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT 
 
       - name: Checkout
         uses: actions/checkout@v3

@@ -465,6 +465,7 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
+    "var": "var",
     "meta": {},
     "attribute": {}
   },
