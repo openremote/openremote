@@ -684,13 +684,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
         connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
             clientEventService.closeSession(sessionId);
-            tunnelInfos.values().removeIf(tunnelInfo -> {
-                if(tunnelInfo.getGatewayId().equals(gatewayId)) {
-                    this.stopTunnel(tunnelInfo);
-                    return true;
-                }
-                return false;
-            });
+            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
         });
     }
 
@@ -754,6 +748,16 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 if (connector == null) {
                     break;
                 }
+
+                tunnelInfos.values().forEach(tunnelInfo -> {
+                    if(tunnelInfo.getGatewayId().equals(gateway.getId())) {
+                        try {
+                            this.stopTunnel(tunnelInfo);
+                        } catch (IllegalArgumentException | IllegalStateException ignored) {
+
+                        }
+                    }
+                });
 
                 connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
