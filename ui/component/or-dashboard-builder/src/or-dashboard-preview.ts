@@ -82,6 +82,10 @@ const editorStyling = css`
         pointer-events: none;
         opacity: 40%;
     }
+    .grid-stack {
+        height: 100% !important;
+        min-height: 100% !important;
+    }
     .grid-stack-item-content {
         background: white;
         box-sizing: border-box;
@@ -397,8 +401,6 @@ export class OrDashboardPreview extends LitElement {
             }, gridElement!);
 
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
-            gridElement!.style.height = "100%";
-            gridElement!.style.minHeight = "100%";
 
             // When an item gets dropped ontop of the grid. GridStack docs say:
             // "called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone)."
