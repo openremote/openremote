@@ -21,6 +21,7 @@ package org.openremote.container.util;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Convenience functions for accessing {@link Map}.
@@ -66,5 +67,12 @@ public class MapAccess {
         }
         return defaultValue;
     }
+
+	public static <T> Optional<T> getValue(Map<String, ?> map, String key) {
+		if (map.containsKey(key)) {
+			return Optional.ofNullable((T) map.get(key));
+		}
+		return Optional.empty();
+	}
 
 }
