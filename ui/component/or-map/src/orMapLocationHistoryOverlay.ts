@@ -6,7 +6,7 @@ import {OrMap} from "./index";
 import {
     ValueDatapoint, GeoJSONPoint
 } from '@openremote/model';
-import {GeoJSONSource, MapLayerMouseEvent} from "maplibre-gl"
+import {GeoJSONSource, GeoJSONSourceSpecification, MapLayerMouseEvent} from "maplibre-gl"
 import "./or-map-location-history-markers"
 import maplibregl from "maplibre-gl";
 @customElement("or-map-location-history-overlay")
@@ -118,7 +118,7 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
                     }
                 ]
             }
-        } as any as GeoJSONSource;
+        } as any as GeoJSONSourceSpecification;
         const PointsSource = {
             type: "geojson",
             data: {
@@ -131,7 +131,7 @@ export class OrMapLocationHistoryOverlay extends subscribe(manager)(LitElement) 
                     }
                 })
             }
-        } as any as GeoJSONSource;
+        } as any as GeoJSONSourceSpecification;
 
 
 
