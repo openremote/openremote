@@ -38,6 +38,7 @@ services:
     environment:
       KEYCLOAK_ISSUER_BASE_URI: https://localhost/auth
       KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME:
     depends_on:
       postgresql:
         condition: service_healthy

@@ -2315,7 +2315,7 @@ __metadata:
     "@types/qs": "npm:^6.9.7"
     i18next: "npm:^21.5.3"
     i18next-http-backend: "npm:^1.3.1"
-    keycloak-js: "npm:^23.0.6"
+    keycloak-js: "npm:^25.0.1"
     moment: "npm:^2.29.4"
     platform: "npm:^1.3.6"
     qs: "npm:^6.8.0"
@@ -4027,13 +4027,6 @@ __metadata:
   version: 1.0.2
   resolution: "balanced-match@npm:1.0.2"
   checksum: 10c0/9308baf0a7e4838a82bbfd11e01b1cb0f0cf2893bc1676c27c2a8c0e70cbae1c59120c3268517a8ae7fb6376b4639ef81ca22582611dbee4ed28df945134aaee
-  languageName: node
-  linkType: hard
-
-"base64-js@npm:^1.5.1":
-  version: 1.5.1
-  resolution: "base64-js@npm:1.5.1"
-  checksum: 10c0/f23823513b63173a001030fae4f2dabe283b99a9d324ade3ad3d148e218134676f1ee8568c877cd79ec1c53158dcf2d2ba527a97c606618928ba99dd930102bf
   languageName: node
   linkType: hard
 
@@ -6731,10 +6724,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-sha256@npm:^0.10.1":
-  version: 0.10.1
-  resolution: "js-sha256@npm:0.10.1"
-  checksum: 10c0/c63119f7c7f8afc24bfa24c1a6b51147c3b562316b6341a375a1cef88569340ec0dbf2cda429ecf472cabfbae47a0b93a0cb82b8730883de066593c3f816c53b
+"js-sha256@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "js-sha256@npm:0.11.0"
+  checksum: 10c0/90980fe01ca01fbd166751fb16c4caa09c1ab997e8bf77c0764cc05c772c6044946f4c1b3bad266ce78357280d2131d3dc0cf2dd7646e78272996bd4d590aa4f
   languageName: node
   linkType: hard
 
@@ -6870,14 +6863,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keycloak-js@npm:^23.0.6":
-  version: 23.0.6
-  resolution: "keycloak-js@npm:23.0.6"
+"keycloak-js@npm:^25.0.1":
+  version: 25.0.1
+  resolution: "keycloak-js@npm:25.0.1"
   dependencies:
-    base64-js: "npm:^1.5.1"
-    js-sha256: "npm:^0.10.1"
+    js-sha256: "npm:^0.11.0"
     jwt-decode: "npm:^4.0.0"
-  checksum: 10c0/2201d7c8cbd9bf556b212895afc1bf68fa4fed47e8f1ac64f96dbfff56e29d182e89d6729f5097ee41910ea8e6284192735483cd274deeb2da7e41d7164c4af1
+  checksum: 10c0/891f803e17b8e3759e1e945ad7e8589ddfed754d3b33d2f09e28099efef2638d2e2a42c502b0b87fd1b22198eca3e40b2a3c53f157739022b39533028ab48a5f
   languageName: node
   linkType: hard
 
