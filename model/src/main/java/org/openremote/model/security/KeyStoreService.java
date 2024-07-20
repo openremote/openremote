@@ -5,6 +5,8 @@ import org.openremote.model.ContainerService;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.util.logging.Logger;
 
@@ -30,16 +32,24 @@ public interface KeyStoreService extends ContainerService {
 	}
 //	Logger getLogger();
 
+	/**
+	 * Enum that contains the different types of KeyStores that are required to contain different types
+	 * of certificates and keypairs
+	 *
+	 * TODO: Implement per-keystore env-var'd password
+	 */
 	enum KeyStoreType {
-		CLIENT_KEYSTORE("client_keystore", "OR_SSL_CLIENT_KEYSTORE"),
-		CLIENT_TRUSTSTORE("client_truststore", "OR_SSL_CLIENT_TRUSTSTORE"),
-		SERVER_KEYSTORE("server_keystore","OR_SSL_SERVER_KEYSTORE");
+		CLIENT_KEYSTORE("client_keystore", "OR_SSL_CLIENT_KEYSTORE_FILE"),
+		CLIENT_TRUSTSTORE("client_truststore", "OR_SSL_CLIENT_TRUSTSTORE_FILE"),
+		SERVER_KEYSTORE("server_keystore","OR_SSL_SERVER_KEYSTORE_FILE");
 
 		private final String fileName;
 		private final String environmentVariableName;
+		private Path filePath;
 		KeyStoreType(String fileName, String envVarName) {
 			this.fileName = fileName;
 			this.environmentVariableName = envVarName;
+			this.filePath = Paths.get("keystores").resolve(this.getFileName()+".p12");
 		}
 
 		public String getFileName() {
@@ -47,6 +57,14 @@ public interface KeyStoreService extends ContainerService {
 		}
 
 		public String getEnvironmentVariableName() {return environmentVariableName;}
+
+		public void setPath(Path f){
+			this.filePath = f;
+		}
+
+		public Path getPath(){
+			return filePath;
+		}
 
 		@Override
 		public String toString() {
