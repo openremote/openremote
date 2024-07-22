@@ -18,5 +18,5 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Add an index for entity ID and attribute name */
-CREATE index on openremote.asset_datapoint (entity_id, attribute_name, timestamp DESC);
+/* Add an index for entity ID, attribute name and timestamp to improve data point retrieval */
+CREATE index if not exists asset_datapoint_entity_id_attribute_name_timestamp_idx on openremote.asset_datapoint (entity_id, attribute_name, timestamp DESC);
