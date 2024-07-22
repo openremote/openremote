@@ -88,12 +88,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String DEFAULT_REALM_KEYCLOAK_THEME = "DEFAULT_REALM_KEYCLOAK_THEME";
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
     public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
-    public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
-    public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
-    public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
+    public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
