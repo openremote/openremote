@@ -303,6 +303,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 return null;
             }
 
+            // Allow attribute events that came from the central manager to be returned
+            if (getClass().getName().equals(ev.getSource())) {
+                return ev;
+            }
+
             boolean allowEvent = predicatesWithFilters.stream()
                 .filter(predicateWithFilter -> {
                     if (predicateWithFilter.key == null) {
