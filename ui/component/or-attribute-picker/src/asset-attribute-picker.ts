@@ -64,7 +64,9 @@ export class OrAssetAttributePicker extends AttributePicker {
 
     public setSelectedAttributes(selectedAttributes: AttributeRef[]): this {
         this.selectedAttributes = selectedAttributes;
-        this.addBtn.disabled = this.selectedAttributes.length === 0;
+        if(this.addBtn) {
+            this.addBtn.disabled = this.selectedAttributes.length === 0;
+        }
         return this;
     }
 

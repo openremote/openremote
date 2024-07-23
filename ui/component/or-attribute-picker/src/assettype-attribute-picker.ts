@@ -132,7 +132,7 @@ export class AssetTypeAttributePicker extends AttributePicker {
         const selectedTypeNames = this.selectedAttributes ? Array.from(this.selectedAttributes.keys()) : undefined;
         const assetTypeItems = this._getAssetTypeDescriptors(assetTypes, assetTypes.filter(type => !selectedTypeNames || selectedTypeNames.includes(type.name)));
         const assetDescriptor = this._getAssetDescriptorByName(this._selectedAssetType);
-        const attributeTypes = this._loadedAttributeTypes || (assetDescriptor ? this._loadAttributeTypes(assetDescriptor) : undefined);
+        const attributeTypes = (this._loadedAttributeTypes || (assetDescriptor ? this._loadAttributeTypes(assetDescriptor) : undefined))?.sort(Util.sortByString(item => item.name));
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
