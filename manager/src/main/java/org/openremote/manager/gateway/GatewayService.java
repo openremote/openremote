@@ -749,6 +749,16 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                     break;
                 }
 
+                tunnelInfos.values().forEach(tunnelInfo -> {
+                    if(tunnelInfo.getGatewayId().equals(gateway.getId())) {
+                        try {
+                            this.stopTunnel(tunnelInfo);
+                        } catch (IllegalArgumentException | IllegalStateException ignored) {
+
+                        }
+                    }
+                });
+
                 connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
                 if (connector != null) {
