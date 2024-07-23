@@ -350,7 +350,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     ></or-mwc-input>
                     <div class="gateway-sharing-control-child">
                         <or-mwc-input .type="${InputType.BUTTON}" raised ?disabled="${filterDisabled}"
-                                      label="${attrAmount || 0} ${i18next.t("gateway.limit_sharing_types_selected")}"
+                                      label="${attrAmount || 0} ${i18next.t("gateway.limit_sharing_attribute_selected")}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onLimitAttributesButtonClick(e)}"
                         ></or-mwc-input>
                     </div>
@@ -408,8 +408,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     types: [entry[0]] as string[],
                     attributes: {
                         items: entry[1]?.map((attr: AttributeDescriptor) => ({
-                            name: {predicateType: "string", value: attr.name},
-                            negated: true
+                            name: {predicateType: "string", value: attr.name}
                         })),
                         operator: LogicGroupOperator.OR
                     }

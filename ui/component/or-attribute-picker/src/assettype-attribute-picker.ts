@@ -7,6 +7,7 @@ import {until} from "lit/directives/until.js";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {AssetDescriptor, AssetModelUtil, AssetTypeInfo, AttributeDescriptor, WellknownMetaItems} from "@openremote/model";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import "./assettype-list";
 
 /**
  * Custom Event that is dispatched upon closing the dialog.
@@ -128,19 +129,20 @@ export class AssetTypeAttributePicker extends AttributePicker {
     protected _setDialogContent(): void {
 
         const assetTypes = this._loadedAssetTypes || this._loadAssetTypes();
-        const assetTypeItems = this._getAssetTypeDescriptors(assetTypes);
+        const selectedTypeNames = this.selectedAttributes ? Array.from(this.selectedAttributes.keys()) : undefined;
+        const assetTypeItems = this._getAssetTypeDescriptors(assetTypes, assetTypes.filter(type => !selectedTypeNames || selectedTypeNames.includes(type.name)));
         const assetDescriptor = this._getAssetDescriptorByName(this._selectedAssetType);
         const attributeTypes = this._loadedAttributeTypes || (assetDescriptor ? this._loadAttributeTypes(assetDescriptor) : undefined);
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
-                <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
-                    <or-mwc-list .listItems="${assetTypeItems}" @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
+                <div class="col" style="width: 320px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
+                    <asset-type-list .listItems="${assetTypeItems}" style="--or-icon-fill: #000000;" @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
                         if (evt.detail.length === 1) this._onAssetTypeItemClick(evt.detail[0] as ListItem);
                     }}"
-                    ></or-mwc-list>
+                    ></asset-type-list>
                 </div>
-                <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
+                <div class="col" style="flex: 1 1 auto;width: 320px;overflow: auto;">
                     ${when(attributeTypes && attributeTypes.length > 0, () => {
                         const selectedAttrNames = this._selectedAssetType ? this.selectedAttributes.get(this._selectedAssetType)?.map(desc => desc.name) : undefined;
                         return html`
@@ -219,20 +221,19 @@ export class AssetTypeAttributePicker extends AttributePicker {
      * Function that maps the {@link AssetDescriptor}s to the formatted {@link ListItem}s.
      * Uses helpers like {@link Util.getAssetTypeLabel} and sorts by {@link descriptorType} so that agents show up first.
      */
-    protected _getAssetTypeDescriptors(descriptors: AssetDescriptor[], withNoneValue?: ListItem): ListItem[] {
+    protected _getAssetTypeDescriptors(descriptors: AssetDescriptor[], selected?: AssetDescriptor[], withNoneValue?: ListItem): ListItem[] {
         const items: ListItem[] = descriptors?.map((descriptor) => {
             return {
                 styleMap: {
                     "--or-icon-fill": descriptor.colour ? "#" + descriptor.colour : "unset"
                 },
                 icon: descriptor.icon,
+                trailingIcon: selected?.includes(descriptor) ? 'cloud-upload-outline' : undefined,
                 text: Util.getAssetTypeLabel(descriptor),
                 value: descriptor.name!,
                 data: descriptor
-            }
-        }).sort((a, b) => {
-            return (a.data.descriptorType === "agent" ? 0 : 1) - (b.data.descriptorType === "agent" ? 0 : 1) || a.text.localeCompare(b.text);
-        });
+            } as ListItem;
+        }).sort((a, b) => (a.data.descriptorType === "agent" ? 0 : 1) - (b.data.descriptorType === "agent" ? 0 : 1) || a.text!.localeCompare(b.text!));
 
         if (withNoneValue) {
             items?.splice(0, 0, withNoneValue);
