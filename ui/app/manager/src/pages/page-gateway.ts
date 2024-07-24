@@ -437,7 +437,10 @@ export class PageGateway extends Page<AppStateKeyed>  {
             // Update all existing filters to the new duration
             attributeFilters?.forEach(filter => {
                 if(duration) {
-                    filter.duration = duration?.toISOString();
+                    const isSkipAlwaysItem = Object.keys(filter).length === 1 && filter.skipAlways;
+                    if(!isSkipAlwaysItem) {
+                        filter.duration = duration?.toISOString();
+                    }
                 } else {
                     delete filter.duration;
                 }
