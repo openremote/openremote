@@ -158,7 +158,7 @@ export class OrDashboardTree extends LitElement {
         const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
         newDashboard.displayName = (newDashboard.displayName + " copy");
         if(newDashboard.template) {
-            newDashboard.template.id = Math.random().toString(36).slice(2, (String(newDashboard.template.id).length + 2));
+            newDashboard.template.id = Math.random().toString(36).slice(2, (String(newDashboard.template.id).length + 2)); // generate a new ID
         }
         DashboardService.create(newDashboard, undefined, this.realm).then(d => {
             if (!this.dashboards) {

@@ -689,6 +689,7 @@ export class OrDashboardPreview extends LitElement {
                         amountAdded++;
                     }
                 });
+                // If a widget is added, update the grid. (for example to update dashboard height)
                 if(amountAdded > 0) {
                     console.debug(`Created ${amountAdded} widgets. Updating the grid...`);
                     this.setupGrid(false, false);
