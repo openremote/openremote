@@ -19,8 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.annotation.Nonnull;
 import org.openremote.model.asset.Asset;
@@ -157,6 +158,10 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return Optional.ofNullable(oldValue);
     }
 
+    public <U> Optional<U> getOldValue(@Nonnull Class<U> valueType) {
+        return ValueUtil.getValueCoerced(oldValue, valueType);
+    }
+
     public long getOldValueTimestamp() {
         return oldValueTimestamp;
     }
@@ -257,7 +262,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @Override
-    public Optional getValue(@Nonnull Class valueType) {
+    public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
         return ValueUtil.getValueCoerced(value, valueType);
     }
 

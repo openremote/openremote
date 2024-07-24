@@ -91,6 +91,8 @@ public class ManagerTestSetup extends ManagerSetup {
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
+    public String peopleCounter1AssetId;
+    public String peopleCounter2AssetId;
     public String peopleCounter3AssetId;
     public String electricityOptimisationAssetId;
     public String electricityConsumerAssetId;
@@ -637,6 +639,7 @@ public class ManagerTestSetup extends ManagerSetup {
         PeopleCounterAsset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
+        peopleCounter1AssetId = peopleCounter1Asset.getId();
 
         Asset<?> microphone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
@@ -668,6 +671,7 @@ public class ManagerTestSetup extends ManagerSetup {
         Asset<?> peopleCounter2Asset = createDemoPeopleCounterAsset("PeopleCounter 2", assetArea2, new GeoJSONPoint(5.473686, 51.438603), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
+        peopleCounter2AssetId = peopleCounter2Asset.getId();
 
         Asset<?> environment2Asset = createDemoEnvironmentAsset("Environment 2", assetArea2, new GeoJSONPoint(5.473552, 51.438412), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));

@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 @TsIgnoreTypeParams
-public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
+public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilter<T> {
 
     public static final String FILTER_TYPE = "asset";
 
@@ -166,11 +166,6 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         this.internal = internal;
     }
 
-    @Override
-    public String getFilterType() {
-        return FILTER_TYPE;
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public T apply(T event) {
@@ -180,6 +175,12 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         // Non internal subscribers of attribute events only get value updates so make sure the value has changed
         if (!internal && event instanceof AttributeEvent attributeEvent) {
             if (!attributeEvent.valueChanged()) {
+                return null;
+            }
+        }
+
+        if (!TextUtil.isNullOrEmpty(realm)) {
+            if (!realm.equals(event.getRealm())) {
                 return null;
             }
         }
@@ -236,12 +237,6 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         if(path != null && !path.isEmpty()) {
             List<String> pathList = Arrays.asList(event.getPath());
             if (path.stream().noneMatch(pathList::contains)) {
-                return null;
-            }
-        }
-
-        if (!TextUtil.isNullOrEmpty(realm)) {
-            if (!realm.equals(event.getRealm())) {
                 return null;
             }
         }
