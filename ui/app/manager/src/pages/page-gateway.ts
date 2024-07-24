@@ -383,6 +383,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     filter.matcher = {};
                 } else {
                     delete filter.matcher;
+                    delete filter.skipAlways;
                 }
             });
             this._updateAttributeFilters(attrFilters);
@@ -414,6 +415,11 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     }
                 }
             }) as GatewayAttributeFilter);
+
+            // By default, all other attributes will NOT be shared (they're blocked)
+            filters.push({
+                skipAlways: true
+            });
 
             this._updateAttributeFilters(filters);
         });
@@ -537,7 +543,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
         if(connection.attributeFilters.length === 0) {
             return false;
         }
-        const excludedKeys = ['duration', 'matcher', 'durationParsedMillis'];
+        const excludedKeys = ['duration', 'matcher', 'durationParsedMillis', 'skipAlways'];
         const customFilter = connection.attributeFilters.find(filter => {
             const unknownKeys = Object.keys(filter).filter(key => !excludedKeys.includes(key));
             return unknownKeys.length > 0;
