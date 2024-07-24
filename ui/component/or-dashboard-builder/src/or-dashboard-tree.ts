@@ -156,7 +156,10 @@ export class OrDashboardTree extends LitElement {
 
     protected _doDuplicateDashboard(dashboard: Dashboard) {
         const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
-        newDashboard.displayName = (newDashboard.displayName + ' copy');
+        newDashboard.displayName = (newDashboard.displayName + " copy");
+        if(newDashboard.template) {
+            newDashboard.template.id = Math.random().toString(36).slice(2, (String(newDashboard.template.id).length + 2));
+        }
         DashboardService.create(newDashboard, undefined, this.realm).then(d => {
             if (!this.dashboards) {
                 this.dashboards = [d] as Dashboard[];

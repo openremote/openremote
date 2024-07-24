@@ -82,10 +82,6 @@ const editorStyling = css`
         pointer-events: none;
         opacity: 40%;
     }
-    .grid-stack {
-        height: 100% !important;
-        min-height: 100% !important;
-    }
     .grid-stack-item-content {
         background: white;
         box-sizing: border-box;
@@ -143,6 +139,7 @@ export class OrDashboardPreview extends LitElement {
 
         // If there is no value yet, do initial setup:
         } else if(newValue != undefined) {
+            console.debug("Creating a new Dashboard grid...");
             this._template = newValue;
             this.setupGrid(false, false);
         }
@@ -309,6 +306,7 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             if(changedProperties.get('editMode') != undefined) {
+                console.debug(`Edit mode is now ${this.editMode}. Force recreating grid...`);
                 this.setupGrid(true, true);
             }
         }
@@ -401,6 +399,8 @@ export class OrDashboardPreview extends LitElement {
             }, gridElement!);
 
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
+            gridElement!.style.height = "100%";
+            gridElement!.style.minHeight = "100%";
 
             // When an item gets dropped ontop of the grid. GridStack docs say:
             // "called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone)."
@@ -431,6 +431,7 @@ export class OrDashboardPreview extends LitElement {
     /* ------------------------------- */
 
     public refreshPreview() {
+        console.debug("Refreshing dashboard preview!");
         this.setupGrid(true, true);
     }
 
@@ -653,6 +654,7 @@ export class OrDashboardPreview extends LitElement {
     }
 
     protected _onGridResize() {
+        console.debug("Grid resize detected. Recreating the grid...");
         this.setupGrid(true, false);
     }
 
@@ -667,25 +669,34 @@ export class OrDashboardPreview extends LitElement {
             let gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
+            console.debug("Amount of columns has been changed! Recreating grid...");
             this.setupGrid(true, false);
         }
 
         // If multiple properties changed, just force rerender all of it.
         else if(changes.changedKeys.length > 1) {
+            console.debug("Multiple changes detected. Force recreating grid...");
             this.setupGrid(true, true);
         }
 
         // On widgets change, check whether they are programmatically added to GridStack. If not, adding them.
         else if(changes.changedKeys.includes('widgets')) {
             if(this.grid?.el != null) {
+                let amountAdded = 0;
                 this.grid.getGridItems().forEach((gridElement) => {
                     if(!gridElement.classList.contains('ui-draggable')) {
                         this.grid?.makeWidget(gridElement);
+                        amountAdded++;
                     }
-                })
+                });
+                if(amountAdded > 0) {
+                    console.debug(`Created ${amountAdded} widgets. Updating the grid...`);
+                    this.setupGrid(false, false);
+                }
             }
         }
         else if(changes.changedKeys.includes('screenPresets')) {
+            console.debug("New template has a different screen preset! Force recreating grid...");
             this.setupGrid(true, true);
         }
     }
