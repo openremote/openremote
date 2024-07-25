@@ -486,7 +486,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
      * This handles basic authorisation checks for clients that want to subscribe to events in the system
      */
     public boolean authorizeEventSubscription(String realm, AuthContext authContext, EventSubscription<?> subscription) {
-        boolean authorized = eventSubscriptionAuthorizers.stream()
+        boolean authorized = subscription.isInternal() || eventSubscriptionAuthorizers.stream()
                 .anyMatch(authorizer -> authorizer.authorise(realm, authContext, subscription));
 
         if (!authorized) {

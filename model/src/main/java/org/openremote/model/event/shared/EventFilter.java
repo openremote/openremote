@@ -45,13 +45,11 @@ import org.openremote.model.syslog.SyslogEvent;
     isGetterVisibility= JsonAutoDetect.Visibility.NONE
 )
 // TODO: Provide authorisation method on this interface
-public abstract class EventFilter<E extends SharedEvent> {
-
-    public abstract String getFilterType();
-
+@FunctionalInterface
+public interface EventFilter<E extends SharedEvent> {
     /**
      *
      * @return the event or a filtered copy of it if the filter matches; do not modify the supplied event.
      */
-    public abstract E apply(E event);
+    E apply(E event);
 }

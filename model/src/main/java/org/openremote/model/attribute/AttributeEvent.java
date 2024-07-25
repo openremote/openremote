@@ -158,6 +158,10 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return Optional.ofNullable(oldValue);
     }
 
+    public <U> Optional<U> getOldValue(@Nonnull Class<U> valueType) {
+        return ValueUtil.getValueCoerced(oldValue, valueType);
+    }
+
     public long getOldValueTimestamp() {
         return oldValueTimestamp;
     }
@@ -258,7 +262,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @Override
-    public Optional getValue(@Nonnull Class valueType) {
+    public <U> Optional<U> getValue(@Nonnull Class<U> valueType) {
         return ValueUtil.getValueCoerced(value, valueType);
     }
 
