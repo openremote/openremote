@@ -174,6 +174,9 @@ export class PageGateway extends Page<AppStateKeyed>  {
     @state()
     protected _dirty = false;
 
+    @state()
+    protected _invalid = false;
+
     protected _readonly = false;
     protected _eventSubscriptionId?: string;
     protected _intervalMin?: number;
@@ -274,7 +277,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", !e.detail.value)}"
                         ></or-mwc-input>
                     </div>
-                    <or-mwc-input label="save" ?disabled="${!this._dirty || disabled}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>
+                    <or-mwc-input label="save" ?disabled="${!this._dirty || !this._invalid || disabled}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>
                 </div>
             </div>
         `;
@@ -296,27 +299,27 @@ export class PageGateway extends Page<AppStateKeyed>  {
         return html`
             <div id="gateway-column-1" class="gateway-column">
                 <div></div>
-                <or-mwc-input .label="${i18next.t("host")}" .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.host}"
+                <or-mwc-input id="gateway-host" .label="${i18next.t("host")}" required .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.host}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("host", e.detail.value)}"
                 ></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("port")}" .type="${InputType.NUMBER}"
+                <or-mwc-input id="gateway-port" .label="${i18next.t("port")}" .type="${InputType.NUMBER}"
                               ?disabled="${disabled}" min="1" max="65536" step="1" .value="${connection?.port}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("port", e.detail.value)}"
                 ></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("realm")}" .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.realm}"
+                <or-mwc-input id="gateway-realm" .label="${i18next.t("realm")}" required .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.realm}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("realm", e.detail.value)}"
                 ></or-mwc-input>
                 <div></div>
             </div>
             <div id="gateway-column-2" class="gateway-column">
                 <div></div>
-                <or-mwc-input .label="${i18next.t("clientId")}" .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.clientId}"
+                <or-mwc-input id="gateway-clientid" .label="${i18next.t("clientId")}" required .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.clientId}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientId", e.detail.value)}"
                 ></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("clientSecret")}" .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.clientSecret}"
+                <or-mwc-input id="gateway-clientsecret" .label="${i18next.t("clientSecret")}" required .type="${InputType.TEXT}" ?disabled="${disabled}" .value="${connection?.clientSecret}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientSecret", e.detail.value)}"
                 ></or-mwc-input>
-                <or-mwc-input .label="${i18next.t("secured")}" .type="${InputType.CHECKBOX}" style="height: 56px;" ?disabled="${disabled}" .value="${connection?.secured || false}"
+                <or-mwc-input id="gateway-secured" .label="${i18next.t("secured")}" .type="${InputType.CHECKBOX}" style="height: 56px;" ?disabled="${disabled}" .value="${connection?.secured || false}"
                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"
                 ></or-mwc-input>
             </div>
@@ -495,6 +498,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected _setConnectionProperty(propName: string, value: any) {
         this._connection[propName] = value;
         this._dirty = true;
+        this._invalid = this._isValid();
         this.requestUpdate("_connection");
     }
 
@@ -553,6 +557,26 @@ export class PageGateway extends Page<AppStateKeyed>  {
         });
         return !!customFilter;
 
+    }
+
+    protected _isValid(): boolean {
+        if(!this._connection.host) {
+            console.warn("Interconnect form can't be submitted: Host is not valid.");
+            return false;
+        }
+        if(!this._connection.realm) {
+            console.warn("Interconnect form can't be submitted: Realm name must be set.")
+            return false;
+        }
+        if(!this._connection.clientId) {
+            console.warn("Interconnect form can't be submitted: Client ID must be set.")
+            return false;
+        }
+        if(!this._connection.clientSecret) {
+            console.warn("Interconnect form can't be submitted: Client secret must be set.")
+            return false;
+        }
+        return true;
     }
 
     /**
