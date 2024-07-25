@@ -147,9 +147,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         assetProcessingService = container.getService(AssetProcessingService.class);
 
         userAssetDisconnectDebouncer = new Debouncer<>(executorService, id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
+        // This allows last will messages to be processed
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(10000, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(3000, TimeUnit.MILLISECONDS)
                 .build();
 
         if (!identityService.isKeycloakEnabled()) {
