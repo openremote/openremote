@@ -256,6 +256,8 @@ export class OrAttributeCard extends LitElement {
     }
 
     updated(changedProperties: PropertyValues) {
+        console.log(changedProperties);
+        console.log(this.assets, this.assetAttributes);
 
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.assets = [];
