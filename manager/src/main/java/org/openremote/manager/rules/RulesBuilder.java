@@ -110,7 +110,7 @@ public class RulesBuilder {
                     try {
                         result = builder.condition.evaluate((RulesFacts) facts);
                     } catch (Exception ex) {
-                        throw new RuntimeException("Error evaluating condition of rule '" + builder.name + "': " + ex.getMessage(), ex);
+                        throw new RuntimeException("Error evaluating condition of rule '" + builder.name + "': " + ex.getMessage());
                     }
                     if (result instanceof Boolean) {
                         return (boolean)result;
