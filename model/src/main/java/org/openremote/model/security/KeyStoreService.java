@@ -14,72 +14,14 @@ public interface KeyStoreService extends ContainerService {
 	String OR_KEYSTORE_PASSWORD = "OR_KEYSTORE_PASSWORD";
 	Logger LOG = Logger.getLogger(KeyStoreService.class.getName());
 
-	KeyStore getKeyStore(KeyStoreType type);
-	void storeKeyStore(KeyStore keyStore, KeyStoreType type);
+	KeyStore getKeyStore();
+	void storeKeyStore(KeyStore keyStore);
+	KeyStore getTrustStore();
+	void storeTrustStore(KeyStore keyStore);
 	char[] getKeyStorePassword();
-
 	KeyManagerFactory getKeyManagerFactory(String preferredAlias) throws Exception;
 	TrustManagerFactory getTrustManagerFactory() throws Exception;
-	/**
-	 * This method is used by all ManagerFactories, that returns True if the provided string s
-	 * @param s The string to check
-	 * @param requestedAlias the alias that the user specified in the client creation. The alias prefixing happens before
-	 *                       this is called.
-	 * @return True, if all criteria are matched.
-	 */
 	static Boolean isRequestedAlias(String s, String requestedAlias){
 		return s.equals(requestedAlias);
 	}
-//	Logger getLogger();
-
-	/**
-	 * Enum that contains the different types of KeyStores that are required to contain different types
-	 * of certificates and keypairs
-	 *
-	 * TODO: Implement per-keystore env-var'd password
-	 */
-	enum KeyStoreType {
-		CLIENT_KEYSTORE("client_keystore", "OR_SSL_CLIENT_KEYSTORE_FILE"),
-		CLIENT_TRUSTSTORE("client_truststore", "OR_SSL_CLIENT_TRUSTSTORE_FILE"),
-		SERVER_KEYSTORE("server_keystore","OR_SSL_SERVER_KEYSTORE_FILE");
-
-		private final String fileName;
-		private final String environmentVariableName;
-		private Path filePath;
-		KeyStoreType(String fileName, String envVarName) {
-			this.fileName = fileName;
-			this.environmentVariableName = envVarName;
-			this.filePath = Paths.get("keystores").resolve(this.getFileName()+".p12");
-		}
-
-		public String getFileName() {
-			return fileName;
-		}
-
-		public String getEnvironmentVariableName() {return environmentVariableName;}
-
-		public void setPath(Path f){
-			this.filePath = f;
-		}
-
-		public Path getPath(){
-			return filePath;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s (File Extension: %s, OpenRemote environment variable: %s)", this.name(), fileName, environmentVariableName);
-		}
-	}
-	@Override
-	int getPriority();
-
-	@Override
-	void init(Container container) throws Exception;
-
-	@Override
-	void start(Container container) throws Exception;
-
-	@Override
-	void stop(Container container) throws Exception;
 }

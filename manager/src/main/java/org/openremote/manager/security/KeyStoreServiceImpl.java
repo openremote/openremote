@@ -4,6 +4,7 @@ import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
+import org.openremote.model.rules.flow.Option;
 import org.openremote.model.security.KeyStoreService;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -11,6 +12,8 @@ import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Key;
 import java.security.KeyStore;
 import java.util.logging.Logger;
 import java.util.Optional;
@@ -35,6 +38,19 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	protected PersistenceService persistenceService;
 	protected ManagerIdentityService identityService;
 
+	private KeyStore keyStore = null;
+	private KeyStore trustStore = null;
+
+	private final String OR_SSL_CLIENT_KEYSTORE_FILE = "OR_SSL_CLIENT_KEYSTORE_FILE";
+	private final String OR_SSL_CLIENT_TRUSTSTORE_FILE = "OR_SSL_CLIENT_TRUSTSTORE_FILE";
+
+	private final String OR_SSL_CLIENT_KEYSTORE_PASSWORD = "OR_SSL_CLIENT_KEYSTORE_PASSWORD";
+	private final String OR_SSL_CLIENT_TRUSTSTORE_PASSWORD = "OR_SSL_CLIENT_TRUSTSTORE_PASSWORD";
+
+	private Path keyStorePath;
+	private Path trustStorePath;
+
+
 	public String OR_KEYSTORE_PASSWORD_DEFAULT;
 	public String keyStorePassword;
 
@@ -55,64 +71,81 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
 	@Override
 	public void start(Container container) throws Exception {
-		for (KeyStoreType storeType : KeyStoreType.values()){
-			// We need to prepend the path with the StorageDir first, since that's not accessible in public KeyStoreType();
-			storeType.setPath(persistenceService.resolvePath(storeType.getPath()));
-			// For all KeyStore types, check if an env var has been set.
-			Optional<String> envVarValue = getValue(container.getConfig(), storeType.getEnvironmentVariableName());
-			if (envVarValue.isPresent()){
-				// If yes, check if that file exists, and pass that as the path.
-				URI fileUri = URI.create(envVarValue.get());
-				File file = new File(fileUri).getAbsoluteFile();
-				if (file.exists()){
-					storeType.setPath(file.toPath());
-					continue;
-				}
+
+		Optional<Path> keyStorePath = getValue(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_FILE, Path.class);
+		Optional<Path> trustStorePath = getValue(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_FILE, Path.class);
+
+		String keyStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
+		String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
+
+
+		if(keyStorePath.isPresent()){
+			try{
+				keyStore = KeyStore.getInstance(keyStorePath.get().toFile(), keyStorePassword.toCharArray());
+			} catch (Exception e){
+				throw e;
+			}
+		}else{
+			Path defaultKeyStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
+			if(new File(defaultKeyStorePath.toUri()).exists()) {
+				keyStorePath = Optional.of(defaultKeyStorePath);
+				this.keyStore = KeyStore.getInstance(new File(defaultKeyStorePath.toUri()), getKeyStorePassword());
+			}else{
+				keyStore = createKeyStore(defaultKeyStorePath);
 			}
 
-			Path storePath = storeType.getPath();
+			this.keyStorePath = defaultKeyStorePath;
+		}
 
-			getLogger().fine("Accessing: " + storePath);
-			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			File keyStoreFile = storePath.toAbsolutePath().toFile();
-
-			// Ensure parent directories exist
-			if (keyStoreFile.getParentFile() != null && !keyStoreFile.getParentFile().exists()) {
-				keyStoreFile.getParentFile().mkdirs();
+		if(trustStorePath.isPresent()){
+			try{
+				keyStore = KeyStore.getInstance(trustStorePath.get().toFile(), trustStorePassword.toCharArray());
+			} catch (Exception e){
+				throw e;
 			}
-
-			// Initialize KeyStore
-			try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
-				keyStore.load(fis, getKeyStorePassword()); // Assuming keystorePassword is defined elsewhere
-			} catch (Exception e) {
-				getLogger().severe("Couldn't find KeyStore file " + storePath + ", initializing new KeyStore file");
-				keyStore.load(null, getKeyStorePassword());
-				// Save the newly created KeyStore
-				try (OutputStream os = new FileOutputStream(keyStoreFile)) {
-					keyStore.store(os, getKeyStorePassword());
-				} catch (Exception saveException) {
-					getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
-				}
+		}else{
+			Path defaultTrustStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_truststore.p12"));
+			if(new File(defaultTrustStorePath.toUri()).exists()) {
+				trustStorePath = Optional.of(defaultTrustStorePath);
+				this.trustStore = KeyStore.getInstance(new File(defaultTrustStorePath.toUri()), getKeyStorePassword());
+			}else{
+				trustStore = createKeyStore(defaultTrustStorePath);
 			}
+			this.trustStorePath = defaultTrustStorePath;
 		}
 	}
 	@Override
-	public KeyStore getKeyStore(KeyStoreType type) {
-		Path storePath = type.getPath();
+	public KeyStore getKeyStore() {
 		try {
-			return KeyStore.getInstance(storePath.toFile(), getKeyStorePassword());
+			return KeyStore.getInstance(this.keyStorePath.toFile(), getKeyStorePassword());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	@Override
+	public KeyStore getTrustStore() {
+		try {
+			return KeyStore.getInstance(this.trustStorePath.toFile(), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+
 	@Override
-		public void storeKeyStore(KeyStore keystore, KeyStoreType type) {
-		Path storePath = type.getPath();
+		public void storeKeyStore(KeyStore keystore) {
 		try {
-			keystore.store(new FileOutputStream(storePath.toString()), getKeyStorePassword());
+			keystore.store(new FileOutputStream(this.keyStorePath.toFile()), getKeyStorePassword());
 		} catch (Exception saveException) {
 			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
+		}
+	}
+	@Override
+	public void storeTrustStore(KeyStore keystore) {
+		try {
+			keystore.store(new FileOutputStream(this.trustStorePath.toFile()), getKeyStorePassword());
+		} catch (Exception saveException) {
+			getLogger().severe("Couldn't store TrustStore to Storage! " + saveException.getMessage());
 		}
 	}
 
@@ -124,18 +157,17 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	public KeyManagerFactory getKeyManagerFactory(String preferredAlias) throws Exception {
 		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
 		try {
-			keyManagerFactory.init(getKeyStore(KeyStoreType.CLIENT_KEYSTORE), getKeyStorePassword());
+			keyManagerFactory.init(this.keyStore, getKeyStorePassword());
 		} catch (Exception e) {
 			throw new Exception("Could not retrieve KeyManagerFactory: "+e.getMessage());
 		}
 
 		return keyManagerFactory;
 	}
-
 	@Override
 	public TrustManagerFactory getTrustManagerFactory() throws Exception {
 
-		CustomX509TrustManagerFactory tmf = new CustomX509TrustManagerFactory(getKeyStore(KeyStoreType.CLIENT_TRUSTSTORE), (KeyStore) null);
+		CustomX509TrustManagerFactory tmf = new CustomX509TrustManagerFactory(this.trustStore, (KeyStore) null);
 		try {
 			tmf.init((KeyStore) null);
 		} catch (Exception e) {
@@ -143,6 +175,17 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		}
 
 		return tmf;
+	}
+	public KeyStore createKeyStore(Path path) throws Exception {
+		KeyStore keystore = ((KeyStore)null);
+		// Save the newly created KeyStore
+		try (OutputStream os = new FileOutputStream(path.toFile())) {
+			keyStore.store(os, getKeyStorePassword());
+			keystore.load(new FileInputStream(path.toFile()), getKeyStorePassword());
+		} catch (Exception saveException) {
+			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
+		}
+		return keystore;
 	}
 
 	@Override

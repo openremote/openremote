@@ -19,6 +19,8 @@
  */
 package org.openremote.container.util;
 
+import org.openremote.model.util.ValueUtil;
+
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -68,9 +70,10 @@ public class MapAccess {
         return defaultValue;
     }
 
-	public static <T> Optional<T> getValue(Map<String, ?> map, String key) {
+	public static <T> Optional<T> getValue(Map<String, ?> map, String key, Class<T> type) {
 		if (map.containsKey(key)) {
-			return Optional.ofNullable((T) map.get(key));
+			// Assuming ValueUtil.getValueCoerced returns a value of type T
+			return Optional.ofNullable(type.cast(ValueUtil.getValueCoerced(map.get(key), type)));
 		}
 		return Optional.empty();
 	}
