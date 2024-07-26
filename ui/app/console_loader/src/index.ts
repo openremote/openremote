@@ -8,8 +8,7 @@ import "@openremote/or-app";
 import {
     OrApp,
     AppConfig,
-    appReducer,
-    getRealmQueryParameter} from "@openremote/or-app";
+    appReducer} from "@openremote/or-app";
 
 import "./pages/page-mobile-onboarding";
 import {pageMobileOnboardingProvider, OnboardingConfig} from "./pages/page-mobile-onboarding";
@@ -17,6 +16,7 @@ import "./pages/page-mobile-splash";
 import {pageMobileSplashProvider, SplashConfig} from "./pages/page-mobile-splash";
 import "./pages/page-mobile-geofences";
 import {pageMobileGeofencesProvider} from "./pages/page-mobile-geofences";
+import { Util } from "@openremote/core";
 
 const onboardingConfig:OnboardingConfig  = {
     pages: [
@@ -71,9 +71,10 @@ const managerConfig: ManagerConfig = {
     managerUrl: MANAGER_URL,
     auth: Auth.NONE,
     autoLogin: false,
-    realm: getRealmQueryParameter(),
+    realm: Util.getQueryParameter("realm"),
     consoleAutoEnable: false,
-    loadTranslations: ["app", "or"]
+    loadTranslations: ["app", "or"],
+    defaultLanguage: Util.getBrowserLanguage(),
 };
 
 const appConfig: AppConfig<RootState> = {

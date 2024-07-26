@@ -29,7 +29,6 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -67,8 +66,6 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static jakarta.ws.rs.core.Response.Status.Family.REDIRECTION;
-import static jakarta.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
@@ -177,7 +174,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             keycloakServiceUri.path(keycloakPath);
         }
 
-
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
         ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
@@ -219,10 +215,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .setReuseXForwarded(true)
                 .build();
         }
-
-        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
-        waitForKeycloak();
-        LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
     @Override
@@ -302,45 +294,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             if (target == this.keycloakTarget) {
                 realmsResourcePool.offer(realmsResource);
             }
-        }
-    }
-
-    protected void waitForKeycloak() {
-        boolean keycloakAvailable = false;
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
-        ResteasyWebTarget target = targetBuilder.build();
-        KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
-
-        while (!keycloakAvailable) {
-            LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
-            try {
-                pingKeycloak(keycloakResource);
-                keycloakAvailable = true;
-            } catch (Exception ex) {
-                LOG.info("Keycloak server not available, waiting...");
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    protected void pingKeycloak(KeycloakResource resource) throws Exception {
-        Response response = null;
-
-        try {
-            response = resource.getWelcomePage();
-            if (response != null &&
-                (response.getStatusInfo().getFamily() == SUCCESSFUL
-                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
-                return;
-            }
-            throw new Exception();
-        } finally {
-            if (response != null)
-                response.close();
         }
     }
 

@@ -122,8 +122,7 @@ public class AttributeLinkingService implements ContainerService {
                     Object val = ValueUtil.convert(value[0], attr.getTypeClass());
 
                     if (val == null) {
-                        LOG.warning("Failed to convert value: " + value[0].getClass() + " -> " + attr.getTypeClass());
-                        LOG.warning("Cannot send linked attribute update");
+                        LOG.warning("Failed to convert value into attribute value type (" + value[0].getClass() + " -> " + attr.getTypeClass() + "): " + attributeInfo.getRef());
                         return;
                     }
                     value[0] = val;

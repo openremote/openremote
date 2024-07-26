@@ -321,7 +321,14 @@
     "JAVASCRIPT": "JavaScript"
   },
   "gatewayConnection": "Manager interconnect",
-  "gateway": "Manager interconnect",
+  "gateway": {
+    "": "Manager interconnect",
+    "limit_sharing_is_custom_error": "An advanced data limiting configuration is set. To modify click the JSON button. Clear it to use the fields below.",
+    "limit_sharing_attribute": "Limit data sharing by asset type attributes",
+    "limit_sharing_attribute_selected": "attributes selected",
+    "limit_sharing_rate": "Limit the rate of how often attribute value updates are shared",
+    "limit_sharing_rate_suffix": "minutes interval"
+  },
   "gatewayTunnel": "Gateway tunnel",
   "gatewayTunnels": {
     "": "Gateway tunnels",
@@ -346,6 +353,7 @@
   "tunnels": "tunnels",
   "tunnel": "tunnel",
   "connectionDetails": "CONNECTION DETAILS",
+  "dataSharing": "Data sharing",
   "secured": "Secured",
   "clientSecret": "Client secret",
   "clientId": "Client ID",
@@ -466,6 +474,7 @@
     "hertz": "Hz",
     "rpm": "rpm",
     "carbon": "CO2",
+    "var": "var",
     "meta": {},
     "attribute": {}
   },
@@ -578,6 +587,7 @@
     }
   },
   "rowsPerPage": "Rows per page",
+  "search": "Search",
   "noEmailSet": "Create user failed, no email set.",
   "noUsernameSet": "Create user failed, no username set",
   "createUserFailed": "Create user failed",

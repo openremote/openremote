@@ -20,6 +20,7 @@ public class GatewayTunnelInfo {
     protected int targetPort = 443;
     protected String target = "localhost";
     protected Integer assignedPort = null;
+    protected String hostname;
     protected Type type = Type.HTTPS;
 
     @JsonCreator
@@ -87,6 +88,15 @@ public class GatewayTunnelInfo {
 
     public GatewayTunnelInfo setAssignedPort(Integer assignedPort) {
         this.assignedPort = assignedPort;
+        return this;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public GatewayTunnelInfo setHostname(String hostname) {
+        this.hostname = hostname;
         return this;
     }
 

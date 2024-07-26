@@ -93,6 +93,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     public static final String OR_GATEWAY_TUNNEL_SSH_HOSTNAME = "OR_GATEWAY_TUNNEL_SSH_HOSTNAME";
     public static final String OR_GATEWAY_TUNNEL_SSH_PORT = "OR_GATEWAY_TUNNEL_SSH_PORT";
     public static final String OR_GATEWAY_TUNNEL_TCP_START = "OR_GATEWAY_TUNNEL_TCP_START";
+    public static final String OR_GATEWAY_TUNNEL_HOSTNAME = "OR_GATEWAY_TUNNEL_HOSTNAME";
     public static final int OR_GATEWAY_TUNNEL_TCP_START_DEFAULT = 9000;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
@@ -104,6 +105,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected ScheduledExecutorService executorService;
     protected TimerService timerService;
     protected String tunnelSSHHostname;
+    protected String tunnelHostname;
     protected int tunnelSSHPort;
     protected int tunnelTCPStart;
 
@@ -227,6 +229,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         tunnelSSHHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_HOSTNAME, null);
         tunnelSSHPort = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_PORT, 0);
         tunnelTCPStart = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_TCP_START, OR_GATEWAY_TUNNEL_TCP_START_DEFAULT);
+        tunnelHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_HOSTNAME, null);
     }
 
     @Override
@@ -560,6 +563,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             int assignedPort = tunnelTCPStart + Math.toIntExact(pendingTunnelCounter.get() + tunnelInfos.values().stream().filter(ti -> ti.getType() == GatewayTunnelInfo.Type.TCP).count());
             tunnelInfo.setAssignedPort(assignedPort);
         }
+        if (!TextUtil.isNullOrEmpty(tunnelHostname)) {
+            tunnelInfo.setHostname(tunnelHostname);
+        }
         CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
         try {
             pendingTunnelCounter.incrementAndGet();
@@ -748,6 +754,16 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 if (connector == null) {
                     break;
                 }
+
+                tunnelInfos.values().forEach(tunnelInfo -> {
+                    if(tunnelInfo.getGatewayId().equals(gateway.getId())) {
+                        try {
+                            this.stopTunnel(tunnelInfo);
+                        } catch (IllegalArgumentException | IllegalStateException ignored) {
+
+                        }
+                    }
+                });
 
                 connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
