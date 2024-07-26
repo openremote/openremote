@@ -182,7 +182,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     * If the test cannot reach the host, then the test is passed.
     * */
     @SuppressWarnings("GroovyAccessibility")
-    def "Check MQTT client protocol SSL support"() {
+    def "Check MQTT client protocol mTLS support"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 100, delay: 0.2)
@@ -213,8 +213,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def keyAlias = Constants.MASTER_REALM + "." + aliasName
 
 
-        KeyStore clientKeystore = keyStoreService.getKeyStore(Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
-        KeyStore clientTruststore = keyStoreService.getKeyStore(Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
+        KeyStore clientKeystore = keyStoreService.getKeyStore(KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
+        KeyStore clientTruststore = keyStoreService.getKeyStore(KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
 
         // Create keystore and keypair
         clientKeystore = createKeystore(clientKeystore, keyAlias, keyPassword)
@@ -246,8 +246,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
         clientKeystore = importCertificate(clientKeystore, keyAlias, signedCertPem, keystorePassword.toCharArray())
 
-        keyStoreService.storeKeyStore(clientKeystore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
-        keyStoreService.storeKeyStore(clientTruststore, Constants.MASTER_REALM, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
+        keyStoreService.storeKeyStore(clientKeystore, KeyStoreService.KeyStoreType.CLIENT_KEYSTORE)
+        keyStoreService.storeKeyStore(clientTruststore, KeyStoreService.KeyStoreType.CLIENT_TRUSTSTORE)
 
         when: "an MQTT client agent is created to connect to this tests manager"
         def clientId = UniqueIdentifierGenerator.generateId()

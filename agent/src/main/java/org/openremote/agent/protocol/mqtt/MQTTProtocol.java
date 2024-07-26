@@ -122,8 +122,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 	    TrustManagerFactory trustManagerFactory = null;
 		KeyManagerFactory keyManagerFactory = null;
 		if(agent.isSecureMode().orElse(false)){
-			trustManagerFactory = keyStoreService.getTrustManagerFactory(agent.getRealm());
-			keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm(), agent.getCertificateAlias().orElseThrow());
+			trustManagerFactory = keyStoreService.getTrustManagerFactory();
+			keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
 		}
 
 	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);

@@ -97,7 +97,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		}
 	}
 	@Override
-	public KeyStore getKeyStore(String realm, KeyStoreType type) {
+	public KeyStore getKeyStore(KeyStoreType type) {
 		Path storePath = type.getPath();
 		try {
 			return KeyStore.getInstance(storePath.toFile(), getKeyStorePassword());
@@ -107,7 +107,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	}
 
 	@Override
-		public void storeKeyStore(KeyStore keystore, String realm, KeyStoreType type) {
+		public void storeKeyStore(KeyStore keystore, KeyStoreType type) {
 		Path storePath = type.getPath();
 		try {
 			keystore.store(new FileOutputStream(storePath.toString()), getKeyStorePassword());
@@ -121,10 +121,10 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	}
 
 	@Override
-	public KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception {
-		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias, realm);
+	public KeyManagerFactory getKeyManagerFactory(String preferredAlias) throws Exception {
+		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
 		try {
-			keyManagerFactory.init(getKeyStore(realm, KeyStoreType.CLIENT_KEYSTORE), getKeyStorePassword());
+			keyManagerFactory.init(getKeyStore(KeyStoreType.CLIENT_KEYSTORE), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new Exception("Could not retrieve KeyManagerFactory: "+e.getMessage());
 		}
@@ -133,9 +133,9 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	}
 
 	@Override
-	public TrustManagerFactory getTrustManagerFactory(String realm) throws Exception {
+	public TrustManagerFactory getTrustManagerFactory() throws Exception {
 
-		CustomX509TrustManagerFactory tmf = new CustomX509TrustManagerFactory(getKeyStore(realm, KeyStoreType.CLIENT_TRUSTSTORE), (KeyStore) null);
+		CustomX509TrustManagerFactory tmf = new CustomX509TrustManagerFactory(getKeyStore(KeyStoreType.CLIENT_TRUSTSTORE), (KeyStore) null);
 		try {
 			tmf.init((KeyStore) null);
 		} catch (Exception e) {

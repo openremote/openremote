@@ -14,21 +14,21 @@ public interface KeyStoreService extends ContainerService {
 	String OR_KEYSTORE_PASSWORD = "OR_KEYSTORE_PASSWORD";
 	Logger LOG = Logger.getLogger(KeyStoreService.class.getName());
 
-	KeyStore getKeyStore(String realm, KeyStoreType type);
-	void storeKeyStore(KeyStore keyStore, String realm, KeyStoreType type);
+	KeyStore getKeyStore(KeyStoreType type);
+	void storeKeyStore(KeyStore keyStore, KeyStoreType type);
 	char[] getKeyStorePassword();
 
-	KeyManagerFactory getKeyManagerFactory(String realm, String preferredAlias) throws Exception;
-	TrustManagerFactory getTrustManagerFactory(String realm) throws Exception;
+	KeyManagerFactory getKeyManagerFactory(String preferredAlias) throws Exception;
+	TrustManagerFactory getTrustManagerFactory() throws Exception;
 	/**
 	 * This method is used by all ManagerFactories, that returns True if the provided string s
 	 * @param s The string to check
-	 * @param realm The realm in which we need the alias to exist in
-	 * @param requestedAlias the alias that the user specified in the client creation
+	 * @param requestedAlias the alias that the user specified in the client creation. The alias prefixing happens before
+	 *                       this is called.
 	 * @return True, if all criteria are matched.
 	 */
-	static Boolean isRequestedAlias(String s, String realm, String requestedAlias){
-		return s.equals(realm+"."+requestedAlias);
+	static Boolean isRequestedAlias(String s, String requestedAlias){
+		return s.equals(requestedAlias);
 	}
 //	Logger getLogger();
 

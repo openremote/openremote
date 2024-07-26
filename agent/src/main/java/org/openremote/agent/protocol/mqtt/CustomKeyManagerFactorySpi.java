@@ -18,11 +18,9 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 	private X509ExtendedKeyManager keyManager;
 	private final String userRequestedAlias;
-	private String realm;
 
-	public CustomKeyManagerFactorySpi(String userRequestedAlias, String realm) {
+	public CustomKeyManagerFactorySpi(String userRequestedAlias) {
 		this.userRequestedAlias = userRequestedAlias;
-		this.realm = realm;
 	}
 
 	@Override
@@ -37,7 +35,7 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		for (KeyManager keyManager : factory.getKeyManagers()) {
 			if (keyManager instanceof X509ExtendedKeyManager) {
-				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, userRequestedAlias, this.realm);
+				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, userRequestedAlias);
 				return;
 			}
 		}
@@ -59,13 +57,11 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		private final X509ExtendedKeyManager keyManager;
 		private final String userRequestedAlias;
-		private final String realm;
 		private static final Logger LOG = Logger.getLogger(CustomX509KeyManager.class.getName());
 
-		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String userRequestedAlias, String realm) {
+		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String userRequestedAlias) {
 			this.keyManager = keyManager;
 			this.userRequestedAlias = userRequestedAlias;
-			this.realm = realm;
 		}
 
 		@Override
@@ -102,7 +98,7 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 		}
 
 		private boolean isCorrectAlias(String s) {
-			return KeyStoreService.isRequestedAlias(s, this.realm, this.userRequestedAlias);
+			return KeyStoreService.isRequestedAlias(s, this.userRequestedAlias);
  		}
 
 		@Override
