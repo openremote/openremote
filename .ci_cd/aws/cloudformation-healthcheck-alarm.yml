@@ -20,7 +20,11 @@ Resources:
         ResourcePath: '/api/master/info'
         FullyQualifiedDomainName: !Sub ${Host}
         RequestInterval: 30
-        FailureThreshold: 10
+        FailureThreshold: 5
+        Regions:
+          - us-east-1
+          - us-west-1
+          - eu-west-1
       HealthCheckTags:
         - Key: Name
           Value: !Sub ${Host}

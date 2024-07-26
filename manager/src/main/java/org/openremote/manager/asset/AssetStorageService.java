@@ -187,24 +187,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
              filter.setRealm(realm);
 
-             if (!filter.isRestrictedEvents() && isRestricted) {
+             if (isRestricted) {
                  filter.setRestrictedEvents(true);
-             }
 
-             // Restricted user can only subscribe to assets they are linked to so go fetch these
-             // TODO: Update asset IDs when user asset links are modified
-             boolean skipAssetIdCheck = false;
-             if (isRestricted && (filter.getAssetIds() == null || filter.getAssetIds().length == 0)) {
-                 filter.setAssetIds(
+                 // Restricted user can only subscribe to assets they are linked to so go fetch these
+                 // TODO: Update asset IDs when user asset links are modified
+                 filter.setUserAssetIds(
                      assetStorageService.findUserAssetLinks(realm, userId, null)
                          .stream()
                          .map(userAssetLink -> userAssetLink.getId().getAssetId())
-                         .toArray(String[]::new)
+                         .toList()
                  );
-                 skipAssetIdCheck = true;
              }
 
-             if (!skipAssetIdCheck && filter.getAssetIds() != null) {
+             if (filter.getAssetIds() != null) {
                  // Client can subscribe to several assets
                  for (String assetId : filter.getAssetIds()) {
                      Asset<?> asset = assetStorageService.find(assetId, false);
@@ -213,7 +209,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                          return false;
                      if (isRestricted) {
                          // Restricted users can only get events for their linked assets
-                         if (!assetStorageService.isUserAsset(userId, assetId))
+                         if (!filter.getUserAssetIds().contains(assetId))
                              return false;
                      } else {
                          // Regular users can only get events for assets in their realm

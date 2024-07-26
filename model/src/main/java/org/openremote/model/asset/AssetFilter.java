@@ -39,6 +39,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
     public static final String FILTER_TYPE = "asset";
 
     protected List<String> assetIds;
+    protected List<String> assetNames;
     protected List<String> assetTypes;
     protected List<Class<? extends Asset>> assetClasses;
     protected String realm;
@@ -48,6 +49,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
     protected boolean publicEvents;
     protected boolean restrictedEvents;
     protected boolean internal;
+    protected List<String> userAssetIds;
 
     public AssetFilter() {
     }
@@ -85,6 +87,20 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
 
     public AssetFilter<T> setAssetTypes(List<String> assetTypes) {
         this.assetTypes = assetTypes;
+        return this;
+    }
+
+    public List<String> getAssetNames() {
+        return assetNames;
+    }
+
+    public AssetFilter<T> setAssetNames(String... assetNames) {
+        this.assetNames = Arrays.asList(assetNames);
+        return this;
+    }
+
+    public AssetFilter<T> setAssetNames(List<String> assetNames) {
+        this.assetNames = assetNames;
         return this;
     }
 
@@ -166,6 +182,15 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
         this.internal = internal;
     }
 
+    public List<String> getUserAssetIds() {
+        return userAssetIds;
+    }
+
+    public AssetFilter<T> setUserAssetIds(List<String> userAssetIds) {
+        this.userAssetIds = userAssetIds;
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public T apply(T event) {
@@ -183,6 +208,10 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
             if (!realm.equals(event.getRealm())) {
                 return null;
             }
+        }
+
+        if (userAssetIds != null && !userAssetIds.contains(event.getId())) {
+            return null;
         }
 
         if (restrictedEvents) {
@@ -224,6 +253,12 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
         if (assetClasses != null && !assetClasses.isEmpty()) {
             T finalEvent = event;
             if (assetClasses.stream().noneMatch(ac -> ac.isAssignableFrom(finalEvent.getAssetClass()))) {
+                return null;
+            }
+        }
+
+        if (assetNames != null && !assetNames.isEmpty()) {
+            if (!assetNames.contains(event.getAssetName())) {
                 return null;
             }
         }
