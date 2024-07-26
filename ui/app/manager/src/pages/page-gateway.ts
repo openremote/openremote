@@ -163,7 +163,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected realm?: string;
 
     @state()
-    protected _loading = true;
+    protected _loading = false;
 
     @state()
     protected _connection?: GatewayConnection;
@@ -487,6 +487,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
         this._setConnection(connectionResponse.data);
         this._connectionStatus = statusResponse.data;
+        this._loading = false;
     }
 
     protected _updateAttributeFilters(attributeFilters: GatewayAttributeFilter[]) {
@@ -502,31 +503,23 @@ export class PageGateway extends Page<AppStateKeyed>  {
         this.requestUpdate("_connection");
     }
 
-    protected _reset() {
-        this._loadData();
-    }
-
-    protected async _delete() {
-        this._loading = true;
-        const response = await manager.rest.api.GatewayClientResource.deleteConnection(this.realm);
-        if (response.status !== 204) {
-            // TODO: Toast message
-        }
-        this._loadData();
-    }
-
     protected async _save() {
         this._loading = true;
-        const response = await manager.rest.api.GatewayClientResource.setConnection(this.realm, this._connection);
-        if (response.status !== 204) {
-            // TODO: Toast message
-        }
-        this._loadData();
+        return manager.rest.api.GatewayClientResource.setConnection(this.realm, this._connection).then(response => {
+            if(response.status === 204) {
+                this._loadData();
+            } else {
+                showSnackbar(undefined, i18next.t("errorOccurred"));
+            }
+        }).catch(() => {
+            showSnackbar(undefined, i18next.t("errorOccurred"));
+        }).finally(() => {
+            this._loading = false;
+        });
     }
 
     protected _setConnection(connection: GatewayConnection) {
         this._connection = connection || {secured: true};
-        this._loading = false;
         this._dirty = false;
     }
 
