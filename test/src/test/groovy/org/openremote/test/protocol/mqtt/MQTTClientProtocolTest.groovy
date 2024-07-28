@@ -190,11 +190,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         and: "External connectivity has been assured"
         try {
             new Socket("test.mosquitto.org", 8884)
-            System.out.println("8884 alive")
             new Socket("test.mosquitto.org", 443)
-            System.out.println("443 alive")
         } catch (Exception e) {
-            System.out.println("dead")
             throw new AssumptionViolatedException("No connectivity to external hosts, skip test");
         }
 

@@ -117,7 +117,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	@Override
 	public KeyStore getKeyStore() {
 		try {
-			return KeyStore.getInstance(this.keyStorePath.toFile(), getKeyStorePassword());
+			return KeyStore.getInstance(this.keyStorePath.toAbsolutePath().toFile(), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -125,7 +125,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	@Override
 	public KeyStore getTrustStore() {
 		try {
-			return KeyStore.getInstance(this.trustStorePath.toFile(), getKeyStorePassword());
+			return KeyStore.getInstance(this.trustStorePath.toAbsolutePath().toFile(), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -177,13 +177,20 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		return tmf;
 	}
 	public KeyStore createKeyStore(Path path) throws Exception {
-		KeyStore keystore = ((KeyStore)null);
+		KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+		keystore.load(null, getKeyStorePassword());
+		File keyStoreFile = path.toAbsolutePath().toFile();
+		if (keyStoreFile.getParentFile() != null && !keyStoreFile.getParentFile().exists()) {
+			keyStoreFile.getParentFile().mkdirs();
+		}
+		keyStoreFile.createNewFile();
+
 		// Save the newly created KeyStore
-		try (OutputStream os = new FileOutputStream(path.toFile())) {
-			keyStore.store(os, getKeyStorePassword());
-			keystore.load(new FileInputStream(path.toFile()), getKeyStorePassword());
+		try (OutputStream os = new FileOutputStream(keyStoreFile)) {
+			keystore.store(os, getKeyStorePassword());
 		} catch (Exception saveException) {
 			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
+			throw saveException;
 		}
 		return keystore;
 	}
