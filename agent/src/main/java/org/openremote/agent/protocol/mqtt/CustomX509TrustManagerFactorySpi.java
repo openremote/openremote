@@ -87,7 +87,7 @@ public class CustomX509TrustManagerFactorySpi extends TrustManagerFactorySpi {
 				try {
 					tm.checkServerTrusted(chain, authType);
 					return;
-				} catch (CertificateException e) {
+				} catch (CertificateException ignored) {
 					// continue to the next trust manager
 				}
 			}

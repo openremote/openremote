@@ -1,26 +1,20 @@
 package org.openremote.agent.protocol.mqtt;
 
-import org.openremote.model.security.KeyStoreService;
-
 import javax.net.ssl.*;
-import java.lang.reflect.Array;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 	private X509ExtendedKeyManager keyManager;
-	private final String userRequestedAlias;
+	private final String realmPrefixedAlias;
 
-	public CustomKeyManagerFactorySpi(String userRequestedAlias) {
-		this.userRequestedAlias = userRequestedAlias;
+	public CustomKeyManagerFactorySpi(String realmPrefixedAlias) {
+		this.realmPrefixedAlias = realmPrefixedAlias;
 	}
 
 	@Override
@@ -35,7 +29,7 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
 		for (KeyManager keyManager : factory.getKeyManagers()) {
 			if (keyManager instanceof X509ExtendedKeyManager) {
-				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, userRequestedAlias);
+				this.keyManager = new CustomX509KeyManager((X509ExtendedKeyManager) keyManager, realmPrefixedAlias);
 				return;
 			}
 		}
@@ -56,12 +50,12 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 	private static class CustomX509KeyManager extends X509ExtendedKeyManager {
 
 		private final X509ExtendedKeyManager keyManager;
-		private final String userRequestedAlias;
+		private final String realmPrefixedAlias;
 		private static final Logger LOG = Logger.getLogger(CustomX509KeyManager.class.getName());
 
-		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String userRequestedAlias) {
+		public CustomX509KeyManager(X509ExtendedKeyManager keyManager, String realmPrefixedAlias) {
 			this.keyManager = keyManager;
-			this.userRequestedAlias = userRequestedAlias;
+			this.realmPrefixedAlias = realmPrefixedAlias;
 		}
 
 		@Override
@@ -89,16 +83,16 @@ public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 					return found.get();
 				}
 			}
-			//TODO: Not sure how this should be handled. This would mean that the keypair with userRequestedAlias
+			//TODO: Not sure how this should be handled. This would mean that the keypair with realmPrefixedAlias
 			//      either wasn't found, or didn't match up with the KeyType, or does not have the correct issuer.
 			//      for now, log the issue that the certificate wasn't found, and then return null.
 
-			LOG.severe("Could not find a certificate with Alias "+ this.userRequestedAlias);
+			LOG.severe("Could not find a certificate with Alias "+ this.realmPrefixedAlias);
 			return null;
 		}
 
 		private boolean isCorrectAlias(String s) {
-			return KeyStoreService.isRequestedAlias(s, this.userRequestedAlias);
+			return s.equals(this.realmPrefixedAlias);
  		}
 
 		@Override

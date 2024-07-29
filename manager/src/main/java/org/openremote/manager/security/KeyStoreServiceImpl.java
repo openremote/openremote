@@ -4,22 +4,18 @@ import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
-import org.openremote.model.rules.flow.Option;
 import org.openremote.model.security.KeyStoreService;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Key;
 import java.security.KeyStore;
 import java.util.logging.Logger;
 import java.util.Optional;
 
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.util.MapAccess.getValue;
 
 /**
  * <p>
@@ -47,6 +43,9 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	private final String OR_SSL_CLIENT_KEYSTORE_PASSWORD = "OR_SSL_CLIENT_KEYSTORE_PASSWORD";
 	private final String OR_SSL_CLIENT_TRUSTSTORE_PASSWORD = "OR_SSL_CLIENT_TRUSTSTORE_PASSWORD";
 
+	private final String OR_KEYSTORE_PASSWORD = "OR_KEYSTORE_PASSWORD";
+
+
 	private Path keyStorePath;
 	private Path trustStorePath;
 
@@ -72,58 +71,51 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	@Override
 	public void start(Container container) throws Exception {
 
-		Optional<Path> keyStorePath = getValue(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_FILE, Path.class);
-		Optional<Path> trustStorePath = getValue(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_FILE, Path.class);
+		String keyStoreEnv = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_FILE, null);
+		String trustStoreEnv = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_FILE, null);
+
+		Optional<Path> keyStorePath = keyStoreEnv != null ? Optional.of(Paths.get(keyStoreEnv)) : Optional.empty();
+		Optional<Path> trustStorePath = trustStoreEnv != null ? Optional.of(Paths.get(trustStoreEnv)) : Optional.empty();
 
 		String keyStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
-		String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
+		String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
 
 
 		if(keyStorePath.isPresent()){
-			try{
-				keyStore = KeyStore.getInstance(keyStorePath.get().toFile(), keyStorePassword.toCharArray());
-			} catch (Exception e){
-				throw e;
-			}
+			this.keyStore = KeyStore.getInstance(keyStorePath.get().toFile(), keyStorePassword.toCharArray());
 		}else{
 			Path defaultKeyStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
 			if(new File(defaultKeyStorePath.toUri()).exists()) {
-				keyStorePath = Optional.of(defaultKeyStorePath);
+				this.keyStorePath = defaultKeyStorePath;
 				this.keyStore = KeyStore.getInstance(new File(defaultKeyStorePath.toUri()), getKeyStorePassword());
 			}else{
-				keyStore = createKeyStore(defaultKeyStorePath);
+				this.keyStore = createKeyStore(defaultKeyStorePath);
 			}
 
 			this.keyStorePath = defaultKeyStorePath;
 		}
 
 		if(trustStorePath.isPresent()){
-			try{
-				keyStore = KeyStore.getInstance(trustStorePath.get().toFile(), trustStorePassword.toCharArray());
-			} catch (Exception e){
-				throw e;
-			}
+			this.keyStore = KeyStore.getInstance(trustStorePath.get().toFile(), trustStorePassword.toCharArray());
 		}else{
 			Path defaultTrustStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_truststore.p12"));
 			if(new File(defaultTrustStorePath.toUri()).exists()) {
-				trustStorePath = Optional.of(defaultTrustStorePath);
+				this.trustStorePath = defaultTrustStorePath;
 				this.trustStore = KeyStore.getInstance(new File(defaultTrustStorePath.toUri()), getKeyStorePassword());
 			}else{
-				trustStore = createKeyStore(defaultTrustStorePath);
+				this.trustStore = createKeyStore(defaultTrustStorePath);
 			}
 			this.trustStorePath = defaultTrustStorePath;
 		}
 	}
-	@Override
-	public KeyStore getKeyStore() {
+	private KeyStore getKeyStore() {
 		try {
 			return KeyStore.getInstance(this.keyStorePath.toAbsolutePath().toFile(), getKeyStorePassword());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
-	@Override
-	public KeyStore getTrustStore() {
+	private KeyStore getTrustStore() {
 		try {
 			return KeyStore.getInstance(this.trustStorePath.toAbsolutePath().toFile(), getKeyStorePassword());
 		} catch (Exception e) {
@@ -131,31 +123,30 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 		}
 	}
 
-
-	@Override
-		public void storeKeyStore(KeyStore keystore) {
+	private void storeKeyStore(KeyStore keystore) {
 		try {
+			this.keyStore = keystore;
 			keystore.store(new FileOutputStream(this.keyStorePath.toFile()), getKeyStorePassword());
 		} catch (Exception saveException) {
 			getLogger().severe("Couldn't store KeyStore to Storage! " + saveException.getMessage());
 		}
 	}
-	@Override
-	public void storeTrustStore(KeyStore keystore) {
+	private void storeTrustStore(KeyStore truststore) {
 		try {
-			keystore.store(new FileOutputStream(this.trustStorePath.toFile()), getKeyStorePassword());
+			this.trustStore = truststore;
+			truststore.store(new FileOutputStream(this.trustStorePath.toFile()), getKeyStorePassword());
 		} catch (Exception saveException) {
 			getLogger().severe("Couldn't store TrustStore to Storage! " + saveException.getMessage());
 		}
 	}
 
-	public char[] getKeyStorePassword(){
+	private char[] getKeyStorePassword(){
 		return this.keyStorePassword.toCharArray();
 	}
 
 	@Override
-	public KeyManagerFactory getKeyManagerFactory(String preferredAlias) throws Exception {
-		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(preferredAlias);
+	public KeyManagerFactory getKeyManagerFactory(String alias) throws Exception {
+		KeyManagerFactory keyManagerFactory = new CustomKeyManagerFactory(alias);
 		try {
 			keyManagerFactory.init(this.keyStore, getKeyStorePassword());
 		} catch (Exception e) {
@@ -176,7 +167,7 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
 		return tmf;
 	}
-	public KeyStore createKeyStore(Path path) throws Exception {
+	private KeyStore createKeyStore(Path path) throws Exception {
 		KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
 		keystore.load(null, getKeyStorePassword());
 		File keyStoreFile = path.toAbsolutePath().toFile();
@@ -199,5 +190,5 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 	public void stop(Container container) throws Exception {
 
 	}
-	public Logger getLogger(){return LOG;}
+	private Logger getLogger(){return LOG;}
 }
