@@ -488,7 +488,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             const lastLink = links.rel("last");
             if (lastLink) {
                 const url = new URL(lastLink.uri);
-                return Util.getQueryParameter(url.search, "page") as number;
+                return Util.getQueryParameters(url.search)['page'] as number;
             }
         }
     }
