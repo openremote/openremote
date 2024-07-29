@@ -176,6 +176,11 @@ services:
       OR_EMAIL_X_HEADERS: # Headers to set on all outbound emails
       OR_EMAIL_PROTOCOL: # smtp or smtps for SSL (if TLS not set or is true then smtp is assumed)
 
+      # Optional oAuth2 configuration to use instead of username/password
+      OR_EMAIL_OAUTH2_URL: # url to request an access token
+      OR_EMAIL_OAUTH2_CLIENT_ID:
+      OR_EMAIL_OAUTH2_CLIENT_SECRET:
+
       # Where to send admin emails to
       OR_EMAIL_ADMIN:
 
