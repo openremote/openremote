@@ -229,8 +229,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
+        final ScheduledFuture testFuture = executorService.scheduleWithFixedDelay(() -> {
+            if (connectRetry != null) {
+                LOG.warning("Connection retry future status: " + connectRetry);
+            }
+        }, 0, 1000, TimeUnit.MILLISECONDS);
+
         AtomicReference<Future<Void>> connectFutureRef = new AtomicReference<>();
-        connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+        connectRetry = Failsafe.with(retryPolicy).with(executorService). runAsyncExecution((execution) -> {
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
             connectFutureRef.set(doConnect());
@@ -250,6 +256,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
+            LOG.fine("Connection attempt complete: " + result + ": " + getClientUri());
+            testFuture.cancel(false);
             if (ex instanceof InterruptedException) {
                 connectFutureRef.get().cancel(true);
             }
