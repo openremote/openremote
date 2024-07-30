@@ -122,8 +122,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_MQTT = "mqtt";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
     public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
-    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
-    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
     protected static final String PUBLISH_QUEUE = "seda://ClientPublishQueue?multipleConsumers=false&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
@@ -373,9 +373,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 String sessionKey = getSessionKey(exchange);
                 EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                 LOG.log(TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
-                eventSubscriptions.createOrUpdate(sessionKey, subscription);
                 subscription.setSubscribed(true);
                 sendToSession(sessionKey, subscription);
+                eventSubscriptions.createOrUpdate(sessionKey, subscription);
             })
             .stop()
             .when(body().isInstanceOf(CancelEventSubscription.class))
@@ -391,6 +391,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Split publish messages for individual subscribers
         from(PUBLISH_QUEUE)
             .routeId("ClientOutbound-Splitter")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .split(method(eventSubscriptions, "splitForSubscribers"))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
@@ -406,6 +407,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         // Route messages destined for websocket clients
         from(CLIENT_OUTBOUND_QUEUE)
             .routeId("ClientOutbound-Websocket")
+            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .filter(header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_WEBSOCKET))
             .process(exchange -> {
                 String sessionKey = exchange.getIn().getHeader(SESSION_KEY, String.class);

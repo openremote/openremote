@@ -331,20 +331,23 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @Override
     public String toString() {
-        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
             ", ref=" + ref +
             ", realm=" + realm +
-            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
+            ", source=" + source +
+            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
             "}";
     }
 
-    public String toStringWithValueType() {
+    public String toStringWithValue() {
+        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + timestamp.toInstant() +
             ", ref=" + ref +
-            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
+            ", realm=" + realm +
+            ", source=" + source +
+            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }
 }
