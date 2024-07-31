@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -30,6 +29,7 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketCl
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.CharsetUtil;
 import jakarta.ws.rs.ProcessingException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -132,13 +132,13 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
     protected static ResteasyClient client;
-    public static final long PING_MILLIS = 60000;
+    // How long since the last read before a PING is sent
+    public static final long PING_MILLIS = 10000;
     protected ScheduledFuture<?> pingFuture;
-    protected AtomicInteger pingCounter;
     protected boolean useSsl;
     protected URI uri;
     protected SslContext sslCtx;
-    protected WebSocketClientHandler handler;
+    protected WebSocketClientProtocolHandler handler;
     protected Map<String, List<String>> headers;
     protected OAuthGrant oAuthGrant;
     protected String authHeaderValue;
@@ -226,19 +226,32 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             hdrs.set(HttpHeaderNames.AUTHORIZATION, authHeaderValue);
         }
 
-        // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
-        // If you change it to V00, ping is not supported and remember to change
-        // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
-        handler =
-            new WebSocketClientHandler(
+        handler = new WebSocketClientProtocolHandler(
                 WebSocketClientHandshakerFactory.newHandshaker(
-                    uri, WebSocketVersion.V13, null, true, hdrs));
+                    uri, WebSocketVersion.V13, null, true, hdrs)) {
+
+                @Override
+                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                    super.userEventTriggered(ctx, evt);
+                    if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
+                        onHandshakeDone(handshakeStateEvent);
+                    }
+                }
+
+            @Override
+            protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
+                if (frame instanceof PongWebSocketFrame) {
+                    onPong(ctx);
+                }
+                super.decode(ctx, frame, out);
+            }
+        };
 
 
         super.initChannel(channel);
     }
 
-    protected void onHandshakeComplete() {
+    protected void onHandshakeDone(WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
         // Start ping task
         if (!pingDisabled) {
             LOG.fine("Starting PING task: " + getClientUri());
@@ -263,6 +276,15 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     @Override
     protected void addEncodersDecoders(Channel channel) {
 
+        if (!pingDisabled) {
+            channel.pipeline().addFirst(new ReadTimeoutHandler(PING_MILLIS, TimeUnit.MILLISECONDS) {
+                @Override
+                protected void readTimedOut(ChannelHandlerContext ctx) throws Exception {
+                    doPing(ctx);
+                }
+            });
+        }
+
         if (sslCtx != null) {
             channel.pipeline().addLast(sslCtx.newHandler(channel.alloc(), host, port));
         }
@@ -273,13 +295,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             WebSocketClientCompressionHandler.INSTANCE,
             handler);
 
-        channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
-            @Override
-            protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) {
-                out.add(new TextWebSocketFrame(msg));
-            }
-        });
-
         super.addEncodersDecoders(channel);
 
         // Put string encoder first (encoders are called in reverse to decoders)
@@ -289,6 +304,14 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 out.add(new TextWebSocketFrame(msg));
             }
         });
+    }
+
+    private void doPing(ChannelHandlerContext ctx) {
+        ctx.executor().
+    }
+
+    private void onPong(ChannelHandlerContext ctx) {
+
     }
 
     @Override
@@ -333,8 +356,10 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             handshakeFuture.awaitUninterruptibly();
 
             if (handshakeFuture.isSuccess()) {
-                onHandshakeComplete();
+                onHandshakeDone();
             }
         });
     }
+
+
 }
