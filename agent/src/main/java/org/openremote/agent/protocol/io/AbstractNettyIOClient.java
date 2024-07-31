@@ -26,20 +26,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import jakarta.validation.constraints.NotNull;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -216,22 +215,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
-        AtomicReference<Future<Void>> connectFutureRef = new AtomicReference<>();
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            // Connection future will timeout
-            doConnect().
-            connectFutureRef.set(doConnect());
-            connectFutureRef.get().get();
-
+            // Connection future will timeout so we just wait for it
+            Future<Void> connectFuture = doConnect();
+            connectFuture.get();
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
-            LOG.fine("Connection attempt complete: " + result + ": " + getClientUri());
-            testFuture.cancel(false);
-            if (ex instanceof InterruptedException) {
-                connectFutureRef.get().cancel(true);
-            }
             if (ex != null) {
                 LOG.log(Level.INFO, "Connection attempt failed: " + getClientUri(), ex);
                 // Cleanup resources
@@ -239,6 +230,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             } else {
                 synchronized (this) {
                     if (connectionStatus == ConnectionStatus.CONNECTING) {
+                        LOG.fine("Connection attempt success: " + getClientUri());
                         onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     } else {
                         doDisconnect();
@@ -270,20 +262,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         });
 
         // Start the channel
-        ChannelFuture channelStartFuture = startChannel();
-
-        return createConnectedFuture(channelStartFuture)
-            .whenComplete((result, ex) -> {
-                if (ex instanceof InterruptedException) {
-                    // Cancel the connection
-                    channelStartFuture.cancel(true);
-                    return;
-                }
-                if (ex != null) {
-                    // Cleanup resources
-                    doDisconnect();
-                }
-            });
+        return startChannel();
     }
 
     @Override
@@ -467,7 +446,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             try {
                 consumer.accept(message);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception occurred in message handler: " + getClientUri(), e);
+                LOG.log(Level.WARNING, "Exception occurred in message handler '" + e.getMessage() + "':" + getClientUri());
             }
         });
     }
@@ -505,21 +484,27 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     // Not ideal but need to chain futures
     // TODO: Replace once netty uses completable futures
-    public static CompletableFuture<Void> toCompletableFuture(ChannelFuture channelFuture) {
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        channelFuture.addListener(future -> {
-            if (future.isCancelled()) {
-                completableFuture.cancel(true);
-                return;
-            }
-            if (future.cause() != null) {
-                completableFuture.completeExceptionally(future.cause());
-            } else if (!future.isSuccess()) {
-                completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
-            } else {
-                completableFuture.complete(null);
-            }
-        });
-        return completableFuture;
+    public static CompletableFuture<Void> toCompletableFuture(Future<Void> future) throws UnsupportedOperationException {
+        if (future instanceof CompletableFuture<Void> completableFuture) {
+            return completableFuture;
+        }
+        if (future instanceof ChannelFuture channelFuture) {
+            CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+            channelFuture.addListener(cf -> {
+                if (cf.isCancelled()) {
+                    completableFuture.cancel(true);
+                    return;
+                }
+                if (cf.cause() != null) {
+                    completableFuture.completeExceptionally(cf.cause());
+                } else if (!cf.isSuccess()) {
+                    completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+                } else {
+                    completableFuture.complete(null);
+                }
+            });
+            return completableFuture;
+        }
+        throw new UnsupportedOperationException("Future must be a ChannelFuture or already a CompletableFuture");
     }
 }
