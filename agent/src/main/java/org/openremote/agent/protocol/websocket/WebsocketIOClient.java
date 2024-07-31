@@ -49,7 +49,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
@@ -126,7 +125,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 handshakeFuture.setFailure(cause);
                 ctx.close();
             }
-            WebsocketIOClient.this.onDecodeException(ctx, cause);
+
         }
     }
 
@@ -203,12 +202,12 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected ChannelFuture startChannel() {
+    protected Future<Void> startChannel() {
         return bootstrap.connect(new InetSocketAddress(host, port));
     }
 
     @Override
-    protected void initChannel(Channel channel) throws Exception {
+    protected void addEncodersDecoders(Channel channel) {
         if (useSsl) {
             sslCtx = SslContextBuilder.forClient()
                 .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
@@ -227,16 +226,18 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         }
 
         handler = new WebSocketClientProtocolHandler(
-                WebSocketClientHandshakerFactory.newHandshaker(
-                    uri, WebSocketVersion.V13, null, true, hdrs)) {
+            WebSocketClientHandshakerFactory.newHandshaker(
+                uri, WebSocketVersion.V13, null, true, hdrs)) {
 
-                @Override
-                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                    super.userEventTriggered(ctx, evt);
-                    if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
+            @Override
+            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                super.userEventTriggered(ctx, evt);
+                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
+                    if (handshakeStateEvent == ClientHandshakeStateEvent.HANDSHAKE_COMPLETE) {
                         onHandshakeDone(handshakeStateEvent);
                     }
                 }
+            }
 
             @Override
             protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
@@ -246,35 +247,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 super.decode(ctx, frame, out);
             }
         };
-
-
-        super.initChannel(channel);
-    }
-
-    protected void onHandshakeDone(WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
-        // Start ping task
-        if (!pingDisabled) {
-            LOG.fine("Starting PING task: " + getClientUri());
-            pingCounter = new AtomicInteger();
-            pingFuture = executorService.scheduleWithFixedDelay(() -> {
-                try {
-                    if (pingCounter.get() > 2) {
-                        LOG.info("No PING response so reconnecting: " + this);
-                        doDisconnect();
-                        scheduleDoConnect(1000);
-                        return;
-                    }
-                    LOG.finest("Sending PING: " + getClientUri());
-                    channel.writeAndFlush(new PingWebSocketFrame());
-                    pingCounter.incrementAndGet();
-                } catch (Exception ignored) {
-                }
-            }, PING_MILLIS, PING_MILLIS, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    @Override
-    protected void addEncodersDecoders(Channel channel) {
 
         if (!pingDisabled) {
             channel.pipeline().addFirst(new ReadTimeoutHandler(PING_MILLIS, TimeUnit.MILLISECONDS) {
@@ -304,6 +276,9 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 out.add(new TextWebSocketFrame(msg));
             }
         });
+    }
+
+    protected void onHandshakeDone(WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
     }
 
     private void doPing(ChannelHandlerContext ctx) {
@@ -347,19 +322,4 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
         super.doDisconnect();
     }
-
-    @Override
-    protected CompletableFuture<Void> createConnectedFuture(final ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = super.createConnectedFuture(channelStartFuture);
-        return connectedFuture.thenRunAsync(() -> {
-            ChannelPromise handshakeFuture = handler.handshakeFuture;
-            handshakeFuture.awaitUninterruptibly();
-
-            if (handshakeFuture.isSuccess()) {
-                onHandshakeDone();
-            }
-        });
-    }
-
-
 }

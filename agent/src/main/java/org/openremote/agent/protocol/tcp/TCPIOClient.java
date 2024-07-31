@@ -27,6 +27,7 @@ import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Future;
 
 /**
  * This is a {@link IOClient} implementation for TCP.
@@ -64,7 +65,7 @@ public class TCPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected ChannelFuture startChannel() {
+    protected Future<Void> startChannel() {
         return bootstrap.connect(new InetSocketAddress(host, port));
     }
 

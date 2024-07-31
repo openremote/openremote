@@ -24,6 +24,8 @@ import dev.failsafe.RetryPolicy;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
 import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.container.Container;
@@ -105,12 +107,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 messages.clear();
             }
         }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onDecodeException(ctx, cause);
-        }
     }
 
     /**
@@ -127,12 +123,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         @Override
         public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
             client.onMessageReceived(msg);
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onDecodeException(ctx, cause);
         }
     }
 
@@ -152,13 +142,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         @Override
         protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) {
             encoder.accept(msg, out);
-        }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onEncodeException(ctx, cause);
         }
     }
 
@@ -195,7 +178,11 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     protected abstract EventLoopGroup getWorkerGroup();
 
-    protected abstract ChannelFuture startChannel();
+    /**
+     * Start the actual connection and return a future indicating completion state. Implementors can also
+     * add any custom connection logic they require.
+     */
+    protected abstract Future<Void> startChannel();
 
     protected void configureChannel() {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, getConnectTimeoutMillis());
@@ -229,30 +216,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
-        final ScheduledFuture testFuture = executorService.scheduleWithFixedDelay(() -> {
-            if (connectRetry != null) {
-                LOG.warning("Connection retry future status: " + connectRetry);
-            }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
-
         AtomicReference<Future<Void>> connectFutureRef = new AtomicReference<>();
-        connectRetry = Failsafe.with(retryPolicy).with(executorService). runAsyncExecution((execution) -> {
+        connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+            // Connection future will timeout
+            doConnect().
             connectFutureRef.set(doConnect());
             connectFutureRef.get().get();
-
-            // Add closed callback
-            channel.closeFuture().addListener(closedFuture -> {
-                synchronized (this) {
-                    if (connectionStatus == ConnectionStatus.CONNECTED) {
-                        LOG.info("Connection closed un-expectedly: " + getClientUri());
-                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
-                        doDisconnect();
-                        scheduleDoConnect(5000);
-                    }
-                }
-            });
 
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
@@ -291,22 +262,22 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         configureChannel();
         bootstrap.group(workerGroup);
 
-        bootstrap.handler(new ChannelInitializer<Channel>() {
+        bootstrap.handler(new ChannelInitializer<>() {
             @Override
             public void initChannel(Channel channel) throws Exception {
                 AbstractNettyIOClient.this.initChannel(channel);
             }
         });
 
-        // Start and store the channel
+        // Start the channel
         ChannelFuture channelStartFuture = startChannel();
-        channel = channelStartFuture.channel();
 
         return createConnectedFuture(channelStartFuture)
             .whenComplete((result, ex) -> {
                 if (ex instanceof InterruptedException) {
                     // Cancel the connection
                     channelStartFuture.cancel(true);
+                    return;
                 }
                 if (ex != null) {
                     // Cleanup resources
@@ -315,36 +286,17 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             });
     }
 
-    /**
-     * A wrapper to provide a java concurrent future; can be overridden in subclasses to add additional connection logic
-     * on top of simply establishing the channel.
-     */
-    protected CompletableFuture<Void> createConnectedFuture(final ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = new CompletableFuture<>();
-        channelStartFuture.addListener(future -> {
-            if (future.isCancelled()) {
+    @Override
+    public void disconnect() {
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                LOG.finest("Already disconnected or disconnecting: " + getClientUri());
                 return;
             }
-            if (future.cause() != null) {
-                connectedFuture.completeExceptionally(future.cause());
-            } else if (!future.isSuccess()) {
-                connectedFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
-            } else {
-                connectedFuture.complete(null);
-            }
-        });
-        return connectedFuture;
-    }
 
-    @Override
-    public synchronized void disconnect() {
-        if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
-            LOG.finest("Already disconnected or disconnecting: " + getClientUri());
-            return;
+            LOG.fine("Disconnecting IO client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
-
-        LOG.fine("Disconnecting IO client: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
 
         if (connectRetry != null) {
             connectRetry.cancel(true);
@@ -358,6 +310,11 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
         doDisconnect();
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+    }
+
+    protected void doReconnect() {
+        doDisconnect();
+        scheduleDoConnect(5000);
     }
 
     protected void doDisconnect() {
@@ -441,14 +398,59 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     /**
-     * Inserts the decoders and encoders into the channel pipeline
+     * Inserts the decoders and encoders into the channel pipeline and configures standard exception handling and logging
      */
     protected void initChannel(Channel channel) throws Exception {
-        // Below is un-necessary as channel listener handles this
+        this.channel = channel;
         addEncodersDecoders(channel);
+
+        // Add closed callback for logging and reconnect
+        channel.closeFuture().addListener(closedFuture -> {
+            boolean reconnect = false;
+
+            if (!closedFuture.isSuccess() && closedFuture.cause() != null) {
+                LOG.info("Connection closed with exception on '" + getClientUri() + "': " + closedFuture.cause().getMessage());
+            }
+
+            synchronized (this) {
+                if (connectionStatus == ConnectionStatus.CONNECTED) {
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                    reconnect = true;
+                }
+            }
+
+            if (reconnect) {
+                doReconnect();
+            }
+        });
+
+        // Add inbound exception handler at end of inbound chain
+        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                if (cause instanceof DecoderException decoderException) {
+                    onDecodeException(ctx, decoderException);
+                } else if (cause instanceof EncoderException encoderException) {
+                    onEncodeException(ctx, encoderException);
+                } else {
+                    // Agressively force close the channel on other exceptions which will cause a reconnect
+                    ctx.close();
+                }
+            }
+        });
+
+        // Add promise listener at start of outbound chain (this is how to handle outbound exceptions)
+        channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                // Fire any failure through the channel pipeline the same as inbound exceptions
+                promise.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                super.write(ctx, msg, promise);
+            }
+        });
     }
 
-    protected void addEncodersDecoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) throws Exception {
         if (encoderDecoderProvider != null) {
             ChannelHandler[] handlers = encoderDecoderProvider.get();
             if (handlers != null) {
@@ -470,12 +472,12 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         });
     }
 
-    protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.FINE, "Exception occurred on in-bound message '" + cause.getMessage() +"': " + getClientUri());
+    protected void onDecodeException(ChannelHandlerContext ctx, DecoderException decoderException) {
+        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() +"': " + getClientUri());
     }
 
-    protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.FINE, "Exception occurred on out-bound message '" + cause.getMessage() +"': " + getClientUri());
+    protected void onEncodeException(ChannelHandlerContext ctx, EncoderException encoderException) {
+        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() +"': " + getClientUri());
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
@@ -499,5 +501,25 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     @Override
     public String toString() {
         return getClientUri();
+    }
+
+    // Not ideal but need to chain futures
+    // TODO: Replace once netty uses completable futures
+    public static CompletableFuture<Void> toCompletableFuture(ChannelFuture channelFuture) {
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        channelFuture.addListener(future -> {
+            if (future.isCancelled()) {
+                completableFuture.cancel(true);
+                return;
+            }
+            if (future.cause() != null) {
+                completableFuture.completeExceptionally(future.cause());
+            } else if (!future.isSuccess()) {
+                completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+            } else {
+                completableFuture.complete(null);
+            }
+        });
+        return completableFuture;
     }
 }

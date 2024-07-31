@@ -31,6 +31,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -55,8 +56,9 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
     }
 
     @Override
-    protected CompletableFuture<Void> createConnectedFuture(ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = super.createConnectedFuture(channelStartFuture);
+    protected Future<Void> startChannel() {
+        CompletableFuture<Void> connectedFuture = toCompletableFuture((ChannelFuture) super.startChannel());
+
         return connectedFuture.thenCompose(__ ->
             getFuture()
                 .orTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
