@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -33,14 +33,20 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.openremote.model.Constants.DYNAMIC_VALUE_PLACEHOLDER;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -112,7 +118,7 @@ public final class ProtocolUtil {
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
             LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
-            Object o = ValueUtil.applyValueFilters(value, valueFilters);
+            Object o = applyValueFilters(value, valueFilters);
             if (o == null) {
                 LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             }
@@ -213,5 +219,53 @@ public final class ProtocolUtil {
                 }
             }
         };
+    }
+
+    public static String doDynamicTimeReplace(String value, Instant instant){
+        if (value == null) return null;
+
+        // Regex to match the pattern ${time:DURATION:FORMAT}
+        Pattern pattern = Pattern.compile(Constants.DYNAMIC_TIME_REGEX);
+        Matcher matcher = pattern.matcher(value);
+
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+            String durationStr = matcher.group(1);
+            String formatStr = matcher.group(2);
+
+            Duration duration;
+            // Parse the duration
+            if (durationStr != null) {
+                duration = Duration.parse(durationStr);
+            } else {
+                // Not set, default is 0 duration, so right now
+                duration = Duration.ZERO;
+            }
+
+            // Get the current date and time, and apply the duration
+            instant = instant.plus(duration);
+
+
+            // Format the adjusted date
+
+            // When we get JDK 21, I'll be able to pattern-match null as well, and I would just include it in the EPOCH_SECONDS case
+            if (formatStr == null) formatStr = "";
+
+            String formattedDate = switch (formatStr){
+                // EPOCH_SECONDS will be the default, when format is ""
+                case "EPOCH_SECONDS", "" -> String.valueOf(instant.getEpochSecond());
+                case "EPOCH_MILLIS" -> String.valueOf(instant.toEpochMilli());
+                default -> {
+                    ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+                    yield zonedDateTime.format(formatter);
+                }
+            };
+            matcher.appendReplacement(result, formattedDate);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

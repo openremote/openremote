@@ -34,7 +34,9 @@ import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.container.web.QueryParameterInjectorFilter;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.DynamicTimeInjectionFilter;
+import org.openremote.container.web.DynamicValueInjectorFilter;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -45,6 +47,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -54,15 +57,18 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.web.QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY;
+import static org.openremote.container.web.DynamicValueInjectorFilter.QUERY_PARAMETERS_PROPERTY;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
@@ -129,6 +135,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         protected WebTarget requestTarget;
         protected boolean dynamicQueryParameters;
         protected boolean pagingEnabled;
+        protected boolean dynamicTimeParameters;
+        private final Supplier<Long> currentMillisSupplier;
 
         public HttpClientRequest(WebTarget client,
                                  String path,
@@ -136,7 +144,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                                  MultivaluedMap<String, Object> headers,
                                  MultivaluedMap<String, String> queryParameters,
                                  boolean pagingEnabled,
-                                 String contentType) {
+                                 String contentType,
+                                 Supplier<Long> currentMillisSupplier) {
 
             if (!TextUtil.isNullOrEmpty(path)) {
                 if (path.startsWith("/")) {
@@ -151,6 +160,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             this.queryParameters = queryParameters;
             this.pagingEnabled = pagingEnabled;
             this.contentType = contentType != null ? contentType : DEFAULT_CONTENT_TYPE;
+            this.currentMillisSupplier = currentMillisSupplier;
+
             dynamicQueryParameters = queryParameters != null
                 && queryParameters
                 .entrySet()
@@ -165,10 +176,29 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             if (!dynamicPath) {
                 requestTarget = createRequestTarget(path);
             }
+
+            // Check if this HTTP request contains any references of dynamic time. We do so by checking query parameters
+            // and headers, using the predicate below.
+            Predicate<String> containsTime = e -> e.contains("${time");
+            dynamicTimeParameters = queryParameters != null && queryParameters.entrySet().stream()
+                    .anyMatch(e ->
+                            e.getValue().stream().anyMatch(containsTime)
+                    )
+                    &&
+                    this.headers != null && this.headers.entrySet().stream()
+                    .anyMatch(e -> e.getValue().stream()
+                            .filter(String.class::isInstance)
+                            .map(String::valueOf)
+                            .anyMatch(containsTime)
+                    );
+
         }
 
         protected WebTarget createRequestTarget(String path) {
             WebTarget requestTarget = client.path(path == null ? "" : path);
+            if(dynamicTimeParameters){
+                requestTarget.property(DynamicTimeInjectionFilter.CURRENT_MILLIS_SUPPLIER_PROPERTY, currentMillisSupplier);
+            }
 
             if (queryParameters != null) {
                 @SuppressWarnings("unchecked")
@@ -196,18 +226,20 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                 requestBuilder.headers(headers);
             }
 
-            if (dynamicQueryParameters) {
-                requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE_PROPERTY, value);
-            }
-
             return requestBuilder;
         }
 
         protected Invocation buildInvocation(Invocation.Builder requestBuilder, String value) {
             Invocation invocation;
 
+            // Dynamic time Injection
+            value = ProtocolUtil.doDynamicTimeReplace(value, Instant.ofEpochMilli(currentMillisSupplier.get()));
+            if(dynamicTimeParameters){
+                requestBuilder.property(DynamicTimeInjectionFilter.CURRENT_MILLIS_SUPPLIER_PROPERTY, this.currentMillisSupplier);
+            }
+
             if (dynamicQueryParameters) {
-                requestBuilder.property(QueryParameterInjectorFilter.DYNAMIC_VALUE_PROPERTY, value);
+                requestBuilder.property(DynamicValueInjectorFilter.DYNAMIC_VALUE_PROPERTY, value);
             }
 
             if (method != null && !HttpMethod.GET.equals(method) && value != null) {
@@ -394,7 +426,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             headers != null ? WebTargetBuilder.mapToMultivaluedMap(headers, new MultivaluedHashMap<>()) : null,
             queryParams != null ? WebTargetBuilder.mapToMultivaluedMap(queryParams, new MultivaluedHashMap<>()) : null,
             pagingEnabled,
-            contentType);
+            contentType,
+            timerService);
 
         LOG.fine("Creating HTTP request for attributeRef '" + clientRequest + "': " + attributeRef);
 
@@ -457,7 +490,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
-    protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, Object> headers, MultivaluedMap<String, String> queryParams, boolean pagingEnabled, String contentType) {
+    protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, Object> headers, MultivaluedMap<String, String> queryParams, boolean pagingEnabled, String contentType, TimerService timerService) {
         return new HttpClientRequest(
             webTarget,
             path,
@@ -465,7 +498,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             headers,
             queryParams,
             pagingEnabled,
-            contentType);
+            contentType,
+            timerService::getCurrentTimeMillis);
     }
 
     protected ScheduledFuture<?> schedulePollingRequest(AttributeRef attributeRef,

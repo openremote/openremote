@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,7 +19,6 @@
  */
 package org.openremote.test.protocol.http
 
-
 import jakarta.ws.rs.HttpMethod
 import jakarta.ws.rs.client.ClientRequestContext
 import jakarta.ws.rs.client.ClientRequestFilter
@@ -29,6 +28,7 @@ import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
+import org.openremote.container.timer.TimerService
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -52,8 +52,11 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.time.Instant
+import java.util.function.Supplier
 import java.util.regex.Pattern
 
+import static org.openremote.model.protocol.ProtocolUtil.doDynamicTimeReplace
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.*
 
@@ -73,6 +76,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         private int successCount = 0
         private int failureCount = 0
         private String dynamicPathParam = ""
+        public ClientRequestContext latestDynamicTimeRequest = null
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
@@ -210,6 +214,15 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 case "https://mockapi/get_failure_401":
                     failureCount++
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
+                    return
+                case "https://mockapi/empty":
+                    pollCountFast++
+                    latestDynamicTimeRequest = requestContext
+                    requestContext.abortWith(
+                            Response
+                                    .ok(requestContext.getEntity() as String, MediaType.APPLICATION_JSON_TYPE)
+                                    .build()
+                    )
                     return
                 case "https://mockapi/redirect":
                     requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
@@ -549,4 +562,179 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             HTTPProtocol.client.set(null)
         }
     }
+
+    def "Check HTTP client dynamic time feature"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+
+        and: "the HTTP client protocol min times are adjusted for testing"
+        HTTPProtocol.MIN_POLLING_MILLIS = 10
+
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+        def timerService = container.getService(TimerService.class)
+
+
+
+        when: "the web target builder is configured to use the mock server"
+        HTTPProtocol.initClient()
+        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
+            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+
+        and: "a HTTP client agent is created"
+        String testReplacementString = "\${time:PT1H:yyyy-MM-dd HH:mm}"
+        HTTPAgent agent = new HTTPAgent("Test agent")
+                .setRealm(Constants.MASTER_REALM)
+                .setBaseURI("https://mockapi")
+                .setOAuthGrant(
+                        new OAuthPasswordGrant("https://mockapi/token",
+                                "TestClient",
+                                "TestSecret",
+                                "scope1 scope2",
+                                "testuser",
+                                "password")
+                )
+                .setFollowRedirects(true)
+
+        and: "the agent is added to the asset service"
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should authenticate and the connection status should become CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id, HTTPAgent.class)
+            assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
+        }
+
+
+        when: "An asset is created"
+        def asset = new ThingAsset("Test Asset")
+                .setParent(agent)
+                .addOrReplaceAttributes(
+                        // attribute that polls the server using GET and uses regex filter on response
+                        new Attribute<>("testPostRequest", TEXT)
+                                .addMeta(
+                                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                                                .setPath("empty")
+                                                .setMethod(HTTPMethod.POST)
+                                                .setPollingMillis(500)
+                                                .setWriteValue('{"prop1": "${time:PT1H:yyyy-MM-dd HH:mm}"}')
+                                                .setHeaders(new MultivaluedStringMap(
+                                                        [
+                                                                ("header2") : ['"${time:PT1H:yyyy-MM-dd HH:mm}"']
+                                                        ]
+                                                ))
+                                                .setQueryParameters(new MultivaluedStringMap(
+                                                        [
+                                                                ("param3") : ['"${time:PT1H:yyyy-MM-dd HH:mm}"']
+                                                        ]
+                                                ))
+                                        )
+                                ),
+                        new Attribute<>("edgeCasesTest", TEXT)
+                                .addMeta(
+                                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                                                .setPath("empty")
+                                                .setMethod(HTTPMethod.POST)
+                                                .setPollingMillis(500)
+                                                .setWriteValue('{"prop1": "${time}"}')
+                                                .setHeaders(new MultivaluedStringMap(
+                                                        [
+                                                                ("header2") : ['"${time:-PT1H:yyyy-MM-dd HH:mm}"']
+                                                        ]
+                                                ))
+                                                .setQueryParameters(new MultivaluedStringMap(
+                                                        [
+                                                                ("param3") : ['"${time:PT0H:yyyy-MM-dd HH:mm}"']
+                                                        ]
+                                                ))
+                                        )
+                                ),
+                )
+
+        and: "the asset is merged into the asset service"
+        asset = assetStorageService.merge(asset)
+
+        and: "the clock is stopped"
+        stopPseudoClock()
+
+        then: "new request maps should be created in the HTTP client protocol for the linked attributes"
+        conditions.eventually {
+            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 2
+        }
+
+        and: "the polling attributes should be polling the server"
+        conditions.eventually {
+            assert mockServer.pollCountFast > 0
+        }
+
+        and: "The request that was sent contains the correct body, headers, and query parameters, and the attribute has the correct value"
+        conditions.eventually {
+            String expectedPostRequest = doDynamicTimeReplace("\${time:PT1H:yyyy-MM-dd HH:mm}", Instant.ofEpochMilli(timerService.getCurrentTimeMillis()))
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("testPostRequest").flatMap({it.value}).orElse(null) == '{"prop1": "'+expectedPostRequest+'"}'
+            assert (String) mockServer.latestDynamicTimeRequest.getEntity() == '{"prop1": "'+expectedPostRequest+'"}'
+            assert mockServer.latestDynamicTimeRequest.getHeaderString("header2") == '"'+expectedPostRequest+'"'
+            assert mockServer.latestDynamicTimeRequest.getUri().toString() ==
+                    UriBuilder.fromUri(agent.getBaseURI().get())
+                            .path("empty")
+                            .queryParam("param3", '"'+expectedPostRequest+'"')
+                            .build().toString()
+        }
+
+        and: "The correct values have been generated for the edge-cases"
+        Instant instant = Instant.ofEpochMilli(timerService.getCurrentTimeMillis())
+        conditions.eventually {
+            assert mockServer.latestDynamicTimeRequest.getEntity() == '{"prop1": "'+doDynamicTimeReplace("\${time}".toString(), instant)+'"}'
+            assert mockServer.latestDynamicTimeRequest.getHeaderString("header2") == '"'+doDynamicTimeReplace("\${time:-PT1H:yyyy-MM-dd HH:mm}".toString(), instant)+'"'
+            assert mockServer.latestDynamicTimeRequest.getUri().toString() ==
+                    UriBuilder.fromUri(agent.getBaseURI().get())
+                            .path("empty")
+                            .queryParam("param3", '"'+doDynamicTimeReplace("\${time:PT0H:yyyy-MM-dd HH:mm}".toString(), instant)+'"')
+                            .build().toString()
+        }
+
+        when: "We add a new attribute, that tests all the different formatting types"
+
+        asset.addAttributes(new Attribute<>("formattingTest", TEXT)
+                .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                                .setPath("empty")
+                                .setMethod(HTTPMethod.POST)
+                                .setPollingMillis(500)
+                                .setWriteValue('{"prop1": "${time}"}')
+                                .setHeaders(new MultivaluedStringMap(
+                                        [
+                                                ("header2") : ['"${time:PT0S:EPOCH_MILLIS}"']
+                                        ]
+                                ))
+                                .setQueryParameters(new MultivaluedStringMap(
+                                        [
+                                                ("param3") : ['"${time:PT0S:EPOCH_SECONDS}"']
+                                        ]
+                                ))
+                        )
+                )
+        )
+
+        and: "The asset is merged"
+        assetStorageService.merge(asset);
+
+        then: "The correct values have been replaced"
+        conditions.eventually {
+            assert mockServer.latestDynamicTimeRequest.getEntity() == '{"prop1": "'+doDynamicTimeReplace("\${time}".toString(), instant)+'"}'
+            assert mockServer.latestDynamicTimeRequest.getHeaderString("header2") == '"'+doDynamicTimeReplace("\${time:PT0S:EPOCH_MILLIS}".toString(), instant)+'"'
+            assert mockServer.latestDynamicTimeRequest.getUri().toString() ==
+                    UriBuilder.fromUri(agent.getBaseURI().get())
+                            .path("empty")
+                            .queryParam("param3", '"'+doDynamicTimeReplace("\${time:PT0S:EPOCH_SECONDS}".toString(), instant)+'"')
+                            .build().toString()
+        }
+    }
 }
+

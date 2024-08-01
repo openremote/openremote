@@ -26,39 +26,38 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
+
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
+
 
 /**
  * A filter for injecting query parameters into the request URI. The query parameters are extracted from the request
  * property {@link #QUERY_PARAMETERS_PROPERTY}. Any {@link Constants#DYNAMIC_VALUE_PLACEHOLDER} in the query parameters
- * will be replaced with the {@link #DYNAMIC_VALUE_PROPERTY} from the request. Any
- * {@link Constants#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the query parameters will be replaced with the current system
- * time in the specified format with optional offset.
+ * will be replaced with the {@link #DYNAMIC_VALUE_PROPERTY} from the request.
+ *
+ * Dynamic time replacement has been moved to {@link DynamicTimeInjectionFilter#filter(ClientRequestContext)}.
+ * This filter is required to be ran <b>after</b> {@link DynamicTimeInjectionFilter}.
  */
 @Provider
-public class QueryParameterInjectorFilter implements ClientRequestFilter {
+public class DynamicValueInjectorFilter implements ClientRequestFilter {
 
     /**
      * Set a property on the request using this name to inject dynamic string values into
      */
-    public static final String DYNAMIC_VALUE_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".dynamicValue";
+    public static final String DYNAMIC_VALUE_PROPERTY = DynamicValueInjectorFilter.class.getName() + ".dynamicValue";
 
     /**
      * Set a property on the request using this name to inject query parameters; the value should be a {@link
      * MultivaluedMap}.
      */
-    public static final String QUERY_PARAMETERS_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".params";
-
-    public static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
+    public static final String QUERY_PARAMETERS_PROPERTY = DynamicValueInjectorFilter.class.getName() + ".params";
 
     @SuppressWarnings("unchecked")
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
+
+        // Query Parameters
 
         MultivaluedMap<String, String> queryParameters = (MultivaluedMap<String, String>) requestContext.getProperty(QUERY_PARAMETERS_PROPERTY);
         String dynamicValue = requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) != null ? (String) requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) : "";
@@ -70,32 +69,28 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
         UriBuilder uriBuilder = UriBuilder.fromUri(requestContext.getUri());
 
         queryParameters.forEach((name, values) -> {
-
-            Object[] formattedValues = values.stream().map(v -> {
-                v = v.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue);
-
-                Matcher matcher = DYNAMIC_TIME_PATTERN.matcher(v);
-
-                if (matcher.find()) {
-                    long millisToAdd = 0L;
-                    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-                    if (matcher.groupCount() > 0) {
-                        dateTimeFormatter = DateTimeFormatter.ofPattern(matcher.group(1));
-                    }
-                    if (matcher.groupCount() == 2) {
-                        millisToAdd = Long.parseLong(matcher.group(2));
-                    }
-
-                    v = v.replaceAll(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP, dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault())));
-                }
-
-                return v;
-            }).toArray();
-
+            Object[] formattedValues = values
+                    .stream()
+		            .map(v -> v.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue))
+		            .toArray();
             uriBuilder.queryParam(name, formattedValues);
         });
 
         requestContext.setUri(uriBuilder.build());
+
+        // Headers
+
+        if (requestContext.getHeaders() != null) {
+            requestContext.getHeaders().forEach((key, values) -> {
+                List<Object> replacedValues = values.stream().map(val -> {
+                    if (val instanceof String) {
+                        return ((String) val).replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue);
+                    } else {
+                        return val;
+                    }
+                }).toList();
+                requestContext.getHeaders().replace(key, replacedValues);
+            });
+        }
     }
 }

@@ -28,7 +28,7 @@ import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.container.web.OAuthServerResponse
-import org.openremote.container.web.QueryParameterInjectorFilter
+import org.openremote.container.web.DynamicValueInjectorFilter
 import org.openremote.container.web.WebTargetBuilder
 import org.openremote.model.util.ValueUtil
 import spock.lang.Shared
@@ -484,13 +484,13 @@ class WebTargetTest extends Specification {
         assert response.getStatus() == 200
 
         when: "a request is made to the server with additional query parameters"
-        params = target.getConfiguration().getProperty(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY) as MultivaluedMap<String, String>
+        params = target.getConfiguration().getProperty(DynamicValueInjectorFilter.QUERY_PARAMETERS_PROPERTY) as MultivaluedMap<String, String>
         params = new MultivaluedHashMap<String, String>(params)
         params.add("param1", "param1Value2")
         params.add("param3", "param3Value1")
 
         response = target.path("get")
-            .property(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY, params)
+            .property(DynamicValueInjectorFilter.QUERY_PARAMETERS_PROPERTY, params)
             .request()
             .get()
 
@@ -512,7 +512,7 @@ class WebTargetTest extends Specification {
 
         when: "a request is made to the server"
         def response = target.request()
-            .property(QueryParameterInjectorFilter.DYNAMIC_VALUE_PROPERTY, "dynamicValue1")
+            .property(DynamicValueInjectorFilter.DYNAMIC_VALUE_PROPERTY, "dynamicValue1")
             .get()
 
         then: "the response should be a 200 OK indicating the query parameters reached the server"
