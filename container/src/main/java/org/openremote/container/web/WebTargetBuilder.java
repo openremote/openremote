@@ -20,6 +20,8 @@
 package org.openremote.container.web;
 
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -36,6 +38,7 @@ import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -68,6 +71,7 @@ public class WebTargetBuilder {
     protected Map<String, List<String>> injectHeaders;
     protected Map<String, List<String>> injectQueryParameters;
     protected boolean followRedirects = false;
+	protected List<ClientRequestFilter> filters = new ArrayList<>();
 
     public WebTargetBuilder(ResteasyClient client, URI baseUri) {
         this.client = client;
@@ -172,6 +176,10 @@ public class WebTargetBuilder {
             target.register(new FollowRedirectFilter());
         }
 
+		if(this.filters != null && !this.filters.isEmpty()){
+			this.filters.forEach(target::register);
+		}
+
         return target;
     }
 
@@ -199,7 +207,7 @@ public class WebTargetBuilder {
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .register(new JacksonConfig());
+		    .register(new JacksonConfig());
 
         if (executorService != null) {
             clientBuilder.executorService(executorService);
@@ -211,6 +219,15 @@ public class WebTargetBuilder {
 
         return clientBuilder.build();
     }
+
+	public WebTargetBuilder setFilters(ClientRequestFilter... filters) {
+		this.filters = List.of(filters);
+		return this;
+	}
+
+	public List<ClientRequestFilter> getFilters() {
+		return filters;
+	}
 
     public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map, MultivaluedMap<K, V> multivaluedMap) {
         for (Map.Entry<K, List<W>> e : map.entrySet()) {
