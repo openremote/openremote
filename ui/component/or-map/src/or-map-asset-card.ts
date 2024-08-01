@@ -23,6 +23,8 @@ import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { getMarkerIconAndColorFromAssetType } from "./util";
 import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
+import "./markers/or-map-asset-card-trip-section";
+import { OrMap } from ".";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -74,6 +76,9 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
     @property({type: Object})
     public config?: MapAssetCardConfig;
+
+    @property({type: Object})
+    public map?: OrMap;
 
     @property({type: Object})
     public markerconfig?: MapMarkerAssetConfig;
@@ -175,6 +180,9 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                         })}
                     </ul>
                 </div>
+                ${this.asset.type == "CarAsset" ? html`
+                    <or-map-asset-card-trip-section .assetId="${this.assetId}"></or-map-asset-card-trip-section>` : html``}
+                
                 ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
                     <div id="footer">
                         <or-mwc-input .type="${InputType.BUTTON}" label="viewAsset" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
