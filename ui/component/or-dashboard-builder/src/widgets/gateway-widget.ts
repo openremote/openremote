@@ -52,7 +52,7 @@ export class GatewayWidget extends OrWidget {
     protected widgetConfig!: GatewayWidgetConfig;
 
     @state()
-    protected _loading = false;
+    protected _loading = true;
 
     @state()
     protected _activeTunnel?: GatewayTunnelInfo;
@@ -88,7 +88,9 @@ export class GatewayWidget extends OrWidget {
     disconnectedCallback() {
         if(this._activeTunnel) {
             if(this._startedByUser) {
-                this._stopTunnel(this._activeTunnel);
+                this._stopTunnel(this._activeTunnel).then(() => {
+                    console.warn("Stopped the active tunnel, as it was created through the widget.")
+                });
             } else {
                 console.warn("Keeping the active tunnel open, as it is not started through the widget.")
             }
@@ -96,9 +98,26 @@ export class GatewayWidget extends OrWidget {
         super.disconnectedCallback();
     }
 
-    protected willUpdate(changedProps: PropertyValues) {
-        if (changedProps.has("_activeTunnel") && !!this._activeTunnel) {
-            this._navigateToTunnel(this._activeTunnel);
+    protected firstUpdated(_changedProps: PropertyValues) {
+        if(this.widgetConfig) {
+
+            // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
+            setTimeout(() => {
+
+                // Check if the tunnel is already active upon widget initialization
+                const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+                this._getActiveTunnel(tunnelInfo).then(info => {
+                    if(info) {
+                        console.log("Existing tunnel found!", info);
+                        this._setActiveTunnel(info, true)
+                    }
+                }).catch(e => {
+                    console.error(e);
+                }).finally(() => {
+                    this._loading = false;
+                });
+
+            }, 500)
         }
     }
 
@@ -110,10 +129,10 @@ export class GatewayWidget extends OrWidget {
                     ${when(this._loading, () => html`
                         <or-loading-indicator></or-loading-indicator>
                     `, () => {
-                        if(this._activeTunnel) {
+                        if (this._activeTunnel) {
                             return html`
-                                
-                                <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}"
+
+                                <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
                                 ></or-mwc-input>
                                 
@@ -188,6 +207,17 @@ export class GatewayWidget extends OrWidget {
     }
 
     /**
+     * Internal function to set the active tunnel.
+     * Navigates the user to the tunnel after updating. This can be disabled using the {@link silent} parameter.
+     */
+    protected _setActiveTunnel(tunnelInfo?: GatewayTunnelInfo, silent = false) {
+        this._activeTunnel = tunnelInfo;
+        if(tunnelInfo && !silent) {
+            this._navigateToTunnel(tunnelInfo);
+        }
+    }
+
+    /**
      * Function that tries to start the tunnel. It checks the configuration beforehand,
      * and acts as a controller to call the correct functions throughout the starting process.
      */
@@ -201,7 +231,7 @@ export class GatewayWidget extends OrWidget {
 
                 if (activeTunnel) {
                     console.log("Found an active tunnel!", activeTunnel);
-                    this._activeTunnel = activeTunnel;
+                    this._setActiveTunnel(activeTunnel);
                     this._loading = false;
 
                 } else {
@@ -209,7 +239,7 @@ export class GatewayWidget extends OrWidget {
 
                         if (newTunnel) {
                             console.log("Started a new tunnel!", newTunnel);
-                            this._activeTunnel = newTunnel;
+                            this._setActiveTunnel(newTunnel);
                             this._startedByUser = true;
 
                         } else {
@@ -243,12 +273,18 @@ export class GatewayWidget extends OrWidget {
 
     /**
      * Internal function that requests the Manager API for the active tunnel based on the {@link GatewayTunnelInfo} parameter.
+     * Returns `undefined` if no tunnel could be found on the Manager instance.
      */
     protected async _getActiveTunnel(info: GatewayTunnelInfo): Promise<GatewayTunnelInfo | undefined> {
         if (!info.realm || !info.gatewayId || !info.target || !info.targetPort) {
             throw new Error("Could not get active tunnel, as some provided information was not set.")
         }
-        return (await manager.rest.api.GatewayServiceResource.getActiveTunnelInfo(info.realm, info.gatewayId, info.target, info.targetPort)).data;
+        const response = await manager.rest.api.GatewayServiceResource.getActiveTunnelInfo(info.realm, info.gatewayId, info.target, info.targetPort);
+        if(response.status === 204) {
+            return undefined;
+        } else {
+            return response.data;
+        }
     }
 
     /**
@@ -259,7 +295,7 @@ export class GatewayWidget extends OrWidget {
         this._loading = true;
         this._stopTunnel(tunnelInfo)
             .then(() => {
-                this._activeTunnel = undefined;
+                this._setActiveTunnel(undefined);
                 this._startedByUser = false;
             })
             .catch(e => {

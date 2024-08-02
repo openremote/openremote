@@ -22,8 +22,10 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
+import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.model.ContainerService;
@@ -39,19 +41,18 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.event.shared.*;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,6 +82,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, GatewayIOClient> clientRealmMap = new HashMap<>();
     protected GatewayTunnelFactory gatewayTunnelFactory;
+    protected Map<String, Map<AttributeRef, Long>> clientAttributeTimestamps = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -188,14 +190,22 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
+                    if (connection.isDisabled()) {
+                        clientAttributeTimestamps.remove(connection.getLocalRealm());
+                    }
                 case CREATE:
                     connectionRealmMap.put(connection.getLocalRealm(), connection);
                     if (!connection.isDisabled()) {
                         clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
                     }
+                    // Gateway connection can become disabled if an error occurred during creation
+                    if (!connection.isDisabled()) {
+                        clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
+                    }
                     break;
                 case DELETE:
                     connectionRealmMap.remove(connection.getLocalRealm());
+                    clientAttributeTimestamps.remove(connection.getLocalRealm());
                     client = clientRealmMap.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
@@ -256,7 +266,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             clientEventService.addInternalSubscription(
                 getClientSessionKey(connection)+"Attribute",
                 AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
+                getOutboundAttribueEventFilter(connection),
                 attributeEvent ->
                     sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
 
@@ -270,6 +280,89 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         return null;
+    }
+
+    protected EventFilter<AttributeEvent> getOutboundAttribueEventFilter(GatewayConnection gatewayConnection) {
+
+        // Convert filters to predicates for efficiency
+        List<Pair<AssetQueryPredicate, GatewayAttributeFilter>> predicatesWithFilters;
+        if (gatewayConnection.getAttributeFilters() != null && !gatewayConnection.getAttributeFilters().isEmpty()) {
+            predicatesWithFilters = gatewayConnection.getAttributeFilters()
+                .stream()
+                .map(filter -> {
+                    AssetQueryPredicate predicate = filter.getMatcher() != null ? new AssetQueryPredicate(timerService, assetStorageService, filter.getMatcher()) : null;
+                    return new Pair<>(predicate, filter);
+                })
+                .toList();
+        } else {
+            predicatesWithFilters = Collections.emptyList();
+        }
+
+        return ev -> {
+            if (!gatewayConnection.getLocalRealm().equals(ev.getRealm())) {
+                return null;
+            }
+
+            // Allow attribute events that came from the central manager to be returned
+            if (getClass().getName().equals(ev.getSource())) {
+                return ev;
+            }
+
+            boolean allowEvent = predicatesWithFilters.stream()
+                .filter(predicateWithFilter -> {
+                    if (predicateWithFilter.key == null) {
+                        // Match all
+                        return true;
+                    }
+                    return predicateWithFilter.key.test(ev);
+                })
+                .findFirst()
+                .map(predicatesWithFilter -> {
+                    GatewayAttributeFilter filter = predicatesWithFilter.value;
+                    if (filter.isAllow()) {
+                        return true;
+                    }
+                    if (filter.getSkipAlways() != null && filter.getSkipAlways()) {
+                        return false;
+                    }
+                    if (filter.getValueChange() != null && filter.getValueChange()) {
+                        if (!Objects.equals(ev.getValue(), ev.getOldValue())) {
+                            LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' value change has allowed attribute event: " + ev.getRef());
+                            return true;
+                        }
+                    }
+                    if (filter.getDelta() != null) {
+                        if (Number.class.isAssignableFrom(ev.getTypeClass())) {
+                            double delta = filter.getDelta();
+                            double value = ev.getValue(Double.class).orElse(0d);
+                            double oldValue = ev.getOldValue(Double.class).orElse(0d);
+                            if (Math.abs(value - oldValue) > Math.abs(delta)) {
+                                LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' delta setting has allowed attribute event: " + ev.getRef());
+                                return true;
+                            }
+                        }
+                    }
+                    if (filter.getDurationParsed().isPresent()) {
+                        boolean allow = filter.getDurationParsed().map(durationMillis -> {
+                            Map<AttributeRef, Long> attributeTimestamps = clientAttributeTimestamps.get(gatewayConnection.getLocalRealm());
+                            Long lastSendMillis = attributeTimestamps.get(ev.getRef());
+                            if (lastSendMillis == null || timerService.getCurrentTimeMillis() - lastSendMillis > durationMillis) {
+                                LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' duration setting has allowed attribute event: " + ev.getRef());
+                                attributeTimestamps.put(ev.getRef(), timerService.getCurrentTimeMillis());
+                                return true;
+                            }
+                            LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' duration setting has blocked attribute event: " + ev.getRef());
+                            return false;
+                        }).orElse(true);
+
+                        return allow;
+                    }
+
+                    return false;
+                }).orElse(true);
+
+            return allowEvent ? ev : null;
+        };
     }
 
     protected void destroyGatewayClient(GatewayConnection connection, GatewayIOClient client) {

@@ -30,10 +30,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
-import org.openremote.model.gateway.GatewayClientResource
-import org.openremote.model.gateway.GatewayConnection
-import org.openremote.model.gateway.GatewayTunnelInfo
-import org.openremote.model.gateway.GatewayTunnelStartRequestEvent
+import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
@@ -751,7 +748,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
         def container = startContainer(defaultConfig(), defaultServices())
+        def timerService = container.getService(TimerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
@@ -796,12 +795,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway client connection is created to connect the city realm to the gateway in the building realm"
         def gatewayConnection = new GatewayConnection(
+            managerTestSetup.realmCityName,
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
             gateway.getClientId().orElse(""),
             gateway.getClientSecret().orElse(""),
             false,
+            null,
             false
         )
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
@@ -909,7 +910,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "we subscribe to attribute events"
         List<AttributeEvent> attributeEvents = []
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
+        def subscriptionId = clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
             attributeEvents.add(attributeEvent)
         })
 
@@ -933,6 +934,106 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
+        }
+
+        when: "attribute filters are added to the gateway connection and persisted"
+        gatewayConnection.setAttributeFilters([
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(LightAsset.class)).setValueChange(true),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(PeopleCounterAsset.class).attributeNames(PeopleCounterAsset.COUNT_TOTAL.name, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name))
+                    .setDelta(1.5d),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().names("Microphone 2")).setDuration("PT1M"),
+                // Ignore any other attribute
+                new GatewayAttributeFilter().setSkipAlways(true)
+        ])
+        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
+        def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
+
+        then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
+        conditions.eventually {
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+            GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert connector != null
+            assert !connector.initialSyncInProgress
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has not changed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has changed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, false))
+
+        then: "the value should now have been forwarded to the central instance"
+        conditions.eventually {
+            def mirroredLight2 = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light2Id, false))
+            assert mirroredLight2 != null
+            assert !mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap{it.getValue()}.orElse(true)
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true)}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by less than delta"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, 0.5d))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) - 0.5d) < 0.000001d}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by more than delta"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, -1.1d))
+
+        then: "the value should have been forwarded to the central instance"
+        conditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a duration filter"
+        attributeEvents.clear()
+        microphone2 = assetStorageService.find(microphone2.id)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 50d))
+
+        then: "the value should have been forwarded to the central instance (as no prior value has been sent since the filter was created)"
+        conditions.eventually {
+            assert attributeEvents.any{it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for the same attribute before the duration filter has elapsed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 60d))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 60d) < 0.000001d}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute that matches the catch all and skip filter"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.area1Id, Asset.NOTES, "Some test notes"))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.area1Id && it.name == Asset.NOTES.name && "Some test notes".equals(it.value.orElse(null))}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.area1Id, false) && it.name == Asset.NOTES.name}
+        }
+
+        cleanup: "Remove any subscriptions created"
+        if (clientEventService != null && subscriptionId != null) {
+            clientEventService.cancelInternalSubscription(subscriptionId)
         }
     }
 

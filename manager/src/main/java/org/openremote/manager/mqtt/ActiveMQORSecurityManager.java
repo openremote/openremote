@@ -145,7 +145,7 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE, DELETE_NON_DURABLE_QUEUE ->
                 // All MQTT clients must be able to create addresses and queues (every session and subscription will create a queue within the topic address)
                 true;
-            case MANAGE, BROWSE -> false;
+            case MANAGE, BROWSE, VIEW, EDIT -> false;
         };
     }
 

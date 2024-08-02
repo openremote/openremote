@@ -34,6 +34,9 @@ export interface ProviderEnableResponse extends ProviderMessage {
     success: boolean;
 }
 
+/**
+ * Storage provider is a special case that must always be available and doesn't require init/enable logic
+ */
 export class Console {
 
     protected _realm: string;
@@ -65,11 +68,7 @@ export class Console {
         let consoleProviders = queryParams.get("consoleProviders");
         let autoEnableStr = queryParams.get("consoleAutoEnable");
 
-        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push", "storage"];
-
-        if (requestedProviders.indexOf("storage") < 0) {
-            requestedProviders.push("storage"); // Storage provider is essential to operation and should always be available
-        }
+        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push"];
         this._pendingProviderEnables = requestedProviders;
 
         // Look for existing console registration in local storage or just create a new one
@@ -273,7 +272,7 @@ export class Console {
     }
 
     public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean): Promise<any | null> {
-        if (!this._registration.providers!.hasOwnProperty(message.provider)) {
+        if (message.provider !== "storage" && !this._registration.providers!.hasOwnProperty(message.provider)) {
             console.debug("Invalid console provider '" + message.provider + "'");
             throw new Error("Invalid console provider '" + message.provider + "'");
         }
@@ -380,13 +379,30 @@ export class Console {
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
-        if (this.shellAndroid) {
-            // @ts-ignore
-            return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+        try {
+            if (this.shellAndroid) {
+                // @ts-ignore
+                return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+            }
+            if (this.shellApple) {
+                // @ts-ignore
+                return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+            }
+        } catch (e) {
+            console.error("Failed to send shell message towards console", e);
         }
-        if (this.shellApple) {
-            // @ts-ignore
-            return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+    }
+
+    /**
+     * Function that allows sending of custom types and messages towards the console.
+     * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
+     */
+    public _doSendGenericMessage(type: string, msg: any) {
+        const payload = { type: type, data: msg };
+        if (this.isMobile) {
+            this._postNativeShellMessage(payload);
+        } else {
+            console.warn("Failed to send generic message to console.", payload)
         }
     }
 

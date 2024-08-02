@@ -159,8 +159,10 @@ fetch(configURL).then(async (result) => {
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
+        const isAdmin = manager.isSuperUser() && manager.username === "admin";
+        const applyConfigToAdmin = appConfig.manager.applyConfigToAdmin !== undefined ? appConfig.manager.applyConfigToAdmin : true;
 
-        if (!(manager.isSuperUser() && manager.username === "admin") && appConfig.pages) {
+        if ((!isAdmin || applyConfigToAdmin) && appConfig.pages) {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {
@@ -231,6 +233,16 @@ fetch(configURL).then(async (result) => {
 
                 orAppConfig.realms[name] = { ...defaultRealm, header: headers, ...(realmConfig as RealmAppConfig) };
             });
+        }
+
+        // When the page is not present in the header, move the PageProvider to the end of the array.
+        // This is to prevent the landing page for the user not being visible in the header
+        const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
+        if(realmAppConfig) {
+            const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
+            orAppConfig.pages = pages
+                .filter(pageProvider => headerPaths.includes(pageProvider.name))
+                .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
         }
 
         // Check local storage for set language, otherwise use language set in config
