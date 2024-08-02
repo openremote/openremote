@@ -10,3 +10,11 @@ task installDist(type: Copy) {
     from project.buildDir
     into "${resolveProject(':manager').buildDir}/install/manager/web/${projectDir.name}"
 }
+
+task prepareUi() {
+    dependsOn clean, npmPrepare
+}
+
+task publishUi() {
+    dependsOn clean, npmPublish
+}

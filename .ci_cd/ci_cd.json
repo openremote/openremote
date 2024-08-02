@@ -13,7 +13,8 @@
 	"release": {
 		"distribute": {
 			"docker": "latest,$version",
-      "maven": "$version"
+			"maven": "$version",
+			"npm": "$version"
 		},
 		"deploy": {
 			"managerTag": "latest",
