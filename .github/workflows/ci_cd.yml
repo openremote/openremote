@@ -765,7 +765,7 @@ jobs:
         continue-on-error: true
 
       - name: Run npm publish command
-        if: steps.check_custom_project.outputs.files_exists != 'true'
+        if: ${{ steps.check_custom_project.outputs.files_exists != 'true' && github.event_name != 'pull_request' }}
         run: |
           VERSION=$NPM_TAG
           if [ "$VERSION" == "" ]; then
