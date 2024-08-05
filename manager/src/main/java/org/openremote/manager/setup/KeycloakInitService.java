@@ -25,6 +25,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.keycloak.KeycloakResource;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebTargetBuilder;
@@ -52,6 +53,8 @@ public class KeycloakInitService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(KeycloakInitService.class.getName());
 
+	private static final int PRIORITY = PersistenceService.PRIORITY - 10;
+
     @Override
     public void init(Container container) throws Exception {
         String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER, OR_IDENTITY_PROVIDER_DEFAULT);
@@ -75,7 +78,7 @@ public class KeycloakInitService implements ContainerService {
 
     @Override
     public int getPriority() {
-        return HIGH_PRIORITY - 100;
+        return PRIORITY;
     }
 
     public static void waitForKeycloak(Container container) {
@@ -115,6 +118,7 @@ public class KeycloakInitService implements ContainerService {
             try {
                 pingKeycloak(keycloakResource);
                 keycloakAvailable = true;
+	            LOG.info("Successfully connected to Keycloak server: " + keycloakServiceUri.build());
             } catch (Exception ex) {
                 LOG.info("Keycloak server not available, waiting...");
                 try {
