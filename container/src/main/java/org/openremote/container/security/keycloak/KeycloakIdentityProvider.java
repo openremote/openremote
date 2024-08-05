@@ -29,7 +29,6 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -67,8 +66,6 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static jakarta.ws.rs.core.Response.Status.Family.REDIRECTION;
-import static jakarta.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;

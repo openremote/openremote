@@ -50,7 +50,7 @@ public class ContainerExecutor extends ThreadPoolExecutor {
             // Wrap rejected handler to add logging
             (r, executor) -> {
                 // Log and discard
-                LOG.info("Container thread pool '" + executor + "' rejected execution of " + r);
+                LOG.fine("Container thread pool '" + executor + "' rejected execution of " + r);
                 rejectedExecutionHandler.rejectedExecution(r, executor);
             }
         );

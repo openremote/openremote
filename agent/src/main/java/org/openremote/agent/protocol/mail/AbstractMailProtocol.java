@@ -61,6 +61,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
         Optional<OAuthGrant> oAuthGrant = getAgent().getOAuthGrant();
         UsernamePassword userPassword = getAgent().getUsernamePassword().orElseThrow();
+        Optional<Boolean> startTLS = getAgent().getStartTLS();
 
         MailClientBuilder clientBuilder = new MailClientBuilder(
             container.getExecutorService(),
@@ -83,6 +84,8 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
 
         oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
             clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
+
+        startTLS.map(clientBuilder::setStartTls);
 
         mailClient = clientBuilder.build();
         mailClient.addConnectionListener(this::onConnectionEvent);

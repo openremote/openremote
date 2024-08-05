@@ -20,6 +20,7 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
@@ -77,8 +78,8 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     protected ConcurrentMap<String, Set<AttributeRef>> userIDAttributeRefs = new ConcurrentHashMap<>();
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
         executorService = container.getExecutorService();
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);

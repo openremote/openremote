@@ -32,7 +32,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @Table(name = "SYSLOG_EVENT")
 public class SyslogEvent extends SharedEvent {
 
-    static public class LevelCategoryFilter extends EventFilter<SyslogEvent> {
+    static public class LevelCategoryFilter implements EventFilter<SyslogEvent> {
 
         public static final String FILTER_TYPE = "level-category-filter";
 
@@ -46,11 +46,6 @@ public class SyslogEvent extends SharedEvent {
         public LevelCategoryFilter(SyslogLevel level, SyslogCategory... categories) {
             this.level = level;
             this.categories = categories != null ? Arrays.asList(categories) : Collections.EMPTY_LIST;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
         }
 
         public List<SyslogCategory> getCategories() {

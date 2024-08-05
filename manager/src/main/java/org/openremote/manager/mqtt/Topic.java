@@ -38,7 +38,7 @@ public class Topic {
     protected List<String> tokens;
 
     public static Topic fromAddress(String address, WildcardConfiguration wildcardConfiguration) throws IllegalArgumentException {
-        return Topic.parse(MQTTUtil.convertCoreAddressToMqttTopicFilter(address, wildcardConfiguration));
+        return Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(address, wildcardConfiguration));
     }
 
     public static Topic parse(String topic) throws IllegalArgumentException {

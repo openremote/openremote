@@ -19,6 +19,10 @@
  */
 package org.openremote.manager.provisioning;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -28,22 +32,37 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ProvisioningService implements ContainerService {
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+
+@SuppressWarnings("rawtypes")
+public class ProvisioningService extends RouteBuilder implements ContainerService {
 
     protected static final Logger LOG = Logger.getLogger(ProvisioningService.class.getName());
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
+    protected List<ProvisioningConfig> provisioningConfigs;
 
     @Override
     public int getPriority() {
         return 0;
+    }
+
+    @Override
+    public void configure() throws Exception {
+        from(PERSISTENCE_TOPIC)
+            .routeId("Persistence-MonitorProvisioningConfigs")
+            .filter(isPersistenceEventForEntityType(ProvisioningConfig.class))
+            .process(exchange -> {
+                synchronized (this) {
+                    provisioningConfigs = null;
+                }
+            });
     }
 
     @Override
@@ -55,6 +74,8 @@ public class ProvisioningService implements ContainerService {
         container.getService(ManagerWebService.class).addApiSingleton(
             new ProvisioningResourceImpl(this, timerService, identityService)
         );
+
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -73,7 +94,7 @@ public class ProvisioningService implements ContainerService {
             // Do standard JSR-380 validation on the config
             Set<ConstraintViolation<ProvisioningConfig<?, ?>>> validationFailures = ValueUtil.validate(provisioningConfig);
 
-            if (validationFailures.size() > 0) {
+            if (!validationFailures.isEmpty()) {
                 String msg = "Provisioning config merge failed as failed constraint validation: config=" + provisioningConfig;
                 ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
                 LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), ex);
@@ -99,12 +120,20 @@ public class ProvisioningService implements ContainerService {
         });
     }
 
-    public List<ProvisioningConfig> getProvisioningConfigs() {
-            return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
+    public synchronized List<ProvisioningConfig> getProvisioningConfigs() {
+        if (provisioningConfigs == null) {
+            updateProvisioningConfigs();
+        }
+
+        return provisioningConfigs;
+    }
+
+    protected void updateProvisioningConfigs() {
+        provisioningConfigs = persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
                     "select pc from " + ProvisioningConfig.class.getSimpleName() + " pc " +
                         "order by pc.name desc",
                     ProvisioningConfig.class)
-                    .getResultList());
+                .getResultList());
     }
 }

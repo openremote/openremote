@@ -42,7 +42,13 @@ export class WidgetService {
 
     // Method used to correct the OrWidgetConfig specification
     // So, if certain fields are removed or invalid, it will be corrected by merging the object with the default OrWidgetConfig.
+    // Will only return a different object if it actually changes. This prevents child objects being returned in a different order.
     public static correctToConfigSpec(manifest: WidgetManifest, widgetConfig: WidgetConfig) {
-        return Util.mergeObjects(manifest.getDefaultConfig(), widgetConfig, false) as WidgetConfig;
+        const newConfig = Util.mergeObjects(manifest.getDefaultConfig(), widgetConfig, false) as WidgetConfig;
+        if(Util.objectsEqual(newConfig, widgetConfig)) {
+            return widgetConfig;
+        } else {
+            return newConfig;
+        }
     }
 }

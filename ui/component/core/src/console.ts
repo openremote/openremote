@@ -34,6 +34,9 @@ export interface ProviderEnableResponse extends ProviderMessage {
     success: boolean;
 }
 
+/**
+ * Storage provider is a special case that must always be available and doesn't require init/enable logic
+ */
 export class Console {
 
     protected _realm: string;
@@ -65,11 +68,7 @@ export class Console {
         let consoleProviders = queryParams.get("consoleProviders");
         let autoEnableStr = queryParams.get("consoleAutoEnable");
 
-        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push", "storage"];
-
-        if (requestedProviders.indexOf("storage") < 0) {
-            requestedProviders.push("storage"); // Storage provider is essential to operation and should always be available
-        }
+        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push"];
         this._pendingProviderEnables = requestedProviders;
 
         // Look for existing console registration in local storage or just create a new one
@@ -273,7 +272,7 @@ export class Console {
     }
 
     public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean): Promise<any | null> {
-        if (!this._registration.providers!.hasOwnProperty(message.provider)) {
+        if (message.provider !== "storage" && !this._registration.providers!.hasOwnProperty(message.provider)) {
             console.debug("Invalid console provider '" + message.provider + "'");
             throw new Error("Invalid console provider '" + message.provider + "'");
         }

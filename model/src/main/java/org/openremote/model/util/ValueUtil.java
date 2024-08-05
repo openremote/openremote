@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -431,7 +432,7 @@ public class ValueUtil {
     }
 
     public static <T> T convert(Object object, Class<T> targetType) {
-        if (object == null) {
+        if (object == null || object instanceof NullNode) {
             return null;
         }
         if (targetType == object.getClass()) {

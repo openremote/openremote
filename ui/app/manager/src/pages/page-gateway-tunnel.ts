@@ -377,9 +377,9 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                return "//" + info.id + "." + window.location.host;
+                return "//" + info.id + "." + (info.hostname ? info.hostname : window.location.hostname);
             case GatewayTunnelInfoType.TCP:
-                return info.id + "." + window.location.hostname + ":" + info.assignedPort;
+                return (info.hostname ? info.hostname : window.location.hostname) + ":" + info.assignedPort;
         }
     }
 

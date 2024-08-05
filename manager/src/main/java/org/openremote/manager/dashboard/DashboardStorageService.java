@@ -88,6 +88,7 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * @param dashboardQuery see {@link DashboardQuery} for specification
      * @return List of dashboards present in the database
      */
+    @SuppressWarnings({"unchecked", "SqlSourceToSinkFlow"})
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
 
         return (Dashboard[]) persistenceService.doReturningTransaction((em) -> {

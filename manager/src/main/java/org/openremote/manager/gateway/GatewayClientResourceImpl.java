@@ -28,6 +28,8 @@ import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.http.RequestParams;
 
 import jakarta.ws.rs.WebApplicationException;
+import org.openremote.model.query.filter.RealmPredicate;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -82,10 +84,19 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
 
     @Override
     public void setConnection(RequestParams requestParams, String realm, GatewayConnection connection) {
+        if (!realm.equals(getAuthenticatedRealmName()) && !isSuperUser()) {
+            throw new WebApplicationException("Gateway connection can only be created in the users realm", FORBIDDEN);
+        }
+
         connection.setLocalRealm(realm);
 
-        if (!connection.getLocalRealm().equals(getAuthenticatedRealmName()) && !isSuperUser()) {
-            throw new WebApplicationException(FORBIDDEN);
+        // Force realm of any attribute filters
+        if (connection.getAttributeFilters() != null) {
+            connection.getAttributeFilters().forEach(filter -> {
+                if (filter.getMatcher() != null) {
+                    filter.getMatcher().realm(new RealmPredicate(realm));
+                }
+            });
         }
 
         try {

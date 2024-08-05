@@ -53,6 +53,7 @@ public class MailClientBuilder {
     protected String user;
     protected String password;
     protected boolean deleteMessageOnceProcessed;
+    protected boolean startTls;
     protected Properties properties = new Properties();
 
     public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port) {
@@ -79,6 +80,12 @@ public class MailClientBuilder {
         setProperty("mail.imap.sasl.enable", "true");
         setProperty("auth.login.disable", "true");
         setProperty("auth.plain.disable", "true");
+        return this;
+    }
+
+    public MailClientBuilder setStartTls(boolean startTls) {
+        this.startTls = startTls;
+        setProperty("mail." + protocol + ".starttls.enable", startTls);
         return this;
     }
 
@@ -184,6 +191,10 @@ public class MailClientBuilder {
         return preferHTML;
     }
 
+    public boolean isStartTls() {
+        return startTls;
+    }
+
     public Properties getProperties() {
         return properties;
     }
@@ -192,7 +203,7 @@ public class MailClientBuilder {
         return new MailClient(this);
     }
 
-    UsernamePassword getAuth() throws SocketException, NullPointerException {
+    public UsernamePassword getAuth() throws SocketException, NullPointerException {
         Objects.requireNonNull(user, "User must be supplied");
 
         if (oAuthGrant != null) {
