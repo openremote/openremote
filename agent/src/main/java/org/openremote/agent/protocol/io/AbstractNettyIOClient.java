@@ -120,7 +120,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+        public void channelRead0(ChannelHandlerContext ctx, T msg) {
             client.onMessageReceived(msg);
         }
     }
@@ -145,7 +145,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIOClient.class);
-    protected final List<Consumer<T>> messageConsumers = new ArrayList<>();
+    protected final List<Consumer<T>> messageConsumers = new CopyOnWriteArrayList<>();
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected Channel channel;
@@ -220,21 +220,23 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
             // Connection future will timeout so we just wait for it
             Future<Void> connectFuture = doConnect();
-            connectFuture.get();
+            connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
             if (ex != null) {
-                LOG.log(Level.INFO, "Connection attempt failed: " + getClientUri(), ex);
                 // Cleanup resources
                 doDisconnect();
             } else {
+                boolean disconnected = true;
                 synchronized (this) {
                     if (connectionStatus == ConnectionStatus.CONNECTING) {
                         LOG.fine("Connection attempt success: " + getClientUri());
                         onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                    } else {
-                        doDisconnect();
+                        disconnected = false;
                     }
+                }
+                if (disconnected) {
+                    doDisconnect();
                 }
             }
         });
@@ -355,25 +357,19 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void addMessageConsumer(Consumer<T> messageConsumer) {
-        synchronized (messageConsumers) {
-            if (!messageConsumers.contains(messageConsumer)) {
-                messageConsumers.add(messageConsumer);
-            }
+        if (!messageConsumers.contains(messageConsumer)) {
+            messageConsumers.add(messageConsumer);
         }
     }
 
     @Override
     public void removeMessageConsumer(Consumer<T> messageConsumer) {
-        synchronized (messageConsumers) {
-            messageConsumers.remove(messageConsumer);
-        }
+        messageConsumers.remove(messageConsumer);
     }
 
     @Override
     public void removeAllMessageConsumers() {
-        synchronized (messageConsumers) {
-            messageConsumers.clear();
-        }
+        messageConsumers.clear();
     }
 
     /**
