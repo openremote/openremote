@@ -350,6 +350,12 @@ const style = css`
     }
 `;
 
+/**
+ * # Chart
+ * ### `<or-chart>` - `OrChart`
+ *
+ * Chart component using the [ChartJS](https://www.chartjs.org) library.
+ */
 @customElement("or-chart")
 export class OrChart extends translate(i18next)(LitElement) {
 
@@ -459,6 +465,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     updated(changedProperties: PropertyValues) {
+        console.log(changedProperties);
+
         super.updated(changedProperties);
 
         if (changedProperties.has("realm")) {
@@ -582,6 +590,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
             const mergedOptions = Util.mergeObjects(options, this.chartOptions, false);
 
+            console.log("Creating a new chart!");
             this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, mergedOptions as ChartConfiguration<"line", ScatterDataPoint[]>);
         } else {
             if (changedProperties.has("_data")) {
@@ -1066,7 +1075,8 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || !this.datapointQuery) {
+        if (this._loading || this._data || !this.assetAttributes || !this.assets || (this.assets.length === 0 && !this.dataProvider) || (this.assetAttributes.length === 0 && !this.dataProvider) || (!this.datapointQuery && !this.dataProvider)) {
+            console.warn("Cannot load chart data.");
             return;
         }
 
@@ -1096,6 +1106,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 dataset.forEach((set) => { data.push(set); });
             });
         } else {
+            console.log(this.assetAttributes);
             promises = this.assetAttributes.map(async ([assetIndex, attribute], index) => {
 
                 const asset = this.assets[assetIndex];

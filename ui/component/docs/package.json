@@ -1,0 +1,34 @@
+{
+  "name": "@openremote/docs",
+  "version": "1.0.0",
+  "description": "OpenRemote 3.x UI documentation",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js",
+    "./custom-elements.json": "./custom-elements.json"
+  },
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "scripts": {
+    "build": "cem analyze",
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx tsc -b",
+    "serve": "cem analyze --watch"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@custom-elements-manifest/analyzer": "^0.10.3",
+    "@openremote/util": "workspace:*",
+    "cem-plugin-expanded-types": "^1.3.2",
+    "lit": "^2.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

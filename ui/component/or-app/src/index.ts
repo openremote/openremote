@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
-import {AppConfig, Page, RealmAppConfig, router} from "./types";
+import {AppConfig, Page, PageProvider, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -47,14 +47,30 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     loadTranslations: ["or"]
 };
 
+/**
+ * # App
+ * ### `<or-app>` - `OrApp`
+ *
+ * Wrapper for OpenRemote web apps, that includes initialization of the Manager API (HTTP and WS), <br />
+ * store management using [Redux](https://redux.js.org), and processing the `manager_config.json` file.
+ *
+ * **Warning:** Should not be initialized using `<or-app>` HTML tag, but using the `OrApp` constructor.
+ */
 @customElement("or-app")
 export class OrApp<S extends AppStateKeyed> extends LitElement {
 
+    protected OFFLINE_PAGE_ID: string = "offline-page";
+
+    /** App configuration JSON object to set up the pages, header items, and languages.
+     * You can use the RealmAppConfig field to adjust these options per realm. */
     @property({type: Object})
     public appConfig?: AppConfig<S>;
 
+    /** Callback function that overrides the appConfig attribute.
+     * This is preferred sometimes to dynamically adjust the config. */
     public appConfigProvider?: (manager: Manager) => AppConfig<S>;
 
+    /** Manager config JSON object for adjusting deployment-targeted options such as managerUrl, realm, mapType, autoLogin etc. */
     @property({type: Object})
     public managerConfig?: ManagerConfig;
 
@@ -90,8 +106,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _storeUnsubscribe!: Unsubscribe;
 
     // language=CSS
-    static get styles() {
-        return css`
+    static get styles(): any[] {
+        return [css`
             :host {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
                 --or-app-color3: ${unsafeCSS(DefaultColor3)};
@@ -139,7 +155,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             or-header a > or-icon {
                 margin-right: 10px;
             }
-        `;
+        `];
     }
 
     constructor(store: Store<S, AnyAction>) {
@@ -309,21 +325,21 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
                 const showOfflineFallback = (this._showOfflineFallback && !pageProvider?.allowOffline);
-                const offlinePage = this._mainElem.querySelector('#offline-page');
+                const offlinePage = this._mainElem.querySelector('#' + this.OFFLINE_PAGE_ID) as Page<any> | undefined;
 
                 // If page has changed, replace the previous content with the new page.
                 // However, if no page is present yet, append it to the page.
                 if(changedProps.has('_page') && pageProvider) {
                     const currentPage = this._mainElem.firstElementChild;
                     if(currentPage) {
-                        const newPage = pageProvider.pageCreator();
-                        if(showOfflineFallback) {
-                            newPage.style.setProperty('display', 'none'); // hide the new page while offline overlay page is shown
-                            newPage.setAttribute('loadedDuringOffline', 'true'); // mark the page as "loaded during offline", since the content is either empty or invalid
-                        }
-                        this._mainElem.replaceChild(newPage, currentPage); // replace content
+                        this._loadPage(pageProvider, (newPage) => {
+                            if(showOfflineFallback) {
+                                newPage.style.setProperty('display', 'none'); // hide the new page while offline overlay page is shown
+                                newPage.setAttribute('loadedDuringOffline', 'true'); // mark the page as "loaded during offline", since the content is either empty or invalid
+                            }
+                        });
                     } else {
-                        this._mainElem.appendChild(pageProvider.pageCreator());
+                        this._loadPage(pageProvider);
                     }
                 }
 
@@ -343,7 +359,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 else if(!offlinePage && showOfflineFallback) {
                     const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
                     (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
-                    newOfflinePage.id = "offline-page";
+                    newOfflinePage.id = this.OFFLINE_PAGE_ID;
                     this._mainElem.appendChild(newOfflinePage);
                 }
             }
@@ -572,6 +588,47 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             ]), document.body); // Attach to document as or-app isn't visible until initialised
 
         return deferred.promise;
+    }
+
+    /**
+     * Internal function used for initializing the page using a {@link PageProvider} function,
+     * After the web component is created, we will append it as a child to the HTML using the {@link _mainElem} container.
+     *
+     * @param pageProvider The PageProvider function to load as a new pager
+     * @param beforeLoad An async callback useful for adjusting the page before it is appended to the page
+     * @protected
+     */
+    protected async _loadPage(pageProvider: PageProvider<any>, beforeLoad?: (page: Page<any>) => (Promise<void> | void)): Promise<Page<any>> {
+        const currentPage = this._mainElem.firstElementChild;
+        const newPage = pageProvider.pageCreator();
+        await beforeLoad?.(newPage);
+        if(currentPage) {
+            this._mainElem.replaceChild(newPage, currentPage);
+        } else {
+            this._mainElem.appendChild(newPage);
+        }
+        return newPage;
+    }
+
+    /**
+     * Unloads the page from the `<amin>` element.
+     * By default, it unloads the existing / current {@link Page}.
+     *
+     * @param page The {@link Page} to unload
+     * @protected
+     */
+    protected async _unloadPage(page?: Page<any>): Promise<void> {
+        if(!this._mainElem) {
+            console.error("Could not unload page; the main element could not be found.");
+        }
+        if(!page) {
+            page = this._mainElem?.firstElementChild as Page<any> | undefined;
+            if(!page) {
+                console.warn("Tried to unload the current page, but no child element was found.");
+                return;
+            }
+        }
+        this._mainElem.removeChild(page);
     }
 
     protected updateWindowTitle() {

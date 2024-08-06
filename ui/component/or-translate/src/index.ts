@@ -7,6 +7,20 @@ export {i18next};
 
 export {translate};
 
+/**
+ * # Translate
+ * ### `<or-translate>` - `OrTranslate`
+ *
+ * Utility component that dynamically translates the value attribute using the [i18next](https://www.i18next.com) library. <br />
+ * Useful throughout web apps, as it automatically responds to language changes.
+ *
+ * Based on the selected language in cache, it will look up the `/locales` folder with the `or.json` file, and translate by key. <br />
+ * Location of the translation folder;
+ * - **OR Manager:** `/manager/src/web/shared/locales/<lang>/app.json`
+ * - **Custom projects:** `/ui/app/<your app>/locales/<lang>/app.json`
+ *
+ * The HTML content is a simple text, with no <span> or similar wrapper.
+ */
 @customElement("or-translate")
 export class OrTranslate extends translate(i18next)(LitElement) {
 

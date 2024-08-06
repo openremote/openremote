@@ -1,0 +1,30 @@
+import { TemplateResult } from "lit";
+import { WidgetSettings } from "../util/widget-settings";
+import "../panels/attributes-panel";
+import "../util/settings-panel";
+import { AttributeActionEvent, AttributesSelectEvent } from "../panels/attributes-panel";
+import { AttributeRef } from "@openremote/model";
+import { ChartWidgetConfig } from "../widgets/chart-widget";
+import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { TimePresetCallback } from "@openremote/or-chart";
+export declare class ChartSettings extends WidgetSettings {
+    protected readonly widgetConfig: ChartWidgetConfig;
+    protected timePresetOptions: Map<string, TimePresetCallback>;
+    protected samplingOptions: Map<string, string>;
+    setTimePresetOptions(options: Map<string, TimePresetCallback>): void;
+    setSamplingOptions(options: Map<string, string>): void;
+    static get styles(): import("lit").CSSResult[];
+    protected render(): TemplateResult;
+    protected getSamplingOptionsTemplate(type: any): TemplateResult;
+    protected onAttributeAction(ev: AttributeActionEvent): void;
+    protected onAttributesSelect(ev: AttributesSelectEvent): void;
+    protected addToRightAxis(attributeRef: AttributeRef, notify?: boolean): void;
+    protected removeFromRightAxis(attributeRef: AttributeRef, notify?: boolean): void;
+    protected onTimePresetSelect(ev: OrInputChangedEvent): void;
+    protected onTimestampControlsToggle(ev: OrInputChangedEvent): void;
+    protected onShowLegendToggle(ev: OrInputChangedEvent): void;
+    protected setAxisMinMaxValue(axis: 'left' | 'right', type: 'min' | 'max', value?: number): void;
+    protected onMinMaxValueChange(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent): void;
+    protected onMinMaxValueToggle(axis: 'left' | 'right', type: 'min' | 'max', ev: OrInputChangedEvent): void;
+    protected onSamplingQueryChange(ev: OrInputChangedEvent): void;
+}

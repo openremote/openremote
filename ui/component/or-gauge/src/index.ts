@@ -88,6 +88,12 @@ export interface OrGaugeConfig {
     options?: GaugeOptions;
 }
 
+/**
+ * # Gauge
+ * ### `<or-gauge>` - `OrGauge`
+ *
+ * Gauge statistic component using the [GaugeJS](https://www.npmjs.com/package/gaugeJS) library.
+ */
 @customElement("or-gauge")
 export class OrGauge extends LitElement {
 
@@ -104,7 +110,7 @@ export class OrGauge extends LitElement {
     @property({type: Object})
     public assetAttribute?: [number, Attribute<any>];
 
-    @property()
+    @property({type: Number})
     public value?: number;
 
     @property()
@@ -119,7 +125,7 @@ export class OrGauge extends LitElement {
     @property()
     public max?: number;
 
-    @property()
+    @property({type: Array})
     public thresholds?: [number, string][];
 
     @property()
@@ -128,15 +134,8 @@ export class OrGauge extends LitElement {
     @property({type: String})
     public realm?: string;
 
-
     @state()
     protected loading: boolean = false;
-
-    @state()
-    private gauge?: Gauge;
-
-    @state()
-    private gaugeSize?: { width: number, height: number }
 
     @query("#chart")
     private _gaugeElem!: HTMLCanvasElement;
@@ -147,6 +146,8 @@ export class OrGauge extends LitElement {
     @query("#details-container")
     private _detailsElem!: HTMLElement;
 
+    private gauge?: Gauge;
+    private gaugeSize?: { width: number, height: number }
     private resizeObserver?: ResizeObserver;
 
 
@@ -173,7 +174,7 @@ export class OrGauge extends LitElement {
 
     // Processing changes before update, to prevent extra render
     willUpdate(changedProps: Map<string, any>) {
-        if(changedProps.has('assetAttribute')) {
+        if(changedProps.has('assetAttribute') && this.assetAttribute) {
             const attr = this.assetAttribute![1];
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.asset!.type!);
             this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
@@ -189,19 +190,20 @@ export class OrGauge extends LitElement {
         if(changedProperties.has('attrRef')) {
             if(this.attrRef) {
                 this.loadData(this.attrRef);
-            } else {
+            } else if(changedProperties.get('attrRef')) {
                 this.assetAttribute = undefined;
                 this.value = undefined;
             }
         }
 
         // Render gauge again if..
-        if(changedProperties.has('min') && this.min != null && this.gauge) {
-            this.gauge.setMinValue(this.min);
+        if(changedProperties.has('min') && this.gauge) {
+            console.log("Setting min value");
+            this.gauge.setMinValue(this.min || 0);
             this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('max') && this.max != null && this.gauge) {
-            this.gauge.maxValue = this.max;
+        if(changedProperties.has('max') && this.gauge) {
+            this.gauge.maxValue = (this.max || 0);
             this.gauge.set(this.value != null ? this.value : NaN);
         }
         if(changedProperties.has('thresholds') && this.thresholds) {
@@ -209,6 +211,7 @@ export class OrGauge extends LitElement {
             // Make staticZones out of the thresholds.
             // If below the minimum or above the maximum, set the value according to it.
             this.config!.options!.staticZones = [];
+            console.log(typeof this.thresholds);
             this.thresholds.sort((x, y) => (x[0] < y[0]) ? -1 : 1).forEach(((threshold, index) => {
                 const min = threshold[0];
                 const max = (this.thresholds![index + 1] ? this.thresholds![index + 1][0] : this.max);
@@ -233,6 +236,7 @@ export class OrGauge extends LitElement {
     }
 
     setupGauge() {
+        console.log("setupGauge()", this.config, this.value);
         this.gauge = new Gauge(this._gaugeElem);
         this.gauge.setOptions(this.config?.options);
         this.gauge.maxValue = (this.max ? this.max : 100)
@@ -268,7 +272,10 @@ export class OrGauge extends LitElement {
     }
 
     render() {
-        const formattedVal = (this.value != null ? +this.value.toFixed(this.decimals) : NaN); // + operator prevents str return
+        /*console.log(this.value);
+        const formattedVal = (this.value != null ? +(Number(this.value || 0).toFixed(this.decimals)) : NaN); // + operator prevents str return
+        /!*const formattedVal = (this.value != null ? +(this.value.toFixed(this.decimals)) : NaN);*!/ // + operator prevents str return
+        console.log(formattedVal);*/
 
         // Set width/height values based on size
         const showLabel = this.gaugeSize ? this.shouldShowLabel(this.gaugeSize) : true;
@@ -285,7 +292,7 @@ export class OrGauge extends LitElement {
                         ${showLabel ? html`
                             <div class="mainvalue-wrapper">
                                 <span class="main-number-icon">${this.asset ? getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.asset.type)) : ""}</span>
-                                <span class="main-number ${labelSize}">${formattedVal}</span>
+                                <span class="main-number ${labelSize}">${this.value}</span>
                                 <span class="main-number-unit ${labelSize}">${this.unit ? this.unit : ""}</span>
                             </div>
                         ` : undefined}

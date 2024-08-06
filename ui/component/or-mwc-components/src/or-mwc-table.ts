@@ -204,6 +204,12 @@ export class OrMwcTableRowClickEvent extends CustomEvent<OrMwcTableRowClickDetai
     }
 }
 
+/**
+ * # Material Table
+ * ### `<or-mwc-table>` - `OrMwcTable`
+ *
+ * Table component using Material Design 2 (v9.0.0); See [documentation](https://github.com/material-components/material-components-web/tree/v9.0.0/packages/mdc-data-table) here. <br />
+ */
 @customElement("or-mwc-table")
 export class OrMwcTable extends LitElement {
 
@@ -373,7 +379,7 @@ export class OrMwcTable extends LitElement {
                                                                 "mdc-data-table__cell": true,
                                                                 "mdc-data-table__cell--numeric": typeof cell === "number",
                                                                 "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
-                                                                "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
+                                                                "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn)?.hideMobile)!
                                                             }
                                                             if(index == 0 && this.config.multiSelect){
                                                                 return html`

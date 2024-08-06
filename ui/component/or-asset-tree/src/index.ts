@@ -254,6 +254,14 @@ export const getAssetTypes = async () => {
     }
 }
 
+/**
+ * # Asset Tree
+ * ### `<or-asset-tree>` - `OrAssetTree`
+ *
+ * Lists assets in a visual hierarchy tree, including search and filtering functionality.
+ *
+ * **Important:** Requires OpenRemote JS initialization.
+ */
 @customElement("or-asset-tree")
 export class OrAssetTree extends subscribe(manager)(LitElement) {
 
@@ -351,9 +359,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandTimer?: number = undefined;
     private _latestSelected: UiAssetTreeNode | undefined = undefined;
 
-    protected assetsChildren: {
-        [key: string]: UiAssetTreeNode[]
-    } = {};
+    protected assetsChildren: any;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -1585,22 +1591,26 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _loadAssets() {
+        console.log("loadAssets()");
 
         const sortFunction = this._getSortFunction();
 
         if (!this.assets) {
 
             if (!this._connected) {
+                console.log("not connected...")
                 return;
             }
 
             if (this._loading) {
+                console.log("Its loading...")
                 return;
             }
 
             this._loading = true;
 
             if(this.dataProvider) {
+                console.log("Dataprovider!");
                 this.dataProvider().then(assets => {
                     this._loading = false;
                     this._buildTreeNodes(assets, sortFunction);
@@ -1627,12 +1637,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     query.ids = this.rootAssetIds;
                     query.recursive = true;
                 }
+                console.log(query);
                 this._sendEventWithReply({
                     event: {
                         eventType: "read-assets",
                         assetQuery: query
                     }
                 }).then((ev) => {
+                    console.log(ev);
                     this._loading = false;
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)
                 });

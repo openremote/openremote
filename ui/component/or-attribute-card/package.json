@@ -10,7 +10,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "npx tsc -b",
+    "build": "npx tsc -b && typedoc",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx webpack"
   },

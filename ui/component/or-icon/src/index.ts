@@ -78,7 +78,7 @@ export function createMdiIconSet(managerUrl: string): IconSet {
 }
 
 class ORIconSets {
-    private _icons: {[name: string]: IconSet} = {};
+    private _icons: any = {};
     private _defaultIconSet?: IconSet;
 
     addIconSet(name: string, iconSet: IconSet) {
@@ -129,6 +129,12 @@ export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | und
     return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon>`;
 }
 
+/**
+ * # Icon
+ * ### `<or-icon>` - `OrIcon`
+ *
+ * Web Component for displaying an icon from a loaded iconset, like the [Material Design Icons](https://materialdesignicons.com) library.
+ */
 @customElement("or-icon")
 export class OrIcon extends LitElement {
 
@@ -183,6 +189,7 @@ export class OrIcon extends LitElement {
         ];
     }
 
+    /** Icon name as given by the Material Design Icons library */
     @property({type: String, reflect: true})
     icon?: string;
 

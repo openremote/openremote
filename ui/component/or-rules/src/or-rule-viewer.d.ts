@@ -1,0 +1,47 @@
+import { LitElement, PropertyValues, TemplateResult } from "lit";
+import { OrRulesRuleChangedEvent, RulesConfig, RuleView } from "./index";
+import { RulesetUnion } from "@openremote/model";
+import "./json-viewer/or-rule-json-viewer";
+import "./or-rule-text-viewer";
+import "./or-rule-validity";
+import "./flow-viewer/components/flow-editor";
+import "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+export declare const style: import("lit").CSSResult;
+declare const OrRuleViewer_base: (new (...args: any[]) => {
+    _i18nextJustInitialized: boolean;
+    connectedCallback(): void;
+    disconnectedCallback(): void;
+    shouldUpdate(changedProps: Map<PropertyKey, unknown> | import("lit").PropertyValueMap<any>): any;
+    initCallback: (options: import("i18next").InitOptions) => void;
+    langChangedCallback: () => void;
+    readonly isConnected: boolean;
+}) & typeof LitElement;
+export declare class OrRuleViewer extends OrRuleViewer_base {
+    static get styles(): import("lit").CSSResult[];
+    ruleset?: RulesetUnion;
+    readonly: boolean;
+    disabled: boolean;
+    config?: RulesConfig;
+    modified: boolean;
+    protected _ruleValid: boolean;
+    protected _supported: boolean;
+    view?: RuleView;
+    protected wrapperElem: HTMLDivElement;
+    protected saveBtnElem: OrMwcInput;
+    protected _focusName: boolean;
+    constructor();
+    get valid(): any;
+    shouldUpdate(_changedProperties: PropertyValues): boolean;
+    protected render(): TemplateResult | void;
+    protected updated(_changedProperties: PropertyValues): void;
+    protected _isReadonly(): boolean;
+    protected _cannotSave(): boolean;
+    protected _changeName(name: string): void;
+    protected _onRuleChanged(e: OrRulesRuleChangedEvent): void;
+    protected _onSaveClicked(): void;
+    protected _doSave(): Promise<void>;
+    protected _onRuleUnsupported(): void;
+    protected _toggleEnabled(): void;
+}
+export {};

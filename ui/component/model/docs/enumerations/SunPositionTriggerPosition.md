@@ -1,0 +1,207 @@
+[**@openremote/model**](../README.md) • **Docs**
+
+***
+
+[@openremote/model](../globals.md) / SunPositionTriggerPosition
+
+# Enumeration: SunPositionTriggerPosition
+
+## Enumeration Members
+
+### SUNRISE
+
+> **SUNRISE**: `"SUNRISE"`
+
+#### Source
+
+model.ts:2165
+
+***
+
+### SUNSET
+
+> **SUNSET**: `"SUNSET"`
+
+#### Source
+
+model.ts:2166
+
+***
+
+### TWILIGHT\_EVENING\_ASTRONOMICAL
+
+> **TWILIGHT\_EVENING\_ASTRONOMICAL**: `"TWILIGHT_EVENING_ASTRONOMICAL"`
+
+#### Source
+
+model.ts:2181
+
+***
+
+### TWILIGHT\_EVENING\_BLUE\_HOUR
+
+> **TWILIGHT\_EVENING\_BLUE\_HOUR**: `"TWILIGHT_EVENING_BLUE_HOUR"`
+
+#### Source
+
+model.ts:2183
+
+***
+
+### TWILIGHT\_EVENING\_CIVIL
+
+> **TWILIGHT\_EVENING\_CIVIL**: `"TWILIGHT_EVENING_CIVIL"`
+
+#### Source
+
+model.ts:2179
+
+***
+
+### TWILIGHT\_EVENING\_GOLDEN\_HOUR
+
+> **TWILIGHT\_EVENING\_GOLDEN\_HOUR**: `"TWILIGHT_EVENING_GOLDEN_HOUR"`
+
+#### Source
+
+model.ts:2182
+
+***
+
+### TWILIGHT\_EVENING\_HORIZON
+
+> **TWILIGHT\_EVENING\_HORIZON**: `"TWILIGHT_EVENING_HORIZON"`
+
+#### Source
+
+model.ts:2178
+
+***
+
+### TWILIGHT\_EVENING\_NAUTICAL
+
+> **TWILIGHT\_EVENING\_NAUTICAL**: `"TWILIGHT_EVENING_NAUTICAL"`
+
+#### Source
+
+model.ts:2180
+
+***
+
+### TWILIGHT\_EVENING\_NIGHT\_HOUR
+
+> **TWILIGHT\_EVENING\_NIGHT\_HOUR**: `"TWILIGHT_EVENING_NIGHT_HOUR"`
+
+#### Source
+
+model.ts:2184
+
+***
+
+### TWILIGHT\_EVENING\_VISUAL
+
+> **TWILIGHT\_EVENING\_VISUAL**: `"TWILIGHT_EVENING_VISUAL"`
+
+#### Source
+
+model.ts:2176
+
+***
+
+### TWILIGHT\_EVENING\_VISUAL\_LOWER
+
+> **TWILIGHT\_EVENING\_VISUAL\_LOWER**: `"TWILIGHT_EVENING_VISUAL_LOWER"`
+
+#### Source
+
+model.ts:2177
+
+***
+
+### TWILIGHT\_MORNING\_ASTRONOMICAL
+
+> **TWILIGHT\_MORNING\_ASTRONOMICAL**: `"TWILIGHT_MORNING_ASTRONOMICAL"`
+
+#### Source
+
+model.ts:2172
+
+***
+
+### TWILIGHT\_MORNING\_BLUE\_HOUR
+
+> **TWILIGHT\_MORNING\_BLUE\_HOUR**: `"TWILIGHT_MORNING_BLUE_HOUR"`
+
+#### Source
+
+model.ts:2174
+
+***
+
+### TWILIGHT\_MORNING\_CIVIL
+
+> **TWILIGHT\_MORNING\_CIVIL**: `"TWILIGHT_MORNING_CIVIL"`
+
+#### Source
+
+model.ts:2170
+
+***
+
+### TWILIGHT\_MORNING\_GOLDEN\_HOUR
+
+> **TWILIGHT\_MORNING\_GOLDEN\_HOUR**: `"TWILIGHT_MORNING_GOLDEN_HOUR"`
+
+#### Source
+
+model.ts:2173
+
+***
+
+### TWILIGHT\_MORNING\_HORIZON
+
+> **TWILIGHT\_MORNING\_HORIZON**: `"TWILIGHT_MORNING_HORIZON"`
+
+#### Source
+
+model.ts:2169
+
+***
+
+### TWILIGHT\_MORNING\_NAUTICAL
+
+> **TWILIGHT\_MORNING\_NAUTICAL**: `"TWILIGHT_MORNING_NAUTICAL"`
+
+#### Source
+
+model.ts:2171
+
+***
+
+### TWILIGHT\_MORNING\_NIGHT\_HOUR
+
+> **TWILIGHT\_MORNING\_NIGHT\_HOUR**: `"TWILIGHT_MORNING_NIGHT_HOUR"`
+
+#### Source
+
+model.ts:2175
+
+***
+
+### TWILIGHT\_MORNING\_VISUAL
+
+> **TWILIGHT\_MORNING\_VISUAL**: `"TWILIGHT_MORNING_VISUAL"`
+
+#### Source
+
+model.ts:2167
+
+***
+
+### TWILIGHT\_MORNING\_VISUAL\_LOWER
+
+> **TWILIGHT\_MORNING\_VISUAL\_LOWER**: `"TWILIGHT_MORNING_VISUAL_LOWER"`
+
+#### Source
+
+model.ts:2168

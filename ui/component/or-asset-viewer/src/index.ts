@@ -1085,6 +1085,14 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
     ]
 };
 
+/**
+ * # Asset Viewer
+ * ### `<or-asset-viewer>` - `OrAssetViewer`
+ *
+ * View details of an asset
+ *
+ * **Important:** Requires OpenRemote JS initialization.
+ */
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
@@ -1100,8 +1108,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Object, reflect: false})
     public asset?: Asset;
 
-    @property({type: Array})
-    public ids: string[] | undefined;
+    /** @type Array */
+    @property({type: Array, reflect: false})
+    public ids?: string[];
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -1159,6 +1168,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     shouldUpdate(changedProperties: PropertyValues): boolean {
+        console.log(changedProperties);
 
         if (this._isReadonly()) {
             this.editMode = false;
@@ -1185,6 +1195,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 this.loadAssetInfo(this.asset)
                     .then(assetInfo => this._assetInfo = assetInfo)
                     .catch(reason => {
+                        console.debug(reason);
                         // We can ignore this as it should indicate that the asset has changed
                     });
             }
@@ -1200,6 +1211,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     async loadAssetInfo(asset: Asset): Promise<AssetInfo> {
+        console.log("loadAssetInfo()", asset);
 
         if (!asset) {
             throw new Error("Asset has changed");
@@ -1224,9 +1236,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const links = await getLinkedUsers(asset);
+        console.log(links);
 
         // Check this asset is still the correct one
         if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+            console.log("Wrong asset id?")
             throw new Error("Asset has changed");
         }
 
@@ -1238,6 +1252,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         // Check this asset is still the correct one
         if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+            console.log("Wrong assetg id 2?");
             throw new Error("Asset has changed");
         }
 

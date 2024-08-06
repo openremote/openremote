@@ -1,0 +1,47 @@
+import { LitElement } from "lit";
+import { Integration } from "../services/integration";
+import { CopyPasteManager } from "../services/copy-paste-manager";
+import { Project } from "../services/project";
+import { Input } from "../services/input";
+import { ModalService } from "../services/modal";
+import { Exporter } from "../services/exporter";
+import { Shortcuts } from "../services/shortcuts";
+import { NodePanel } from "./node-panel";
+import { EditorWorkspace } from "./editor-workspace";
+import { TopBar } from "./top-bar";
+import { RuleView } from "../..";
+import { RulesetUnion } from "@openremote/model";
+export declare const integration: Integration;
+export declare const copyPasteManager: CopyPasteManager;
+export declare const project: Project;
+export declare const input: Input;
+export declare const modal: ModalService;
+export declare const exporter: Exporter;
+export declare const shortcuts: Shortcuts;
+export declare const newIds: Set<string>;
+declare const FlowEditor_base: (new (...args: any[]) => {
+    _i18nextJustInitialized: boolean;
+    connectedCallback(): void;
+    disconnectedCallback(): void;
+    shouldUpdate(changedProps: Map<PropertyKey, unknown> | import("lit").PropertyValueMap<any>): any;
+    initCallback: (options: import("i18next").InitOptions) => void;
+    langChangedCallback: () => void;
+    readonly isConnected: boolean;
+}) & typeof LitElement;
+export declare class FlowEditor extends FlowEditor_base implements RuleView {
+    nodePanel: NodePanel;
+    topBar: TopBar;
+    editorWorkspace: EditorWorkspace;
+    showTopbar: boolean;
+    readonly?: boolean | undefined;
+    protected _ruleset: RulesetUnion;
+    constructor();
+    validate(): boolean;
+    beforeSave(): void;
+    set ruleset(ruleset: RulesetUnion);
+    static get styles(): import("lit").CSSResult[];
+    protected firstUpdated(): Promise<void>;
+    protected render(): import("lit-html").TemplateResult<1>;
+    private serialiseRule;
+}
+export {};
