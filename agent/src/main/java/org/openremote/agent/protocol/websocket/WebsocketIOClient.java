@@ -41,6 +41,7 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
+import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
@@ -71,7 +72,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     protected ScheduledFuture<?> pingFuture;
     protected boolean useSsl;
     protected URI uri;
-    protected SslContext sslCtx;
+    protected static SslContext sslCtx;
     protected WebSocketClientProtocolHandler handler;
     protected Map<String, List<String>> headers;
     protected OAuthGrant oAuthGrant;
@@ -147,13 +148,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     @Override
     protected void addEncodersDecoders(Channel channel) throws Exception {
-        if (useSsl) {
-            sslCtx = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
-        } else {
-            sslCtx = null;
-        }
-
         HttpHeaders hdrs = new DefaultHttpHeaders();
 
         if (this.headers != null) {
@@ -197,10 +191,6 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             });
         }
 
-        if (sslCtx != null) {
-            channel.pipeline().addLast(sslCtx.newHandler(channel.alloc(), host, port));
-        }
-
         channel.pipeline().addLast(
             new HttpClientCodec(),
             new HttpObjectAggregator(8192),
@@ -219,6 +209,11 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         });
 
         super.addEncodersDecoders(channel);
+
+        // Put SSL handler first
+        if (useSsl) {
+            channel.pipeline().addFirst(getSSLContext().newHandler(channel.alloc(), host, port));
+        }
 
         // Put string and bytebuf encoders first (encoders are called in reverse to decoders)
         channel.pipeline().addLast(new MessageToMessageEncoder<String>() {
@@ -240,6 +235,16 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             handshakeFuture.complete(null);
             handshakeFuture = null;
         }
+    }
+
+    protected synchronized SslContext getSSLContext() throws SSLException {
+        if (sslCtx == null) {
+            sslCtx = SslContextBuilder.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .sessionTimeout(getConnectTimeoutMillis())
+                    .build();
+        }
+        return sslCtx;
     }
 
     private void doPing(ChannelHandlerContext ctx) {

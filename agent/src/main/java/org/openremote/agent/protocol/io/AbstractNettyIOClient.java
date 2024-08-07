@@ -218,7 +218,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            // Connection future will timeout so we just wait for it
+            // Connection future should timeout so we just wait for it but add additional timeout just in case
             Future<Void> connectFuture = doConnect();
             connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
             execution.recordResult(null);
@@ -448,11 +448,11 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, DecoderException decoderException) {
-        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() +"': " + getClientUri());
+        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() +"': " + getClientUri(), decoderException);
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, EncoderException encoderException) {
-        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() +"': " + getClientUri());
+        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() +"': " + getClientUri(), encoderException);
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
