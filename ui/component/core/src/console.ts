@@ -370,11 +370,13 @@ export class Console {
         try {
             const response = await Promise.race([responsePromise, new Promise<T>((resolve, reject) => setTimeout(reject, 2000))]);
             if (response && response.value) {
-                return response.value as T;
+                const value = response.value as T;
+                return value === "null" ? undefined : value;
             }
         } catch (e) {
             console.log("Failed to retrieve data from storage provider");
         }
+        return undefined;
     }
 
     public addProviderMessageListener(providerAction: ProviderAction, listener: (msg: ProviderMessage) => void) {
