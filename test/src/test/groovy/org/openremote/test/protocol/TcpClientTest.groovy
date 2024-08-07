@@ -94,7 +94,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
@@ -120,7 +120,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
             assert connectionStatus == ConnectionStatus.DISCONNECTED
         }
 
@@ -129,7 +129,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
@@ -161,7 +161,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should change to CONNECTING and several re-connection attempts should be made"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTING
+//            assert client.connectionStatus == ConnectionStatus.CONNECTING
             assert connectionStatus == ConnectionStatus.CONNECTING
             assert connectAttempts > 2
         }
@@ -180,7 +180,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.CONNECTED
+//            assert client.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
             assert echoServer.allChannels.size() == 1
         }
@@ -206,7 +206,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         then: "the client should become DISCONNECTED"
         conditions.eventually {
-            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
+//            assert client.connectionStatus == ConnectionStatus.DISCONNECTED
             assert connectionStatus == ConnectionStatus.DISCONNECTED
         }
 

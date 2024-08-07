@@ -188,14 +188,30 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public synchronized void connect() {
-        if (connectionStatus != ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Must be disconnected before calling connect: " + getClientUri());
-            return;
+    public void connect() {
+        synchronized (this) {
+            if (connectionStatus != ConnectionStatus.DISCONNECTED) {
+                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
+                return;
+            }
+
+            LOG.fine("Connecting IO Client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        LOG.fine("Connecting IO Client: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+        // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
+        workerGroup = getWorkerGroup();
+        bootstrap = new Bootstrap();
+        bootstrap.channel(getChannelClass());
+        configureChannel();
+        bootstrap.group(workerGroup);
+
+        bootstrap.handler(new ChannelInitializer<>() {
+            @Override
+            public void initChannel(Channel channel) throws Exception {
+                AbstractNettyIOClient.this.initChannel(channel);
+            }
+        });
 
         scheduleDoConnect(100);
     }
@@ -207,11 +223,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
             .withJitter(Duration.ofMillis(delay))
             .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
-            .handle(ExecutionException.class)
+            .handle(Exception.class)
             .onRetryScheduled((execution) ->
                 LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
-            .onFailedAttempt((execution) ->
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()))
+            .onFailedAttempt((execution) -> {
+                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri());
+                doDisconnect();
+            })
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
@@ -225,48 +243,25 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }).whenComplete((result, ex) -> {
             if (ex != null) {
                 // Cleanup resources
-                doDisconnect();
+                disconnect();
             } else {
-                boolean disconnected = true;
                 synchronized (this) {
                     if (connectionStatus == ConnectionStatus.CONNECTING) {
                         LOG.fine("Connection attempt success: " + getClientUri());
                         onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                        disconnected = false;
                     }
-                }
-                if (disconnected) {
-                    doDisconnect();
                 }
             }
         });
     }
 
     protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
-        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+        return connectFuture.get();
+//        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
     }
 
     protected Future<Void> doConnect() {
-
         LOG.info("Establishing connection: " + getClientUri());
-
-        if (workerGroup == null) {
-            // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
-            workerGroup = getWorkerGroup();
-        }
-
-        bootstrap = new Bootstrap();
-        bootstrap.channel(getChannelClass());
-        configureChannel();
-        bootstrap.group(workerGroup);
-
-        bootstrap.handler(new ChannelInitializer<>() {
-            @Override
-            public void initChannel(Channel channel) throws Exception {
-                AbstractNettyIOClient.this.initChannel(channel);
-            }
-        });
-
         // Start the channel
         return startChannel();
     }
@@ -285,15 +280,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
         if (connectRetry != null) {
             connectRetry.cancel(true);
-            try {
-                connectRetry.get();
-            } catch (CancellationException | InterruptedException | ExecutionException ignored) {
-            } catch (Exception e) {
-                LOG.log(Level.FINE, "Failed to wait for connection retry future: " + getClientUri());
-            }
             connectRetry = null;
         }
         doDisconnect();
+        if (workerGroup != null) {
+            workerGroup.shutdownGracefully();
+            workerGroup = null;
+        }
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
@@ -307,17 +300,16 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         try {
             // Close the channel
             if (channel != null) {
-                channel.disconnect();
-                channel.close();
+                try {
+                    channel.disconnect().await();
+                } catch (Exception ignored) {}
+                try {
+                    channel.close().await();
+                } catch (Exception ignored) {}
                 channel = null;
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), e);
-        } finally {
-            if (workerGroup != null) {
-                workerGroup.shutdownGracefully();
-                workerGroup = null;
-            }
         }
         LOG.finest("Disconnect done: " + getClientUri());
     }
