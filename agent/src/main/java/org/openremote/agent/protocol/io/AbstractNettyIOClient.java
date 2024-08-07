@@ -220,7 +220,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
             // Connection future should timeout so we just wait for it but add additional timeout just in case
             Future<Void> connectFuture = doConnect();
-            connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+            waitForConnectFuture(connectFuture);
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
             if (ex != null) {
@@ -240,6 +240,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 }
             }
         });
+    }
+
+    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
     }
 
     protected Future<Void> doConnect() {

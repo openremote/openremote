@@ -20,7 +20,6 @@
 
 package org.openremote.manager.gateway;
 
-import io.netty.channel.ChannelFuture;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
@@ -72,6 +71,12 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
                     return null;
                 })
         );
+    }
+
+    @Override
+    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        // Might need a better solution than this as we don't know how long the sync will take
+        return connectFuture.get(getConnectTimeoutMillis()+30000L, TimeUnit.MILLISECONDS);
     }
 
     protected CompletableFuture<Void> getFuture() {
