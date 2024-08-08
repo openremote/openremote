@@ -271,7 +271,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected _onEditToggle(event: OrAssetViewerEditToggleEvent) {
         this._editMode = event.detail;
-        this._updateRoute(true);
+        this._updateRoute(false);
     }
 
     protected _confirmContinue(action: () => void) {
