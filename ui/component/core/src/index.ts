@@ -892,8 +892,13 @@ export class Manager implements EventProviderFactory {
             });
 
             if (!authenticated && offlineToken) {
-                this._keycloak.refreshToken = offlineToken;
-                authenticated  = await this._updateKeycloakAccessToken();
+                try {
+                    console.error("SETTING OFFLINE TOKEN");
+                    this._keycloak.refreshToken = offlineToken;
+                    authenticated = await this._updateKeycloakAccessToken();
+                } catch (e) {
+                    console.error("Failed to authenticate using offline token");
+                }
             }
 
             if (authenticated) {
