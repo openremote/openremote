@@ -34,6 +34,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.Future
+
 /**
  * This tests the {@link TCPIOClient} by creating a simple echo server that the client communicates with
  */
@@ -55,8 +57,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         })
 
         and: "a simple TCP client"
-        def connectAttempts = 0
-        TCPIOClient<String> client = new TCPIOClient<String>(
+        TestTCPClient client = new TestTCPClient(
                 "127.0.0.1",
                 echoServerPort)
         client.setEncoderDecoderProvider({
@@ -64,11 +65,6 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
             new StringDecoder(CharsetUtil.UTF_8),
             new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
-        client = Spy(client)
-        client.doConnect() >> {
-            connectAttempts++
-            callRealMethod()
-        }
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()
@@ -151,7 +147,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "we lose connection to the server"
-        connectAttempts = 0
+        client.connectAttempts = 0
         echoServer.stop()
 
         then: "the server status should be DISCONNECTED"
@@ -163,7 +159,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
 //            assert client.connectionStatus == ConnectionStatus.CONNECTING
             assert connectionStatus == ConnectionStatus.CONNECTING
-            assert connectAttempts > 2
+            assert client.connectAttempts > 2
         }
 
         when: "the connection to the server is restored"

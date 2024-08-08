@@ -209,7 +209,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         bootstrap.handler(new ChannelInitializer<>() {
             @Override
             public void initChannel(Channel channel) throws Exception {
-                AbstractNettyIOClient.this.initChannel(channel);
+            AbstractNettyIOClient.this.initChannel(channel);
             }
         });
 
