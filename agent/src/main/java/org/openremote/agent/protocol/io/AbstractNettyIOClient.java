@@ -256,8 +256,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
-        return connectFuture.get();
-//        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
     }
 
     protected Future<Void> doConnect() {

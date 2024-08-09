@@ -58,7 +58,9 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
     protected Future<Void> startChannel() {
         CompletableFuture<Void> connectedFuture = toCompletableFuture(super.startChannel());
 
-        return connectedFuture.thenCompose(__ ->
+        return connectedFuture
+            .orTimeout(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS)
+            .thenCompose(__ ->
             getFuture()
                 .orTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .handle((result, ex) -> {
@@ -76,7 +78,7 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
     @Override
     protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
         // Might need a better solution than this as we don't know how long the sync will take
-        return connectFuture.get(getConnectTimeoutMillis()+30000L, TimeUnit.MILLISECONDS);
+        return connectFuture.get(getConnectTimeoutMillis()+60000L, TimeUnit.MILLISECONDS);
     }
 
     protected CompletableFuture<Void> getFuture() {
