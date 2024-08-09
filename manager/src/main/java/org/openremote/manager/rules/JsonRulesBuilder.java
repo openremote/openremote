@@ -19,10 +19,11 @@
  */
 package org.openremote.manager.rules;
 
+import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
@@ -78,6 +79,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             this.delay = delay;
         }
     }
+
 
     /**
      * Stores all state for a given {@link RuleCondition} and calculates which {@link AttributeInfo}s match and don't
@@ -534,6 +536,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Users usersFacade;
     final protected Notifications notificationsFacade;
     final protected Webhooks webhooksFacade;
+    final protected Alarms alarmsFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
     final protected ScheduledExecutorService executorService;
@@ -546,7 +549,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
                             Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
-                            HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
+                            Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
@@ -555,6 +558,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
         this.webhooksFacade = webhooksFacade;
+        this.alarmsFacade = alarmsFacade;
         this.historicDatapointsFacade= historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
@@ -580,7 +584,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
-            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
+            executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, this.scheduledActionConsumer));
 
         // Remove temporal fact for timer rule evaluation
         String tempFactName = TIMER_TEMPORAL_FACT_NAME_PREFIX + jsonRuleset.getId();
@@ -590,7 +594,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public void start(RulesFacts facts) {
 
         Arrays.stream(jsonRules).forEach(jsonRule -> {
-            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
+            executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, this.scheduledActionConsumer);
         });
 
         // Initialise asset states
@@ -669,12 +673,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             try {
                 if (ruleState.thenMatched()) {
                     log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
 
                 if (rule.otherwise != null && ruleState.otherwiseMatched()) {
                     log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
@@ -716,7 +720,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    public void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public void executeRuleActions(JsonRule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, Alarms alarmsFacade, PredictedDatapoints predictedDatapointsFacade, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         if (ruleActions != null && ruleActions.length > 0) {
 
@@ -737,6 +741,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     usersFacade,
                     notificationsFacade,
                     webhooksFacade,
+                    alarmsFacade,
                     predictedDatapointsFacade
                 );
 
@@ -765,7 +770,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, PredictedDatapoints predictedDatapointsFacade) {
+    protected RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade, Alarms alarmsFacade, PredictedDatapoints predictedDatapointsFacade) {
 
         if (ruleAction instanceof RuleActionNotification notificationAction) {
 
@@ -932,6 +937,39 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
+        }
+
+        if (ruleAction instanceof  RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
+                Alarm alarm = alarmAction.alarm;
+                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
+                if(alarm.getContent() != null) {
+                    String content = alarm.getContent();
+                    if (!TextUtil.isNullOrEmpty(content) && (content.contains(PLACEHOLDER_TRIGGER_ASSETS))) {
+                            // Need to clone the alarm
+                            alarm = ValueUtil.clone(alarm);
+                            Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
+                            alarm.setContent(getAlarmContent(content, assetStates));
+                    }
+                }
+                else {
+                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getSeverity() == null) {
+                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                if (alarm.getTitle() == null) {
+                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
+                }
+                Alarm finalAlarm = alarm;
+                String userId = alarmAction.assigneeId;
+                if(!assetIds.isEmpty()){
+                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
+                }
+                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
+
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {
@@ -1120,6 +1158,19 @@ public class JsonRulesBuilder extends RulesBuilder {
             realm = assetRuleset.getRealm();
         }
         return realm;
+    }
+
+    protected String getAlarmContent(String sourceText, Map<String, Set<AttributeInfo>> assetStates) {
+        StringBuilder sb = new StringBuilder();
+
+        assetStates.forEach((key, value) -> value.forEach(assetState -> {
+            sb.append("ID: ").append(assetState.getId()).append("\n");
+            sb.append("Asset name: ").append(assetState.getAssetName()).append("\n");
+            sb.append("Attribute name: ").append(assetState.getName()).append("\n");
+            sb.append("Value: ").append(assetState.getValue().flatMap(ValueUtil::asJSON).orElse("")).append("\n");
+        }));
+
+        return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {

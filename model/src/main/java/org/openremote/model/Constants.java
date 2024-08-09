@@ -36,6 +36,7 @@ public interface Constants {
     String READ_ASSETS_ROLE = "read:assets";
     String READ_RULES_ROLE = "read:rules";
     String READ_INSIGHTS_ROLE = "read:insights";
+    String READ_ALARMS_ROLE = "read:alarms";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
@@ -43,6 +44,7 @@ public interface Constants {
     String WRITE_ATTRIBUTES_ROLE = "write:attributes";
     String WRITE_RULES_ROLE = "write:rules";
     String WRITE_INSIGHTS_ROLE = "write:insights";
+    String WRITE_ALARMS_ROLE = "write:alarms";
     String RESTRICTED_USER_REALM_ROLE = "restricted_user";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
     String SESSION_TERMINATOR = "connection.sessionTerminator";
