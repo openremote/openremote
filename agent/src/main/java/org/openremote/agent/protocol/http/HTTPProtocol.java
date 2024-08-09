@@ -20,9 +20,7 @@
 package org.openremote.agent.protocol.http;
 
 import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.client.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -34,6 +32,7 @@ import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.specimpl.BuiltResponse;
 import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.QueryParameterInjectorFilter;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Constants;
@@ -50,10 +49,18 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +68,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.openremote.container.web.QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
@@ -347,6 +356,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         queryParams.ifPresent(webTargetBuilder::setInjectQueryParameters);
         webTargetBuilder.followRedirects(followRedirects);
 
+		webTargetBuilder.setFilters(new DynamicTimeReplacementClientRequestFilter(timerService));
+
         LOG.fine("Creating web target client '" + baseUri + "'");
         webTarget = webTargetBuilder.build();
 
@@ -602,4 +613,68 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
+	public static class DynamicTimeReplacementClientRequestFilter implements ClientRequestFilter {
+
+		private final TimerService timerService;
+
+		private DynamicTimeReplacementClientRequestFilter(TimerService timerService) {
+			this.timerService = timerService;
+		}
+		@Override
+		public void filter(ClientRequestContext requestContext) throws IOException {
+			if (requestContext.hasEntity()) {
+				Object entity = requestContext.getEntity();
+
+				if (entity instanceof InputStream) {
+					String body = new Scanner((InputStream) entity, StandardCharsets.UTF_8).useDelimiter("\\A").next();
+
+					// Perform regex replacement
+					String modifiedBody = replace(body);
+
+					// Set the modified body back to the request context
+					InputStream modifiedStream = new ByteArrayInputStream(modifiedBody.getBytes(StandardCharsets.UTF_8));
+					// Set the modified body back to the request context
+					requestContext.setEntity(Entity.entity(modifiedBody, MediaType.APPLICATION_JSON));
+				} else if (entity instanceof String) {
+					// Perform regex replacement
+					String modifiedBody = replace((String) entity);
+
+					// Set the modified body back to the request context
+					requestContext.setEntity(modifiedBody);
+				}
+			}
+		}
+
+		private String replace(String str){
+			// Regex to match the pattern ${time:DURATION:FORMAT}
+			String regex = "\\$\\{time:([^:]+):([^}]+)\\}";
+			Pattern pattern = Pattern.compile(regex);
+			Matcher matcher = pattern.matcher(str);
+
+			StringBuilder result = new StringBuilder();
+
+			while (matcher.find()) {
+				String durationStr = matcher.group(1);
+				String formatStr = matcher.group(2);
+
+				// Parse the duration
+				Duration duration = Duration.parse(durationStr);
+
+				// Get the current date and time, and apply the duration
+				Date currentDate = Date.from(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()));
+				Date adjustedDate = new Date(currentDate.getTime() + duration.toMillis());
+
+				// Format the adjusted date
+				SimpleDateFormat sdf = new SimpleDateFormat(formatStr);
+				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+				String formattedDate = sdf.format(adjustedDate);
+
+				// Replace the matched pattern with the formatted date
+				matcher.appendReplacement(result, formattedDate);
+			}
+			matcher.appendTail(result);
+
+			return result.toString();
+		}
+	}
 }

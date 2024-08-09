@@ -29,6 +29,7 @@ import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
+import org.openremote.container.timer.TimerService
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -52,6 +53,9 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.time.Instant
 import java.util.regex.Pattern
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -211,6 +215,14 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     failureCount++
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
                     return
+                case "https://mockapi/empty":
+                    pollCountFast++;
+                    requestContext.abortWith(
+                            Response
+                                    .ok(requestContext.getEntity() as String, MediaType.APPLICATION_JSON_TYPE)
+                                    .build()
+                    );
+                    return;
                 case "https://mockapi/redirect":
                     requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
                     return
@@ -549,4 +561,113 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             HTTPProtocol.client.set(null)
         }
     }
+
+    def "Check HTTP client dynamic time feature"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+
+        and: "the HTTP client protocol min times are adjusted for testing"
+        HTTPProtocol.MIN_POLLING_MILLIS = 10
+
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+        def timerService = container.getService(TimerService.class)
+
+        timerService.stop();
+
+        when: "the web target builder is configured to use the mock server"
+        HTTPProtocol.initClient()
+        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
+            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+        and: "a HTTP client agent is created"
+        HTTPAgent agent = new HTTPAgent("Test agent")
+                .setRealm(Constants.MASTER_REALM)
+                .setBaseURI("https://mockapi")
+                .setOAuthGrant(
+                        new OAuthPasswordGrant("https://mockapi/token",
+                                "TestClient",
+                                "TestSecret",
+                                "scope1 scope2",
+                                "testuser",
+                                "password")
+                )
+                .setFollowRedirects(true)
+
+        and: "the agent is added to the asset service"
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should authenticate and the connection status should become CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id, HTTPAgent.class)
+            assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
+        }
+
+        when: "An array of dynamic time strings is tested with the string replacement function"
+
+        String[] dynamicTimeTests = ["\${time:PT1H:yyyy-MM-dd HH:mm}", "\${time:PT2H:yyyy-MM-dd HH:mm:ss}", "\${time:P1D:yyyy-MM-dd}", "\${time:P2DT3H:yyyy-MM-dd HH:mm}", "\${time:PT30M:yyyy-MM-dd HH:mm}", "\${time:P7D:yyyy-MM-dd}", "\${time:PT5H:yyyy-MM-dd HH:mm}", "\${time:P2D:yyyy-MM-dd}", "\${time:PT1M:yyyy-MM-dd}", "\${time:P3D:yyyy-MM-dd}"] as List<String>
+
+        then: "The strings are parsed correctly. If there is a way to use a constant timestamp, it'd be much easier."
+        HTTPProtocol.DynamicTimeReplacementClientRequestFilter filter = new HTTPProtocol.DynamicTimeReplacementClientRequestFilter(timerService);
+        for (final String e in dynamicTimeTests){
+            def y = filter.replace(e);
+
+//            container.LOG.log(System.Logger.Level.WARNING, y);
+        }
+
+        when: "An asset is created"
+        def asset = new ThingAsset("Test Asset")
+                .setParent(agent)
+                .addOrReplaceAttributes(
+                        // attribute that polls the server using GET and uses regex filter on response
+                        new Attribute<>("testPostRequest", TEXT)
+                                .addMeta(
+                                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                                                .setPath("empty")
+                                                .setMethod(HTTPMethod.POST)
+                                                .setWriteValue('{"prop1": "${time:PT1H:yyyy-MM-dd HH:mm}"}')
+                                                .setPollingMillis(200)
+                                        )
+                                ),
+                )
+        and: "the asset is merged into the asset service"
+        asset = assetStorageService.merge(asset)
+
+        def currentTimeLong = timerService.getCurrentTimeMillis();
+
+
+
+        then: "new request maps should be created in the HTTP client protocol for the linked attributes"
+        conditions.eventually {
+            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 1
+        }
+
+        and: "the polling attributes should be polling the server"
+        conditions.eventually {
+            assert mockServer.pollCountFast > 0
+        }
+
+        when: "The attribute is updated"
+        def currentDate = Date.from(Instant.ofEpochMilli(currentTimeLong+1*60*60*1000));
+
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.ENGLISH)
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String expected = df.format(currentDate)
+
+        then: "The attribute has the correct value"
+        conditions.eventually{
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("testPostRequest").flatMap({it.value}).orElse(null) == '{"prop1": "'+expected+'"}';
+        }
+
+    }
+
+
+
 }
+
