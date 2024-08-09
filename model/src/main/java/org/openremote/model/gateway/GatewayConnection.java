@@ -211,7 +211,7 @@ public class GatewayConnection {
             ", port=" + port +
             ", realm='" + realm + '\'' +
             ", secured=" + secured +
-            ", attributeFilters=" + attributeFilters +
+            ", attributeFilters=" + (attributeFilters != null && !attributeFilters.isEmpty()) +
             ", disabled=" + disabled +
             '}';
     }

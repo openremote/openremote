@@ -641,7 +641,7 @@ jobs:
           fi
 
           # Pull the images
-          docker-compose -f $composeProfile pull
+          docker compose -f $composeProfile pull
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
@@ -667,11 +667,11 @@ jobs:
           chmod 777 tmp
 
           # Define cleanup command
-          echo "cleanup=docker-compose -f $composeProfile down" >> $GITHUB_OUTPUT
+          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
 
           # Start the stack
-          echo "docker-compose -f ${composeProfile} up -d --no-build"
-          docker-compose -f ${composeProfile} up -d --no-build
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f ${composeProfile} up -d --no-build
 
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
@@ -749,7 +749,7 @@ jobs:
           fi
 
           # Start the stack          
-          MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}

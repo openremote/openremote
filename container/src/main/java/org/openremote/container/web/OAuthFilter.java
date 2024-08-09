@@ -80,7 +80,7 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected synchronized void updateToken() throws SocketException {
-        LOG.fine("Updating OAuth token");
+        LOG.finest("Updating OAuth token: " + oAuthGrant.getTokenEndpointUri());
         Response response = null;
 
         try {
@@ -103,7 +103,7 @@ public class OAuthFilter implements ClientRequestFilter {
 
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 authServerResponse = null;
-                LOG.finest("OAuth server response error: " + response.getStatus());
+                LOG.fine("OAuth server response error '" + response.getStatus() + "': " + oAuthGrant.getTokenEndpointUri());
                 throw new RuntimeException("OAuth server response error: " + response.getStatus());
             } else {
                 authServerResponse = response.readEntity(OAuthServerResponse.class);

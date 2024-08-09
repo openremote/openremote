@@ -24,20 +24,21 @@ import dev.failsafe.RetryPolicy;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import jakarta.validation.constraints.NotNull;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -105,12 +106,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 messages.clear();
             }
         }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onDecodeException(ctx, cause);
-        }
     }
 
     /**
@@ -125,14 +120,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+        public void channelRead0(ChannelHandlerContext ctx, T msg) {
             client.onMessageReceived(msg);
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onDecodeException(ctx, cause);
         }
     }
 
@@ -153,17 +142,10 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) {
             encoder.accept(msg, out);
         }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-            client.onEncodeException(ctx, cause);
-        }
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIOClient.class);
-    protected final List<Consumer<T>> messageConsumers = new ArrayList<>();
+    protected final List<Consumer<T>> messageConsumers = new CopyOnWriteArrayList<>();
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected Channel channel;
@@ -195,21 +177,41 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     protected abstract EventLoopGroup getWorkerGroup();
 
-    protected abstract ChannelFuture startChannel();
+    /**
+     * Start the actual connection and return a future indicating completion state. Implementors can also
+     * add any custom connection logic they require.
+     */
+    protected abstract Future<Void> startChannel();
 
     protected void configureChannel() {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, getConnectTimeoutMillis());
     }
 
     @Override
-    public synchronized void connect() {
-        if (connectionStatus != ConnectionStatus.DISCONNECTED) {
-            LOG.finest("Must be disconnected before calling connect: " + getClientUri());
-            return;
+    public void connect() {
+        synchronized (this) {
+            if (connectionStatus != ConnectionStatus.DISCONNECTED) {
+                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
+                return;
+            }
+
+            LOG.fine("Connecting IO Client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        LOG.fine("Connecting IO Client: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+        // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
+        workerGroup = getWorkerGroup();
+        bootstrap = new Bootstrap();
+        bootstrap.channel(getChannelClass());
+        configureChannel();
+        bootstrap.group(workerGroup);
+
+        bootstrap.handler(new ChannelInitializer<>() {
+            @Override
+            public void initChannel(Channel channel) throws Exception {
+            AbstractNettyIOClient.this.initChannel(channel);
+            }
+        });
 
         scheduleDoConnect(100);
     }
@@ -221,135 +223,75 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
             .withJitter(Duration.ofMillis(delay))
             .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
-            .handle(ExecutionException.class)
+            .handle(Exception.class)
             .onRetryScheduled((execution) ->
                 LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
-            .onFailedAttempt((execution) ->
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()))
+            .onFailedAttempt((execution) -> {
+                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri());
+                doDisconnect();
+            })
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
-        AtomicReference<Future<Void>> connectFutureRef = new AtomicReference<>();
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
 
             LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
-            connectFutureRef.set(doConnect());
-            connectFutureRef.get().get();
-
-            // Add closed callback
-            channel.closeFuture().addListener(closedFuture -> {
-                synchronized (this) {
-                    if (connectionStatus == ConnectionStatus.CONNECTED) {
-                        LOG.info("Connection closed un-expectedly: " + getClientUri());
-                        onConnectionStatusChanged(ConnectionStatus.CONNECTING);
-                        doDisconnect();
-                        scheduleDoConnect(5000);
-                    }
-                }
-            });
-
+            // Connection future should timeout so we just wait for it but add additional timeout just in case
+            Future<Void> connectFuture = doConnect();
+            waitForConnectFuture(connectFuture);
             execution.recordResult(null);
         }).whenComplete((result, ex) -> {
-            if (ex instanceof InterruptedException) {
-                connectFutureRef.get().cancel(true);
-            }
             if (ex != null) {
-                LOG.log(Level.INFO, "Connection attempt failed: " + getClientUri(), ex);
                 // Cleanup resources
-                doDisconnect();
+                disconnect();
             } else {
                 synchronized (this) {
                     if (connectionStatus == ConnectionStatus.CONNECTING) {
+                        LOG.fine("Connection attempt success: " + getClientUri());
                         onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                    } else {
-                        doDisconnect();
                     }
                 }
             }
         });
     }
 
-    protected Future<Void> doConnect() {
-
-        LOG.info("Establishing connection: " + getClientUri());
-
-        if (workerGroup == null) {
-            // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
-            workerGroup = getWorkerGroup();
-        }
-
-        bootstrap = new Bootstrap();
-        bootstrap.channel(getChannelClass());
-        configureChannel();
-        bootstrap.group(workerGroup);
-
-        bootstrap.handler(new ChannelInitializer<Channel>() {
-            @Override
-            public void initChannel(Channel channel) throws Exception {
-                AbstractNettyIOClient.this.initChannel(channel);
-            }
-        });
-
-        // Start and store the channel
-        ChannelFuture channelStartFuture = startChannel();
-        channel = channelStartFuture.channel();
-
-        return createConnectedFuture(channelStartFuture)
-            .whenComplete((result, ex) -> {
-                if (ex instanceof InterruptedException) {
-                    // Cancel the connection
-                    channelStartFuture.cancel(true);
-                }
-                if (ex != null) {
-                    // Cleanup resources
-                    doDisconnect();
-                }
-            });
+    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * A wrapper to provide a java concurrent future; can be overridden in subclasses to add additional connection logic
-     * on top of simply establishing the channel.
-     */
-    protected CompletableFuture<Void> createConnectedFuture(final ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = new CompletableFuture<>();
-        channelStartFuture.addListener(future -> {
-            if (future.isCancelled()) {
-                return;
-            }
-            if (future.cause() != null) {
-                connectedFuture.completeExceptionally(future.cause());
-            } else if (!future.isSuccess()) {
-                connectedFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
-            } else {
-                connectedFuture.complete(null);
-            }
-        });
-        return connectedFuture;
+    protected Future<Void> doConnect() {
+        LOG.info("Establishing connection: " + getClientUri());
+        // Start the channel
+        return startChannel();
     }
 
     @Override
-    public synchronized void disconnect() {
-        if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
-            LOG.finest("Already disconnected or disconnecting: " + getClientUri());
-            return;
-        }
+    public void disconnect() {
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+                LOG.finest("Already disconnected or disconnecting: " + getClientUri());
+                return;
+            }
 
-        LOG.fine("Disconnecting IO client: " + getClientUri());
-        onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
+            LOG.fine("Disconnecting IO client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
+        }
 
         if (connectRetry != null) {
             connectRetry.cancel(true);
-            try {
-                connectRetry.get();
-            } catch (CancellationException | InterruptedException | ExecutionException ignored) {
-            } catch (Exception e) {
-                LOG.log(Level.FINE, "Failed to wait for connection retry future: " + getClientUri());
-            }
             connectRetry = null;
         }
         doDisconnect();
+        if (workerGroup != null) {
+            workerGroup.shutdownGracefully();
+            workerGroup = null;
+        }
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+    }
+
+    protected void doReconnect() {
+        doDisconnect();
+        scheduleDoConnect(5000);
     }
 
     protected void doDisconnect() {
@@ -357,17 +299,16 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         try {
             // Close the channel
             if (channel != null) {
-                channel.disconnect();
-                channel.close();
+                try {
+                    channel.disconnect().await();
+                } catch (Exception ignored) {}
+                try {
+                    channel.close().await();
+                } catch (Exception ignored) {}
                 channel = null;
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), e);
-        } finally {
-            if (workerGroup != null) {
-                workerGroup.shutdownGracefully();
-                workerGroup = null;
-            }
         }
         LOG.finest("Disconnect done: " + getClientUri());
     }
@@ -411,36 +352,75 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void addMessageConsumer(Consumer<T> messageConsumer) {
-        synchronized (messageConsumers) {
-            if (!messageConsumers.contains(messageConsumer)) {
-                messageConsumers.add(messageConsumer);
-            }
+        if (!messageConsumers.contains(messageConsumer)) {
+            messageConsumers.add(messageConsumer);
         }
     }
 
     @Override
     public void removeMessageConsumer(Consumer<T> messageConsumer) {
-        synchronized (messageConsumers) {
-            messageConsumers.remove(messageConsumer);
-        }
+        messageConsumers.remove(messageConsumer);
     }
 
     @Override
     public void removeAllMessageConsumers() {
-        synchronized (messageConsumers) {
-            messageConsumers.clear();
-        }
+        messageConsumers.clear();
     }
 
     /**
-     * Inserts the decoders and encoders into the channel pipeline
+     * Inserts the decoders and encoders into the channel pipeline and configures standard exception handling and logging
      */
     protected void initChannel(Channel channel) throws Exception {
-        // Below is un-necessary as channel listener handles this
+        this.channel = channel;
         addEncodersDecoders(channel);
+
+        // Add closed callback for logging and reconnect
+        channel.closeFuture().addListener(closedFuture -> {
+            boolean reconnect = false;
+
+            if (!closedFuture.isSuccess() && closedFuture.cause() != null) {
+                LOG.info("Connection closed with exception on '" + getClientUri() + "': " + closedFuture.cause().getMessage());
+            }
+
+            synchronized (this) {
+                if (connectionStatus == ConnectionStatus.CONNECTED) {
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTING);
+                    reconnect = true;
+                }
+            }
+
+            if (reconnect) {
+                doReconnect();
+            }
+        });
+
+        // Add inbound exception handler at end of inbound chain
+        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                if (cause instanceof DecoderException decoderException) {
+                    onDecodeException(ctx, decoderException);
+                } else if (cause instanceof EncoderException encoderException) {
+                    onEncodeException(ctx, encoderException);
+                } else {
+                    // Agressively force close the channel on other exceptions which will cause a reconnect
+                    ctx.close();
+                }
+            }
+        });
+
+        // Add promise listener at start of outbound chain (this is how to handle outbound exceptions)
+        channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                // Fire any failure through the channel pipeline the same as inbound exceptions
+                promise.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                super.write(ctx, msg, promise);
+            }
+        });
     }
 
-    protected void addEncodersDecoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) throws Exception {
         if (encoderDecoderProvider != null) {
             ChannelHandler[] handlers = encoderDecoderProvider.get();
             if (handlers != null) {
@@ -457,17 +437,17 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             try {
                 consumer.accept(message);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception occurred in message handler: " + getClientUri(), e);
+                LOG.log(Level.WARNING, "Exception occurred in message handler '" + e.getMessage() + "':" + getClientUri());
             }
         });
     }
 
-    protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.FINE, "Exception occurred on in-bound message '" + cause.getMessage() +"': " + getClientUri());
+    protected void onDecodeException(ChannelHandlerContext ctx, DecoderException decoderException) {
+        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() +"': " + getClientUri(), decoderException);
     }
 
-    protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.log(Level.FINE, "Exception occurred on out-bound message '" + cause.getMessage() +"': " + getClientUri());
+    protected void onEncodeException(ChannelHandlerContext ctx, EncoderException encoderException) {
+        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() +"': " + getClientUri(), encoderException);
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
@@ -491,5 +471,31 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     @Override
     public String toString() {
         return getClientUri();
+    }
+
+    // Not ideal but need to chain futures
+    // TODO: Replace once netty uses completable futures
+    public static CompletableFuture<Void> toCompletableFuture(Future<Void> future) throws UnsupportedOperationException {
+        if (future instanceof CompletableFuture<Void> completableFuture) {
+            return completableFuture;
+        }
+        if (future instanceof ChannelFuture channelFuture) {
+            CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+            channelFuture.addListener(cf -> {
+                if (cf.isCancelled()) {
+                    completableFuture.cancel(true);
+                    return;
+                }
+                if (cf.cause() != null) {
+                    completableFuture.completeExceptionally(cf.cause());
+                } else if (!cf.isSuccess()) {
+                    completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+                } else {
+                    completableFuture.complete(null);
+                }
+            });
+            return completableFuture;
+        }
+        throw new UnsupportedOperationException("Future must be a ChannelFuture or already a CompletableFuture");
     }
 }

@@ -31,6 +31,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
@@ -70,7 +71,7 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected void addEncodersDecoders(Channel channel) {
+    protected void addEncodersDecoders(Channel channel) throws Exception {
         channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
@@ -89,7 +90,7 @@ public class UDPIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> 
     }
 
     @Override
-    protected ChannelFuture startChannel() {
+    protected Future<Void> startChannel() {
         return bootstrap.bind("0.0.0.0", bindPort);
     }
 

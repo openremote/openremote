@@ -149,6 +149,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         connectionRealmMap.forEach((realm, connection) -> {
             if (!connection.isDisabled()) {
                 clientRealmMap.put(realm, createGatewayClient(connection));
+                clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
             }
         });
     }
@@ -162,6 +163,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         });
         clientRealmMap.clear();
         connectionRealmMap.clear();
+        clientAttributeTimestamps.clear();
     }
 
     @Override
@@ -187,19 +189,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
                 case UPDATE:
                     GatewayIOClient client = clientRealmMap.remove(connection.getLocalRealm());
+                    clientAttributeTimestamps.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
-                    }
-                    if (connection.isDisabled()) {
-                        clientAttributeTimestamps.remove(connection.getLocalRealm());
                     }
                 case CREATE:
                     connectionRealmMap.put(connection.getLocalRealm(), connection);
                     if (!connection.isDisabled()) {
                         clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
-                    }
-                    // Gateway connection can become disabled if an error occurred during creation
-                    if (!connection.isDisabled()) {
                         clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
                     }
                     break;
