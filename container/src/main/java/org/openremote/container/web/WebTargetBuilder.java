@@ -68,6 +68,7 @@ public class WebTargetBuilder {
     protected Map<String, List<String>> injectHeaders;
     protected Map<String, List<String>> injectQueryParameters;
     protected boolean followRedirects = false;
+    private Map<String, List<String>> updateResponseHeaders;
 
     public WebTargetBuilder(ResteasyClient client, URI baseUri) {
         this.client = client;
@@ -100,6 +101,11 @@ public class WebTargetBuilder {
 
     public WebTargetBuilder setInjectQueryParameters(Map<String, List<String>> injectQueryParameters) {
         this.injectQueryParameters = injectQueryParameters;
+        return this;
+    }
+
+    public WebTargetBuilder setUpdateResponseHeaders(Map<String, List<String>> updateResponseHeaders) {
+        this.updateResponseHeaders = updateResponseHeaders;
         return this;
     }
 
@@ -170,6 +176,10 @@ public class WebTargetBuilder {
 
         if (followRedirects) {
             target.register(new FollowRedirectFilter());
+        }
+
+        if (updateResponseHeaders != null) {
+            target.register(new ResponseHeaderUpdateFilter(updateResponseHeaders));
         }
 
         return target;
