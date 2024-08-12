@@ -232,19 +232,24 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected void doSubscriptions(Map<String, List<String>> headers, WebsocketSubscription[] subscriptions) {
         LOG.info("Executing subscriptions for websocket: " + client.getClientUri());
 
-        // Inject OAuth header
-        if (!TextUtil.isNullOrEmpty(client.authHeaderValue)) {
-            if (headers == null) {
-                headers = new MultivaluedHashMap<>();
+        try {
+            // Inject OAuth header
+            String authHeaderValue = client.getAuthHeader();
+            if (authHeaderValue != null) {
+                if (headers == null) {
+                    headers = new MultivaluedHashMap<>();
+                }
+                headers.remove(HttpHeaders.AUTHORIZATION);
+                headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authHeaderValue));
             }
-            headers.remove(HttpHeaders.AUTHORIZATION);
-            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.authHeaderValue));
-        }
 
-        Map<String, List<String>> finalHeaders = headers;
-        Arrays.stream(subscriptions).forEach(
-            subscription -> doSubscription(finalHeaders, subscription)
-        );
+            Map<String, List<String>> finalHeaders = headers;
+            Arrays.stream(subscriptions).forEach(
+                subscription -> doSubscription(finalHeaders, subscription)
+            );
+        } catch (Exception e) {
+            LOG.info("An exception occurred executing subscriptions: " + e.getMessage());
+        }
     }
 
     protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {

@@ -28,13 +28,10 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    volumes:
+    #volumes:
     #   Map custom themes
-      - ../deployment:/deployment
+    #  - ../deployment:/deployment
     # Access directly if needed on localhost
-    environment:
-      # Prevent theme caching during dev
-      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
     ports:
       - "8081:8080"
     # Following options are useful for tunnelling functionality do not use on public instance

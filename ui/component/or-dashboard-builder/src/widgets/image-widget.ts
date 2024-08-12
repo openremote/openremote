@@ -101,7 +101,7 @@ export class ImageWidget extends OrAssetWidget {
         return [...super.styles, styling];
     }
 
-    updated(changedProps: PropertyValues) {
+    willUpdate(changedProps: PropertyValues) {
 
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             const attributeRefs = this.widgetConfig.attributeRefs;
@@ -110,6 +110,8 @@ export class ImageWidget extends OrAssetWidget {
                 this.loadAssets();
             }
         }
+
+        return super.willUpdate(changedProps);
     }
 
     protected loadAssets() {
