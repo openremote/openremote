@@ -20,6 +20,9 @@
 package org.openremote.test.protocol.websocket
 
 import io.netty.channel.ChannelHandler
+import io.netty.handler.codec.string.StringDecoder
+import io.netty.handler.codec.string.StringEncoder
+import io.netty.util.CharsetUtil
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
@@ -99,7 +102,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         "testuser3",
                         "testuser3"))
         client.setEncoderDecoderProvider({
-            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
+            [
+                new StringEncoder(CharsetUtil.UTF_8),
+                new StringDecoder(CharsetUtil.UTF_8),
+                new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
+            ].toArray(new ChannelHandler[0])
         })
 
         and: "another Websocket client with another restricted user"
@@ -113,7 +120,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         "building",
                         "building"))
         client2.setEncoderDecoderProvider({
-            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client2)].toArray(new ChannelHandler[0])
+            [
+                    new StringEncoder(CharsetUtil.UTF_8),
+                    new StringDecoder(CharsetUtil.UTF_8),
+                    new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client2)
+            ].toArray(new ChannelHandler[0])
         })
 
         and: "we add callback consumers to the clients"
@@ -148,10 +159,6 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert client2.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus2 == ConnectionStatus.CONNECTED
         }
-
-        // TODO: Remove this once client supports some better connection logic
-        and: "some time passes to allow the connection to be fully initialised"
-        sleep(3000)
 
         when: "we subscribe to attribute events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
