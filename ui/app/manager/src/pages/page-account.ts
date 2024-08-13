@@ -204,18 +204,20 @@ export class PageAccount extends Page<AppStateKeyed>  {
                     
                 </div>
                 
-                <div class="panel">
-                    <p class="panel-title">
-                        <or-translate value="twoFactorAuth"></or-translate>
-                    </p>
-                    <div class="row">
-                        <div class="column">
-                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('twoFactorConfigure')}" outlined
-                                          @or-mwc-input-changed="${() => manager.login({ action: "CONFIGURE_TOTP" })}"
-                            ></or-mwc-input>
+                ${when(manager.isKeycloak(), () => html`
+                    <div class="panel">
+                        <p class="panel-title">
+                            <or-translate value="twoFactorAuth"></or-translate>
+                        </p>
+                        <div class="row">
+                            <div class="column">
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('twoFactorConfigure')}" outlined
+                                              @or-mwc-input-changed="${() => manager.login({ action: "CONFIGURE_TOTP" })}"
+                                ></or-mwc-input>
+                            </div>
                         </div>
                     </div>
-                </div>
+                `)}
             </div>
         `;
     }
