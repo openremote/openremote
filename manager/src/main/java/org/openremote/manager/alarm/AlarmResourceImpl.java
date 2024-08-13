@@ -45,9 +45,9 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams) {
         try{
-            return alarmService.getAlarms().toArray(new SentAlarm[0]);
+            return alarmService.getAlarms(getAuthenticatedRealmName()).toArray(new SentAlarm[0]);
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(this.invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
         }
     }
 
@@ -56,14 +56,14 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         try{
             alarmService.removeAlarms(ids, getAuthenticatedRealmName());
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(this.invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
         }
     }
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
         if (alarmId == null) {
-            throw new WebApplicationException(this.missingId, Status.BAD_REQUEST);
+            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
         }
         alarmService.removeAlarm(alarmId, getAuthenticatedRealmName());
     }
@@ -89,9 +89,9 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
     @Override
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
         if (alarmId == null) {
-            throw new WebApplicationException(this.missingId, Status.BAD_REQUEST);
+            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
         }
-        this.verifyAccess(alarm);
+        verifyAccess(alarm);
         alarmService.updateAlarm(alarmId, alarm);
     }
 
@@ -108,17 +108,17 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
         try{
             return alarmService.getOpenAlarms();
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(this.invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
         }
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
         if (alarmId == null) {
-            throw new WebApplicationException(this.missingId, Status.BAD_REQUEST);
+            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
         }
         if (realm == null) {
-            throw new WebApplicationException(this.missingRealm, Status.BAD_REQUEST);
+            throw new WebApplicationException(missingRealm, Status.BAD_REQUEST);
         }
         return alarmService.getAssetLinks(alarmId, realm);
     }
