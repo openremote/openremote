@@ -378,9 +378,7 @@ jobs:
                 if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
                   dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release" and refName in eventConfig:
-
-              eventConfig = eventConfig[refName]
+            elif eventName == "release":
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
                 if 'distribute' in eventConfig:
