@@ -359,15 +359,24 @@ export class Console {
 
 
     public async retrieveData<T>(key: string): Promise<T | undefined> {
-        let response = await this.sendProviderMessage({
+        let responsePromise = this.sendProviderMessage({
             provider: "storage",
             action: "RETRIEVE",
             key: key
         }, true);
 
-        if (response && response.value) {
-            return response.value as T;
+        // This is here to deal with lack of response from storage provider
+        // Storage provider should respond quickly
+        try {
+            const response = await Promise.race([responsePromise, new Promise<T>((resolve, reject) => setTimeout(reject, 2000))]);
+            if (response && response.value) {
+                const value = response.value as T;
+                return value === "null" ? undefined : value;
+            }
+        } catch (e) {
+            console.log("Failed to retrieve data from storage provider");
         }
+        return undefined;
     }
 
     public addProviderMessageListener(providerAction: ProviderAction, listener: (msg: ProviderMessage) => void) {
