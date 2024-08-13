@@ -203,6 +203,19 @@ export class PageAccount extends Page<AppStateKeyed>  {
                     ${when(this._user, () => until(this._getActionsRowTemplate(this._user)))}
                     
                 </div>
+                
+                <div class="panel">
+                    <p class="panel-title">
+                        <or-translate value="twoFactorAuth"></or-translate>
+                    </p>
+                    <div class="row">
+                        <div class="column">
+                            <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('twoFactorConfigure')}" outlined
+                                          @or-mwc-input-changed="${() => manager.login({ action: "CONFIGURE_TOTP" })}"
+                            ></or-mwc-input>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
