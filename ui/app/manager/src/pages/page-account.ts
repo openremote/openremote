@@ -402,7 +402,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
         if(!this._user) {
             try {
                 const usersResponse = await manager.rest.api.UserResource.query({
-                    realmPredicate: {name: manager.displayRealm},
+                    realmPredicate: {name: manager.getRealm()},
                     usernames: [{predicateType: "string", value: manager.username}],
                     limit: 1
                 } as UserQuery);
@@ -428,10 +428,10 @@ export class PageAccount extends Page<AppStateKeyed>  {
      * If the password has been changed, it will, after updating the user, also request to reset the password.
      */
     protected async _updateUser(user: UserModel): Promise<void> {
-        await manager.rest.api.UserResource.update(manager.displayRealm, user).then(() => {
+        await manager.rest.api.UserResource.update(manager.getRealm(), user).then(() => {
             if(user.password) {
                 const credentials = {value: user.password};
-                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
+                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials);
             }
             this._dirty = false;
             showSnackbar(undefined, "saveUserSucceeded");
