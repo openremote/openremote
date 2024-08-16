@@ -42,12 +42,12 @@ public class Alarm {
                  @JsonProperty("content") String content,
                  @JsonProperty("severity") Severity severity,
                  @JsonProperty("assigneeId") String assignee,
-                 @JsonProperty("realm") String realm){
+                 @JsonProperty("realm") String realm) {
         this.title = title;
         this.content = content;
         this.severity = severity;
         this.status = Status.OPEN;
-        if(assignee != null){
+        if (assignee != null) {
             this.assigneeId = assignee;
         }
         this.realm = realm;

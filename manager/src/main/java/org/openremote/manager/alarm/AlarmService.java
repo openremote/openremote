@@ -5,13 +5,11 @@ import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.*;
-import org.openremote.model.alarm.Alarm.Status;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.manager.event.ClientEventService;
@@ -35,14 +33,12 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
 
-    private static final Logger LOGGER = Logger.getLogger(org.openremote.manager.alarm.AlarmService.class.getName());
-    protected TimerService timerService;
-    protected PersistenceService persistenceService;
-    protected AssetStorageService assetStorageService;
-    protected ManagerIdentityService identityService;
-    protected MessageBrokerService messageBrokerService;
-    protected NotificationService notificationService;
-    protected ClientEventService clientEventService;
+    private static final Logger LOGGER = Logger.getLogger(AlarmService.class.getName());
+    private TimerService timerService;
+    private PersistenceService persistenceService;
+    private ManagerIdentityService identityService;
+    private NotificationService notificationService;
+    private ClientEventService clientEventService;
 
     @Override
     public int getPriority() {
@@ -52,18 +48,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         this.timerService = container.getService(TimerService.class);
-        this.persistenceService = container.getService(PersistenceService.class);
-        this.assetStorageService = container.getService(AssetStorageService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
-        this.messageBrokerService = container.getService(MessageBrokerService.class);
+        this.persistenceService = container.getService(PersistenceService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.clientEventService = container.getService(ClientEventService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         container.getService(ManagerWebService.class).addApiSingleton(
-                new AlarmResourceImpl(this,
-                        container.getService(MessageBrokerService.class),
-                        container.getService(AssetStorageService.class),
-                        container.getService(ManagerIdentityService.class))
+                new AlarmResourceImpl(timerService, identityService, this)
         );
         clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
             if (!eventSubscription.isEventType(AlarmEvent.class) || authContext == null) {
@@ -135,38 +126,33 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     private void sendAssigneeNotification(Alarm alarm) {
         try {
-            List<Notification.Target> assignee = new ArrayList<>();
             if (alarm.getAssignee().isEmpty()) {
                 // TODO Get users by role??
                 return;
             }
-            assignee.add(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee()));
-            User result = persistenceService.doReturningTransaction(entityManager -> {
-                TypedQuery<User> query = entityManager.createQuery("select u from User u where u.id=:id", User.class);
-                query.setParameter("id", alarm.getAssignee());
-                return query.getSingleResult();
-            });
+
+            User user = identityService.getIdentityProvider().getUser(alarm.getAssignee());
+
+            String text = "Assigned to alarm: " + alarm.getTitle() + "\n" +
+                    "Description: " + alarm.getContent() + "\n" +
+                    "Severity: " + alarm.getSeverity() + "\n" +
+                    "Status: " + alarm.getStatus();
+
             Notification email = new Notification();
             email.setName("New Alarm")
                     .setMessage(new EmailNotificationMessage()
-                    .setText("Assigned to alarm: " + alarm.getTitle() + "\n" +
-                            "Description: " + alarm.getContent() + "\n" +
-                            "Severity: " + alarm.getSeverity() + "\n" +
-                            "Status: " + alarm.getStatus())
+                    .setText(text)
                     .setSubject("New Alarm Notification")
-                    .setTo(new EmailNotificationMessage.Recipient(result.getFullName(), result.getEmail())));
+                    .setTo(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())));
 
             Notification push = new Notification();
             push.setName("New Alarm")
                     .setMessage(
                     new PushNotificationMessage()
                             .setTitle("Alarm: " + alarm.getTitle())
-                            .setBody("Assigned to alarm: " + alarm.getTitle() + "\n" +
-                                    "Description: " + alarm.getContent() + "\n" +
-                                    "Severity: " + alarm.getSeverity() + "\n" +
-                                    "Status: " + alarm.getStatus())
+                            .setBody(text)
                     )
-                    .setTargets(assignee);
+                    .setTargets(List.of(new Notification.Target(Notification.TargetType.USER, alarm.getAssignee())));
 
             notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
             notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
@@ -275,7 +261,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     public void linkAssets(List<AlarmAssetLink> links) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
             try {
-                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");;
+                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (sentalarm_id, realm, asset_id) DO NOTHING");
                 for (AlarmAssetLink link : links) {
                     st.setLong(1, link.getId().getAlarmId());
                     st.setString(2, link.getId().getRealm());
@@ -363,7 +349,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             });
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to get alarms", e);
+            throw new IllegalStateException("Failed to get alarms in '" + realm  + "' realm", e);
         }
     }
 
@@ -376,7 +362,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             );
             clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to remove alarm", e);
+            throw new IllegalStateException("Failed to remove alarm " + id + " in '" + realm + "' realm" , e);
         }
     }
 
@@ -390,7 +376,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to remove alarms", e);
+            throw new IllegalStateException("Failed to remove alarms in '" + realm + "' realm", e);
         }
     }
 }

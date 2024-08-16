@@ -59,7 +59,7 @@ public class SentAlarm {
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
 
-    @Column(name= "ASSIGNEE_ID")
+    @Column(name = "ASSIGNEE_ID")
     protected String assigneeId;
 
     @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = ASSIGNEE_ID)")
@@ -69,56 +69,72 @@ public class SentAlarm {
     @JoinTable(name = "ALARM_ASSET_LINK")
     protected List<Asset<?>> asset = new ArrayList<>();
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
     public SentAlarm setId(Long id) {
         this.id = id;
         return this;
     }
 
-    public String getRealm() { return realm; }
+    public String getRealm() {
+        return realm;
+    }
 
     public SentAlarm setRealm(String realm) {
         this.realm = realm;
         return this;
     }
 
-    public String getTitle() { return title; }
+    public String getTitle() {
+        return title;
+    }
 
-    public SentAlarm setTitle(String title){
+    public SentAlarm setTitle(String title) {
         this.title = title;
         return this;
     }
 
-    public String getContent() { return content; }
+    public String getContent() {
+        return content;
+    }
 
-    public SentAlarm setContent(String content){
+    public SentAlarm setContent(String content) {
         this.content = content;
         return this;
     }
 
-    public Alarm.Severity getSeverity() { return severity; }
+    public Alarm.Severity getSeverity() {
+        return severity;
+    }
 
     public SentAlarm setSeverity(Alarm.Severity severity) {
         this.severity = severity;
         return this;
     }
 
-    public Alarm.Status getStatus() { return status; }
+    public Alarm.Status getStatus() {
+        return status;
+    }
 
     public SentAlarm setStatus(Alarm.Status status) {
         this.status = status;
         return this;
     }
 
-    public Alarm.Source getSource() { return source; }
+    public Alarm.Source getSource() {
+        return source;
+    }
 
     public SentAlarm setSource(Alarm.Source source) {
         this.source = source;
         return this;
     }
 
-    public String getSourceId() { return sourceId; }
+    public String getSourceId() {
+        return sourceId;
+    }
 
     public SentAlarm setSourceId(String sourceId) {
         this.sourceId = sourceId;

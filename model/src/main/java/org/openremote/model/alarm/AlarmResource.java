@@ -8,7 +8,6 @@ import org.openremote.model.http.RequestParams;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -24,27 +23,22 @@ public interface AlarmResource {
     @RolesAllowed({ Constants.READ_ALARMS_ROLE })
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
 
-
     @DELETE
     @Path("alarms")
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void removeAlarms(@BeanParam RequestParams requestParams, @RequestBody List<Long> ids);
 
-
-     @DELETE
-     @Path("{alarmId}")
-     @Consumes(APPLICATION_JSON)
-     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-     void removeAlarm(@BeanParam RequestParams requestParams,
-                      @PathParam("alarmId") Long alarmId);
-
+    @DELETE
+    @Path("{alarmId}")
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+    void removeAlarm(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    SentAlarm createAlarm(@BeanParam RequestParams requestParams,
-            Alarm alarm);
+    SentAlarm createAlarm(@BeanParam RequestParams requestParams, Alarm alarm);
 
     @Path("{source}/{sourceId}")
     @POST
@@ -57,30 +51,28 @@ public interface AlarmResource {
     @PUT
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
-    void updateAlarm(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            SentAlarm alarm);
+    void updateAlarm(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, SentAlarm alarm);
 
     @Path("assets")
     @PUT
-    void setAssetLinks(@BeanParam RequestParams requestParams,
-                      @RequestBody ArrayList<AlarmAssetLink> links);
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
+    void setAssetLinks(@BeanParam RequestParams requestParams, @RequestBody List<AlarmAssetLink> links);
 
     @Path("{alarmId}/assets")
     @GET
     @Produces(APPLICATION_JSON)
-    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams,
-            @PathParam("alarmId") Long alarmId,
-            String realm);
+    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, String realm);
 
     @Path("{assetId}/alarms")
     @GET
     @Produces(APPLICATION_JSON)
-    List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams,
-                                       @PathParam("assetId") String assetId);
+    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     @Path("open")
     @GET
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
 }

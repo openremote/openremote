@@ -1,9 +1,8 @@
 package org.openremote.manager.alarm;
 
-import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.WebResource;
-import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.alarm.AlarmResource;
 import org.openremote.model.alarm.SentAlarm;
@@ -13,58 +12,60 @@ import org.openremote.model.http.RequestParams;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
-public class AlarmResourceImpl extends WebResource implements AlarmResource {
-    private static final Logger LOG = Logger.getLogger(AlarmResourceImpl.class.getName());
+public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
-    protected final AlarmService alarmService;
-    protected final MessageBrokerService messageBrokerService;
-    protected final AssetStorageService assetStorageService;
-    protected final String invalidCriteria;
-    protected final String missingId;
-    protected final String missingRealm;
+    private static final String INVALID_CRITERIA_SET = "Invalid criteria set";
 
-    final ManagerIdentityService managerIdentityService;
+    private final AlarmService alarmService;
 
-    public AlarmResourceImpl(AlarmService alarmService,
-                             MessageBrokerService messageBrokerService,
-                             AssetStorageService assetStorageService,
-                             ManagerIdentityService managerIdentityService) {
+    public AlarmResourceImpl(TimerService timerService,
+                             ManagerIdentityService identityService,
+                             AlarmService alarmService) {
+        super(timerService, identityService);
         this.alarmService = alarmService;
-        this.messageBrokerService = messageBrokerService;
-        this.assetStorageService = assetStorageService;
-        this.managerIdentityService = managerIdentityService;
-        this.invalidCriteria = "Invalid criteria set";
-        this.missingId = "Missing alarm ID";
-        this.missingRealm = "Missing realm";
+    }
+
+    private void validateAlarmId(Long alarmId) {
+        if (alarmId == null) {
+            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
+        }
+        if (alarmId < 0) {
+            throw new WebApplicationException("Alarm ID cannot be negative", Status.BAD_REQUEST);
+        }
+    }
+
+    private void validateRealm(String realm) {
+        if (realm == null) {
+            throw new WebApplicationException("Realm cannot be null", Status.BAD_REQUEST);
+        }
+        if (!realm.isBlank() && !isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException("Realm '" + realm + "' is not active or inaccessible", Status.FORBIDDEN);
+        }
     }
 
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams) {
-        try{
+        try {
             return alarmService.getAlarms(getAuthenticatedRealmName()).toArray(new SentAlarm[0]);
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> ids) {
-        try{
+        try {
             alarmService.removeAlarms(ids, getAuthenticatedRealmName());
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }
     }
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
-        if (alarmId == null) {
-            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
-        }
+        validateAlarmId(alarmId);
         alarmService.removeAlarm(alarmId, getAuthenticatedRealmName());
     }
 
@@ -88,10 +89,11 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
-        if (alarmId == null) {
-            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
+        validateAlarmId(alarmId);
+        if (alarm == null) {
+            throw new WebApplicationException("Alarm cannot be null", Status.BAD_REQUEST);
         }
-        verifyAccess(alarm);
+
         alarmService.updateAlarm(alarmId, alarm);
     }
 
@@ -105,46 +107,26 @@ public class AlarmResourceImpl extends WebResource implements AlarmResource {
 
     @Override
     public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
-        try{
+        try {
             return alarmService.getOpenAlarms();
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(invalidCriteria, Status.BAD_REQUEST);
+            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        if (alarmId == null) {
-            throw new WebApplicationException(missingId, Status.BAD_REQUEST);
-        }
-        if (realm == null) {
-            throw new WebApplicationException(missingRealm, Status.BAD_REQUEST);
-        }
+        validateAlarmId(alarmId);
+        validateRealm(realm);
         return alarmService.getAssetLinks(alarmId, realm);
     }
 
     @Override
-    public void setAssetLinks(RequestParams requestParams, ArrayList<AlarmAssetLink> links) {
-        if(links.isEmpty()){
+    public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
+        if (links == null || links.isEmpty()) {
             throw new WebApplicationException("Missing links", Status.BAD_REQUEST);
         }
         alarmService.linkAssets(links);
     }
 
-    protected void verifyAccess(SentAlarm sentAlarm) {
-        if (sentAlarm == null) {
-            LOG.fine("DENIED: Alarm not found");
-            throw new WebApplicationException(Status.NOT_FOUND);
-        }
-
-        if (isSuperUser()) {
-            LOG.finest("ALLOWED: Request from super user");
-            return;
-        }
-
-        if (!isAuthenticated()) {
-            LOG.fine("DENIED: Anonymous request are forbidden");
-            throw new WebApplicationException(Status.FORBIDDEN);
-        }
-    }
 }
