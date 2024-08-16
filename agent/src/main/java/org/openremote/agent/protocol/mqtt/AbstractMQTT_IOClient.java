@@ -128,12 +128,15 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             .applyAutomaticReconnect();
 
         if (secure) {
-			MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
-			sslBuilder = sslBuilder.keyManagerFactory(keyManagerFactory);
-			sslBuilder = sslBuilder.trustManagerFactory(trustManagerFactory);
-
-			builder = builder.sslConfig(sslBuilder.build());
-		}
+            MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
+            if(keyManagerFactory != null){
+                sslBuilder = sslBuilder.keyManagerFactory(keyManagerFactory);
+            }
+	        if(trustManagerFactory != null){
+		        sslBuilder = sslBuilder.trustManagerFactory(trustManagerFactory);
+	        }
+            builder = builder.sslConfig(sslBuilder.build());
+        }
 
         if (websocketURI != null) {
             builder = builder

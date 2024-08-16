@@ -44,7 +44,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
 
-	protected KeyStoreService keyStoreService;
+    protected KeyStoreService keyStoreService;
 
     protected MQTTProtocol(MQTTAgent agent) {
         super(agent);
@@ -61,14 +61,14 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         });
     }
 
-	@Override
-	protected void doStart(Container container) throws Exception {
-		keyStoreService = container.getService(KeyStoreService.class);
-		if (keyStoreService == null) throw new Exception("Couldn't load KeyStoreService");
-		super.doStart(container);
-	}
+    @Override
+    protected void doStart(Container container) throws Exception {
+        keyStoreService = container.getService(KeyStoreService.class);
+        if (keyStoreService == null) throw new Exception("Couldn't load KeyStoreService");
+        super.doStart(container);
+    }
 
-	@Override
+    @Override
     protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) {
         agentLink.getSubscriptionTopic().ifPresent(topic -> {
             AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
@@ -89,7 +89,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
     @Override
     protected MQTT_IOClient doCreateIoClient() throws Exception {
-	    String host = agent.getHost().orElse(null);
+        String host = agent.getHost().orElse(null);
         int port = agent.getPort().orElseGet(() -> {
             if (agent.isSecureMode().orElse(false)) {
                 return agent.isWebsocketMode().orElse(false) ? 443 : 8883;
@@ -118,15 +118,17 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
 
-		//It's fine if they're null, they're not going to be used when creating the client
-	    TrustManagerFactory trustManagerFactory = null;
-		KeyManagerFactory keyManagerFactory = null;
-		if(agent.isSecureMode().orElse(false)){
+        //It's fine if they're null, they're not going to be used when creating the client
+        TrustManagerFactory trustManagerFactory = null;
+        KeyManagerFactory keyManagerFactory = null;
+        if(agent.isSecureMode().orElse(false)){
 			trustManagerFactory = keyStoreService.getTrustManagerFactory();
-			keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
-		}
+			if(agent.getCertificateAlias().isPresent()){
+                keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
+			}
+        }
 
-	    return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
+        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
     }
 
     @Override
