@@ -138,7 +138,7 @@ export class OrConfRealmCard extends LitElement {
 
 
     protected headerListSecondary: string[] = [
-        "gateway",
+        "gatewayHeaderItem",
         "export",
         "logs",
         "realms",
