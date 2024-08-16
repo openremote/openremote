@@ -9,6 +9,6 @@ import java.security.Provider;
 
 public class CustomX509TrustManagerFactory extends TrustManagerFactory {
 	public CustomX509TrustManagerFactory(KeyStore... keystores) throws KeyStoreException {
-		super(new CustomX509TrustManagerFactorySpi(keystores), new Provider("CustomX509TrustManagerFactory", 1.0, "Custom X509 Trust Manager Factory") {}, TrustManagerFactory.getDefaultAlgorithm());
+		super(new CustomX509TrustManagerFactorySpi(keystores), new Provider("CustomX509TrustManagerFactory", "1.0", "Custom X509 Trust Manager Factory") {}, TrustManagerFactory.getDefaultAlgorithm());
 	}
 }
