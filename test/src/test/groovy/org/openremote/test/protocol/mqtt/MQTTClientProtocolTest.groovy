@@ -10,7 +10,7 @@
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY without even the implied warranty of
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.openremote.test.protocol.mqtt
-
 
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.X509v3CertificateBuilder
@@ -51,7 +50,6 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
-import org.openremote.model.security.KeyStoreService
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
@@ -189,8 +187,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
 
         and: "External connectivity has been assured"
         try {
-            new Socket("test.mosquitto.org", 8884)
-            new Socket("test.mosquitto.org", 443)
+            assert new Socket("test.mosquitto.org", 8884) != null
+            assert new Socket("test.mosquitto.org", 443) != null
         } catch (Exception e) {
             throw new AssumptionViolatedException("No connectivity to external hosts, skip test");
         }
