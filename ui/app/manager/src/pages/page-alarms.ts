@@ -542,7 +542,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         this._loading = true;
-        const response = await manager.rest.api.AlarmResource.getAlarms();
+        const response = await manager.rest.api.AlarmResource.getAlarms(manager.displayRealm);
         if (manager.hasRole("read:user") || manager.hasRole("read:admin")) {
             const usersResponse = await manager.rest.api.UserResource.query({
                 realmPredicate: {name: manager.displayRealm},
@@ -984,7 +984,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             if(this.realm == state.app.realm){
                 if (state.app.params && state.app.params.id) {
                     const parsedId = Number(state.app.params.id);
-                    manager.rest.api.AlarmResource.getAlarms().then((alarms) => {
+                    manager.rest.api.AlarmResource.getAlarms(manager.displayRealm).then((alarms) => {
                         this.alarm = alarms.data.find((alarm) => alarm.id === parsedId) as AlarmModel;
                         this.alarm.loaded = false;
                         this.alarm.loading = false;

@@ -273,8 +273,8 @@ public class JsonRulesBuilder extends RulesBuilder {
             } else {
 
                 Map<Boolean, List<AttributeInfo>> results = new HashMap<>();
-                ArrayList<AttributeInfo> matched = new ArrayList<>();
-                ArrayList<AttributeInfo> unmatched = new ArrayList<>();
+                List<AttributeInfo> matched = new ArrayList<>();
+                List<AttributeInfo> unmatched = new ArrayList<>();
                 results.put(true, matched);
                 results.put(false, unmatched);
 
@@ -941,7 +941,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         if (ruleAction instanceof  RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
                 Alarm alarm = alarmAction.alarm;
-                ArrayList<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
+                List<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
                 if(alarm.getContent() != null) {
                     String content = alarm.getContent();
                     if (!TextUtil.isNullOrEmpty(content) && (content.contains(PLACEHOLDER_TRIGGER_ASSETS))) {

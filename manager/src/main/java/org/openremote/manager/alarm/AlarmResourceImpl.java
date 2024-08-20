@@ -1,5 +1,6 @@
 package org.openremote.manager.alarm;
 
+import jakarta.ws.rs.PathParam;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -46,9 +47,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public SentAlarm[] getAlarms(RequestParams requestParams) {
+    public SentAlarm[] getAlarms(RequestParams requestParams, String realm) {
         try {
-            return alarmService.getAlarms(getAuthenticatedRealmName()).toArray(new SentAlarm[0]);
+            validateRealm(realm);
+            return alarmService.getAlarms(realm).toArray(new SentAlarm[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }

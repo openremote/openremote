@@ -17,11 +17,11 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Consumes(APPLICATION_JSON)
 public interface AlarmResource {
 
-    @Path("all")
+    @Path("all/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_ALARMS_ROLE })
-    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams);
+    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @DELETE
     @Path("alarms")
