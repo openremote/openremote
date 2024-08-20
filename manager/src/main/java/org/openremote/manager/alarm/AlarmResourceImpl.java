@@ -50,7 +50,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         }
 
         if (!isRealmActiveAndAccessible(alarm.getRealm())) {
-            throw new WebApplicationException("Alarms is in an nonexistent, inactive or inaccessible realm", FORBIDDEN);
+            throw new WebApplicationException("Alarm is in a nonexistent, inactive or inaccessible realm", FORBIDDEN);
         }
 
         return alarm.getRealm();
@@ -68,7 +68,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         Set<String> realms = alarms.stream().map(SentAlarm::getRealm).collect(Collectors.toSet());
 
         if (realms.stream().anyMatch(realm -> !isRealmActiveAndAccessible(realm))) {
-            throw new WebApplicationException("One or more alarms are in an nonexistent, inactive or inaccessible realm", FORBIDDEN);
+            throw new WebApplicationException("One or more alarms are in a nonexistent, inactive or inaccessible realm", FORBIDDEN);
         }
 
         return realms;

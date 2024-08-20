@@ -278,9 +278,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        StringBuilder sb = new StringBuilder("select al from AlarmAssetLink al where 1=1");
-        sb.append(" and al.id.realm = :realm");
-        sb.append(" and al.id.sentalarmId = :alarmId");
+        StringBuilder sb = new StringBuilder("select al from AlarmAssetLink al");
+        sb.append(" where al.id.realm = :realm and al.id.sentalarmId = :alarmId");
         sb.append(" order by al.createdOn desc");
 
         Map<String, Object> parameters = new HashMap<>();
@@ -367,24 +366,24 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public void removeAlarm(Long id, String realm) {
+    public void removeAlarm(Long alarmId, String realm) {
         try {
             persistenceService.doTransaction(entityManager -> entityManager
                     .createQuery("delete SentAlarm where id = :id")
-                    .setParameter("id", id)
+                    .setParameter("id", alarmId)
                     .executeUpdate()
             );
             clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to remove alarm " + id + " in '" + realm + "' realm" , e);
+            throw new IllegalStateException("Failed to remove alarm " + alarmId + " in '" + realm + "' realm" , e);
         }
     }
 
-    public void removeAlarms(List<Long> ids, Set<String> realms) throws IllegalArgumentException {
+    public void removeAlarms(List<Long> alarmIds, Set<String> realms) throws IllegalArgumentException {
         try {
             persistenceService.doTransaction(entityManager -> {
                 Query query = entityManager.createQuery("delete from SentAlarm n where n.id in :ids");
-                query.setParameter("ids", ids);
+                query.setParameter("ids", alarmIds);
                 query.executeUpdate();
             });
 
