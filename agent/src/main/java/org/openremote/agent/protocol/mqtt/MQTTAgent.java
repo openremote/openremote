@@ -82,12 +82,12 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public Optional<String> getCertificateAlias() {
-		return getAttributes().getValue(CLIENT_CERTIFICATE_ALIAS);
+        return getAttributes().getValue(CLIENT_CERTIFICATE_ALIAS);
 	}
 
     public MQTTAgent setCertificateAlias(String certificateAlias) {
-    	getAttributes().getOrCreate(CLIENT_CERTIFICATE_ALIAS).setValue(certificateAlias);
-    	return this;
+        getAttributes().getOrCreate(CLIENT_CERTIFICATE_ALIAS).setValue(certificateAlias);
+        return this;
     }
 
     public Optional<Boolean> isWebsocketMode() {
