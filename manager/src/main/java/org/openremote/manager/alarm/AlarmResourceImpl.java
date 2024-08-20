@@ -1,6 +1,5 @@
 package org.openremote.manager.alarm;
 
-import jakarta.ws.rs.PathParam;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -14,6 +13,12 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
@@ -37,13 +42,50 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         }
     }
 
-    private void validateRealm(String realm) {
-        if (realm == null) {
-            throw new WebApplicationException("Realm cannot be null", Status.BAD_REQUEST);
+    private String validateExistingAlarmId(Long alarmId) {
+        validateAlarmId(alarmId);
+        SentAlarm alarm = alarmService.getAlarm(alarmId);
+        if (alarm == null) {
+            throw new WebApplicationException("Alarm does not exist", BAD_REQUEST);
         }
-        if (!realm.isBlank() && !isRealmActiveAndAccessible(realm)) {
+
+        if (!isRealmActiveAndAccessible(alarm.getRealm())) {
+            throw new WebApplicationException("Alarms is in an nonexistent, inactive or inaccessible realm", FORBIDDEN);
+        }
+
+        return alarm.getRealm();
+    }
+
+    private Set<String> validateExistingAlarmIds(List<Long> alarmIds) {
+        alarmIds.forEach(this::validateAlarmId);
+
+        List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);
+
+        if (alarms == null || alarms.size() != alarmIds.size()) {
+            throw new WebApplicationException("One or more alarms do not exist", BAD_REQUEST);
+        }
+
+        Set<String> realms = alarms.stream().map(SentAlarm::getRealm).collect(Collectors.toSet());
+
+        if (realms.stream().anyMatch(realm -> !isRealmActiveAndAccessible(realm))) {
+            throw new WebApplicationException("One or more alarms are in an nonexistent, inactive or inaccessible realm", FORBIDDEN);
+        }
+
+        return realms;
+    }
+
+    private void validateRealm(String realm) {
+        if (!isRealmActiveAndAccessible(realm)) {
             throw new WebApplicationException("Realm '" + realm + "' is not active or inaccessible", Status.FORBIDDEN);
         }
+    }
+
+    private void validateRealms(Stream<String> realms) {
+        realms.forEach(this::validateRealm);
+    }
+
+    private List<SentAlarm> filterByActiveAndAccessibleRealms(List<SentAlarm> sentAlarms) {
+        return sentAlarms.stream().filter(sa -> isRealmActiveAndAccessible(sa.getRealm())).toList();
     }
 
     @Override
@@ -57,9 +99,10 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public void removeAlarms(RequestParams requestParams, List<Long> ids) {
+    public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
+        Set<String> realms = validateExistingAlarmIds(alarmIds);
         try {
-            alarmService.removeAlarms(ids, getAuthenticatedRealmName());
+            alarmService.removeAlarms(alarmIds, realms);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }
@@ -67,12 +110,13 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
-        validateAlarmId(alarmId);
-        alarmService.removeAlarm(alarmId, getAuthenticatedRealmName());
+        String realm = validateExistingAlarmId(alarmId);
+        alarmService.removeAlarm(alarmId, realm);
     }
 
     @Override
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
+        validateRealm(alarm.getRealm());
         SentAlarm success = alarmService.sendAlarm(alarm);
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
@@ -82,6 +126,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
+        validateRealm(alarm.getRealm());
         SentAlarm success = alarmService.sendAlarm(alarm, source, sourceId);
         if (success.getId() == null) {
             throw new WebApplicationException(Status.BAD_REQUEST);
@@ -91,11 +136,12 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
-        validateAlarmId(alarmId);
+        validateExistingAlarmId(alarmId);
         if (alarm == null) {
             throw new WebApplicationException("Alarm cannot be null", Status.BAD_REQUEST);
         }
 
+        validateRealm(alarm.getRealm());
         alarmService.updateAlarm(alarmId, alarm);
     }
 
@@ -104,13 +150,13 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         if (assetId == null) {
             throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
         }
-        return alarmService.getAlarmsByAssetId(assetId);
+        return filterByActiveAndAccessibleRealms(alarmService.getAlarmsByAssetId(assetId));
     }
 
     @Override
     public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
         try {
-            return alarmService.getOpenAlarms();
+            return filterByActiveAndAccessibleRealms(alarmService.getOpenAlarms());
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
         }
@@ -128,6 +174,8 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         if (links == null || links.isEmpty()) {
             throw new WebApplicationException("Missing links", Status.BAD_REQUEST);
         }
+
+        validateRealms(links.stream().map(link -> link.getId().getRealm()).distinct());
         alarmService.linkAssets(links);
     }
 

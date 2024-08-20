@@ -58,11 +58,11 @@ public interface AlarmResource {
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void setAssetLinks(@BeanParam RequestParams requestParams, @RequestBody List<AlarmAssetLink> links);
 
-    @Path("{alarmId}/assets")
+    @Path("{alarmId}/assets/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({ Constants.READ_ALARMS_ROLE })
-    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, String realm);
+    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, @PathParam("realm") String realm);
 
     @Path("{assetId}/alarms")
     @GET

@@ -27,6 +27,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.alarm.Alarm.Source.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -277,18 +278,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
-        Map<String, Object> parameters = new HashMap<>();
         StringBuilder sb = new StringBuilder("select al from AlarmAssetLink al where 1=1");
-
-        if (!isNullOrEmpty(realm)) {
-            sb.append(" and al.id.realm = :realm");
-            parameters.put("realm", realm);
-        }
-        if (alarmId != null) {
-            sb.append(" and al.id.sentalarmId = :alarmId");
-            parameters.put("alarmId", alarmId);
-        }
+        sb.append(" and al.id.realm = :realm");
+        sb.append(" and al.id.sentalarmId = :alarmId");
         sb.append(" order by al.createdOn desc");
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("realm", realm);
+        parameters.put("alarmId", alarmId);
 
         try {
             return persistenceService.doReturningTransaction(entityManager -> {
@@ -329,6 +326,23 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+    public SentAlarm getAlarm(Long alarmId) throws IllegalArgumentException {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlarm> query = entityManager.createQuery("select n from SentAlarm n where n.id = :id", SentAlarm.class);
+            query.setParameter("id", alarmId);
+            return query.getSingleResult();
+        });
+    }
+
+
+    public List<SentAlarm> getAlarms(List<Long> alarmIds) throws IllegalArgumentException {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlarm> query = entityManager.createQuery("select n from SentAlarm n where n.id in :ids", SentAlarm.class);
+            query.setParameter("ids", alarmIds);
+            return query.getResultList();
+        });
+    }
+
     public List<SentAlarm> getAlarms(String realm) throws IllegalArgumentException {
         try {
             Map<String, Object> parameters = new HashMap<>();
@@ -366,7 +380,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public void removeAlarms(List<Long> ids, String realm) throws IllegalArgumentException {
+    public void removeAlarms(List<Long> ids, Set<String> realms) throws IllegalArgumentException {
         try {
             persistenceService.doTransaction(entityManager -> {
                 Query query = entityManager.createQuery("delete from SentAlarm n where n.id in :ids");
@@ -374,9 +388,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 query.executeUpdate();
             });
 
-            clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE));
+            realms.forEach(realm -> clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE)));
         } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to remove alarms in '" + realm + "' realm", e);
+            throw new IllegalStateException("Failed to remove alarms", e);
         }
     }
 }
