@@ -27,7 +27,6 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.alarm.Alarm.Source.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -109,8 +108,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         .setLastModified(new Date(timestamp));
 
                 entityManager.merge(sentAlarm);
-                TypedQuery<Long> query = entityManager.createQuery("select max(id) from SentAlarm", Long.class);
-                sentAlarm.setId(query.getSingleResult());
+
 
                 clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
                 if (alarm.getSeverity() == Alarm.Severity.HIGH) {
