@@ -195,50 +195,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public void assignUser(Long alarmId, String userId, String realm) {
-        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            try {
-                PreparedStatement st = connection.prepareStatement("INSERT INTO ALARM_USER_LINK (alarm_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (alarm_id, realm, user_id) DO NOTHING");
-                st.setLong(1, alarmId);
-                st.setString(2, realm);
-                st.setObject(3, userId);
-                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
-                st.addBatch();
-
-                st.executeBatch();
-            } catch (RuntimeException e) {
-                throw new IllegalStateException("Failed to create user alarm link", e);
-            }
-        }));
-    }
-
-    public List<AlarmUserLink> getUserLinks(Long alarmId, String realm) {
-        Map<String, Object> parameters = new HashMap<>();
-        StringBuilder sb = new StringBuilder();
-        sb.append("select al from AlarmUserLink al where 1=1");
-
-        if (!isNullOrEmpty(realm)) {
-            sb.append(" and al.id.realm = :realm");
-            parameters.put("realm", realm);
-        }
-        if (alarmId != null) {
-            sb.append(" and al.id.alarmId = :alarmId");
-            parameters.put("alarmId", alarmId);
-        }
-        sb.append(" order by al.createdOn desc");
-
-        try {
-            return persistenceService.doReturningTransaction(entityManager -> {
-                TypedQuery<AlarmUserLink> query = entityManager.createQuery(sb.toString(), AlarmUserLink.class);
-                parameters.forEach(query::setParameter);
-                return query.getResultList();
-            });
-
-        } catch (RuntimeException e) {
-            throw new IllegalStateException("Failed to get user alarm links", e);
-        }
-    }
-
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
         persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
             try {
