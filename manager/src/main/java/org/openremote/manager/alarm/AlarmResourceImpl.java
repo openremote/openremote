@@ -109,8 +109,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         validateRealm(alarm.getRealm());
         try {
             return alarmService.sendAlarm(alarm);
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }
     }
@@ -120,8 +119,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         validateRealm(alarm.getRealm());
         try {
             return alarmService.sendAlarm(alarm, source, sourceId);
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }
     }

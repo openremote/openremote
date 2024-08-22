@@ -20,7 +20,7 @@ public interface AlarmResource {
     @Path("all/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @DELETE
@@ -37,7 +37,7 @@ public interface AlarmResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     SentAlarm createAlarm(@BeanParam RequestParams requestParams, Alarm alarm);
 
     @Path("{source}/{sourceId}")
@@ -50,7 +50,7 @@ public interface AlarmResource {
     @Path("{alarmId}")
     @PUT
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({ Constants.WRITE_ALARMS_ROLE })
+    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void updateAlarm(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, SentAlarm alarm);
 
     @Path("assets")
@@ -61,18 +61,18 @@ public interface AlarmResource {
     @Path("{alarmId}/assets/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, @PathParam("realm") String realm);
 
     @Path("{assetId}/alarms")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     @Path("open")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({ Constants.READ_ALARMS_ROLE })
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
     List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
 }
