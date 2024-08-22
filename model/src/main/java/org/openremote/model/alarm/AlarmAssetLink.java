@@ -31,14 +31,14 @@ import java.util.Objects;
 @Table(name = "ALARM_ASSET_LINK")
 public class AlarmAssetLink {
     public static class Id implements Serializable {
-        @Column(name = "REALM", length = 36)
+        @Column(name = "REALM", nullable = false, length = 36)
         protected String realm;
 
-        @Column(name = "SENTALARM_ID")
+        @Column(name = "SENTALARM_ID", nullable = false)
         protected Long sentalarmId;
 
 
-        @Column(name = "ASSET_ID")
+        @Column(name = "ASSET_ID", nullable = false)
         protected String assetId;
 
         protected Id() {

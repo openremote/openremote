@@ -2,6 +2,7 @@ package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
 
 public class Alarm {
     public enum Source {
@@ -28,13 +29,26 @@ public class Alarm {
     public static final String HEADER_SOURCE = Alarm.class.getName() + ".SOURCE";
     public static final String HEADER_SOURCE_ID = Alarm.class.getName() + ".SOURCEID";
 
+    @NotNull
     protected String title;
+
     protected String content;
+
+    @NotNull
     protected Severity severity;
+
+    @NotNull
     protected Status status;
+
     protected String assigneeId;
+
+    @NotNull
     protected String realm;
+
+    @NotNull
     protected String sourceId;
+
+    @NotNull
     protected Source source;
 
     @JsonCreator
@@ -60,7 +74,7 @@ public class Alarm {
 
     public String getTitle() { return this.title; }
 
-    public Alarm setTitle(String title) {
+    public Alarm setTitle(@NotNull String title) {
         this.title = title;
         return this;
     }
@@ -74,14 +88,14 @@ public class Alarm {
 
     public Severity getSeverity() { return this.severity; }
 
-    public Alarm setSeverity(Severity severity) {
+    public Alarm setSeverity(@NotNull Severity severity) {
         this.severity = severity;
         return this;
     }
 
     public Status getStatus() { return this.status; }
 
-    public Alarm setStatus(Status status) {
+    public Alarm setStatus(@NotNull Status status) {
         this.status = status;
         return this;
     }
@@ -95,7 +109,7 @@ public class Alarm {
 
     public String getRealm() { return this.realm; }
 
-    public  Alarm setRealm(String realm) {
+    public  Alarm setRealm(@NotNull String realm) {
         this.realm = realm;
         return this;
     }
@@ -104,7 +118,7 @@ public class Alarm {
         return source;
     }
 
-    public Alarm setSource(Source source) {
+    public Alarm setSource(@NotNull Source source) {
         this.source = source;
         return this;
     }
@@ -113,7 +127,7 @@ public class Alarm {
         return sourceId;
     }
 
-    public Alarm setSourceId(String sourceId) {
+    public Alarm setSourceId(@NotNull String sourceId) {
         this.sourceId = sourceId;
         return this;
     }

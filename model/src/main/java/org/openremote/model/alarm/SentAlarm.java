@@ -23,28 +23,28 @@ public class SentAlarm {
     @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
-    @Column(name = "TITLE")
+    @Column(name = "TITLE", nullable = false)
     protected String title;
 
     @Column(name = "CONTENT", length = 4096)
     protected String content;
 
     @NotNull
-    @Column(name = "SEVERITY", length = 15)
+    @Column(name = "SEVERITY", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Severity severity;
 
     @NotNull
-    @Column(name = "STATUS", length = 15)
+    @Column(name = "STATUS", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Status status;
 
     @NotNull()
-    @Column(name = "SOURCE", length = 50)
+    @Column(name = "SOURCE", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     protected Alarm.Source source;
 
-    @Column(name = "SOURCE_ID", length = 43)
+    @Column(name = "SOURCE_ID", nullable = false, length = 43)
     protected String sourceId;
 
     @Temporal(TemporalType.TIMESTAMP)

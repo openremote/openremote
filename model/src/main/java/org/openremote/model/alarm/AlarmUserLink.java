@@ -36,14 +36,14 @@ import org.hibernate.annotations.Formula;
 @Table(name = "ALARM_USER_LINK")
 public class AlarmUserLink {
     public static class Id implements Serializable {
-        @Column(name = "REALM", length = 36)
+        @Column(name = "REALM", nullable = false, length = 36)
         protected String realm;
 
-        @Column(name = "ALARM_ID")
+        @Column(name = "ALARM_ID", nullable = false)
         protected Long alarmId;
 
 
-        @Column(name = "USER_ID")
+        @Column(name = "USER_ID", nullable = false)
         protected String userId;
 
         protected Id() {

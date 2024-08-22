@@ -22,8 +22,6 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
-    private static final String INVALID_CRITERIA_SET = "Invalid criteria set";
-
     private final AlarmService alarmService;
 
     public AlarmResourceImpl(TimerService timerService,
@@ -90,22 +88,14 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm) {
-        try {
-            validateRealm(realm);
-            return alarmService.getAlarms(realm).toArray(new SentAlarm[0]);
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
-        }
+        validateRealm(realm);
+        return alarmService.getAlarms(realm).toArray(new SentAlarm[0]);
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
         Set<String> realms = validateExistingAlarmIds(alarmIds);
-        try {
-            alarmService.removeAlarms(alarmIds, realms);
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
-        }
+        alarmService.removeAlarms(alarmIds, realms);
     }
 
     @Override
@@ -117,21 +107,23 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
         validateRealm(alarm.getRealm());
-        SentAlarm success = alarmService.sendAlarm(alarm);
-        if (success.getId() == null) {
-            throw new WebApplicationException(Status.BAD_REQUEST);
+        try {
+            return alarmService.sendAlarm(alarm);
         }
-        return success;
+        catch (RuntimeException e) {
+            throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
+        }
     }
 
     @Override
     public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
         validateRealm(alarm.getRealm());
-        SentAlarm success = alarmService.sendAlarm(alarm, source, sourceId);
-        if (success.getId() == null) {
-            throw new WebApplicationException(Status.BAD_REQUEST);
+        try {
+            return alarmService.sendAlarm(alarm, source, sourceId);
         }
-        return success;
+        catch (RuntimeException e) {
+            throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
+        }
     }
 
     @Override
@@ -155,16 +147,12 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
     @Override
     public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
-        try {
-            return filterByActiveAndAccessibleRealms(alarmService.getOpenAlarms());
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException(INVALID_CRITERIA_SET, Status.BAD_REQUEST);
-        }
+        return filterByActiveAndAccessibleRealms(alarmService.getOpenAlarms());
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        validateAlarmId(alarmId);
+        validateExistingAlarmId(alarmId);
         validateRealm(realm);
         return alarmService.getAssetLinks(alarmId, realm);
     }
