@@ -46,7 +46,6 @@ import org.openremote.model.security.User;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -129,18 +128,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public SentAlarm sendAlarm(Alarm alarm, String userId) {
-        return sendAlarm(alarm, MANUAL, "", userId);
-    }
-
-    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String userId) {
+    public SentAlarm sendAlarm(Alarm alarm) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
         Objects.requireNonNull(alarm.getRealm(), "Alarm realm cannot be null");
         Objects.requireNonNull(alarm.getTitle(), "Alarm title cannot be null");
         Objects.requireNonNull(alarm.getSeverity(), "Alarm severity cannot be null");
-
-        Objects.requireNonNull(source, "Source cannot be null");
-        Objects.requireNonNull(sourceId, "Source ID cannot be null");
+        Objects.requireNonNull(alarm.getSource(), "Source cannot be null");
+        Objects.requireNonNull(alarm.getSourceId(), "Source ID cannot be null");
 
         long timestamp = timerService.getCurrentTimeMillis();
 
@@ -152,8 +146,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     .setContent(alarm.getContent())
                     .setSeverity(alarm.getSeverity())
                     .setStatus(alarm.getStatus())
-                    .setSource(source)
-                    .setSourceId(sourceId)
+                    .setSource(alarm.getSource())
+                    .setSourceId(alarm.getSourceId())
                     .setCreatedOn(new Date(timestamp))
                     .setLastModified(new Date(timestamp));
 
@@ -162,7 +156,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
 
             if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                Set<String> excludeUserIds = userId == null ? Set.of() : Set.of(userId);
+                Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
                 sendAssigneeNotification(sentAlarm, excludeUserIds);
             }
 

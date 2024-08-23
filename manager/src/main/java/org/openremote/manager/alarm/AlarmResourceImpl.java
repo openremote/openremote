@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static org.openremote.model.alarm.Alarm.Source.MANUAL;
 
 public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
@@ -127,17 +128,9 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
         validateRealm(alarm.getRealm());
         try {
-            return alarmService.sendAlarm(alarm, getUserId());
-        } catch (RuntimeException e) {
-            throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
-        validateRealm(alarm.getRealm());
-        try {
-            return alarmService.sendAlarm(alarm, source, sourceId, getUserId());
+            alarm.setSource(MANUAL);
+            alarm.setSourceId(getUserId());
+            return alarmService.sendAlarm(alarm);
         } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }

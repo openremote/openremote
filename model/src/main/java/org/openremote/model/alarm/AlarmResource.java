@@ -59,13 +59,6 @@ public interface AlarmResource {
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     SentAlarm createAlarm(@BeanParam RequestParams requestParams, Alarm alarm);
 
-    @Path("{source}/{sourceId}")
-    @POST
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    SentAlarm createAlarmWithSource(@BeanParam RequestParams requestParams, @RequestBody Alarm alarm, @PathParam("source") Alarm.Source source, @PathParam("sourceId") String sourceId);
-
     @Path("{alarmId}")
     @PUT
     @Consumes(APPLICATION_JSON)

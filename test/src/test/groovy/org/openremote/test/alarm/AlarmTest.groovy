@@ -93,7 +93,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
     def "should create an alarm with title '#title', content '#content', severity '#severity', and source '#source'"() {
         when: "an alarm is created"
         def input = new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(Alarm.Status.OPEN).setRealm(MASTER_REALM)
-        def alarm = adminResource.createAlarmWithSource(null, input, source, 'test')
+        def alarm = adminResource.createAlarm(null, input)
 
         then:
         assert alarm != null
@@ -105,8 +105,8 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         where:
         title           | content               | severity        | source
-        "Test Alarm"    | "Test Description"    | Severity.LOW    | Alarm.Source.AGENT
-        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.REALM_RULESET
+        "Test Alarm"    | "Test Description"    | Severity.LOW    | Alarm.Source.MANUAL
+        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.MANUAL
     }
 
     @Unroll

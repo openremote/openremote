@@ -39,26 +39,21 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         this.alarmService = alarmService;
     }
 
-    public Long create(Alarm alarm, String userId) {
+    public Long create(Alarm alarm) {
         Alarm.Source source;
-        String sourceId = null;
 
         if (rulesEngineId.getScope() == GlobalRuleset.class) {
             source = Source.GLOBAL_RULESET;
         } else if (rulesEngineId.getScope() == RealmRuleset.class) {
             source = Source.REALM_RULESET;
-            sourceId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Realm ruleset must have a realm ID"));
         } else {
             source = Source.ASSET_RULESET;
-            sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));
         }
 
         alarm.setRealm(rulesEngineId.getRealm().orElseThrow());
-        if (userId != null && !userId.isEmpty()) {
-            alarm.setAssignee(userId);
-        }
+        alarm.setSource(source);
 
-        return alarmService.sendAlarm(alarm, source, sourceId, null).getId();
+        return alarmService.sendAlarm(alarm).getId();
     }
 
     public void linkAssets(List<String> assetIds, Long alarmId) {

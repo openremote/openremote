@@ -361,7 +361,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         try {
             action == "update"
                 ? await manager.rest.api.AlarmResource.updateAlarm(alarm.id, alarm)
-                : await manager.rest.api.AlarmResource.createAlarmWithSource(alarm.source,'alarm-page', alarm).then(async (response) => {
+                : await manager.rest.api.AlarmResource.createAlarm(alarm).then(async (response) => {
                     if (alarm.alarmAssetLinks.length > 0) {
                         alarm.alarmAssetLinks.forEach((link) => {
                             link.id.sentalarmId = response.data.id;
