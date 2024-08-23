@@ -108,7 +108,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
         validateRealm(alarm.getRealm());
         try {
-            return alarmService.sendAlarm(alarm);
+            return alarmService.sendAlarm(alarm, getUserId());
         } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }
@@ -118,7 +118,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
         validateRealm(alarm.getRealm());
         try {
-            return alarmService.sendAlarm(alarm, source, sourceId);
+            return alarmService.sendAlarm(alarm, source, sourceId, getUserId());
         } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }
@@ -132,7 +132,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         }
 
         validateRealm(alarm.getRealm());
-        alarmService.updateAlarm(alarmId, alarm);
+        alarmService.updateAlarm(alarmId, getUserId(), alarm);
     }
 
     @Override

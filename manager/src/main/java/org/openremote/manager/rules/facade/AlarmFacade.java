@@ -8,7 +8,6 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.alarm.Alarm;
-import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.alarm.Alarm.Source;
 import org.openremote.model.rules.Alarms;
 
@@ -40,7 +39,7 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
             alarm.setAssignee(userId);
         }
 
-        return alarmService.sendAlarm(alarm, source, sourceId).getId();
+        return alarmService.sendAlarm(alarm, source, sourceId, null).getId();
     }
 
     public void linkAssets(List<String> assetIds, Long alarmId) {

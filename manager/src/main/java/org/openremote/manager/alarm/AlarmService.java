@@ -2,8 +2,10 @@ package org.openremote.manager.alarm;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigModelPublicationGet;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.security.ManagerIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.*;
 import org.openremote.model.Container;
@@ -18,15 +20,23 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.*;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openremote.model.alarm.Alarm.Source.*;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
+
+    public static final Logger LOG = Logger.getLogger(AlarmService.class.getName());
 
     private ClientEventService clientEventService;
     private ManagerIdentityService identityService;
@@ -100,11 +110,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    public SentAlarm sendAlarm(Alarm alarm) {
-        return sendAlarm(alarm, MANUAL, "");
+    public SentAlarm sendAlarm(Alarm alarm, String userId) {
+        return sendAlarm(alarm, MANUAL, "", userId);
     }
 
-    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
+    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId, String userId) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
         Objects.requireNonNull(alarm.getRealm(), "Alarm realm cannot be null");
         Objects.requireNonNull(alarm.getTitle(), "Alarm title cannot be null");
@@ -131,32 +141,52 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             entityManager.merge(sentAlarm);
 
             clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
+
             if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                sendAssigneeNotification(sentAlarm);
+                Set<String> excludeUsersIds = userId == null ? Set.of() : Set.of(userId);
+                sendAssigneeNotification(sentAlarm, excludeUsersIds);
             }
+
             return sentAlarm;
         });
     }
 
-    private void sendAssigneeNotification(SentAlarm alarm) {
+    private void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+
+        List<User> users = new ArrayList<>();
         if (alarm.getAssigneeId() == null) {
-            // TODO Get users by role??
+            UserQuery userQuery = new UserQuery()
+                    .realm(new RealmPredicate(alarm.getRealm()))
+                    .realmRoles(new StringPredicate(Constants.REALM_ADMIN_ROLE), new StringPredicate(Constants.WRITE_ALARMS_ROLE))
+                    .serviceUsers(false);
+            users.addAll(Arrays.asList(identityProvider.queryUsers(userQuery)));
+        } else {
+            users.add(identityProvider.getUser(alarm.getAssigneeId()));
+        }
+
+        users.removeIf(user -> excludeUserIds.contains(user.getId()));
+
+        if (users.isEmpty()) {
+            LOG.fine("No matching users to send alarm notification");
             return;
         }
 
-        User user = identityService.getIdentityProvider().getUser(alarm.getAssigneeId());
+        LOG.fine("Sending alarm notification to " + users.size() + " matching user(s)");
 
         String text = "Assigned to alarm: " + alarm.getTitle() + "\n" +
                 "Description: " + alarm.getContent() + "\n" +
                 "Severity: " + alarm.getSeverity() + "\n" +
                 "Status: " + alarm.getStatus();
 
-        Notification email = new Notification();
-        email.setName("New Alarm")
+        Notification email = new Notification()
+                .setName("New Alarm")
                 .setMessage(new EmailNotificationMessage()
                         .setText(text)
                         .setSubject("New Alarm Notification")
-                        .setTo(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())));
+                        .setTo(users.stream()
+                                .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
+                                .map(user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())).toList()));
 
         Notification push = new Notification();
         push.setName("New Alarm")
@@ -165,13 +195,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                                 .setTitle("Alarm: " + alarm.getTitle())
                                 .setBody(text)
                 )
-                .setTargets(List.of(new Notification.Target(Notification.TargetType.USER, alarm.getAssigneeId())));
+                .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
 
         notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
         notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
     }
 
-    public void updateAlarm(Long alarmId, SentAlarm alarm) {
+    public void updateAlarm(Long alarmId, String userId, SentAlarm alarm) {
         SentAlarm oldAlarm = validateExistingAlarm(alarmId);
         String oldAssigneeId = oldAlarm.getAssigneeId();
         String newAssigneeId = alarm.getAssigneeId();
@@ -195,8 +225,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
 
-        if (alarm.getSeverity() == Alarm.Severity.HIGH && newAssigneeId != null && !newAssigneeId.equals(oldAssigneeId)) {
-            sendAssigneeNotification(alarm);
+        if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+            Set<String> excludeUsersIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
+            sendAssigneeNotification(alarm, excludeUsersIds);
         }
     }
 
