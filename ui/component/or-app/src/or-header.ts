@@ -371,6 +371,10 @@ export class OrHeader extends LitElement {
         return super.shouldUpdate(changedProperties);
     }
 
+    firstUpdated(){
+        this._getAlarmButton().then();
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this._subscribeEvents().then();
