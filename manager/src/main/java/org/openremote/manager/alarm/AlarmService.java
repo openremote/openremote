@@ -28,6 +28,7 @@ import org.openremote.model.security.User;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -143,8 +144,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
 
             if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                Set<String> excludeUsersIds = userId == null ? Set.of() : Set.of(userId);
-                sendAssigneeNotification(sentAlarm, excludeUsersIds);
+                Set<String> excludeUserIds = userId == null ? Set.of() : Set.of(userId);
+                sendAssigneeNotification(sentAlarm, excludeUserIds);
             }
 
             return sentAlarm;
@@ -226,26 +227,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
 
         if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-            Set<String> excludeUsersIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
-            sendAssigneeNotification(alarm, excludeUsersIds);
+            Set<String> excludeUserIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
+            sendAssigneeNotification(alarm, excludeUserIds);
         }
     }
 
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
-        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            PreparedStatement st = connection.prepareStatement("""
-                    insert into ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) values (?, ?, ?, ?)
-                    on conflict (sentalarm_id, realm, asset_id) do nothing
-                    """);
-            for (String assetId : assetIds) {
-                st.setLong(1, alarmId);
-                st.setString(2, realm);
-                st.setString(3, assetId);
-                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
-                st.addBatch();
-            }
-            st.executeBatch();
-        }));
+        linkAssets(assetIds.stream().map(assetId -> new AlarmAssetLink(realm, alarmId, assetId)).toList());
     }
 
     public void linkAssets(List<AlarmAssetLink> links) {

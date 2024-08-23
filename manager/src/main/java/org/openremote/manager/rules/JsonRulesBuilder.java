@@ -939,7 +939,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
         }
 
-        if (ruleAction instanceof  RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
+        if (ruleAction instanceof RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
                 Alarm alarm = alarmAction.alarm;
                 List<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
                 if(alarm.getContent() != null) {
@@ -965,7 +965,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
                 Alarm finalAlarm = alarm;
                 String userId = alarmAction.assigneeId;
-                if(!assetIds.isEmpty()){
+                if (!assetIds.isEmpty()) {
                     return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
                 }
                 return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
