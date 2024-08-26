@@ -139,7 +139,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         long timestamp = timerService.getCurrentTimeMillis();
 
-        return persistenceService.doReturningTransaction(entityManager -> {
+        SentAlarm result = persistenceService.doReturningTransaction(entityManager -> {
             SentAlarm sentAlarm = new SentAlarm()
                     .setAssigneeId(alarm.getAssignee())
                     .setRealm(alarm.getRealm())
@@ -154,15 +154,18 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
             entityManager.merge(sentAlarm);
 
-            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-
-            if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
-                sendAssigneeNotification(sentAlarm, excludeUserIds);
-            }
-
             return sentAlarm;
         });
+
+        if (result != null) {
+            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
+            if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+                Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
+                sendAssigneeNotification(result, excludeUserIds);
+            }
+        }
+
+        return result;
     }
 
     private void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
@@ -290,11 +293,6 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                         .setParameter("assetId", assetId)
                         .getResultList()
         );
-    }
-
-    public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.status = 'OPEN' order by sa.createdOn desc", SentAlarm.class)
-                .getResultList());
     }
 
     public SentAlarm getAlarm(Long alarmId) throws IllegalArgumentException {
