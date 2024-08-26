@@ -964,6 +964,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return null;
             }
 
+            alarm.setAssignee(alarmAction.assigneeId);
             alarm.setSourceId(Long.toString(jsonRuleset.getId()));
             Alarm finalAlarm = alarm;
 

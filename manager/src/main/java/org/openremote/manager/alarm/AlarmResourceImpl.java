@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.alarm;
 
+import jakarta.ws.rs.QueryParam;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -30,6 +31,7 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
+import org.openremote.model.util.TextUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -108,15 +110,22 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public SentAlarm[] getAlarms(RequestParams requestParams, String realm) {
-        validateRealm(realm);
-        return alarmService.getAlarms(realm).toArray(new SentAlarm[0]);
+    public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
+        String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName(): realm;
+        validateRealm(filterRealm);
+        return alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]);
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
         Set<String> realms = validateExistingAlarmIds(alarmIds);
         alarmService.removeAlarms(alarmIds, realms);
+    }
+
+    @Override
+    public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
+        validateExistingAlarmId(alarmId);
+        return alarmService.getAlarm(alarmId);
     }
 
     @Override
@@ -152,19 +161,6 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
 
         validateRealm(alarm.getRealm());
         alarmService.updateAlarm(alarmId, getUserId(), alarm);
-    }
-
-    @Override
-    public List<SentAlarm> getAlarmsByAssetId(RequestParams requestParams, String assetId) {
-        if (assetId == null) {
-            throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
-        }
-        return filterByActiveAndAccessibleRealms(alarmService.getAlarmsByAssetId(assetId));
-    }
-
-    @Override
-    public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
-        return filterByActiveAndAccessibleRealms(alarmService.getOpenAlarms());
     }
 
     @Override

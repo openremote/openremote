@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.alarm;
 
+import jakarta.persistence.TypedQuery;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
@@ -268,9 +269,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery("""
-                                select al from AlarmAssetLink al
-                                where al.id.realm = :realm and al.id.sentalarmId = :alarmId
-                                order by al.createdOn desc
+                                select aal from AlarmAssetLink aal
+                                where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
+                                order by aal.createdOn desc
                                 """, AlarmAssetLink.class)
                         .setParameter("realm", realm)
                         .setParameter("alarmId", alarmId)
@@ -297,25 +298,46 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public SentAlarm getAlarm(Long alarmId) throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select n from SentAlarm n where n.id = :id", SentAlarm.class)
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.id = :id", SentAlarm.class)
                 .setParameter("id", alarmId)
                 .getSingleResult());
     }
 
     public List<SentAlarm> getAlarms(List<Long> alarmIds) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery("select n from SentAlarm n where n.id in :ids", SentAlarm.class)
+                entityManager.createQuery("select sa from SentAlarm sa where sa.id in :ids", SentAlarm.class)
                         .setParameter("ids", alarmIds)
                         .getResultList()
         );
     }
 
-    public List<SentAlarm> getAlarms(String realm) throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery("select n from SentAlarm n where n.realm = :realm  order by n.createdOn desc", SentAlarm.class)
-                        .setParameter("realm", realm)
-                        .getResultList()
-        );
+    public List<SentAlarm> getAlarms(String realm, Alarm.Status status, String assetId, String assigneeId) throws IllegalArgumentException {
+        Map<String, Object> parameters = new HashMap<>();
+        StringBuilder sb = new StringBuilder("select sa from SentAlarm sa ");
+
+        if (assetId != null) {
+            sb.append("join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId ");
+            parameters.put("assetId", assetId);
+        } else {
+            sb.append("where sa.realm = :realm ");
+        }
+        parameters.put("realm", realm);
+
+        if (status != null) {
+            sb.append("and sa.status = :status ");
+            parameters.put("status", status);
+        }
+        if (assigneeId != null) {
+            sb.append("and sa.assigneeId = :assigneeId ");
+            parameters.put("assigneeId", assigneeId);
+        }
+        sb.append("order by sa.createdOn desc");
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
+            parameters.forEach(query::setParameter);
+            return query.getResultList();
+        });
     }
 
     public void removeAlarm(Long alarmId, String realm) {
@@ -329,7 +351,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public void removeAlarms(List<Long> alarmIds, Set<String> realms) throws IllegalArgumentException {
         persistenceService.doTransaction(entityManager ->
-                entityManager.createQuery("delete from SentAlarm n where n.id in :ids")
+                entityManager.createQuery("delete from SentAlarm sa where sa.id in :ids")
                         .setParameter("ids", alarmIds)
                         .executeUpdate()
         );

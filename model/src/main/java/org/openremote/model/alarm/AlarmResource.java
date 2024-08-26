@@ -36,16 +36,22 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Consumes(APPLICATION_JSON)
 public interface AlarmResource {
 
-    @Path("all/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm,
+                          @QueryParam("status") Alarm.Status status, @QueryParam("assetId") String assetId,
+                          @QueryParam("assigneeId") String assigneeId);
 
     @DELETE
-    @Path("alarms")
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void removeAlarms(@BeanParam RequestParams requestParams, @RequestBody List<Long> ids);
+
+    @GET
+    @Path("{alarmId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
+    SentAlarm getAlarm(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId);
 
     @DELETE
     @Path("{alarmId}")
@@ -70,21 +76,10 @@ public interface AlarmResource {
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void setAssetLinks(@BeanParam RequestParams requestParams, @RequestBody List<AlarmAssetLink> links);
 
-    @Path("{alarmId}/assets/{realm}")
+    @Path("{alarmId}/assets")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, @PathParam("realm") String realm);
-
-    @Path("{assetId}/alarms")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
-
-    @Path("open")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
+    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId,
+                                       @QueryParam("realm") String realm);
 }

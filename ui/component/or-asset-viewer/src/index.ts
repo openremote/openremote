@@ -1027,8 +1027,8 @@ async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
 
 async function getLinkedAlarms(asset: Asset): Promise<SentAlarm[]> {
     try {
-        return await manager.rest.api.AlarmResource.getAlarmsByAssetId(
-            asset.id
+        return await manager.rest.api.AlarmResource.getAlarms(
+            {realm: manager.displayRealm, assetId: asset.id}
         ).then((response) => {
             const alarmAssetLinks = response.data;
             return Promise.all(alarmAssetLinks);
