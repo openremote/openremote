@@ -1,9 +1,30 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.alarm;
 
+import jakarta.persistence.TypedQuery;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.security.ManagerIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.*;
 import org.openremote.model.Container;
@@ -18,15 +39,23 @@ import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.notification.*;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openremote.model.alarm.Alarm.Source.*;
 
 public class AlarmService extends RouteBuilder implements ContainerService {
+
+    public static final Logger LOG = Logger.getLogger(AlarmService.class.getName());
 
     private ClientEventService clientEventService;
     private ManagerIdentityService identityService;
@@ -101,21 +130,16 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     public SentAlarm sendAlarm(Alarm alarm) {
-        return sendAlarm(alarm, MANUAL, "");
-    }
-
-    public SentAlarm sendAlarm(Alarm alarm, Alarm.Source source, String sourceId) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
         Objects.requireNonNull(alarm.getRealm(), "Alarm realm cannot be null");
         Objects.requireNonNull(alarm.getTitle(), "Alarm title cannot be null");
         Objects.requireNonNull(alarm.getSeverity(), "Alarm severity cannot be null");
-
-        Objects.requireNonNull(source, "Source cannot be null");
-        Objects.requireNonNull(sourceId, "Source ID cannot be null");
+        Objects.requireNonNull(alarm.getSource(), "Source cannot be null");
+        Objects.requireNonNull(alarm.getSourceId(), "Source ID cannot be null");
 
         long timestamp = timerService.getCurrentTimeMillis();
 
-        return persistenceService.doReturningTransaction(entityManager -> {
+        SentAlarm result = persistenceService.doReturningTransaction(entityManager -> {
             SentAlarm sentAlarm = new SentAlarm()
                     .setAssigneeId(alarm.getAssignee())
                     .setRealm(alarm.getRealm())
@@ -123,40 +147,63 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                     .setContent(alarm.getContent())
                     .setSeverity(alarm.getSeverity())
                     .setStatus(alarm.getStatus())
-                    .setSource(source)
-                    .setSourceId(sourceId)
+                    .setSource(alarm.getSource())
+                    .setSourceId(alarm.getSourceId())
                     .setCreatedOn(new Date(timestamp))
                     .setLastModified(new Date(timestamp));
 
             entityManager.merge(sentAlarm);
 
-            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-            if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                sendAssigneeNotification(sentAlarm);
-            }
             return sentAlarm;
         });
+
+        if (result != null) {
+            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
+            if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+                Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
+                sendAssigneeNotification(result, excludeUserIds);
+            }
+        }
+
+        return result;
     }
 
-    private void sendAssigneeNotification(SentAlarm alarm) {
+    private void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+
+        List<User> users = new ArrayList<>();
         if (alarm.getAssigneeId() == null) {
-            // TODO Get users by role??
+            UserQuery userQuery = new UserQuery()
+                    .realm(new RealmPredicate(alarm.getRealm()))
+                    .realmRoles(new StringPredicate(Constants.REALM_ADMIN_ROLE), new StringPredicate(Constants.WRITE_ALARMS_ROLE))
+                    .serviceUsers(false);
+            users.addAll(Arrays.asList(identityProvider.queryUsers(userQuery)));
+        } else {
+            users.add(identityProvider.getUser(alarm.getAssigneeId()));
+        }
+
+        users.removeIf(user -> excludeUserIds.contains(user.getId()));
+
+        if (users.isEmpty()) {
+            LOG.fine("No matching users to send alarm notification");
             return;
         }
 
-        User user = identityService.getIdentityProvider().getUser(alarm.getAssigneeId());
+        LOG.fine("Sending alarm notification to " + users.size() + " matching user(s)");
 
         String text = "Assigned to alarm: " + alarm.getTitle() + "\n" +
                 "Description: " + alarm.getContent() + "\n" +
                 "Severity: " + alarm.getSeverity() + "\n" +
                 "Status: " + alarm.getStatus();
 
-        Notification email = new Notification();
-        email.setName("New Alarm")
+        Notification email = new Notification()
+                .setName("New Alarm")
                 .setMessage(new EmailNotificationMessage()
                         .setText(text)
                         .setSubject("New Alarm Notification")
-                        .setTo(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())));
+                        .setTo(users.stream()
+                                .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
+                                .map(user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())).toList()));
 
         Notification push = new Notification();
         push.setName("New Alarm")
@@ -165,13 +212,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                                 .setTitle("Alarm: " + alarm.getTitle())
                                 .setBody(text)
                 )
-                .setTargets(List.of(new Notification.Target(Notification.TargetType.USER, alarm.getAssigneeId())));
+                .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
 
         notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
         notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
     }
 
-    public void updateAlarm(Long alarmId, SentAlarm alarm) {
+    public void updateAlarm(Long alarmId, String userId, SentAlarm alarm) {
         SentAlarm oldAlarm = validateExistingAlarm(alarmId);
         String oldAssigneeId = oldAlarm.getAssigneeId();
         String newAssigneeId = alarm.getAssigneeId();
@@ -195,26 +242,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
 
-        if (alarm.getSeverity() == Alarm.Severity.HIGH && newAssigneeId != null && !newAssigneeId.equals(oldAssigneeId)) {
-            sendAssigneeNotification(alarm);
+        if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+            Set<String> excludeUserIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
+            sendAssigneeNotification(alarm, excludeUserIds);
         }
     }
 
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
-        persistenceService.doTransaction(entityManager -> entityManager.unwrap(Session.class).doWork(connection -> {
-            PreparedStatement st = connection.prepareStatement("""
-                    insert into ALARM_ASSET_LINK (sentalarm_id, realm, asset_id, created_on) values (?, ?, ?, ?)
-                    on conflict (sentalarm_id, realm, asset_id) do nothing
-                    """);
-            for (String assetId : assetIds) {
-                st.setLong(1, alarmId);
-                st.setString(2, realm);
-                st.setString(3, assetId);
-                st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
-                st.addBatch();
-            }
-            st.executeBatch();
-        }));
+        linkAssets(assetIds.stream().map(assetId -> new AlarmAssetLink(realm, alarmId, assetId)).toList());
     }
 
     public void linkAssets(List<AlarmAssetLink> links) {
@@ -237,9 +272,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String realm) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery("""
-                                select al from AlarmAssetLink al
-                                where al.id.realm = :realm and al.id.sentalarmId = :alarmId
-                                order by al.createdOn desc
+                                select aal from AlarmAssetLink aal
+                                where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
+                                order by aal.createdOn desc
                                 """, AlarmAssetLink.class)
                         .setParameter("realm", realm)
                         .setParameter("alarmId", alarmId)
@@ -260,31 +295,47 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         );
     }
 
-    public List<SentAlarm> getOpenAlarms() throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.status = 'OPEN' order by sa.createdOn desc", SentAlarm.class)
-                .getResultList());
-    }
-
     public SentAlarm getAlarm(Long alarmId) throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select n from SentAlarm n where n.id = :id", SentAlarm.class)
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.id = :id", SentAlarm.class)
                 .setParameter("id", alarmId)
                 .getSingleResult());
     }
 
     public List<SentAlarm> getAlarms(List<Long> alarmIds) throws IllegalArgumentException {
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery("select n from SentAlarm n where n.id in :ids", SentAlarm.class)
+                entityManager.createQuery("select sa from SentAlarm sa where sa.id in :ids", SentAlarm.class)
                         .setParameter("ids", alarmIds)
                         .getResultList()
         );
     }
 
-    public List<SentAlarm> getAlarms(String realm) throws IllegalArgumentException {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery("select n from SentAlarm n where n.realm = :realm  order by n.createdOn desc", SentAlarm.class)
-                        .setParameter("realm", realm)
-                        .getResultList()
-        );
+    public List<SentAlarm> getAlarms(String realm, Alarm.Status status, String assetId, String assigneeId) throws IllegalArgumentException {
+        Map<String, Object> parameters = new HashMap<>();
+        StringBuilder sb = new StringBuilder("select sa from SentAlarm sa ");
+
+        if (assetId != null) {
+            sb.append("join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId ");
+            parameters.put("assetId", assetId);
+        } else {
+            sb.append("where sa.realm = :realm ");
+        }
+        parameters.put("realm", realm);
+
+        if (status != null) {
+            sb.append("and sa.status = :status ");
+            parameters.put("status", status);
+        }
+        if (assigneeId != null) {
+            sb.append("and sa.assigneeId = :assigneeId ");
+            parameters.put("assigneeId", assigneeId);
+        }
+        sb.append("order by sa.createdOn desc");
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<SentAlarm> query = entityManager.createQuery(sb.toString(), SentAlarm.class);
+            parameters.forEach(query::setParameter);
+            return query.getResultList();
+        });
     }
 
     public void removeAlarm(Long alarmId, String realm) {
@@ -298,7 +349,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public void removeAlarms(List<Long> alarmIds, Set<String> realms) throws IllegalArgumentException {
         persistenceService.doTransaction(entityManager ->
-                entityManager.createQuery("delete from SentAlarm n where n.id in :ids")
+                entityManager.createQuery("delete from SentAlarm sa where sa.id in :ids")
                         .setParameter("ids", alarmIds)
                         .executeUpdate()
         );

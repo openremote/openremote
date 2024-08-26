@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.model.alarm;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -17,16 +36,22 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 @Consumes(APPLICATION_JSON)
 public interface AlarmResource {
 
-    @Path("all/{realm}")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    SentAlarm[] getAlarms(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm,
+                          @QueryParam("status") Alarm.Status status, @QueryParam("assetId") String assetId,
+                          @QueryParam("assigneeId") String assigneeId);
 
     @DELETE
-    @Path("alarms")
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void removeAlarms(@BeanParam RequestParams requestParams, @RequestBody List<Long> ids);
+
+    @GET
+    @Path("{alarmId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ALARMS_ROLE})
+    SentAlarm getAlarm(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId);
 
     @DELETE
     @Path("{alarmId}")
@@ -40,13 +65,6 @@ public interface AlarmResource {
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     SentAlarm createAlarm(@BeanParam RequestParams requestParams, Alarm alarm);
 
-    @Path("{source}/{sourceId}")
-    @POST
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    SentAlarm createAlarmWithSource(@BeanParam RequestParams requestParams, @RequestBody Alarm alarm, @PathParam("source") Alarm.Source source, @PathParam("sourceId") String sourceId);
-
     @Path("{alarmId}")
     @PUT
     @Consumes(APPLICATION_JSON)
@@ -58,21 +76,10 @@ public interface AlarmResource {
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
     void setAssetLinks(@BeanParam RequestParams requestParams, @RequestBody List<AlarmAssetLink> links);
 
-    @Path("{alarmId}/assets/{realm}")
+    @Path("{alarmId}/assets")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId, @PathParam("realm") String realm);
-
-    @Path("{assetId}/alarms")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<SentAlarm> getAlarmsByAssetId(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
-
-    @Path("open")
-    @GET
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ALARMS_ROLE})
-    List<SentAlarm> getOpenAlarms(@BeanParam RequestParams requestParams);
+    List<AlarmAssetLink> getAssetLinks(@BeanParam RequestParams requestParams, @PathParam("alarmId") Long alarmId,
+                                       @QueryParam("realm") String realm);
 }

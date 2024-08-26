@@ -939,37 +939,39 @@ public class JsonRulesBuilder extends RulesBuilder {
             return new RuleActionExecution(() -> webhooksFacade.send(webhook, webhookAction.mediaType, webhookAction.target), 0);
         }
 
-        if (ruleAction instanceof  RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
-                Alarm alarm = alarmAction.alarm;
-                List<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
-                if(alarm.getContent() != null) {
-                    String content = alarm.getContent();
-                    if (!TextUtil.isNullOrEmpty(content) && (content.contains(PLACEHOLDER_TRIGGER_ASSETS))) {
-                            // Need to clone the alarm
-                            alarm = ValueUtil.clone(alarm);
-                            Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
-                            alarm.setContent(getAlarmContent(content, assetStates));
-                    }
+        if (ruleAction instanceof RuleActionAlarm alarmAction && (alarmAction.alarm != null)) {
+            Alarm alarm = alarmAction.alarm;
+            List<String> assetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
+            if (alarm.getContent() != null) {
+                String content = alarm.getContent();
+                if (!TextUtil.isNullOrEmpty(content) && (content.contains(PLACEHOLDER_TRIGGER_ASSETS))) {
+                    // Need to clone the alarm
+                    alarm = ValueUtil.clone(alarm);
+                    Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
+                    alarm.setContent(getAlarmContent(content, assetStates));
                 }
-                else {
-                    log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getSeverity() == null) {
-                    log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                if (alarm.getTitle() == null) {
-                    log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
-                    return null;
-                }
-                Alarm finalAlarm = alarm;
-                String userId = alarmAction.assigneeId;
-                if(!assetIds.isEmpty()){
-                    return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm, userId)), 0);
-                }
-                return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, userId), 0);
+            }
+            else {
+                log(Level.WARNING, "Alarm content is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                return null;
+            }
+            if (alarm.getSeverity() == null) {
+                log(Level.WARNING, "Alarm severity is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                return null;
+            }
+            if (alarm.getTitle() == null) {
+                log(Level.WARNING, "Alarm title is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                return null;
+            }
 
+            alarm.setAssignee(alarmAction.assigneeId);
+            alarm.setSourceId(Long.toString(jsonRuleset.getId()));
+            Alarm finalAlarm = alarm;
+
+            if (!assetIds.isEmpty()) {
+                return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
+            }
+            return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {

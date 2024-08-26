@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.test.alarm
 
 import org.openremote.model.alarm.Alarm
@@ -20,7 +39,7 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import jakarta.ws.rs.WebApplicationException
 
-class AlarmTest extends Specification implements ManagerContainerTrait{
+class AlarmTest extends Specification implements ManagerContainerTrait {
     @Shared
     static AlarmResource adminResource
 
@@ -32,7 +51,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
 
     @Shared
     static ManagerTestSetup managerTestSetup
-
 
     def setupSpec() {
         def container = startContainer(defaultConfig(), defaultServices())
@@ -58,7 +76,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         def input = new Alarm(title, content, severity, null, MASTER_REALM)
         def alarm = adminResource.createAlarm(null, input)
 
-
         then:
         assert alarm != null
         assert alarm.title == title
@@ -66,10 +83,9 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert alarm.severity == severity
         assert alarm.status == Alarm.Status.OPEN
 
-
         where:
-        title | content | severity
-        "Test Alarm" | "Test Description" | Severity.LOW
+        title           | content               | severity
+        "Test Alarm"    | "Test Description"    | Severity.LOW
         "Another Alarm" | "Another Description" | Severity.MEDIUM
     }
 
@@ -77,8 +93,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     def "should create an alarm with title '#title', content '#content', severity '#severity', and source '#source'"() {
         when: "an alarm is created"
         def input = new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(Alarm.Status.OPEN).setRealm(MASTER_REALM)
-        def alarm = adminResource.createAlarmWithSource(null, input, source, 'test')
-
+        def alarm = adminResource.createAlarm(null, input)
 
         then:
         assert alarm != null
@@ -88,11 +103,10 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert alarm.status == Alarm.Status.OPEN
         assert alarm.source == source
 
-
         where:
-        title | content | severity | source
-        "Test Alarm" | "Test Description" | Severity.LOW | Alarm.Source.AGENT
-        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.REALM_RULESET
+        title           | content               | severity        | source
+        "Test Alarm"    | "Test Description"    | Severity.LOW    | Alarm.Source.MANUAL
+        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.MANUAL
     }
 
     @Unroll
@@ -108,9 +122,9 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert ex.response.status == 400
 
         where:
-        title | content | severity | status
-        null | "Test Description" | Severity.LOW | Alarm.Status.OPEN
-        "Another Test Alarm" | "Another Description" | null | Alarm.Status.RESOLVED
+        title                | content               | severity     | status
+        null                 | "Test Description"    | Severity.LOW | Alarm.Status.OPEN
+        "Another Test Alarm" | "Another Description" | null         | Alarm.Status.RESOLVED
     }
 
     // Create alarm without write:alarm role
@@ -126,11 +140,10 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert ex.response.status == 403
     }
 
-
     // Get alarms as admin
     def "should return list of alarms"() {
         when:
-        def output = adminResource.getAlarms(null, MASTER_REALM)
+        def output = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
 
         then:
         assert output != null
@@ -140,7 +153,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     // Get alarms without read:alarm role
     def "should not return list of alarms"() {
         when:
-        regularUserResource.getAlarms(null, MASTER_REALM)
+        regularUserResource.getAlarms(null, MASTER_REALM, null, null, null)
 
         then:
         WebApplicationException ex = thrown()
@@ -151,9 +164,9 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     @Unroll
     def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def updatable = adminResource.getAlarms(null, MASTER_REALM)[0]
+        def updatable = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
         adminResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setRealm(MASTER_REALM).setSeverity(severity).setStatus(status))
-        def updated = adminResource.getAlarms(null, MASTER_REALM)[0]
+        def updated = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
 
         then:
         assert updated != null
@@ -162,10 +175,9 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert updated.severity == severity
         assert updated.status == status
 
-
         where:
-        title | content | severity | status
-        "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
+        title           | content               | severity        | status
+        "Updated Alarm" | "Test Description"    | Severity.HIGH   | Alarm.Status.OPEN
         "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
     }
 
@@ -182,7 +194,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     @Unroll
     def "should not update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def updatable = adminResource.getAlarms(null, MASTER_REALM)[0]
+        def updatable = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
         regularUserResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status))
 
         then:
@@ -190,15 +202,15 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         assert ex.response.status == 403
 
         where:
-        title | content | severity | status
-        "Updated Alarm" | "Test Description" | Severity.HIGH | Alarm.Status.OPEN
+        title           | content               | severity        | status
+        "Updated Alarm" | "Test Description"    | Severity.HIGH   | Alarm.Status.OPEN
         "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
     }
 
     // Delete alarm without write:alarm role
     def "should not delete alarm without proper permissions"() {
         when:
-        def delete = adminResource.getAlarms(null, MASTER_REALM)[0]
+        def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
         regularUserResource.removeAlarm(null, delete.id)
 
         then:
@@ -209,8 +221,8 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     // Delete alarms without write:alarm role
     def "should not delete alarms without proper permissions"() {
         when:
-        def delete = adminResource.getAlarms(null, MASTER_REALM)
-        regularUserResource.removeAlarms(null, (List<Long>) delete.collect{it.id})
+        def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
+        regularUserResource.removeAlarms(null, (List<Long>) delete.collect { it.id })
 
         then:
         WebApplicationException ex = thrown()
@@ -220,21 +232,21 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
     // Delete alarm as admin
     def "should delete alarm as admin"() {
         when:
-        def delete = adminResource.getAlarms(null, MASTER_REALM)[0]
+        def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
         adminResource.removeAlarm(null, delete.id)
 
         then:
-        adminResource.getAlarms(null, MASTER_REALM).find {it.id == delete.id} == null
+        adminResource.getAlarms(null, MASTER_REALM, null, null, null).find { it.id == delete.id } == null
     }
 
     // Delete alarms as admin
     def "should delete alarms as admin"() {
         when:
-        def delete = adminResource.getAlarms(null, MASTER_REALM)
-        adminResource.removeAlarms(null, (List<Long>) delete.collect{it.id})
+        def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
+        adminResource.removeAlarms(null, (List<Long>) delete.collect { it.id })
 
         then:
-        adminResource.getAlarms(null, MASTER_REALM).length == 0
+        adminResource.getAlarms(null, MASTER_REALM, null, null, null).length == 0
     }
 
     // Get open alarms
@@ -243,7 +255,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait{
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 3').setContent('content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
-        def open = adminResource.getOpenAlarms(null)
+        def open = adminResource.getAlarms(null, MASTER_REALM, Alarm.Status.OPEN, null, null)
 
         then: "returns 2 open alarms"
         open.size() == 2

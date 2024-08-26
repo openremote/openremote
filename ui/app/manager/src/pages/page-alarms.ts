@@ -361,7 +361,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         try {
             action == "update"
                 ? await manager.rest.api.AlarmResource.updateAlarm(alarm.id, alarm)
-                : await manager.rest.api.AlarmResource.createAlarmWithSource(alarm.source,'alarm-page', alarm).then(async (response) => {
+                : await manager.rest.api.AlarmResource.createAlarm(alarm).then(async (response) => {
                     if (alarm.alarmAssetLinks.length > 0) {
                         alarm.alarmAssetLinks.forEach((link) => {
                             link.id.sentalarmId = response.data.id;
@@ -394,8 +394,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
             await this._loadData();
         }
     }
-
-
 
     protected render() {
         if (!manager.authenticated) {
@@ -503,7 +501,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             return this.getState().app.realm === this.realm && this.isConnected;
         };
 
-        const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, alarm.realm);
+        const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, {realm: alarm.realm});
         if (!this.responseAndStateOK(stateChecker, alarmAssetLinksResponse, i18next.t("loadFailedUsers"))) {
             return;
         }
@@ -542,7 +540,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
 
         this._loading = true;
-        const response = await manager.rest.api.AlarmResource.getAlarms(manager.displayRealm);
+        const response = await manager.rest.api.AlarmResource.getAlarms({realm: manager.displayRealm});
         if (manager.hasRole("read:users") || manager.hasRole("read:admin")) {
             const usersResponse = await manager.rest.api.UserResource.query({
                 realmPredicate: {name: manager.displayRealm},
@@ -981,11 +979,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public stateChanged(state: AppStateKeyed) {
         if (state.app.page == "alarms") {
-            if(this.realm == state.app.realm){
+            if(this.realm === undefined || this.realm == state.app.realm){
                 if (state.app.params && state.app.params.id) {
                     const parsedId = Number(state.app.params.id);
-                    manager.rest.api.AlarmResource.getAlarms(manager.displayRealm).then((alarms) => {
-                        this.alarm = alarms.data.find((alarm) => alarm.id === parsedId) as AlarmModel;
+                    manager.rest.api.AlarmResource.getAlarm(parsedId).then((alarm: any) => {
+                        this.alarm = alarm.data as AlarmModel;
                         this.alarm.loaded = false;
                         this.alarm.loading = false;
                         this.alarm.alarmAssetLinks = [];

@@ -1,5 +1,25 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.alarm;
 
+import jakarta.ws.rs.QueryParam;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -11,6 +31,7 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
+import org.openremote.model.util.TextUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -19,6 +40,8 @@ import java.util.stream.Stream;
 
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static org.openremote.model.alarm.Alarm.Source.CLIENT;
+import static org.openremote.model.alarm.Alarm.Source.MANUAL;
 
 public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
@@ -87,15 +110,22 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public SentAlarm[] getAlarms(RequestParams requestParams, String realm) {
-        validateRealm(realm);
-        return alarmService.getAlarms(realm).toArray(new SentAlarm[0]);
+    public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
+        String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName(): realm;
+        validateRealm(filterRealm);
+        return alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]);
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
         Set<String> realms = validateExistingAlarmIds(alarmIds);
         alarmService.removeAlarms(alarmIds, realms);
+    }
+
+    @Override
+    public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
+        validateExistingAlarmId(alarmId);
+        return alarmService.getAlarm(alarmId);
     }
 
     @Override
@@ -108,17 +138,15 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
         validateRealm(alarm.getRealm());
         try {
+            if (getUserId() != null) {
+                alarm.setSource(MANUAL);
+                alarm.setSourceId(getUserId());
+            }
+            else if (getClientId() != null) {
+                alarm.setSource(CLIENT);
+                alarm.setSourceId(getClientId());
+            }
             return alarmService.sendAlarm(alarm);
-        } catch (RuntimeException e) {
-            throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public SentAlarm createAlarmWithSource(RequestParams requestParams, Alarm alarm, Alarm.Source source, String sourceId) {
-        validateRealm(alarm.getRealm());
-        try {
-            return alarmService.sendAlarm(alarm, source, sourceId);
         } catch (RuntimeException e) {
             throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
         }
@@ -132,20 +160,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         }
 
         validateRealm(alarm.getRealm());
-        alarmService.updateAlarm(alarmId, alarm);
-    }
-
-    @Override
-    public List<SentAlarm> getAlarmsByAssetId(RequestParams requestParams, String assetId) {
-        if (assetId == null) {
-            throw new WebApplicationException("Missing asset ID", Status.BAD_REQUEST);
-        }
-        return filterByActiveAndAccessibleRealms(alarmService.getAlarmsByAssetId(assetId));
-    }
-
-    @Override
-    public List<SentAlarm> getOpenAlarms(RequestParams requestParams) {
-        return filterByActiveAndAccessibleRealms(alarmService.getOpenAlarms());
+        alarmService.updateAlarm(alarmId, getUserId(), alarm);
     }
 
     @Override

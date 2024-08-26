@@ -420,7 +420,7 @@ export class OrMwcTable extends LitElement {
                                                                         </div>
                                                                     </td>
                                                                 `)}
-                                                                <td class="${classMap(classes)}" title="${cell}" style="${styleMap(styles)}">
+                                                                <td class="${classMap(classes)}" title="${typeof cell === 'object' ? "" : cell}" style="${styleMap(styles)}">
                                                                     ${until(this.getTableContent(cell))}
                                                                 </td>
                                                             `;

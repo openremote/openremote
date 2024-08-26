@@ -360,7 +360,6 @@ export class OrHeader extends LitElement {
     private _eventSubscriptionId?: string;
 
     public _onRealmSelect(realm: string) {
-        this._getAlarmButton().then();
         this.store.dispatch(updateRealm(realm));
     }
 
@@ -368,7 +367,14 @@ export class OrHeader extends LitElement {
         if (changedProperties.has("config")) {
             this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
         }
+        if (changedProperties.has("realm")) {
+            this._getAlarmButton().then();
+        }
         return super.shouldUpdate(changedProperties);
+    }
+
+    firstUpdated(){
+        this._getAlarmButton().then();
     }
 
     connectedCallback() {
@@ -500,14 +506,10 @@ export class OrHeader extends LitElement {
     }
 
     protected async _getAlarmButton() {
-        let newAlarms= false;
-        if(manager.isRestrictedUser()){
-            // TODO Filter alarms by linked assets
-        }
-        if(manager.hasRole("read:alarms") || manager.hasRole("read:admin")){
-            const response = await manager.rest.api.AlarmResource.getOpenAlarms();
-            let open = response.data.filter((alarm) => alarm.realm === manager.displayRealm);
-            newAlarms = (open.length > 0);
+        let newAlarms = false;
+        if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
+            const response = await manager.rest.api.AlarmResource.getAlarms({realm: manager.displayRealm, status: Model.AlarmStatus.OPEN});
+            newAlarms = response.data.length > 0;
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';
         this.alarmColor = newAlarms ? '--or-app-color4, ${unsafeCSS(DefaultColor4)}' : '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
