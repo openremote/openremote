@@ -745,13 +745,18 @@ export class PageAlarms extends Page<AppStateKeyed> {
                     ${when(!(readonly && !this._saveAlarmPromise), () => html`
                         <div class="row" style="justify-content: space-between; margin-top: 10px;">
                             ${when((manager.hasRole("write:alarms")), () => html`
-                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:alarms")}"
-                                          .label="${i18next.t("delete")}"
-                                          .type="${InputType.BUTTON}"
-                                          @click="${() => this._deleteAlarm(this.alarm)}"
+                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined ?disabled="${!manager.hasRole("write:alarms") || !alarm.id}"
+                                              .label="${i18next.t("delete")}"
+                                              .type="${InputType.BUTTON}"
+                                              @or-mwc-input-changed="${() => this._deleteAlarm(this.alarm)}"
                                 ></or-mwc-input>
                             `)}
                             <div>
+                                <or-mwc-input class="alarm-input" style="margin: 0;" outlined
+                                          .label="${i18next.t("cancel")}"
+                                          .type="${InputType.BUTTON}"
+                                          @or-mwc-input-changed="${() => this.reset()}"
+                                ></or-mwc-input>
                                 <or-mwc-input id="savebtn"
                                               style="margin: 0;"
                                               raised class="alarm-input" disabled
