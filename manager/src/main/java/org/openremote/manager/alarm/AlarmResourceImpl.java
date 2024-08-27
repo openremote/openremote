@@ -19,7 +19,10 @@
  */
 package org.openremote.manager.alarm;
 
-import jakarta.ws.rs.QueryParam;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
@@ -34,12 +37,8 @@ import jakarta.ws.rs.core.Response.Status;
 import org.openremote.model.util.TextUtil;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
-import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
-import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.openremote.model.alarm.Alarm.Source.CLIENT;
 import static org.openremote.model.alarm.Alarm.Source.MANUAL;
 
@@ -54,130 +53,79 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
         this.alarmService = alarmService;
     }
 
-    private void validateAlarmId(Long alarmId) {
-        if (alarmId == null) {
-            throw new WebApplicationException("Missing alarm ID", Status.BAD_REQUEST);
-        }
-        if (alarmId < 0) {
-            throw new WebApplicationException("Alarm ID cannot be negative", Status.BAD_REQUEST);
-        }
-    }
-
-    private String validateExistingAlarmId(Long alarmId) {
-        validateAlarmId(alarmId);
-        SentAlarm alarm = alarmService.getAlarm(alarmId);
-        if (alarm == null) {
-            throw new WebApplicationException("Alarm does not exist", BAD_REQUEST);
-        }
-
-        if (!isRealmActiveAndAccessible(alarm.getRealm())) {
-            throw new WebApplicationException("Alarm is in a nonexistent, inactive or inaccessible realm", FORBIDDEN);
-        }
-
-        return alarm.getRealm();
-    }
-
-    private Set<String> validateExistingAlarmIds(List<Long> alarmIds) {
-        alarmIds.forEach(this::validateAlarmId);
-
-        List<SentAlarm> alarms = alarmService.getAlarms(alarmIds);
-
-        if (alarms == null || alarms.size() != alarmIds.size()) {
-            throw new WebApplicationException("One or more alarms do not exist", BAD_REQUEST);
-        }
-
-        Set<String> realms = alarms.stream().map(SentAlarm::getRealm).collect(Collectors.toSet());
-
-        if (realms.stream().anyMatch(realm -> !isRealmActiveAndAccessible(realm))) {
-            throw new WebApplicationException("One or more alarms are in a nonexistent, inactive or inaccessible realm", FORBIDDEN);
-        }
-
-        return realms;
-    }
-
-    private void validateRealm(String realm) {
-        if (!isRealmActiveAndAccessible(realm)) {
-            throw new WebApplicationException("Realm '" + realm + "' is not active or inaccessible", Status.FORBIDDEN);
+    private <T> T mapExceptions(Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException(e.getMessage(), e);
+        } catch (EntityNotFoundException e) {
+            throw new NotFoundException(e.getMessage(), e);
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage(), e);
         }
     }
 
-    private void validateRealms(Stream<String> realms) {
-        realms.forEach(this::validateRealm);
-    }
-
-    private List<SentAlarm> filterByActiveAndAccessibleRealms(List<SentAlarm> sentAlarms) {
-        return sentAlarms.stream().filter(sa -> isRealmActiveAndAccessible(sa.getRealm())).toList();
+    private void mapExceptions(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BadRequestException(e.getMessage(), e);
+        } catch (EntityNotFoundException e) {
+            throw new NotFoundException(e.getMessage(), e);
+        } catch (SecurityException e) {
+            throw new ForbiddenException(e.getMessage(), e);
+        }
     }
 
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
-        String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName(): realm;
-        validateRealm(filterRealm);
-        return alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]);
+        String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
+        if (!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException("Realm '" + realm + "' is not active or inaccessible", Status.FORBIDDEN);
+        }
+        return mapExceptions(() -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
     }
 
     @Override
     public void removeAlarms(RequestParams requestParams, List<Long> alarmIds) {
-        Set<String> realms = validateExistingAlarmIds(alarmIds);
-        alarmService.removeAlarms(alarmIds, realms);
+        mapExceptions(() -> alarmService.removeAlarms(alarmIds, getUserId()));
     }
 
     @Override
     public SentAlarm getAlarm(RequestParams requestParams, Long alarmId) {
-        validateExistingAlarmId(alarmId);
-        return alarmService.getAlarm(alarmId);
+        return mapExceptions(() -> alarmService.getAlarm(alarmId, getUserId()));
     }
 
     @Override
     public void removeAlarm(RequestParams requestParams, Long alarmId) {
-        String realm = validateExistingAlarmId(alarmId);
-        alarmService.removeAlarm(alarmId, realm);
+        mapExceptions(() -> alarmService.removeAlarm(alarmId, getUserId()));
     }
 
     @Override
     public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
-        validateRealm(alarm.getRealm());
-        try {
-            if (getUserId() != null) {
-                alarm.setSource(MANUAL);
-                alarm.setSourceId(getUserId());
-            }
-            else if (getClientId() != null) {
-                alarm.setSource(CLIENT);
-                alarm.setSourceId(getClientId());
-            }
-            return alarmService.sendAlarm(alarm);
-        } catch (RuntimeException e) {
-            throw new WebApplicationException(e.getMessage(), e, Status.BAD_REQUEST);
+        if (getUserId() != null) {
+            alarm.setSource(MANUAL);
+            alarm.setSourceId(getUserId());
+        } else if (getClientId() != null) {
+            alarm.setSource(CLIENT);
+            alarm.setSourceId(getClientId());
         }
+        return mapExceptions(() -> alarmService.sendAlarm(alarm, getUserId()));
     }
 
     @Override
     public void updateAlarm(RequestParams requestParams, Long alarmId, SentAlarm alarm) {
-        validateExistingAlarmId(alarmId);
-        if (alarm == null) {
-            throw new WebApplicationException("Alarm cannot be null", Status.BAD_REQUEST);
-        }
-
-        validateRealm(alarm.getRealm());
-        alarmService.updateAlarm(alarmId, getUserId(), alarm);
+        mapExceptions(() -> alarmService.updateAlarm(alarmId, getUserId(), alarm));
     }
 
     @Override
     public List<AlarmAssetLink> getAssetLinks(RequestParams requestParams, Long alarmId, String realm) {
-        validateExistingAlarmId(alarmId);
-        validateRealm(realm);
-        return alarmService.getAssetLinks(alarmId, realm);
+        return mapExceptions(() -> alarmService.getAssetLinks(alarmId, getUserId(), realm));
     }
 
     @Override
     public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
-        if (links == null || links.isEmpty()) {
-            throw new WebApplicationException("Missing links", Status.BAD_REQUEST);
-        }
-
-        validateRealms(links.stream().map(link -> link.getId().getRealm()).distinct());
-        alarmService.linkAssets(links);
+        mapExceptions(() -> alarmService.linkAssets(links, getUserId()));
     }
 
 }
