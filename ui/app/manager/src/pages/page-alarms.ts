@@ -312,7 +312,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
-        if (changedProperties.has("realm")) {
+        if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
         }
         if (changedProperties.has("alarm")) {
@@ -995,7 +995,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         this.requestUpdate();
                     })
                 }
-                else {
+                else if (!this.creationState) {
                     this.reset();
                 }
             } else {
