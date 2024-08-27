@@ -303,6 +303,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public connectedCallback() {
         super.connectedCallback();
+        this.realm = this.getState().app.realm;
         this._loadData();
     }
 
@@ -502,6 +503,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         };
 
         const alarmAssetLinksResponse = await manager.rest.api.AlarmResource.getAssetLinks(alarm.id, {realm: alarm.realm});
+
         if (!this.responseAndStateOK(stateChecker, alarmAssetLinksResponse, i18next.t("loadFailedUsers"))) {
             return;
         }
@@ -518,6 +520,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
             this._loadedUsers = usersResponse.data.filter((user) => user.enabled && !user.serviceAccount);
         }
         this.alarm.alarmAssetLinks = alarmAssetLinksResponse.data;
+
         this.alarm.loaded = true;
         this.alarm.loading = false;
 
@@ -569,10 +572,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
             if (this.status) {
                 this._data = this._data.filter((e) => e.status === this.status);
             }
-            if(!this.status && this.allActive){
+            if (!this.status && this.allActive) {
                 this._data = this._data.filter((e) => e.status !== AlarmStatus.RESOLVED && e.status !== AlarmStatus.CLOSED);
             }
-            if(this.assign){
+            if (this.assign) {
                 await this._onAssignCheckChanged(this.assign);
             }
         }
@@ -803,7 +806,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _onSeverityChanged(severity: any) {
-        if(severity == 'alarm.all'){
+        if (severity == 'alarm.all') {
             this.severity = undefined;
             this._loadData();
             return;
@@ -832,14 +835,14 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _onStatusChanged(status: any) {
-        if(status == 'alarm.all'){
+        if (status == 'alarm.all') {
             this.status = undefined;
             this.allActive = undefined;
             this.requestUpdate();
             return;
         }
 
-        if(status == 'alarm.allActive'){
+        if (status == 'alarm.allActive') {
             this.status = undefined;
             this.allActive = true;
             this.requestUpdate();
@@ -856,9 +859,9 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected _onRowSelect(ev: OrMwcTableRowSelectEvent) {
         const alarm = this._data[ev.detail.index];
-        if(alarm) {
-            if(ev.detail.state) {
-                if(this._selectedIds === undefined) {
+        if (alarm) {
+            if (ev.detail.state) {
+                if (this._selectedIds === undefined) {
                     this._selectedIds = [alarm.id];
                 } else {
                     this._selectedIds.push(alarm.id);
@@ -979,7 +982,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     public stateChanged(state: AppStateKeyed) {
         if (state.app.page == "alarms") {
-            if(this.realm === undefined || this.realm == state.app.realm){
+            if (this.realm === undefined || this.realm == state.app.realm) {
                 if (state.app.params && state.app.params.id) {
                     const parsedId = Number(state.app.params.id);
                     manager.rest.api.AlarmResource.getAlarm(parsedId).then((alarm: any) => {
@@ -1019,7 +1022,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 .some((input) => !(input as OrMwcInput).valid);
         }
 
-        if (this.alarm && !this.alarm.title){
+        if (this.alarm && !this.alarm.title) {
             saveBtn.disabled = true;
         }
     }
