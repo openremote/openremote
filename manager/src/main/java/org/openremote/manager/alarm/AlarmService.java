@@ -290,6 +290,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+    public void linkAsset(String assetId, String realm, Long alarmId) {
+        linkAssets(List.of(assetId), realm, alarmId);
+    }
+
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
         linkAssets(assetIds.stream().map(assetId -> new AlarmAssetLink(realm, alarmId, assetId)).toList(), null);
     }
