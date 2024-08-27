@@ -368,18 +368,18 @@ export class OrHeader extends LitElement {
             this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
         }
         if (changedProperties.has("realm")) {
-            this._getAlarmButton().then();
+            this._getAlarmButton();
         }
         return super.shouldUpdate(changedProperties);
     }
 
-    firstUpdated(){
-        this._getAlarmButton().then();
+    firstUpdated() {
+        this._getAlarmButton();
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this._subscribeEvents().then();
+        this._subscribeEvents();
     }
 
     disconnectedCallback() {

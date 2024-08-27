@@ -77,11 +77,11 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
         def alarm = adminResource.createAlarm(null, input)
 
         then:
-        assert alarm != null
-        assert alarm.title == title
-        assert alarm.content == content
-        assert alarm.severity == severity
-        assert alarm.status == Alarm.Status.OPEN
+        alarm != null
+        alarm.title == title
+        alarm.content == content
+        alarm.severity == severity
+        alarm.status == Alarm.Status.OPEN
 
         where:
         title           | content               | severity
@@ -96,12 +96,12 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
         def alarm = adminResource.createAlarm(null, input)
 
         then:
-        assert alarm != null
-        assert alarm.title == title
-        assert alarm.content == content
-        assert alarm.severity == severity
-        assert alarm.status == Alarm.Status.OPEN
-        assert alarm.source == source
+        alarm != null
+        alarm.title == title
+        alarm.content == content
+        alarm.severity == severity
+        alarm.status == Alarm.Status.OPEN
+        alarm.source == source
 
         where:
         title           | content               | severity        | source
@@ -119,7 +119,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 400
+        ex.response.status == 400
 
         where:
         title                | content               | severity     | status
@@ -137,7 +137,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 403
+        ex.response.status == 403
     }
 
     // Get alarms as admin
@@ -146,8 +146,8 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
         def output = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
 
         then:
-        assert output != null
-        assert output.size() == 4
+        output != null
+        output.size() == 4
     }
 
     // Get alarms without read:alarm role
@@ -157,7 +157,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 403
+        ex.response.status == 403
     }
 
     // Update alarm as admin
@@ -169,11 +169,11 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
         def updated = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
 
         then:
-        assert updated != null
-        assert updated.title == title
-        assert updated.content == content
-        assert updated.severity == severity
-        assert updated.status == status
+        updated != null
+        updated.title == title
+        updated.content == content
+        updated.severity == severity
+        updated.status == status
 
         where:
         title           | content               | severity        | status
@@ -199,7 +199,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 403
+        ex.response.status == 403
 
         where:
         title           | content               | severity        | status
@@ -215,7 +215,7 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 403
+        ex.response.status == 403
     }
 
     // Delete alarms without write:alarm role
@@ -226,26 +226,34 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
 
         then:
         WebApplicationException ex = thrown()
-        assert ex.response.status == 403
+        ex.response.status == 403
     }
 
-    // Delete alarm as admin
-    def "should delete alarm as admin"() {
+    // Delete one alarm as admin
+    def "should delete one alarm as admin"() {
         when:
+        for (int i = 0; i < 2; i++) {
+            adminResource.createAlarm(null, new Alarm("Alarm " + i, "Content " + i, Severity.MEDIUM, null, MASTER_REALM))
+        }
         def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
         adminResource.removeAlarm(null, delete.id)
 
-        then:
-        adminResource.getAlarms(null, MASTER_REALM, null, null, null).find { it.id == delete.id } == null
+        then: "returns some alarms but not the deleted alarm"
+        def alarms = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
+        alarms.find { it.id == delete.id } == null
+        alarms.length > 0
     }
 
-    // Delete alarms as admin
-    def "should delete alarms as admin"() {
+    // Delete multiple alarms as admin
+    def "should delete multiple alarms as admin"() {
         when:
+        for (int i = 0; i < 2; i++) {
+            adminResource.createAlarm(null, new Alarm("Alarm " + i, "Content " + i, Severity.MEDIUM, null, MASTER_REALM))
+        }
         def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
         adminResource.removeAlarms(null, (List<Long>) delete.collect { it.id })
 
-        then:
+        then: "returns no alarms"
         adminResource.getAlarms(null, MASTER_REALM, null, null, null).length == 0
     }
 

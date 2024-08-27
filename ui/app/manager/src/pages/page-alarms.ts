@@ -307,10 +307,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
         this._loadData();
     }
 
-    public disconnectedCallback() {
-        super.disconnectedCallback();
-    }
-
     public shouldUpdate(changedProperties: PropertyValues): boolean {
         if (changedProperties.has("realm") && changedProperties.get("realm") != undefined) {
             this.reset();
