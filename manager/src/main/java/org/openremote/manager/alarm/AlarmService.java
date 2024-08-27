@@ -112,11 +112,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     }
 
-    private Set<String> getAlarmRealms(List<SentAlarm> alarms) {
+    protected Set<String> getAlarmRealms(List<SentAlarm> alarms) {
         return alarms == null ? Set.of() : alarms.stream().map(SentAlarm::getRealm).collect(Collectors.toSet());
     }
 
-    private void validateAlarmId(Long alarmId) {
+    protected void validateAlarmId(Long alarmId) {
         if (alarmId == null) {
             throw new IllegalArgumentException("Missing alarm ID");
         }
@@ -125,32 +125,32 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
-    private void validateAlarmIds(List<Long> alarmIds) {
+    protected void validateAlarmIds(List<Long> alarmIds) {
         if (alarmIds == null || alarmIds.isEmpty()) {
             throw new IllegalArgumentException("Missing alarm IDs");
         }
         alarmIds.forEach(this::validateAlarmId);
     }
 
-    private void validateAlarmExistsAndAccessible(SentAlarm alarm, String userId) {
+    protected void validateAlarmExistsAndAccessible(SentAlarm alarm, String userId) {
         if (alarm == null) {
             throw new EntityNotFoundException("Alarm does not exist");
         }
         validateRealmAccessibleToUser(userId, alarm.getRealm());
     }
 
-    private void validateAlarmsExistAndAccessible(List<Long> alarmIds, List<SentAlarm> alarms, String userId) {
+    protected void validateAlarmsExistAndAccessible(List<Long> alarmIds, List<SentAlarm> alarms, String userId) {
         if (alarms == null || alarmIds.size() != alarms.size()) {
             throw new EntityNotFoundException("One or more alarms do not exist");
         }
         validateRealmsAccessibleToUser(userId, getAlarmRealms(alarms));
     }
 
-    private void validateRealmAccessibleToUser(String userId, String realm) {
+    protected void validateRealmAccessibleToUser(String userId, String realm) {
         validateRealmsAccessibleToUser(userId, Set.of(realm));
     }
 
-    private void validateRealmsAccessibleToUser(String userId, Set<String> realms) {
+    protected void validateRealmsAccessibleToUser(String userId, Set<String> realms) {
         if (userId == null) {
             return;
         }
@@ -210,7 +210,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return result;
     }
 
-    private void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
+    protected void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
 
         List<User> users = new ArrayList<>();
