@@ -394,8 +394,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     protected render() {
         if (!manager.authenticated) {
-            return html`
-                <or-translate value="notAuthenticated"></or-translate> `;
+            return html`<or-translate value="notAuthenticated"/>`;
         }
 
         const disabled = false;
@@ -411,7 +410,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 <div id="title" class="${this.creationState || this.alarm ? "hidden" : ""}">
                     <div class="${this.creationState || this.alarm ? "hidden" : ""}" style="display: flex; align-items: center;">
                         <or-icon icon="bell-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                        <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
+                        <span>${this.alarm != undefined ? this.alarm.title : html`<or-translate value="alarm.alarm_plural"/>`}</span>
                     </div>
                     <div>
                         <div id="controls">
@@ -464,7 +463,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         <!-- List of Alarms page -->
                         <div id="container">
                             ${disabled ? html`
-                                <div id="msg">${i18next.t("loading")}</div>
+                                <div id="msg"><or-translate value="loading"/></div>
                             ` : html`
                                 <div id="table-container">
                                     ${when(this._data, () => guard([this._data], () => this.getAlarmsTable(writeAlarms)))}
@@ -621,7 +620,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             return this.getSingleAlarmTemplate(alarm, readonly);
                         };
                         const content: Promise<TemplateResult> = getTemplate();
-                        return html` ${until(content, html`${i18next.t("loading")}`)} `;
+                        return html`${until(content, html`<or-translate value="loading"/>`)} `;
                     }
             )}
         `;
@@ -636,20 +635,20 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         max-width: 1000px;">
                 <div class="breadcrumb-container">
                     <span class="breadcrumb-clickable" @click="${() => this.reset()}"
-                    >${i18next.t("alarm.alarm_plural")}</span>
+                    ><or-translate value="alarm.alarm_plural"/></span>
                     <or-icon class="breadcrumb-arrow" icon="chevron-right"></or-icon>
                     <span style="margin-left: 2px;"
-                    >${this.alarm != undefined ? this.alarm.id : i18next.t("alarm.creatingAlarm")}</span>
+                    >${this.alarm != undefined ? this.alarm.id : html`<or-translate value="alarm.creatingAlarm"/>`}</span>
                 </div>
                 <div id="title-alarm">
                     <or-icon icon="bell-outline" style="margin-right: 10px; margin-left: 14px;"></or-icon>
-                    <span> ${this.alarm != undefined ? this.alarm.title : i18next.t("alarm.alarm_plural")} </span>
+                    <span>${this.alarm != undefined ? this.alarm.title : html`<or-translate value="alarm.alarm_plural"/>`}</span>
                 </div>
                        
                 <div class="panel" style="margin-top: 0">
                     <div class="row">
                         <div class="column" id="details-panel">
-                            <h5>${i18next.t("details")}</h5>
+                            <h5><or-translate value="details"/></h5>
                             <!-- alarm details -->
                             <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                       .label="${i18next.t("alarm.title")}" required
@@ -672,7 +671,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             ></or-mwc-input>
                         </div>
                         <div class="column" id="prop-panel">
-                            <h5>${i18next.t("properties")}</h5>
+                            <h5><or-translate value="properties"/></h5>
                             <or-mwc-input class="alarm-input hidden" ?disabled="${true}"
                                           ?comfortable=${!this.creationState}
                                   .label="${i18next.t("createdOn")}"
@@ -725,7 +724,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                                   }}"
                             ></or-mwc-input>
                             <div>
-                                <span style="margin: 0px auto 10px;">${i18next.t("linkedAssets")}:</span>
+                                <span style="margin: 0px auto 10px;"><or-translate value="linkedAssets"/>:</span>
                                 <or-mwc-input outlined ?disabled="${!manager.hasRole("write:alarms")}" style="margin-left: 4px;"
                                       .type="${InputType.BUTTON}"
                                       .label="${i18next.t("selectRestrictedAssets", {
