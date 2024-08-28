@@ -55,6 +55,10 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.alarm.Alarm.Source.*;
 
+/**
+ * A service for managing {@link SentAlarm}s. It also provides functionality for managing links between {@link SentAlarm}s
+ * and {@link org.openremote.model.asset.Asset}s using {@link AlarmAssetLink}s.
+ */
 public class AlarmService extends RouteBuilder implements ContainerService {
 
     public static final Logger LOG = Logger.getLogger(AlarmService.class.getName());
@@ -112,10 +116,16 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     }
 
+    /**
+     * Returns a set of all realms of the given alarms.
+     */
     protected Set<String> getAlarmRealms(List<SentAlarm> alarms) {
         return alarms == null ? Set.of() : alarms.stream().map(SentAlarm::getRealm).collect(Collectors.toSet());
     }
 
+    /**
+     * Throws an {@link IllegalArgumentException} if {@code alarmId} is null or negative.
+     */
     protected void validateAlarmId(Long alarmId) {
         if (alarmId == null) {
             throw new IllegalArgumentException("Missing alarm ID");
@@ -125,6 +135,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+    /**
+     * Throws an {@link IllegalArgumentException} if the given {@code alarmIds} are null, empty or negative.
+     */
     protected void validateAlarmIds(List<Long> alarmIds) {
         if (alarmIds == null || alarmIds.isEmpty()) {
             throw new IllegalArgumentException("Missing alarm IDs");
@@ -132,6 +145,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         alarmIds.forEach(this::validateAlarmId);
     }
 
+    /**
+     * Validates if the {@code alarm} is non-null and the user can access to the alarm realm.
+     */
     protected void validateAlarmExistsAndAccessible(SentAlarm alarm, String userId) {
         if (alarm == null) {
             throw new EntityNotFoundException("Alarm does not exist");
@@ -139,6 +155,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         validateRealmAccessibleToUser(userId, alarm.getRealm());
     }
 
+    /**
+     * Validates if the {@code alarms} are non-null, match the alarmIds length and the user has access to all alarm realms.
+     */
     protected void validateAlarmsExistAndAccessible(List<Long> alarmIds, List<SentAlarm> alarms, String userId) {
         if (alarms == null || alarmIds.size() != alarms.size()) {
             throw new EntityNotFoundException("One or more alarms do not exist");
@@ -146,10 +165,16 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         validateRealmsAccessibleToUser(userId, getAlarmRealms(alarms));
     }
 
+    /**
+     * Validates if the user has access to the given realm.
+     */
     protected void validateRealmAccessibleToUser(String userId, String realm) {
         validateRealmsAccessibleToUser(userId, Set.of(realm));
     }
 
+    /**
+     * Validates if the user has access to all given realms.
+     */
     protected void validateRealmsAccessibleToUser(String userId, Set<String> realms) {
         if (userId == null) {
             return;
@@ -169,6 +194,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
+    /**
+     * Sends an alarm if the given user has access to the alarm realm.
+     */
     public SentAlarm sendAlarm(Alarm alarm, String userId) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
         Objects.requireNonNull(alarm.getRealm(), "Alarm realm cannot be null");
@@ -210,6 +238,13 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return result;
     }
 
+    /**
+     * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not set all users having
+     * the {@link Constants#READ_ADMIN_ROLE} or{@link Constants#WRITE_ALARMS_ROLE} are notified.
+     *
+     * @param alarm the alarm to send e-mail and push notifications for
+     * @param excludeUserIds users matching these user IDs will are excluded from the notifications
+     */
     protected void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
 
@@ -260,6 +295,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
     }
 
+    /**
+     * Updates an existing alarm if the given user has access to the alarm realm.
+     */
     public void updateAlarm(Long alarmId, String userId, SentAlarm alarm) {
         SentAlarm oldAlarm = getAlarm(alarmId, userId);
         String oldAssigneeId = oldAlarm.getAssigneeId();
@@ -290,14 +328,23 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }
     }
 
+    /**
+     * Links one asset to an existing alarm.
+     */
     public void linkAsset(String assetId, String realm, Long alarmId) {
         linkAssets(List.of(assetId), realm, alarmId);
     }
 
+    /**
+     * Links multiple assets to an existing alarm.
+     */
     public void linkAssets(List<String> assetIds, String realm, Long alarmId) {
         linkAssets(assetIds.stream().map(assetId -> new AlarmAssetLink(realm, alarmId, assetId)).toList(), null);
     }
 
+    /**
+     * Links multiple assets to existing alarms if the given user has access to the alarm realms.
+     */
     public void linkAssets(List<AlarmAssetLink> links, String userId) {
         if (links == null || links.isEmpty()) {
             throw new IllegalArgumentException("Missing links");
@@ -324,6 +371,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         }));
     }
 
+    /**
+     * Returns the assets linked to an alarm if the given user has access to the alarm realm.
+     */
     public List<AlarmAssetLink> getAssetLinks(Long alarmId, String userId, String realm) throws IllegalArgumentException {
         getAlarm(alarmId, userId);
         return persistenceService.doReturningTransaction(entityManager ->
@@ -338,13 +388,16 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         );
     }
 
+    /**
+     * Retrieves the details of an existing alarm if the given user has access to the alarm realm.
+     */
     public SentAlarm getAlarm(Long alarmId, String userId) throws IllegalArgumentException {
         validateAlarmId(alarmId);
         SentAlarm alarm;
         try {
             alarm = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.id = :id", SentAlarm.class)
-                .setParameter("id", alarmId)
-                .getSingleResult());
+                    .setParameter("id", alarmId)
+                    .getSingleResult());
         } catch (PersistenceException e) {
             alarm = null;
         }
@@ -352,6 +405,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return alarm;
     }
 
+    /**
+     * Retrieves the details of existing alarms if the given user has access to the alarm realms.
+     */
     public List<SentAlarm> getAlarms(List<Long> alarmIds, String userId) throws IllegalArgumentException {
         validateAlarmIds(alarmIds);
         List<SentAlarm> alarms;
@@ -368,6 +424,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return alarms;
     }
 
+    /**
+     * Retrieves all existing alarms in a realm. The {@code status}, {@code assetId} and {@code assigneeId} parameters
+     * are optional and if non-null are used for filtering the alarms.
+     */
     public List<SentAlarm> getAlarms(String realm, Alarm.Status status, String assetId, String assigneeId) throws IllegalArgumentException {
         Map<String, Object> parameters = new HashMap<>();
         StringBuilder sb = new StringBuilder("select sa from SentAlarm sa ");
@@ -397,6 +457,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         });
     }
 
+    /**
+     * Removes an existing alarms if the given user has access to the alarm realm.
+     */
     public void removeAlarm(Long alarmId, String userId) {
         SentAlarm alarm = getAlarm(alarmId, userId);
         persistenceService.doTransaction(entityManager -> entityManager
@@ -407,6 +470,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.DELETE));
     }
 
+    /**
+     * Removes existing alarms if the given user has access to the alarm realms.
+     */
     public void removeAlarms(List<Long> alarmIds, String userId) throws IllegalArgumentException {
         List<SentAlarm> alarms = getAlarms(alarmIds, userId);
         persistenceService.doTransaction(entityManager ->
