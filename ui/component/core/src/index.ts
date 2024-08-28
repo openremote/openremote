@@ -59,6 +59,7 @@ export enum OREvent {
 
 export interface LoginOptions {
     redirectUrl?: string;
+    action?: string;
     credentials?: UsernamePassword;
 }
 
@@ -699,6 +700,9 @@ export class Manager implements EventProviderFactory {
                     const keycloakOptions: any = {};
                     if (options && options.redirectUrl && options.redirectUrl !== "") {
                         keycloakOptions.redirectUri = options.redirectUrl;
+                    }
+                    if(options?.action && options.action !== "") {
+                        keycloakOptions.action = options.action;
                     }
                     if (this.isMobile()) {
                         keycloakOptions.scope = "offline_access";

@@ -309,6 +309,8 @@
   "deleteUserConfirm":"De gebruiker '{{userName}}' verwijderen?",
   "deleteRoleConfirm":"De rol '{{roleName}}' verwijderen?",
   "passwordMismatch":"Wachtwoorden komen niet overeen",
+  "twoFactorAuth": "Tweestapsverificatie",
+  "twoFactorConfigure": "Configureer",
   "firstName":"Voornaam",
   "surname":"Achternaam",
   "realmRules": "Realm",
@@ -321,6 +323,7 @@
     "JAVASCRIPT": "JavaScript"
   },
   "gatewayConnection": "Manager interconnect",
+  "gatewayHeaderItem": "Manager interconnect",
   "gateway": {
     "": "Manager interconnect",
     "limit_sharing_is_custom_error": "Een aangepaste configuratie is ingesteld. Klik op JSON om deze aan te passen. Maak de configuratie leeg om de velden hieronder te gebruiken.",

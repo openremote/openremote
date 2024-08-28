@@ -65,7 +65,11 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,6 +78,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -1336,5 +1342,74 @@ public class ValueUtil {
             Protocol.LOG.log(Level.WARNING, "Failed to convert hex string to bytes", e);
             return new byte[0];
         }
+    }
+
+    public static String doDynamicTimeReplace(String str, Instant instant) {
+        if (TextUtil.isNullOrEmpty(str)) {
+            return str;
+        }
+
+        Pattern pattern = Pattern.compile(Constants.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
+        Matcher matcher = pattern.matcher(str);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+
+            String durationStr = matcher.group(1);
+            String formatStr = matcher.group(2);
+
+            // Parse the duration
+            if (durationStr != null) {
+                Duration duration = Duration.parse(durationStr);
+                instant = instant.plus(duration);
+            }
+
+            // Apply formatting
+            if (formatStr == null) formatStr = "";
+
+            String formattedDate = switch (formatStr) {
+                case "" -> instant.toString();
+                case "EPOCH_SECONDS" -> String.valueOf(instant.getEpochSecond());
+                case "EPOCH_MILLIS" -> String.valueOf(instant.toEpochMilli());
+                default -> {
+                    ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
+                    yield zonedDateTime.format(formatter);
+                }
+            };
+
+            matcher.appendReplacement(result, formattedDate);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
+    }
+
+    public static String doDynamicValueReplace(String str, Object value) {
+        if (TextUtil.isNullOrEmpty(str)) {
+            return str;
+        }
+
+        Pattern pattern = Pattern.compile(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP);
+        Matcher matcher = pattern.matcher(str);
+
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+
+            String formatStr = matcher.group(1);
+            String formattedValue;
+
+            // Apply formatting
+            if (TextUtil.isNullOrEmpty(formatStr)) {
+                formattedValue = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
+            } else {
+                formattedValue = String.format(formatStr, value);
+            }
+            matcher.appendReplacement(result, formattedValue);
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

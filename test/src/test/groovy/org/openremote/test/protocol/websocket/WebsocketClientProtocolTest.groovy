@@ -195,7 +195,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     "targetTemperature",
                                     0.12345))
                                     .orElse(ValueUtil.NULL_LITERAL)
-                                        .replace("0.12345", Constants.DYNAMIC_VALUE_PLACEHOLDER)
+                                        .replace("0.12345", "%VALUE%")
                             )
                         .setMessageMatchFilters(
                             [
