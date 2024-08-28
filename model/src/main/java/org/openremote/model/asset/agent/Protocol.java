@@ -99,10 +99,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <ol>
  * <li>Configurable value conversion which allows the value sent from the linked attribute to be converted in a
  * configurable way before being sent to the protocol for processing (see {@link AgentLink#getWriteValueConverter})
- * <li>Configurable dynamic value insertion (replacement of {@link org.openremote.model.Constants#DYNAMIC_VALUE_PLACEHOLDER} strings within a
- * pre-defined JSON string with the value sent from the linked attribute (this allows for attribute values to be inserted
- * into a larger payload before processing by the protocol; it also allows the written value to be fixed or statically
- * converted (see {@link AgentLink#getWriteValue}).
+ * <li>Configurable dynamic data insertion into attribute write value before processing by the protocol; it also allows
+ * the written value to be fixed or statically converted (see {@link AgentLink#getWriteValue}).
  * </ol>
  * When sending the converted value onto the actual protocol implementation for processing the original
  * {@link AttributeEvent} as well as the converted value should be made available.
