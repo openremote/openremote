@@ -330,12 +330,10 @@ export class OrMwcTable extends LitElement {
                                             return html`
                                                 <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
                                                     role="columnheader" scope="col">
-                                                    <div class="">
-                                                        <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
-                                                                      .indeterminate="${indeterminate}" .value="${allSelected}"
-                                                                      @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "all")}">
-                                                        </or-mwc-input>
-                                                    </div>
+                                                    <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
+                                                                  .indeterminate="${indeterminate}" .value="${allSelected}"
+                                                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "all")}">
+                                                    </or-mwc-input>
                                                 </th>
                                                 ${(typeof column === "string") ? html`
                                                     <th class="mdc-data-table__header-cell ${this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index + 1}"
