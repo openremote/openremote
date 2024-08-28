@@ -22,7 +22,6 @@ package org.openremote.model.protocol;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.ValuePredicate;
@@ -33,22 +32,16 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
-import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.openremote.model.Constants.DYNAMIC_VALUE_PLACEHOLDER;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
 import static org.openremote.model.util.ValueUtil.applyValueFilters;
@@ -67,7 +60,7 @@ public final class ProtocolUtil {
      * searched on every single write request (for performance reasons), instead this should be recorded when the
      * attribute is first linked.
      */
-    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, AttributeInfo attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
+    public static Pair<Boolean, Object> doOutboundValueProcessing(AttributeRef attributeRef, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder, Instant instant) {
 
         String writeValue = agentLink.getWriteValue().orElse(null);
 
@@ -76,7 +69,7 @@ public final class ProtocolUtil {
         // value conversion
         Object finalValue = value;
         ignoreAndConvertedValue = agentLink.getWriteValueConverter().map(converter -> {
-            LOG.finest("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute write value converter to attribute: " + attributeRef);
             return applyValueConverter(finalValue, converter);
         }).orElse(new Pair<>(false, finalValue));
 
@@ -86,14 +79,14 @@ public final class ProtocolUtil {
 
         value = ignoreAndConvertedValue.value;
 
-        // dynamic value insertion
+        // dynamic placeholder insertion
 
         boolean hasWriteValue = !TextUtil.isNullOrEmpty(writeValue);
 
         if (hasWriteValue) {
             if (containsDynamicPlaceholder) {
-                String valueStr = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
-                writeValue = writeValue.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
+                writeValue = ValueUtil.doDynamicValueReplace(writeValue, value);
+                writeValue = ValueUtil.doDynamicTimeReplace(writeValue, instant);
             }
 
             value = writeValue;
@@ -102,8 +95,8 @@ public final class ProtocolUtil {
         return new Pair<>(false, value);
     }
 
-    public static boolean hasDynamicWriteValue(AgentLink<?> agentLink) {
-        return agentLink.getWriteValue().map(str -> str.contains(DYNAMIC_VALUE_PLACEHOLDER)).orElse(false);
+    public static boolean hasDynamicPlaceholders(AgentLink<?> agentLink) {
+        return agentLink.getWriteValue().map(str -> Constants.containsDynamicValuePlaceholder(str) || Constants.containsDynamicTimePlaceholder(str)).orElse(false);
     }
 
     /**
@@ -219,53 +212,5 @@ public final class ProtocolUtil {
                 }
             }
         };
-    }
-
-    public static String doDynamicTimeReplace(String value, Instant instant){
-        if (value == null) return null;
-
-        // Regex to match the pattern ${time:DURATION:FORMAT}
-        Pattern pattern = Pattern.compile(Constants.DYNAMIC_TIME_REGEX);
-        Matcher matcher = pattern.matcher(value);
-
-        StringBuilder result = new StringBuilder();
-
-        while (matcher.find()) {
-            String durationStr = matcher.group(1);
-            String formatStr = matcher.group(2);
-
-            Duration duration;
-            // Parse the duration
-            if (durationStr != null) {
-                duration = Duration.parse(durationStr);
-            } else {
-                // Not set, default is 0 duration, so right now
-                duration = Duration.ZERO;
-            }
-
-            // Get the current date and time, and apply the duration
-            instant = instant.plus(duration);
-
-
-            // Format the adjusted date
-
-            // When we get JDK 21, I'll be able to pattern-match null as well, and I would just include it in the EPOCH_SECONDS case
-            if (formatStr == null) formatStr = "";
-
-            String formattedDate = switch (formatStr){
-                // EPOCH_SECONDS will be the default, when format is ""
-                case "EPOCH_SECONDS", "" -> String.valueOf(instant.getEpochSecond());
-                case "EPOCH_MILLIS" -> String.valueOf(instant.toEpochMilli());
-                default -> {
-                    ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr);
-                    yield zonedDateTime.format(formatter);
-                }
-            };
-            matcher.appendReplacement(result, formattedDate);
-        }
-        matcher.appendTail(result);
-
-        return result.toString();
     }
 }

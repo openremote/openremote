@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -26,38 +26,41 @@ import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.List;
+import java.util.function.Supplier;
 
-import static org.openremote.model.util.ValueUtil.doDynamicValueReplace;
+import static org.openremote.model.util.ValueUtil.doDynamicTimeReplace;
 
 /**
- * A filter for replacing {@link org.openremote.model.Constants#DYNAMIC_VALUE_PLACEHOLDER_REGEXP} in the request URI and
- * headers with the {@link #DYNAMIC_VALUE_PROPERTY} from the request properties, this allows insertion of
- * dynamic values into HTTP requests.
- * <p>Dynamic time replacement has been moved to {@link DynamicTimeInjectorFilter#filter(ClientRequestContext)}.
+ * A filter for replacing {@link org.openremote.model.Constants#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the request URI and
+ * headers with the {@link #INSTANT_SUPPLIER_PROPERTY} from the request properties, this allows insertion of
+ * dynamic timestamps into HTTP requests.
  */
 @Provider
-public class DynamicValueInjectorFilter implements ClientRequestFilter {
+public class DynamicTimeInjectorFilter implements ClientRequestFilter {
 
-    /**
-     * Set a property on the request using this name to inject a dynamic value
-     */
-    public static final String DYNAMIC_VALUE_PROPERTY = DynamicValueInjectorFilter.class.getName() + ".dynamicValue";
+    public static final String INSTANT_SUPPLIER_PROPERTY = DynamicTimeInjectorFilter.class.getName()+".instantSupplier";
 
+    @SuppressWarnings("unchecked")
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
 
-        if(!requestContext.getPropertyNames().contains(DYNAMIC_VALUE_PROPERTY)) return;
+        Supplier<Instant> instantSupplier = (Supplier<Instant>) requestContext.getProperty(DynamicTimeInjectorFilter.INSTANT_SUPPLIER_PROPERTY);
 
-        String dynamicValue = requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) != null ? (String) requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) : "";
+        if (instantSupplier == null) {
+            return;
+        }
+
+        Instant instant = instantSupplier.get();
 
         try {
 
             // Query Parameters & Path
 
             URI oldURI = requestContext.getUri();
-            String path = doDynamicValueReplace(oldURI.getPath(), dynamicValue);
-            String query = doDynamicValueReplace(oldURI.getQuery(), dynamicValue);
+            String path = doDynamicTimeReplace(oldURI.getPath(), instant);
+            String query = doDynamicTimeReplace(oldURI.getQuery(), instant);
             requestContext.setUri(new URI(
                 oldURI.getScheme(),
                 oldURI.getUserInfo(),
@@ -74,7 +77,7 @@ public class DynamicValueInjectorFilter implements ClientRequestFilter {
                 requestContext.getHeaders().forEach((key, values) -> {
                     List<Object> replacedValues = values.stream().map(val -> {
                         if (val instanceof String str) {
-                            return doDynamicValueReplace(str, dynamicValue);
+                            return doDynamicTimeReplace(str, instant);
                         } else {
                             return val;
                         }

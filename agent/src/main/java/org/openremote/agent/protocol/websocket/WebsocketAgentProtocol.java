@@ -26,7 +26,6 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
@@ -293,19 +292,18 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
             WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient.get(), uri);
 
-            if (headers != null) {
-                webTargetBuilder.setInjectHeaders(headers);
-            }
-
             LOG.fine("Creating web target client for subscription '" + uri + "'");
-            ResteasyWebTarget target = webTargetBuilder.build();
-
+            Invocation.Builder request = webTargetBuilder.build().request();
             Invocation invocation;
 
+            if (headers != null) {
+                request = WebTargetBuilder.addHeaders(request, headers);
+            }
+
             if (httpSubscription.body == null) {
-                invocation = target.request().build(httpSubscription.method.toString());
+                invocation = request.build(httpSubscription.method.toString());
             } else {
-                invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
+                invocation = request.build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
             }
             Response response = invocation.invoke();
             response.close();
