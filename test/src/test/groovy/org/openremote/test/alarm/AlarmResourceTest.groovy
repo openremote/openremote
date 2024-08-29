@@ -136,12 +136,23 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     // Get alarms as admin
     def "should return list of alarms"() {
-        when:
+        when: "there are no alarms"
+        def delete = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
+        if (delete.length > 0) {
+            adminResource.removeAlarms(null, (List<Long>) delete.collect { it.id })
+        }
+
+        and: "five alarms are added"
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.ACKNOWLEDGED).setSeverity(Severity.MEDIUM).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 3').setContent('content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.HIGH).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 4').setContent('content').setStatus(Alarm.Status.IN_PROGRESS).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        adminResource.createAlarm(null, new Alarm().setTitle('alarm 5').setContent('content').setStatus(Alarm.Status.RESOLVED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         def output = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
 
         then:
         output != null
-        output.size() == 4
+        output.size() == 5
     }
 
     // Get alarms without read:alarm role
@@ -158,7 +169,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     @Unroll
     def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
         when:
-        def updatable = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
+        def updatable = adminResource.createAlarm(null, new Alarm().setTitle('Updatable alarm').setContent('Updatable content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         adminResource.updateAlarm(null, updatable.id, new SentAlarm().setTitle(title).setContent(content).setRealm(MASTER_REALM).setSeverity(severity).setStatus(status))
         def updated = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
 
