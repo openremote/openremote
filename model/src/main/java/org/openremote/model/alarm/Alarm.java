@@ -71,17 +71,13 @@ public class Alarm {
     protected Source source;
 
     @JsonCreator
-    public Alarm(@JsonProperty("title") String title,
-                 @JsonProperty("content") String content,
-                 @JsonProperty("severity") Severity severity,
-                 @JsonProperty("assigneeId") String assignee,
-                 @JsonProperty("realm") String realm) {
+    public Alarm(String title, String content, Severity severity, String assigneeId, String realm) {
         this.title = title;
         this.content = content;
         this.severity = severity;
         this.status = Status.OPEN;
-        if (assignee != null) {
-            this.assigneeId = assignee;
+        if (assigneeId != null) {
+            this.assigneeId = assigneeId;
         }
         this.realm = realm;
     }

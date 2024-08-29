@@ -39,7 +39,7 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import jakarta.ws.rs.WebApplicationException
 
-class AlarmTest extends Specification implements ManagerContainerTrait {
+class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     @Shared
     static AlarmResource adminResource
 
@@ -114,9 +114,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
         when:
         adminResource.createAlarm(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status).setRealm(MASTER_REALM))
 
-        and:
-        adminResource.createAlarmWithSource(null, new Alarm().setTitle(title).setContent(content).setSeverity(severity).setStatus(status).setRealm(MASTER_REALM), Alarm.Source.MANUAL, "id")
-
         then:
         WebApplicationException ex = thrown()
         ex.response.status == 400
@@ -131,9 +128,6 @@ class AlarmTest extends Specification implements ManagerContainerTrait {
     def "should not create an alarm as regular user"() {
         when:
         regularUserResource.createAlarm(null, new Alarm().setTitle("title").setContent("content").setSeverity(Severity.MEDIUM).setStatus(Alarm.Status.ACKNOWLEDGED).setRealm(MASTER_REALM))
-
-        and:
-        regularUserResource.createAlarmWithSource(null, new Alarm().setTitle("title").setContent("content").setSeverity(Severity.MEDIUM).setStatus(Alarm.Status.ACKNOWLEDGED).setRealm(MASTER_REALM), Alarm.Source.MANUAL, "id")
 
         then:
         WebApplicationException ex = thrown()

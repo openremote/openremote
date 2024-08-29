@@ -184,14 +184,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         if (user == null) {
             throw new IllegalStateException("User does not exist");
         }
-        if (identityProvider.isMasterRealmAdmin(userId)) {
-            return;
+
+        if (!identityProvider.isMasterRealmAdmin(userId) &&
+                (realms.size() > 1 || !identityProvider.isUserInRealm(userId, realms.stream().findFirst().orElse(null)))) {
+            throw new SecurityException("Realm is not active or inaccessible");
         }
-        realms.forEach(realm -> {
-            if (!identityProvider.isUserInRealm(userId, realm)) {
-                throw new SecurityException("User does not have access to '" + realm + "' realm");
-            }
-        });
     }
 
     /**

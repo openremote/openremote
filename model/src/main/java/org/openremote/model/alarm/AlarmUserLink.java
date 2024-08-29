@@ -81,10 +81,7 @@ public class AlarmUserLink {
 
         @Override
         public int hashCode() {
-            int result = realm.hashCode();
-            result = 31 * result + alarmId.hashCode();
-            result = 31 * result + userId.hashCode();
-            return result;
+            return Objects.hash(realm, alarmId, userId);
         }
 
         @Override

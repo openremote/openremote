@@ -80,8 +80,8 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     @Override
     public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
         String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
-        if (!isRealmActiveAndAccessible(realm)) {
-            throw new WebApplicationException("Realm '" + realm + "' is not active or inaccessible", Status.FORBIDDEN);
+        if (!isRealmActiveAndAccessible(filterRealm)) {
+            throw new ForbiddenException("Realm '" + filterRealm + "' is not active or inaccessible");
         }
         return mapExceptions(() -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
     }

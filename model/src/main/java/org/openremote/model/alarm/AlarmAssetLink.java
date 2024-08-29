@@ -76,10 +76,7 @@ public class AlarmAssetLink {
 
         @Override
         public int hashCode() {
-            int result = realm.hashCode();
-            result = 31 * result + sentalarmId.hashCode();
-            result = 31 * result + assetId.hashCode();
-            return result;
+            return Objects.hash(realm, sentalarmId, assetId);
         }
 
         @Override
