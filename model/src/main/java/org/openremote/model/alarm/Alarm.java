@@ -20,7 +20,6 @@
 package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 
 public class Alarm {
@@ -115,10 +114,10 @@ public class Alarm {
         return this;
     }
 
-    public String getAssignee() { return this.assigneeId; }
+    public String getAssigneeId() { return this.assigneeId; }
 
-    public  Alarm setAssignee(String assignee) {
-        this.assigneeId = assignee;
+    public  Alarm setAssigneeId(String assigneeId) {
+        this.assigneeId = assigneeId;
         return this;
     }
 

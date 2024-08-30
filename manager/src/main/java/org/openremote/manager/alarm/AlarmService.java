@@ -208,7 +208,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         SentAlarm result = persistenceService.doReturningTransaction(entityManager -> {
             SentAlarm sentAlarm = new SentAlarm()
-                    .setAssigneeId(alarm.getAssignee())
+                    .setAssigneeId(alarm.getAssigneeId())
                     .setRealm(alarm.getRealm())
                     .setTitle(alarm.getTitle())
                     .setContent(alarm.getContent())
