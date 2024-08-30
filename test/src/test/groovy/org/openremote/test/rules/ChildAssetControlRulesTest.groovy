@@ -1,13 +1,12 @@
 package org.openremote.test.rules
 
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.Constants
-import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -76,7 +75,7 @@ class ChildAssetControlRulesTest extends Specification implements ManagerContain
 
         when: "The on/off attribute of the parent asset is written to"
         assetProcessingService.sendAttributeEvent(
-            new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
+                new AttributeEvent(parentAsset.id, LightAsset.ON_OFF, true)
         )
 
         then: "the parent asset attribute should be updated"

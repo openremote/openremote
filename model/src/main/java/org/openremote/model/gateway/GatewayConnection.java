@@ -30,6 +30,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.List;
 
 @Entity
 @Table(name = "GATEWAY_CONNECTION")
@@ -69,21 +73,31 @@ public class GatewayConnection {
     protected boolean disabled;
 
     /**
+     * Filters are applied in order and the first to match the {@link org.openremote.model.attribute.AttributeEvent} will
+     * be applied; if a catch all filter is to be used (i.e. {@link GatewayAttributeFilter#matcher == null}) it should
+     * be last in the list.
+     */
+    @Column(name = "ATTRIBUTE_FILTERS")
+    @JdbcTypeCode(SqlTypes.JSON)
+    protected List<GatewayAttributeFilter> attributeFilters;
+
+    /**
      * For JPA
      */
-    GatewayConnection() {
+    protected GatewayConnection() {
     }
 
     @JsonCreator
     public GatewayConnection(
-        @JsonProperty("localRealm") String localRealm,
-        @JsonProperty("host") String host,
-        @JsonProperty("port") Integer port,
-        @JsonProperty("realm") String realm,
-        @JsonProperty("clientId") String clientId,
-        @JsonProperty("clientSecret") String clientSecret,
-        @JsonProperty("secured") Boolean secured,
-        @JsonProperty("disabled") boolean disabled) {
+        String localRealm,
+        String host,
+        Integer port,
+        String realm,
+        String clientId,
+        String clientSecret,
+        Boolean secured,
+        List<GatewayAttributeFilter> attributeFilters,
+        boolean disabled) {
         this.localRealm = localRealm;
         this.host = host;
         this.port = port;
@@ -92,6 +106,7 @@ public class GatewayConnection {
         this.clientSecret = clientSecret;
         this.secured = secured;
         this.disabled = disabled;
+        this.attributeFilters = attributeFilters;
     }
 
     public GatewayConnection(
@@ -164,7 +179,7 @@ public class GatewayConnection {
     }
 
     public boolean isSecured() {
-        return secured == null ? true : secured;
+        return secured == null || secured;
     }
 
     public void setSecured(boolean secured) {
@@ -179,6 +194,15 @@ public class GatewayConnection {
         this.disabled = disabled;
     }
 
+    public List<GatewayAttributeFilter> getAttributeFilters() {
+        return attributeFilters;
+    }
+
+    public GatewayConnection setAttributeFilters(List<GatewayAttributeFilter> attributeFilters) {
+        this.attributeFilters = attributeFilters;
+        return this;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -186,9 +210,8 @@ public class GatewayConnection {
             ", host='" + host + '\'' +
             ", port=" + port +
             ", realm='" + realm + '\'' +
-            ", clientId='" + clientId + '\'' +
-            ", clientSecret='" + clientSecret + '\'' +
             ", secured=" + secured +
+            ", attributeFilters=" + (attributeFilters != null && !attributeFilters.isEmpty()) +
             ", disabled=" + disabled +
             '}';
     }

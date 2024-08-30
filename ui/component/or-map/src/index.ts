@@ -2,7 +2,7 @@ import manager, {EventCallback} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
+import {IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
@@ -29,7 +29,7 @@ import {getMarkerConfigForAssetType, MapMarkerAssetConfig} from "./markers/or-ma
 export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl} from "maplibre-gl";
+export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 export * from "./or-map-legend";
 
@@ -367,7 +367,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                         .setActions([
                             {
                                 actionName: "none",
-                                content: i18next.t("none"),
+                                content: "none",
                                 action: () => {
                                     setPos(null);
                                     valueChangeHandler(pos as LngLatLike);
@@ -375,7 +375,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             },
                             {
                                 actionName: "ok",
-                                content: i18next.t("ok"),
+                                content: "ok",
                                 action: () => {
                                     valueChangeHandler(pos as LngLatLike);
                                 }
@@ -383,7 +383,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             {
                                 default: true,
                                 actionName: "cancel",
-                                content: i18next.t("cancel")
+                                content: "cancel"
                             }
                         ]));
             };
@@ -474,7 +474,7 @@ export class OrMap extends LitElement {
     @property({type: Array})
     public boundary: string[] = [];
 
-    public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;

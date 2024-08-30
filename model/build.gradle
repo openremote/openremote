@@ -10,7 +10,6 @@ dependencies {
 
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
-    api "com.vladmihalcea:hibernate-types-60:$hibernateTypesVersion"
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
     api "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
 
@@ -34,6 +33,8 @@ dependencies {
     api "org.scala-lang:scala-library:2.12.10"
     api "io.github.classgraph:classgraph:$classgraphVersion"
     api "io.micrometer:micrometer-core:$micrometerVersion"
+    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
+    api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
 }
 
 jar {

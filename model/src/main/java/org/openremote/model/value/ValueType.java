@@ -19,9 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -51,10 +48,11 @@ import java.util.List;
 public final class ValueType {
 
     /* SOME CUSTOM TYPES TO AVOID GENERIC TYPE SO THESE CAN BE CONSUMED IN VALUE DESCRIPTORS */
+    public static class ObjectMap extends HashMap<String, Object> {}
     public static class StringMap extends HashMap<String, String> {}
     public static class IntegerMap extends HashMap<String, Integer> {}
     public static class DoubleMap extends HashMap<String, Double> {}
-    public static class BooleanMap extends HashMap<String, Double> {}
+    public static class BooleanMap extends HashMap<String, Boolean> {}
     public static class MultivaluedStringMap extends HashMap<String, List<String>> {}
 
     public static final ValueDescriptor<Boolean> BOOLEAN = new ValueDescriptor<>("boolean", Boolean.class);
@@ -79,13 +77,11 @@ public final class ValueType {
 
     public static final ValueDescriptor<StringMap> TEXT_MAP = new ValueDescriptor<>("textMap", StringMap.class);
 
+    public static final ValueDescriptor<ObjectMap> JSON_OBJECT = new ValueDescriptor<>("JSONObject", ObjectMap.class);
+
+    public static final ValueDescriptor<Object> JSON = new ValueDescriptor<>("JSON", Object.class);
+
     public static final ValueDescriptor<MultivaluedStringMap> MULTIVALUED_TEXT_MAP = new ValueDescriptor<>("multivaluedTextMap", MultivaluedStringMap.class);
-
-    public static final ValueDescriptor<ObjectNode> JSON_OBJECT = new ValueDescriptor<>("JSONObject", ObjectNode.class);
-
-    public static final ValueDescriptor<ArrayNode> JSON_ARRAY = new ValueDescriptor<>("JSONArray", ArrayNode.class);
-
-    public static final ValueDescriptor<BaseJsonNode> JSON = new ValueDescriptor<>("JSON", BaseJsonNode.class);
 
     public static final ValueDescriptor<Integer> POSITIVE_INTEGER = new ValueDescriptor<>("positiveInteger", Integer.class,
         new ValueConstraint.Min(0)
@@ -110,7 +106,9 @@ public final class ValueType {
 
     public static final ValueDescriptor<Byte> BYTE = new ValueDescriptor<>("byte", Byte.class);
 
-    public static final ValueDescriptor<Long> TIMESTAMP = new ValueDescriptor<>("timestamp", Long.class);
+    public static final ValueDescriptor<Long> TIMESTAMP = new ValueDescriptor<>("timestamp", Long.class,
+        new ValueConstraint.Min(0)
+    );
 
     public static final ValueDescriptor<String> TIMESTAMP_ISO8601 = new ValueDescriptor<>("timestampISO8601", String.class,
         new ValueConstraint.Pattern(Constants.ISO8601_DATETIME_REGEXP)
@@ -165,11 +163,11 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.IP_REGEXP)
     );
 
-    public static final ValueDescriptor<AttributeLink> ATTRIBUTE_LINK = new ValueDescriptor<>("attributeLink", AttributeLink.class);
+    public static final ValueDescriptor<AttributeLink> ATTRIBUTE_LINK = new ValueDescriptor<>("attributeLink", AttributeLink.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AttributeRef> ATTRIBUTE_REF = new ValueDescriptor<>("attributeReference", AttributeRef.class);
+    public static final ValueDescriptor<AttributeRef> ATTRIBUTE_REF = new ValueDescriptor<>("attributeReference", AttributeRef.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AttributeState> ATTRIBUTE_STATE = new ValueDescriptor<>("attributeState", AttributeState.class);
+    public static final ValueDescriptor<AttributeState> ATTRIBUTE_STATE = new ValueDescriptor<>("attributeState", AttributeState.class).forMetaUseOnly();
 
     public static final ValueDescriptor<GeoJSONPoint> GEO_JSON_POINT = new ValueDescriptor<>("GEO_JSONPoint", GeoJSONPoint.class);
 
@@ -187,11 +185,11 @@ public final class ValueType {
 
     public static final ValueDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new ValueDescriptor<>("usernameAndPassword", UsernamePassword.class);
 
-    public static final ValueDescriptor<ValueFormat> VALUE_FORMAT = new ValueDescriptor<>("valueFormat", ValueFormat.class);
+    public static final ValueDescriptor<ValueFormat> VALUE_FORMAT = new ValueDescriptor<>("valueFormat", ValueFormat.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class);
+    public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class);
+    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class).forMetaUseOnly();
 
     public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("CRONExpression", CronExpressionParser.class);
 
@@ -203,9 +201,11 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.WS_URL_REGEXP)
     );
 
-    public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class);
+    public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class).forMetaUseOnly();
 
-    public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class);
+    public static final ValueDescriptor<ForecastConfiguration> FORECAST_CONFIGURATION = new ValueDescriptor<>("forecastConfiguration", ForecastConfiguration.class).forMetaUseOnly();
+
+    public static final ValueDescriptor<ValueDescriptor> VALUE_DESCRIPTOR_VALUE_DESCRIPTOR = new ValueDescriptor<>("valueDescriptor", ValueDescriptor.class).forMetaUseOnly();
 
     protected ValueType() {
     }

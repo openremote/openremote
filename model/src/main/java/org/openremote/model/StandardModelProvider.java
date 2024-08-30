@@ -20,13 +20,16 @@
 package org.openremote.model;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.*;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueConstraint;
+import org.openremote.model.value.ValueType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
@@ -43,35 +46,16 @@ public class StandardModelProvider implements AssetModelProvider {
     protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, StandardModelProvider.class);
 
     @Override
-    public AssetDescriptor<?>[] getAssetDescriptors() {
-        return null;
-    }
-
-    @Override
     public boolean useAutoScan() {
         return true;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<AttributeDescriptor<?>>> getAttributeDescriptors() {
-        return null;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<MetaItemDescriptor<?>>> getMetaItemDescriptors() {
-        return null;
-    }
-
-    @Override
-    public Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors() {
-        return null;
     }
 
     @Override
     public void onAssetModelFinished() {
         // Inject allowed asset types into GroupAsset
         List<ValueConstraint> constraints = ValueType.ASSET_TYPE.getConstraints() != null ? new ArrayList<>(Arrays.asList(ValueType.ASSET_TYPE.getConstraints())): new ArrayList<>();
-        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetClasses(null)).map(Class::getSimpleName).toArray()));
+        constraints.removeIf(vc -> vc instanceof ValueConstraint.AllowedValues);
+        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetInfos(null)).map(ati -> ati.getAssetDescriptor().getName()).toArray()));
         ValueType.ASSET_TYPE.updateConstraints(constraints.toArray(new ValueConstraint[0]));
     }
 }

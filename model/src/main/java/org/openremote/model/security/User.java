@@ -29,7 +29,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
-import org.openremote.model.persistence.EpochMillisInstantType;
+import org.openremote.model.persistence.InstantEpochConverter;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
@@ -78,7 +78,7 @@ public class User {
     protected Boolean enabled;
 
     @Column(name = "CREATED_TIMESTAMP")
-    @org.hibernate.annotations.Type(EpochMillisInstantType.class)
+    @Convert(converter = InstantEpochConverter.class)
     protected Instant createdOn;
 
     @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")
@@ -119,12 +119,11 @@ public class User {
         return this;
     }
 
-    @NotNull(message = "{User.username.NotNull}")
     @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = "[a-zA-Z0-9-_]+", message = "{User.username.Pattern}")
+    @Pattern(regexp = "[A-Za-z0-9\\-_@.]+", message = "{User.username.Pattern}")
     @JsonProperty
     public String getUsername() {
-        return username.replace(SERVICE_ACCOUNT_PREFIX, "");
+        return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
     }
 
     @JsonSetter("username")

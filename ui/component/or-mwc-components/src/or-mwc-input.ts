@@ -49,6 +49,7 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
+import { styleMap } from "lit/directives/style-map.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -108,6 +109,7 @@ export enum InputType {
     DATETIME = "datetime-local",
     EMAIL = "email",
     JSON = "json",
+    JSON_OBJECT = "json-object",
     MONTH = "month",
     NUMBER = "number",
     BIG_INT = "big-int",
@@ -164,6 +166,7 @@ function inputTypeSupportsButton(inputType: InputType): boolean {
         || inputType === InputType.DATETIME
         || inputType === InputType.EMAIL
         || inputType === InputType.JSON
+        || inputType === InputType.JSON_OBJECT
         || inputType === InputType.MONTH
         || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
@@ -190,6 +193,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
+    const styles = {} as any;
 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
@@ -276,6 +280,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                 break;
             case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
                 inputType = InputType.DURATION;
+                break;
+            case WellknownValueTypes.JSONOBJECT:
+                inputType = InputType.JSON_OBJECT;
                 break;
         }
 
@@ -382,6 +389,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         step = format.resolution;
     }
 
+    if (inputType === InputType.COLOUR) {
+        styles.marginLeft = "24px"
+    }
+
     const supportsHelperText = inputTypeSupportsHelperText(inputType);
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
@@ -396,7 +407,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input ${ref(inputRef)} id="input" style="${styleMap(styles)}" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
@@ -679,6 +690,9 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public checked: boolean = false;
 
+    @property({type: Boolean})
+    public indeterminate: boolean = false;
+
     @property({type: Number})
     public maxLength?: number;
 
@@ -821,6 +835,11 @@ export class OrMwcInput extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
+        if(_changedProperties.has("indeterminate")) {
+            if(this._mdcComponent && this.type === InputType.CHECKBOX){
+                (this._mdcComponent as any).indeterminate = this.indeterminate;
+            }
+        }
 
         if (_changedProperties.has("disabled")) {
             if (this._mdcComponent) {
@@ -1178,7 +1197,7 @@ export class OrMwcInput extends LitElement {
                             @mousedown="${(ev: MouseEvent) => onMouseDown(ev)}" @mouseup="${(ev: MouseEvent) => onMouseUp(ev)}">
                             ${!isIconButton ? html`<div class="mdc-button__ripple"></div>` : ``}
                             ${this.icon ? html`<or-icon class="${isIconButton ? "" : this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                            ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}">${this.label}</span>` : ``}
+                            ${this.label ? html`<span class="${this.action ? "mdc-fab__label" : "mdc-button__label"}"><or-translate .value="${this.label}"></or-translate></span>` : ``}
                             ${!isIconButton && this.iconTrailing ? html`<or-icon class="${this.action ? "mdc-fab__icon" : "mdc-button__icon"}" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                         </button>
                     `;
@@ -1238,7 +1257,8 @@ export class OrMwcInput extends LitElement {
                         <div id="field" class="mdc-form-field">
                             <div id="component" class="${classMap(classList)}">
                                 <input type="checkbox" 
-                                    id="elem"
+                                    id="elem" 
+                                    data-indeterminate="${this.indeterminate}"
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
@@ -1257,7 +1277,7 @@ export class OrMwcInput extends LitElement {
                     `;
                 case InputType.COLOUR:
                     return html`
-                        <div id="component" style="width: 100%; height: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
+                        <div id="component" style="width: 100%; display: inline-flex; align-items: center; padding: 8px 0;">
                             <input type="color" id="elem" style="border: none; height: 31px; width: 31px; padding: 1px 3px; min-height: 22px; min-width: 30px;cursor: pointer" value="${this.value}"
                                    ?disabled="${this.disabled || this.readonly}"
                                    ?required="${this.required}"
@@ -1279,13 +1299,14 @@ export class OrMwcInput extends LitElement {
                 case InputType.URL:
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
-                case InputType.JSON: {
+                case InputType.JSON:
+                case InputType.JSON_OBJECT: {
                     // The following HTML input types require the values as specially formatted strings
                     let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? undefined : this.value, this.min, this.max];
 
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
-                        if (this.type === InputType.JSON) {
+                        if (this.type === InputType.JSON || this.type === InputType.JSON_OBJECT) {
                             if (valMinMax[0] !== undefined) {
                                 if (typeof valMinMax[0] !== "string" || valMinMax[0] === null) {
                                     try {
@@ -1324,6 +1345,9 @@ export class OrMwcInput extends LitElement {
                                     format.asDate = true;
                                     format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
+                                case InputType.NUMBER:
+                                    format.maximumFractionDigits = 20; // default according to Web documentation
+                                    break;
                             }
 
                             // Numbers/dates must be in english locale without commas etc.
@@ -1352,10 +1376,10 @@ export class OrMwcInput extends LitElement {
                             "mdc-text-field--invalid": !this.valid,
                             "mdc-text-field--filled": !outlined,
                             "mdc-text-field--outlined": outlined,
-                            "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
+                            "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON),
+                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT),
                             "dense-compact": !this.comfortable && this.compact,
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
@@ -1364,7 +1388,7 @@ export class OrMwcInput extends LitElement {
                             "or-mwc-input--rounded": this.rounded
                         };
 
-                        inputElem = type === InputType.TEXTAREA || type === InputType.JSON
+                        inputElem = type === InputType.TEXTAREA || type === InputType.JSON || type === InputType.JSON_OBJECT
                             ? html`
                                 <textarea id="elem" class="mdc-text-field__input ${this.resizeVertical ? "resize-vertical" : ""}" ?required="${this.required}"
                                 ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
@@ -1498,7 +1522,8 @@ export class OrMwcInput extends LitElement {
                         const mdcSelect = new MDCSelect(component);
                         this._mdcComponent = mdcSelect;
 
-                        if (!this.value) {
+                        const hasValue = (this.value !== null && this.value !== undefined);
+                        if (!hasValue) {
                             mdcSelect.selectedIndex = -1; // Without this first option will be shown as selected
                         }
 
@@ -1534,7 +1559,8 @@ export class OrMwcInput extends LitElement {
                         }
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
-                        const searchable: boolean = (this.searchProvider != undefined);
+                        const searchable: boolean = (this.searchProvider !== undefined);
+                        const multi: boolean = this.multiple;
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                             if (this.adapter.isElementInContainer(el)) {
@@ -1544,6 +1570,9 @@ export class OrMwcInput extends LitElement {
                                 // if searchable, we manually close the menu when clicking a list item.
                                 // However, if something else than a list item (for example the search field) is clicked, it should not close, so abort.
                                 else if (el instanceof Element && !el.className.includes('mdc-list-item')) {
+                                    return;
+                                }
+                                else if (multi) {
                                     return;
                                 }
                             }
@@ -1631,6 +1660,10 @@ export class OrMwcInput extends LitElement {
             }
         }
 
+        if(_changedProperties.has("label")) {
+            (this._mdcComponent as any)?.layout?.(); // Adjusts the dimensions and positions for all sub-elements.
+        }
+
         if (this.autoValidate) {
             this.reportValidity();
         }
@@ -1667,9 +1700,9 @@ export class OrMwcInput extends LitElement {
             valid = nativeValidity.valid;
         }
 
-        if (valid && this.type === InputType.JSON) {
+        if (valid && (this.type === InputType.JSON || this.type === InputType.JSON_OBJECT)) {
             // JSON needs special validation - if no text value but this.value then parsing failed
-            if (this.value !== undefined && (this._mdcComponent as MDCTextField).value === "") {
+            if (this.value !== undefined && this.value !== null && (this._mdcComponent as MDCTextField).value === "") {
                 valid = false;
             }
         }
@@ -1709,6 +1742,7 @@ export class OrMwcInput extends LitElement {
                     newValue = newValue === "on";
                     break;
                 case InputType.JSON:
+                case InputType.JSON_OBJECT:
                 case InputType.NUMBER:
                 case InputType.RANGE:
                     if (newValue === "") {
@@ -1716,9 +1750,13 @@ export class OrMwcInput extends LitElement {
                     } else {
                         try {
                             newValue = JSON.parse(newValue);
+                            if (this.type === InputType.JSON_OBJECT && (typeof newValue !== 'object' || Array.isArray(newValue))) {
+                                newValue = this.value;
+                                errorMsg = i18next.t("validation.invalidJSON");
+                            }
                         } catch (e) {
                             newValue = this.value;
-                            errorMsg = this.type === InputType.JSON ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
+                            errorMsg = this.type === InputType.JSON || this.type == InputType.JSON_OBJECT ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
                         }
                     }
                     break;
@@ -1798,7 +1836,7 @@ export class OrMwcInput extends LitElement {
 
     protected getSelectedTextValue(options?: [string, string][] | undefined): string {
         const value = this.value;
-        const values = Array.isArray(value) ? value as string[] : value ? [value as string] : undefined;
+        const values = Array.isArray(value) ? value as string[] : value != null ? [value as string] : undefined;
         if (!values) {
             return "";
         }

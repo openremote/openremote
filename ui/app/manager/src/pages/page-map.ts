@@ -69,8 +69,8 @@ const pageMapSlice = createSlice({
             const assets = state.assets;
             const attrsOfInterest = action.payload[0];
             const attrEvent = action.payload[1];
-            const attrName = attrEvent.attributeState.ref.name;
-            const assetId = attrEvent.attributeState.ref.id;
+            const attrName = attrEvent.ref.name;
+            const assetId = attrEvent.ref.id;
             const index = assets.findIndex((asst) => asst.id === assetId);
             const asset = index >= 0 ? assets[index] : null;
 
@@ -78,7 +78,7 @@ const pageMapSlice = createSlice({
                 return state;
             }
 
-            if (attrName === WellknownAttributes.LOCATION && attrEvent.attributeState.deleted) {
+            if (attrName === WellknownAttributes.LOCATION && attrEvent.deleted) {
                 return {
                     ...state,
                     assets: [...assets.splice(index, 1)]

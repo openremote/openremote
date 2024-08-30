@@ -5,7 +5,6 @@ import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
-import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "@openremote/or-dashboard-builder";
@@ -99,7 +98,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
             this._userId = response.data.id;
         }).catch((ex) => {
             console.error(ex);
-            showSnackbar(undefined, i18next.t('errorOccurred'));
+            showSnackbar(undefined, "errorOccurred");
         })
     }
 
@@ -113,7 +112,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .fullscreen="${this._fullscreen}" .selectedId="${this._dashboardId}"
                                       .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
                                       @selected="${(event: CustomEvent) => { this._dashboardId = (event.detail as Dashboard)?.id }}"
-                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(true); }}"
+                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(false); }}"
                                       @fullscreenToggle="${(event: CustomEvent) => { this._fullscreen = event.detail; }}"
                 ></or-dashboard-builder>
             </div>
@@ -123,7 +122,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
-        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode == "true") : false;
+        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode === "true" && manager.hasRole(ClientRole.WRITE_INSIGHTS)) : false;
         this._dashboardId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
     }
 

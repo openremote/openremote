@@ -24,8 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
-import org.openremote.model.gateway.GatewayConnectionStatusEvent;
-import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.*;
 import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.simulator.RequestSimulatorState;
@@ -50,6 +49,12 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = RulesetChangedEvent.class, name = "ruleset-changed"),
     @JsonSubTypes.Type(value = GatewayDisconnectEvent.class, name = "gateway-disconnect"),
     @JsonSubTypes.Type(value = GatewayConnectionStatusEvent.class, name = "gateway-connection-status"),
+    @JsonSubTypes.Type(value = GatewayCapabilitiesRequestEvent.class, name = GatewayCapabilitiesRequestEvent.TYPE),
+    @JsonSubTypes.Type(value = GatewayCapabilitiesResponseEvent.class, name = GatewayCapabilitiesResponseEvent.TYPE),
+    @JsonSubTypes.Type(value = GatewayTunnelStartRequestEvent.class, name = "gateway-tunnel-start-request"),
+    @JsonSubTypes.Type(value = GatewayTunnelStartResponseEvent.class, name = "gateway-tunnel-start-response"),
+    @JsonSubTypes.Type(value = GatewayTunnelStopRequestEvent.class, name = "gateway-tunnel-stop-request"),
+    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response"),
     @JsonSubTypes.Type(value = DeleteAssetsRequestEvent.class, name = "delete-assets-request"),
     @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets-response")
 })
@@ -61,7 +66,7 @@ public abstract class SharedEvent extends Event {
 
     public static final String MESSAGE_PREFIX = "EVENT:";
 
-    public SharedEvent(long timestamp) {
+    public SharedEvent(Long timestamp) {
         super(timestamp);
     }
 

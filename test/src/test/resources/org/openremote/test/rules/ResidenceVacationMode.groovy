@@ -66,7 +66,7 @@ rules.add()
                     new AssetQuery().types(BuildingAsset)
                             .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.currentTimeMillis)
             ).filter { residenceWithVacationUntilInPast ->
-                residenceWithVacationUntilInPast.getValueAs(Double.class).isPresent()
+                residenceWithVacationUntilInPast.getValue(Double.class).isPresent()
             }.filter { residenceWithVacationUntilInPast ->
                 facts.match(VacationMode).noneMatch {
                     vacationMode -> vacationMode.residenceId == residenceWithVacationUntilInPast.id

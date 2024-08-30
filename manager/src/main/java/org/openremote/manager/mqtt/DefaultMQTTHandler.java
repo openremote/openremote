@@ -23,7 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import org.apache.activemq.artemis.api.core.SimpleString;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -54,11 +54,10 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -93,6 +92,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
     protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
     // An authorisation cache for publishing
+    // TODO: Switch to caffeine library once ActiveMQ has migrated
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
         .maximumSize(100000)
         .expireAfterWrite(300000, TimeUnit.MILLISECONDS)
@@ -105,8 +105,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -114,6 +114,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 // Route messages destined for MQTT clients
                 from(CLIENT_OUTBOUND_QUEUE)
                     .routeId("ClientOutbound-DefaultMQTTHandler")
+                    .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
                     .filter(and(
                         header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
                         body().isInstanceOf(TriggeredEventSubscription.class)
@@ -146,7 +147,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> {
             if (mqttBrokerService != null) {
-                LOG.fine("Calling client session closed force disconnect runnable: " + mqttBrokerService.connectionToString(connection));
+                LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
                 mqttBrokerService.doForceDisconnect(connection);
             }
         };
@@ -452,7 +453,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     protected static AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
         String attributeName = topicTokens.get(3);
         String assetId = topicTokens.get(4);
-        return new AttributeEvent(assetId, attributeName, value);
+        return new AttributeEvent(assetId, attributeName, value).setSource(DefaultMQTTHandler.class.getSimpleName());
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {
@@ -551,7 +552,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         if (isAssetTopic) {
             String topicStr = topic.toString();
             String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
-            topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent)ev).getAssetId()) : topicStr;
+            topicExpander = ev -> replaceToken != null ? topicStr.replace(replaceToken, ((AssetEvent)ev).getId()) : topicStr;
         } else {
             String topicStr = topic.toString();
             boolean injectAttributeName = TOKEN_SINGLE_LEVEL_WILDCARD.equals(topicTokenIndexToString(topic, 3));
@@ -563,9 +564,9 @@ public class DefaultMQTTHandler extends MQTTHandler {
             String replaceToken = topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD) ? TOKEN_MULTI_LEVEL_WILDCARD : topicStr.endsWith(TOKEN_SINGLE_LEVEL_WILDCARD) ? TOKEN_SINGLE_LEVEL_WILDCARD : null;
             String finalTopicStr = topicStr;
             topicExpander = ev -> {
-                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent)ev).getAssetId()) : finalTopicStr;
+                String expanded = replaceToken != null ? finalTopicStr.replace(replaceToken, ((AttributeEvent)ev).getId()) : finalTopicStr;
                 if (injectAttributeName) {
-                    expanded = expanded.replace("$", ((AttributeEvent)ev).getAttributeName());
+                    expanded = expanded.replace("$", ((AttributeEvent)ev).getName());
                 }
                 return expanded;
             };
@@ -576,14 +577,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
             if (isAssetTopic) {
                 if (ev instanceof AssetEvent) {
-                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
                 if (ev instanceof AttributeEvent attributeEvent) {
                     if (isValueSubscription) {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
+                        publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
                     } else {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                        publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                     }
                 }
             }
@@ -607,7 +608,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(SESSION_KEY, getConnectionIDString(connection));
         headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(REALM_PARAM_NAME, requestRealm);
-        headers.put(HEADER_SOURCE, CLIENT);
         return headers;
     }
 }

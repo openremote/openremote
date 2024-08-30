@@ -94,7 +94,7 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected String createWriteMessage(DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
         return ValueUtil.convert(processedValue, String.class);
     }
 }

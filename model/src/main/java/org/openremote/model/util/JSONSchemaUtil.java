@@ -30,9 +30,8 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 public class JSONSchemaUtil {
 
@@ -115,15 +114,15 @@ public class JSONSchemaUtil {
             Collections.emptyMap(),
             false,
             Collections.emptySet(),
-            new HashMap<Class<?>, Class<?>>(){{
-                put(Object.class, AnyType.class);
-                put(ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class);
-            }},
-            new HashMap<String, Supplier<JsonNode>>() {{
-                put(SCHEMA_SUPPLIER_NAME_ANY_TYPE, () -> getSchemaType(true, TYPES_ALL));
-                put(SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesAnyKeyAnyType);
-                put(SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesSimpleKeyAnyType);
-            }},
+            Map.of(
+                Object.class, AnyType.class,
+                ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class
+            ),
+            Map.of(
+                SCHEMA_SUPPLIER_NAME_ANY_TYPE, () -> getSchemaType(true, TYPES_ALL),
+                SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesAnyKeyAnyType,
+                SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_SIMPLE_KEY_ANY_TYPE, JSONSchemaUtil::getSchemaPatternPropertiesSimpleKeyAnyType
+            ),
             null,
             false,
             null,

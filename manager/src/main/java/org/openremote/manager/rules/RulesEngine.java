@@ -40,9 +40,12 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.webhook.WebhookService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
+import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,13 +60,13 @@ import static org.openremote.model.rules.RulesetStatus.*;
 public class RulesEngine<T extends Ruleset> {
 
     /**
-     * Allows rule deployments to track changes to the {@link AssetState}s in scope
+     * Allows rule deployments to track changes to the {@link AttributeInfo}s in scope
      */
     public static final class AssetStateChangeEvent {
         public PersistenceEvent.Cause cause;
-        public AssetState<?> assetState;
+        public AttributeInfo assetState;
 
-        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AssetState<?> assetState) {
+        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AttributeInfo assetState) {
             this.cause = cause;
             this.assetState = assetState;
         }
@@ -72,12 +75,12 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * Identifies a set of {@link LocationAttributePredicate}s associated with a particular {@link Asset}
      */
-    public static final class AssetStateLocationPredicates {
+    public static final class AssetLocationPredicates {
 
         final String assetId;
         final Set<GeofencePredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
+        public AssetLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
@@ -91,10 +94,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
-
-    // Separate logger for execution of rules
-    public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
+    protected final Logger LOG;
 
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
@@ -148,9 +148,13 @@ public class RulesEngine<T extends Ruleset> {
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.id = id;
+
+        String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
+        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleEngineCategory);
+
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, attributeEvent -> {
             try {
-                assetProcessingService.sendAttributeEvent(attributeEvent);
+                assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName());
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Failed to dispatch attribute event");
             }
@@ -163,7 +167,7 @@ public class RulesEngine<T extends Ruleset> {
         this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
-        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
+        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, LOG);
         engine = new DefaultRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
@@ -208,14 +212,14 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * @return a shallow copy of the asset state facts.
      */
-    public synchronized Set<AssetState<?>> getAssetStates() {
+    public synchronized Set<AttributeInfo> getAssetStates() {
         return new HashSet<>(facts.getAssetStates());
     }
 
     /**
      * @return a shallow copy of the asset event facts.
      */
-    public synchronized List<TemporaryFact<AssetState<?>>> getAssetEvents() {
+    public synchronized List<TemporaryFact<AttributeInfo>> getAssetEvents() {
         return new ArrayList<>(facts.getAssetEvents());
     }
 
@@ -317,7 +321,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        LOG.info("Starting: " + this);
+        LOG.info("Starting: " + id);
         running = true;
         trackLocationPredicates(true);
 
@@ -330,9 +334,9 @@ public class RulesEngine<T extends Ruleset> {
         // Start a background stats printer if INFO level logging is enabled
         if (STATS_LOG.isLoggable(Level.FINE) || STATS_LOG.isLoggable(Level.FINEST)) {
             if (STATS_LOG.isLoggable(Level.FINEST)) {
-                LOG.info("On " + this + ", enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
             } else {
-                LOG.info("On " + this + ", enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
             }
             statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
@@ -358,7 +362,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
         running = false;
-        LOG.info("Stopping: " + this);
+        LOG.info("Stopping: " + id);
         if (fireTimer != null) {
             fireTimer.cancel(true);
             fireTimer = null;
@@ -419,7 +423,7 @@ public class RulesEngine<T extends Ruleset> {
 
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
-        LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms on: " + this);
+        LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
         fireTimer = executorService.schedule(
             () -> {
                 synchronized (RulesEngine.this) {
@@ -457,9 +461,9 @@ public class RulesEngine<T extends Ruleset> {
         executionTotalMillis = (timerService.getCurrentTimeMillis() - executionTotalMillis);
 
         if (executionTotalMillis > 500) {
-            LOG.warning("Rules firing took " + executionTotalMillis + "ms on: " + this);
+            LOG.warning("Rules firing took " + executionTotalMillis + "ms");
         } else {
-            LOG.fine("Rules firing took " + executionTotalMillis + "ms on: " + this);
+            LOG.fine("Rules firing took " + executionTotalMillis + "ms");
         }
     }
 
@@ -476,7 +480,7 @@ public class RulesEngine<T extends Ruleset> {
 
                     // If full detail logging is enabled
                     // Log asset states and events before firing
-                    facts.logFacts(RULES_LOG, Level.FINEST);
+                    facts.logFacts(LOG, Level.FINEST);
 
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
@@ -489,7 +493,7 @@ public class RulesEngine<T extends Ruleset> {
                     LOG.fine("Rules deployment '" + deployment.getName() + "' skipped as status is: " + status);
                 }
             } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error executing rules of: " + deployment, ex);
+                LOG.log(Level.SEVERE, "Error executing rules of: " + deployment, ex);
 
                 deployment.setStatus(ex instanceof RulesLoopException ? LOOP_ERROR : EXECUTION_ERROR);
                 deployment.setError(ex);
@@ -525,31 +529,35 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void updateOrInsertAssetState(AssetState<?> assetState, boolean insert) {
-        facts.putAssetState(assetState);
+    public synchronized void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
+        facts.putAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, assetState));
+        trackLocationPredicates(trackLocationPredicates || (insert && attributeInfo.getName().equals(Asset.LOCATION.getName())));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, attributeInfo));
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public synchronized void removeAssetState(AssetState<?> assetState) {
-        facts.removeAssetState(assetState);
+    public synchronized void removeAttributeInfo(AttributeInfo attributeInfo) {
+        facts.removeAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, assetState));
+        trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public synchronized void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
-        facts.insertAssetEvent(expiresMillis, assetState);
+    public synchronized void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
+        facts.insertAttributeEvent(expiresMillis, attributeInfo);
         if (running) {
             scheduleFire(true);
         }
+    }
+
+    public synchronized void removeAttributeEvents(AttributeRef attributeRef) {
+        facts.removeAttributeEvents(attributeRef);
     }
 
     protected void updateDeploymentInfo() {
@@ -561,8 +569,8 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void printSessionStats() {
-        Collection<AssetState<?>> assetStateFacts = facts.getAssetStates();
-        Collection<TemporaryFact<AssetState<?>>> assetEventFacts = facts.getAssetEvents();
+        Collection<AttributeInfo> assetStateFacts = facts.getAssetStates();
+        Collection<TemporaryFact<AttributeInfo>> assetEventFacts = facts.getAssetEvents();
         Map<String, Object> namedFacts = facts.getNamedFacts();
         Collection<Object> anonFacts = facts.getAnonymousFacts();
         long temporaryFactsCount = facts.getTemporaryFacts().count();
@@ -581,7 +589,7 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * This is called with all the asset's that have a location attribute currently loaded into this engine.
      */
-    protected void processLocationRules(List<AssetStateLocationPredicates> assetStateLocationPredicates) {
+    protected void processLocationRules(List<AssetLocationPredicates> assetStateLocationPredicates) {
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }

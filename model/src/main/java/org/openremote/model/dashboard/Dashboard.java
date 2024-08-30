@@ -1,14 +1,15 @@
 package org.openremote.model.dashboard;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.util.Date;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 @Entity
@@ -48,8 +49,8 @@ public class Dashboard {
     protected String displayName;
 
     @NotNull(message = "{Dashboard.template.NotNull}")
-    @Column(name = "TEMPLATE", columnDefinition = PERSISTENCE_JSON_VALUE_TYPE, nullable = false)
-    @org.hibernate.annotations.Type(JsonBinaryType.class)
+    @Column(name = "TEMPLATE", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Valid
     protected DashboardTemplate template;
 

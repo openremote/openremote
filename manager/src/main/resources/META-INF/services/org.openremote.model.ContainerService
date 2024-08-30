@@ -13,7 +13,6 @@ org.openremote.manager.asset.AssetProcessingService
 org.openremote.container.message.MessageBrokerService
 org.openremote.manager.system.HealthService
 org.openremote.manager.agent.AgentService
-org.openremote.manager.simulator.SimulatorService
 org.openremote.manager.map.MapService
 org.openremote.manager.notification.NotificationService
 org.openremote.manager.webhook.WebhookService
@@ -34,3 +33,4 @@ org.openremote.manager.dashboard.DashboardStorageService
 org.openremote.manager.security.AuthorisationService
 org.openremote.manager.app.ConfigurationService
 org.openremote.manager.asset.ForecastService
+org.openremote.manager.setup.KeycloakInitService

@@ -2,7 +2,6 @@ import { manager } from "@openremote/core";
 import { AppStateKeyed, HeaderItem, OrApp } from "@openremote/or-app";
 import {AnyAction} from "@reduxjs/toolkit";
 import { getMapRoute } from "./routes";
-import { i18next } from "@openremote/or-translate";
 
 export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
@@ -46,6 +45,16 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
         text: "gatewayConnection",
         roles: ["write:admin", "read:admin"]
     };
+}
+
+export function headerItemGatewayTunnel<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "lan-connect",
+        value: "gateway-tunnel",
+        href: "gateway-tunnel",
+        text: "gatewayTunnels.",
+        roles: ["write:admin", "read:admin"]
+    }
 }
 
 export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

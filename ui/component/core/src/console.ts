@@ -6,9 +6,12 @@ import {Deferred} from "./util";
 // No ES6 module support in platform lib
 let platform = require('platform');
 
-export interface ProviderMessage {
+export interface ProviderAction {
     provider: string;
     action: string;
+}
+
+export interface ProviderMessage extends ProviderAction{
     data?: any;
     [x: string]: any;
 }
@@ -31,6 +34,9 @@ export interface ProviderEnableResponse extends ProviderMessage {
     success: boolean;
 }
 
+/**
+ * Storage provider is a special case that must always be available and doesn't require init/enable logic
+ */
 export class Console {
 
     protected _realm: string;
@@ -39,6 +45,7 @@ export class Console {
     protected _initialised: boolean = false;
     protected _initialiseInProgress: boolean = false;
     protected _pendingProviderPromises: { [name: string]: [Deferred<any>, number] } = {};
+    protected _providerMessageListeners: { [name: string]: (msg: ProviderMessage) => void } = {};
     protected _pendingProviderEnables: string[] = [];
     protected _enableCompleteCallback: (() => void) | null;
     protected _registrationTimer: number | null = null;
@@ -61,11 +68,7 @@ export class Console {
         let consoleProviders = queryParams.get("consoleProviders");
         let autoEnableStr = queryParams.get("consoleAutoEnable");
 
-        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push", "storage"];
-
-        if (requestedProviders.indexOf("storage") < 0) {
-            requestedProviders.push("storage"); // Storage provider is essential to operation and should always be available
-        }
+        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push"];
         this._pendingProviderEnables = requestedProviders;
 
         // Look for existing console registration in local storage or just create a new one
@@ -269,7 +272,7 @@ export class Console {
     }
 
     public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean): Promise<any | null> {
-        if (!this._registration.providers!.hasOwnProperty(message.provider)) {
+        if (message.provider !== "storage" && !this._registration.providers!.hasOwnProperty(message.provider)) {
             console.debug("Invalid console provider '" + message.provider + "'");
             throw new Error("Invalid console provider '" + message.provider + "'");
         }
@@ -356,25 +359,59 @@ export class Console {
 
 
     public async retrieveData<T>(key: string): Promise<T | undefined> {
-        let response = await this.sendProviderMessage({
+        let responsePromise = this.sendProviderMessage({
             provider: "storage",
             action: "RETRIEVE",
             key: key
         }, true);
 
-        if (response && response.value) {
-            return response.value as T;
+        // This is here to deal with lack of response from storage provider
+        // Storage provider should respond quickly
+        try {
+            const response = await Promise.race([responsePromise, new Promise<T>((resolve, reject) => setTimeout(reject, 2000))]);
+            if (response && response.value) {
+                const value = response.value as T;
+                return value === "null" ? undefined : value;
+            }
+        } catch (e) {
+            console.log("Failed to retrieve data from storage provider");
         }
+        return undefined;
+    }
+
+    public addProviderMessageListener(providerAction: ProviderAction, listener: (msg: ProviderMessage) => void) {
+        this._providerMessageListeners[providerAction.provider + providerAction.action] = listener;
+    }
+
+    public removeProviderMessageListener(providerAction: ProviderAction) {
+        delete this._providerMessageListeners[providerAction.provider + providerAction.action];
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
-        if (this.shellAndroid) {
-            // @ts-ignore
-            return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+        try {
+            if (this.shellAndroid) {
+                // @ts-ignore
+                return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+            }
+            if (this.shellApple) {
+                // @ts-ignore
+                return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+            }
+        } catch (e) {
+            console.error("Failed to send shell message towards console", e);
         }
-        if (this.shellApple) {
-            // @ts-ignore
-            return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+    }
+
+    /**
+     * Function that allows sending of custom types and messages towards the console.
+     * TODO: Will be improved in the future, see this GitHub issue; https://github.com/openremote/openremote/issues/1318
+     */
+    public _doSendGenericMessage(type: string, msg: any) {
+        const payload = { type: type, data: msg };
+        if (this.isMobile) {
+            this._postNativeShellMessage(payload);
+        } else {
+            console.warn("Failed to send generic message to console.", payload)
         }
     }
 
@@ -486,7 +523,8 @@ export class Console {
                     }
                     break;
                 default:
-                    throw new Error("Unsupported provider: " + msg.provider);
+                    // Just log that this provider is unsupported in a normal browser
+                    console.error("Unsupported provider: " + msg.provider);
             }
         }
     }
@@ -507,6 +545,11 @@ export class Console {
             window.clearTimeout(deferredAndTimeout[1]);
             delete this._pendingProviderPromises[name + action];
             deferredAndTimeout[0].resolve(msgJson);
+        }
+
+        let listener = this._providerMessageListeners[name + action];
+        if (listener) {
+            listener(msgJson);
         }
     }
 

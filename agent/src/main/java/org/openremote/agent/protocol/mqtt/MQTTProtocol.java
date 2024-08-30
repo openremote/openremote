@@ -19,13 +19,11 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
@@ -52,7 +50,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, MQTTAgentLink agentLink) throws RuntimeException {
         agentLink.getSubscriptionTopic().ifPresent(topic -> {
             Consumer<MQTTMessage<String>> messageConsumer = msg -> updateLinkedAttribute(
-                new AttributeState(assetId, attribute.getName(), msg.payload)
+                new AttributeRef(assetId, attribute.getName()), msg.payload
             );
             client.addMessageConsumer(topic, messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
@@ -104,7 +102,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
 
         if (agent.getLastWillTopic().isPresent()) {
             String topic = agent.getLastWillTopic().get();
-            BaseJsonNode payload = agent.getLastWillPayload().orElse(null);
+            String payload = agent.getLastWillPayload().orElse(null);
             boolean retain = agent.isLastWillRetain().orElse(false);
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
@@ -118,7 +116,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     }
 
     @Override
-    protected MQTTMessage<String> createWriteMessage(Attribute<?> attribute, MQTTAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected MQTTMessage<String> createWriteMessage(MQTTAgentLink agentLink, AttributeEvent event, Object processedValue) {
         Optional<String> topic = agentLink.getPublishTopic();
 
         if (!topic.isPresent()) {

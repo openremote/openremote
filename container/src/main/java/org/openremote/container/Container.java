@@ -27,13 +27,13 @@ import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.prometheus.client.CollectorRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -98,10 +98,6 @@ public class Container implements org.openremote.model.Container {
 
         this.devMode = getBoolean(this.config, OR_DEV_MODE, OR_DEV_MODE_DEFAULT);
 
-        if (this.devMode) {
-            ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
-        }
-
         boolean metricsEnabled = getBoolean(getConfig(), OR_METRICS_ENABLED, OR_METRICS_ENABLED_DEFAULT);
         LOG.log(INFO, "Metrics enabled: " + metricsEnabled);
 
@@ -158,6 +154,14 @@ public class Container implements org.openremote.model.Container {
                 LOG.log(INFO, "Initializing service: " + service.getClass().getName());
                 service.init(Container.this);
             }
+
+            // Initialise the asset model
+            ValueUtil.initialise(this);
+
+            if (this.devMode) {
+                ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+            }
+
             for (ContainerService service : getServices()) {
                 LOG.log(INFO, "Starting service: " + service.getClass().getName());
                 service.start(Container.this);
@@ -205,13 +209,29 @@ public class Container implements org.openremote.model.Container {
      */
     public void startBackground() throws Exception {
         start();
-        waitingThread = ContainerThreads.startWaitingThread();
+        waitingThread = startWaitingThread();
+    }
+
+    static Thread startWaitingThread() {
+        Thread thread = new Thread("Container Waiting") {
+            @Override
+            public void run() {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (InterruptedException ex) {
+                    // Ignore, thrown on shutdown
+                }
+            }
+        };
+        thread.setDaemon(false);
+        thread.start();
+        return thread;
     }
 
     @Override
     public ContainerService[] getServices() {
         synchronized (services) {
-            return services.values().toArray(new ContainerService[services.size()]);
+            return services.values().toArray(new ContainerService[0]);
         }
     }
 
@@ -231,7 +251,7 @@ public class Container implements org.openremote.model.Container {
 
     @Override
     public <T extends ContainerService> boolean hasService(Class<T> type) {
-        return getServices(type).size() > 0;
+        return !getServices(type).isEmpty();
     }
 
     @Override

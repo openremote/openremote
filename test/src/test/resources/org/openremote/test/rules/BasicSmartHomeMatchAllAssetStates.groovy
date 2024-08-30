@@ -1,7 +1,6 @@
 package org.openremote.setup.integration.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
 import static org.openremote.model.value.ValueType.*

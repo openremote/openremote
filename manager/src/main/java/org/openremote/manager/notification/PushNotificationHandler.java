@@ -39,7 +39,6 @@ import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
@@ -49,14 +48,13 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
@@ -295,27 +293,24 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     @Override
-    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) {
+    public void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) throws Exception {
 
         Notification.TargetType targetType = target.getType();
         String targetId = target.getId();
 
         if (targetType != Notification.TargetType.ASSET && targetType != Notification.TargetType.CUSTOM) {
-            LOG.warning("Target type not supported: " + targetType);
-            return NotificationSendResult.failure("Target type not supported: " + targetType);
-        }
-
-        if (!isValid()) {
-            LOG.warning("FCM invalid configuration so ignoring");
-            return NotificationSendResult.failure("FCM invalid configuration so ignoring");
+            String msg = "Target type not supported: " + targetType;
+            LOG.warning(msg);
+            throw new Exception(msg);
         }
 
         // Check this asset has an FCM token (i.e. it is registered for push notifications)
         String fcmToken = consoleFCMTokenMap.get(targetId);
 
         if (TextUtil.isNullOrEmpty(fcmToken)) {
-            LOG.finer("No FCM token found for console: " + targetId);
-            return NotificationSendResult.failure("No FCM token found for console: " + targetId);
+            String msg = "No FCM token found for console: " + targetId;
+            LOG.finer(msg);
+            throw new Exception(msg);
         }
 
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
@@ -326,19 +321,18 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         switch (pushMessage.getTargetType()) {
-            case DEVICE:
+            case DEVICE ->
                 // Always use fcm token from the console asset (so users cannot target other devices)
                 pushMessage.setTarget(fcmToken);
-                break;
-            case TOPIC:
-                // TODO: Decide how to handle FCM topic support (too much power for users to put anything in target)
-                break;
-            case CONDITION:
-                // TODO: Decide how to handle conditions support (too much power for users to put anything in target)
-                break;
+            case TOPIC -> {
+            }
+            // TODO: Decide how to handle FCM topic support (too much power for users to put anything in target)
+            case CONDITION -> {
+            }
+            // TODO: Decide how to handle conditions support (too much power for users to put anything in target)
         }
 
-        return sendMessage(buildFCMMessage(id, pushMessage));
+        sendMessage(buildFCMMessage(id, pushMessage));
     }
 
 //    public NotificationSendResult sendMessage(PushNotificationMessage.TargetType targetType, String fcmTarget, Message.Builder messageBuilder) {
@@ -370,22 +364,25 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return valid;
     }
 
-    public NotificationSendResult sendMessage(Message message) {
-        try {
-            FirebaseMessaging.getInstance().send(message);
-            return NotificationSendResult.success();
-        } catch (FirebaseMessagingException e) {
-            handleFcmException(e);
-            return NotificationSendResult.failure("FCM send failed: " + e.getErrorCode());
-        }
+    public void sendMessage(Message message) throws Exception {
+        FirebaseMessaging.getInstance().send(message);
     }
 
     protected boolean isConsoleSubscribedToTopic(ConsoleAsset consoleAsset, String topic) {
         return consoleAsset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(objectValue -> objectValue.withArray("topics"))
-                .map(arrayValue -> StreamSupport.stream(arrayValue.spliterator(), false).anyMatch(node -> node.asText("").equals(topic))))
+                .map(data -> data.get("topics"))
+                .map(arrayValue -> {
+                    int length = Array.getLength(arrayValue);
+                    for (int i = 0; i < length; i ++) {
+                        Object arrayElement = Array.get(arrayValue, i);
+                        if (arrayElement instanceof String && arrayElement.equals(topic)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }))
             .orElse(false);
     }
 
@@ -483,7 +480,10 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return asset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(data -> data.get("token") != null && !data.get("token").isNull() && !data.get("token").asText().isEmpty() ? data.get("token").asText() : null));
+                .map(data -> {
+                    Object token = data.get("token");
+                    return token instanceof String ? (String)token : null;
+                }));
     }
 
     protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
@@ -495,22 +495,5 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         switch (persistenceEvent.getCause()) {
             case CREATE, UPDATE -> getFcmToken(asset).ifPresent(token -> consoleFCMTokenMap.put(asset.getId(), token));
         }
-    }
-
-    protected void handleFcmException(FirebaseMessagingException e) {
-
-        LOG.log(Level.WARNING, "FCM send failed: " + e.getErrorCode(), e);
-
-//        // TODO: Implement backoff and blacklisting
-//        switch (e.getErrorCode()) {
-//
-//            case INVALID_ARGUMENT:
-//            case UNAUTHENTICATED:
-//                LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
-//                break;
-//            case UNAVAILABLE:
-//            case INTERNAL:
-//                break;
-//        }
     }
 }

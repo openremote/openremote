@@ -1,19 +1,19 @@
 import manager, { DefaultColor4 } from "@openremote/core";
 import maplibregl,{
-    AnyLayer,
-    Control,
-    GeoJSONSource,
-    GeolocateControl,
+    AddLayerObject,
     IControl,
+    GeolocateControl,
     LngLat,
     LngLatLike,
     Map as MapGL,
-    MapboxOptions as OptionsGL,
+    MapOptions as OptionsGL,
     MapMouseEvent,
     Marker as MarkerGL,
     NavigationControl,
     Style as StyleGL,
     Popup
+    StyleSpecification,
+    GeoJSONSourceSpecification,
 } from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
@@ -62,7 +62,7 @@ export class MapWidget {
     protected _showBoundaryBox: boolean = false;
     protected _useZoomControls: boolean = true;
     protected _showGeoJson: boolean = true;
-    protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    protected _controls?: (IControl | [IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
     protected _geocoder?: any;
     protected popup: Popup | undefined = undefined;
@@ -182,13 +182,13 @@ export class MapWidget {
         return this;
     }
 
-    public setControls(controls?: (Control | IControl | [Control | IControl, ControlPosition?])[]): this {
+    public setControls(controls?: (IControl | [IControl, ControlPosition?])[]): this {
         this._controls = controls;
         if (this._mapGl) {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -326,9 +326,9 @@ export class MapWidget {
             const settings = await this.loadViewSettings();
                 
             const options: OptionsGL = {
-                attributionControl: true,
+                attributionControl: {compact: true},
                 container: this._mapContainer,
-                style: settings as StyleGL,
+                style: settings as StyleSpecification,
                 transformRequest: (url, resourceType) => {
                     return {
                         headers: {Authorization: manager.getAuthorizationHeader()},
@@ -449,7 +449,7 @@ export class MapWidget {
             if (this._controls) {
                 this._controls.forEach((control) => {
                     if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        const controlAndPosition: [IControl, ControlPosition?] = control;
                         this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
                     } else {
                         this._mapGl!.addControl(control);
@@ -537,7 +537,7 @@ export class MapWidget {
                             type: "FeatureCollection",
                             features: features
                         }
-                    } as any as GeoJSONSource;
+                    } as any as GeoJSONSourceSpecification;
                     const sourceInfo = this.addGeoJSONSource(newSource);
                     if(sourceInfo) {
                         this.addGeoJSONLayer(type, sourceInfo.sourceId);
@@ -567,7 +567,7 @@ export class MapWidget {
         return groupedSources;
     }
 
-    public addGeoJSONSource(source: GeoJSONSource): { source: GeoJSONSource, sourceId: string } | undefined {
+    public addGeoJSONSource(source: GeoJSONSourceSpecification): { source: GeoJSONSourceSpecification, sourceId: string } | undefined {
         if(!this._mapGl) {
             console.error("mapGl instance not found!"); return;
         }
@@ -646,7 +646,7 @@ export class MapWidget {
                             'line-color': realmColor,
                             'line-width': 2
                         },
-                    } as AnyLayer
+                    } as AddLayerObject
                     this._geoJsonLayers.set(outlineId, outlineLayer);
                     this._mapGl.addLayer(outlineLayer);
                     break;
@@ -1239,13 +1239,13 @@ export class MapWidget {
                 "type": "circle",
                 "source": "circleData",
                 "paint": {
-                    "circle-radius": {
-                        stops: [
-                            [0, 0],
-                            [20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)]
-                        ],
-                        base: 2
-                    },
+                    "circle-radius": [
+                        "interpolate", 
+                        ["linear"], 
+                        ["zoom"], 
+                        0, 0, 
+                        20, metersToPixelsAtMaxZoom(marker.radius, marker.lat)
+                    ],
                     "circle-color": "red",
                     "circle-opacity": 0.3
                 }
@@ -1354,9 +1354,36 @@ export class MapWidget {
         };
     }
 
-    protected async _reverseGeocode(config: any) {
+    public async _reverseGeocode(config: {lat: number, lon:number}) {
+            const features = [];
+            try {
+                let request =  this._viewSettings!.geocodeUrl + '/reverse?lat=' + config.lat + '&lon='+config.lon+'&format=geojson&polygon_geojson=1&addressdetails=1';
+                const response = await fetch(request);
+                const geojson = await response.json();
+                for (let feature of geojson.features) {
+                    let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                    let point = {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: center
+                        },
+                        place_name: feature.properties.display_name,
+                        properties: feature.properties,
+                        text: feature.properties.display_name,
+                        place_type: ['place'],
+                        center: center
+                    };
+                    features.push(point);
+                }
+            } catch (e) {
+                console.error(`Failed to reverseGeocode with error: ${e}`);
+            }
 
-    }
+            return {
+                features: features
+            };
+        }
 
     protected _initLongPressEvent() {
         if (this._mapGl) {

@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.mqtt.MQTTAgent
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink
 import org.openremote.agent.protocol.mqtt.MQTTProtocol
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -34,7 +34,6 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.Protocol
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -98,7 +97,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
                             .setSubscriptionTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
                             .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
-                            .setWriteValue("${Protocol.DYNAMIC_VALUE_PLACEHOLDER}")
+                            .setWriteValue("%VALUE%")
                     ))
         )
 
@@ -120,7 +119,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             def livingRoom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
             assert livingRoom != null
-            assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
+            assert livingRoom.getAttribute("targetTemperature").flatMap{it.value}.orElse(0d) == 99d
         }
 
         then: "the agent linked attribute should also have the updated value of the subscribed attribute"
@@ -138,7 +137,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readWriteTargetTemp", Double.class).flatMap{it.getValue()}.orElse(null) == 19.5d
+            assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValue()}.orElse(null) == 19.5d
         }
     }
 }

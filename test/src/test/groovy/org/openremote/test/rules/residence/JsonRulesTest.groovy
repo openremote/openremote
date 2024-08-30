@@ -1,7 +1,6 @@
 package org.openremote.test.rules.residence
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ObjectNode
+
 import com.google.firebase.messaging.Message
 import jakarta.mail.internet.InternetAddress
 import jakarta.ws.rs.client.ClientRequestContext
@@ -11,7 +10,7 @@ import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.EmailNotificationHandler
@@ -42,7 +41,6 @@ import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.RealmRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.json.JsonRulesetDefinition
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -88,10 +86,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     break
                 case "https://basicserver/webhookjson":
                     if (requestContext.method == "POST" && requestContext.mediaType == MediaType.APPLICATION_JSON_TYPE && requestContext.getHeaderString('test-header') == "test-value" && requestContext.hasEntity()) {
-                        Optional<JsonNode> jsonBody = parse(requestContext.entity.toString())
-                        if (jsonBody.isPresent() && jsonBody.get().size() == 1
-                                && jsonBody.get().iterator().next().get(0).get("assetName").asText() == "TestThing"
-                                && jsonBody.get().iterator().next().get(0).get("value").asText() == "test_message") {
+                        def jsonBody = parse(requestContext.entity.toString()).get() as Map
+                        if (jsonBody.size() == 1
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("assetName") == "TestThing"
+                                && ((Map)((Object[])jsonBody.values()[0])[0]).get("value") == "test_message") {
                             successCount++
                             requestContext.abortWith(Response.ok().build()); return
                         }
@@ -185,11 +183,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the room lights in an apartment to be on"
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert livingroomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).get().value.get().length == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().value.get().get("cactus").asDouble() == 0.8d
+            assert livingroomAsset.getAttribute("lightSwitch").get().value.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().value.get().length == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8d
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
-            assert bathRoomAsset.getAttribute("lightSwitch", Boolean.class).get().value.get()
+            assert bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }
 
         when: "a user authenticates"
@@ -234,7 +232,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -266,7 +264,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                ((ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
+                                (Map<String, Object>)(parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                                 )))
                     }
                 },
@@ -295,7 +293,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         )
 
         and: "the console location is set to the apartment"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -313,20 +311,20 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
-            assert assetState.getValueAs(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
+            assert assetState.getValue(GeoJSONPoint.class).map{it.y == ManagerTestSetup.SMART_BUILDING_LOCATION.y}.orElse(false)
         }
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
         def outsideLocation = new GeoJSONPoint(0d, 0d)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, outsideLocation), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, outsideLocation))
 
         then: "the apartment lights should be switched off"
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().value.get()
-            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes", String[].class).flatMap{it.value}.map{it.length}.orElse(0) == 2
-            assert livingroomAsset.getAttribute("plantsWaterLevels", ObjectNode.class).get().getValue().map{it.get("cactus").asDouble()}.orElse(null) == 0.8
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").flatMap{it.value}.map{it.length}.orElse(0) == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().getValue(Map.class).get().get("cactus") == 0.8
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().value.get()
         }
@@ -369,7 +367,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         def lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -377,17 +375,25 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d)), AttributeEvent.Source.CLIENT)
+        emailMessages.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(-10d, -4d)))
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
             assert pushTargetsAndMessages.findAll {it.v2.title == "Test title"}.size() == 2
         }
 
+        and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body but only containing the triggered asset states"
+        conditions.eventually {
+            assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
+                    && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "test@openremote.io"
+                    && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(new GeoJSONPoint(-10d, -4d)).orElse("") + "</td></tr></table>"}
+        }
+
         when: "the console sends a location update with a new location but still outside the geofence"
         def timestamp = assetStorageService.find(consoleRegistration.id, true).getAttribute(Asset.LOCATION).flatMap{it.getTimestamp()}.orElse(timerService.getCurrentTimeMillis())
         def attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(10d, 10d), timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
@@ -414,7 +420,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -423,7 +429,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "after a few seconds the rule should not have fired again"
         new PollingConditions(timeout: 5, initialDelay: 1).eventually {
@@ -432,7 +438,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
         lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION), AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, ManagerTestSetup.SMART_BUILDING_LOCATION))
 
         then: "the engine fires at least one more time"
         conditions.eventually {
@@ -444,7 +450,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the console device moves outside the home geofence again (as defined in the rule)"
         attributeEvent = new AttributeEvent(consoleRegistration.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d))
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
@@ -473,7 +479,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {
@@ -495,7 +501,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {
@@ -519,7 +525,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the same AttributeEvent is sent"
         timestamp = attributeEvent.getTimestamp()+1
         attributeEvent.setTimestamp(timestamp)
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.CLIENT)
+        assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the event should have been committed to the DB"
         conditions.eventually {

@@ -228,20 +228,20 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         assert !((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).linkedAttributes.any {it.value.name == "invalidToggle1"}
 
         when: "values are sent to the linked attributes by the protocol"
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeState(mockThing.id, "lightToggle1", true))
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeState(mockThing.id, "tempTarget1", 25.5d))
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "lightToggle1"), true, null)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "tempTarget1"), 25.5d, null)
 
         then: "the linked attributes values should have been updated by the protocol"
         conditions.eventually {
             def mockAsset = assetStorageService.find(mockThing.id, true)
             // Check all valid linked attributes have the new values
-            assert mockAsset.getAttributes().<Boolean>getValue("lightToggle1").orElse(false)
-            assert mockAsset.getAttribute("tempTarget1", Double.class).flatMap{it.getValue()}.orElse(0d) == 25.5d
+            assert mockAsset.getAttribute("lightToggle1").flatMap{it.getValue()}.orElse(false)
+            assert mockAsset.getAttribute("tempTarget1").flatMap{it.getValue()}.orElse(0d) == 25.5d
             // Check invalid attributes don't have the new values
-            assert !mockAsset.getAttribute("lightToggle2", Boolean.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("tempTarget2", Double.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("lightToggle3", Boolean.class).get().getValue().isPresent()
-            assert !mockAsset.getAttribute("tempTarget3", Double.class).get().getValue().isPresent()
+            assert !mockAsset.getAttribute("lightToggle2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("lightToggle3").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget3").get().getValue().isPresent()
         }
 
         when: "the disabled agent is enabled"
@@ -306,30 +306,28 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the update should reach the protocol as an attribute write request"
         conditions.eventually {
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.size() == 1
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeName == "tempTarget1"
-            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).attributeRef.id == mockThing.id
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).name == "tempTarget1"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).ref.id == mockThing.id
             assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolWriteAttributeEvents.get(0).value.orElse(null) == 30d
         }
 
         then: "the target temp attributes value should be updated"
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
-            assert mockThing.getAttribute("tempTarget1").get().getValueAs(Double.class).orElse(0d) == 30d
+            assert mockThing.getAttribute("tempTarget1").get().getValue(Double.class).orElse(0d) == 30d
         }
 
         when: "a sensor value is received that links to an attribute using a regex filter"
-        def state = new AttributeState(mockThing.id, "filterRegex", "s100 d56 g1212")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "s100 d56 g1212", null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.id, true) as ThingAsset
-            assert mockThing.getAttribute("filterRegex").get().getValueAs(Double.class).orElse(0d) == 1212d
+            assert mockThing.getAttribute("filterRegex").get().getValue(Double.class).orElse(0d) == 1212d
         }
 
         when: "the same attribute receives a sensor value that doesn't match the regex filter (match index invalid)"
-        state = new AttributeState(mockThing.id, "filterRegex", "s100")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "s100", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -338,8 +336,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the regex filter (no match)"
-        state = new AttributeState(mockThing.id, "filterRegex", "no match to be found!")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegex"), "no match to be found!", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -348,8 +345,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a sensor value is received that links to an attribute using a substring filter"
-        state = new AttributeState(mockThing.id, "filterSubstring", "Substring test value")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterSubstring"), "Substring test value", null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
@@ -358,8 +354,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the substring filter"
-        state = new AttributeState(mockThing.id, "filterSubstring", "Substring")
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterSubstring"), "Substring", null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {
@@ -368,8 +363,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a sensor value is received that links to an attribute using a regex and substring filter"
-        state = new AttributeState(mockThing.id, "filterRegexSubstring", '{"prop1":true,"prop2":"volume is at 90%"}')
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegexSubstring"), '{"prop1":true,"prop2":"volume is at 90%"}', null)
 
         then: "the linked attributes value should be updated with the filtered result"
         conditions.eventually {
@@ -378,8 +372,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the same attribute receives a sensor value that doesn't match the substring filter"
-        state = new AttributeState(mockThing.id, "filterRegexSubstring", '"volume is at 90%"}')
-        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(state)
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "filterRegexSubstring"), '"volume is at 90%"}', null)
 
         then: "the linked attributes value should be updated to null"
         conditions.eventually {

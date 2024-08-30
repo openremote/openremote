@@ -195,7 +195,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     // TODO: Make configurable
     public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
@@ -224,10 +224,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final String OR_DB_USER_DEFAULT = "postgres";
     public static final String OR_DB_PASSWORD = "OR_DB_PASSWORD";
     public static final String OR_DB_PASSWORD_DEFAULT = "postgres";
-    public static final String OR_DB_MIN_POOL_SIZE = "OR_DB_MIN_POOL_SIZE";
-    public static final int OR_DB_MIN_POOL_SIZE_DEFAULT = 5;
-    public static final String OR_DB_MAX_POOL_SIZE = "OR_DB_MAX_POOL_SIZE";
-    public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String OR_DB_POOL_MIN_SIZE = "OR_DB_POOL_MIN_SIZE";
+    public static final int OR_DB_POOL_MIN_SIZE_DEFAULT = 5;
+    public static final String OR_DB_POOL_MAX_SIZE = "OR_DB_POOL_MAX_SIZE";
+    public static final int OR_DB_POOL_MAX_SIZE_DEFAULT = 20;
     public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
     public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
     public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
@@ -292,6 +292,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             );
         }
 
+        persistenceUnitProperties.put(AvailableSettings.JSON_FORMAT_MAPPER, JsonFormatMapper.class.getName());
+        // Disable JPA validation as it triggers on select for entities with JSON columns - we do our own validation
+        persistenceUnitProperties.put(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
 
         // Add custom integrator so we can register a custom flush entity event listener
@@ -323,7 +327,19 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(container, connectionUrl, dbUsername, dbPassword, dbSchema);
+    }
 
+    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
+        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
+
+        return new EntityManagerFactoryBuilderImpl(
+            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
+            .build();
+    }
+
+
+    @Override
+    public void start(Container container) throws Exception {
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
@@ -352,7 +368,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(UnknownAsset.class.getName()); // This doesn't have an asset descriptor which is why it is specifically added
         Arrays.stream(ValueUtil.getAssetDescriptors(null))
             .map(AssetDescriptor::getType)
-            .filter(assetClass -> assetClass.getAnnotation(Entity.class) != null)
+            .filter(assetClass -> assetClass != null && assetClass.getAnnotation(Entity.class) != null)
             .map(Class::getName)
             .forEach(entityClasses::add);
 
@@ -364,20 +380,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         this.entityManagerFactory = getEntityManagerFactory(persistenceUnitProperties, entityClasses);
         //Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
-    }
-
-    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
-        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
-
-        return new EntityManagerFactoryBuilderImpl(
-            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
-            .build();
-    }
-
-
-    @Override
-    public void start(Container container) throws Exception {
-
     }
 
     @Override
@@ -427,7 +429,11 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         } catch (Exception ex) {
             if (tx != null && tx.isActive()) {
                 try {
-                    LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
+                    } else {
+                        LOG.log(Level.FINE, "Rolling back failed transaction");
+                    }
                     tx.rollback();
                 } catch (RuntimeException rbEx) {
                     LOG.log(Level.SEVERE, "Rollback of transaction failed!", rbEx);
@@ -459,13 +465,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         Field[] propertyFields = getEntityPropertyFields(clazz, includeFields, excludeFields);
 
         switch (cause) {
-            case CREATE:
-                publishPersistenceEvent(cause, currentEntity, null, null, null);
-                break;
-            case DELETE:
-                publishPersistenceEvent(cause, previousEntity, null, null, null);
-                break;
-            case UPDATE:
+            case CREATE -> publishPersistenceEvent(cause, currentEntity, null, null, null);
+            case DELETE -> publishPersistenceEvent(cause, previousEntity, null, null, null);
+            case UPDATE -> {
                 List<String> propertyNames = new ArrayList<>(propertyFields.length);
                 List<Object> currentState = new ArrayList<>(propertyFields.length);
                 List<Object> previousState = new ArrayList<>(propertyFields.length);
@@ -479,7 +481,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
                     }
                 });
                 publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]), currentState.toArray(), previousState.toArray());
-                break;
+            }
         }
     }
 
@@ -501,8 +503,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {
 
-        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_MIN_POOL_SIZE, OR_DB_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_MAX_POOL_SIZE, OR_DB_MAX_POOL_SIZE_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MIN_SIZE, OR_DB_POOL_MIN_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MAX_SIZE, OR_DB_POOL_MAX_SIZE_DEFAULT);
         int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS, OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
@@ -524,7 +526,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
         StringBuilder initSql = new StringBuilder();
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
+//        initSql.append("ALTER EXTENSION timescaledb UPDATE;");
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
+//        initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
@@ -599,6 +603,20 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     public Path getStorageDir() {
         return storageDir;
+    }
+
+    /**
+     * Will resolve relative paths relative to {@link #getStorageDir()}
+     */
+    public Path resolvePath(String path) {
+        return resolvePath(Path.of(path));
+    }
+
+    /**
+     * Will resolve relative paths relative to {@link #getStorageDir()}
+     */
+    public Path resolvePath(Path path) {
+        return getStorageDir().resolve(path);
     }
 
     public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {

@@ -9,6 +9,7 @@ import {
     headerItemConfiguration,
     headerItemExport,
     headerItemGatewayConnection,
+    headerItemGatewayTunnel,
     headerItemInsights,
     headerItemLanguage,
     headerItemLogout,
@@ -43,6 +44,7 @@ import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
 import { ManagerAppConfig } from "@openremote/model";
+import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -64,6 +66,7 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageMapProvider(store),
     pageAssetsProvider(store),
     pageGatewayProvider(store),
+    pageGatewayTunnelProvider(store),
     pageLogsProvider(store),
     pageInsightsProvider(store),
     pageRulesProvider(store),
@@ -85,6 +88,7 @@ export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
 
 export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     gateway: headerItemGatewayConnection(orApp),
+    gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
     logs: headerItemLogs(orApp),
     account: headerItemAccount(orApp),
@@ -153,8 +157,10 @@ fetch(configURL).then(async (result) => {
 
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
+        const isAdmin = manager.isSuperUser() && manager.username === "admin";
+        const applyConfigToAdmin = appConfig.manager.applyConfigToAdmin !== undefined ? appConfig.manager.applyConfigToAdmin : true;
 
-        if (!(manager.isSuperUser() && manager.username === "admin") && appConfig.pages) {
+        if ((!isAdmin || applyConfigToAdmin) && appConfig.pages) {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {
@@ -227,17 +233,29 @@ fetch(configURL).then(async (result) => {
             });
         }
 
+        // When the page is not present in the header, move the PageProvider to the end of the array.
+        // This is to prevent the landing page for the user not being visible in the header
+        const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
+        if(realmAppConfig) {
+            const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
+            orAppConfig.pages = pages
+                .filter(pageProvider => headerPaths.includes(pageProvider.name))
+                .concat(pages.filter(pageProvider => !headerPaths.includes(pageProvider.name)));
+        }
+
         // Check local storage for set language, otherwise use language set in config
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
-            manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
-        }).catch(() => {
-            if (orAppConfig.realms[manager.displayRealm]){
+            if (value) {
+                manager.language = value;
+            } else if (orAppConfig.realms[manager.displayRealm]) {
                 manager.language = orAppConfig.realms[manager.displayRealm].language
-            } else if (orAppConfig.realms['default']){
+            } else if (orAppConfig.realms['default']) {
                 manager.language = orAppConfig.realms['default'].language
             } else {
                 manager.language = 'en'
             }
+        }).catch(reason => {
+            console.error("Failed to initialise app: " + reason);
         })
 
         // Add config prefix if defined (used in dev)

@@ -27,7 +27,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
@@ -62,6 +61,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
         Optional<OAuthGrant> oAuthGrant = getAgent().getOAuthGrant();
         UsernamePassword userPassword = getAgent().getUsernamePassword().orElseThrow();
+        Optional<Boolean> startTLS = getAgent().getStartTLS();
 
         MailClientBuilder clientBuilder = new MailClientBuilder(
             container.getExecutorService(),
@@ -84,6 +84,8 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
 
         oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
             clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
+
+        startTLS.map(clientBuilder::setStartTls);
 
         mailClient = clientBuilder.build();
         mailClient.addConnectionListener(this::onConnectionEvent);
@@ -121,7 +123,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, V agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(V agentLink, AttributeEvent event, Object processedValue) {
         // Not supported
     }
 
@@ -133,7 +135,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         attributeMessageProcessorMap.forEach(((attributeRef, mailMessageStringFunction) -> {
             String value = mailMessageStringFunction.apply(mailMessage);
             if (value != null) {
-                updateLinkedAttribute(new AttributeState(attributeRef, value));
+                updateLinkedAttribute(attributeRef, value);
             } else if (LOG.isLoggable(Level.FINEST)) {
                 LOG.log(Level.FINEST, "MailMessage failed to match linked attribute:" + attributeRef + ", " + mailMessage);
             }

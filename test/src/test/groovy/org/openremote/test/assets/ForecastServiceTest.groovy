@@ -12,7 +12,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetPredictedDatapoint
-import org.openremote.model.util.Pair
+import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -23,8 +23,6 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.stream.IntStream
 
@@ -303,9 +301,9 @@ class ForecastServiceTest extends Specification implements ManagerContainerTrait
                                 config.getForecastPeriod().toMillis() * hourIndex - // THE HOUR OFFSET
                                 offsetMillis
 
-                        return new Pair<>(
-                                periodHourValue,
-                                LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis() - timeOffset), ZoneId.systemDefault()))
+                        return new ValueDatapoint<>(
+                            timerService.getCurrentTimeMillis() - timeOffset,
+                            periodHourValue)
                     }
                 }
             }

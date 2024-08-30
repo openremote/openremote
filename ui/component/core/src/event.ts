@@ -12,7 +12,6 @@ import {
     EventRequestResponseWrapper,
     EventSubscription,
     ReadAssetsEvent,
-    ReadAttributeEvent,
     SharedEvent,
     TriggeredEventSubscription
 } from "@openremote/model";
@@ -114,6 +113,10 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public connect(): Promise<boolean> {
+        if (this._reconnectTimer) {
+            window.clearTimeout(this._reconnectTimer);
+            this._reconnectTimer = null;
+        }
         if (this._status === EventProviderStatus.CONNECTED) {
             return Promise.resolve(true);
         }
@@ -133,11 +136,6 @@ abstract class EventProviderImpl implements EventProvider {
                 const deferred = this._connectingDeferred;
                 this._connectingDeferred = null;
 
-                if (this._reconnectTimer) {
-                    window.clearTimeout(this._reconnectTimer);
-                    this._reconnectTimer = null;
-                }
-
                 if (connected) {
                     console.debug("Connected to event service: " + this.endpointUrl);
                     this._reconnectDelayMillis = WebSocketEventProvider.MIN_RECONNECT_DELAY;
@@ -148,7 +146,7 @@ abstract class EventProviderImpl implements EventProvider {
                     }, 0);
                 } else {
                     console.debug("Failed to connect to event service: " + this.endpointUrl);
-                    this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+                    this._scheduleReconnect();
                 }
 
                 deferred.resolve(connected);
@@ -159,6 +157,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     public disconnect(): void {
+        console.debug("Disconnecting from event service: " + this.endpointUrl);
         if (this._disconnectRequested) {
             return;
         }
@@ -394,7 +393,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         // Build a filter to only respond to the callback for the requested attributes
         const eventFilter = (e: AttributeEvent) => {
-            const eventRef = e.attributeState!.ref!;
+            const eventRef = e.ref!;
 
             if (isAttributeRef) {
                 (ids as AttributeRef[]).forEach((ref: AttributeRef) => {
@@ -446,12 +445,10 @@ abstract class EventProviderImpl implements EventProvider {
                                             eventFilter({
                                                 eventType: "attribute",
                                                 timestamp: attr.timestamp,
-                                                attributeState: {
-                                                    value: attr.value,
-                                                    ref: {
-                                                        id: asset.id,
-                                                        name: attributeName
-                                                    }
+                                                value: attr.value,
+                                                ref: {
+                                                    id: asset.id,
+                                                    name: attributeName
                                                 }
                                             });
                                         }
@@ -538,12 +535,15 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
-        this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+        if (this._status === EventProviderStatus.CONNECTED) {
+            this._onStatusChanged(EventProviderStatus.DISCONNECTED);
+        }
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);
             this._pendingSubscription = null;
         }
 
+        this._onStatusChanged(EventProviderStatus.CONNECTING);
         this._scheduleReconnect();
     }
 
@@ -564,13 +564,7 @@ abstract class EventProviderImpl implements EventProvider {
                 return;
             }
 
-            this.connect().then(connected => {
-                if (!connected) {
-                    this._scheduleReconnect();
-                }
-            }).catch(error => {
-                this._scheduleReconnect();
-            });
+            this.connect();
         }, this._reconnectDelayMillis);
 
         if (this._reconnectDelayMillis < WebSocketEventProvider.MAX_RECONNECT_DELAY) {
@@ -708,7 +702,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doDisconnect(): void {
-        this._webSocket!.close();
+        this._webSocket?.close();
         this._subscribeDeferred = null;
         this._repliesDeferred.clear();
     }

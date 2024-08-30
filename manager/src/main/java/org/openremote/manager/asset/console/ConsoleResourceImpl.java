@@ -67,7 +67,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     protected void onAssetChange(AssetEvent event) {
         // Remove any parent console asset mapping if the asset gets deleted
         if (event.getCause() == AssetEvent.Cause.DELETE) {
-            realmConsoleParentMap.values().remove(event.getAssetId());
+            realmConsoleParentMap.values().remove(event.getId());
         }
     }
 
@@ -142,7 +142,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         return new ConsoleAsset(consoleRegistration.getName());
     }
 
-    public String getConsoleParentAssetId(String realm) {
+    /**
+     * This is synchronised to ensure only a single parent is created.
+     */
+    public synchronized String getConsoleParentAssetId(String realm) {
+
         String id = realmConsoleParentMap.get(realm);
 
         if (TextUtil.isNullOrEmpty(id)) {

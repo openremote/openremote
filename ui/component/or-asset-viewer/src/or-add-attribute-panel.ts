@@ -78,6 +78,10 @@ export class OrAddAttributePanel extends LitElement {
 
             this.attributeValueTypes = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.valueDescriptors || [])
                 .sort(Util.sortByString((descriptor) => descriptor[0]))
+                .filter(descriptorName => {
+                    const valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorName);
+                    return !valueDescriptor || !valueDescriptor.metaUseOnly;
+                })
                 .map((descriptor) => {
                     return [
                         descriptor,

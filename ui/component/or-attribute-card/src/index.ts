@@ -360,7 +360,7 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             ${this.shouldShowControls() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
                                 <span>${i18next.t('noAttributeConnected')}</span>
                             `}
@@ -377,7 +377,7 @@ export class OrAttributeCard extends LitElement {
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             ${this.shouldShowControls() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : undefined}
                         </div>
                     </div>
@@ -387,7 +387,7 @@ export class OrAttributeCard extends LitElement {
 
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                const elemSize = entries[0].devicePixelContentBoxSize[0].inlineSize;
                 this.setLabelSizeByWidth(elemSize);
             }, 200))
             this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
@@ -439,7 +439,7 @@ export class OrAttributeCard extends LitElement {
                                 ${this.shouldShowControls() ? html`
                                     <div class="period-selector-wrapper">
                                         ${getContentWithMenuTemplate(
-                                                html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
+                                                html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" label="${this.period ? this.period : '-'}"></or-mwc-input>`,
                                                 [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
                                                     option.text = i18next.t(option.value);
                                                     return option;
@@ -484,7 +484,7 @@ export class OrAttributeCard extends LitElement {
                     .setActions([
                         {
                             actionName: "cancel",
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
+                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
                             action: () => {
                                 // Nothing to do here
                             }
@@ -492,7 +492,7 @@ export class OrAttributeCard extends LitElement {
                         {
                             actionName: "yes",
                             default: true,
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-mwc-input>`,
+                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="ok" data-mdc-dialog-action="yes"></or-mwc-input>`,
                             action: () => {
                                 if (dialogContent === "editDelta") {
                                     this.delta = this.data ? this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data)) : undefined;
@@ -737,7 +737,7 @@ export class OrAttributeCard extends LitElement {
             } as ReadAttributeEvent
         });
 
-        this.mainValue = currentValue.attributeState!.value;
+        this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
@@ -777,7 +777,7 @@ export class OrAttributeCard extends LitElement {
         }
 
         const attr = this.assetAttributes[0][1];
-        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
+        const roundedVal = +value?.toFixed(this.mainValueDecimals); // + operator prevents str return
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[0].type!);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.assets[0].type));
         this.setLabelSizeByLength(roundedVal.toString());
@@ -842,10 +842,10 @@ export class OrAttributeCard extends LitElement {
         if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
-    protected setLabelSizeByWidth(blockSize: number) {
-        if(blockSize < 60) { this.mainValueSize = "s"; }
-        else if(blockSize < 100) { this.mainValueSize = "m"; }
-        else if(blockSize < 200) { this.mainValueSize = "l"; }
+    protected setLabelSizeByWidth(inlineSize: number) {
+        if(inlineSize < 60) { this.mainValueSize = "s"; }
+        else if(inlineSize < 100) { this.mainValueSize = "m"; }
+        else if(inlineSize < 200) { this.mainValueSize = "l"; }
         else { this.mainValueSize = "xl"; }
     }
 

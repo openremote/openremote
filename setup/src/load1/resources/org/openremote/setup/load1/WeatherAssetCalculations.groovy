@@ -4,7 +4,6 @@ import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.WeatherAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
@@ -28,16 +27,16 @@ rules.add()
                 { facts ->
 
                     List<AttributeEvent> updates = []
-
+                    //LOG.info("Calculations start")
                     // Get weather asset rainfall and/or temperature states that have changed value
                     facts.matchAssetState(
                             new AssetQuery()
                                     .types(WeatherAsset)
                                     .attributeNames(WeatherAsset.TEMPERATURE.name, WeatherAsset.RAINFALL.name)
-                    ).collect(Collectors.groupingBy{AssetState<?> state -> state.id})
+                    ).collect(Collectors.groupingBy{state -> state.id})
                     .forEach{id, states ->
                         // See if either attribute has changed for this asset
-                        if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))}) {
+                        if (states.any {state -> !Objects.equals(state.value.orElse(null), state.oldValue.orElse(null))} && states.size() == 2) {
                             def value1 = states[0].value.orElse(0) as float
                             def value2 = states[1].value.orElse(0) as float
                             def calculated = value1+value2
@@ -50,14 +49,16 @@ rules.add()
                         facts.bind("updates", updates)
                     }
 
+                    //LOG.info("Calculations end")
                     // Trigger the rule action if we have one or more changes to process
                     return !updates.isEmpty()
                 })
         .then(
                 { facts ->
                     def updates = facts.bound("updates") as List<AttributeEvent>
-
+                    LOG.info("Update start")
                     updates.forEach {
                         assets.dispatch(it)
                     }
+                    LOG.info("Update end")
                 })

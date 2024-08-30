@@ -138,7 +138,7 @@ export class OrConfRealmCard extends LitElement {
 
 
     protected headerListSecondary: string[] = [
-        "gateway",
+        "gatewayHeaderItem",
         "export",
         "logs",
         "realms",
@@ -183,7 +183,8 @@ export class OrConfRealmCard extends LitElement {
         Object.entries(colors).forEach(([key, value]) => {
             css += key +":" +value + ";"
         })
-        this.realm.styles = css
+        css += "}";
+        this.realm.styles = css;
         this.notifyConfigChange(this.realm);
     }
 
@@ -233,12 +234,12 @@ export class OrConfRealmCard extends LitElement {
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: "cancel"
             },
             {
                 default: true,
                 actionName: "ok",
-                content: i18next.t("yes"),
+                content: "yes",
                 action: () => {
                     this.dispatchEvent(new CustomEvent("remove"));
                 }},
@@ -362,7 +363,7 @@ export class OrConfRealmCard extends LitElement {
 
                     ${when(app.canRemove, () => html`
                         <or-mwc-input outlined id="remove-realm" .type="${InputType.BUTTON}"
-                                      .label="${i18next.t("configuration.deleteRealmCustomization")}"
+                                      label="configuration.deleteRealmCustomization"
                                       @click="${() => { app._showRemoveRealmDialog(); }}"
                         ></or-mwc-input>
                     `)}

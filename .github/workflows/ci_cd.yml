@@ -163,7 +163,13 @@ jobs:
 
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.3
+        shell: bash
+        run: |
+          set -e
+          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
+          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
+          echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
+          echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT 
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -372,9 +378,7 @@ jobs:
                 if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
                   dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release" and refName in eventConfig:
-
-              eventConfig = eventConfig[refName]
+            elif eventName == "release":
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
                 if 'distribute' in eventConfig:
@@ -498,7 +502,7 @@ jobs:
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
         shell: bash
         run: |
-          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -P$MAVEN_PASSWORD"
+          command="./gradlew publish -PopenremoteVersion=$MAVEN_TAG -PsigningKey=$SIGNING_KEY -PsigningPassword=$SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
@@ -635,7 +639,7 @@ jobs:
           fi
 
           # Pull the images
-          docker-compose -f $composeProfile pull
+          docker compose -f $composeProfile pull
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
@@ -657,15 +661,15 @@ jobs:
           fi
 
           # Make temp dir and set mask to 777 as docker seems to run as root
-          mkdir tmp
+          mkdir -p tmp
           chmod 777 tmp
 
           # Define cleanup command
-          echo "cleanup=docker-compose -f $composeProfile down" >> $GITHUB_OUTPUT
+          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
 
           # Start the stack
-          echo "docker-compose -f ${composeProfile} up -d --no-build"
-          docker-compose -f ${composeProfile} up -d --no-build
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f ${composeProfile} up -d --no-build
 
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
@@ -743,7 +747,7 @@ jobs:
           fi
 
           # Start the stack          
-          MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}
@@ -841,17 +845,24 @@ jobs:
                       os.system(f"echo '{value}'\"'\"'' >> {envFile}")
                   else:
                       os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> {envFile}")
-
+            
+            # Output new line
+            os.system(f"echo '\n' >> {envFile}")
+          
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
               os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
               os.system("cat .ci_cd/env/.env >> temp/env")
+              # Output new line
+              os.system(f"echo '\n' >> {envFile}")
           
             # Output environment specific env file if exists
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
-              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-            
+              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")          
+              # Output new line
+              os.system(f"echo '\n' >> {envFile}")
+          
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
               os.putenv("CIDR", ipv4 + '/32')
