@@ -128,12 +128,11 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
         if (secure) {
             MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
-            if(keyManagerFactory != null){
+            if (keyManagerFactory != null) {
                 sslBuilder = sslBuilder.keyManagerFactory(keyManagerFactory);
+            } if (trustManagerFactory != null) {
+                sslBuilder = sslBuilder.trustManagerFactory(trustManagerFactory);
             }
-	        if(trustManagerFactory != null){
-		        sslBuilder = sslBuilder.trustManagerFactory(trustManagerFactory);
-	        }
             builder = builder.sslConfig(sslBuilder.build());
         }
 
