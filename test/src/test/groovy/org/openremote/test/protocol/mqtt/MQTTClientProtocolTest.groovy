@@ -97,7 +97,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
                             .setSubscriptionTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
                             .setPublishTopic("${keycloakTestSetup.realmBuilding.name}/$clientId/${DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC}/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
-                            .setWriteValue("${Constants.DYNAMIC_VALUE_PLACEHOLDER}")
+                            .setWriteValue("%VALUE%")
                     ))
         )
 
