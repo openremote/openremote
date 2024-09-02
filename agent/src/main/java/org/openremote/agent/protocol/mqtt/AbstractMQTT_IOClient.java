@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.hivemq.client.internal.mqtt.MqttClientSslConfigImplBuilder;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.MqttClientSslConfig;
 import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
