@@ -21,6 +21,7 @@ package org.openremote.test.alarm
 
 import org.openremote.model.alarm.Alarm
 import org.openremote.model.alarm.Alarm.Severity
+import org.openremote.model.alarm.AlarmAssetLink
 import org.openremote.model.alarm.SentAlarm
 import org.openremote.model.alarm.AlarmResource
 import org.openremote.manager.setup.SetupService
@@ -78,9 +79,9 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
     // Create alarm as admin
     @Unroll
-    def "should create an alarm with title '#title', content '#content', and severity '#severity'"() {
+    def "should create an alarm with title '#title', content '#content', severity '#severity' and assigneeId '#assigneeId'"() {
         when: "an alarm is created"
-        def input = new Alarm(title, content, severity, null, MASTER_REALM)
+        def input = new Alarm(title, content, severity, assigneeId, MASTER_REALM)
         def alarm = adminResource.createAlarm(null, input)
 
         then:
@@ -88,12 +89,15 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm.title == title
         alarm.content == content
         alarm.severity == severity
+        alarm.assigneeId == assigneeId
         alarm.status == Alarm.Status.OPEN
 
         where:
-        title           | content               | severity
-        "Test Alarm"    | "Test Description"    | Severity.LOW
-        "Another Alarm" | "Another Description" | Severity.MEDIUM
+        title            | content                | severity        | assigneeId
+        "Test Alarm"     | "Test Description"     | Severity.LOW    | null
+        "Another Alarm"  | "Another Description"  | Severity.MEDIUM | null
+        "Assigned Alarm" | "Assigned Description" | Severity.MEDIUM | keycloakTestSetup.testuser1Id
+        "Critical Alarm" | "Critical Description" | Severity.HIGH   | null
     }
 
     @Unroll
@@ -111,9 +115,10 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm.source == source
 
         where:
-        title           | content               | severity        | source
-        "Test Alarm"    | "Test Description"    | Severity.LOW    | Alarm.Source.MANUAL
-        "Another Alarm" | "Another Description" | Severity.MEDIUM | Alarm.Source.MANUAL
+        title            | content                | severity        | source
+        "Test Alarm"     | "Test Description"     | Severity.LOW    | Alarm.Source.MANUAL
+        "Another Alarm"  | "Another Description"  | Severity.MEDIUM | Alarm.Source.MANUAL
+        "Critical Alarm" | "Critical Description" | Severity.HIGH   | Alarm.Source.MANUAL
     }
 
     @Unroll
@@ -142,7 +147,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     }
 
     // Get alarms as admin
-    def "should return list of alarms"() {
+    def "should return created alarms"() {
         when: "five alarms are added"
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.ACKNOWLEDGED).setSeverity(Severity.MEDIUM).setRealm(MASTER_REALM))
@@ -151,27 +156,39 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         adminResource.createAlarm(null, new Alarm().setTitle('alarm 5').setContent('content').setStatus(Alarm.Status.RESOLVED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
         def alarms = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
 
-        then:
+        then: "five alarm can be retrieved"
         alarms != null
         alarms.size() == 5
+
+        and: "each single alarm can also be retrieved"
+        for (alarm in alarms) {
+            assert adminResource.getAlarm(null, alarm.id) != null
+        }
     }
 
     // Get alarms without read:alarm role
-    def "should not return list of alarms"() {
+    def "should not return alarms"() {
         when:
         regularUserResource.getAlarms(null, MASTER_REALM, null, null, null)
 
         then:
         WebApplicationException ex = thrown()
         ex.response.status == 403
+
+        when:
+        regularUserResource.getAlarm(null, 1L)
+
+        then:
+        ex = thrown()
+        ex.response.status == 403
     }
 
     // Update alarm as admin
     @Unroll
-    def "should update an alarm with title '#title', content '#content', severity '#severity', and status '#status'"() {
+    def "should update an alarm with title '#title', content '#content', severity '#severity', status '#status' and assigneeId '#assigneeId'"() {
         when:
         def alarm = adminResource.createAlarm(null, new Alarm().setTitle('Updatable alarm').setContent('Updatable content').setStatus(Alarm.Status.CLOSED).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
-        adminResource.updateAlarm(null, alarm.id, new SentAlarm().setTitle(title).setContent(content).setRealm(MASTER_REALM).setSeverity(severity).setStatus(status))
+        adminResource.updateAlarm(null, alarm.id, new SentAlarm().setTitle(title).setContent(content).setRealm(MASTER_REALM).setSeverity(severity).setStatus(status).setAssigneeId(assigneeId))
         def updated = adminResource.getAlarms(null, MASTER_REALM, null, null, null)[0]
 
         then:
@@ -180,11 +197,12 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         updated.content == content
         updated.severity == severity
         updated.status == status
+        updated.assigneeId == assigneeId
 
         where:
-        title           | content               | severity        | status
-        "Updated Alarm" | "Test Description"    | Severity.HIGH   | Alarm.Status.OPEN
-        "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED
+        title           | content               | severity        | status              | assigneeId
+        "Updated Alarm" | "Test Description"    | Severity.HIGH   | Alarm.Status.OPEN   | null
+        "Another Alarm" | "Updated Description" | Severity.MEDIUM | Alarm.Status.CLOSED | keycloakTestSetup.testuser1Id
     }
 
     @Unroll
@@ -238,6 +256,63 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
     }
 
+    // Delete empty or null alarms
+    def "should not delete null or empty alarms"() {
+        when:
+        adminResource.removeAlarm(null, null)
+
+        then:
+        NullPointerException npe = thrown()
+
+        when:
+        adminResource.removeAlarms(null, [])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.removeAlarms(null, [null])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+    }
+
+    // Delete invalid alarms
+    def "should not delete alarms with invalid ID"() {
+        when:
+        adminResource.removeAlarm(null, -1L)
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.removeAlarms(null, [-1L, 0L, 1L])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+    }
+
+    // Delete non-exising alarms
+    def "should not delete non-existing alarms"() {
+        when:
+        adminResource.removeAlarm(null, 1L)
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 404
+
+        when:
+        adminResource.removeAlarms(null, [1L, 2L, 3L])
+
+        then:
+        ex = thrown()
+        ex.response.status == 404
+    }
+
     // Delete one alarm as admin
     def "should delete one alarm as admin"() {
         when:
@@ -276,5 +351,121 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         then: "returns 2 open alarms"
         openAlarms.size() == 2
+    }
+
+    // Linking alarms as admin
+    def "should be able to link alarms to assets as admin"() {
+        when: "two alarms are added"
+        def alarm1 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        def alarm2 = adminResource.createAlarm(null, new Alarm().setTitle('alarm 2').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+
+        then: "both can be linked to an asset"
+        adminResource.setAssetLinks(null, [
+                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.smartOfficeId),
+                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.smartOfficeId)
+        ])
+
+        when: "the alarm asset links are retrieved"
+        def alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
+        def alarm2Links = adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM)
+
+        then: "the alarm asset links match"
+        alarm1Links.size() == 1
+        alarm1Links.get(0).id.alarmId == alarm1.id
+        alarm1Links.get(0).id.assetId == managerTestSetup.smartOfficeId
+        alarm1Links.get(0).id.realm == MASTER_REALM
+        alarm2Links.size() == 1
+        alarm2Links.get(0).id.alarmId == alarm2.id
+        alarm2Links.get(0).id.assetId == managerTestSetup.smartOfficeId
+        alarm2Links.get(0).id.realm == MASTER_REALM
+
+        when: "more alarm asset links are added"
+        adminResource.setAssetLinks(null, [
+                new AlarmAssetLink(MASTER_REALM, alarm1.id, managerTestSetup.lobbyId),
+                new AlarmAssetLink(MASTER_REALM, alarm2.id, managerTestSetup.lobbyId)
+        ])
+        alarm1Links = adminResource.getAssetLinks(null, alarm1.id, MASTER_REALM)
+        alarm2Links = adminResource.getAssetLinks(null, alarm2.id, MASTER_REALM)
+
+        then: "these alarm asset links also match"
+        alarm1Links.size() == 2
+        alarm1Links.get(0).id.alarmId == alarm1.id
+        alarm1Links.get(0).id.assetId == managerTestSetup.lobbyId
+        alarm1Links.get(0).id.realm == MASTER_REALM
+        alarm1Links.get(1).id.alarmId == alarm1.id
+        alarm1Links.get(1).id.assetId == managerTestSetup.smartOfficeId
+        alarm1Links.get(1).id.realm == MASTER_REALM
+        alarm2Links.size() == 2
+        alarm2Links.get(0).id.alarmId == alarm2.id
+        alarm2Links.get(0).id.assetId == managerTestSetup.lobbyId
+        alarm2Links.get(0).id.realm == MASTER_REALM
+        alarm2Links.get(1).id.alarmId == alarm2.id
+        alarm2Links.get(1).id.assetId == managerTestSetup.smartOfficeId
+        alarm2Links.get(1).id.realm == MASTER_REALM
+    }
+
+    // Linking alarms without permissions
+    def "should not be able to link alarms without proper permissions"() {
+        when:
+        def alarm = adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        regularUserResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm.id, managerTestSetup.smartOfficeId)])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+    }
+
+    // Creating invalid alarm links
+    def "should not create invalid alarm links"() {
+        when:
+        def alarm = adminResource.createAlarm(null, new Alarm().setTitle('alarm 1').setContent('content').setStatus(Alarm.Status.OPEN).setSeverity(Severity.LOW).setRealm(MASTER_REALM))
+        adminResource.setAssetLinks(null, [])
+
+        then:
+        WebApplicationException ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.setAssetLinks(null, [null])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(null, null, null)])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+
+
+        when:
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, null, null)])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, -1L, null)])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm.id, null)])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
+
+        when:
+        adminResource.setAssetLinks(null, [new AlarmAssetLink(MASTER_REALM, alarm.id, "")])
+
+        then:
+        ex = thrown()
+        ex.response.status == 400
     }
 }

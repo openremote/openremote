@@ -118,7 +118,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         JsonRulesetDefinition rulesetDef = ValueUtil.JSON.readValue(rulesStr, JsonRulesetDefinition.class)
         rulesetDef.rules[0].when.groups.get(0).items.get(0).assets.ids(managerTestSetup.apartment2LivingroomId)
         ((RuleActionAlarm) rulesetDef.rules[0].then[0]).alarm.setSeverity(severity)
-        ((RuleActionAlarm) rulesetDef.rules[0].then[0]).assigneeId = assignee
+        ((RuleActionAlarm) rulesetDef.rules[0].then[0]).assigneeId = assigneeId
         rulesStr = ValueUtil.JSON.writeValueAsString(rulesetDef)
         def realmRuleset = new RealmRuleset(managerTestSetup.realmBuildingName, "CO2 Alarm Rule", Ruleset.Lang.JSON, rulesStr)
         rulesetStorageService.merge(realmRuleset)
@@ -166,7 +166,7 @@ Value: 6000
         alarm.createdOn.toInstant().isBefore(Instant.now())
         alarm.acknowledgedOn == null
         alarm.createdOn == alarm.lastModified
-        alarm.assigneeId == assignee
+        alarm.assigneeId == assigneeId
 
         and: "the asset is linked to the alarm"
         def assetLinks = alarmService.getAssetLinks(alarm.id, null, managerTestSetup.realmBuildingName)
@@ -184,7 +184,7 @@ Value: 6000
         notificationMessages.size() == emailNotifications
 
         where:
-        severity              | assignee                      | emailNotifications
+        severity              | assigneeId                    | emailNotifications
         Alarm.Severity.LOW    | null                          | 0
         Alarm.Severity.LOW    | keycloakTestSetup.testuser1Id | 0
         Alarm.Severity.MEDIUM | null                          | 0

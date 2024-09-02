@@ -45,6 +45,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -138,7 +139,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Throws an {@link IllegalArgumentException} if the given {@code alarmIds} are null, empty or negative.
      */
-    protected void validateAlarmIds(List<Long> alarmIds) {
+    protected void validateAlarmIds(Collection<Long> alarmIds) {
         if (alarmIds == null || alarmIds.isEmpty()) {
             throw new IllegalArgumentException("Missing alarm IDs");
         }
@@ -163,6 +164,20 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             throw new EntityNotFoundException("One or more alarms do not exist");
         }
         validateRealmsAccessibleToUser(userId, getAlarmRealms(alarms));
+    }
+
+    /**
+     * Throws an {@link IllegalArgumentException} if the given {@code assetIds} are null or empty.
+     */
+    protected void validateAssetIds(Collection<String> assetIds) {
+        if (assetIds == null || assetIds.isEmpty()) {
+            throw new IllegalArgumentException("Missing asset IDs");
+        }
+        assetIds.forEach(assetId -> {
+            if (TextUtil.isNullOrEmpty(assetId)) {
+                throw new IllegalArgumentException("Missing asset ID");
+            }
+        });
     }
 
     /**
@@ -346,6 +361,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         if (links == null || links.isEmpty()) {
             throw new IllegalArgumentException("Missing links");
         }
+
+        Set<Long> alarmIds = links.stream().map(link -> link.getId().getAlarmId()).collect(Collectors.toSet());
+        validateAlarmIds(alarmIds);
+
+        Set<String> assetIds = links.stream().map(link -> link.getId().getAssetId()).collect(Collectors.toSet());
+        validateAssetIds(assetIds);
 
         if (userId != null) {
             Set<String> realms = links.stream().map(link -> link.getId().getRealm()).collect(Collectors.toSet());

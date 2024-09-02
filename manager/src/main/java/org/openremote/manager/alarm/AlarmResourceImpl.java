@@ -32,8 +32,6 @@ import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.alarm.AlarmAssetLink;
 import org.openremote.model.http.RequestParams;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response.Status;
 import org.openremote.model.util.TextUtil;
 
 import java.util.List;
