@@ -112,7 +112,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         notificationMessages.clear()
     }
 
-    def "rule in realm with alarm action creates an alarm with severity '#severity', assignee '#assignee' and '#emailNotifications' emailNotifications based on attribute event"() {
+    def "rule in realm with alarm action creates an alarm with severity '#severity', assignee '#assigneeId' and '#emailNotifications' emailNotifications based on attribute event"() {
         when: "a ruleset with a notification action is created in the building realm"
         def rulesStr = getClass().getResource("/org/openremote/test/rules/CO2AlarmRule.json").text
         JsonRulesetDefinition rulesetDef = ValueUtil.JSON.readValue(rulesStr, JsonRulesetDefinition.class)
@@ -189,7 +189,7 @@ Value: 6000
         Alarm.Severity.LOW    | keycloakTestSetup.testuser1Id | 0
         Alarm.Severity.MEDIUM | null                          | 0
         Alarm.Severity.MEDIUM | keycloakTestSetup.testuser2Id | 0
-        Alarm.Severity.HIGH   | null                          | 0
+        Alarm.Severity.HIGH   | null                          | 1
         Alarm.Severity.HIGH   | keycloakTestSetup.testuser3Id | 1
         Alarm.Severity.HIGH   | alarmsReadWriteUserId         | 1
     }

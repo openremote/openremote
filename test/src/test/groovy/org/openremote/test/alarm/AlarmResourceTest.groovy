@@ -19,18 +19,26 @@
  */
 package org.openremote.test.alarm
 
+import jakarta.mail.Message
+import org.openremote.manager.notification.EmailNotificationHandler
+import org.openremote.manager.notification.NotificationService
 import org.openremote.model.alarm.Alarm
 import org.openremote.model.alarm.Alarm.Severity
 import org.openremote.model.alarm.AlarmAssetLink
 import org.openremote.model.alarm.SentAlarm
 import org.openremote.model.alarm.AlarmResource
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
+import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.security.User
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.lang.Shared
+import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -53,10 +61,20 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     @Shared
     static ManagerTestSetup managerTestSetup
 
+    @Shared
+    static String alarmsReadWriteUserId;
+
+    @Shared
+    static NotificationService notificationService
+
+    @Shared
+    static List<AbstractNotificationMessage> notificationMessages = []
+
     def setupSpec() {
         def container = startContainer(defaultConfig(), defaultServices())
         keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        notificationService = container.getService(NotificationService.class)
 
         def adminAccessToken = authenticate(
                 container,
@@ -68,18 +86,43 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
 
         regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
+
+        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES);
+        alarmsReadWriteUserId = alarmsReadWriteUser.getId();
+
+        def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def throwPushHandlerException = false
+        EmailNotificationHandler mockPushNotificationHandler = Spy(emailNotificationHandler)
+        mockPushNotificationHandler.isValid() >> true
+        mockPushNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                if (throwPushHandlerException) {
+                    throw new Exception("Failed to send notification")
+                }
+                notificationMessages << message
+                callRealMethod()
+        }
+        mockPushNotificationHandler.sendMessage(_ as Message) >> {
+            message -> return NotificationSendResult.success()
+        }
+
+        notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockPushNotificationHandler)
     }
 
     def cleanup() {
+        // Remove all alarms
         def alarms = adminResource.getAlarms(null, MASTER_REALM, null, null, null)
         if (alarms.length > 0) {
             adminResource.removeAlarms(null, (List<Long>) alarms.collect { it.id })
         }
+
+        // Clear notifications
+        notificationMessages.clear()
     }
 
     // Create alarm as admin
     @Unroll
-    def "should create an alarm with title '#title', content '#content', severity '#severity' and assigneeId '#assigneeId'"() {
+    def "should create an alarm with title '#title', content '#content', severity '#severity', assigneeId '#assigneeId' and '#emailNotifications' emailNotifications"() {
         when: "an alarm is created"
         def input = new Alarm(title, content, severity, assigneeId, MASTER_REALM)
         def alarm = adminResource.createAlarm(null, input)
@@ -92,12 +135,23 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         alarm.assigneeId == assigneeId
         alarm.status == Alarm.Status.OPEN
 
+        and:
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 0.2)
+        conditions.eventually {
+            assert notificationMessages.size() == emailNotifications
+        }
+
         where:
-        title            | content                | severity        | assigneeId
-        "Test Alarm"     | "Test Description"     | Severity.LOW    | null
-        "Another Alarm"  | "Another Description"  | Severity.MEDIUM | null
-        "Assigned Alarm" | "Assigned Description" | Severity.MEDIUM | keycloakTestSetup.testuser1Id
-        "Critical Alarm" | "Critical Description" | Severity.HIGH   | null
+        title                     | content                | severity        | assigneeId                    | emailNotifications
+        "Low Alarm"               | "Test Description"     | Severity.LOW    | null                          | 0
+        "Low Assigned 1 Alarm"    | "Test Description"     | Severity.LOW    | keycloakTestSetup.testuser1Id | 0
+        "Low Assigned 2 Alarm"    | "Test Description"     | Severity.LOW    | alarmsReadWriteUserId         | 0
+        "Medium Unassigned Alarm" | "Another Description"  | Severity.MEDIUM | null                          | 0
+        "Medium Assigned 1 Alarm" | "Assigned Description" | Severity.MEDIUM | keycloakTestSetup.testuser1Id | 0
+        "Medium Assigned 2 Alarm" | "Assigned Description" | Severity.MEDIUM | alarmsReadWriteUserId         | 0
+        "High Unassigned Alarm"   | "Critical Description" | Severity.HIGH   | null                          | 1
+        "High Assigned 1 Alarm"   | "Critical Description" | Severity.HIGH   | keycloakTestSetup.testuser1Id | 0
+        "High Assigned 2 Alarm"   | "Critical Description" | Severity.HIGH   | alarmsReadWriteUserId         | 1
     }
 
     @Unroll

@@ -185,7 +185,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
                     // exists otherwise it will just match any other row
                     sb.append("NOT ");
                 }
-                sb.append("EXISTS (SELECT urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where urm.user_id = u.id and not kr.client_role and");
+                sb.append("EXISTS (SELECT urm.user_id from public.user_role_mapping urm join public.keycloak_role kr on urm.role_id = kr.id where urm.user_id = u.id and");
 
                 sb.append(realmPredicate.caseSensitive ? " kr.name" : " upper(kr.name)");
                 sb.append(StringPredicate.toSQLParameter(realmPredicate, parameters.size() + 1, realmPredicate.negate));
