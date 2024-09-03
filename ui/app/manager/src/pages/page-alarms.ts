@@ -890,9 +890,11 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
 
     protected _getUsers() {
-        return this._loadedUsers.filter((u) => u.username != 'manager-keycloak').map((u) => {
+        let options = this._loadedUsers.filter((u) => u.username != 'manager-keycloak').map((u) => {
             return {value: u.id, label: u.username};
         });
+        options.unshift({value: null, label: i18next.t("none")})
+        return options;
     }
 
     protected _openAssetSelector(ev: MouseEvent, alarm: AlarmModel, readonly: boolean) {
