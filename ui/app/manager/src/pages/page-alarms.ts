@@ -185,6 +185,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
                 .row {
                     display: flex;
                     flex-direction: row;
+                    flex-wrap: wrap;
                     margin: auto;
                     flex: 1 1 0;
                     gap: 16px;
