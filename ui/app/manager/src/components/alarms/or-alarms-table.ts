@@ -34,40 +34,40 @@ export interface AlarmTableColumn extends TableColumn {
 }
 
 const styling = css`
-  .alarm-text {
-    padding: 4px 6px;
-    border-radius: 5px;
-  }
+    .alarm-text {
+        padding: 4px 6px;
+        border-radius: 5px;
+    }
 
-  .alarm-status-text__closed {
-    color: var(--or-alarm-status-color__closed, grey);
-    background-color: var(--or-alarm-status-background__closed);
-    border: var(--or-alarm-status-border__closed, 1px #8590A2 solid);
-  }
+    .alarm-status-text__closed {
+        color: var(--or-alarm-status-color__closed, grey);
+        background-color: var(--or-alarm-status-background__closed);
+        border: var(--or-alarm-status-border__closed, 1px #8590A2 solid);
+    }
 
-  .alarm-status-text__resolved {
-    color: var(--or-alarm-status-color__resolved, white);
-    background-color: var(--or-alarm-status-background__resolved, #22A06B);
-    border: var(--or-alarm-status-border__resolved);
-  }
+    .alarm-status-text__resolved {
+        color: var(--or-alarm-status-color__resolved, white);
+        background-color: var(--or-alarm-status-background__resolved, #22A06B);
+        border: var(--or-alarm-status-border__resolved);
+    }
 
-  .alarm-status-text__acknowledged {
-    color: var(--or-alarm-status-color__acknowledged);
-    background-color: var(--or-alarm-status-background__acknowledged);
-    border: var(--or-alarm-status-border__acknowledged, 1px #8F7EE7 solid);
-  }
+    .alarm-status-text__acknowledged {
+        color: var(--or-alarm-status-color__acknowledged);
+        background-color: var(--or-alarm-status-background__acknowledged);
+        border: var(--or-alarm-status-border__acknowledged, 1px #8F7EE7 solid);
+    }
 
-  .alarm-status-text__in-progress {
-    color: var(--or-alarm-status-color__in-progress, white);
-    background-color: var(--or-alarm-status-background__in-progress, #388BFF);
-    border: var(--or-alarm-status-border__in-progress);
-  }
+    .alarm-status-text__in-progress {
+        color: var(--or-alarm-status-color__in-progress, white);
+        background-color: var(--or-alarm-status-background__in-progress, #388BFF);
+        border: var(--or-alarm-status-border__in-progress);
+    }
 
-  .alarm-status-text__open {
-    color: var(--or-alarm-status-color__open, white);
-    background-color: var(--or-alarm-status-background__open, #8F7EE7);
-    border: var(--or-alarm-status-border__open);
-  }
+    .alarm-status-text__open {
+        color: var(--or-alarm-status-color__open, white);
+        background-color: var(--or-alarm-status-background__open, #8F7EE7);
+        border: var(--or-alarm-status-border__open);
+    }
 
     .alarm-severity-text__low {
         color: white;
@@ -176,7 +176,8 @@ export class OrAlarmsTable extends OrMwcTable {
             "alarm-severity-text__high": severity === AlarmSeverity.HIGH
         };
         return html`
-            <or-translate class=${classMap(classes)} value="${severity ? `alarm.severity_${severity}` : "error"}"></or-translate>
+            <or-translate class=${classMap(classes)}
+                          value="${severity ? `alarm.severity_${severity}` : "error"}"></or-translate>
         `;
     }
 
@@ -194,7 +195,8 @@ export class OrAlarmsTable extends OrMwcTable {
             "alarm-status-text__open": status === AlarmStatus.OPEN
         };
         return html`
-            <or-translate class=${classMap(classes)} value="${status ? `alarm.status_${status}` : "error"}"></or-translate>
+            <or-translate class=${classMap(classes)}
+                          value="${status ? `alarm.status_${status}` : "error"}"></or-translate>
         `;
     }
 
@@ -214,7 +216,7 @@ export class OrAlarmsTable extends OrMwcTable {
         const valueA: string | undefined = (cellA.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
         const valueB: string | undefined = (cellB.values as any[]).filter(v => typeof v === 'string' || typeof v === 'number').map(v => v.toString())?.[0];
         if (valueA !== undefined && valueB !== undefined) {
-            if(valueA.includes("alarm.status") && valueB.includes("alarm.status")){
+            if (valueA.includes("alarm.status") && valueB.includes("alarm.status")) {
                 const sortingArr = ["alarm.status_OPEN", "alarm.status_ACKNOWLEDGED", "alarm.status_IN_PROGRESS", "alarm.status_RESOLVED", "alarm.status_CLOSED"];
                 if (sortDirection === 'DESC') {
                     return sortingArr.indexOf(valueB) - sortingArr.indexOf(valueA);
@@ -222,7 +224,7 @@ export class OrAlarmsTable extends OrMwcTable {
                     return sortingArr.indexOf(valueA) - sortingArr.indexOf(valueB);
                 }
             }
-            if(valueA.includes("alarm.severity") && valueB.includes("alarm.severity")){
+            if (valueA.includes("alarm.severity") && valueB.includes("alarm.severity")) {
                 const sortingArr = ["alarm.severity_LOW", "alarm.severity_MEDIUM", "alarm.severity_HIGH"];
                 if (sortDirection === 'DESC') {
                     return sortingArr.indexOf(valueB) - sortingArr.indexOf(valueA);
@@ -253,7 +255,7 @@ export class OrAlarmsTable extends OrMwcTable {
     }
 
     /** In AlarmTableColumn, columns can have a 'weighted width' which makes them wider/smaller relative to others.
-    * This function calculates the total of these values. */
+     * This function calculates the total of these values. */
     protected getTotalColumnWidthWeight(columns?: string[] | TableColumn[]): number | undefined {
         let totalWeight = 0;
         columns.forEach(c => {
