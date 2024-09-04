@@ -66,6 +66,9 @@ public class SentAlarm {
     @Column(name = "SOURCE_ID", nullable = false, length = 43)
     protected String sourceId;
 
+    @Formula("(select u.USERNAME from PUBLIC.USER_ENTITY u where u.ID = SOURCE_ID)")
+    protected String sourceUsername;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date createdOn;
@@ -158,6 +161,10 @@ public class SentAlarm {
     public SentAlarm setSourceId(String sourceId) {
         this.sourceId = sourceId;
         return this;
+    }
+
+    public String getSourceUsername() {
+        return sourceUsername;
     }
 
     public Date getCreatedOn() {

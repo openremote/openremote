@@ -686,13 +686,8 @@ export class PageAlarms extends Page<AppStateKeyed> {
                             ></or-mwc-input>
                             <or-mwc-input class="alarm-input" ?disabled="${!write || this.creationState || this.alarm}"
                                   .label="${i18next.t("alarm.source")}"
-                                  .type="${InputType.SELECT}"
-                                  .options="${this._getSourceOptions().map( s => s.label)}"
-                                  .value="${this._getSourceOptions().filter((obj) => obj.value === alarm.source).map((obj) => obj.label)[0]}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-            alarm.source = this._getSourceOptions().filter((obj) => obj.label === e.detail.value).map((obj) => obj.value)[0];
-            this.onAlarmChanged(e);
-        }}"
+                                  .type="${InputType.TEXT}"
+                                  .value="${this._getSourceText()}"
                             ></or-mwc-input>
                             <or-mwc-input class="alarm-input" ?disabled="${!write}"
                                   .label="${i18next.t("alarm.severity")}"
@@ -785,25 +780,39 @@ export class PageAlarms extends Page<AppStateKeyed> {
     }
 
     protected _getStatusOptions() {
-        return [{label: 'alarm.allActive', value: 'All-active'}, {label: 'alarm.all', value: 'All'}, {label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_RESOLVED', value: AlarmStatus.RESOLVED}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
+        return [{label: 'alarm.allActive', value: 'All-active'}, {label: 'alarm.all', value: 'All'}].concat(this._getAddStatusOptions());
     }
 
     protected _getSeverityOptions() {
-        return [{label: 'alarm.all', value: 'All'}, {label: 'alarm.severity_LOW', value: AlarmSeverity.LOW}, {label: 'alarm.severity_MEDIUM', value: AlarmSeverity.MEDIUM}, {label: 'alarm.severity_HIGH', value: AlarmSeverity.HIGH}];
+        return [{label: 'alarm.all', value: 'All'}].concat(this._getAddSeverityOptions());
     }
 
     protected _getAddStatusOptions() {
-        return [{label: 'alarm.status_OPEN', value: AlarmStatus.OPEN}, {label: 'alarm.status_ACKNOWLEDGED', value: AlarmStatus.ACKNOWLEDGED}, {label: 'alarm.status_IN_PROGRESS', value: AlarmStatus.IN_PROGRESS}, {label: 'alarm.status_RESOLVED', value: AlarmStatus.RESOLVED}, {label: 'alarm.status_CLOSED', value: AlarmStatus.CLOSED}];
+        const statuses = [AlarmStatus.OPEN, AlarmStatus.ACKNOWLEDGED, AlarmStatus.IN_PROGRESS, AlarmStatus.RESOLVED, AlarmStatus.CLOSED];
+        return statuses.map(status => ({label: 'alarm.status_' + status, value: status}));
     }
 
     protected _getAddSeverityOptions() {
-        return [{label: 'alarm.severity_LOW', value: AlarmSeverity.LOW}, {label: 'alarm.severity_MEDIUM', value: AlarmSeverity.MEDIUM}, {label: 'alarm.severity_HIGH', value: AlarmSeverity.HIGH}];
+        const severities = [AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH];
+        return severities.map(status => ({label: 'alarm.severity_' + status, value: status}));
     }
 
-    protected _getSourceOptions() {
-        return [{label: 'alarm.source_REALM_RULESET', value: AlarmSource.REALM_RULESET}, {label: 'alarm.source_ASSET_RULESET', value: AlarmSource.ASSET_RULESET},
-                {label: 'alarm.source_GLOBEL_RULESET', value: AlarmSource.GLOBAL_RULESET}, {label: 'alarm.source_AGENT', value: AlarmSource.AGENT},
-                {label: 'alarm.source_CLIENT', value: AlarmSource.CLIENT}, {label: 'alarm.source_MANUAL', value: AlarmSource.MANUAL}];
+    protected _getSourceText(): string {
+        const alarm: AlarmModel = this.alarm ?? this.creationState.alarmModel
+        const alarmSource = alarm.source;
+        const alarmSourceId = alarm.sourceId;
+        const sourceText = i18next.t('alarm.source_' + alarmSource);
+
+        if (alarmSourceId) {
+            let sourceIdText: string;
+            if ([AlarmSource.REALM_RULESET, AlarmSource.ASSET_RULESET, AlarmSource.GLOBAL_RULESET].includes(alarmSource)) {
+                sourceIdText = "ID: " + alarmSourceId;
+            } else if (alarmSource === AlarmSource.MANUAL) {
+                sourceIdText = alarm.sourceUsername;
+            }
+            return sourceIdText ? sourceText + " (" + sourceIdText + ")" : sourceText;
+        }
+        return sourceText;
     }
 
     protected _onSeverityChanged(severity: any) {
