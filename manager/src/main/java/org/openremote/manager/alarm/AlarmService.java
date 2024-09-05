@@ -252,7 +252,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     /**
      * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not set all users having
-     * the {@link Constants#READ_ADMIN_ROLE} or{@link Constants#WRITE_ALARMS_ROLE} are notified.
+     * the {@link Constants#READ_ADMIN_ROLE} or {@link Constants#WRITE_ALARMS_ROLE} are notified.
      *
      * @param alarm the alarm to send e-mail and push notifications for
      * @param excludeUserIds users matching these user IDs will are excluded from the notifications
@@ -477,7 +477,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Removes an existing alarms if the given user has access to the alarm realm.
+     * Removes an existing alarm if the given user has access to the alarm realm.
      */
     public void removeAlarm(Long alarmId, String userId) {
         SentAlarm alarm = getAlarm(alarmId, userId);
