@@ -62,7 +62,7 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
     static ManagerTestSetup managerTestSetup
 
     @Shared
-    static String alarmsReadWriteUserId;
+    static String alarmsReadWriteUserId
 
     @Shared
     static NotificationService notificationService
@@ -87,8 +87,8 @@ class AlarmResourceTest extends Specification implements ManagerContainerTrait {
         regularUserResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AlarmResource.class)
         adminResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(AlarmResource.class)
 
-        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES);
-        alarmsReadWriteUserId = alarmsReadWriteUser.getId();
+        User alarmsReadWriteUser = keycloakTestSetup.createUser(MASTER_REALM, "alarmsrwuser1", "alarmsrwuser1", "Alarms R/W", "User", "alarmsrwuser@openremote.local", true, KeycloakTestSetup.REGULAR_USER_ROLES)
+        alarmsReadWriteUserId = alarmsReadWriteUser.getId()
 
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def throwPushHandlerException = false
