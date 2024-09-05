@@ -49,11 +49,14 @@ import org.openremote.model.util.TextUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.OR_HOSTNAME;
 import static org.openremote.model.alarm.Alarm.Source.*;
 
 /**
@@ -64,6 +67,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     public static final Logger LOG = Logger.getLogger(AlarmService.class.getName());
 
+    private Container container;
     private ClientEventService clientEventService;
     private ManagerIdentityService identityService;
     private NotificationService notificationService;
@@ -77,6 +81,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+        this.container = container;
         this.clientEventService = container.getService(ClientEventService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.notificationService = container.getService(NotificationService.class);
@@ -254,12 +259,48 @@ public class AlarmService extends RouteBuilder implements ContainerService {
      * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not set all users having
      * the {@link Constants#READ_ADMIN_ROLE} or {@link Constants#WRITE_ALARMS_ROLE} are notified.
      *
-     * @param alarm the alarm to send e-mail and push notifications for
+     * @param alarm          the alarm to send e-mail and push notifications for
      * @param excludeUserIds users matching these user IDs will are excluded from the notifications
      */
     protected void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
-        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+        List<User> users = getAlarmNotificationUsers(alarm);
+        users.removeIf(user -> excludeUserIds.contains(user.getId()));
+        if (users.isEmpty()) {
+            LOG.fine("No matching users to send alarm notification");
+            return;
+        }
 
+        LOG.fine("Sending alarm notification to " + users.size() + " matching user(s)");
+
+        String title = String.format("Alarm: %s - %s", alarm.getSeverity(), alarm.getTitle());
+        String url = getAlarmNotificationUrl(alarm);
+        String text = getAlarmNotificationText(alarm, url);
+
+        Notification email = new Notification()
+                .setName("New Alarm")
+                .setMessage(new EmailNotificationMessage()
+                        .setText(text)
+                        .setSubject(title)
+                        .setTo(users.stream()
+                                .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
+                                .map(user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())).toList()));
+
+        Notification push = new Notification();
+        push.setName("New Alarm")
+                .setMessage(
+                        new PushNotificationMessage()
+                                .setTitle(title)
+                                .setBody(text)
+                                .setAction(url == null ? null : new PushNotificationAction(url))
+                )
+                .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
+
+        notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
+        notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
+    }
+
+    private List<User> getAlarmNotificationUsers(SentAlarm alarm) {
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         List<User> users = new ArrayList<>();
         if (alarm.getAssigneeId() == null) {
             UserQuery userQuery = new UserQuery()
@@ -271,41 +312,35 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         } else {
             users.add(identityProvider.getUser(alarm.getAssigneeId()));
         }
+        return users;
+    }
 
-        users.removeIf(user -> excludeUserIds.contains(user.getId()));
+    private String getAlarmNotificationText(SentAlarm alarm, String url) {
+        List<String> lines = new ArrayList<>();
+        lines.add("Content: " + alarm.getContent());
+        lines.add("Created: " + DateFormat.getDateTimeInstance().format(alarm.getCreatedOn()));
+        lines.add("Source: " + alarm.getSource());
+        lines.add("Severity: " + alarm.getSeverity());
+        lines.add("Status: " + alarm.getStatus());
 
-        if (users.isEmpty()) {
-            LOG.fine("No matching users to send alarm notification");
-            return;
+        List<String> assetLinks = getAssetLinks(alarm.getId(), null, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
+        lines.add("Linked assets: " + (assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks)));
+
+        lines.add("Assignee: " + (TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername()));
+
+        if (!TextUtil.isNullOrEmpty(url)) {
+            lines.add("URL: " + url);
         }
 
-        LOG.fine("Sending alarm notification to " + users.size() + " matching user(s)");
+        return String.join("\n", lines);
+    }
 
-        String text = "Assigned to alarm: " + alarm.getTitle() + "\n" +
-                "Description: " + alarm.getContent() + "\n" +
-                "Severity: " + alarm.getSeverity() + "\n" +
-                "Status: " + alarm.getStatus();
-
-        Notification email = new Notification()
-                .setName("New Alarm")
-                .setMessage(new EmailNotificationMessage()
-                        .setText(text)
-                        .setSubject("New Alarm Notification")
-                        .setTo(users.stream()
-                                .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
-                                .map(user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())).toList()));
-
-        Notification push = new Notification();
-        push.setName("New Alarm")
-                .setMessage(
-                        new PushNotificationMessage()
-                                .setTitle("Alarm: " + alarm.getTitle())
-                                .setBody(text)
-                )
-                .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
-
-        notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
-        notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
+    private String getAlarmNotificationUrl(SentAlarm alarm) {
+        String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
+        if (defaultHostname == null) {
+            return null;
+        }
+        return String.format("https://%s/manager/#/alarms/%s?realm=%s", defaultHostname, alarm.getId(), alarm.getRealm());
     }
 
     /**
