@@ -368,8 +368,6 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         await manager.rest.api.AlarmResource.setAssetLinks(alarm.alarmAssetLinks);
                     }
                 });
-
-
         } catch (e) {
             if (isAxiosError(e)) {
                 console.error(
@@ -1005,6 +1003,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
                         this.alarm.alarmUserLinks = [];
                         this.loadAlarm(this.alarm);
                         this.requestUpdate();
+                    }).catch((ex) => {
+                        if (isAxiosError(ex)) {
+                            this.reset();
+                        }
                     })
                 }
                 else if (!this.creationState) {
