@@ -19,6 +19,7 @@
  */
 package org.openremote.model.provisioning;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 
@@ -33,20 +34,24 @@ public interface ProvisioningResource {
 
     @GET
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getProvisioningConfigs", summary = "Retrieve all provisioning configurations")
     ProvisioningConfig<?, ?>[] getProvisioningConfigs();
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "createProvisioningConfig", summary = "Create a provisioning configuration")
     long createProvisioningConfig(ProvisioningConfig<?, ?> provisioningConfig);
 
     @PUT
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "updateProvisioningConfig", summary = "Update a provisioning configuration")
     void updateProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid ProvisioningConfig<?, ?> provisioningConfig);
 
     @DELETE
     @Path("{id}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "deleteProvisioningConfig", summary = "Delete a provisioning configuration")
     void deleteProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 }

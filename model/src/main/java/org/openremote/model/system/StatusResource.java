@@ -19,6 +19,7 @@
  */
 package org.openremote.model.system;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
@@ -39,10 +40,12 @@ public interface StatusResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
+    @Operation(operationId = "getHealthStatus", summary = "Retrieve the health status of the system")
     Map<String, Object> getHealthStatus();
 
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getInfo", summary = "Retrieve the system information")
     Map<String, Object> getInfo();
 }
