@@ -29,6 +29,6 @@ import org.openremote.model.util.TsIgnore;
  */
 @TsIgnore
 public abstract class Alarms {
-    public abstract Long create(Alarm alarm);
+    public abstract Long create(Alarm alarm, List<String> assetIds);
     public abstract void linkAssets(List<String> assetIds, Long alarmId);
 }

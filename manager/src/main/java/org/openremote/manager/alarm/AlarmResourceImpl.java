@@ -100,7 +100,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm) {
+    public SentAlarm createAlarm(RequestParams requestParams, Alarm alarm, List<String> assetIds) {
         if (getUserId() != null) {
             alarm.setSource(MANUAL);
             alarm.setSourceId(getUserId());
@@ -108,7 +108,7 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
             alarm.setSource(CLIENT);
             alarm.setSourceId(getClientId());
         }
-        return mapExceptions(() -> alarmService.sendAlarm(alarm, getUserId()));
+        return mapExceptions(() -> alarmService.sendAlarm(alarm, assetIds, getUserId()));
     }
 
     @Override

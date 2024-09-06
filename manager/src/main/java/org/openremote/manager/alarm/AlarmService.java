@@ -214,7 +214,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Sends an alarm if the given user has access to the alarm realm.
      */
-    public SentAlarm sendAlarm(Alarm alarm, String userId) {
+    public SentAlarm sendAlarm(Alarm alarm, List<String> assetIds, String userId) {
         Objects.requireNonNull(alarm, "Alarm cannot be null");
         Objects.requireNonNull(alarm.getRealm(), "Alarm realm cannot be null");
         Objects.requireNonNull(alarm.getTitle(), "Alarm title cannot be null");
@@ -224,35 +224,30 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         validateRealmAccessibleToUser(userId, alarm.getRealm());
 
-        long timestamp = timerService.getCurrentTimeMillis();
+        Date timestamp = new Date(timerService.getCurrentTimeMillis());
+        SentAlarm sentAlarm = persistenceService.doReturningTransaction(entityManager -> entityManager.merge(new SentAlarm()
+                .setAssigneeId(alarm.getAssigneeId())
+                .setRealm(alarm.getRealm())
+                .setTitle(alarm.getTitle())
+                .setContent(alarm.getContent())
+                .setSeverity(alarm.getSeverity())
+                .setStatus(alarm.getStatus())
+                .setSource(alarm.getSource())
+                .setSourceId(alarm.getSourceId())
+                .setCreatedOn(timestamp)
+                .setLastModified(timestamp)));
 
-        SentAlarm result = persistenceService.doReturningTransaction(entityManager -> {
-            SentAlarm sentAlarm = new SentAlarm()
-                    .setAssigneeId(alarm.getAssigneeId())
-                    .setRealm(alarm.getRealm())
-                    .setTitle(alarm.getTitle())
-                    .setContent(alarm.getContent())
-                    .setSeverity(alarm.getSeverity())
-                    .setStatus(alarm.getStatus())
-                    .setSource(alarm.getSource())
-                    .setSourceId(alarm.getSourceId())
-                    .setCreatedOn(new Date(timestamp))
-                    .setLastModified(new Date(timestamp));
-
-            entityManager.merge(sentAlarm);
-
-            return sentAlarm;
-        });
-
-        if (result != null) {
-            clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
-            if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-                Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
-                sendAssigneeNotification(result, excludeUserIds);
-            }
+        if (assetIds != null && !assetIds.isEmpty()) {
+            linkAssets(assetIds, sentAlarm.getRealm(), sentAlarm.getId());
         }
 
-        return result;
+        clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.CREATE));
+        if (alarm.getSeverity() == Alarm.Severity.HIGH) {
+            Set<String> excludeUserIds = alarm.getSource() == MANUAL ? Set.of(alarm.getSourceId()) : Set.of();
+            sendAssigneeNotification(sentAlarm, excludeUserIds);
+        }
+
+        return sentAlarm;
     }
 
     /**

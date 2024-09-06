@@ -39,7 +39,7 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         this.alarmService = alarmService;
     }
 
-    public Long create(Alarm alarm) {
+    public Long create(Alarm alarm, List<String> assetIds) {
         Alarm.Source source;
 
         if (rulesEngineId.getScope() == GlobalRuleset.class) {
@@ -53,7 +53,7 @@ public class AlarmFacade<T extends Ruleset> extends Alarms {
         alarm.setRealm(rulesEngineId.getRealm().orElseThrow());
         alarm.setSource(source);
 
-        return alarmService.sendAlarm(alarm, null).getId();
+        return alarmService.sendAlarm(alarm, assetIds, null).getId();
     }
 
     public void linkAssets(List<String> assetIds, Long alarmId) {

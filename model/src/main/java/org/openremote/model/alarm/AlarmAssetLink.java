@@ -23,6 +23,7 @@ import org.hibernate.annotations.Formula;
 
 
 import jakarta.persistence.*;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
@@ -82,10 +83,10 @@ public class AlarmAssetLink {
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                "realm='" + realm + '\'' +
-                ", alarmId='" + sentalarmId + '\'' +
-                ", assetId='" + assetId + '\'' +
-                '}';
+                    "realm='" + realm + '\'' +
+                    ", alarmId='" + sentalarmId + '\'' +
+                    ", assetId='" + assetId + '\'' +
+                    '}';
         }
     }
 
@@ -149,10 +150,11 @@ public class AlarmAssetLink {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "id=" + id +
-            ", createdOn=" + createdOn +
-            ", assetName='" + assetName + '\'' +
-            ", parentAssetName='" + parentAssetName + '\'' +
-            '}';
+                "id=" + id +
+                ", createdOn=" + createdOn +
+                ", assetName='" + assetName + '\'' +
+                ", parentAssetName='" + parentAssetName + '\'' +
+                '}';
     }
+
 }

@@ -46,7 +46,7 @@ public interface AlarmResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ALARMS_ROLE})
-    SentAlarm createAlarm(@BeanParam RequestParams requestParams, @RequestBody Alarm alarm);
+    SentAlarm createAlarm(@BeanParam RequestParams requestParams, @RequestBody Alarm alarm, @QueryParam("assetIds") List<String> assetIds);
 
     @DELETE
     @Consumes(APPLICATION_JSON)

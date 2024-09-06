@@ -966,12 +966,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             alarm.setAssigneeId(alarmAction.assigneeId);
             alarm.setSourceId(Long.toString(jsonRuleset.getId()));
-            Alarm finalAlarm = alarm;
 
-            if (!assetIds.isEmpty()) {
-                return new RuleActionExecution(() -> alarmsFacade.linkAssets(assetIds, alarmsFacade.create(finalAlarm)), 0);
-            }
-            return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm), 0);
+            Alarm finalAlarm = alarm;
+            return new RuleActionExecution(() -> alarmsFacade.create(finalAlarm, assetIds), 0);
         }
 
         if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {

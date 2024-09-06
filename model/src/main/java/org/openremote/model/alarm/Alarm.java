@@ -31,6 +31,7 @@ public class Alarm {
         ASSET_RULESET,
         AGENT
     }
+
     public enum Status {
         OPEN,
         ACKNOWLEDGED,
@@ -38,6 +39,7 @@ public class Alarm {
         RESOLVED,
         CLOSED
     }
+
     public enum Severity {
         LOW,
         MEDIUM,
@@ -75,9 +77,7 @@ public class Alarm {
         this.content = content;
         this.severity = severity;
         this.status = Status.OPEN;
-        if (assigneeId != null) {
-            this.assigneeId = assigneeId;
-        }
+        this.assigneeId = assigneeId;
         this.realm = realm;
     }
 
@@ -86,44 +86,56 @@ public class Alarm {
 
     }
 
-    public String getTitle() { return this.title; }
+    public String getTitle() {
+        return this.title;
+    }
 
     public Alarm setTitle(@NotNull String title) {
         this.title = title;
         return this;
     }
 
-    public String getContent() { return this.content; }
+    public String getContent() {
+        return this.content;
+    }
 
     public Alarm setContent(String content) {
         this.content = content;
         return this;
     }
 
-    public Severity getSeverity() { return this.severity; }
+    public Severity getSeverity() {
+        return this.severity;
+    }
 
     public Alarm setSeverity(@NotNull Severity severity) {
         this.severity = severity;
         return this;
     }
 
-    public Status getStatus() { return this.status; }
+    public Status getStatus() {
+        return this.status;
+    }
 
     public Alarm setStatus(@NotNull Status status) {
         this.status = status;
         return this;
     }
 
-    public String getAssigneeId() { return this.assigneeId; }
+    public String getAssigneeId() {
+        return this.assigneeId;
+    }
 
-    public  Alarm setAssigneeId(String assigneeId) {
+    public Alarm setAssigneeId(String assigneeId) {
         this.assigneeId = assigneeId;
         return this;
     }
 
-    public String getRealm() { return this.realm; }
+    public String getRealm() {
+        return this.realm;
+    }
 
-    public  Alarm setRealm(@NotNull String realm) {
+    public Alarm setRealm(@NotNull String realm) {
         this.realm = realm;
         return this;
     }
@@ -148,11 +160,16 @@ public class Alarm {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName()+ "{" +
-                "title=" + this.title + '\'' +
-                ", context=" + this.content +
-                ", severity=" + this.severity +
-                ", status=" + this.status +
+        return getClass().getSimpleName() + "{" +
+                "title='" + title + '\'' +
+                ", content='" + content + '\'' +
+                ", severity=" + severity +
+                ", status=" + status +
+                ", assigneeId='" + assigneeId + '\'' +
+                ", realm='" + realm + '\'' +
+                ", sourceId='" + sourceId + '\'' +
+                ", source=" + source +
                 '}';
     }
+
 }
