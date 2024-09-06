@@ -269,12 +269,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
         String title = String.format("Alarm: %s - %s", alarm.getSeverity(), alarm.getTitle());
         String url = getAlarmNotificationUrl(alarm);
-        String text = getAlarmNotificationText(alarm, url);
+        Map<String, String> content = getAlarmNotificationContent(alarm, url);
 
         Notification email = new Notification()
                 .setName("New Alarm")
                 .setMessage(new EmailNotificationMessage()
-                        .setText(text)
+                        .setHtml(getAlarmNotificationHtml(content))
                         .setSubject(title)
                         .setTo(users.stream()
                                 .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
@@ -285,7 +285,7 @@ public class AlarmService extends RouteBuilder implements ContainerService {
                 .setMessage(
                         new PushNotificationMessage()
                                 .setTitle(title)
-                                .setBody(text)
+                                .setBody(getAlarmNotificationText(content))
                                 .setAction(url == null ? null : new PushNotificationAction(url))
                 )
                 .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
@@ -310,32 +310,43 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         return users;
     }
 
-    private String getAlarmNotificationText(SentAlarm alarm, String url) {
-        List<String> lines = new ArrayList<>();
-        lines.add("Content: " + alarm.getContent());
-        lines.add("Created: " + DateFormat.getDateTimeInstance().format(alarm.getCreatedOn()));
-        lines.add("Source: " + alarm.getSource());
-        lines.add("Severity: " + alarm.getSeverity());
-        lines.add("Status: " + alarm.getStatus());
-
-        List<String> assetLinks = getAssetLinks(alarm.getId(), null, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
-        lines.add("Linked assets: " + (assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks)));
-
-        lines.add("Assignee: " + (TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername()));
-
-        if (!TextUtil.isNullOrEmpty(url)) {
-            lines.add("URL: " + url);
-        }
-
-        return String.join("\n", lines);
-    }
-
     private String getAlarmNotificationUrl(SentAlarm alarm) {
         String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
-        if (defaultHostname == null) {
-            return null;
+        return defaultHostname == null ? null : String.format("https://%s/manager/#/alarms/%s?realm=%s", defaultHostname, alarm.getId(), alarm.getRealm());
+    }
+
+    private Map<String, String> getAlarmNotificationContent(SentAlarm alarm, String url) {
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("Title", alarm.getTitle());
+        result.put("Content", alarm.getContent());
+        result.put("Created", DateFormat.getDateTimeInstance().format(alarm.getCreatedOn()));
+        result.put("Source", alarm.getSource().name());
+        result.put("Severity", alarm.getSeverity().name());
+        result.put("Status", alarm.getStatus().name());
+
+        List<String> assetLinks = getAssetLinks(alarm.getId(), null, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
+        result.put("Linked assets", assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks));
+
+        result.put("Assignee", TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername());
+
+        if (url != null) {
+            result.put("URL", url);
         }
-        return String.format("https://%s/manager/#/alarms/%s?realm=%s", defaultHostname, alarm.getId(), alarm.getRealm());
+
+        return result;
+    }
+
+    private String getAlarmNotificationHtml(Map<String, String> content) {
+        StringBuilder sb = new StringBuilder("<html><head><style>td {vertical-align: top;}</style></head><body><table>");
+        content.forEach((key, value) -> sb.append(String.format("<tr><td><b>%s</b></td><td>%s</td></tr>", key, value.replaceAll("\n", "<br>"))));
+        sb.append("</table><body></html>");
+        return sb.toString();
+    }
+
+    private String getAlarmNotificationText(Map<String, String> content) {
+        StringBuilder sb = new StringBuilder();
+        content.forEach((key, value) -> sb.append(String.format("%s: %s\n", key, value)));
+        return sb.toString();
     }
 
     /**
