@@ -35,6 +35,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> SECURE_MODE = new AttributeDescriptor<>("secureMode", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<String> CLIENT_CERTIFICATE_ALIAS = new AttributeDescriptor<>("certificateAlias", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> RESUME_SESSION = new AttributeDescriptor<>("resumeSession", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> WEBSOCKET_MODE = new AttributeDescriptor<>("websocketMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<String> WEBSOCKET_PATH = new AttributeDescriptor<>("websocketPath", ValueType.TEXT);
@@ -77,6 +78,15 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
 
     public MQTTAgent setSecureMode(boolean secureMode) {
         getAttributes().getOrCreate(SECURE_MODE).setValue(secureMode);
+        return this;
+    }
+
+    public Optional<String> getCertificateAlias() {
+        return getAttributes().getValue(CLIENT_CERTIFICATE_ALIAS);
+    }
+
+    public MQTTAgent setCertificateAlias(String certificateAlias) {
+        getAttributes().getOrCreate(CLIENT_CERTIFICATE_ALIAS).setValue(certificateAlias);
         return this;
     }
 
