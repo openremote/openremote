@@ -236,4 +236,73 @@ export const mapAssetCardStyle = css`
                     min-height: 134px;
                 }
             }
+`;
+
+export const mapAssetLegendStyle = css`
+            :host {
+                --internal-or-map-asset-legend-background-color: var(--or-map-asset-card-background-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
+                --internal-or-map-asset-legend-header-height: var(--or-map-asset-card-header-height, calc(${unsafeCSS(DefaultHeaderHeight)} - 10px));
+              
+                display: block;
+            }
+
+            #legend {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            #legend-title {
+                height: var(--internal-or-map-asset-legend-header-height);
+                background-color: var(--internal-or-map-asset-legend-background-color);
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                line-height: var(--internal-or-map-asset-legend-header-height:);
+                border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};
+                z-index: 99999;
+                padding-left: 10px;
+                padding-right: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: 3px;
+            }
+    
+            #legend-content {
+                -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                background-color: var(--internal-or-map-asset-legend-background-color);
+                margin-top: 10px;
+                border-radius: 3px;
+                padding: 10px;
+            }
+            
+            #title {
+                font-weight: 500;
+            }
+    
+            #asset-legend {
+                display: flex;
+                align-items: center;
+            }   
+    
+            #asset-label {
+                margin-left: 5px;
+            }
+            
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+            }
+            
+            li {
+                display: flex;
+                line-height: 30px;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+}
 `
