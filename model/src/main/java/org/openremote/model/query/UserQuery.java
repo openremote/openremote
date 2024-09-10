@@ -137,6 +137,7 @@ public class UserQuery {
     /**
      * OR condition is assumed between values (AND filtering can be applied by the caller on the results)
      */
+    public StringPredicate[] clientRoles;
     public StringPredicate[] realmRoles;
     public Boolean serviceUsers;
     public Integer limit;
@@ -173,6 +174,11 @@ public class UserQuery {
 
     public UserQuery attributes(AttributeValuePredicate...attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public UserQuery clientRoles(StringPredicate...clientRoles) {
+        this.clientRoles = clientRoles;
         return this;
     }
 
@@ -216,6 +222,7 @@ public class UserQuery {
             ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
             ", serviceUsers=" + serviceUsers +
             ", attributes=" + (attributes != null ? Arrays.toString(attributes) : "null") +
+            ", clientRoles=" + (clientRoles != null ? Arrays.toString(clientRoles) : "null") +
             ", realmRoles=" + (realmRoles != null ? Arrays.toString(realmRoles) : "null") +
             ", limit=" + limit +
             ", offset=" + offset +

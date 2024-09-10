@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.temporal.ChronoUnit.*;
+import static java.util.Map.entry;
 import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
 import static org.openremote.model.notification.Notification.HEADER_SOURCE;
 import static org.openremote.model.notification.Notification.Source.*;
@@ -119,7 +120,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     LOG.finest("Processing: " + notification.getName());
 
                     if (notification.getMessage() == null) {
-                        throw new NotificationProcessingException(MISSING_MESSAGE, "Notification message must be set");
+                        throw new NotificationProcessingException(MISSING_CONTENT, "Notification message must be set");
                     }
 
                     Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Notification.Source.class);
@@ -273,16 +274,16 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     public void sendNotificationAsync(Notification notification, Notification.Source source, String sourceId) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Notification.HEADER_SOURCE, source);
-        headers.put(Notification.HEADER_SOURCE_ID, sourceId);
+        Map<String, Object> headers = Map.ofEntries(
+            entry(Notification.HEADER_SOURCE, source),
+            entry(Notification.HEADER_SOURCE_ID, sourceId));
         messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).send();
     }
 
     public boolean sendNotification(Notification notification, Notification.Source source, String sourceId) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Notification.HEADER_SOURCE, source);
-        headers.put(Notification.HEADER_SOURCE_ID, sourceId);
+        Map<String, Object> headers = Map.ofEntries(
+            entry(Notification.HEADER_SOURCE, source),
+            entry(Notification.HEADER_SOURCE_ID, sourceId));
         return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
     }
 
@@ -328,6 +329,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             IntStream.rangeClosed(1, parameters.size())
                     .forEach(i -> query.setParameter(i, parameters.get(i-1)));
             return query.getResultList();
+
         });
     }
 
