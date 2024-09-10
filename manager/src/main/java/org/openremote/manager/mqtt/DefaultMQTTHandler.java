@@ -430,7 +430,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
         Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        LOG.finer("Publishing to client inbound queue: " + attributeEvent);
+        LOG.finer(() -> "Publishing to client inbound queue: " + attributeEvent);
         messageBrokerService.getFluentProducerTemplate()
             .withHeaders(headers)
             .withBody(attributeEvent)
