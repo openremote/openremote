@@ -19,6 +19,7 @@
  */
 package org.openremote.model.datapoint;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.*;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -26,7 +27,7 @@ import org.openremote.model.http.RequestParams;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Predicted Datapoint")
+@Tag(name = "Asset Predicted Datapoint", description = "Operations on asset predicted datapoints")
 @Path("asset/predicted")
 public interface AssetPredictedDatapointResource {
     /**
@@ -40,6 +41,7 @@ public interface AssetPredictedDatapointResource {
     @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getPredictedDatapoints", summary = "Retrieve the predicted datapoints of an asset attribute")
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                                @PathParam("assetId") String assetId,
                                                @PathParam("attributeName") String attributeName,
@@ -48,6 +50,7 @@ public interface AssetPredictedDatapointResource {
     @PUT
     @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "writePredictedDatapoints", summary = "Write the predicted datapoints of an asset attribute")
     void writePredictedDatapoints(@BeanParam RequestParams requestParams,
                                   @PathParam("assetId") String assetId,
                                   @PathParam("attributeName") String attributeName,

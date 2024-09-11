@@ -19,6 +19,7 @@
  */
 package org.openremote.model.security;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
@@ -36,12 +37,13 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * TODO Relax permissions to allow regular users to maintain their own realm
  */
-@Tag(name = "Realm")
+@Tag(name = "Realm", description = "Operations on realms")
 @Path("realm")
 public interface RealmResource {
 
     @GET
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAllRealms", summary = "Retrieve all realms")
     Realm[] getAll(@BeanParam RequestParams requestParams);
 
     /**
@@ -50,6 +52,7 @@ public interface RealmResource {
     @GET
     @Path("accessible")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAccessibleRealms", summary = "Retrieve accessible realms for the authenticated user")
     Realm[] getAccessible(@BeanParam RequestParams requestParams);
 
     /**
@@ -58,6 +61,7 @@ public interface RealmResource {
     @GET
     @Path("{name}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getRealm", summary = "Retrieve details about the currently authenticated and active realm")
     Realm get(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
 
     @PUT
@@ -65,17 +69,20 @@ public interface RealmResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "updateRealm", summary = "Update a realm")
     void update(@BeanParam RequestParams requestParams, @PathParam("name") String realmName, @Valid Realm realm);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "createRealm", summary = "Create a new realm")
     void create(@BeanParam RequestParams requestParams, @Valid Realm realm);
 
     @DELETE
     @Path("{name}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Operation(operationId = "deleteRealm", summary = "Delete a realm")
     void delete(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
 }

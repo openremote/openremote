@@ -20,6 +20,7 @@
 package org.openremote.model.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapRealmConfig;
@@ -29,7 +30,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.Map;
 
-@Tag(name = "Map")
+@Tag(name = "Map", description = "Operations on maps")
 @Path("map")
 public interface MapResource {
 
@@ -37,7 +38,9 @@ public interface MapResource {
      * Saves the settings for maps
      */
     @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "saveSettings", summary = "Update map settings")
     Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig);
 
     /**
@@ -46,6 +49,7 @@ public interface MapResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "getSettings", summary = "Retrieve the style used for Mapbox GL")
     ObjectNode getSettings(@BeanParam RequestParams requestParams);
 
     /**
@@ -55,6 +59,7 @@ public interface MapResource {
     @GET
     @Path("js")
     @Produces(MediaType.APPLICATION_JSON)
+    @Operation(operationId = "getSettingsJs", summary = "Retrieve the tileJSON object used for Mapbox GL")
     ObjectNode getSettingsJs(@BeanParam RequestParams requestParams);
 
     /**
@@ -63,5 +68,6 @@ public interface MapResource {
     @GET
     @Produces("application/vnd.mapbox-vector-tile")
     @Path("tile/{zoom}/{column}/{row}")
+    @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
 }
