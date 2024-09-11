@@ -38,7 +38,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should
  * still use {@link AssetResource}.
  */
-@Tag(name = "Agent")
+@Tag(name = "Agent", description = "Operations on agents")
 @Path("agent")
 public interface AgentResource {
 

@@ -31,7 +31,7 @@ import java.io.IOException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Configuration")
+@Tag(name = "Configuration", description = "Operations on configurations")
 @Path("configuration")
 public interface ConfigurationResource {
 

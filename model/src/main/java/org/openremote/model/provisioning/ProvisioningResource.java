@@ -28,7 +28,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Provisioning")
+@Tag(name = "Provisioning", description = "Operations on provisioning configurations")
 @Path("provisioning")
 public interface ProvisioningResource {
 

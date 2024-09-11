@@ -27,7 +27,7 @@ import org.openremote.model.http.RequestParams;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Predicted Datapoint")
+@Tag(name = "Asset Predicted Datapoint", description = "Operations on asset predicted datapoints")
 @Path("asset/predicted")
 public interface AssetPredictedDatapointResource {
     /**

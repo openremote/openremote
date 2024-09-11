@@ -9,7 +9,7 @@ import org.openremote.model.http.RequestParams;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Gateway")
+@Tag(name = "Gateway", description = "Operations on gateways")
 @Path("gateway")
 public interface GatewayServiceResource {
 

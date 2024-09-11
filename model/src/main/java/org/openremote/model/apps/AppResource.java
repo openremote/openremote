@@ -28,7 +28,7 @@ import jakarta.ws.rs.core.Response;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "UI Apps")
+@Tag(name = "UI Apps", description = "Operations on UI apps")
 @Path("apps")
 public interface AppResource {
 

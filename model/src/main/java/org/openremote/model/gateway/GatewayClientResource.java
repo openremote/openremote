@@ -35,7 +35,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Resource for managing the connection to a central manager
  */
-@Tag(name = "Gateway")
+@Tag(name = "Gateway", description = "Operations on gateways")
 @Path("gateway")
 public interface GatewayClientResource {
 

@@ -7,7 +7,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Flow")
+@Tag(name = "Flow", description = "Operations on flows")
 @Path("flow")
 public interface FlowResource {
     @GET

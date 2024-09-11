@@ -37,7 +37,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * TODO Relax permissions to allow regular users to maintain their own realm
  */
-@Tag(name = "Realm")
+@Tag(name = "Realm", description = "Operations on realms")
 @Path("realm")
 public interface RealmResource {
 

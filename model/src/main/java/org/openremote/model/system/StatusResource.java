@@ -31,7 +31,7 @@ import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Status")
+@Tag(name = "Status", description = "Operations on system status")
 @Path("")
 public interface StatusResource {
 

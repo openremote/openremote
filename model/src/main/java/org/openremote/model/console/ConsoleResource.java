@@ -31,7 +31,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Console")
+@Tag(name = "Console", description = "Operations on consoles")
 @Path("console")
 public interface ConsoleResource {
 

@@ -35,7 +35,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * Resource for handling model requests and also providing server side validation of {@link Asset}s
  */
 // TODO: Implement generic Asset<?> validation for assets and agents
-@Tag(name = "Asset Model")
+@Tag(name = "Asset Model", description = "Operations on asset model resources")
 @Path("model")
 public interface AssetModelResource {
 

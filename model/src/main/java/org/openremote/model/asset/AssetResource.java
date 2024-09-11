@@ -67,7 +67,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>{@link #writeAttributeValue}</li>
  * </ul>
  */
-@Tag(name = "Asset")
+@Tag(name = "Asset", description = "Operations on assets")
 @Path("asset")
 public interface AssetResource {
 

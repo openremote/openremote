@@ -11,7 +11,7 @@ import org.openremote.model.query.DashboardQuery;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Dashboard")
+@Tag(name = "Dashboard", description = "Operations on dashboards")
 @Path("dashboard")
 public interface DashboardResource {
 

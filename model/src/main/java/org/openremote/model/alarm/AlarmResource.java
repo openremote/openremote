@@ -32,7 +32,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Alarm")
+@Tag(name = "Alarm", description = "Operations on alarms")
 @Path("alarm")
 public interface AlarmResource {
 

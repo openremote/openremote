@@ -35,7 +35,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
  * Manage users in realms and get info of current user.
  */
 // TODO Relax permissions to allow regular users to maintain their own realm
-@Tag(name = "User")
+@Tag(name = "User", description = "Operations on users")
 @Path("user")
 public interface UserResource {
 

@@ -32,7 +32,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Rule")
+@Tag(name = "Rule", description = "Operations on rules")
 @Path("rules")
 public interface RulesResource {
 

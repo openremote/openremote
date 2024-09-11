@@ -31,7 +31,7 @@ import java.util.List;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Syslog")
+@Tag(name = "Syslog", description = "Operations on syslog events")
 @Path("syslog")
 public interface SyslogResource {
 

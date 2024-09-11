@@ -29,7 +29,7 @@ import jakarta.ws.rs.*;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Notification")
+@Tag(name = "Notification", description = "Operations on notifications")
 @Path("notification")
 public interface NotificationResource {
 

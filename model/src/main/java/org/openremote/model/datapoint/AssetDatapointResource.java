@@ -31,7 +31,7 @@ import jakarta.ws.rs.container.Suspended;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Datapoint")
+@Tag(name = "Asset Datapoint", description = "Operations on asset datapoints")
 @Path("asset/datapoint")
 public interface AssetDatapointResource {
 
