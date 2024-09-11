@@ -196,6 +196,7 @@
   "noAttributesToShow": "No attributes found",
   "noAttributeConnected": "No attribute connected",
   "noAttributesConnected": "No attributes connected",
+  "noAttributeDataTimeout": "Data request timed out",
   "noDatapointsOrRuleStateAttributes": "No attributes with 'rule state', 'store data points', or 'agent link' configuration item found",
   "copy": "Copy",
   "paste": "Paste",
