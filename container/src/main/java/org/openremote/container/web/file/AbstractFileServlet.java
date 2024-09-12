@@ -112,6 +112,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author Bauke Scholtz
  * @since 2.2
  */
+// TODO: Replace this with a standard file servlet
 public abstract class AbstractFileServlet extends HttpServlet {
 
 	// Constants ------------------------------------------------------------------------------------------------------

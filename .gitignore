@@ -59,3 +59,4 @@ local.properties
 *.tsbuildinfo
 *~
 *.tar.gz
+/balena/manager-build/

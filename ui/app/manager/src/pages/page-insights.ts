@@ -112,7 +112,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .fullscreen="${this._fullscreen}" .selectedId="${this._dashboardId}"
                                       .realm="${manager.displayRealm}" .userId="${this._userId}" .readonly="${!manager.hasRole(ClientRole.WRITE_INSIGHTS)}"
                                       @selected="${(event: CustomEvent) => { this._dashboardId = (event.detail as Dashboard)?.id }}"
-                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(true); }}"
+                                      @editToggle="${(event: CustomEvent) => { this._editMode = event.detail; this._fullscreen = true; this._updateRoute(false); }}"
                                       @fullscreenToggle="${(event: CustomEvent) => { this._fullscreen = event.detail; }}"
                 ></or-dashboard-builder>
             </div>

@@ -42,6 +42,11 @@ public enum SyslogCategory {
         "NotificationService",
         "FCMDeliveryService"
     ),
+    ALARM(
+            "ALARM",
+            false,
+            "AlarmService"
+    ),
     RULES(
         "Rules",
         true,

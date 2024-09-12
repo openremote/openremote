@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -53,6 +54,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.model.Constants.*;
@@ -103,8 +105,8 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -112,6 +114,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 // Route messages destined for MQTT clients
                 from(CLIENT_OUTBOUND_QUEUE)
                     .routeId("ClientOutbound-DefaultMQTTHandler")
+                    .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
                     .filter(and(
                         header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
                         body().isInstanceOf(TriggeredEventSubscription.class)
@@ -574,14 +577,14 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
             if (isAssetTopic) {
                 if (ev instanceof AssetEvent) {
-                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
                 if (ev instanceof AttributeEvent attributeEvent) {
                     if (isValueSubscription) {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
+                        publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
                     } else {
-                        mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                        publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                     }
                 }
             }

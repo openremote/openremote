@@ -229,11 +229,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     .logExhausted(false)
                     .logStackTrace(false)
                     .process(exchange -> {
-                        AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                         Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
 
                         if (exception instanceof RejectedExecutionException || (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage()))) {
-                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this event is full");
+                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this message is full");
                             if (queueFullCounter != null) {
                                 queueFullCounter.increment();
                             }
@@ -246,15 +245,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             return;
                         }
 
-                        StringBuilder error = new StringBuilder("Error processing from ");
-
-                        if (event.getSource() != null) {
-                            error.append(event.getSource());
-                        } else {
-                            error.append("N/A");
-                        }
-
-                        error.append(": ").append(event.toStringWithValueType());
+                        Object body = exchange.getIn().getBody();
+                        StringBuilder error = new StringBuilder("Route '")
+                            .append(exchange.getFromRouteId())
+                            .append("' error processing message: ")
+                            .append(body);
 
                         if (exception instanceof AssetProcessingException processingException) {
                             error.append(" ").append(" - ").append(processingException.getMessage());
@@ -322,21 +317,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 .process(exchange -> {
                     AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                     LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: processor=" + processorCount + ", event=" + event);
-                    long startMillis = System.currentTimeMillis();
                     boolean processed = processAttributeEvent(event);
-
-                    // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
-                    // is not updated so tests can't then detect the problem.
-                    lastProcessedEventTimestamp = startMillis;
-
-                    long processingMillis = System.currentTimeMillis() - startMillis;
-
-                    if (processingMillis > 50) {
-                        LOG.log(System.Logger.Level.INFO, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: processor=" + processorCount + ", event=" + event);
-                    } else {
-                        LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processed in " + processingMillis + "ms: processor=" + processorCount + ", event=" + event);
-                    }
-
                     exchange.getIn().setBody(processed);
                 });
         });
@@ -375,6 +356,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * handles the event then the {@link Attribute} value is updated in the DB with the new event value and timestamp.
      */
     protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException {
+
+        long startMillis = System.currentTimeMillis();
+        // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
+        // is not updated so tests can't then detect the problem.
+        lastProcessedEventTimestamp = startMillis;
 
         // TODO: Get asset lock so it cannot be modified during event processing
         persistenceService.doTransaction(em -> {
@@ -455,6 +441,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     );
                 }
             }
+
+            long processingMillis = System.currentTimeMillis() - startMillis;
+
+            if (processingMillis > 50) {
+                LOG.log(System.Logger.Level.INFO, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
+            } else {
+                LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
+            }
         });
 
         return true;
@@ -467,7 +461,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected int getEventProcessingRouteNumber(String assetId) {
-        int charCode = Character.codePointAt(assetId, 0);
+        int charCode = Character.codePointAt(assetId, 0) + Character.codePointAt(assetId, 1);
         return (charCode % eventProcessingThreadCount) + 1;
     }
 

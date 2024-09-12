@@ -148,7 +148,7 @@ export class PageUsers extends Page<AppStateKeyed> {
 
                 .breadcrumb-clickable {
                     cursor: pointer;
-                    color: ${unsafeCSS(DefaultColor4)}
+                    color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
                 }
 
                 .breadcrumb-arrow {

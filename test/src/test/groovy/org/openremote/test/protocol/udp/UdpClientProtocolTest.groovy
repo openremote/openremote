@@ -122,7 +122,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
             new Attribute<>("echoHello", TEXT)
                 .addMeta(
                     new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                        .setWriteValue('Hello {$value};'))
+                        .setWriteValue('Hello %VALUE%;'))
                 ),
             new Attribute<>("echoWorld", TEXT)
                 .addMeta(

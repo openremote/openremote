@@ -91,6 +91,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
+    public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -250,6 +251,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User getUserByUsername(String realm, String username) {
+        if (username.length() > 255) {
+            // Keycloak has a 255 character limit on clientId
+            username = username.substring(0, 254);
+        }
+        username = username.toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
         return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
@@ -260,6 +266,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // Force lowercase username
             if (user.getUsername() != null) {
                 user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
+            }
+            if (user.getUsername().length() > 255) {
+                // Keycloak has a 255 character limit on clientId which affects service users
+                user.setUsername(user.getUsername().substring(0, 254));
             }
 
             if (!user.isServiceAccount() && allowUpdate) {
@@ -976,11 +986,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         client.setName("OpenRemote");
         client.setPublicClient(true);
 
-        if (container.isDevMode()) {
-            // We need direct access for integration tests
+        boolean enableDirectAccessGrant = getBoolean(container.getConfig(), OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT, container.isDevMode());
+
+        if (enableDirectAccessGrant) {
+            // We need direct access for integration/load tests
             LOG.info("### Allowing direct access grants for client id '" + client.getClientId() + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
+        }
 
+        if (container.isDevMode()) {
             // Allow any web origin (this will add CORS headers to token requests etc.)
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
