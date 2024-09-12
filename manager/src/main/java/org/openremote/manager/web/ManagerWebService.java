@@ -63,6 +63,8 @@ import java.util.regex.Pattern;
 import static io.undertow.util.RedirectBuilder.redirect;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static jakarta.ws.rs.core.UriBuilder.fromUri;
+import static org.openremote.container.persistence.PersistenceService.OR_STORAGE_DIR;
+import static org.openremote.container.persistence.PersistenceService.OR_STORAGE_DIR_DEFAULT;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
@@ -98,6 +100,7 @@ public class ManagerWebService extends WebService {
     protected boolean initialised;
     protected Path builtInAppDocRoot;
     protected Path customAppDocRoot;
+    protected Path storageDir;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
@@ -114,6 +117,7 @@ public class ManagerWebService extends WebService {
         super.init(container);
 
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
+        storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
 
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
@@ -214,6 +218,7 @@ public class ManagerWebService extends WebService {
         }
 
         PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
+        HttpHandler managerConfigFileHandler = createFileHandler(container, storageDir, null);
 
         // Serve deployment files
         if (Files.isDirectory(builtInAppDocRoot)) {
@@ -248,6 +253,18 @@ public class ManagerWebService extends WebService {
                                 new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
                             }));
         }
+
+        // Manager_config.json handler to be served from OR_STORAGE_DIR
+        getRequestHandlers().add(
+            new RequestHandler(
+                "manager_config.json request handler",
+                exchange -> "/manager_config.json".equals(exchange.getRelativePath()),
+                exchange -> {
+                    LOG.warning("Using manager_config.json request handler");
+                    managerConfigFileHandler.handleRequest(exchange);
+                }
+            )
+        );
 
         if (apiHandler != null) {
             getRequestHandlers().add(pathStartsWithHandler("REST API Handler", API_PATH, apiHandler));
