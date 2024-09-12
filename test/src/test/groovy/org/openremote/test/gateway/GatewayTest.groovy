@@ -68,7 +68,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def executorService = container.getExecutorService()
+        def executorService = container.getScheduledExecutor()
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
@@ -1054,7 +1054,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
         def gatewayClientService = container.getService(GatewayClientService)
         def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
-        def client = WebTargetBuilder.createClient(container.getExecutorService())
+        def client = WebTargetBuilder.createClient(container.getScheduledExecutor())
         def tunnelInfo = new GatewayTunnelInfo(
                 "",
                 UniqueIdentifierGenerator.generateId(),

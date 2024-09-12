@@ -37,10 +37,10 @@ import org.apache.camel.spi.StreamCachingStrategy;
 import org.apache.camel.spi.ThreadPoolFactory;
 import org.apache.camel.spi.ThreadPoolProfile;
 import org.apache.camel.support.DefaultRegistry;
+import org.apache.camel.support.DefaultThreadPoolFactory;
 import org.apache.camel.support.SimpleRegistry;
 import org.apache.camel.util.StringHelper;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
-import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -75,42 +74,23 @@ public class MessageBrokerService implements ContainerService {
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
 
         // Not using InstrumentedThreadPoolFactory directly as it only uses the ThreadPoolProfile ID for naming
-        ThreadPoolFactory threadPoolFactory = new ThreadPoolFactory() {
+        ThreadPoolFactory threadPoolFactory = new DefaultThreadPoolFactory() {
             private static final AtomicLong COUNTER = new AtomicLong();
 
             @Override
-            public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
-                // This is an unlimited pool used probably only by multicast aggregation
-                ExecutorService executorService = new ContainerExecutor(
-                    getExecutorName("CachedPool", threadFactory),
-                    1,
-                    Integer.MAX_VALUE,
-                    10,
-                    -1,
-                    new ThreadPoolExecutor.CallerRunsPolicy());
-
-// Disabled as not very useful for SEDA components
-//                if (meterRegistry != null) {
-//                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name("instrumented-delegate-"));
-//                }
-
-                return executorService;
-            }
-
-            @Override
             public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
-                // This pool is used by SEDA consumers, so the endpoint parameters define the pool and queue sizes
-                ExecutorService executorService = new ContainerExecutor(
-                    getExecutorName("Pool", threadFactory),
-                    profile.getPoolSize(),
-                    profile.getMaxPoolSize(),
-                    profile.getKeepAliveTime(),
-                    profile.getMaxQueueSize(),
-                    profile.getRejectedExecutionHandler()
-                );
+
+                ExecutorService executorService;
+
+                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
+                if (profile.isDefaultProfile()) {
+                    executorService = container.getScheduledExecutor();
+                } else {
+                    executorService = super.newThreadPool(profile, threadFactory);
+                }
 
                 // Want to instrument pools that use defaultThreadPool profile (ProducerTemplate and multiple consumer SEDA endpoints)
-                if (meterRegistry != null && profile.isDefaultProfile() != null && profile.isDefaultProfile()) {
+                if (meterRegistry != null) {
                     String name = getExecutorName("Pool", threadFactory);
                     name = "Pool".equals(name) ? profile.getId() : name;
                     executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));

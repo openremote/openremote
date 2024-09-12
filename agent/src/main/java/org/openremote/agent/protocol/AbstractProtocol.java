@@ -71,7 +71,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     public void start(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();

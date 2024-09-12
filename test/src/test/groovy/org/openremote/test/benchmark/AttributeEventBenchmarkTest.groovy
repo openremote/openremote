@@ -107,7 +107,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         startTime = System.currentTimeMillis()
         for (i in 1..eventCount) {
             topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
-            def payload = "i"
+            def payload = i.toString()
             client.sendMessage(new MQTTMessage<String>(topic, payload))
         }
 

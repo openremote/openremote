@@ -68,7 +68,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
 
     public AbstractNettyIOServer() {
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.SCHEDULED_EXECUTOR;
     }
 
     @Override

@@ -106,7 +106,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
@@ -157,7 +157,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }

@@ -80,7 +80,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         persistenceService = container.getService(PersistenceService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
     }
 
     @Override

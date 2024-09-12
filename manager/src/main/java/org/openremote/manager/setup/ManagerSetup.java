@@ -76,7 +76,7 @@ public class ManagerSetup implements Setup {
 
     public ManagerSetup(Container container) {
         this.timerService = container.getService(TimerService.class);
-        this.executorService = container.getExecutorService();
+        this.executorService = container.getScheduledExecutor();
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);

@@ -24,6 +24,7 @@ import org.openremote.model.util.TsIgnore;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 @TsIgnore
@@ -40,7 +41,9 @@ public interface Container {
 
     ContainerService[] getServices();
 
-    ScheduledExecutorService getExecutorService();
+    ScheduledExecutorService getScheduledExecutor();
+
+    ExecutorService getExecutor();
 
     <T extends ContainerService> Collection<T> getServices(Class<T> type);
 

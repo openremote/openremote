@@ -87,7 +87,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }

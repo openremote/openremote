@@ -86,7 +86,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         persistenceService = container.getService(PersistenceService.class);

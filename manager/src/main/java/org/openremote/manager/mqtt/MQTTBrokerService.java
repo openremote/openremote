@@ -142,7 +142,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 

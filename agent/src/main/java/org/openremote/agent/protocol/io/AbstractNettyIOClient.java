@@ -157,7 +157,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
     protected AbstractNettyIOClient() {
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.SCHEDULED_EXECUTOR;
     }
 
     @Override

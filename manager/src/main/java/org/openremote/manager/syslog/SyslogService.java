@@ -77,7 +77,7 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
 
         if (container.hasService(ClientEventService.class) && container.hasService(PersistenceService.class)) {
             LOG.info("Syslog service enabled");

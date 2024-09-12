@@ -31,21 +31,17 @@ public class ContainerExecutor extends ThreadPoolExecutor {
     protected static final Logger LOG = Logger.getLogger(ContainerExecutor.class.getName());
     protected String name;
 
-    /**
-     * @param blockingQueueCapacity Set to <code>-1</code> if a {@link SynchronousQueue} should be used.
-     */
     public ContainerExecutor(String name,
                              int corePoolSize,
                              int maximumPoolSize,
                              long keepAliveSeconds,
-                             int blockingQueueCapacity,
                              RejectedExecutionHandler rejectedExecutionHandler) {
         super(
             corePoolSize,
             maximumPoolSize,
             keepAliveSeconds,
             TimeUnit.SECONDS,
-            blockingQueueCapacity == -1 ? new SynchronousQueue<>() : new ArrayBlockingQueue<>(blockingQueueCapacity),
+            new SynchronousQueue<Runnable>(),
             new ContainerThreadFactory(name),
             // Wrap rejected handler to add logging
             (r, executor) -> {

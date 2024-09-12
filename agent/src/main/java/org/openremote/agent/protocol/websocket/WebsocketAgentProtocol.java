@@ -195,7 +195,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }

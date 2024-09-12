@@ -58,7 +58,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     
     public KNXConnection(String gatewayAddress, String bindAddress, Integer gatewayPort, String messageSourceAddress, boolean routingMode, boolean natMode) {
         this.gatewayAddress = gatewayAddress;
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.SCHEDULED_EXECUTOR;
         this.routingMode = routingMode;
         this.bindAddress = bindAddress;
         this.gatewayPort = gatewayPort;

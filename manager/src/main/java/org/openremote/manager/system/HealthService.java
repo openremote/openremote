@@ -101,7 +101,7 @@ public class HealthService implements ContainerService {
             // this port can be exposed to the host but not to the public
             metricsServer = new HTTPServer.Builder()
                 .withPort(metricsPort)
-                .withExecutorService(container.getExecutorService())
+                .withExecutorService(container.getScheduledExecutor())
                 .build();
 
             // Alternative servlet option to run on existing undertow but would require oauth on prometheus scraper

@@ -225,7 +225,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         assetStorageService = container.getService(AssetStorageService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
 
         if (initDone) {
             return;
@@ -237,7 +237,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 container.getService(ManagerIdentityService.class),
                 assetStorageService,
                 this,
-                container.getExecutorService())
+                container.getScheduledExecutor())
         );
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);

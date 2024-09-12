@@ -811,7 +811,7 @@ class VelbusBasicTest extends Specification {
 //        def client = new VelbusSerialMessageProcessor("COM6", 38400);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
 
-        def scheduledTasksExecutor = new ContainerScheduledExecutor("Scheduled task", Container.OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT)
+        def scheduledTasksExecutor = new ContainerScheduledExecutor("Scheduled task", Container.OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT)
         network = new VelbusNetwork(messageProcessor,  scheduledTasksExecutor, null)
 
         loadDevicePackets(VelbusBasicTest.messageProcessor)

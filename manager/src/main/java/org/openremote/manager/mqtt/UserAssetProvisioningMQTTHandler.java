@@ -156,7 +156,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             int minThreadCount = getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MIN, OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT);
             int maxThreadCount = Math.max(minThreadCount, getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MAX, OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT));
 
-            provisioningExecutorService = new ContainerExecutor("AutoProvisioningPool", minThreadCount, maxThreadCount, 60, -1, new ThreadPoolExecutor.CallerRunsPolicy());
+            provisioningExecutorService = new ContainerExecutor("AutoProvisioningPool", minThreadCount, maxThreadCount, 60L, new ThreadPoolExecutor.CallerRunsPolicy());
         }
     }
 
@@ -242,18 +242,12 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         // Offload messages to the thread pool to improve processing rate
-        try {
-            provisioningExecutorService.submit(() -> {
-                if (!connection.getTransportConnection().isOpen()) {
-                    // Drop provisioning requests for closed connections
-                    LOG.fine(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
-                    return;
-                }
-                this.processProvisioningRequest(connection, topic, body);
-            });
-        } catch (RejectedExecutionException e) {
-            publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.SERVER_BUSY), MqttQoS.AT_MOST_ONCE);
+        if (!connection.getTransportConnection().isOpen()) {
+            // Drop provisioning requests for closed connections
+            LOG.fine(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
+            return;
         }
+        this.processProvisioningRequest(connection, topic, body);
     }
 
     @Override

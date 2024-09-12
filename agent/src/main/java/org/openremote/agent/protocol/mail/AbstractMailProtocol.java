@@ -64,7 +64,7 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         Optional<Boolean> startTLS = getAgent().getStartTLS();
 
         MailClientBuilder clientBuilder = new MailClientBuilder(
-            container.getExecutorService(),
+            container.getScheduledExecutor(),
             getAgent().getProtocol().orElseThrow(),
             getAgent().getHost().orElseThrow(),
             getAgent().getPort().orElseThrow()

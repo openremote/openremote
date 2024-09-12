@@ -91,7 +91,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         assetDatapointService = container.getService(AssetDatapointService.class);
         persistenceService = container.getService(PersistenceService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
     }
 
     @Override

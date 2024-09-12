@@ -165,7 +165,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         MeterRegistry meterRegistry = container.getMeterRegistry();
 
         if (meterRegistry != null) {

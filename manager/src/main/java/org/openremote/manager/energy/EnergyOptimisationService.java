@@ -114,7 +114,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
     }
 
     @Override

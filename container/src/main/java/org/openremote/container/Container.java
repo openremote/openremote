@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.prometheus.client.CollectorRegistry;
+import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
@@ -33,8 +34,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -57,9 +57,14 @@ import static org.openremote.container.util.MapAccess.getInteger;
 public class Container implements org.openremote.model.Container {
 
     public static final System.Logger LOG = System.getLogger(Container.class.getName());
-    public static ScheduledExecutorService EXECUTOR_SERVICE;
-    public static final String OR_SCHEDULED_TASKS_THREADS_MAX = "OR_SCHEDULED_TASKS_THREADS_MAX";
-    public static final int OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static ScheduledExecutorService SCHEDULED_EXECUTOR;
+    public static ExecutorService EXECUTOR;
+    public static final String OR_SCHEDULED_EXECUTOR_THREADS = "OR_SCHEDULED_EXECUTOR_THREADS";
+    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = 1;
+    public static final String OR_EXECUTOR_THREADS_MIN = "OR_EXECUTOR_THREADS_MIN";
+    public static final String OR_EXECUTOR_THREADS_MAX = "OR_EXECUTOR_THREADS_MAX";
+    public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Runtime.getRuntime().availableProcessors();
+    public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors()*10;
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
     protected MeterRegistry meterRegistry;
@@ -106,15 +111,20 @@ public class Container implements org.openremote.model.Container {
             meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
-        int scheduledTasksThreadsMax = getInteger(
+        int scheduledExecutorThreads = getInteger(
             getConfig(),
-            OR_SCHEDULED_TASKS_THREADS_MAX,
-            OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
+            OR_SCHEDULED_EXECUTOR_THREADS,
+            OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
 
-        EXECUTOR_SERVICE = new ContainerScheduledExecutor("Scheduled task", scheduledTasksThreadsMax);
+        int executorThreadsMin = getInteger(getConfig(), OR_EXECUTOR_THREADS_MIN, OR_EXECUTOR_THREADS_MIN_DEFAULT);
+        int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
+
+        SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
+        EXECUTOR = new ContainerExecutor("ContainerExecutor", executorThreadsMin, executorThreadsMax, 60L, new ThreadPoolExecutor.CallerRunsPolicy());
 
         if (meterRegistry != null) {
-            EXECUTOR_SERVICE = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR_SERVICE, "ContainerExecutorService");
+            SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR, "ContainerScheduledExecutor");
+            EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR, "ContainerExecutor");
         }
 
         // Any log handlers of the root logger that are container services must be registered
@@ -191,7 +201,7 @@ public class Container implements org.openremote.model.Container {
 
         try {
             LOG.log(INFO, "Cancelling scheduled tasks");
-            EXECUTOR_SERVICE.shutdown();
+            SCHEDULED_EXECUTOR.shutdown();
         } catch (Exception e) {
             LOG.log(WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
         }
@@ -283,7 +293,12 @@ public class Container implements org.openremote.model.Container {
     }
 
     @Override
-    public ScheduledExecutorService getExecutorService() {
-        return EXECUTOR_SERVICE;
+    public ScheduledExecutorService getScheduledExecutor() {
+        return SCHEDULED_EXECUTOR;
+    }
+
+    @Override
+    public ExecutorService getExecutor() {
+        return EXECUTOR;
     }
 }

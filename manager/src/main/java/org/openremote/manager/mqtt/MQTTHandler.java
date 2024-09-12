@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,6 +71,7 @@ public abstract class MQTTHandler {
     protected MQTTBrokerService mqttBrokerService;
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
+    protected ExecutorService executorService;
     protected boolean isKeycloak;
     protected ClientSession clientSession;
     protected ClientProducer producer;
@@ -97,6 +99,7 @@ public abstract class MQTTHandler {
         clientEventService = container.getService(ClientEventService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
+        executorService = container.getExecutor();
 
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -150,12 +153,20 @@ public abstract class MQTTHandler {
                 // Need to be able to get connection/auth from the message somehow
                 // Cannot use connection.getTransportConnection().isOpen() check as well due to last will publishes
                 if (connection == null) {
-                    LOG.log(TRACE, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" +  clientID);
+                    LOG.log(TRACE, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
                     return;
                 }
 
                 getLogger().fine(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
-                onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+
+                // Offload processing to a background thread
+                executorService.submit(() -> {
+                    try {
+                        onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+                    } catch (Exception e) {
+                        getLogger().info("An error occurred whilst handling onPublish to topic '" + topic + "': clientID=" + clientID);
+                    }
+                });
             });
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);

@@ -141,7 +141,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
 
         openWeatherAppId = getString(container.getConfig(), OR_OPEN_WEATHER_API_APP_ID, null);
@@ -195,7 +195,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }

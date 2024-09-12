@@ -180,7 +180,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getScheduledExecutor();
         rulesetStorageService = container.getService(RulesetStorageService.class);
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
