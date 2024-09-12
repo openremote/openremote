@@ -27,7 +27,6 @@ import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
-import java.io.*;
 import java.util.logging.Logger;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
@@ -43,7 +42,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
     @Override
     public Object update(RequestParams requestParams, Object managerConfiguration) {
-        this.configurationService.saveMangerConfig(managerConfiguration);
+        this.configurationService.saveManagerConfigFile(managerConfiguration);
         return managerConfiguration;
     }
 

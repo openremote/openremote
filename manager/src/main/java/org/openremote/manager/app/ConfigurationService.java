@@ -82,9 +82,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
 
-    public void saveMangerConfig(Object managerConfiguration) {
+    public void saveManagerConfigFile(Object managerConfiguration) {
         LOG.log(Level.INFO, "Saving manager_config.json..");
-        try (OutputStream out = new FileOutputStream(pathPublicRoot + "/manager_config.json")) {
+        try (OutputStream out = new FileOutputStream(persistenceService.getStorageDir().resolve("manager_config.json").toFile())) {
             out.write(ValueUtil.JSON.writeValueAsString(managerConfiguration).getBytes());
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
