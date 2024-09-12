@@ -42,12 +42,14 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
 
+import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -242,6 +244,9 @@ public class ManagerWebService extends WebService {
 
         // Add all route handlers required by the manager in priority order
 
+        PersistenceService persistenceService = container.getService(PersistenceService.class);
+        File managerConfigFile = persistenceService.getStorageDir().resolve("manager_config.json").toFile();
+
         // Redirect / to default app
         if (rootRedirectPath != null) {
             getRequestHandlers().add(
@@ -258,7 +263,9 @@ public class ManagerWebService extends WebService {
         getRequestHandlers().add(
             new RequestHandler(
                 "manager_config.json request handler",
-                exchange -> "/manager_config.json".equals(exchange.getRelativePath()),
+                exchange -> "/manager_config.json".equals(exchange.getRelativePath())
+                        && managerConfigFile.exists()
+                        && !managerConfigFile.isDirectory(),
                 exchange -> {
                     LOG.warning("Using manager_config.json request handler");
                     managerConfigFileHandler.handleRequest(exchange);
