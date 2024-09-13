@@ -27,7 +27,6 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-import java.io.IOException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -56,5 +55,9 @@ public interface ConfigurationResource {
             FileInfo fileInfo
     );
 
-
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("manager")
+    @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
+    Object getManagerConfig();
 }

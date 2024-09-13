@@ -45,6 +45,7 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.app.ConfigurationService;
 import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -106,6 +107,8 @@ public class ManagerWebService extends WebService {
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
+    protected ConfigurationService configurationService;
+
     /**
      * Start web service after other services.
      */
@@ -120,6 +123,8 @@ public class ManagerWebService extends WebService {
 
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
         storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
+
+        configurationService = container.getService(ConfigurationService.class);
 
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
@@ -263,9 +268,7 @@ public class ManagerWebService extends WebService {
         getRequestHandlers().add(
             new RequestHandler(
                 "manager_config.json request handler",
-                exchange -> "/manager_config.json".equals(exchange.getRelativePath())
-                        && managerConfigFile.exists()
-                        && !managerConfigFile.isDirectory(),
+                exchange -> false && configurationService.getManagerConfig().isPresent(),
                 exchange -> {
                     LOG.warning("Using manager_config.json request handler");
                     managerConfigFileHandler.handleRequest(exchange);

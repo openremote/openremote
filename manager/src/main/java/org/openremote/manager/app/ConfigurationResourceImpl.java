@@ -19,6 +19,11 @@
  */
 package org.openremote.manager.app;
 
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
+import jakarta.servlet.http.HttpServletResponse;
+import net.minidev.json.JSONObject;
+import org.apache.activemq.artemis.commons.shaded.json.Json;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -27,6 +32,11 @@ import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
@@ -50,5 +60,19 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         this.configurationService.saveImageFile(path, fileInfo);
         return path;
+    }
+
+    @Override
+    public Object getManagerConfig() {
+        Optional<File> file = configurationService.getManagerConfig();
+        if (file.isEmpty()) {
+            throw new IllegalStateException();
+        }
+        try (JsonReader reader = new JsonReader(new FileReader(file.get()))) {
+            return JsonParser.parseReader(reader).getAsJsonObject();
+        } catch (IOException e) {
+            LOG.severe("Error reading manager config file: " + e.getMessage());
+        }
+        return null;
     }
 }

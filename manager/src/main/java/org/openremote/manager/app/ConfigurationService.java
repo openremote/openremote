@@ -29,11 +29,13 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.rules.flow.Option;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -112,5 +114,14 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             LOG.log(Level.WARNING, "Error when saving image in manger_config.json", exception);
         }
 
+    }
+
+    public Optional<File> getManagerConfig(){
+        File file = persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json").toFile();
+
+        if(file.exists() && !file.isDirectory()){
+           return Optional.of(file);
+        }
+        return Optional.empty();
     }
 }
