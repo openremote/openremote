@@ -122,7 +122,7 @@ export const DefaultAppConfig: AppConfig<RootState> = {
 };
 
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
+const configURL = (CONFIG_URL_PREFIX || "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
     if (!result.ok) {

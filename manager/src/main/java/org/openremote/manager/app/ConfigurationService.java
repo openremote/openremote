@@ -29,7 +29,6 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
-import org.openremote.model.rules.flow.Option;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
@@ -96,7 +95,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
     public void saveImageFile(String path, FileInfo fileInfo) {
-        LOG.log(Level.INFO, "Saving image in manger_config.json..");
+        LOG.log(Level.INFO, "Saving image in manager_config.json..");
         File file = new File(pathPublicRoot + path);
         try {
             file.getParentFile().mkdirs();
@@ -111,16 +110,28 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         try (OutputStream out = new FileOutputStream(file)) {
             out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
         } catch (IOException | SecurityException exception) {
-            LOG.log(Level.WARNING, "Error when saving image in manger_config.json", exception);
+            LOG.log(Level.WARNING, "Error when saving image in manager_config.json", exception);
         }
 
     }
 
-    public Optional<File> getManagerConfig(){
-        File file = persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json").toFile();
+    public Optional<java.io.File> getManagerConfig(){
+        File file = persistenceService.getStorageDir()
+                .resolve("manager")
+                .resolve("manager_config.json")
+                .toFile();
 
         if(file.exists() && !file.isDirectory()){
            return Optional.of(file);
+        }else{
+            file = pathPublicRoot
+                    .resolve("manager")
+                    .resolve("app")
+                    .resolve("manager_config.json")
+                    .toFile();
+            if (file.exists() && !file.isDirectory()){
+                return Optional.of(file);
+            }
         }
         return Optional.empty();
     }

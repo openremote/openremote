@@ -42,7 +42,6 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -50,7 +49,6 @@ import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
 
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -225,7 +223,6 @@ public class ManagerWebService extends WebService {
         }
 
         PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
-        HttpHandler managerConfigFileHandler = createFileHandler(container, storageDir, null);
 
         // Serve deployment files
         if (Files.isDirectory(builtInAppDocRoot)) {
@@ -249,9 +246,6 @@ public class ManagerWebService extends WebService {
 
         // Add all route handlers required by the manager in priority order
 
-        PersistenceService persistenceService = container.getService(PersistenceService.class);
-        File managerConfigFile = persistenceService.getStorageDir().resolve("manager_config.json").toFile();
-
         // Redirect / to default app
         if (rootRedirectPath != null) {
             getRequestHandlers().add(
@@ -263,18 +257,6 @@ public class ManagerWebService extends WebService {
                                 new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
                             }));
         }
-
-        // Manager_config.json handler to be served from OR_STORAGE_DIR
-        getRequestHandlers().add(
-            new RequestHandler(
-                "manager_config.json request handler",
-                exchange -> false && configurationService.getManagerConfig().isPresent(),
-                exchange -> {
-                    LOG.warning("Using manager_config.json request handler");
-                    managerConfigFileHandler.handleRequest(exchange);
-                }
-            )
-        );
 
         if (apiHandler != null) {
             getRequestHandlers().add(pathStartsWithHandler("REST API Handler", API_PATH, apiHandler));
