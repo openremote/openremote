@@ -44,7 +44,6 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.app.ConfigurationService;
 import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -64,8 +63,6 @@ import java.util.regex.Pattern;
 import static io.undertow.util.RedirectBuilder.redirect;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static jakarta.ws.rs.core.UriBuilder.fromUri;
-import static org.openremote.container.persistence.PersistenceService.OR_STORAGE_DIR;
-import static org.openremote.container.persistence.PersistenceService.OR_STORAGE_DIR_DEFAULT;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
@@ -101,11 +98,8 @@ public class ManagerWebService extends WebService {
     protected boolean initialised;
     protected Path builtInAppDocRoot;
     protected Path customAppDocRoot;
-    protected Path storageDir;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
-
-    protected ConfigurationService configurationService;
 
     /**
      * Start web service after other services.
@@ -120,9 +114,6 @@ public class ManagerWebService extends WebService {
         super.init(container);
 
         String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
-        storageDir = Paths.get(getString(container.getConfig(), OR_STORAGE_DIR, OR_STORAGE_DIR_DEFAULT));
-
-        configurationService = container.getService(ConfigurationService.class);
 
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
@@ -253,7 +244,7 @@ public class ManagerWebService extends WebService {
                             "Default app redirect",
                             exchange -> exchange.getRequestPath().equals("/"),
                             exchange -> {
-                                LOG.warning("Handling root request, redirecting client to default app");
+                                LOG.finest("Handling root request, redirecting client to default app");
                                 new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
                             }));
         }
