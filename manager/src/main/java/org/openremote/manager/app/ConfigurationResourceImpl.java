@@ -19,12 +19,10 @@
  */
 package org.openremote.manager.app;
 
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
-import jakarta.servlet.http.HttpServletResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.NotFoundException;
-import net.minidev.json.JSONObject;
-import org.apache.activemq.artemis.commons.shaded.json.Json;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -32,13 +30,8 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.rules.flow.Option;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Paths;
+import java.io.*;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -66,13 +59,21 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public Object getManagerConfig() {
+    public ObjectNode getManagerConfig() {
         Optional<File> file = configurationService.getManagerConfig();
         if (file.isEmpty()) {
             throw new NotFoundException("Configuration file not found");
         }
-        try (JsonReader reader = new JsonReader(new FileReader(file.get()))) {
-            return JsonParser.parseReader(reader).getAsJsonObject();
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(file.get());
+            if (jsonNode.isObject()) {
+                ObjectNode objectNode = (ObjectNode) jsonNode;
+                return objectNode;
+            } else {
+                throw new IOException("The provided JSON is not an object.");
+            }
         } catch (IOException e) {
             LOG.severe("Error reading manager config file: " + e.getMessage());
         }
