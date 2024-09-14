@@ -298,8 +298,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // FETCH METHODS
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
-        const response = await fetch(this.urlPrefix + "/api/master/configuration/manager", { cache: "reload" });
-        return await response.json() as ManagerAppConfig;
+        const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
+        return response.data as ManagerAppConfig;
     }
 
     protected async getMapConfig(): Promise<{[id: string]: any}> {
@@ -318,7 +318,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         // POST manager config if changed...
         if (this.managerConfigurationChanged) {
             managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
-                fetch(this.urlPrefix + "/api/master/configuration/manager", {cache: "reload"});
+                // Not sure what this does and how to adapt it to fetch from axios, so I just replaced the urlPrefix with the managerUrl
+                fetch(this.managerConfiguration.manager.managerUrl + "/api/master/configuration/manager", {cache: "reload"});
                 this.managerConfiguration = config;
                 Object.entries(this.managerConfiguration.realms).forEach(([name, settings]) => {
                     fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});

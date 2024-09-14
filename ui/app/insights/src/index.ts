@@ -1,10 +1,10 @@
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
-import "@openremote/or-app";
 import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {pageViewProvider} from "./pages/page-view";
 import {ManagerAppConfig} from "@openremote/model";
 
 declare const CONFIG_URL_PREFIX: string;
+declare const MANAGER_URL: string;
 
 const rootReducer = combineReducers({
     app: appReducer
@@ -30,7 +30,7 @@ export const DefaultAppConfig: AppConfig<RootState> = {
 };
 
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL = (CONFIG_URL_PREFIX || "") + "/api/master/configuration/manager";
+const configURL = (MANAGER_URL || "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
     if (!result.ok) {
