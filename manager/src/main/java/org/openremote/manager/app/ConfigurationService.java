@@ -125,8 +125,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
            return Optional.of(file);
         }else{
             file = pathPublicRoot
-                    .resolve("manager")
-                    .resolve("app")
                     .resolve("manager_config.json")
                     .toFile();
             if (file.exists() && !file.isDirectory()){
