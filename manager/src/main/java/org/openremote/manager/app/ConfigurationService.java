@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.app;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -29,11 +30,14 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,11 +48,16 @@ import static org.openremote.container.util.MapAccess.getString;
 
 public class ConfigurationService extends RouteBuilder implements ContainerService {
 
+    public static final String OR_MAP_SETTINGS_PATH = "OR_MAP_SETTINGS_PATH";
+    public static final String OR_MAP_SETTINGS_PATH_DEFAULT = "manager/src/map/mapsettings.json";
+
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
     protected Path pathPublicRoot;
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
+    protected Path mapSettingsPath;
+    protected ObjectNode mapConfig;
 
     @Override
     public int getPriority() {
@@ -70,6 +79,22 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         container.getService(TimerService.class),
                         identityService, this)
         );
+
+        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT));
+        if (!Files.isRegularFile(mapSettingsPath)) {
+            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
+            mapSettingsPath = persistenceService.getStorageDir().resolve("mapsettings.json");
+            if(!Files.isRegularFile(mapSettingsPath)){
+                mapSettingsPath = Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT).resolve("mapsettings.json");
+                if(!Files.isRegularFile(mapSettingsPath)){
+                    LOG.severe("Map settings file not found, map functionality will not work");
+                }
+            }
+        }
+
+        if(Files.isRegularFile(mapSettingsPath)){
+            mapConfig = loadMapSettingsJson();
+        }
     }
 
     @Override
@@ -115,7 +140,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     }
 
-    public Optional<java.io.File> getManagerConfig(){
+    public Optional<File> getManagerConfig(){
         File file = persistenceService.getStorageDir()
                 .resolve("manager")
                 .resolve("manager_config.json")
@@ -132,5 +157,31 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             }
         }
         return Optional.empty();
+    }
+
+    protected ObjectNode loadMapSettingsJson() {
+        try {
+            return (ObjectNode) ValueUtil.JSON.readTree(Files.readAllBytes(mapSettingsPath));
+        } catch (Exception ex) {
+            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
+            return ValueUtil.JSON.createObjectNode();
+        }
+    }
+
+    public ObjectNode getMapConfig() {
+        return mapConfig;
+    }
+
+    protected File getMapSettingsFile(){
+        return mapSettingsPath.toFile();
+    }
+
+    public void storeMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
+        try(OutputStream out = new FileOutputStream(getMapSettingsFile())){
+            mapConfig.putPOJO("options", mapConfiguration);
+            out.write(ValueUtil.JSON.writeValueAsString(mapConfiguration).getBytes());
+        } catch (IOException | NullPointerException exception) {
+            LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
+        }
     }
 }
