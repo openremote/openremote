@@ -173,7 +173,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
     protected File getMapSettingsFile(){
-        return mapSettingsPath.toFile();
+        return persistenceService.getStorageDir().resolve("mapsettings.json").toFile();
     }
 
     public void storeMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
