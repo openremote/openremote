@@ -19,6 +19,7 @@
  */
 package org.openremote.model.datapoint;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
@@ -30,7 +31,7 @@ import jakarta.ws.rs.container.Suspended;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Datapoint")
+@Tag(name = "Asset Datapoint", description = "Operations on asset datapoints")
 @Path("asset/datapoint")
 public interface AssetDatapointResource {
 
@@ -45,6 +46,7 @@ public interface AssetDatapointResource {
     @Path("{assetId}/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getDatapoints", summary = "Retrieve the historical datapoints of an asset attribute")
     ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
                                       @PathParam("assetId") String assetId,
                                       @PathParam("attributeName") String attributeName,
@@ -54,6 +56,7 @@ public interface AssetDatapointResource {
     @Path("periods")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getDatapointPeriod", summary = "Retrieve a datapoint period of an asset attribute")
     DatapointPeriod getDatapointPeriod(@BeanParam RequestParams requestParams,
                                           @QueryParam("assetId") String assetId,
                                           @QueryParam("attributeName") String attributeName);
@@ -62,6 +65,7 @@ public interface AssetDatapointResource {
     @Path("export")
     @Produces("application/zip")
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getDatapointExport", summary = "Retrieve a datapoint export of an asset attribute")
     void getDatapointExport(@Suspended AsyncResponse asyncResponse,
                             @QueryParam("attributeRefs") String attributeRefsString,
                             @QueryParam("fromTimestamp") long fromTimestamp,
