@@ -36,7 +36,10 @@ import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.model.asset.agent.*;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.*;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
@@ -52,8 +55,8 @@ import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -203,7 +206,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     protected AssetStorageService assetStorageService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
     protected Map<String, Agent<?, ?, ?>> agentMap;
     protected final Map<String, Future<Void>> agentDiscoveryImportFutureMap = new ConcurrentHashMap<>();
     protected final Map<String, Protocol<?>> protocolInstanceMap = new ConcurrentHashMap<>();
@@ -225,7 +228,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         assetStorageService = container.getService(AssetStorageService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
 
         if (initDone) {
             return;
@@ -237,7 +240,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 container.getService(ManagerIdentityService.class),
                 assetStorageService,
                 this,
-                container.getScheduledExecutor())
+                container.getExecutor())
         );
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);

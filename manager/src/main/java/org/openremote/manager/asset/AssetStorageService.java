@@ -76,6 +76,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.FINEST;
 import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
@@ -1327,8 +1328,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assets.stream().filter(asset -> calendarEventPredicateMatches(timerService::getCurrentTimeMillis, query, asset)).toList();
         }
 
-        if (LOG.isLoggable(FINE)) {
-            LOG.fine("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
+        if (LOG.isLoggable(FINEST)) {
+            LOG.finest("Asset query took " + (System.currentTimeMillis() - startMillis) + "ms: return count=" + assets.size());
         }
 
         return assets;

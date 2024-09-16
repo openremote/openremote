@@ -28,7 +28,7 @@ import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
-import org.openremote.container.concurrent.ContainerExecutor;
+import org.openremote.container.concurrent.ContainerThreadFactory;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -156,7 +156,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             int minThreadCount = getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MIN, OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT);
             int maxThreadCount = Math.max(minThreadCount, getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MAX, OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT));
 
-            provisioningExecutorService = new ContainerExecutor("AutoProvisioningPool", minThreadCount, maxThreadCount, 60L, new ThreadPoolExecutor.CallerRunsPolicy());
+            provisioningExecutorService = new ThreadPoolExecutor(minThreadCount, maxThreadCount, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("AutoProvisioningPool"), new ThreadPoolExecutor.CallerRunsPolicy());
         }
     }
 

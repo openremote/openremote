@@ -157,7 +157,7 @@ public abstract class MQTTHandler {
                     return;
                 }
 
-                getLogger().fine(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
+                getLogger().finer(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
 
                 // Offload processing to a background thread
                 executorService.submit(() -> {

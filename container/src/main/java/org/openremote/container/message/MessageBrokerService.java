@@ -46,9 +46,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -82,38 +80,51 @@ public class MessageBrokerService implements ContainerService {
 
                 ExecutorService executorService;
 
-                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
-                if (profile.isDefaultProfile()) {
-                    executorService = container.getScheduledExecutor();
-                } else {
-                    executorService = super.newThreadPool(profile, threadFactory);
-                }
+                // SEDA routes always create a custom thread pool so we will force them to use our shared executor to
+                // minimise the number of threads
+                executorService = container.getExecutor();
 
-                // Want to instrument pools that use defaultThreadPool profile (ProducerTemplate and multiple consumer SEDA endpoints)
-                if (meterRegistry != null) {
-                    String name = getExecutorName("Pool", threadFactory);
-                    name = "Pool".equals(name) ? profile.getId() : name;
-                    executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
-                }
+//                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
+//                if (profile.isDefaultProfile()) {
+//                    executorService = container.getExecutor();
+//                } else {
+//                    executorService = super.newThreadPool(profile, threadFactory);
+//
+//                    // Want to instrument pools that use defaultThreadPool profile (ProducerTemplate and multiple consumer SEDA endpoints)
+//                    if (meterRegistry != null) {
+//                        String name = getExecutorName("Pool", threadFactory);
+//                        name = "Pool".equals(name) ? profile.getId() : name;
+//                        executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
+//                    }
+//                }
 
                 return executorService;
             }
 
             @Override
             public ScheduledExecutorService newScheduledThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
-                ScheduledExecutorService scheduledExecutorService = new ContainerScheduledExecutor(
-                    getExecutorName("ScheduledPool", threadFactory),
-                    profile.getPoolSize(), profile.getRejectedExecutionHandler()
-                );
+                ScheduledExecutorService scheduledExecutorService;
 
-// Disabled as not very useful for SEDA components
-//                if (meterRegistry != null) {
-//                    String name = getExecutorName("", threadFactory);
-//                    name = "ScheduledPool".equals(name) ? profile.getId() : name;
-//                    scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
-//                }
+                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
+                if (profile.isDefaultProfile()) {
+                    scheduledExecutorService = container.getScheduledExecutor();
+                } else {
+                    scheduledExecutorService = super.newScheduledThreadPool(profile, threadFactory);
+
+                    // Disabled as not very useful for SEDA components
+//                    if (meterRegistry != null) {
+//                        String name = getExecutorName("", threadFactory);
+//                        name = "ScheduledPool".equals(name) ? profile.getId() : name;
+//                        scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
+//                    }
+                }
 
                 return scheduledExecutorService;
+            }
+
+            @Override
+            public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
+                return super.newCachedThreadPool(threadFactory);
             }
 
             protected String getExecutorName(String name, ThreadFactory threadFactory) {
