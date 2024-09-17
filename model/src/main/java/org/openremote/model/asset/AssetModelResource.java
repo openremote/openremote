@@ -19,20 +19,23 @@
  */
 package org.openremote.model.asset;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import java.util.Map;
+
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Resource for handling model requests and also providing server side validation of {@link Asset}s
  */
 // TODO: Implement generic Asset<?> validation for assets and agents
-@Tag(name = "Asset Model")
+@Tag(name = "Asset Model", description = "Operations on asset model resources")
 @Path("model")
 public interface AssetModelResource {
 
@@ -45,6 +48,7 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfos")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetInfos", summary = "Retrieve the asset type information of each available asset type")
     AssetTypeInfo[] getAssetInfos(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
@@ -57,6 +61,7 @@ public interface AssetModelResource {
     @GET
     @Path("assetInfo/{assetType}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetInfo", summary = "Retrieve the asset type information of an asset type")
     AssetTypeInfo getAssetInfo(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @PathParam("assetType") String assetType);
 
     /**
@@ -68,27 +73,30 @@ public interface AssetModelResource {
     @GET
     @Path("assetDescriptors")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAssetDescriptors", summary = "Retrieve the available asset descriptors")
     AssetDescriptor<?>[] getAssetDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
      * Retrieve value descriptors {@link ValueDescriptor} available in this system or from a {@link
-     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
-     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a  parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' ancestors resides on a {@link
      * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
     @Path("valueDescriptors")
     @Produces(APPLICATION_JSON)
-    ValueDescriptor<?>[] getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    @Operation(operationId = "getValueDescriptors", summary = "Retrieve the available value descriptors")
+    Map<String, ValueDescriptor<?>> getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 
     /**
      * Retrieve meta descriptors {@link MetaItemDescriptor} available in this system or from a {@link
-     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
-     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' ancestors resides on a {@link
      * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
     @Path("metaItemDescriptors")
     @Produces(APPLICATION_JSON)
-    MetaItemDescriptor<?>[] getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+    @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
+    Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 }

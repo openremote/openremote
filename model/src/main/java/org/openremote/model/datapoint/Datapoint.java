@@ -19,16 +19,16 @@
  */
 package org.openremote.model.datapoint;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
-
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 
 /**
  * <p>
@@ -36,7 +36,7 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
  * <p>
  */
 @MappedSuperclass
-@IdClass(Datapoint.class)
+@IdClass(DatapointID.class)
 public abstract class Datapoint implements Serializable {
 
     @Id
@@ -51,8 +51,8 @@ public abstract class Datapoint implements Serializable {
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP")
     protected Date timestamp;
 
-    @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @Column(name = "VALUE", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     protected Object value;
 
     public Datapoint() {
@@ -63,7 +63,7 @@ public abstract class Datapoint implements Serializable {
     }
 
     public Datapoint(AttributeEvent stateEvent) {
-        this(stateEvent.getAttributeState(), stateEvent.getTimestamp());
+        this(stateEvent.getRef(), stateEvent.getValue(), stateEvent.getTimestamp());
     }
 
     public Datapoint(AttributeRef attributeRef, Object value, long timestamp) {

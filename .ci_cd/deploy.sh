@@ -143,7 +143,8 @@ PLATFORM="linux/$PLATFORM"
 
 # Verify manager tag and create docker image tarballs as required
 if [ "$MANAGER_TAG" != '#ref' ]; then
-  docker buildx imagetools inspect --raw openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
+  echo "Checking existence of manager docker image with tag: $MANAGER_TAG"
+  docker buildx imagetools inspect --raw openremote/manager:$MANAGER_TAG
   if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
     revoke_ssh
@@ -234,7 +235,7 @@ fi
 CONTAINER_IDS=\$(docker ps -q)
 if [ -n "\$CONTAINER_IDS" ]; then
   echo "Stopping existing stack"
-  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+  docker-compose -f temp/docker-compose.yml -p or down --remove-orphans 2> /dev/null
 
   if [ \$? -ne 0 ]; then
     echo "Deployment failed to stop the existing stack"

@@ -321,8 +321,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     <div id="msg">
                         <or-translate value="invalidAttribute"></or-translate>
                     </div>
-                ` : isChart
-            ? html`
+                ` : isChart ? html`
                         <div id="chart-container">
                             <canvas id="chart"></canvas>
                         </div>
@@ -335,8 +334,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         `;
     }
 
-    updated(changedProperties: PropertyValues) {
-        super.updated(changedProperties);
+    // Method that is executed during an update, to compute (additional) values before rendering.
+    // Used instead of updated() to prevent a second render when properties get changed.
+    willUpdate(changedProperties: PropertyValues) {
+        super.willUpdate(changedProperties);
 
         if (!this._type || !this._data) {
             return;
@@ -445,6 +446,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 }
             }
         } else {
+            // Updating the table template before render, if necessary, to prevent additional update
             if (!this._tableTemplate || changedProperties.has("_data")) {
                 this._tableTemplate = this._getTableTemplate();
             }
@@ -705,15 +707,30 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
 
-        const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-            assetId,
-            attributeName,
-            {
-                interval: interval,
-                fromTimestamp: this._startOfPeriod,
-                toTimestamp: this._endOfPeriod
-            }
-        );
+        const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
+        let response;
+        if(isChart) {
+            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                assetId,
+                attributeName,
+                {
+                    type: "lttb",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod,
+                    amountOfPoints: 100
+                }
+            )
+        } else {
+            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                assetId,
+                attributeName,
+                {
+                    type: "all",
+                    fromTimestamp: this._startOfPeriod,
+                    toTimestamp: this._endOfPeriod
+                }
+            );
+        }
 
         this._loading = false;
 

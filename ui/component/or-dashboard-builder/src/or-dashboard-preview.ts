@@ -2,23 +2,22 @@ import manager, {DefaultColor4, DefaultColor5} from "@openremote/core";
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {style} from "./style";
-import "./or-dashboard-widget";
+import "./or-dashboard-widgetcontainer";
 import {debounce} from "lodash";
-import {
-    DashboardGridItem,
-    DashboardScalingPreset,
-    DashboardScreenPreset,
-    DashboardTemplate,
-    DashboardWidget
-} from "@openremote/model";
-import { getActivePreset } from "./index";
+import {DashboardGridItem, DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget} from "@openremote/model";
+import {getActivePreset} from "./index";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-loading-indicator";
 import {repeat} from 'lit/directives/repeat.js';
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import { i18next } from "@openremote/or-translate";
-import { when } from "lit/directives/when.js";
-import { cache } from "lit/directives/cache.js";
+import {i18next} from "@openremote/or-translate";
+import {when} from "lit/directives/when.js";
+import {cache} from "lit/directives/cache.js";
+import {guard} from "lit/directives/guard.js";
+import {OrDashboardEngine} from "./or-dashboard-engine";
+import {WidgetService} from "./service/widget-service";
+import {OrDashboardWidgetContainer} from "./or-dashboard-widgetcontainer";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -26,6 +25,15 @@ const extracss = require('gridstack/dist/gridstack-extra.css');
 
 //language=css
 const editorStyling = css`
+    
+    #loadingContainer {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
     
     #view-options {
         padding: 24px;
@@ -79,7 +87,9 @@ const editorStyling = css`
         box-sizing: border-box;
         border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         border-radius: 4px;
-        overflow: hidden !important;
+    }
+    .grid-stack > .grid-stack-item > .grid-stack-item-content {
+        overflow: visible;
     }
     .grid-stack-item-content__active {
         border: 2px solid var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
@@ -98,7 +108,7 @@ const editorStyling = css`
 
 /* -------------------------------------------------- */
 
-export interface ORGridStackNode extends GridStackNode {
+export interface DashboardGridNode extends GridStackNode {
     widgetTypeId: string;
 }
 export interface DashboardPreviewSize {
@@ -129,6 +139,7 @@ export class OrDashboardPreview extends LitElement {
 
         // If there is no value yet, do initial setup:
         } else if(newValue != undefined) {
+            console.debug("Creating a new Dashboard grid...");
             this._template = newValue;
             this.setupGrid(false, false);
         }
@@ -175,13 +186,7 @@ export class OrDashboardPreview extends LitElement {
     @property()
     protected fullscreen: boolean = true;
 
-    @property() // Property that, when toggled on, shows a "loading" state for 200ms, and then renders the component again.
-    protected rerenderPending: boolean = false;
-
     /* -------------- */
-
-    @state()
-    protected grid?: GridStack;
 
     @state() // State where the changes of the template are saved temporarily (for comparison with incoming data)
     protected latestChanges?: {
@@ -190,14 +195,18 @@ export class OrDashboardPreview extends LitElement {
         newValue: DashboardTemplate
     }
 
-    @state() // Records time a user is dragging
-    protected latestDragWidgetStart?: Date;
-
     @state()
     protected activePreset?: DashboardScreenPreset;
 
     @state()
     private rerenderActive: boolean = false;
+
+    @state()
+    private isLoading: boolean = false;
+
+
+    protected grid?: GridStack;
+    protected latestDragWidgetStart?: Date;
 
 
     /* ------------------------------------------- */
@@ -217,6 +226,9 @@ export class OrDashboardPreview extends LitElement {
         }
         // Defaulting to a Phone view
         if(!this.previewSize) { this.previewSize = this.availablePreviewSizes[3]; }
+
+        // Register custom override functions for GridStack
+        GridStack.registerEngine(OrDashboardEngine);
     }
 
     static get styles() {
@@ -228,27 +240,37 @@ export class OrDashboardPreview extends LitElement {
     // Checking whether actual changes have been made; if not, prevent updating.
     shouldUpdate(changedProperties: Map<PropertyKey, unknown>): boolean {
         const changed = changedProperties;
+
         if(changedProperties.has('latestChanges')
             && this.latestChanges?.changedKeys.length == 0
             && (JSON.stringify((changedProperties.get('latestChanges') as any)?.oldValue)) == (JSON.stringify((changedProperties.get('latestChanges') as any)?.newValue))) {
                 changed.delete('latestChanges');
         }
-        // Delete ones that not actually change anything
-        changed.delete('latestDragWidgetStart');
 
-        return (changed.size == 0 ? false : super.shouldUpdate(changedProperties));
+        // Do not update UI if the preview size has changed while being fullscreen,
+        // since it is only used when in "responsive mode".
+        if(this.fullscreen && changedProperties.has('previewWidth')) {
+            changed.delete('previewWidth');
+        }
+        if(this.fullscreen && changedProperties.has('previewHeight')) {
+            changed.delete('previewHeight');
+        }
+
+        return (changed.size === 0 ? false : super.shouldUpdate(changedProperties));
     }
 
 
     // Main method for executing actions after property changes
     updated(changedProperties: Map<string, any>) {
+        super.updated(changedProperties);
+
         if(this.realm == undefined) { this.realm = manager.displayRealm; }
 
         // Setup template (list of widgets and properties)
         if(!this.template && this.dashboardId) {
-            manager.rest.api.DashboardResource.get(this.dashboardId)
+            manager.rest.api.DashboardResource.get(this.realm, this.dashboardId)
                 .then((response) => { this.template = response.data.template!; })
-                .catch((reason) => { console.error(reason); showSnackbar(undefined, i18next.t('errorOccurred')); });
+                .catch((reason) => { console.error(reason); showSnackbar(undefined, "errorOccurred"); });
         } else if(this.template == null && this.dashboardId == null) {
             console.warn("Neither the template nor dashboardId attributes have been specified!");
         }
@@ -284,6 +306,7 @@ export class OrDashboardPreview extends LitElement {
         // Switching edit/view mode needs recreation of Grid
         if(changedProperties.has("editMode")) {
             if(changedProperties.get('editMode') != undefined) {
+                console.debug(`Edit mode is now ${this.editMode}. Force recreating grid...`);
                 this.setupGrid(true, true);
             }
         }
@@ -303,15 +326,6 @@ export class OrDashboardPreview extends LitElement {
             }
         }
 
-        if(changedProperties.has("rerenderPending")) {
-            if(this.rerenderPending) {
-                this.setupGrid(true, true).then(() => {
-                    this.rerenderPending = false;
-                    this.dispatchEvent(new CustomEvent("rerenderfinished"));
-                });
-            }
-        }
-
         // When parent component requests a forced rerender
         if(changedProperties.has("rerenderActive")) {
             if(this.rerenderActive) {
@@ -325,13 +339,14 @@ export class OrDashboardPreview extends LitElement {
 
     // Main setup Grid method (often used)
     async setupGrid(recreate: boolean, force: boolean = false) {
-        await this.waitUntil((_: any) => this.shadowRoot?.getElementById("gridElement") != null)
+        this.isLoading = true;
+        await this.updateComplete;
         let gridElement = this.shadowRoot?.getElementById("gridElement");
         if(gridElement != null) {
             if(recreate && this.grid != null) {
                 this.grid.destroy(false);
 
-                if(force) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
+                if(force) { // Fully rerender the grid by switching rerenderActive on and off, and continue after that.
                     this.rerenderActive = true;
                     await this.updateComplete;
                     await this.waitUntil((_: any) => !this.rerenderActive);
@@ -342,7 +357,7 @@ export class OrDashboardPreview extends LitElement {
             const width: number = (this.fullscreen ? this.clientWidth : (+(this.previewWidth?.replace(/\D/g, "")!)));
             const newPreset = getActivePreset(width, this.template.screenPresets!);
             if(newPreset?.scalingPreset != this.activePreset?.scalingPreset) {
-                if(!(recreate && force)) { // Fully rerender the grid by switching rerenderPending on and off, and continue after that.
+                if(!(recreate && force)) { // Fully rerender the grid by switching rerenderActive on and off, and continue after that.
                     if(!recreate) { // If not destroyed yet, destroy first.
                         this.grid?.destroy(false);
                     }
@@ -367,9 +382,9 @@ export class OrDashboardPreview extends LitElement {
             this.grid = GridStack.init({
                 acceptWidgets: (this.editMode),
                 animate: true,
-                cellHeight: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
+                cellHeight: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (width / (this.template?.columns ? (this.template.columns / 4) : 2)) : 'initial'),
                 column: this.template?.columns,
-                disableOneColumnMode: (this.activePreset?.scalingPreset != DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
+                disableOneColumnMode: (this.activePreset?.scalingPreset !== DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN),
                 oneColumnModeDomSort: true,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
@@ -379,7 +394,7 @@ export class OrDashboardPreview extends LitElement {
                 resizable: {
                     handles: 'all'
                 },
-                staticGrid: (this.activePreset?.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? true : (!this.editMode)),
+                staticGrid: (this.activePreset?.scalingPreset === DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? true : (!this.editMode)),
                 styleInHead: false
             }, gridElement!);
 
@@ -387,12 +402,9 @@ export class OrDashboardPreview extends LitElement {
             gridElement!.style.height = "100%";
             gridElement!.style.minHeight = "100%";
 
-            this.grid.on('dropped', (_event: Event, _previousWidget: any, newWidget: GridStackNode | undefined) => {
-                if(this.grid != null && newWidget != null) {
-                    this.grid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
-                    this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
-                }
-            });
+            // When an item gets dropped ontop of the grid. GridStack docs say:
+            // "called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone)."
+            this.grid.on('dropped', (ev: Event, prevWidget: any, newWidget: GridStackNode | undefined) => this.onWidgetDrop(ev, prevWidget, newWidget as DashboardGridNode));
             this.grid.on('change', (_event: Event, items: any) => {
                 if(this.template != null && this.template.widgets != null) {
                     (items as GridStackNode[]).forEach(node => {
@@ -412,12 +424,27 @@ export class OrDashboardPreview extends LitElement {
                 setTimeout(() => {  this.latestDragWidgetStart = undefined; }, 200);
             });
         }
+        this.isLoading = false;
     }
 
 
     /* ------------------------------- */
 
-    selectGridItem(gridItem: GridItemHTMLElement) {
+    public refreshPreview() {
+        console.debug("Refreshing dashboard preview!");
+        this.setupGrid(true, true);
+    }
+
+    public refreshWidgets() {
+        this.grid?.getGridItems().forEach(gridItem => {
+            const widgetContainer = gridItem.querySelector(OrDashboardWidgetContainer.tagName) as OrDashboardWidgetContainer | null;
+            if(widgetContainer) {
+                widgetContainer.refreshContent(false);
+            }
+        })
+    }
+
+    protected selectGridItem(gridItem: GridItemHTMLElement) {
         if(this.grid != null) {
             this.deselectGridItems(this.grid.getGridItems()); // deselecting all other items
             gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
@@ -425,19 +452,20 @@ export class OrDashboardPreview extends LitElement {
             });
         }
     }
-    deselectGridItem(gridItem: GridItemHTMLElement) {
+
+    protected deselectGridItem(gridItem: GridItemHTMLElement) {
         gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
             item.classList.remove('grid-stack-item-content__active'); // Remove active CSS class
         });
     }
 
-    deselectGridItems(gridItems: GridItemHTMLElement[]) {
+    protected deselectGridItems(gridItems: GridItemHTMLElement[]) {
         gridItems.forEach(item => {
             this.deselectGridItem(item);
         })
     }
 
-    onGridItemClick(gridItem: DashboardGridItem | undefined) {
+    protected onGridItemClick(gridItem: DashboardGridItem | undefined) {
         if(!this.latestDragWidgetStart && !this.grid?.opts.staticGrid) {
             if(!gridItem) {
                 this.selectedWidget = undefined;
@@ -447,12 +475,16 @@ export class OrDashboardPreview extends LitElement {
         }
     }
 
-    onFitToScreenClick() {
+    protected onFitToScreenClick() {
         const container = this.shadowRoot?.querySelector('#container');
         if(container) {
             const zoomWidth = +((0.95 * container.clientWidth) / +this.previewWidth!.replace('px', '')).toFixed(2);
             this.previewZoom = (zoomWidth > 1 ? 1 : zoomWidth);
         }
+    }
+
+    protected isPreviewVisible(): boolean {
+        return !this.isLoading && this.activePreset?.scalingPreset != DashboardScalingPreset.BLOCK_DEVICE;
     }
 
     // Render
@@ -472,7 +504,7 @@ export class OrDashboardPreview extends LitElement {
         let screenPresets = this.template?.screenPresets?.map(s => s.displayName);
         screenPresets?.push(customPreset);
         return html`
-            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
+            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%; position: relative;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.onGridItemClick(undefined); }}}">
                 ${this.editMode && !this.fullscreen ? html`
                     <div id="view-options">
                         <or-mwc-input id="fit-btn" type="${InputType.BUTTON}" icon="fit-to-screen"
@@ -498,32 +530,48 @@ export class OrDashboardPreview extends LitElement {
                 ` : undefined}
                 ${this.rerenderActive ? html`
                     <div id="container" style="justify-content: center; align-items: center;">
-                        <span>${i18next.t('dashboard.renderingGrid')}</span>
+                        <span><or-translate value="dashboard.renderingGrid"></or-translate></span>
                     </div>
                 ` : html`
-                    <div id="container" style="justify-content: center; overflow: ${this.fullscreen ? undefined : 'hidden auto'}; position: relative;">
-                        ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                    <div id="container" style="justify-content: center; position: relative;">
+                        ${when(this.isLoading, () => html`
                             <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
-                                <span>${i18next.t('dashboard.deviceNotSupported')}</span>
+                                <or-loading-indicator></or-loading-indicator>
                             </div>
-                        ` : undefined}
-                        <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}">
-                            <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined }" 
-                                 @click="${(ev: MouseEvent) => { if((ev.composedPath()[0] as HTMLElement).id == 'gridElement') { this.onGridItemClick(undefined) }}}" 
-                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}; zoom: ${this.editMode && !this.fullscreen ? this.previewZoom : 'normal'}; ${this.editMode && !this.fullscreen ? ('-moz-transform: scale(' + this.previewZoom + ')') : undefined}; transform-origin: top;"
-                            >
-                                <!-- Gridstack element on which the Grid will be rendered -->
-                                <div id="gridElement" class="grid-stack ${this.editMode ? 'grid-element' : undefined}" style="margin: auto;">
-                                    ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
-                                        return html`
-                                            <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${() => { this.onGridItemClick(widget.gridItem); }}">
-                                                <div class="grid-stack-item-content" style="display: flex;">
-                                                    <or-dashboard-widget .widget="${widget}" .editMode="${this.editMode}" .realm="${this.realm}" style="width: 100%; height: auto;"></or-dashboard-widget>
-                                                </div>
-                                            </div>
-                                        `
-                                    }) : undefined}
+                        `, () => html`
+                            ${this.activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                                <div style="position: absolute; z-index: 3; height: 100%; display: flex; align-items: center;">
+                                    <span><or-translate value="dashboard.deviceNotSupported"></or-translate></span>
                                 </div>
+                            ` : undefined}
+                        `)}
+                        <!-- The grid itself. Will also show during isLoading, but will be invisible through CSS -->
+                        <div class="${this.fullscreen ? 'maingridContainer__fullscreen' : 'maingridContainer'}" style="${this.isLoading ? 'visibility: hidden;' : ''}">
+                            <div class="maingrid ${this.fullscreen ? 'maingrid__fullscreen' : undefined}"
+                                 style="width: ${this.previewWidth}; height: ${this.previewHeight}; visibility: ${this.isPreviewVisible() ? 'visible' : 'hidden'}; zoom: ${this.editMode && !this.fullscreen ? this.previewZoom : 'normal'}; ${this.editMode && !this.fullscreen ? ('-moz-transform: scale(' + this.previewZoom + ')') : undefined}; transform-origin: top;"
+                                 @click="${(ev: MouseEvent) => {
+                                     if ((ev.composedPath()[0] as HTMLElement).id == 'gridElement') {
+                                         this.onGridItemClick(undefined)
+                                     }
+                                 }}">
+                                ${guard([this.editMode, this.template], () => html`
+                                    <!-- Gridstack element on which the Grid will be rendered -->
+                                    <div id="gridElement" class="grid-stack ${this.editMode ? 'grid-element' : undefined}" style="margin: auto;">
+                                        ${this.template?.widgets ? repeat(this.template.widgets, (item) => item.id, (widget) => {
+                                            return html`
+                                                    <div class="grid-stack-item" id="${widget.id}" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}"
+                                                         gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" gs-min-w="${widget.gridItem?.minW}" gs-min-h="${widget.gridItem?.minH}"
+                                                         @click="${() => { 
+                                                             this.onGridItemClick(widget.gridItem);
+                                                         }}">
+                                                        <div class="grid-stack-item-content" style="display: flex;">
+                                                            <or-dashboard-widget-container .widget="${widget}" .editMode="${this.editMode}" style="width: 100%; height: auto; border-radius: 4px;"></or-dashboard-widget-container>
+                                                        </div>
+                                                    </div>
+                                                `
+                                        }) : undefined}
+                                    </div>
+                                `)}
                             </div>
                         </div>
                     </div>
@@ -537,12 +585,12 @@ export class OrDashboardPreview extends LitElement {
         `
     }
 
-    getGridstackColumns(grid: GridStack | undefined): number | undefined {
+    protected getGridstackColumns(grid: GridStack | undefined): number | undefined {
         try { return grid?.getColumn(); }
         catch (e) { return undefined; }
     }
 
-    isExtraLargeGrid(): boolean {
+    protected isExtraLargeGrid(): boolean {
         return !!this.grid && (
             (this.getGridstackColumns(this.grid) && this.getGridstackColumns(this.grid)! > 12)
             || !!(this.template?.columns && this.template.columns > 12)
@@ -555,7 +603,7 @@ export class OrDashboardPreview extends LitElement {
 
     // Provides support for > 12 columns in GridStack (which requires manual css edits)
     //language=html
-    applyCustomGridstackGridCSS(columns: number): TemplateResult {
+    protected applyCustomGridstackGridCSS(columns: number): TemplateResult {
         if(this.cachedGridstackCSS.has(columns)) {
             return html`${this.cachedGridstackCSS.get(columns)!.map((x) => x)}`;
         } else {
@@ -577,10 +625,7 @@ export class OrDashboardPreview extends LitElement {
 
     /* ---------------------------------------------- */
 
-
-    @state()
     protected resizeObserver?: ResizeObserver;
-
     protected previousObserverEntry?: ResizeObserverEntry;
 
     disconnectedCallback() {
@@ -590,7 +635,7 @@ export class OrDashboardPreview extends LitElement {
 
     // Triggering a Grid rerender on every time the element resizes.
     // In fullscreen, debounce (only trigger after 550ms of no changes) to limit amount of rerenders.
-    setupResizeObserver(element: Element): ResizeObserver {
+    protected setupResizeObserver(element: Element): ResizeObserver {
         this.resizeObserver?.disconnect();
         if(this.fullscreen) {
             this.resizeObserver = new ResizeObserver(debounce(this.resizeObserverCallback, 200));
@@ -608,13 +653,14 @@ export class OrDashboardPreview extends LitElement {
         this.previousObserverEntry = entries[0];
     }
 
-    _onGridResize() {
+    protected _onGridResize() {
+        console.debug("Grid resize detected. Recreating the grid...");
         this.setupGrid(true, false);
     }
 
     /* --------------------------------------- */
 
-    processTemplateChanges(changes: { changedKeys: string[], oldValue: DashboardTemplate, newValue: DashboardTemplate }) {
+    protected processTemplateChanges(changes: { changedKeys: string[], oldValue: DashboardTemplate, newValue: DashboardTemplate }) {
 
         // If only columns property changed, change columns through the framework and then recreate grid.
         if(changes.changedKeys.length == 1 && changes.changedKeys.includes('columns') && this.grid) {
@@ -623,35 +669,59 @@ export class OrDashboardPreview extends LitElement {
             let gridElement = this.shadowRoot?.getElementById("gridElement");
             gridElement!.style.backgroundSize = "" + this.grid.cellWidth() + "px " + this.grid.getCellHeight() + "px";
             gridElement!.style.height = maingrid!.scrollHeight + 'px';
+            console.debug("Amount of columns has been changed! Recreating grid...");
             this.setupGrid(true, false);
         }
 
         // If multiple properties changed, just force rerender all of it.
         else if(changes.changedKeys.length > 1) {
+            console.debug("Multiple changes detected. Force recreating grid...");
             this.setupGrid(true, true);
         }
 
         // On widgets change, check whether they are programmatically added to GridStack. If not, adding them.
         else if(changes.changedKeys.includes('widgets')) {
             if(this.grid?.el != null) {
+                let amountAdded = 0;
                 this.grid.getGridItems().forEach((gridElement) => {
                     if(!gridElement.classList.contains('ui-draggable')) {
                         this.grid?.makeWidget(gridElement);
+                        amountAdded++;
                     }
-                })
+                });
+                // If a widget is added, update the grid. (for example to update dashboard height)
+                if(amountAdded > 0) {
+                    console.debug(`Created ${amountAdded} widgets. Updating the grid...`);
+                    this.setupGrid(false, false);
+                }
             }
         }
         else if(changes.changedKeys.includes('screenPresets')) {
+            console.debug("New template has a different screen preset! Force recreating grid...");
             this.setupGrid(true, true);
         }
     }
 
     // Wait until function that waits until a boolean returns differently
-    waitUntil(conditionFunction: any) {
+    // TODO: Remove this, and replace 'waiting' functionality with observer pattern principles.
+    protected waitUntil(conditionFunction: any) {
         const poll = (resolve: any) => {
             if(conditionFunction()) resolve();
             else setTimeout(_ => poll(resolve), 400);
         }
         return new Promise(poll);
+    }
+
+    // Callback method for GridStack Grid 'dropped' event. GridStack docs say:
+    // called when an item has been dropped and accepted over a grid. If the item came from another grid, the previous widget node info will also be sent (but dom item long gone).
+    protected onWidgetDrop(_ev: Event, _prevWidget: any, newWidget: DashboardGridNode | undefined) {
+
+        // When a "Widget Card" gets dropped onto the grid, we create a new widget on those coordinates.
+        if(this.grid && newWidget) {
+            this.grid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
+            WidgetService.placeNew(newWidget.widgetTypeId, newWidget.x!, newWidget.y!).then((widget) => {
+                this.dispatchEvent(new CustomEvent("created", { detail: widget }));
+            });
+        }
     }
 }

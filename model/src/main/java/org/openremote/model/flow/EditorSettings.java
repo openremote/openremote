@@ -20,13 +20,10 @@
 
 package org.openremote.model.flow;
 
-import javax.persistence.Column;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.validation.constraints.NotNull;
-
-import static org.openremote.model.Constants.PERSISTENCE_STRING_ARRAY_TYPE;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.validation.constraints.NotNull;
 
 public class EditorSettings {
 
@@ -47,8 +44,7 @@ public class EditorSettings {
     @Column(name = "EDITOR_POSITION_Y", nullable = false)
     public double positionY;
 
-    @Column(name = "EDITOR_COMPONENTS", columnDefinition = "text[]")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_STRING_ARRAY_TYPE)
+    @Column(name = "EDITOR_COMPONENTS")
     public String[] components;
 
 

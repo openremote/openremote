@@ -19,18 +19,19 @@
  */
 package org.openremote.model.console;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.http.RequestParams;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Console")
+@Tag(name = "Console", description = "Operations on consoles")
 @Path("console")
 public interface ConsoleResource {
 
@@ -50,5 +51,6 @@ public interface ConsoleResource {
     @Path("register")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "register", summary = "Create or update the registration for a console")
     ConsoleRegistration register(@BeanParam RequestParams requestParams, @NotNull @Valid ConsoleRegistration consoleRegistration);
 }

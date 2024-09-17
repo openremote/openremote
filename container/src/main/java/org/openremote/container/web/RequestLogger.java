@@ -22,19 +22,19 @@ package org.openremote.container.web;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 
 @Provider
 public class RequestLogger implements ContainerRequestFilter {
 
-    protected static final System.Logger LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
+    public static final System.Logger REQUEST_LOG = System.getLogger(RequestLogger.class.getName() + "." + SyslogCategory.API.name());
 
     @Context
     private HttpServletRequest request;
@@ -44,7 +44,7 @@ public class RequestLogger implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        LOG.log(System.Logger.Level.DEBUG, () -> {
+        REQUEST_LOG.log(System.Logger.Level.DEBUG, () -> {
             String requestPath = request.getRequestURI();
             String address = request.getRemoteAddr();
             String port = String.valueOf(request.getRemotePort());

@@ -20,6 +20,7 @@
 package org.openremote.manager.mqtt;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
@@ -43,6 +44,7 @@ import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.ValueHolder;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
@@ -53,8 +55,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -78,8 +78,8 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     protected ConcurrentMap<String, Set<AttributeRef>> userIDAttributeRefs = new ConcurrentHashMap<>();
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
         executorService = container.getExecutorService();
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
@@ -93,7 +93,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
                 @Override
                 public void configure() throws Exception {
                     from(PERSISTENCE_TOPIC)
-                        .routeId("MQTTConnectionMonitorHandlerQueue")
+                        .routeId("Persistence-MQTTConnectedAttributes")
                         .filter(isPersistenceEventForEntityType(Asset.class))
                         .filter(isNotForGateway(gatewayService))
                         .process(exchange -> {
@@ -106,12 +106,9 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
                                 if (oldAttributes != null) {
                                     oldAttributes.stream().filter(ConnectionMonitorHandler::attributeMatches)
-                                        .forEach(attr -> {
-                                            String userID = attr.getMetaValueOrDefault(USER_CONNECTED);
-                                            if (userID != null) {
-                                                removeSessionAttribute(userID, new AttributeRef(asset.getId(), attr.getName()));
-                                            }
-                                        });
+                                        .forEach(attr -> attr.getMetaItem(USER_CONNECTED)
+                                            .flatMap(ValueHolder::getValue)
+                                            .ifPresent(userID -> removeSessionAttribute(userID, new AttributeRef(asset.getId(), attr.getName()))));
                                 }
 
                                 if (newAttributes != null) {
@@ -248,7 +245,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     }
 
     protected void addSessionAttributes(String realm, List<Pair<String, Attribute<?>>> assetIdsAttrs) {
-        LOG.fine("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
+        LOG.finest("Adding '" + assetIdsAttrs.size() + "' attributes(s) with user linked attributes in realm: " + realm);
 
         List<String> usernames = assetIdsAttrs.stream().map(assetIdAttr -> assetIdAttr.getValue().getMetaValue(USER_CONNECTED).orElse(null))
             .filter(Objects::nonNull)
@@ -306,7 +303,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
 
         LOG.fine("Updating connected status for '" + userID + "' on " + attributeRefs.size() + " attribute(s) connected=" + connected);
         attributeRefs.forEach(attributeRef ->
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(attributeRef, connected)));
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(attributeRef, connected), getClass().getSimpleName()));
     }
 
     protected Pair<String, Set<AttributeRef>> getUserIDAndAttributeRefs(RemotingConnection connection) {

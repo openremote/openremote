@@ -51,7 +51,7 @@ async function refreshUI(assetId:string) {
 manager.addListener((event: OREvent) => {
     console.log("OR Event:" + event);
 
-    if(event === OREvent.EVENTS_CONNECTED) {
+    if(event === OREvent.ONLINE) {
         initApartment1Asset().then(assetId => {
             if (assetId) {
                 refreshUI(assetId);
@@ -63,7 +63,6 @@ manager.addListener((event: OREvent) => {
 manager.init({
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    keycloakUrl: "https://localhost/auth",
     managerUrl: "https://localhost",
     realm: "building"
 });

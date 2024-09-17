@@ -23,17 +23,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.openremote.model.Constants;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.openremote.model.security.ClientRole;
 
-import javax.persistence.*;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.Date;
 
-import static javax.persistence.DiscriminatorType.STRING;
+import static jakarta.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @SuppressWarnings("unchecked")
@@ -53,7 +51,8 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Id
     @Column(name = "ID")
     @Min(1)
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -84,8 +83,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Column(name = "RESTRICTED_USER", nullable = false)
     protected boolean restrictedUser;
 
-    @Column(name = "ROLES", columnDefinition = "client_role[]")
-    @org.hibernate.annotations.Type(type = Constants.PERSISTENCE_STRING_ARRAY_TYPE)
+    @Column(name = "ROLES")
     @Enumerated(EnumType.STRING)
     protected ClientRole[] userRoles;
 

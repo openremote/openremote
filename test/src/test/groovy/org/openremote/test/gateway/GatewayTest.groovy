@@ -1,6 +1,5 @@
 package org.openremote.test.gateway
 
-import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HTTPAgent
@@ -9,7 +8,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.container.web.WebTargetBuilder
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -17,18 +16,13 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.gateway.GatewayConnector
 import org.openremote.manager.gateway.GatewayService
+import org.openremote.manager.gateway.JSchGatewayTunnelFactory
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.impl.LightAsset
-import org.openremote.model.security.User
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.impl.BuildingAsset
-import org.openremote.model.asset.impl.GatewayAsset
-import org.openremote.model.asset.impl.MicrophoneAsset
-import org.openremote.model.asset.impl.RoomAsset
+import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
@@ -36,16 +30,20 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
-import org.openremote.model.gateway.GatewayClientResource
-import org.openremote.model.gateway.GatewayConnection
+import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.security.User
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.nio.file.Paths
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -95,10 +93,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId(), true)
+            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
             assert gateway.getAttribute("clientId").isPresent()
-            assert !isNullOrEmpty(gateway.getAttribute("clientId", String.class).flatMap{it.getValue()}.orElse(""))
-            assert !isNullOrEmpty(gateway.getAttribute("clientSecret", String.class).flatMap{it.getValue()}.orElse(""))
+            assert !isNullOrEmpty(gateway.getClientId().orElse(""))
+            assert !isNullOrEmpty(gateway.getClientSecret().orElse(""))
         }
 
         and: "a gateway connector should have been created for this gateway"
@@ -139,13 +137,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        and: "the server should have sent a CONNECTED message and an asset read request"
+        and: "the server should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
             assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
@@ -327,22 +325,25 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "all the gateway assets should be replicated underneath the gateway"
-        assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        conditions.eventually {
+            assert assetStorageService.findAll(new AssetQuery().parents(gateway.getId()).recursive(true)).size() == agentAssets.size() + assets.size()
+        }
 
         and: "the http client protocol of the gateway agents should not have been linked to the central manager"
         Thread.sleep(500)
         conditions.eventually {
             assert !agentService.protocolInstanceMap.containsKey(agentAssetIds[0])
-            assert !agentService.agentMap.containsKey(agentAssetIds[0])
+            assert !agentService.agents.containsKey(agentAssetIds[0])
             assert !agentService.protocolInstanceMap.containsKey(agentAssetIds[4])
-            assert !agentService.agentMap.containsKey(agentAssetIds[4])
+            assert !agentService.agents.containsKey(agentAssetIds[4])
         }
 
         when: "the previously received messages are cleared"
@@ -367,7 +368,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         then: "the descendant asset in the local manager should contain the new attribute value"
         conditions.eventually {
             def building1Room1Asset = assetStorageService.find(mapAssetId(gateway.id, assetIds[1], false))
-            assert building1Room1Asset.getAttribute("tempSetpoint", Double.class).flatMap {it.getValue()}.orElse(0d) == 20d
+            assert building1Room1Asset.getAttribute("tempSetpoint").flatMap {it.getValue()}.orElse(0d) == 20d
         }
 
         when: "an asset is added on the gateway and the local manager is notified"
@@ -431,7 +432,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert localBuilding1Room5Asset.getRealm() == managerTestSetup.realmBuildingName
             assert localBuilding1Room5Asset.getParentId() == mapAssetId(gateway.id, assetIds[0], false)
             assert localBuilding1Room5Asset.getAttributes().size() == 7
-            assert localBuilding1Room5Asset.getAttribute("co2Level", Integer.class).flatMap{it.getValue()}.orElse(0i) == 500i
+            assert localBuilding1Room5Asset.getAttribute("co2Level").flatMap{it.getValue()}.orElse(0i) == 500i
         }
 
         when: "an asset is deleted on the gateway and the local manager is notified"
@@ -524,26 +525,20 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the gateway asset is marked as disabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED, true))
 
-        then: "the gateway asset status should become disabled"
+        then: "the gateway asset status should become DISCONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true)
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISABLED
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISCONNECTED
         }
 
         and: "the gateway connector should be marked as disconnected and the gateway client should have been disconnected"
         conditions.eventually {
             assert gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).disabled
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).connected
-            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
         }
-
-        and: "the central manager should have sent a disconnect event to the client"
-        conditions.eventually {
-            assert clientReceivedMessages.last().contains("gateway-disconnect")
-        }
-        gatewayClient.disconnect()
 
         when: "an attempt is made to add a descendant asset to a gateway that isn't connected"
+        gatewayClient.disconnect()
         def failedAsset = new BuildingAsset("Failed Asset")
             .setId(UniqueIdentifierGenerator.generateId("Failed asset"))
             .setCreatedOn(Date.from(timerService.getNow()))
@@ -581,7 +576,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the gateway asset client secret attribute is updated"
-        def newSecret = UniqueIdentifierGenerator.generateId()
+        def newSecret = UUID.randomUUID().toString()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret))
 
         then: "the service user secret should be updated"
@@ -618,10 +613,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
         }
 
-        and: "the gateway asset connection status should be CONNECTING"
+        and: "the gateway asset connection status should be CONNECTED"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "the local manager should have sent an asset read request"
@@ -717,10 +712,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         readAssetsReplyEvent = new EventRequestResponseWrapper(messageId, new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway asset status should become connected"
+        then: "the gateway connector sync should be completed"
         conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
         }
 
         and: "the gateway should have the correct assets"
@@ -750,10 +746,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
     def "Verify gateway client service"() {
 
-        given: "the container environment is started with the spy gateway client service"
+        given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
-        def services = Lists.newArrayList(defaultServices())
-        def container = startContainer(defaultConfig(), services)
+        def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def timerService = container.getService(TimerService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def gatewayService = container.getService(GatewayService.class)
@@ -798,12 +795,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway client connection is created to connect the city realm to the gateway in the building realm"
         def gatewayConnection = new GatewayConnection(
+            managerTestSetup.realmCityName,
             "127.0.0.1",
             serverPort,
             managerTestSetup.realmBuildingName,
-            gateway.getAttribute("clientId", String.class).flatMap{it.getValue()}.orElse(""),
-            gateway.getAttribute("clientSecret", String.class).flatMap{it.getValue()}.orElse(""),
+            gateway.getClientId().orElse(""),
+            gateway.getClientSecret().orElse(""),
             false,
+            null,
             false
         )
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
@@ -840,7 +839,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredMicrophone != null
             assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap{it.getMetaItem(READ_ONLY)}.flatMap{it.getValue()}.orElse(false)
             assert mirroredMicrophone.getAttribute("test").isPresent()
-            assert mirroredMicrophone.getAttribute("test", Double.class).flatMap{it.getValue()}.orElse(0d) == 100d
+            assert mirroredMicrophone.getAttribute("test").flatMap{it.getValue()}.orElse(0d) == 100d
         }
 
         when: "a gateway client asset is added"
@@ -911,7 +910,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "we subscribe to attribute events"
         List<AttributeEvent> attributeEvents = []
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
+        def subscriptionId = clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
             attributeEvents.add(attributeEvent)
         })
 
@@ -922,10 +921,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         Thread.sleep(1000)
         conditions.eventually {
             assert attributeEvents.size() == 4
-            assert attributeEvents.any{it.assetId == managerTestSetup.light2Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == managerTestSetup.light1Id && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
-            assert attributeEvents.any{it.assetId == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.attributeName == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == managerTestSetup.light1Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light1Id, false) && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
         }
 
         when: "a gateway client asset is deleted"
@@ -935,6 +934,165 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert deleted
         conditions.eventually {
             assert assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false)) == null
+        }
+
+        when: "attribute filters are added to the gateway connection and persisted"
+        gatewayConnection.setAttributeFilters([
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(LightAsset.class)).setValueChange(true),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().types(PeopleCounterAsset.class).attributeNames(PeopleCounterAsset.COUNT_TOTAL.name, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name))
+                    .setDelta(1.5d),
+                new GatewayAttributeFilter().setMatcher(new AssetQuery().names("Microphone 2")).setDuration("PT1M"),
+                // Ignore any other attribute
+                new GatewayAttributeFilter().setSkipAlways(true)
+        ])
+        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
+        def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
+
+        then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
+        conditions.eventually {
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != null
+            assert gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm()) != oldClient
+            GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert connector != null
+            assert !connector.initialSyncInProgress
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has not changed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has changed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, false))
+
+        then: "the value should now have been forwarded to the central instance"
+        conditions.eventually {
+            def mirroredLight2 = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.light2Id, false))
+            assert mirroredLight2 != null
+            assert !mirroredLight2.getAttribute(LightAsset.ON_OFF).flatMap{it.getValue()}.orElse(true)
+            assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true)}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.light2Id, false) && it.name == LightAsset.ON_OFF.name && !it.value.orElse(true)}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by less than delta"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, 0.5d))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) - 0.5d) < 0.000001d}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a delta filter and the attribute value has changed by more than delta"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.peopleCounter1AssetId, PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE, -1.1d))
+
+        then: "the value should have been forwarded to the central instance"
+        conditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.peopleCounter1AssetId && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.peopleCounter1AssetId, false) && it.name == PeopleCounterAsset.COUNT_GROWTH_PER_MINUTE.name && Math.abs(it.value.orElse(0d) + 1.1d) < 0.000001d}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute with a duration filter"
+        attributeEvents.clear()
+        microphone2 = assetStorageService.find(microphone2.id)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 50d))
+
+        then: "the value should have been forwarded to the central instance (as no prior value has been sent since the filter was created)"
+        conditions.eventually {
+            assert attributeEvents.any{it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d}
+            assert attributeEvents.any{it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 50d) < 0.000001d}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for the same attribute before the duration filter has elapsed"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, MicrophoneAsset.SOUND_LEVEL, 60d))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == microphone2.id && it.name == MicrophoneAsset.SOUND_LEVEL.name && Math.abs(it.value.orElse(0d) - 60d) < 0.000001d}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, microphone2.id, false) && it.name == MicrophoneAsset.SOUND_LEVEL.name}
+        }
+
+        when: "an attribute event occurs in the edge gateway realm for an attribute that matches the catch all and skip filter"
+        attributeEvents.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.area1Id, Asset.NOTES, "Some test notes"))
+
+        then: "the value should not have been forwarded to the central instance"
+        delayedConditions.eventually {
+            assert attributeEvents.any{it.id == managerTestSetup.area1Id && it.name == Asset.NOTES.name && "Some test notes".equals(it.value.orElse(null))}
+            assert !attributeEvents.any{it.id == mapAssetId(gateway.id, managerTestSetup.area1Id, false) && it.name == Asset.NOTES.name}
+        }
+
+        cleanup: "Remove any subscriptions created"
+        if (clientEventService != null && subscriptionId != null) {
+            clientEventService.cancelInternalSubscription(subscriptionId)
+        }
+    }
+
+    /**
+     * This test requires a manager instance with tunnelling configured, so is manual for now unfortunately.
+     * Change the test url and key path to match the instance to connect to.
+     * Recommended to run profile/dev-proxy.yml profile.
+     */
+    @Ignore
+    def "Verify gateway tunnel factory"() {
+        given: "an ssh private key and the URL of a manager instance with tunnelling configured"
+        def keyPath = Paths.get(System.getProperty("user.home"), ".ssh", "test_key")
+        def tunnelSSHHost = "test.openremote.app"
+        def tunnelSSHPort = 2222
+
+        and: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig() << [(GatewayService.OR_GATEWAY_TUNNEL_SSH_KEY_FILE): keyPath.toAbsolutePath().toString()], defaultServices())
+        def gatewayClientService = container.getService(GatewayClientService)
+        def tunnelFactory = gatewayClientService.gatewayTunnelFactory as JSchGatewayTunnelFactory
+        def client = WebTargetBuilder.createClient(container.getExecutorService())
+        def tunnelInfo = new GatewayTunnelInfo(
+                "",
+                UniqueIdentifierGenerator.generateId(),
+                GatewayTunnelInfo.Type.HTTPS,
+                "localhost",
+                443)
+        def target = client.target("https://${tunnelInfo.getId()}.${tunnelSSHHost}/auth/")
+
+        expect: "the tunnel factory to be created"
+        tunnelFactory != null
+
+        when: "a tunnel is requested to start"
+        def startEvent = new GatewayTunnelStartRequestEvent(
+                tunnelSSHHost,
+                tunnelSSHPort,
+                null,
+                null,
+                tunnelInfo)
+        tunnelFactory.startTunnel(startEvent)
+
+        then: "the tunnel should be established and be usable"
+        tunnelFactory.sessionMap.containsKey(tunnelInfo)
+        def response = target.request().get()
+        response.status == 200
+
+        when: "the tunnel is stopped"
+        tunnelFactory.stopTunnel(tunnelInfo)
+
+        then: "the tunnel should be destroyed"
+        !tunnelFactory.sessionMap.containsKey(tunnelInfo)
+
+        and: "requests should fail"
+        def response2 = target.request().get()
+        response2.status != 200
+
+        cleanup: "cleanup"
+        if (client != null) {
+            client.close()
         }
     }
 }

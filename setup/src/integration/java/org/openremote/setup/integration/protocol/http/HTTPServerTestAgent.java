@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.http.AbstractHTTPServerAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class HTTPServerTestAgent extends AbstractHTTPServerAgent<HTTPServerTestAgent, TestHTTPServerProtocol, DefaultAgentLink> {

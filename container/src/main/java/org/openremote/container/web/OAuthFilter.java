@@ -19,18 +19,17 @@
  */
 package org.openremote.container.web;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.client.*;
-import javax.ws.rs.core.Form;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.*;
+import jakarta.ws.rs.core.Form;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.SocketException;
 import java.time.LocalDateTime;
@@ -47,11 +46,11 @@ public class OAuthFilter implements ClientRequestFilter {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
     public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
-    protected ResteasyClient client;
+    protected Client client;
     protected WebTarget authTarget;
     protected OAuthGrant oAuthGrant;
 
-    public OAuthFilter(ResteasyClient client, OAuthGrant oAuthGrant) {
+    public OAuthFilter(Client client, OAuthGrant oAuthGrant) {
         Objects.requireNonNull(client);
         Objects.requireNonNull(oAuthGrant);
         this.client = client;
@@ -81,30 +80,30 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected synchronized void updateToken() throws SocketException {
-        LOG.fine("Updating OAuth token");
+        LOG.finest("Updating OAuth token: " + oAuthGrant.getTokenEndpointUri());
         Response response = null;
 
         try {
             if (authServerResponse != null && authServerResponse.refreshToken != null) {
                 // Do a refresh
-                LOG.fine("Using Refresh grant");
+                LOG.finest("Using Refresh grant");
                 response = requestTokenUsingRefresh();
                 if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                     // Maybe the refresh token is not valid so do full auth
-                    LOG.fine("OAuth token refresh failed, trying a full authentication");
+                    LOG.finest("OAuth token refresh failed, trying a full authentication");
                     authServerResponse = null;
                     updateToken();
                     return;
                 }
             } else {
                 // Do full auth
-                LOG.fine("Doing full authentication");
+                LOG.finest("Doing full authentication");
                 response = requestToken();
             }
 
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 authServerResponse = null;
-                LOG.warning("OAuth server response error: " + response.getStatus());
+                LOG.fine("OAuth server response error '" + response.getStatus() + "': " + oAuthGrant.getTokenEndpointUri());
                 throw new RuntimeException("OAuth server response error: " + response.getStatus());
             } else {
                 authServerResponse = response.readEntity(OAuthServerResponse.class);

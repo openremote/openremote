@@ -19,18 +19,19 @@
  */
 package org.openremote.model.manager;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
 import java.io.IOException;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Configuration")
+@Tag(name = "Configuration", description = "Operations on configurations")
 @Path("configuration")
 public interface ConfigurationResource {
 
@@ -39,6 +40,7 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "updateConfiguration", summary = "Update manager configuration")
     Object update(@BeanParam RequestParams requestParams, Object managerConfiguration);
 
     @POST
@@ -46,6 +48,7 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
+    @Operation(operationId = "fileUpload", summary = "Upload a file")
     String fileUpload(
             @BeanParam RequestParams requestParams,
             @QueryParam("path")

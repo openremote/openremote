@@ -1,6 +1,5 @@
 package org.openremote.agent.protocol.snmp;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.snmp.SnmpMessage;
 import org.openremote.agent.protocol.AbstractProtocol;
@@ -9,9 +8,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ValueUtil;
 import org.snmp4j.PDU;
 
 import java.util.HashMap;
@@ -74,17 +71,17 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
                             AttributeRef wildCardAttributeRef;
                             if ((wildCardAttributeRef = oidMap.get("*")) != null) {
-                                ObjectNode wildCardValue = ValueUtil.createJsonObject();
+                                Map<String, Object> wildCardValue = new HashMap<>();
                                 pdu.getVariableBindings().forEach(variableBinding -> {
                                     wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
                                 });
-                                updateLinkedAttribute(new AttributeState(wildCardAttributeRef, wildCardValue));
+                                updateLinkedAttribute(wildCardAttributeRef, wildCardValue);
                             }
 
                             pdu.getVariableBindings().forEach(variableBinding -> {
                                 AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
                                 if (attributeRef != null) {
-                                    updateLinkedAttribute(new AttributeState(attributeRef, variableBinding.toValueString()));
+                                    updateLinkedAttribute(attributeRef, variableBinding.toValueString());
                                 }
                             });
                         });
@@ -122,7 +119,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
         // Nothing to do here
     }
 }

@@ -21,7 +21,7 @@ package org.openremote.container.web;
 
 import org.openremote.model.Container;
 
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,6 +46,7 @@ public class WebApplication extends Application {
         return classes;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Set<Object> getSingletons() {
         return singletons;

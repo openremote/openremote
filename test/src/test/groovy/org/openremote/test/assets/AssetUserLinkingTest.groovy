@@ -12,7 +12,7 @@ import org.openremote.model.asset.UserAssetLink
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
-import javax.ws.rs.WebApplicationException
+import jakarta.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -190,6 +190,13 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         when: "an asset link is deleted"
         assetResource.deleteUserAssetLink(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
         userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser2Id, null)
+
+        then: "result should match"
+        userAssetLinks.length == 0
+
+        when: "all of a user assets are deleted"
+        assetResource.deleteAllUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id)
+        userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.realmBuilding.name, keycloakTestSetup.testuser3Id, null)
 
         then: "result should match"
         userAssetLinks.length == 0

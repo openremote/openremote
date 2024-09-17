@@ -65,9 +65,11 @@ export class OrDashboardBrowser extends LitElement {
 
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const coords: Array<[number, number]> = new Array<[number, number]>([0,0], [2,0], [0,2], [2,2], [4,2], [4,4], [6,4], [6,6], [8,6], [8,8]) // TODO: make this unlimited possibilities with a formula
-        const sidebarItems: any[] = Array.from(widgetTypes).map((typeArr, index) => {
-            return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].DISPLAY_MDI_ICON}"></or-icon><span class="itemText">${typeArr[1].DISPLAY_NAME}</span>`}
+        const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
+        const sidebarItems: any[] = Array.from(widgetTypes)
+            .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
+            .map((typeArr, index) => {
+                return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
         });
 
         // Setting Sidebar height depending on sidebarItems
@@ -78,8 +80,15 @@ export class OrDashboardBrowser extends LitElement {
             }
         });
 
+        let newSidebarHeight = 0;
+        if (sidebarItems.length % 2 !== 0) {
+            // If sidebarHeight is based on nr of widgets in array & is not even add 1
+            newSidebarHeight = sidebarItems.length + 1
+        } else {
+            newSidebarHeight = sidebarItems.length
+        }
         // Creation of the sidebarGrid. Only loads items if already existing
-        if(this.sidebarGrid != undefined) {
+        if(this.sidebarGrid !== undefined) {
             this.sidebarGrid.removeAll();
             this.sidebarGrid.load(sidebarItems);
         } else {
@@ -93,19 +102,20 @@ export class OrDashboardBrowser extends LitElement {
                     appendTo: 'parent'
                 },
                 margin: 8,
-                row: sidebarHeight
+                row: newSidebarHeight
 
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, sidebarElement);
+            
             this.sidebarGrid.load(sidebarItems);
 
             // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
             // This is done by just loading the initial/original widget back in the sidebar.
             // @ts-ignore typechecking since we assume they are not undefined
             this.sidebarGrid.on('removed', (_event: Event, items: GridStackNode[]) => {
-                if(items.length == 1) {
+                if(items.length === 1) {
                     const filteredItems = sidebarItems.filter(widget => {
-                        return (widget.content == items[0].content);
+                        return (widget.content === items[0].content);
                     });
                     this.sidebarGrid?.load([filteredItems[0]]);
                 }
@@ -124,6 +134,7 @@ export class OrDashboardBrowser extends LitElement {
         if(this.backgroundGrid != undefined) {
             this.backgroundGrid.removeAll();
             this.backgroundGrid.load(sidebarItems);
+
         } else {
             this.backgroundGrid = GridStack.init({
                 staticGrid: true,

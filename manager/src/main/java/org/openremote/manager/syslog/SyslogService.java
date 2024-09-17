@@ -33,7 +33,7 @@ import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 import org.openremote.model.util.Pair;
 
-import javax.persistence.TypedQuery;
+import jakarta.persistence.TypedQuery;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -132,8 +132,10 @@ public class SyslogService extends Handler implements ContainerService {
         try {
             persistenceService.doTransaction(em -> em.createQuery(
                 "delete from SyslogEvent e " +
-                    "where e.timestamp < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
-            ).setParameter("minutes", config.getStoredMaxAgeMinutes()).executeUpdate());
+                    "where e.timestamp <= :date")
+                    .setParameter("date",
+                            Date.from(Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES)))
+                    .executeUpdate());
         } catch (Throwable e) {
             LOG.log(Level.WARNING, "Failed to purge syslog events", e);
         }

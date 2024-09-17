@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
 /**
@@ -34,36 +35,28 @@ import org.openremote.model.util.ValueUtil;
  * <p>
  * {@link MetaItemDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
+@TsIgnoreTypeParams
 public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> {
 
     /**
-     * This class handles serialising {@link MetaItemDescriptor}s as strings
-     */
-    public static class MetaItemDescriptorStringConverter extends StdConverter<MetaItemDescriptor<?>, String> {
-
-        @Override
-        public String convert(MetaItemDescriptor<?> value) {
-            return value.getName();
-        }
-    }
-
-    /**
-     * This class handles deserialising meta item descriptor names to {@link MetaItemDescriptor}s
+     * This class handles deserialising meta item descriptor names to {@link MetaItemDescriptor}s; to reuse instances
      */
     public static class StringMetaItemDescriptorConverter extends StdConverter<String, MetaItemDescriptor<?>> {
 
         @Override
         public MetaItemDescriptor<?> convert(String value) {
-            return ValueUtil.getMetaItemDescriptor(value).orElse(MetaItemDescriptor.UNKNOWN);
+            return ValueUtil.getMetaItemDescriptor(value).orElse(null);
         }
     }
-
-    public static final MetaItemDescriptor<Object> UNKNOWN = new MetaItemDescriptor<>("unkown", ValueDescriptor.UNKNOWN);
 
     MetaItemDescriptor() {}
 
     public MetaItemDescriptor(String name, ValueDescriptor<T> valueDescriptor, ValueConstraint...constraints) {
         super(name, valueDescriptor, constraints);
+    }
+
+    public MetaItemDescriptor(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+        super(name, type, constraints, format, units);
     }
 
     public MetaItemDescriptor<T> setFormat(ValueFormat format) {

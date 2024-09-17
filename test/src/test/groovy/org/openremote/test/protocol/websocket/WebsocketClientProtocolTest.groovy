@@ -31,7 +31,6 @@ import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.ReadAttributeEvent
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.Protocol
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -50,12 +49,12 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.HttpHeaders
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -105,9 +104,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     break
                 case "https://mockapi/targetTemperature":
                     attribute1SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
                 case "https://mockapi/co2Level":
                     attribute2SubscriptionDone = true
+                    requestContext.abortWith(Response.ok().build())
                     break
             }
 
@@ -194,12 +195,12 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     "targetTemperature",
                                     0.12345))
                                     .orElse(ValueUtil.NULL_LITERAL)
-                                        .replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER)
+                                        .replace("0.12345", "%VALUE%")
                             )
                         .setMessageMatchFilters(
                             [
                                 new RegexValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX + "(.*)", true, false).setMatchGroup(1),
-                                new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                new JsonPathFilter("\$..ref.name", true, false)
                             ] as ValueFilter[]
                         )
                         .setMessageMatchPredicate(
@@ -208,7 +209,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         .setValueFilters(
                             [
                                 new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"targetTemperature\")].attributeState.value", true, false)
+                                new JsonPathFilter("\$..events[?(@.ref.name == \"targetTemperature\")].value", true, false)
                             ] as ValueFilter[]
                         )
                         .setWebsocketSubscriptions(
@@ -229,7 +230,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setMessageMatchFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                    new JsonPathFilter("\$..ref.name", true, false)
                                 ] as ValueFilter[]
                             )
                             .setMessageMatchPredicate(
@@ -238,7 +239,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             .setValueFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                    new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"co2Level\")].attributeState.value", true, false),
+                                    new JsonPathFilter("\$..events[?(@.ref.name == \"co2Level\")].value", true, false),
                                 ] as ValueFilter[]
                             )
                             .setWebsocketSubscriptions(
@@ -272,8 +273,8 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         conditions.eventually {
             def livingRoom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
             assert livingRoom != null
-            assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
-            assert livingRoom.getAttribute("co2Level", Integer.class).flatMap{it.value}.orElse(0i) == 50i
+            assert livingRoom.getAttribute("targetTemperature").flatMap{it.value}.orElse(0d) == 99d
+            assert livingRoom.getAttribute("co2Level").flatMap{it.value}.orElse(0i) == 50i
         }
 
         then: "the linked attributes should also have the updated values of the subscribed attributes"
@@ -292,7 +293,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readWriteTargetTemp", Double.class).flatMap{it.getValue()}.orElse(null) == 19.5d
+            assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValue()}.orElse(null) == 19.5d
         }
 
         when: "the co2level changes"

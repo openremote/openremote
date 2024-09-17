@@ -6,7 +6,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Optional;
 
 @Entity
@@ -37,8 +37,8 @@ public class SNMPAgent extends Agent<SNMPAgent, SNMPProtocol, SNMPAgentLink> {
     public static final ValueDescriptor<SNMPVersion> VALUE_SNMP_VERSION = new ValueDescriptor<>("SNMPVersion", SNMPVersion.class);
 
     public static final AttributeDescriptor<SNMPVersion> SNMP_VERSION = new AttributeDescriptor<>("SNMPVersionValue", VALUE_SNMP_VERSION);
-    public static final AttributeDescriptor<String> SNMP_BIND_HOST = BIND_HOST.withOptional(false);
-    public static final AttributeDescriptor<Integer> SNMP_BIND_PORT = BIND_PORT.withOptional(false);
+    public static final AttributeDescriptor<String> SNMP_BIND_HOST = Agent.BIND_HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> SNMP_BIND_PORT = Agent.BIND_PORT.withOptional(false);
 
 
     public static final AgentDescriptor<SNMPAgent, SNMPProtocol, SNMPAgentLink> DESCRIPTOR = new AgentDescriptor<>(

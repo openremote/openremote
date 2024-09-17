@@ -27,7 +27,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Optional;
 
 @Entity
@@ -128,7 +128,7 @@ public class ConsoleAsset extends Asset<ConsoleAsset> {
 //            valid = false;
 //        }
 //
-//        Value providerValue = asset.getAttribute(Asset.CONSOLE_PROVIDERS.getAttributeName()).flatMap(AbstractValueHolder::getValue).orElse(null);
+//        Value providerValue = asset.getAttribute(Asset.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
 //
 //        if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
 //            if (validationFailures != null) {

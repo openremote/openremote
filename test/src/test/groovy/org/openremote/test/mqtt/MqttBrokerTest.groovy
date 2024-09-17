@@ -9,7 +9,7 @@ import org.openremote.agent.protocol.mqtt.MQTTLastWill
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.container.util.UniqueIdentifierGenerator
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
@@ -172,8 +172,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 50
         }
         receivedEvents.clear()
@@ -186,8 +186,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "presenceDetected"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "presenceDetected"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(false) == true
         }
         receivedEvents.clear()
@@ -202,8 +202,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 70d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 70d
         }
         receivedEvents.clear()
@@ -218,8 +218,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert !assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(true)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "lights"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "lights"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(true) == false
         }
         receivedEvents.clear()
@@ -234,8 +234,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("lights").get().value.orElse(false)
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "lights"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "lights"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(false) == true
         }
         receivedEvents.clear()
@@ -281,8 +281,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 30
         }
         receivedEvents.clear()
@@ -327,8 +327,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 40
         }
         receivedEvents.clear()
@@ -359,8 +359,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert receivedValues.get(0) == "50"
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 50
         }
         receivedEvents.clear()
@@ -374,8 +374,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "presenceDetected"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "presenceDetected"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(true) == false
             assert receivedValues.size() == 0
         }
@@ -431,7 +431,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AssetEvent
-            assert (receivedEvents.get(0) as AssetEvent).assetId == managerTestSetup.smartBuildingId
+            assert (receivedEvents.get(0) as AssetEvent).id == managerTestSetup.smartBuildingId
             assert (receivedEvents.get(0) as AssetEvent).asset.attributes.get("temp") != null
             assert (receivedEvents.get(0) as AssetEvent).asset.attributes.get("temp").flatMap(){it.getValue()}.orElse(null) == "hello world"
         }
@@ -459,7 +459,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AssetEvent
-            assert (receivedEvents.get(0) as AssetEvent).assetId == childAsset.id
+            assert (receivedEvents.get(0) as AssetEvent).id == childAsset.id
             assert (receivedEvents.get(0) as AssetEvent).assetName == childAsset.name
         }
         receivedEvents.clear()
@@ -488,7 +488,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         newClientId = "newClient"
         def username2 = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser2.username // realm and OAuth client id
         def password2 = keycloakTestSetup.serviceUser2.secret
-        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/$managerTestSetup.apartment1HallwayId".toString(), "1000", false))
         newClient.connect()
 
         then: "the client should be connected"
@@ -510,8 +510,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
         }
         receivedEvents.clear()
@@ -532,8 +532,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 1000d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 1000d
         }
         receivedEvents.clear()
@@ -548,8 +548,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert assetStorageService.find(managerTestSetup.apartment1HallwayId).getAttribute("motionSensor").get().value.orElse(0) == 170d
             assert receivedEvents.size() == 1
             assert receivedEvents.get(0) instanceof AttributeEvent
-            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
-            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).id == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).name == "motionSensor"
             assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 170d
         }
         receivedEvents.clear()
@@ -566,7 +566,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "the new client reconnects using a last will topic for an unauthorised asset/attribute"
         def asset = assetStorageService.find(managerTestSetup.apartment2LivingroomId)
         def currentCO2Level = asset.getAttribute("co2Level").flatMap{it.getValue()}.orElse(0d)
-        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/co2Level/$managerTestSetup.apartment2LivingroomId".toString(), ValueUtil.parse("1000").orElse(null), false))
+        newClient = new MQTT_IOClient(newClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username2, password2), null, new MQTTLastWill("${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/co2Level/$managerTestSetup.apartment2LivingroomId".toString(), "1000", false))
         newClient.connect()
 
         then: "the client should be connected"
@@ -615,17 +615,47 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
         }
 
-        when: "user asset links are updated for a connected restricted user"
+        when: "a user asset link is added for a connected restricted user"
         existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
         assetStorageService.storeUserAssetLinks(List.of(
                 new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
                         keycloakTestSetup.serviceUser2.getId(),
                         managerTestSetup.apartment1BathroomId)))
 
+        then: "the existing connection should not have been terminated"
+        new PollingConditions(initialDelay: 2, timeout: 10, delay: 1).eventually {
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0].is(existingConnection)
+        }
+
+        when: "a user asset link is removed for a connected restricted user"
+        existingConnection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+        assetStorageService.deleteUserAssetLinks(List.of(
+                new UserAssetLink(keycloakTestSetup.realmBuilding.getName(),
+                        keycloakTestSetup.serviceUser2.getId(),
+                        managerTestSetup.apartment1HallwayId)))
+
         then: "the existing connection should be terminated and the client should reconnect"
         conditions.eventually {
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id).size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0] !== existingConnection
+        }
+
+        when: "the restricted mqtt client removes all subscriptions"
+        newClient.removeAllMessageConsumers() // Clear subscriptions as otherwise it won't hit the server again
+
+        then: "no subscriptions should exist in the client"
+        assert newClient.topicConsumerMap.isEmpty()
+
+        when: "the restricted mqtt client subscribes to a now unlinked asset"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$newClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        newClient.addMessageConsumer(topic, {msg ->})
+
+        then: "no subscription should exist"
+        conditions.eventually {
+            assert newClient.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
+            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser2.id)[0]
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
         }
 
         // TODO: Further MQTT tests

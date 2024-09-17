@@ -19,35 +19,23 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothCentralManager;
-import com.welie.blessed.BluetoothCentralManagerCallback;
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothPeripheral;
-import com.welie.blessed.ScanResult;
+import com.welie.blessed.*;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +43,6 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 
@@ -74,9 +61,9 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProtocol.class.getName());
 
-    private static MainThreadManager mainThread = new MainThreadManager();
+    private static final MainThreadManager mainThread = new MainThreadManager();
     private static ScheduledFuture<?> mainThreadFuture = null;
-    private static BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
+    private static final BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
             LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
@@ -132,10 +119,10 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             }
         }
     };
-    private static BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
-    private static List<BluetoothMeshNetwork> networkList = new LinkedList<>();
-    private static SequenceNumberPersistencyManager sequenceNumberManager = new SequenceNumberPersistencyManager();
-
+    private static final BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
+    private static final List<BluetoothMeshNetwork> networkList = new LinkedList<>();
+    // Not ideal this but will do for now
+    private static SequenceNumberPersistencyManager sequenceNumberManager;
 
     public synchronized static void initMainThread(ScheduledExecutorService executorService) {
         if (mainThreadFuture == null) {
@@ -180,6 +167,15 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
     @Override
     protected synchronized void doStart(Container container) throws Exception {
+
+        synchronized (BluetoothMeshProtocol.mainThread) {
+            if (BluetoothMeshProtocol.sequenceNumberManager == null) {
+                Path storagePath = container.getService(PersistenceService.class).getStorageDir();
+                BluetoothMeshProtocol.sequenceNumberManager = new SequenceNumberPersistencyManager(storagePath.resolve("bluetoothmesh"));
+                BluetoothMeshProtocol.sequenceNumberManager.load();
+            }
+        }
+
         LOG.info("Starting Bluetooth Mesh protocol.");
         String meshNetKeyParam = agent.getNetworkKey().orElseThrow(() -> {
             String msg = "No Bluetooth Mesh network key provided for protocol: " + this;
@@ -243,7 +239,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
                 }
             }
         };
-        BluetoothMeshProtocol.sequenceNumberManager.load();
+
         Integer oldSequenceNumber = BluetoothMeshProtocol.sequenceNumberManager.getSequenceNumber(networkKey, sourceAddress);
         if (oldSequenceNumber == null) {
             oldSequenceNumber = sequenceNumberParam;
@@ -288,8 +284,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             "Linking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '" +
                  modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef
         );
-        Class<?> clazz = (attribute == null ? null : attribute.getType().getType());
-        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(new AttributeState(attributeRef, toAttributeValue(value, clazz)));
+        Class<?> clazz = attribute.getTypeClass();
+        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(attributeRef, toAttributeValue(value, clazz));
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
 
         meshNetwork.addMeshModel(address, modelId, appKeyIndex);
@@ -326,7 +322,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (meshNetwork == null) {
             return;
         }

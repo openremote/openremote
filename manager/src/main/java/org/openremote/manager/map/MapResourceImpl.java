@@ -26,8 +26,8 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.map.MapResource;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Map;
 
@@ -50,7 +50,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectNode getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
             getRequestRealmName(),
-            requestParams.getExternalRequestBaseUri()
+            requestParams.getExternalSchemeHostAndPort()
         );
     }
 
@@ -58,7 +58,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public ObjectNode getSettingsJs(RequestParams requestParams) {
         return mapService.getMapSettingsJs(
             getAuthenticatedRealmName(),
-            requestParams.getExternalRequestBaseUri()
+            requestParams.getExternalSchemeHostAndPort()
         );
     }
 

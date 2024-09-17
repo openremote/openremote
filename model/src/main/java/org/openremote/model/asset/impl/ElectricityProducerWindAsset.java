@@ -28,7 +28,7 @@ import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Collection;
 import java.util.Optional;
 

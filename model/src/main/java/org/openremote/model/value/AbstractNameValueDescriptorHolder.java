@@ -20,16 +20,17 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.validation.constraints.Pattern;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import java.util.Arrays;
 import java.util.Objects;
 
+@TsIgnoreTypeParams
 public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescriptorHolder<T>, NameHolder {
 
+    @Pattern(regexp = "^\\w+$")
     @JsonIgnore
     protected String name;
     @JsonIgnore
@@ -49,28 +50,29 @@ public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescr
         this.constraints = constraints;
     }
 
-    @JsonProperty
+    public AbstractNameValueDescriptorHolder(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+        this.name = name;
+        this.type = type;
+        this.constraints = constraints;
+        this.format = format;
+        this.units = units;
+    }
+
     @Override
     public String getName() {
         return name;
     }
 
-    @JsonProperty
     protected void setName(String name) {
         this.name = name;
     }
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
+    @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     @Override
     public ValueDescriptor<T> getType() {
         return type;
     }
 
-    @JsonProperty
-    @JsonSerialize(converter = ValueDescriptor.ValueDescriptorStringConverter.class)
-    @JsonDeserialize(converter = ValueDescriptor.StringValueDescriptorConverter.class)
     protected void setType(ValueDescriptor<T> type) {
         this.type = type;
     }

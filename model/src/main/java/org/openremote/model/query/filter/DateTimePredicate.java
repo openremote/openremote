@@ -101,14 +101,14 @@ public class DateTimePredicate extends ValuePredicate {
             if (TimeUtil.isTimeDuration(value)) {
                 from = currentMillis + TimeUtil.parseTimeDuration(value);
             } else {
-                from = TimeUtil.parseTimeIso8601(value);
+                from = TimeUtil.parseTimeIso8601(value).toEpochMilli();
             }
 
             if (operator == AssetQuery.Operator.BETWEEN) {
                 if (TimeUtil.isTimeDuration(rangeValue)) {
                     to = currentMillis + TimeUtil.parseTimeDuration(rangeValue);
                 } else {
-                    to = TimeUtil.parseTimeIso8601(rangeValue);
+                    to = TimeUtil.parseTimeIso8601(rangeValue).toEpochMilli();
                 }
             }
         } catch (IllegalArgumentException e) {

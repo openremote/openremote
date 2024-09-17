@@ -231,7 +231,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = getContentWithMenuTemplate(
                     html`<or-mwc-input type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                     allowedLanguages.map((l) => {
-                        return {value: l, text: i18next.t(l)} as ListItem;
+                        return {value: l, text: i18next.t("rulesLanguages." + l)} as ListItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
@@ -340,19 +340,19 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         switch (node.ruleset.lang) {
             case (RulesetLang.JSON):
                 nodeIcon = "ray-start-arrow";
-                nodeTitle = "When-Then";
+                nodeTitle = "rulesLanguages.JSON";
                 break;
             case (RulesetLang.FLOW):
                 nodeIcon = "transit-connection-variant";
-                nodeTitle = "Flow";
+                nodeTitle = "rulesLanguages.FLOW";
                 break;
             case (RulesetLang.GROOVY):
                 nodeIcon = "alpha-g-box-outline";
-                nodeTitle = "Groovy";
+                nodeTitle = "rulesLanguages.GROOVY";
                 break;
             case (RulesetLang.JAVASCRIPT):
                 nodeIcon = "language-javascript";
-                nodeTitle = "JavaScript";
+                nodeTitle = "rulesLanguages.JAVASCRIPT";
                 break;
             default:
                 nodeIcon = "mdi-state-machine";
@@ -556,9 +556,11 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             return;
         }
 
+        const rulesetsToDelete = this._selectedNodes.map((rulesetNode) => rulesetNode.ruleset);
+        const rulesetNamesToDelete = rulesetsToDelete.map(ruleset => "\n- " + ruleset.name);
+
         const doDelete = async () => {
             this.disabled = true;
-            const rulesetsToDelete = this._selectedNodes.map((rulesetNode) => rulesetNode.ruleset);
             let fail = false;
             
             for (const ruleset of rulesetsToDelete) {
@@ -601,7 +603,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: rulesetNamesToDelete}), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();

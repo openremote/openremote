@@ -2,7 +2,7 @@ import manager, {EventCallback} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
+import {IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import "./markers/or-map-marker";
@@ -19,13 +19,13 @@ import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dial
 import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 import { debounce } from "lodash";
-import { MapType } from "@openremote/model";
+import {GeoJsonConfig, MapType } from "@openremote/model";
 
 // Re-exports
 export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl} from "maplibre-gl";
+export {IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
@@ -36,6 +36,7 @@ export interface ViewSettings {
     minZoom: number;
     boxZoom: boolean;
     geocodeUrl: String;
+    geoJson?: GeoJsonConfig
 }
 
 export interface MapEventDetail {
@@ -338,7 +339,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                         .setActions([
                             {
                                 actionName: "none",
-                                content: i18next.t("none"),
+                                content: "none",
                                 action: () => {
                                     setPos(null);
                                     valueChangeHandler(pos as LngLatLike);
@@ -346,7 +347,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             },
                             {
                                 actionName: "ok",
-                                content: i18next.t("ok"),
+                                content: "ok",
                                 action: () => {
                                     valueChangeHandler(pos as LngLatLike);
                                 }
@@ -354,7 +355,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                             {
                                 default: true,
                                 actionName: "cancel",
-                                content: i18next.t("cancel")
+                                content: "cancel"
                             }
                         ]));
             };
@@ -436,10 +437,16 @@ export class OrMap extends LitElement {
     @property({type: Boolean})
     public useZoomControl: boolean = true;
 
+    @property({type: Object})
+    public geoJson?: GeoJsonConfig;
+
+    @property({type: Boolean})
+    public showGeoJson: boolean = true;
+
     @property({type: Array})
     public boundary: string[] = [];
 
-    public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
+    public controls?: (IControl | [IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
     protected _map?: MapWidget;
@@ -483,6 +490,8 @@ export class OrMap extends LitElement {
         if(this._resizeObserver) {
             this._resizeObserver.disconnect();
         }
+        // Clean up of internal resources associated with the map
+        this._map?.unload();
     }
 
     protected render() {
@@ -524,10 +533,11 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer, this.showBoundaryBoxControl, this.useZoomControl)
+            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer, this.showGeoCodingControl, this.showBoundaryBoxControl, this.useZoomControl, this.showGeoJson)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
-                .setControls(this.controls);
+                .setControls(this.controls)
+                .setGeoJson(this.geoJson);
             this._map.load().then(() => {
                 // Get markers from slot
                 this._observer = new FlattenedNodesObserver(this._slotElement!, (info: any) => {

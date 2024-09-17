@@ -28,9 +28,11 @@ import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.KeycloakConfigResolver;
@@ -48,11 +50,9 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
+import org.openremote.model.util.TextUtil;
 
 import javax.security.auth.Subject;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Arrays;
@@ -67,8 +67,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
-import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
@@ -83,6 +81,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final List<String> DEFAULT_CLIENTS = Arrays.asList(
         "account",
+        "account-console",
         ADMIN_CLI_CLIENT_ID,
         "broker",
         "master-realm",
@@ -92,6 +91,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String OR_KEYCLOAK_HOST_DEFAULT = "127.0.0.1"; // Bug in keycloak default hostname provider means localhost causes problems with dev-proxy profile
     public static final String OR_KEYCLOAK_PORT = "OR_KEYCLOAK_PORT";
     public static final int OR_KEYCLOAK_PORT_DEFAULT = 8081;
+    public static final String OR_KEYCLOAK_PATH = "OR_KEYCLOAK_PATH";
+    public static final String OR_KEYCLOAK_PATH_DEFAULT = "auth";
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
@@ -102,8 +103,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final int OR_IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
     public static final int OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
-
-    public static final String KEYCLOAK_AUTH_PATH = "auth";
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
     // The URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
@@ -167,13 +166,17 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             UriBuilder.fromPath("/")
                 .scheme("http")
                 .host(getString(container.getConfig(), OR_KEYCLOAK_HOST, OR_KEYCLOAK_HOST_DEFAULT))
-                .port(getInteger(container.getConfig(), OR_KEYCLOAK_PORT, OR_KEYCLOAK_PORT_DEFAULT))
-                .path(KEYCLOAK_AUTH_PATH);
+                .port(getInteger(container.getConfig(), OR_KEYCLOAK_PORT, OR_KEYCLOAK_PORT_DEFAULT));
+
+        String keycloakPath = getString(container.getConfig(), OR_KEYCLOAK_PATH, OR_KEYCLOAK_PATH_DEFAULT);
+
+        if (!TextUtil.isNullOrEmpty(keycloakPath)) {
+            keycloakServiceUri.path(keycloakPath);
+        }
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
-        ResteasyClientBuilder clientBuilder =
-            new ResteasyClientBuilder()
+        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
                 .connectTimeout(
                     getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
@@ -212,10 +215,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 .setReuseXForwarded(true)
                 .build();
         }
-
-        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
-        waitForKeycloak();
-        LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
     @Override
@@ -298,46 +297,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
     }
 
-    protected void waitForKeycloak() {
-        boolean keycloakAvailable = false;
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
-        ResteasyWebTarget target = targetBuilder.build();
-        KeycloakResource keycloakResource = target.proxy(KeycloakResource.class);
-
-        while (!keycloakAvailable) {
-            LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
-            try {
-                pingKeycloak(keycloakResource);
-                keycloakAvailable = true;
-            } catch (Exception ex) {
-                LOG.info("Keycloak server not available, waiting...");
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    protected void pingKeycloak(KeycloakResource resource) throws Exception {
-        Response response = null;
-
-        try {
-            response = resource.getWelcomePage();
-            if (response != null &&
-                (response.getStatusInfo().getFamily() == SUCCESSFUL
-                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
-                return;
-            }
-            throw new Exception();
-        } finally {
-            if (response != null)
-                response.close();
-        }
-    }
-
     public synchronized KeycloakDeployment getKeycloakDeployment(String realm, String clientId) {
+        if (realm == null || clientId == null) {
+            return null;
+        }
         try {
             return keycloakDeploymentCache.get(new KeycloakRealmClient(realm, clientId));
         } catch (Exception ex) {
@@ -457,14 +420,15 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             .build(loader);
     }
 
-    protected void enableAuthProxy(WebService webService) {
+    protected void enableAuthProxy(WebService webService, String keycloakPath) {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
 
-        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + KEYCLOAK_AUTH_PATH);
+
+        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + keycloakPath);
         webService.getRequestHandlers().add(0, pathStartsWithHandler(
             "Keycloak auth proxy",
-            "/" + KEYCLOAK_AUTH_PATH,
+            "/" + keycloakPath,
             authProxyHandler));
     }
 

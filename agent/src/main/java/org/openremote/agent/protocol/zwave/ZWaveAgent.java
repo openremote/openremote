@@ -23,12 +23,12 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class ZWaveAgent extends Agent<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> {
 
-    public static final AttributeDescriptor<String> ZWAVE_SERIAL_PORT = SERIAL_PORT.withOptional(false);
+    public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
 
     public static AgentDescriptor<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         ZWaveAgent.class, ZWaveProtocol.class, ZWaveAgentLink.class, null

@@ -21,7 +21,7 @@ function getStandardModuleRules() {
                 ]
             },
             {
-                test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2)$/,
+                test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
                 type: "asset",
                 generator: {
                     filename: 'images/[hash][ext][query]'
@@ -80,7 +80,10 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
         // },
         resolve: {
             extensions: [".ts", ".tsx", "..."],
-            fallback: { "vm": false }
+            fallback: {
+                "vm": false,
+                "querystring": require.resolve("querystring-es3")
+            }
         }
     };
 

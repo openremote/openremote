@@ -19,11 +19,11 @@
  */
 package org.openremote.model.syslog;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.util.*;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -32,7 +32,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @Table(name = "SYSLOG_EVENT")
 public class SyslogEvent extends SharedEvent {
 
-    static public class LevelCategoryFilter extends EventFilter<SyslogEvent> {
+    static public class LevelCategoryFilter implements EventFilter<SyslogEvent> {
 
         public static final String FILTER_TYPE = "level-category-filter";
 
@@ -46,11 +46,6 @@ public class SyslogEvent extends SharedEvent {
         public LevelCategoryFilter(SyslogLevel level, SyslogCategory... categories) {
             this.level = level;
             this.categories = categories != null ? Arrays.asList(categories) : Collections.EMPTY_LIST;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
         }
 
         public List<SyslogCategory> getCategories() {
@@ -86,7 +81,8 @@ public class SyslogEvent extends SharedEvent {
 
     @Id
     @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
     @NotNull

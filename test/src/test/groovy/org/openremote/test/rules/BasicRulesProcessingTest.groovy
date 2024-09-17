@@ -48,7 +48,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         expect: "the rules engines to be ready"
         conditions.eventually {
             assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
-            assert noRuleEngineFiringScheduled()
         }
 
         when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
@@ -126,7 +125,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         expect: "the rules engines to be ready"
         conditions.eventually {
             assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
-            assert noRuleEngineFiringScheduled()
         }
 
         when: "a Kitchen room asset is inserted into apartment that contains a RULE_STATE = true meta flag"
@@ -152,7 +150,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "after a few seconds the engines in scope should have facts and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
@@ -172,46 +170,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
-        then: "the rule engines settle down"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
-        and: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
+        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
         def realmALastFireTimestamp = rulesImport.realmBuildingEngine.lastFireTimestamp
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
-        def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-            managerTestSetup.apartment2LivingroomId, "windowOpen", true
-        )
-        assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
-
-        then: "the attribute event should have been processed"
-        conditions.eventually {
-            def apartment2LivingRoom = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAs(Boolean.class)}.orElse(false)
-        }
-
-        then: "the rules engines should not have fired"
-        conditions.eventually {
-            assert rulesImport.globalEngine.lastFireTimestamp == globalLastFireTimestamp
-            assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
-            assert rulesImport.realmBuildingEngine.lastFireTimestamp == realmALastFireTimestamp
-            assert rulesImport.apartment2Engine.lastFireTimestamp == apartment2LastFireTimestamp
-            assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
-        }
-
-        when: "time advances"
-        advancePseudoClock(1, TimeUnit.SECONDS, container)
-
-        and: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
-        globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
-        masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
-        realmALastFireTimestamp = rulesImport.realmBuildingEngine.lastFireTimestamp
-        apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
-        apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         asset.addOrReplaceAttributes(
             new Attribute<>("testString", ValueType.TEXT, "test")
                 .addOrReplaceMeta(
@@ -224,15 +188,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         then: "the rules engines should have executed at least one more time"
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > globalLastFireTimestamp
-            assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
+            assert rulesImport.masterEngine.lastFireTimestamp > masterLastFireTimestamp
             assert rulesImport.realmBuildingEngine.lastFireTimestamp > realmALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
-            assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
+            assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }
 
         then: "no rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1
@@ -258,7 +222,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
@@ -289,7 +253,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be added to the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2
@@ -310,7 +274,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesService.attributeEvents.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
             assert rulesImport.realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
@@ -347,7 +311,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         expect: "the rules engines to be ready"
         conditions.eventually {
             assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
-            assert noRuleEngineFiringScheduled()
         }
 
         when: "a broken RHS rule is loaded into the building engine"
@@ -370,11 +333,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             })
         }
 
-        then: "the engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         when: "an attribute event occurs"
         def globalLastFireTimestamp = rulesImport.globalEngine.lastFireTimestamp
         def masterLastFireTimestamp = rulesImport.masterEngine.lastFireTimestamp
@@ -389,10 +347,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         then: "the rules engines should have executed at least one more time"
         conditions.eventually {
             assert rulesImport.globalEngine.lastFireTimestamp > globalLastFireTimestamp
-            assert rulesImport.masterEngine.lastFireTimestamp == masterLastFireTimestamp
-            assert rulesImport.realmBuildingEngine.lastFireTimestamp == realmALastFireTimestamp
+            assert rulesImport.masterEngine.lastFireTimestamp > masterLastFireTimestamp
+            assert rulesImport.realmBuildingEngine.lastFireTimestamp > realmALastFireTimestamp
             assert rulesImport.apartment2Engine.lastFireTimestamp > apartment2LastFireTimestamp
-            assert rulesImport.apartment3Engine.lastFireTimestamp == apartment3LastFireTimestamp
+            assert rulesImport.apartment3Engine.lastFireTimestamp > apartment3LastFireTimestamp
         }
 
     }

@@ -19,10 +19,9 @@
  */
 package org.openremote.setup.integration;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -35,13 +34,13 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
@@ -52,7 +51,7 @@ public class ManagerTestSetup extends ManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 13;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 14;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 5;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -92,6 +91,8 @@ public class ManagerTestSetup extends ManagerSetup {
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
+    public String peopleCounter1AssetId;
+    public String peopleCounter2AssetId;
     public String peopleCounter3AssetId;
     public String electricityOptimisationAssetId;
     public String electricityConsumerAssetId;
@@ -101,6 +102,7 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricityBatteryAssetId;
     public String light1Id;
     public String light2Id;
+
 
     public ManagerTestSetup(Container container) {
         super(container);
@@ -145,7 +147,7 @@ public class ManagerTestSetup extends ManagerSetup {
         lobby.setParent(groundFloor);
         lobby.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, SMART_OFFICE_LOCATION),
-            new Attribute<>("lobbyLocations", JSON_OBJECT.asArray())
+            new Attribute<>("lobbyLocations")
         );
         lobby = assetStorageService.merge(lobby);
         lobbyId = lobby.getId();
@@ -286,8 +288,6 @@ public class ManagerTestSetup extends ManagerSetup {
         );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
         electricitySupplierAssetId = electricitySupplierAsset.getId();
-
-
 
         // ################################ Assets for 'building' realm ###################################
 
@@ -461,8 +461,9 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment2Livingroom.setAccessPublicRead(true);
         apartment2Livingroom.setParent(apartment2);
 
-        ObjectNode objectMap = ValueUtil.createJsonObject();
-        objectMap.put("cactus", 0.8);
+        Map<String, Object> objectMap = Map.of(
+            "cactus", 0.8
+        );
 
         apartment2Livingroom.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454109, 51.446631)).addMeta(
@@ -509,12 +510,13 @@ public class ManagerTestSetup extends ManagerSetup {
                                 new MetaItem<>(LABEL, "Lightswitch Trigger Times"),
                                 new MetaItem<>(RULE_STATE, true)
                         ),
-                new Attribute<>("plantsWaterLevels", JSON_OBJECT, objectMap)
+                new Attribute<>("plantsWaterLevels", null, objectMap)
                         .addMeta(
                                 new MetaItem<>(LABEL, "Water levels of the plants"),
                                 new MetaItem<>(RULE_STATE, true)
                         )
         );
+        addDemoApartmentTemperatureControl(apartment2Livingroom, false, null);
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
@@ -637,6 +639,7 @@ public class ManagerTestSetup extends ManagerSetup {
         PeopleCounterAsset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
+        peopleCounter1AssetId = peopleCounter1Asset.getId();
 
         Asset<?> microphone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
@@ -668,6 +671,7 @@ public class ManagerTestSetup extends ManagerSetup {
         Asset<?> peopleCounter2Asset = createDemoPeopleCounterAsset("PeopleCounter 2", assetArea2, new GeoJSONPoint(5.473686, 51.438603), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
+        peopleCounter2AssetId = peopleCounter2Asset.getId();
 
         Asset<?> environment2Asset = createDemoEnvironmentAsset("Environment 2", assetArea2, new GeoJSONPoint(5.473552, 51.438412), () ->
             new SimulatorAgentLink(smartCityServiceAgentId));

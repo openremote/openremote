@@ -11,7 +11,6 @@ import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -19,7 +18,6 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
-import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 // Ignore this test as temporary facts (rule events) cause the rule engine to continually fire, need to decide if
 // we support rule events or should it just be something rules do internally
@@ -54,7 +52,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-            assert noRuleEngineFiringScheduled()
         }
 
         and: "the ventilation should be off"
@@ -68,11 +65,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         assetProcessingService.sendAttributeEvent(
                 new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
         )
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "auto ventilation should be on"
         conditions.eventually {
@@ -101,11 +93,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             advancePseudoClock(2, MINUTES, container)
         }
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -117,11 +104,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
                 managerTestSetup.apartment1LivingroomId, "co2Level", 500
         )
         simulatorProtocol.putValue(co2LevelDecrement)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "the decreasing CO2 should have been detected in rules"
         conditions.eventually {
@@ -160,11 +142,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             advancePseudoClock(2, MINUTES, container)
         }
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be HIGH"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -186,11 +163,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         and: "time advances"
         advancePseudoClock(20, MINUTES, container)
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -211,11 +183,6 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         and: "time advances"
         advancePseudoClock(15, MINUTES, container)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "ventilation level of the apartment should be LOW"
         conditions.eventually {

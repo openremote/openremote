@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.event;
 
+import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.support.DefaultMessage;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
@@ -33,7 +33,10 @@ import org.openremote.model.util.TextUtil;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.SESSION_KEY;
 
 /**
  * Manages subscriptions to events for WebSocket sessions.
@@ -45,7 +48,7 @@ public class EventSubscriptions {
     final protected TimerService timerService;
     final protected ConcurrentMap<String, SessionSubscriptions> sessionSubscriptionIdMap = new ConcurrentHashMap<>();
 
-    class SessionSubscriptions extends HashSet<SessionSubscription<?>> {
+    class SessionSubscriptions extends ConcurrentHashSet<SessionSubscription<?>> {
         protected void createOrUpdate(EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
@@ -102,6 +105,11 @@ public class EventSubscriptions {
         }
         LOG.finest("Cancel subscription for session '" + sessionKey + "': " + subscription);
         SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+
+        if (sessionSubscriptions == null) {
+            return;
+        }
+
         if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
             sessionSubscriptions.cancelById(subscription.getSubscriptionId());
         } else {
@@ -119,6 +127,9 @@ public class EventSubscriptions {
         }
     }
 
+    /**
+     * Used in {@link ClientEventService#PUBLISH_QUEUE}
+     */
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
         List<Message> messageList = new ArrayList<>();
@@ -140,21 +151,25 @@ public class EventSubscriptions {
                 T filteredEvent = sessionSub.subscription.getFilter() == null ? event : sessionSub.subscription.getFilter().apply(event);
 
                 if (filteredEvent != null) {
-                    LOG.finest("Creating message for subscribed session '" + sessionKey + "': " + event);
-                    List<T> events = Collections.singletonList(event);
+                    LOG.finest("Creating message for subscribed session '" + sessionKey + "': " + filteredEvent);
+                    List<T> events = Collections.singletonList(filteredEvent);
                     TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
 
-                    if (sessionSub.subscription.getInternalConsumer() == null) {
+                    if (sessionSub.subscription.isInternal()) {
+                        if (triggeredEventSubscription.getEvents() != null) {
+                            try {
+                                triggeredEventSubscription.getEvents().forEach(e ->
+                                        sessionSub.subscription.getInternalConsumer().accept(e));
+                            } catch (Exception e) {
+                                LOG.log(Level.WARNING, "Internal subscription consumer has thrown an exception: id=" + triggeredEventSubscription.getSubscriptionId(), e);
+                            }
+                        }
+                    } else {
                         Message msg = new DefaultMessage(exchange.getContext());
                         msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
-                        msg.setHeader(ConnectionConstants.SESSION_KEY, sessionKey);
+                        msg.setHeader(SESSION_KEY, sessionKey);
                         messageList.add(msg);
-                    } else {
-                        if (triggeredEventSubscription.getEvents() != null) {
-                            triggeredEventSubscription.getEvents().forEach(e ->
-                                sessionSub.subscription.getInternalConsumer().accept(e));
-                        }
                     }
                 }
             }

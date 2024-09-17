@@ -1,22 +1,50 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.dashboard;
 
+import jakarta.ws.rs.WebApplicationException;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.dashboard.Dashboard;
-import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.dashboard.DashboardAccess;
+import org.openremote.model.dashboard.DashboardResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.DashboardQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import javax.ws.rs.WebApplicationException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
 
-import java.util.List;
-
-import static javax.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.*;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
+
+    public static final Logger LOG = Logger.getLogger(DashboardResourceImpl.class.getName());
 
     protected final DashboardStorageService dashboardStorageService;
     protected final MessageBrokerService messageBrokerService;
@@ -27,34 +55,63 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
         this.messageBrokerService = messageBrokerService;
     }
 
-
     @Override
     public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
-
-        try {
-            if(!isRealmActiveAndAccessible(realm)) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
-            return this.dashboardStorageService.findAllOfRealm(realm, getUserId());
-
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
         }
+        if(!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+        return dashboardStorageService.query(this.createDashboardQuery(realm), getUserId());
     }
 
     @Override
-    public Dashboard get(RequestParams requestParams, String dashboardId) {
-        return this.dashboardStorageService.get(dashboardId);
+    public Dashboard get(RequestParams requestParams, String realm, String dashboardId) {
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        Dashboard[] dashboards = dashboardStorageService.query(
+                this.createDashboardQuery(realm).ids(dashboardId).limit(1),
+                getUserId()
+        );
+        // If no dashboards were returned, check whether it existed, and return a different response.
+        if(dashboards.length == 0) {
+            if(this.dashboardStorageService.exists(dashboardId, realm)) {
+                throw new WebApplicationException(FORBIDDEN);
+            } else {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+        }
+
+        return dashboards[0];
+    }
+
+    @Override
+    public Dashboard[] query(RequestParams requestParams, DashboardQuery query) {
+        if(query == null) {
+            query = this.createDashboardQuery(getRequestRealmName());
+        }
+        if(query.realm == null || query.realm.name == null) {
+            query.realm(new RealmPredicate(getRequestRealmName()));
+        }
+        if(isAuthenticated() && !isSuperUser() && !(getAuthenticatedRealmName().equals(query.realm.name))) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        return dashboardStorageService.query(query, getUserId());
     }
 
     @Override
     public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
+        String realm = dashboard.getRealm();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-
-            // Check if access to realm
-            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
             dashboard.setOwnerId(getUserId());
             dashboard.setViewAccess(DashboardAccess.SHARED);
             dashboard.setEditAccess(DashboardAccess.SHARED);
@@ -68,14 +125,18 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public void update(RequestParams requestParams, Dashboard dashboard) {
+    public Dashboard update(RequestParams requestParams, Dashboard dashboard) {
+        String realm = dashboard.getRealm();
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-
-            // Check if access to realm
-            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
-            this.dashboardStorageService.update(ValueUtil.clone(dashboard), getUserId());
+            return this.dashboardStorageService.update(ValueUtil.clone(dashboard), realm, getUserId());
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
@@ -83,12 +144,78 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
-    public void delete(RequestParams requestParams, List<String> fields) {
+    public void delete(RequestParams requestParams, String realm, String dashboardId) {
+        if(realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if(!isRealmActiveAndAccessible(realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
         try {
-            this.dashboardStorageService.delete(fields, getUserId());
+            this.dashboardStorageService.delete(dashboardId, realm, getUserId());
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex, NOT_FOUND);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Function that builds an {@link DashboardQuery} object, based on user permissions.
+     * Automatically fills NULL values, adjusts access filters based on roles, etc.
+     *
+     * @param realm
+     * @return An instantiated DashboardQuery with the correct permissions based on the user.
+     */
+    protected DashboardQuery createDashboardQuery(String realm) {
+        if(realm == null) {
+            realm = getRequestRealmName();
+        }
+        DashboardQuery query = new DashboardQuery().realm(new RealmPredicate(realm));
+        Set<DashboardAccess> userViewAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getViewAccess()));
+        Set<DashboardAccess> userEditAccess = new HashSet<>(Set.of(query.conditions.getDashboard().getEditAccess()));
+        Set<DashboardQuery.AssetAccess> assetAccess = new HashSet<>(Set.of(query.conditions.getAsset().getAccess()));
+
+        // Detect cross realm access
+        if(isAuthenticated() && !isSuperUser() && !realm.equals(getAuthenticatedRealmName())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        // User always has access to public dashboards
+        userViewAccess.add(DashboardAccess.PUBLIC);
+        userEditAccess.add(DashboardAccess.PUBLIC);
+        assetAccess.add(DashboardQuery.AssetAccess.REALM);
+
+        // Adjust query object based on user roles/permissions
+        if (isAuthenticated()) {
+            assetAccess.add(DashboardQuery.AssetAccess.LINKED);
+            if (hasResourceRole(ClientRole.READ_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                Collections.addAll(userViewAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
+            }
+            if (hasResourceRole(ClientRole.WRITE_INSIGHTS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                Collections.addAll(userEditAccess, DashboardAccess.SHARED, DashboardAccess.PRIVATE);
+            }
+            if (isRestrictedUser()) {
+                assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.RESTRICTED));
+            }
+        }
+
+        // If not logged in, force only public read/write access
+        else {
+            userViewAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
+            userEditAccess = new HashSet<>(Set.of(DashboardAccess.PUBLIC));
+            assetAccess = new HashSet<>(Set.of(DashboardQuery.AssetAccess.REALM));
+        }
+
+        // Build query object and return
+        return query.conditions(new DashboardQuery.Conditions(
+                        new DashboardQuery.DashboardConditions()
+                                .viewAccess(userViewAccess.toArray(new DashboardAccess[0]))
+                                .editAccess(userEditAccess.toArray(new DashboardAccess[0])),
+                        new DashboardQuery.AssetConditions()
+                                .access(assetAccess.toArray(new DashboardQuery.AssetAccess[0]))
+                )
+        );
     }
 }

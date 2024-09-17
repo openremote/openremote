@@ -7,9 +7,10 @@ import {
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
+    OrAssetViewerLoadUserEvent,
     saveAsset,
     SaveResult,
-    ViewerConfig
+    ViewerConfig, OrAssetViewerLoadAlarmEvent
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig,
@@ -28,7 +29,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
-import {getAssetsRoute} from "../routes";
+import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageAssetsConfig {
@@ -148,7 +149,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     @property()
     protected _editMode: boolean = false;
 
-    @property()
+    @property() // selected asset ids
     protected _assetIds?: string[];
 
     @state()
@@ -189,6 +190,8 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
+        this.addEventListener(OrAssetViewerLoadUserEvent.NAME, this._onLoadUserEvent);
+        this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME,(ev) =>  this._onLoadAlarmEvent(ev));
     }
 
     public connectedCallback() {
@@ -199,16 +202,26 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected render(): TemplateResult | void {
         return html`
-            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}" .expandedIds="${this._expandedIds}"></or-asset-tree>
-            <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}" class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}" .editMode="${this._editMode}"></or-asset-viewer>
+            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
+                           class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
+                           .selectedIds="${this._assetIds}"
+                           .expandedIds="${this._expandedIds}"
+            ></or-asset-tree>
+            <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
+                             class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}"
+                             .editMode="${this._editMode}"
+            ></or-asset-viewer>
         `;
     }
 
+    // State is only utilised for initial loading, and for changes within the store.
+    // On the assets page, we shouldn't change editMode nor assetIds if the URL/state hasn't changed.
     stateChanged(state: AppStateKeyed) {
-        // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        if(!this._assetIds || this._assetIds.length === 0) {
+            this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        }
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
@@ -259,7 +272,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected _onEditToggle(event: OrAssetViewerEditToggleEvent) {
         this._editMode = event.detail;
-        this._updateRoute(true);
+        this._updateRoute(false);
     }
 
     protected _confirmContinue(action: () => void) {
@@ -299,7 +312,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
     }
 
-    protected async  _onAssetParentChange(newParentId: any) {
+    protected async _onAssetParentChange(newParentId: any) {
         let parentId: string | undefined = newParentId.parentId;
         let assetsIds: string[] = newParentId.assetsIds;
 
@@ -308,14 +321,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 if ( !assetsIds.includes(parentId) ) {
                     await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
                 } else {
-                    showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+                    showSnackbar(undefined, "moveAssetFailed", "dismiss");
                 }
             } else {
                 //So need to remove parent from all the selected assets
                 await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
             }
         } catch (e) {
-            showSnackbar(undefined, i18next.t("moveAssetFailed"), i18next.t("dismiss"));
+            showSnackbar(undefined, "moveAssetFailed", "dismiss");
         }
     }
 
@@ -339,6 +352,20 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     protected _updateRoute(silent: boolean = true) {
         const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
         router.navigate(getAssetsRoute(this._editMode, assetId), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
+    }
+
+    protected _onLoadUserEvent(event: OrAssetViewerLoadUserEvent, silent: boolean = false) {
+        router.navigate(getUsersRoute(event.detail), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
+    }
+
+    protected _onLoadAlarmEvent(event: OrAssetViewerLoadAlarmEvent, silent: boolean = false) {
+        router.navigate(getAlarmsRoute(event.detail.toString()), {
             callHooks: !silent,
             callHandler: !silent
         });

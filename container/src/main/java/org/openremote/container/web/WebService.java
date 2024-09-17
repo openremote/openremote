@@ -31,7 +31,11 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
-import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.UriBuilder;
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
@@ -42,9 +46,6 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
 import java.util.*;
@@ -233,7 +234,7 @@ public abstract class WebService implements ContainerService {
 
         HttpHandler handler = exchange -> {
 
-            LOG.log(DEBUG, () -> {
+            RequestLogger.REQUEST_LOG.log(DEBUG, () -> {
                 String requestPath = exchange.getRequestURI();
                 String address = exchange.getSourceAddress().toString();
                 HeaderMap headers = exchange.getRequestHeaders();
@@ -280,7 +281,7 @@ public abstract class WebService implements ContainerService {
         if (apiClasses == null && apiSingletons == null)
             return null;
         WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
-        ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
+        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
@@ -293,11 +294,15 @@ public abstract class WebService implements ContainerService {
         }
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
-        resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
+        //resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
 
         resteasyDeployment.setSecurityEnabled(secure);
 
         return resteasyDeployment;
+    }
+
+    public Undertow getUndertow() {
+        return undertow;
     }
 
     public static synchronized FilterInfo getCorsFilterInfo(Container container) {

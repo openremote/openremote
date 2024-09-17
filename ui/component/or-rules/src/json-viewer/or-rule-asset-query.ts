@@ -381,7 +381,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                             }) : ``}
                             ${showAddAttribute ? html`
                                 <or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
-                                              .label="${i18next.t("rulesEditorAddAttribute")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
+                                              label="rulesEditorAddAttribute" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.addAttributePredicate(this.query!.attributes!)}"></or-mwc-input>
                             `: ``}
                         </div>
                     `;

@@ -19,12 +19,14 @@
  */
 package org.openremote.model.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import java.util.Date;
 
 /**
@@ -39,10 +41,13 @@ public abstract class Event {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    public Date timestamp;
+    @JsonIgnore
+    protected Date timestamp;
 
-    protected Event(long timestamp) {
-        this.timestamp = new Date(timestamp);
+    protected Event(Long timestamp) {
+        if (timestamp != null) {
+            this.timestamp = new Date(timestamp);
+        }
     }
 
     protected Event() {
@@ -59,10 +64,12 @@ public abstract class Event {
         return getEventType(eventClass.getSimpleName());
     }
 
+    @JsonIgnore
     final public String getEventType() {
         return getEventType(getClass());
     }
 
+    @JsonProperty
     public long getTimestamp() {
         return timestamp != null ? timestamp.getTime() : 0L;
     }

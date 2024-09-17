@@ -23,10 +23,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.model.Constants;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Roles available for our client application on Keycloak.
@@ -40,6 +38,7 @@ public enum ClientRole {
     READ_ASSETS(Constants.READ_ASSETS_ROLE, "Read asset data"),
     READ_RULES(Constants.READ_RULES_ROLE, "Read rulesets"),
     READ_INSIGHTS(Constants.READ_INSIGHTS_ROLE, "Read dashboards"),
+    READ_ALARMS(Constants.READ_ALARMS_ROLE, "Read alarms"),
 
     WRITE_USER(Constants.WRITE_USER_ROLE, "Write data of the authenticated user"),
     WRITE_ADMIN(Constants.WRITE_ADMIN_ROLE, "Write system settings, realms, and users"),
@@ -48,6 +47,7 @@ public enum ClientRole {
     WRITE_ATTRIBUTES(Constants.WRITE_ATTRIBUTES_ROLE, "Write attribute data"),
     WRITE_RULES(Constants.WRITE_RULES_ROLE, "Write rulesets (NOTE: effectively super-user access!)"),
     WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
+    WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
@@ -56,7 +56,8 @@ public enum ClientRole {
         READ_MAP,
         READ_ASSETS,
         READ_RULES,
-        READ_INSIGHTS
+        READ_INSIGHTS,
+        READ_ALARMS
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
@@ -67,23 +68,22 @@ public enum ClientRole {
         READ_ASSETS,
         READ_RULES,
         READ_INSIGHTS,
+        READ_ALARMS,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,
         WRITE_ASSETS,
         WRITE_ATTRIBUTES,
         WRITE_RULES,
-        WRITE_INSIGHTS
+        WRITE_INSIGHTS,
+        WRITE_ALARMS
     });
 
     // Only individual roles, not composites
-    public static final Set<String> ALL_ROLES = new HashSet<String>() {{
-        for (ClientRole clientRole : values()) {
-            if (clientRole.composites == null) {
-                add(clientRole.value);
-            }
-        }
-    }};
+    public static final Set<String> ALL_ROLES = Arrays.stream(values())
+        .filter(r -> r.composites == null)
+        .map(ClientRole::getValue)
+        .collect(Collectors.toSet());
 
     final protected String value;
     final protected String description;

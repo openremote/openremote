@@ -20,6 +20,8 @@
 package org.openremote.agent.protocol.mqtt;
 
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.MqttClientSslConfig;
+import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
 import com.hivemq.client.mqtt.MqttClientState;
 import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
 import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
@@ -35,12 +37,14 @@ import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
 import com.hivemq.client.mqtt.mqtt3.message.subscribe.suback.Mqtt3SubAck;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.container.Container;
-import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,11 +78,11 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected final AtomicBoolean connected = new AtomicBoolean(false); // Used for subscriptions
     protected Consumer<String> topicSubscribeFailureConsumer;
 
-    protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill) {
-        this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill);
+    protected AbstractMQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
+        this(UniqueIdentifierGenerator.generateId(), host, port, secure, cleanSession, usernamePassword, websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
     }
 
-    protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill) {
+    protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI, MQTTLastWill lastWill, KeyManagerFactory keyManagerFactory, TrustManagerFactory trustManagerFactory) {
         this.clientId = clientId;
         this.host = host;
         this.port = port;
@@ -123,7 +127,13 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             .applyAutomaticReconnect();
 
         if (secure) {
-            builder = builder.sslWithDefaultConfig();
+            MqttClientSslConfigBuilder sslBuilder = MqttClientSslConfig.builder();
+            if (keyManagerFactory != null) {
+                sslBuilder = sslBuilder.keyManagerFactory(keyManagerFactory);
+            } if (trustManagerFactory != null) {
+                sslBuilder = sslBuilder.trustManagerFactory(trustManagerFactory);
+            }
+            builder = builder.sslConfig(sslBuilder.build());
         }
 
         if (websocketURI != null) {
@@ -261,7 +271,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             LOG.fine("Subscribed to topic '" + topic + "' on client '" + getClientUri() + "'");
             return true;
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "'", e);
+            LOG.log(Level.WARNING, "Failed to subscribe to topic '" + topic + "' on client '" + getClientUri() + "': " + e.getMessage());
             executorService.execute(() -> onSubscribeFailed(topic));
         }
         return false;
@@ -366,7 +376,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
         completableFutureSend.send().whenComplete((connAck, throwable) -> {
             if (throwable != null) {
-                LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable);
+                LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable.getMessage());
             } else {
                 synchronized (connected) {
                     connected.set(true);

@@ -26,7 +26,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.value.*;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Collection;
 import java.util.Optional;
 

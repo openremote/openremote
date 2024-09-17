@@ -21,6 +21,8 @@ export interface RealmAppConfig {
 
 export interface AppConfig<S extends AppStateKeyed> {
     pages: PageProvider<S>[];
+    offlinePage?: PageProvider<S>; // override for fallback page when user is offline/disconnected
+    offlineTimeout?: number;
     languages?: Languages;
     superUserHeader?: HeaderConfig;
     realms?: {
@@ -33,6 +35,7 @@ export interface AppConfig<S extends AppStateKeyed> {
 export interface PageProvider<S extends AppStateKeyed> {
     name: string;
     routes: string[];
+    allowOffline?: boolean; // allow use during offline/disconnected state. Default is false.
     pageCreator: () => Page<S>;
 }
 
@@ -43,6 +46,10 @@ export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(L
     protected _store: Store<S, AnyAction>;
 
     protected _storeUnsubscribe!: Unsubscribe;
+
+    // onRefresh() gets called by or-app to (as silent as possible) refresh the content of the page.
+    // If undefined (default), it will fully rerender the Web Component.
+    onRefresh?: () => void;
 
     constructor(store: Store<S, AnyAction>) {
         super();

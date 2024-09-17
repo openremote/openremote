@@ -43,7 +43,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         asset1.setRealm(Constants.MASTER_REALM)
         asset1.addOrReplaceAttributes(
             new Attribute<>("button", TEXT, "RELEASED"),
-            new Attribute<>("array", JSON_OBJECT.asArray(), null),
+            new Attribute<>("array", null, null),
             new Attribute<>("crossRealm", TEXT, null)
         )
         asset1 = assetStorageService.merge(asset1)
@@ -62,16 +62,18 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         assert asset2.id != null
 
         when: "attributes from one asset is linked to attributes on the other"
-        def converterOnOff = ValueUtil.createJsonObject()
-        converterOnOff.put("PRESSED", "@TOGGLE")
-        converterOnOff.put("RELEASED", "@IGNORE")
-        converterOnOff.put("LONG_PRESSED", "@IGNORE")
+        def converterOnOff = Map.of(
+                "PRESSED", "@TOGGLE",
+                "RELEASED", "@IGNORE",
+                "LONG_PRESSED", "@IGNORE"
+        )
         def attributeLinkOnOff = new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null)
 
-        def converterCounter = ValueUtil.createJsonObject()
-        converterCounter.put("PRESSED", "@INCREMENT")
-        converterCounter.put("RELEASED", "@DECREMENT")
-        converterCounter.put("LONG_PRESSED", "@IGNORE")
+        def converterCounter = Map.of(
+                "PRESSED", "@INCREMENT",
+                "RELEASED", "@DECREMENT",
+                "LONG_PRESSED", "@IGNORE"
+        )
         def attributeLinkCounter = new AttributeLink(new AttributeRef(asset2.id, "counter"), converterCounter, null)
 
         def attributeLinkProp = new AttributeLink(new AttributeRef(asset2.id, "item2Prop1"), null, [
@@ -98,7 +100,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         then: "the linked attribute value should be toggled on"
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
-            assert asset2.getAttribute("lightOnOff", Boolean.class).flatMap{it.value}.orElse(false)
+            assert asset2.getAttribute("lightOnOff").flatMap{it.value}.orElse(false)
         }
 
         when: "the button is pressed again for a short period"
@@ -106,6 +108,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
                 new AttributeState(new AttributeRef(asset1.id, "button"), "PRESSED")
         )
         assetProcessingService.sendAttributeEvent(buttonPressed)
+        Thread.sleep(200)
         advancePseudoClock(1, TimeUnit.SECONDS, container)
         buttonReleased = new AttributeEvent(
                 new AttributeState(new AttributeRef(asset1.id, "button"), "RELEASED")
@@ -115,7 +118,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         then: "the linked attribute value should be toggled off"
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
-            assert !asset2.getAttribute("lightOnOff", Boolean.class).flatMap{it.value}.orElse(false)
+            assert !asset2.getAttribute("lightOnOff").flatMap{it.value}.orElse(false)
         }
         when: "a long button press occurs"
         def buttonLongPressed = new AttributeEvent(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,13 +19,16 @@
  */
 package org.openremote.test.protocol.http
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import org.jboss.resteasy.spi.ResteasyUriInfo
+import jakarta.ws.rs.HttpMethod
+import jakarta.ws.rs.client.ClientRequestContext
+import jakarta.ws.rs.client.ClientRequestFilter
+import jakarta.ws.rs.core.*
+import org.jboss.resteasy.specimpl.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPProtocol
-import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
+import org.openremote.container.timer.TimerService
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -49,12 +52,14 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.ws.rs.HttpMethod
-import javax.ws.rs.client.ClientRequestContext
-import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.*
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoField
+import java.time.temporal.ChronoUnit
 import java.util.regex.Pattern
 
+import static org.openremote.model.util.ValueUtil.doDynamicTimeReplace
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.*
 
@@ -168,11 +173,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
-                        if (body.has("prop1")
-                            && body.get("prop1").get("myProp1").asInt() == 123
-                            && body.get("prop1").get("myProp2").asBoolean()
-                            && body.has("prop2") && body.get("prop2").asText() == "prop2Value") {
+                        Map body = (Map)ValueUtil.parse(bodyStr).orElse(null)
+                        if (body.containsKey("prop1")
+                            && ((Map)body.get("prop1")).get("myProp1") == 123
+                            && ((Map)body.get("prop1")).get("myProp2")
+                            && body.containsKey("prop2") && body.get("prop2") == "prop2Value") {
                             putRequestWithHeadersCalled = true
                             requestContext.abortWith(Response.ok().build())
                             return
@@ -212,6 +217,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     failureCount++
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
                     return
+
                 case "https://mockapi/redirect":
                     requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
                     return
@@ -222,6 +228,43 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                             ).build()
                     )
                     return
+                case "https://mockapi/dynamic_time_1":
+                    pollCountFast++
+                    def uriInfo = new ResteasyUriInfo(requestContext.uri)
+                    def queryParams = uriInfo.getQueryParameters(true)
+                    def yearMonthDay = doDynamicTimeReplace('%TIME:yyyy-MM-dd%', getInstantTimeOf(container))
+                    def epochMillis = getInstantTimeOf(container).plus(1, ChronoUnit.HOURS).toEpochMilli()
+                    def epochSeconds = getInstantTimeOf(container).minus(50, ChronoUnit.DAYS).getEpochSecond()
+                    def localInstant = LocalDateTime.ofInstant(getInstantTimeOf(container), ZoneId.systemDefault())
+
+                    if (yearMonthDay.substring(4,5) != '-'
+                        || yearMonthDay.substring(7,8) != '-'
+                        || yearMonthDay.substring(0,4) != Integer.toString(localInstant.get(ChronoField.YEAR))
+                        || !yearMonthDay.substring(5,7).contains(Integer.toString(localInstant.get(ChronoField.MONTH_OF_YEAR)))
+                        || !yearMonthDay.substring(8,10).contains(Integer.toString(localInstant.get(ChronoField.DAY_OF_MONTH)))
+                    ) {
+                        requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).build())
+                        return
+                    }
+
+                    if (queryParams.get("param1").size() == 1
+                            && queryParams.getFirst("param1") == yearMonthDay
+                            && Long.parseLong(requestContext.getHeaderString("header1")) == epochMillis
+                            && Long.parseLong(requestContext.getHeaderString("header2")) == epochSeconds
+                            && requestContext.getHeaderString("header3") == DateTimeFormatter.ISO_INSTANT.format(getInstantTimeOf(container))) {
+
+                        String bodyStr = (String) requestContext.getEntity()
+                        Map body = (Map) ValueUtil.parse(bodyStr).orElse(null)
+                        if (body.containsKey("prop1")
+                                && body.get("prop1") == doDynamicTimeReplace("%TIME+PT1H:yyyy-MM-dd HH:mm%", getInstantTimeOf(container))) {
+                            requestContext.abortWith(
+                                    Response
+                                            .ok(requestContext.getEntity() as String, MediaType.APPLICATION_JSON_TYPE)
+                                            .build()
+                            )
+                            return
+                        }
+                    }
             }
 
             requestContext.abortWith(Response.serverError().build())
@@ -295,12 +338,12 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .setParent(agent)
             .addOrReplaceAttributes(
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-                new Attribute<>("putRequestWithHeaders", JSON_OBJECT)
+                new Attribute<>("putRequestWithHeaders")
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("put_request_with_headers")
                             .setMethod(HTTPMethod.PUT)
-                            .setWriteValue('{"prop1": {$value}, "prop2": "prop2Value"}')
+                            .setWriteValue('{"prop1": %VALUE%, "prop2": "prop2Value"}')
                             .setContentType(MediaType.APPLICATION_JSON)
                             .setHeaders(new MultivaluedStringMap(
                                 [
@@ -319,8 +362,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 new Attribute<>("getRequestWithDynamicPath", BOOLEAN)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
-                            .setPath('value/{$value}/set')
-                            .setWriteValueConverter((ObjectNode)ValueUtil.parse("{\n" +
+                            .setPath('value/%VALUE%/set')
+                            .setWriteValueConverter((Map)ValueUtil.parse("{\n" +
                                 "    \"TRUE\": \"on\",\n" +
                                 "    \"FALSE\": \"off\"\n" +
                                 "}").get())
@@ -364,9 +407,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(22, 24)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     ),
@@ -382,9 +425,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                                     new SubStringValueFilter(4, 6)
                                 ] as ValueFilter[]
                             )
-                            .setValueConverter(ValueUtil.JSON.createObjectNode()
-                                    .put("00", "OFF")
-                                    .put("01", "ON")
+                            .setValueConverter(Map.of(
+                                    "00", "OFF",
+                                    "01", "ON")
                             )
                         )
                     )
@@ -550,4 +593,105 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             HTTPProtocol.client.set(null)
         }
     }
+
+    def "Check HTTP client dynamic time feature"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+
+        and: "the HTTP client protocol min times are adjusted for testing"
+        HTTPProtocol.MIN_POLLING_MILLIS = 10
+
+        and: "the container starts"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def agentService = container.getService(AgentService.class)
+        def timerService = container.getService(TimerService.class)
+
+
+
+        when: "the web target builder is configured to use the mock server"
+        HTTPProtocol.initClient()
+        if (!HTTPProtocol.client.get().configuration.isRegistered(mockServer)) {
+            HTTPProtocol.client.get().register(mockServer, Integer.MAX_VALUE)
+        }
+
+
+        and: "a HTTP client agent is created"
+        HTTPAgent agent = new HTTPAgent("Test agent")
+                .setRealm(Constants.MASTER_REALM)
+                .setBaseURI("https://mockapi")
+                .setOAuthGrant(
+                        new OAuthPasswordGrant("https://mockapi/token",
+                                "TestClient",
+                                "TestSecret",
+                                "scope1 scope2",
+                                "testuser",
+                                "password")
+                )
+                .setFollowRedirects(true)
+
+        and: "the agent is added to the asset service"
+        agent = assetStorageService.merge(agent)
+
+        then: "the protocol should authenticate and the connection status should become CONNECTED"
+        conditions.eventually {
+            agent = assetStorageService.find(agent.id, HTTPAgent.class)
+            assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
+        }
+
+
+        when: "An asset is created"
+        def asset = new ThingAsset("Test Asset")
+                .setParent(agent)
+                .addOrReplaceAttributes(
+                        // attribute that polls the server using GET and uses regex filter on response
+                        new Attribute<>("testPostRequest", TEXT)
+                                .addMeta(
+                                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                                                .setPath("dynamic_time_1")
+                                                .setMethod(HTTPMethod.POST)
+                                                .setPollingMillis(500)
+                                                .setWriteValue('{"prop1": "%TIME+PT1H:yyyy-MM-dd HH:mm%"}')
+                                                .setHeaders(new MultivaluedStringMap(
+                                                    [
+                                                        ("header1") : ['%TIME+PT1H:EPOCH_MILLIS%'],
+                                                        ("header2") : ['%TIME-P50D:EPOCH_SECONDS%'],
+                                                        ("header3") : ['%TIME%']
+                                                    ]
+                                                ))
+                                                .setQueryParameters(new MultivaluedStringMap(
+                                                    [
+                                                        ("param1") : ['%TIME:yyyy-MM-dd%']
+                                                    ]
+                                                ))
+                                        )
+                                )
+                )
+
+        and: "the clock is stopped"
+        stopPseudoClock()
+
+        and: "the asset is merged into the asset service"
+        asset = assetStorageService.merge(asset)
+
+        then: "new request maps should be created in the HTTP client protocol for the linked attributes"
+        conditions.eventually {
+            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 1
+        }
+
+        and: "the attribute should be polling the server"
+        conditions.eventually {
+            assert mockServer.pollCountFast > 0
+        }
+
+        and: "the attribute value should contain the dynamic time (which means headers and query params are also correct)"
+        conditions.eventually {
+            String expectedPostRequest = doDynamicTimeReplace("%TIME+PT1H:yyyy-MM-dd HH:mm%", timerService.getNow())
+            asset = assetStorageService.find(asset.getId(), true)
+            assert asset.getAttribute("testPostRequest").flatMap {it.value}.orElse(null) == "{\"prop1\": \"${expectedPostRequest}\"}"
+        }
+    }
 }
+

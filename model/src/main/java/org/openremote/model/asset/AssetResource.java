@@ -24,6 +24,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -33,15 +38,9 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.MetaItemType;
 
-import javax.annotation.security.RolesAllowed;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Asset<?> access rules:
@@ -68,7 +67,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>{@link #writeAttributeValue}</li>
  * </ul>
  */
-@Tag(name = "Asset")
+@Tag(name = "Asset", description = "Operations on assets")
 @Path("asset")
 public interface AssetResource {
 
@@ -94,6 +93,7 @@ public interface AssetResource {
     @Path("user/current")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getCurrentUserAssets",  summary = "Retrieve the linked assets of the currently authenticated user")
     Asset<?>[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
@@ -113,6 +113,7 @@ public interface AssetResource {
     @Path("user/link")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getUserAssetLinks", summary = "Retrieve links between assets and users")
     UserAssetLink[] getUserAssetLinks(@BeanParam RequestParams requestParams,
                                       @QueryParam("realm") String realm,
                                       @QueryParam("userId") String userId,
@@ -129,7 +130,9 @@ public interface AssetResource {
     @POST
     @Path("user/link")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "createUserAssetLinks", summary = "Create links between users and assets")
     void createUserAssetLinks(@BeanParam RequestParams requestParams, List<UserAssetLink> userAssets);
 
     /**
@@ -145,6 +148,7 @@ public interface AssetResource {
     @DELETE
     @Path("user/link/{realm}/{userId}/{assetId}")
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "deleteUserAssetLink", summary = "Delete a link between an asset and user")
     void deleteUserAssetLink(@BeanParam RequestParams requestParams,
                              @PathParam("realm") String realm,
                              @PathParam("userId") String userId,
@@ -162,12 +166,15 @@ public interface AssetResource {
     @Path("user/link/delete")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "deleteUserAssetLinks", summary = "Delete user asset links")
     void deleteUserAssetLinks(@BeanParam RequestParams requestParams, List<UserAssetLink> userAssets);
 
     @DELETE
     @Path("user/link/{realm}/{userId}")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "deleteAllUserAssetLinks", summary = "Delete all user asset links")
     void deleteAllUserAssetLinks(@BeanParam RequestParams requestParams,
                                  @PathParam("realm") String realm,
                                  @PathParam("userId") String userId);
@@ -182,6 +189,7 @@ public interface AssetResource {
     @Path("{assetId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getAsset", summary = "Retrieve an asset")
     Asset<?> get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
@@ -191,6 +199,7 @@ public interface AssetResource {
     @Path("partial/{assetId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getPartialAsset", summary = "Retrieve a partially loaded asset (no attributes or path)")
     Asset<?> getPartial(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
@@ -206,8 +215,10 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset<?> asset);
+    @Operation(operationId = "updateAsset", summary = "Update an asset")
+    Asset<?> update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset<?> asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
@@ -229,8 +240,8 @@ public interface AssetResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @Operation(description = "Write to a single attribute", responses = {
-        @ApiResponse(
+    @Operation(operationId = "writeAttributeValue", summary = "Write to a single attribute", responses = {
+        @ApiResponse(description = "The result of the write operation",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(implementation = AttributeWriteResult.class)))})
     Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
@@ -239,6 +250,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes")
+    @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
     AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
 
     /**
@@ -253,7 +265,8 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    Asset<?> create(@BeanParam RequestParams requestParams, @Valid Asset<?> asset);
+    @Operation(operationId = "createAsset", summary = "Create an asset")
+    Asset<?> create(@BeanParam RequestParams requestParams, Asset<?> asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete
@@ -263,6 +276,7 @@ public interface AssetResource {
     @DELETE
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    @Operation(operationId = "deleteAsset", summary = "Delete assets")
     void delete(@BeanParam RequestParams requestParams, @QueryParam("assetId") List<String> assetIds);
 
     /**
@@ -278,6 +292,7 @@ public interface AssetResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryAssets", summary = "Retrieve assets using a query")
     Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
@@ -287,6 +302,7 @@ public interface AssetResource {
     @Path("{parentAssetId}/child")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "updateAssetParent", summary = "Update the parent of assets")
     void updateParent(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") @NotNull(message = "Parent reference required") String parentId, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 
     /**
@@ -295,5 +311,6 @@ public interface AssetResource {
     @DELETE
     @Path("/parent")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "deleteAssetsParent", summary = "Delete the parent of assets")
     void updateNoneParent(@BeanParam RequestParams requestParams, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 }

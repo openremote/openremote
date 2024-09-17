@@ -19,32 +19,34 @@
  */
 package org.openremote.manager.gateway;
 
+import jakarta.persistence.EntityManager;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.ConnectionConstants;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.event.AttributeEventInterceptor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.GatewayAsset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
+import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.ClientRole;
@@ -52,34 +54,47 @@ import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.MetaItemType;
 
-import javax.persistence.EntityManager;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
  * Manages {@link org.openremote.model.asset.impl.GatewayAsset}s in the local instance by creating Keycloak clients
  * for them and handles the connection logic of gateways; it is the gateways responsibility to connect to this instance,
  * it is then up to this instance to authenticate the gateway and to initiate synchronisation of gateway assets.
+ * <p>
+ * Also adds an {@link AttributeEventInterceptor} to consume any {@link AttributeEvent} destined for a
+ * {@link GatewayAsset} descendant {@link Asset} and routes them to the underlying gateway for handling; the underlying
+ * gateway then notifies us if/when the action has succeeded.
  */
-public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
+public class GatewayService extends RouteBuilder implements ContainerService {
 
     // Need a high priority so that event authorizer can get the events before other authorizers
     public static final int PRIORITY = HIGH_PRIORITY + 100;
     public static final String GATEWAY_CLIENT_ID_PREFIX = "gateway-";
+    public static final String OR_GATEWAY_TUNNEL_SSH_KEY_FILE = "OR_GATEWAY_TUNNEL_SSH_KEY_FILE";
     private static final Logger LOG = SyslogCategory.getLogger(GATEWAY, GatewayService.class.getName());
+    public static final String OR_GATEWAY_TUNNEL_SSH_HOSTNAME = "OR_GATEWAY_TUNNEL_SSH_HOSTNAME";
+    public static final String OR_GATEWAY_TUNNEL_SSH_PORT = "OR_GATEWAY_TUNNEL_SSH_PORT";
+    public static final String OR_GATEWAY_TUNNEL_TCP_START = "OR_GATEWAY_TUNNEL_TCP_START";
+    public static final String OR_GATEWAY_TUNNEL_HOSTNAME = "OR_GATEWAY_TUNNEL_HOSTNAME";
+    public static final int OR_GATEWAY_TUNNEL_TCP_START_DEFAULT = 9000;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected ManagerIdentityService identityService;
@@ -88,15 +103,23 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     protected RulesetStorageService rulesetStorageService;
     protected RulesService rulesService;
     protected ScheduledExecutorService executorService;
+    protected TimerService timerService;
+    protected String tunnelSSHHostname;
+    protected String tunnelHostname;
+    protected int tunnelSSHPort;
+    protected int tunnelTCPStart;
+
     /**
      * Maps gateway asset IDs to connections; note that gateway asset IDs are stored lower case so that they can be
      * matched up to the service user client ID (which needs to be all lower case); this could technically cause an
      * ID collision but for now the odds of that are low enough to not be a concern.
      */
-    protected final Map<String, GatewayConnector> gatewayConnectorMap = new HashMap<>();
+    protected final Map<String, GatewayConnector> gatewayConnectorMap = new ConcurrentHashMap<>();
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
     protected List<String> realmIds = new ArrayList<>();
+    protected Map<String, GatewayTunnelInfo> tunnelInfos = new ConcurrentHashMap<>();
+    protected AtomicInteger pendingTunnelCounter = new AtomicInteger();
 
     @SuppressWarnings("unchecked")
     public static Predicate isNotForGateway(GatewayService gatewayService) {
@@ -160,6 +183,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         executorService = container.getExecutorService();
         rulesetStorageService = container.getService(RulesetStorageService.class);
         rulesService = container.getService(RulesService.class);
+        timerService = container.getService(TimerService.class);
+
+        container.getService(ManagerWebService.class).addApiSingleton(
+                new GatewayServiceResourceImpl(timerService, identityService, this, assetStorageService)
+        );
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
@@ -182,7 +210,26 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 // TODO: Introduce gateway realm role
                 return isGatewayClientId(clientId);
             });
+
+            assetProcessingService.addEventInterceptor(new AttributeEventInterceptor() {
+                @Override
+                public int getPriority() {
+                    // Needs to be the first interceptor
+                    return AttributeEventInterceptor.DEFAULT_PRIORITY - 1000;
+                }
+
+                @Override
+                public boolean intercept(EntityManager em, AttributeEvent event) throws AssetProcessingException {
+                    return onAttributeEventIntercepted(em, event);
+                }
+            });
         }
+
+        // Check tunnelling support
+        tunnelSSHHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_HOSTNAME, null);
+        tunnelSSHPort = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_PORT, 0);
+        tunnelTCPStart = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_TCP_START, OR_GATEWAY_TUNNEL_TCP_START_DEFAULT);
+        tunnelHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_HOSTNAME, null);
     }
 
     @Override
@@ -196,7 +243,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             .stream()
             .map(asset -> (GatewayAsset)asset)
             .collect(Collectors.toList());
-        List<String> gatewayIds = gateways.stream().map(Asset::getId).collect(Collectors.toList());
+        List<String> gatewayIds = gateways.stream().map(Asset::getId).toList();
         gateways = gateways.stream()
             .filter(gateway ->
                 Arrays.stream(gateway.getPath()).noneMatch(p -> !p.equals(gateway.getId()) && gatewayIds.contains(p)))
@@ -216,7 +263,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 }
 
                 // Create connector
-                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
 
                 // Get IDs of all assets under this gateway
@@ -234,10 +281,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
     @Override
     public void stop(Container container) throws Exception {
-        // TODO: Stop all connectors
         gatewayConnectorMap.values().forEach(GatewayConnector::disconnect);
         gatewayConnectorMap.clear();
         assetIdGatewayIdMap.clear();
+        tunnelInfos.clear();
     }
 
     @Override
@@ -245,7 +292,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (active) {
             from(PERSISTENCE_TOPIC)
-                .routeId("GatewayServiceAssetChanges")
+                .routeId("Persistence-GatewayAsset")
                 .filter(isPersistenceEventForEntityType(Asset.class))
                 .process(exchange -> {
                     @SuppressWarnings("unchecked")
@@ -295,96 +342,120 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return;
         }
 
-        if (header(ConnectionConstants.SESSION_OPEN).matches(exchange)) {
+        if (header(SESSION_OPEN).matches(exchange)) {
+            // We need to delay processing here so that ClientEventService has fully initialised the session
             String sessionKey = ClientEventService.getSessionKey(exchange);
             processGatewayConnected(clientId, sessionKey);
             return;
         }
 
-        if (or(header(ConnectionConstants.SESSION_CLOSE), header(ConnectionConstants.SESSION_CLOSE_ERROR)).matches(exchange)) {
-            processGatewayDisconnected(clientId);
+        if (or(header(SESSION_CLOSE), header(SESSION_CLOSE_ERROR)).matches(exchange)) {
+            String sessionKey = ClientEventService.getSessionKey(exchange);
+            processGatewayDisconnected(clientId, sessionKey);
             return;
         }
 
         // Inbound shared events
-        if (and(ClientEventService::isInbound, body().isInstanceOf(SharedEvent.class)).matches(exchange)) {
-            ClientEventService.stopMessage(exchange);
+        if (body().isInstanceOf(SharedEvent.class).matches(exchange)) {
+            exchange.setRouteStop(true);
+            String sessionKey = ClientEventService.getSessionKey(exchange);
             String gatewayId = getGatewayIdFromClientId(clientId);
-            onGatewayClientEventReceived(gatewayId, exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));
+            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+            processGatewayMessage(gatewayId, sessionKey, messageId, exchange.getIn().getBody(SharedEvent.class));
         }
     }
 
-    @Override
-    public boolean processAssetUpdate(EntityManager em, Asset<?> asset, Attribute<?> attribute, AttributeEvent.Source source) throws AssetProcessingException {
+    public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
 
-        // If the update was generated by a gateway then we don't want to process it here
-        if (source == AttributeEvent.Source.GATEWAY) {
+        // If the event came from a gateway then we don't want to process it here
+        if (getClass().getName().equals(event.getSource())) {
+            // Clear out agentlink meta so agent interceptor doesn't try intercepting the event
+            event.getMeta().remove(MetaItemType.AGENT_LINK);
             return false;
         }
 
-        GatewayConnector connector = gatewayConnectorMap.get(asset.getId().toLowerCase(Locale.ROOT));
+        GatewayConnector connector = gatewayConnectorMap.get(event.getId().toLowerCase(Locale.ROOT));
 
         if (connector != null) {
-            LOG.fine("Attribute event for a locally registered gateway asset (Asset ID=" + asset.getId() + "): " + attribute);
-
-            GatewayAsset gatewayAsset = (GatewayAsset)asset;
+            LOG.fine("Attribute event for a locally registered gateway asset (Asset ID=" + event.getId() + "): " + event.getRef());
 
             // This is a change to a locally registered gateway
-            if (GatewayAsset.DISABLED.getName().equals(attribute.getName())) {
-                boolean disabled = attribute.getValueAs(Boolean.class).orElse(false);
-                boolean isAlreadyDisabled = gatewayAsset.getDisabled().orElse(false);
-                gatewayAsset.setDisabled(disabled); // Ensure we update state
+            if (GatewayAsset.DISABLED.getName().equals(event.getName())) {
+                boolean disabled = (Boolean)event.getValue().orElse(false);
+                boolean isAlreadyDisabled = (Boolean)event.getOldValue().orElse(false);
 
                 if (disabled != isAlreadyDisabled) {
-                    createUpdateGatewayServiceUser(gatewayAsset);
-                    if (disabled) {
-                        connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+                    GatewayAsset gatewayAsset = assetStorageService.find(event.getId(), GatewayAsset.class);
+                    if (gatewayAsset == null) {
+                        String msg = "Gateway asset not found: ref=" + event.getRef();
+                        LOG.info(msg);
+                        throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
                     }
+                    LOG.fine("Gateway client disabled attribute updated so updating gateway service user enabled flag: (gatewayId=" + event.getId() + ")");
+                    // Push value into asset for service user method
+                    gatewayAsset.setDisabled(disabled);
+                    createUpdateGatewayServiceUser(gatewayAsset);
                     connector.setDisabled(disabled);
                 }
-            }
-
-            if (GatewayAsset.CLIENT_SECRET.getName().equals(attribute.getName())) {
-                String newSecret = attribute.getValueAs(String.class).orElse(null);
-                if (!TextUtil.isNullOrEmpty(newSecret)) {
-                    LOG.fine("Gateway client secret attribute updated so updating gateway service user secret to match: (Gateway ID=" + asset.getId() + ")");
-                    User gatewayServiceUser = identityProvider.getUserByUsername(asset.getRealm(), User.SERVICE_ACCOUNT_PREFIX + ((GatewayAsset) asset).getClientId().orElse(""));
-                    if (gatewayServiceUser != null) {
-                        identityProvider.resetSecret(asset.getRealm(), gatewayServiceUser.getId(), newSecret);
-                    } else {
-                        LOG.info("Couldn't retrieve gateway service user to update secret: (Gateway ID=" + asset.getId() + ")");
-                    }
-                } else {
-                    // Push old secret back
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), GatewayAsset.CLIENT_SECRET, gatewayAsset.getClientSecret().orElseThrow(() -> new IllegalStateException("Gateway client secret is null which was not expected"))));
+            } else if (GatewayAsset.CLIENT_SECRET.getName().equals(event.getName())) {
+                String newSecret = (String)event.getValue().orElse(null);
+                GatewayAsset gatewayAsset = assetStorageService.find(event.getId(), GatewayAsset.class);
+                if (gatewayAsset == null) {
+                    String msg = "Gateway asset not found: ref=" + event.getRef();
+                    LOG.warning(msg);
+                    throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
                 }
-            }
-        } else {
-            String gatewayId = assetIdGatewayIdMap.get(asset.getId());
-
-            if (gatewayId != null) {
-                LOG.fine("Attribute event for a gateway descendant asset (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
-                connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-                if (connector == null) {
-                    LOG.warning("Gateway not found for descendant asset, this should not happen!!! (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + ")");
-                } else {
-                    if (!connector.isConnected()) {
-                        LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
-                        throw new AssetProcessingException(AttributeWriteFailure.GATEWAY_DISCONNECTED, "Gateway is not connected: Gateway ID=" + connector.gatewayId);
-                    }
-                    LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
-                    connector.sendMessageToGateway(
-                        new AttributeEvent(
-                            mapAssetId(gatewayId, asset.getId(), true),
-                            attribute.getName(),
-                            attribute.getValue().orElse(null),
-                            attribute.getTimestamp().orElse(0L))
-                            .setParentId(mapAssetId(gatewayId, asset.getParentId(), true)).setRealm(asset.getRealm()));
+                LOG.fine("Gateway client secret attribute updated so updating gateway service user secret: (gatewayId=" + event.getId() + ")");
+                User gatewayServiceUser = identityProvider.getUserByUsername(event.getRealm(), User.SERVICE_ACCOUNT_PREFIX + gatewayAsset.getClientId().orElseThrow(() -> {
+                    String msg = "Gateway asset client ID is missing";
+                    LOG.warning(msg);
+                    return new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
+                }));
+                if (gatewayServiceUser == null) {
+                    String msg = "Couldn't retrieve gateway service user to update secret: (gatewayId=" + event.getId() + ")";
+                    LOG.warning(msg);
+                    throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
                 }
+                newSecret = identityProvider.resetSecret(event.getRealm(), gatewayServiceUser.getId(), newSecret);
 
-                // Consume this event as it is for a gateway descendant and we've sent it to that gateway for processing
-                return true;
+                // Disconnect current session
+                connector.disconnect();
+
+                // Update the event value with the potentially newly generated secret
+                event.setValue(newSecret);
             }
+
+            return false;
+        }
+
+        String gatewayId = assetIdGatewayIdMap.get(event.getId());
+
+        if (gatewayId != null) {
+            LOG.fine("Attribute event for a gateway descendant asset (assetId=" + event.getId() + ", gatewayId=" + gatewayId + ")");
+            connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
+            if (connector == null) {
+                String msg = "Gateway not found for descendant asset, this should not happen!!! assetId=" + event.getId() + ", gatewayId=" + gatewayId + ")";
+                LOG.warning(msg);
+                throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, msg);
+            }
+
+            if (!connector.isConnected()) {
+                LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (assetId=" + event.getId() + ", gatewayId=" + gatewayId + ")");
+                throw new AssetProcessingException(AttributeWriteFailure.CANNOT_PROCESS, "Gateway is not connected: gatewayId=" + connector.gatewayId);
+            }
+
+            LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (assetRef=" + event.getRef() + ", gatewayId=" + gatewayId + ")");
+            connector.sendMessageToGateway(
+                new AttributeEvent(
+                    mapAssetId(gatewayId, event.getId(), true),
+                    event.getName(),
+                    event.getValue().orElse(null),
+                    event.getTimestamp())
+                    .setParentId(mapAssetId(gatewayId, event.getParentId(), true))
+                    .setRealm(event.getRealm()));
+
+            // Consume this event as it is for a gateway descendant and we've sent it to that gateway for processing
+            return true;
         }
 
         // Don't consume event for non gateway descendant assets
@@ -444,6 +515,131 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return connector.deleteGatewayAssets(assetIds);
     }
 
+    public Collection<GatewayTunnelInfo> getTunnelInfos() {
+        return this.tunnelInfos.values();
+    }
+
+    protected boolean tunnellingSupported() {
+        return !TextUtil.isNullOrEmpty(tunnelSSHHostname) && tunnelSSHPort > 0;
+    }
+
+    public GatewayTunnelInfo startTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
+        if (!tunnellingSupported()) {
+            String msg = "Failed to start tunnel: reason=tunnelling is not supported";
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+            String msg = "Failed to start tunnel: reason=gateway ID cannot be null or empty";
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
+        String realm = tunnelInfo.getRealm();
+        final GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+
+        if (connector == null || !realm.equals(connector.getRealm())) {
+            String msg = "Failed to start tunnel: reason=Gateway disconnected or doesn't exist, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalStateException(msg);
+        }
+
+        if (!connector.isTunnellingSupported()) {
+            String msg = "Failed to start tunnel: reason=Not supported by gateway, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (!connector.isConnected()) {
+            String msg = "Failed to start tunnel: reason=Not connected, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (tunnelInfo.getType() == GatewayTunnelInfo.Type.TCP) {
+            // This is pretty crude but should be robust enough
+            int assignedPort = tunnelTCPStart + Math.toIntExact(pendingTunnelCounter.get() + tunnelInfos.values().stream().filter(ti -> ti.getType() == GatewayTunnelInfo.Type.TCP).count());
+            tunnelInfo.setAssignedPort(assignedPort);
+        }
+        if (!TextUtil.isNullOrEmpty(tunnelHostname)) {
+            tunnelInfo.setHostname(tunnelHostname);
+        }
+        CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
+        try {
+            pendingTunnelCounter.incrementAndGet();
+            startFuture.get();
+            tunnelInfos.put(tunnelInfo.getId(), tunnelInfo);
+            return tunnelInfo;
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                String msg = "Failed to start tunnel: A timeout occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+                LOG.log(Level.WARNING, msg);
+            } else {
+                String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+                LOG.log(Level.WARNING, msg, e.getCause());
+            }
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            pendingTunnelCounter.decrementAndGet();
+        }
+    }
+
+    public void stopTunnel(GatewayTunnelInfo tunnelInfo) throws IllegalArgumentException, IllegalStateException {
+        if (!tunnellingSupported()) {
+            String msg = "Failed to stop tunnel: reason=tunnelling is not supported";
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (TextUtil.isNullOrEmpty(tunnelInfo.getGatewayId())) {
+            String msg = "Failed to stop tunnel: reason=gateway ID cannot be null or empty";
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        String gatewayId = tunnelInfo.getGatewayId().toLowerCase(Locale.ROOT);
+        String realm = tunnelInfo.getRealm();
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+
+        if (connector == null || !realm.equals(connector.getRealm())) {
+            String msg = "Failed to stop tunnel: reason=Gateway disconnected or doesn't exist, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalStateException(msg);
+        }
+
+        if (!connector.isTunnellingSupported()) {
+            String msg = "Failed to stop tunnel: reason=Not supported by gateway, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        if (!connector.isConnected()) {
+            String msg = "Failed to stop tunnel: reason=Not connected, id=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        // Wait for up to 20 seconds for the tunnel to stop
+        CompletableFuture<Void> stopFuture = connector.stopTunnel(tunnelInfo);
+        try {
+            stopFuture.get(20, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+            LOG.log(Level.WARNING, msg, e.getCause());
+            throw new RuntimeException(msg, e.getCause());
+        } catch (InterruptedException | TimeoutException e) {
+            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+            LOG.warning(msg);
+            throw new RuntimeException(msg);
+        } finally {
+            tunnelInfos.remove(tunnelInfo.getId(), tunnelInfo);
+        }
+    }
+
     /**
      * Check if asset ID is a gateway asset registered locally on this manager
      */
@@ -455,10 +651,6 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
      * Check if the specified asset ID or parent ID is a known gateway or descendant of a gateway.
      */
     public String getLocallyRegisteredGatewayId(String assetId, String parentId) {
-        if (!active) {
-            return null;
-        }
-
         String gatewayId = assetIdGatewayIdMap.get(assetId);
 
         if (gatewayId != null) {
@@ -479,73 +671,65 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     protected void processGatewayConnected(String gatewayClientId, String sessionId) {
-
-        if (!active) {
-            return;
-        }
-
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
-            LOG.warning("Gateway connected but not recognised which shouldn't happen: Gateway ID=" + gatewayId);
+            LOG.warning("Gateway connected but not recognised which shouldn't happen: GatewayID=" + gatewayId);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
             clientEventService.closeSession(sessionId);
             return;
         }
 
-        if (connector.isConnected()) {
-            LOG.warning("Gateway already connected so requesting disconnect on new connection: Gateway ID=" + gatewayId);
-            clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.ALREADY_CONNECTED));
-            clientEventService.closeSession(sessionId);
-            return;
-        }
-
         if (connector.isDisabled()) {
-            LOG.warning("Gateway is currently disabled so will be ignored: Gateway ID=" + gatewayId);
+            LOG.warning("Gateway is currently disabled so will be ignored: " + this);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             clientEventService.closeSession(sessionId);
             return;
         }
 
-        connector.connect(createConnectorMessageConsumer(sessionId), () -> clientEventService.closeSession(sessionId));
+        connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
+            clientEventService.closeSession(sessionId);
+            tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
+        });
     }
 
-    protected void processGatewayDisconnected(String gatewayClientId) {
-
-        if (!active) {
-            return;
-        }
-
+    protected void processGatewayDisconnected(String gatewayClientId, String sessionId) {
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
+        if (connector != null) {
+            connector.disconnected(sessionId);
+        }
+    }
+
+    protected void processGatewayMessage(String gatewayId, String sessionId, String messageId, SharedEvent event) {
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
         if (connector == null) {
             return;
         }
-
-        connector.disconnect();
+        if (!connector.isConnected() || !sessionId.equals(connector.getSessionId())) {
+            LOG.finest("Gateway event received for an obsolete session so ignoring: " + this);
+            return;
+        }
+        connector.onGatewayEvent(messageId, event);
     }
 
     protected void processGatewayChange(GatewayAsset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
 
         switch (persistenceEvent.getCause()) {
 
-            case CREATE:
+            case CREATE -> {
                 createUpdateGatewayServiceUser(gateway);
-                synchronized (gatewayConnectorMap) {
-                    GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
-                    gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
-                }
-                break;
-            case UPDATE:
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
+                gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
+            }
+            case UPDATE -> {
                 // Check if this gateway has a connector
                 GatewayConnector connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
                     break;
                 }
-
-                connector.gateway = gateway;
 
                 // Check if disabled
                 boolean isNowDisabled = gateway.getDisabled().orElse(false);
@@ -563,42 +747,48 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                         createUpdateGatewayServiceUser(gateway);
                     }
                 }
-                break;
-            case DELETE:
+            }
+            case DELETE -> {
                 // Check if this gateway has a connector
-                connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
+                GatewayConnector connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
                     break;
                 }
 
-                synchronized (gatewayConnectorMap) {
-                    connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
+                tunnelInfos.values().forEach(tunnelInfo -> {
+                    if(tunnelInfo.getGatewayId().equals(gateway.getId())) {
+                        try {
+                            this.stopTunnel(tunnelInfo);
+                        } catch (IllegalArgumentException | IllegalStateException ignored) {
 
-                    if (connector != null) {
-                        connector.disconnect();
+                        }
                     }
+                });
+
+                connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
+
+                if (connector != null) {
+                    connector.disconnect();
                 }
 
                 removeGatewayServiceUser(gateway);
-                break;
+            }
         }
     }
 
     protected void processGatewayChildAssetChange(String gatewayId, Asset<?> childAsset, PersistenceEvent<Asset<?>> persistenceEvent) {
         // The asset would have been modified by the gateway connector so all we need to do here is update the id map
         switch (persistenceEvent.getCause()) {
-
-            case CREATE:
-            case UPDATE:
+            case CREATE, UPDATE -> {
                 synchronized (assetIdGatewayIdMap) {
                     assetIdGatewayIdMap.put(childAsset.getId(), gatewayId);
                 }
-                break;
-            case DELETE:
+            }
+            case DELETE -> {
                 synchronized (assetIdGatewayIdMap) {
                     assetIdGatewayIdMap.remove(childAsset.getId());
                 }
-                break;
+            }
         }
     }
 
@@ -674,11 +864,16 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return msg -> clientEventService.sendToSession(sessionId, msg);
     }
 
-    protected void onGatewayClientEventReceived(String gatewayId, String messageId, SharedEvent event) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-        if (connector != null) {
-            connector.onGatewayEvent(messageId, event);
-        }
+    String getTunnelSSHHostname() {
+        return tunnelSSHHostname;
+    }
+
+    int getTunnelSSHPort() {
+        return tunnelSSHPort;
+    }
+
+    public int getTunnelTCPStart() {
+        return tunnelTCPStart;
     }
 
     @Override

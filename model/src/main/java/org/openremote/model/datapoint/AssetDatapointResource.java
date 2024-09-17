@@ -19,17 +19,19 @@
  */
 package org.openremote.model.datapoint;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.Suspended;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Datapoint")
+@Tag(name = "Asset Datapoint", description = "Operations on asset datapoints")
 @Path("asset/datapoint")
 public interface AssetDatapointResource {
 
@@ -40,22 +42,21 @@ public interface AssetDatapointResource {
      * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
      * not have datapoint storage enabled.
      */
-    @GET
-    @Path("{assetId}/attribute/{attributeName}")
+    @POST
+    @Path("{assetId}/{attributeName}")
+    @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getDatapoints", summary = "Retrieve the historical datapoints of an asset attribute")
     ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
-                                   @PathParam("assetId") String assetId,
-                                   @PathParam("attributeName") String attributeName,
-                                   @QueryParam("interval") DatapointInterval datapointInterval,
-                                   @QueryParam("step") Integer stepSize,
-                                   @QueryParam("fromTimestamp") long fromTimestamp,
-                                   @QueryParam("toTimestamp") long toTimestamp);
+                                      @PathParam("assetId") String assetId,
+                                      @PathParam("attributeName") String attributeName,
+                                      AssetDatapointQuery query);
 
     @GET
     @Path("periods")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getDatapointPeriod", summary = "Retrieve a datapoint period of an asset attribute")
     DatapointPeriod getDatapointPeriod(@BeanParam RequestParams requestParams,
                                           @QueryParam("assetId") String assetId,
                                           @QueryParam("attributeName") String attributeName);
@@ -64,8 +65,10 @@ public interface AssetDatapointResource {
     @Path("export")
     @Produces("application/zip")
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getDatapointExport", summary = "Retrieve a datapoint export of an asset attribute")
     void getDatapointExport(@Suspended AsyncResponse asyncResponse,
                             @QueryParam("attributeRefs") String attributeRefsString,
                             @QueryParam("fromTimestamp") long fromTimestamp,
                             @QueryParam("toTimestamp") long toTimestamp);
+
 }

@@ -21,7 +21,7 @@ package org.openremote.model.event.bus;
 
 import org.openremote.model.event.Event;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Handle for receiving events from {@link EventBus}.

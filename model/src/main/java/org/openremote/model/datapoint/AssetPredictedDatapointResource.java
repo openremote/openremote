@@ -19,15 +19,15 @@
  */
 package org.openremote.model.datapoint;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
+import jakarta.ws.rs.*;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Asset Predicted Datapoint")
+@Tag(name = "Asset Predicted Datapoint", description = "Operations on asset predicted datapoints")
 @Path("asset/predicted")
 public interface AssetPredictedDatapointResource {
     /**
@@ -37,16 +37,22 @@ public interface AssetPredictedDatapointResource {
      * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
      * not have datapoint storage enabled.
      */
-    @GET
-    @Path("{assetId}/attribute/{attributeName}")
+    @POST
+    @Path("{assetId}/{attributeName}")
+    @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @Operation(operationId = "getPredictedDatapoints", summary = "Retrieve the predicted datapoints of an asset attribute")
     ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                                @PathParam("assetId") String assetId,
                                                @PathParam("attributeName") String attributeName,
-                                               @QueryParam("interval") DatapointInterval datapointInterval,
-                                               @QueryParam("step") Integer stepSize,
-                                               @QueryParam("fromTimestamp") long fromTimestamp,
-                                               @QueryParam("toTimestamp") long toTimestamp);
+                                               AssetDatapointQuery query);
 
+    @PUT
+    @Path("{assetId}/{attributeName}")
+    @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "writePredictedDatapoints", summary = "Write the predicted datapoints of an asset attribute")
+    void writePredictedDatapoints(@BeanParam RequestParams requestParams,
+                                  @PathParam("assetId") String assetId,
+                                  @PathParam("attributeName") String attributeName,
+                                  ValueDatapoint<?>[] predictedDatapoints);
 }

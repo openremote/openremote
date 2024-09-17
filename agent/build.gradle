@@ -34,6 +34,10 @@ dependencies {
     api "com.github.weliem:blessed-bluez:$bluetoothVersion"
 
     implementation "dev.failsafe:failsafe:$failsafeVersion"
+
+    implementation "org.eclipse.angus:angus-mail:$jakartaMailVersion"
+
+    implementation "org.jdom:jdom2:$jdomVersion"
 }
 
 jar {

@@ -22,12 +22,14 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
+    Role,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
+import {transform} from "lodash";
 
 export class Deferred<T> {
 
@@ -61,12 +63,27 @@ export interface GeoNotification {
     notification?: PushNotificationMessage;
 }
 
+export function getBrowserLanguage(): string {
+    return navigator.language.split("-")[0] || "en";
+}
+
 export function getQueryParameters(queryStr: string): any {
     return Qs.parse(queryStr, {ignoreQueryPrefix: true});
 }
 
-export function getQueryParameter(queryStr: string, parameter: string): any | undefined {
-    const parsed = getQueryParameters(queryStr);
+export function getQueryParameter(parameter: string): any | undefined {
+    let parsed;
+
+    if (location.search && location.search !== "") {
+        parsed = getQueryParameters(location.search);
+    }
+
+    if (location.hash) {
+        const index = location.hash.indexOf("?");
+        if (index > -1) {
+            parsed = getQueryParameters(location.hash.substring(index + 1));
+        }
+    }
     return parsed ? parsed[parameter] : undefined;
 }
 
@@ -257,6 +274,20 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
     }
 
     return false;
+}
+/**
+ * Deep diff between two object, using lodash
+ * @param  {Object} object Object compared
+ * @param  {Object} base   Object to compare with
+ * @return {Object}        Return a new object who represent the diff
+ */
+export function difference(object?: any, base?: any): any {
+    const changes = (object: any, base: any) => transform(object, function(result: any, value, key: string | number | symbol) {
+        if (!objectsEqual(value, base?.[key])) {
+            result[key] = (isObject(value) && isObject(base?.[key])) ? changes(value, base?.[key]) : value;
+        }
+    });
+    return changes(object, base);
 }
 
 export function arrayRemove<T>(arr: T[], item: T) {
@@ -529,7 +560,10 @@ export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): s
     return i18next.t("label.asset." + type.name, {defaultValue: camelCaseToSentenceCase(type.name!)});
 }
 
-export function getValueDescriptorLabel(descriptor: ValueDescriptor | string): string {
+export function getValueDescriptorLabel(descriptor: ValueDescriptor | undefined | string): string {
+    if (!descriptor) {
+        return i18next.t("label.value.unknown", {defaultValue: "Unknown"});
+    }
     const name = (typeof(descriptor) === "string" ? descriptor : descriptor.name);
     return i18next.t("label.value." + name, {defaultValue: camelCaseToSentenceCase(name || "")});
 }
@@ -633,9 +667,8 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                         value = !!value;
                     } else if (format.asDate) {
                         // Assume UNIX timestamp in ms
-                        const offset = (new Date()).getTimezoneOffset() * 60000;
-                        value = new Date(value - offset);
-                    } 
+                        value = new Date(value);
+                    }
                 } else if (typeof(value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;
                 }
@@ -801,11 +834,11 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
         if (value === undefined || value === null) {
             delete dest[key];
         } else if (Array.isArray(dest[key])) {
-                if (mergeArrays) {
-                    dest[key] = [...dest[key], ...value];
-                } else {
-                    dest[key] = [...value];
-                }
+            if (mergeArrays) {
+                dest[key] = [...dest[key], ...value];
+            } else {
+                dest[key] = [...value];
+            }
         } else if (typeof(value) === "object") {
             dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
         } else {
@@ -834,7 +867,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         matched = JSON.parse(str) as T;
         if (matched) {
             if (lookup === WellknownMetaItems.FORMAT) {
-                formats.push(matched);
+                formats.push(matched as ValueFormat);
             } else {
                 return matched;
             }
@@ -847,7 +880,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
 
         if (matched) {
             if (lookup === WellknownMetaItems.FORMAT) {
-                formats.push(matched);
+                formats.push(matched as ValueFormat);
             } else {
                 return matched;
             }
@@ -857,7 +890,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
     if (descriptor && typeof(descriptor) !== "string" && (descriptor as any).hasOwnProperty(lookup)) {
         matched = (descriptor as any)[lookup] as T;
         if (lookup === WellknownMetaItems.FORMAT) {
-            formats.push(matched);
+            formats.push(matched as ValueFormat);
         } else {
             return matched;
         }
@@ -867,7 +900,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         const valueDescriptor = AssetModelUtil.getValueDescriptor((descriptor as AbstractNameValueDescriptorHolder).type);
         matched = (valueDescriptor as any)[lookup] as T;
         if (lookup === WellknownMetaItems.FORMAT) {
-            formats.push(matched);
+            formats.push(matched as ValueFormat);
         } else {
             return matched;
         }
@@ -935,15 +968,15 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
  */
 export function updateAsset(asset: Asset, event: AttributeEvent): Asset {
 
-    const attributeName = event.attributeState!.ref!.name!;
+    const attributeName = event.ref!.name!;
 
     if (asset.attributes) {
-        if (event.attributeState!.deleted) {
+        if (event.deleted) {
             delete asset.attributes![attributeName];
         } else {
             const attribute = asset.attributes[attributeName];
             if (attribute) {
-                attribute.value = event.attributeState!.value;
+                attribute.value = event.value;
                 attribute.timestamp = event.timestamp;
             }
         }
@@ -1070,4 +1103,8 @@ export function blobToBase64(blob:Blob) {
             reject(error);
         };
     });
+}
+
+export function realmRoleFilter(role: Role) {
+    return role.name === "admin" || (!role.composite && !["uma_authorization", "offline_access", "create-realm"].includes(role.name!) && !role.name!.startsWith("default-roles"));
 }

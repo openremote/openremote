@@ -7,11 +7,10 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
-import org.openremote.model.rules.TemporaryFact
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -19,7 +18,6 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.setup.integration.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
-import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 // Ignore this test as temporary facts (rule events) cause the rule engine to continually fire, need to decide if
 // we support rule events or should it just be something rules do internally
@@ -54,11 +52,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
-        and: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         and: "the presence detected flag and timestamp should not be set"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -82,11 +75,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         )
         simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "presence should be detected in all rooms"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -109,11 +97,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         )
         simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "presence should be detected in all rooms and timestamp should be updated of one room"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -135,11 +118,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         )
         simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "some presence should still be detected and timestamps are still available"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
@@ -160,11 +138,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
                 managerTestSetup.apartment1HallwayId, "motionSensor", 0
         )
         simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "no presence should be detected but the last timestamp still available"
         conditions.eventually {
@@ -207,11 +180,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-        }
-
-        and: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
         }
 
         and: "the presence detected flag and timestamp of the room should not be set"
@@ -260,11 +228,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         }
         */
 
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
-
         then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
         conditions.eventually {
             def roomAsset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
@@ -295,10 +258,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             }
 
             advancePseudoClock(5, MINUTES, container)
-
-            conditions.eventually {
-                assert noRuleEngineFiringScheduled()
-            }
         }
 
         then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
@@ -310,11 +269,6 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
         when: "there is no CO2 level increase for a while (nobody resting in the room)"
         advancePseudoClock(20, MINUTES, container)
-
-        then: "the rule engines should settle"
-        conditions.eventually {
-            assert noRuleEngineFiringScheduled()
-        }
 
         then: "presence should be gone but the last timestamp still available"
         conditions.eventually {

@@ -25,8 +25,8 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Webhooks;
 import org.openremote.model.webhook.Webhook;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 
 public class WebhooksFacade<T extends Ruleset> extends Webhooks {
 
@@ -39,8 +39,8 @@ public class WebhooksFacade<T extends Ruleset> extends Webhooks {
     }
 
     @Override
-    public void send(Webhook webhook, MediaType mediaType, WebTarget target) {
-        webhookService.sendHttpRequest(webhook, mediaType, target);
+    public boolean send(Webhook webhook, MediaType mediaType, WebTarget target) {
+        return webhookService.sendHttpRequest(webhook, mediaType, target);
     }
 
     @Override

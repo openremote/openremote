@@ -11,7 +11,8 @@ import {
     DatapointInterval,
     ReadAttributeEvent,
     ValueDatapoint,
-    AssetModelUtil
+    AssetModelUtil,
+    AssetDatapointLTTBQuery
 } from "@openremote/model";
 import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
@@ -142,13 +143,19 @@ const style = css`
     }
     
     .chart-wrapper {
-        flex: 1;
+        flex: 1 1 auto;
         width: 65%;
         height: 75%;
     }
+    .controls-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        place-content: space-between;
+    }
     
     .delta-wrapper {
-        flex: 0 0 50px;
+        /*flex: 0 0 50px;*/
         text-align: right;
         
         /*position: absolute;*/
@@ -162,9 +169,7 @@ const style = css`
     }
     
     .period-selector {
-        position: absolute;
-        right: -12px;
-        bottom: 0;
+        
     }
     
     .delta {
@@ -222,6 +227,8 @@ export class OrAttributeCard extends LitElement {
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
     private _chart?: Chart<"line", ScatterDataPoint[]>;
+    protected _startOfPeriod?: number;
+    protected _endOfPeriod?: number;
     private resizeObserver?: ResizeObserver;
 
     static get styles() {
@@ -314,6 +321,8 @@ export class OrAttributeCard extends LitElement {
                         },
                         x: {
                             type: "time",
+                            min: this._startOfPeriod,
+                            max: this._endOfPeriod,
                             display: false,
                         }
                     }
@@ -351,10 +360,9 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             ${this.shouldShowControls() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
-                                <span>${i18next.t('noAttributesConnected')}</span>
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
+                                <span>${i18next.t('noAttributeConnected')}</span>
                             `}
                         </div>
                     </div>
@@ -369,10 +377,8 @@ export class OrAttributeCard extends LitElement {
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
                             ${this.shouldShowControls() ? html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("selectAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
-                            ` : html`
-                                <or-mwc-input class="button" .type="${InputType.BUTTON}" icon="reload" @or-mwc-input-changed="${() => { this.requestUpdate(); }}"></or-mwc-input>
-                            `}
+                                <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
+                            ` : undefined}
                         </div>
                     </div>
                 </div>
@@ -381,7 +387,7 @@ export class OrAttributeCard extends LitElement {
 
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                const elemSize = entries[0].devicePixelContentBoxSize[0].inlineSize;
                 this.setLabelSizeByWidth(elemSize);
             }, 200))
             this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
@@ -392,7 +398,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel-content-wrapper">
                     <div class="panel-title">
                         ${this.shouldShowTitle() ? html`<span class="panel-title-text">${this.assets[0].name + " - " + i18next.t(this.assetAttributes[0][1].name!)}</span>` : undefined}
-                        ${this.shouldShowControls() ? getContentWithMenuTemplate(html`
+                        ${this.shouldShowTitle() ? getContentWithMenuTemplate(html`
                             <or-mwc-input icon="dots-vertical" type="button"></or-mwc-input>
                         `,
                         [
@@ -426,25 +432,26 @@ export class OrAttributeCard extends LitElement {
                             <div class="chart-wrapper">
                                 <canvas id="chart"></canvas>
                             </div>
-                            <div class="delta-wrapper">
-                                <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
-                            </div>
-                            
-                            ${this.shouldShowControls() ? html`
-                                <div class="period-selector-wrapper">
-                                    ${getContentWithMenuTemplate(
-                                        html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
-                                        [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
-                                            option.text = i18next.t(option.value);
-                                            return option;
-                                        }),
-                                        this.period,
-                                        (value) => this._setPeriodOption(value)
-                                    )}
+                            <div class="controls-wrapper">
+                                <div class="delta-wrapper">
+                                    <span class="delta">${this.delta ? this.deltaPlus + (this.delta.val !== undefined && this.delta.val !== null ? this.delta.val : "") + (this.delta.unit || "") : ""}</span>
                                 </div>
-                            ` : html`
-                                <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
-                            `}
+                                ${this.shouldShowControls() ? html`
+                                    <div class="period-selector-wrapper">
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input class="period-selector" .type="${InputType.BUTTON}" label="${this.period ? this.period : '-'}"></or-mwc-input>`,
+                                                [{value: "hour", text: "hour"}, {value: "day", text: "day"}, {value: "week", text: "week"}, {value: "month", text: "month"}, {value: "year", text: "year"}].map((option) => {
+                                                    option.text = i18next.t(option.value);
+                                                    return option;
+                                                }),
+                                                this.period,
+                                                (value) => this._setPeriodOption(value)
+                                        )}
+                                    </div>
+                                ` : html`
+                                    <or-mwc-input class="period-selector" .type="${InputType.BUTTON}" disabled .label="${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>
+                                `}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -477,7 +484,7 @@ export class OrAttributeCard extends LitElement {
                     .setActions([
                         {
                             actionName: "cancel",
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
+                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="cancel"></or-mwc-input>`,
                             action: () => {
                                 // Nothing to do here
                             }
@@ -485,7 +492,7 @@ export class OrAttributeCard extends LitElement {
                         {
                             actionName: "yes",
                             default: true,
-                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("ok")}" data-mdc-dialog-action="yes"></or-mwc-input>`,
+                            content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="ok" data-mdc-dialog-action="yes"></or-mwc-input>`,
                             action: () => {
                                 if (dialogContent === "editDelta") {
                                     this.delta = this.data ? this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data)) : undefined;
@@ -713,8 +720,8 @@ export class OrAttributeCard extends LitElement {
         }
 
         const lowerCaseInterval = interval.toLowerCase();
-        const startOfPeriod = moment().startOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime(); moment().clone().subtract(1, this.period).toDate().getTime();
-        const endOfPeriod = moment().endOf(this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        this._startOfPeriod = moment().subtract(1, this.period).toDate().getTime();
+        this._endOfPeriod = moment().toDate().getTime();
         this.mainValue = undefined;
         this.formattedMainValue = undefined;
         const assetId = this.assets[0].id!;
@@ -730,17 +737,18 @@ export class OrAttributeCard extends LitElement {
             } as ReadAttributeEvent
         });
 
-        this.mainValue = currentValue.attributeState!.value;
+        this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,
             attributeName,
             {
-                interval: interval,
-                fromTimestamp: startOfPeriod,
-                toTimestamp: endOfPeriod
-            }
+                type: "lttb",
+                fromTimestamp: this._startOfPeriod,
+                toTimestamp: this._endOfPeriod,
+                amountOfPoints: 20,
+            } as AssetDatapointLTTBQuery
         );
 
         this._loading = false;
@@ -769,7 +777,7 @@ export class OrAttributeCard extends LitElement {
         }
 
         const attr = this.assetAttributes[0][1];
-        const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
+        const roundedVal = +value?.toFixed(this.mainValueDecimals); // + operator prevents str return
         const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[0].type!);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.assets[0].type));
         this.setLabelSizeByLength(roundedVal.toString());
@@ -834,10 +842,10 @@ export class OrAttributeCard extends LitElement {
         if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
-    protected setLabelSizeByWidth(blockSize: number) {
-        if(blockSize < 60) { this.mainValueSize = "s"; }
-        else if(blockSize < 100) { this.mainValueSize = "m"; }
-        else if(blockSize < 200) { this.mainValueSize = "l"; }
+    protected setLabelSizeByWidth(inlineSize: number) {
+        if(inlineSize < 60) { this.mainValueSize = "s"; }
+        else if(inlineSize < 100) { this.mainValueSize = "m"; }
+        else if(inlineSize < 200) { this.mainValueSize = "l"; }
         else { this.mainValueSize = "xl"; }
     }
 

@@ -25,7 +25,7 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 import java.util.Optional;
 
 @Entity
@@ -48,6 +48,11 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
      * subscriptions are executed in the order specified in the array.
      */
     public static final AttributeDescriptor<WebsocketSubscription[]> CONNECT_SUBSCRIPTIONS = new AttributeDescriptor<>("connectSubscriptions", WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR.asArray());
+
+    /**
+     * Ability to disable the Websocket PING/PONG requests which ensure the connection is not broken
+     */
+    public static final AttributeDescriptor<Boolean> PING_DISABLED = new AttributeDescriptor<>("pingDisabled", ValueType.BOOLEAN);
 
     public static final AgentDescriptor<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         WebsocketAgent.class, WebsocketAgentProtocol.class, WebsocketAgentLink.class, null
@@ -87,6 +92,15 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
 
     public WebsocketAgent setConnectSubscriptions(WebsocketSubscription[] value) {
         getAttributes().getOrCreate(CONNECT_SUBSCRIPTIONS).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> getPingDisabled() {
+        return getAttributes().getValue(PING_DISABLED);
+    }
+
+    public WebsocketAgent setPingDisabled(Boolean value) {
+        getAttributes().getOrCreate(PING_DISABLED).setValue(value);
         return this;
     }
 

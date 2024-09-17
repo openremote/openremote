@@ -20,6 +20,16 @@
 package org.openremote.manager.asset;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionImpl;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.event.ClientEventService;
@@ -37,22 +47,13 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.persistence.OptimisticLockException;
-import javax.validation.ConstraintViolationException;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import static javax.ws.rs.core.Response.Status.*;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -280,7 +281,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void update(RequestParams requestParams, String assetId, Asset<?> asset) {
+    public Asset<?> update(RequestParams requestParams, String assetId, Asset<?> asset) {
 
         LOG.fine("Updating asset: assetID=" + assetId);
 
@@ -334,7 +335,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     String updatedAttributeName = updatedAttribute.getName();
 
                     // Check if attribute is present on the asset in storage
-                    Optional<Attribute<?>> serverAttribute = storageAsset.getAttribute(updatedAttributeName);
+                    Optional<Attribute<Object>> serverAttribute = storageAsset.getAttribute(updatedAttributeName);
                     if (serverAttribute.isPresent()) {
                         Attribute<?> existingAttribute = serverAttribute.get();
 
@@ -401,12 +402,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 //            });
 
             // Store the result
-            assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
+            return assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, FORBIDDEN);
         } catch (ConstraintViolationException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (OptimisticLockException opEx) {
             throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
         }
@@ -432,25 +433,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         AttributeWriteResult result = doAttributeWrite(event);
 
         if (result.getFailure() != null) {
-            switch (result.getFailure()) {
-                case ILLEGAL_SOURCE:
-                case INSUFFICIENT_ACCESS:
-                case INVALID_REALM:
-                    status = FORBIDDEN;
-                    break;
-                case ASSET_NOT_FOUND:
-                case ATTRIBUTE_NOT_FOUND:
-                    status = NOT_FOUND;
-                    break;
-                case INVALID_AGENT_LINK:
-                case ILLEGAL_AGENT_UPDATE:
-                case INVALID_ATTRIBUTE_EXECUTE_STATUS:
-                case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
-                    status = NOT_ACCEPTABLE;
-                    break;
-                default:
-                    status = BAD_REQUEST;
-            }
+            status = switch (result.getFailure()) {
+                case ASSET_NOT_FOUND, ATTRIBUTE_NOT_FOUND -> NOT_FOUND;
+                case INVALID_VALUE -> NOT_ACCEPTABLE;
+                case QUEUE_FULL -> TOO_MANY_REQUESTS;
+                default -> BAD_REQUEST;
+            };
         }
 
         return Response.status(status).entity(result).type(MediaType.APPLICATION_JSON_TYPE).build();
@@ -463,7 +451,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         return Arrays.stream(attributeStates).map(attributeState -> {
             AttributeEvent event = new AttributeEvent(attributeState);
             if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
-                return new AttributeWriteResult(event.getAttributeRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
+                return new AttributeWriteResult(event.getRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
             }
             return doAttributeWrite(event);
         }).toArray(AttributeWriteResult[]::new);
@@ -482,7 +470,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
-            if (asset.getRealm() == null || asset.getRealm().length() == 0) {
+            if (asset.getRealm() == null || asset.getRealm().isEmpty()) {
                 asset.setRealm(getAuthenticatedRealm().getName());
             } else if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
@@ -496,39 +484,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 newAsset.setId(asset.getId());
             }
 
-            // TODO: Decide on the below - clients should ensure the asset conforms to the asset descriptor and we shouldn't do any 'magic' here
-//            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
-//
-//                // Add meta items to well known attributes if not present
-//                newAsset.getAttributes().stream().forEach(assetAttribute -> {
-//                    if (assetDescriptor.getAttributeDescriptors() != null) {
-//                        Arrays.stream(assetDescriptor.getAttributeDescriptors())
-//                                .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getName()))
-//                                .findFirst()
-//                                .ifPresent(defaultAttribute -> {
-//                                    if (defaultAttribute.getMetaItemDescriptors() != null) {
-//                                        assetAttribute.addMeta(
-//                                                Arrays.stream(defaultAttribute.getMetaItemDescriptors())
-//                                                        .filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor))
-//                                                        .map(MetaItem::new)
-//                                                        .toArray(MetaItem[]::new)
-//                                        );
-//                                    }
-//                                });
-//                    }
-//                });
-//
-//                // Add attributes for this well known asset if not present
-//                if (assetDescriptor.getAttributeDescriptors() != null) {
-//                    newAsset.addAttributes(
-//                            Arrays.stream(assetDescriptor.getAttributeDescriptors()).filter(attributeDescriptor ->
-//                                    !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(Attribute::new).toArray(Attribute[]::new)
-//                    );
-//                }
-//            });
-
             return assetStorageService.merge(newAsset);
 
+        } catch (ConstraintViolationException ex) {
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
@@ -590,20 +549,23 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {
         AttributeWriteFailure failure = null;
 
+        if (event.getTimestamp() <= 0) {
+            event.setTimestamp(timerService.getCurrentTimeMillis());
+        }
+
         try {
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Write attribute value request: " + event);
             }
 
-            // Process synchronously
+            // Process synchronously - need to directly use the ATTRIBUTE_EVENT_QUEUE as the client inbound queue
+            // has multiple consumers and so doesn't support In/Out MEP
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
-                .withHeader(AttributeEvent.HEADER_SOURCE, CLIENT)
-                .to(AssetProcessingService.ASSET_QUEUE)
+                .to(ATTRIBUTE_EVENT_ROUTER_QUEUE)
                 .request();
 
-            if (result instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) result;
+            if (result instanceof AssetProcessingException processingException) {
                 failure = processingException.getReason();
             }
 
@@ -613,7 +575,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             failure = AttributeWriteFailure.UNKNOWN;
         }
 
-        return new AttributeWriteResult(event.getAttributeRef(), failure);
+        return new AttributeWriteResult(event.getRef(), failure);
     }
 
     @Override
@@ -624,7 +586,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         List<Asset<?>> assets = this.assetStorageService.findAll(query);
         LOG.fine("Updating parent for assets: count=" + assets.size() + ", newParentID=" + parentId);
 
-        for (Asset asset : assets) {
+        for (Asset<?> asset : assets) {
             asset.setParentId(parentId);
             LOG.fine("Updating asset parent: assetID=" + asset.getId() + ", newParentID=" + parentId);
             assetStorageService.merge(asset);

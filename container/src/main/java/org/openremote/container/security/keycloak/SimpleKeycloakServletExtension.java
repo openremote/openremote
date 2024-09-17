@@ -31,7 +31,7 @@ import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.NodesRegistrationManagement;
 import org.keycloak.adapters.undertow.*;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import java.util.Map;
 
 /**
@@ -44,7 +44,7 @@ public class SimpleKeycloakServletExtension implements ServletExtension {
 
     public static final String AUTH_MECHANISM = "SIMPLE_KEYCLOAK";
 
-    protected static Logger log = Logger.getLogger(KeycloakServletExtension.class);
+    protected static Logger log = Logger.getLogger(SimpleKeycloakServletExtension.class);
 
     final protected KeycloakConfigResolver configResolver;
     final protected AdapterDeploymentContext deploymentContext;

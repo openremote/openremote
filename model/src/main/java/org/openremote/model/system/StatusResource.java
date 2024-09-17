@@ -19,29 +19,33 @@
  */
 package org.openremote.model.system;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import org.openremote.model.Constants;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import java.util.Map;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Status")
+@Tag(name = "Status", description = "Operations on system status")
 @Path("")
 public interface StatusResource {
 
+    // TODO: Replace this with prometheus metrics
     @Path("health")
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    ObjectNode getHealthStatus();
+    @Operation(operationId = "getHealthStatus", summary = "Retrieve the health status of the system")
+    Map<String, Object> getHealthStatus();
 
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
-    ObjectNode getInfo();
+    @Operation(operationId = "getInfo", summary = "Retrieve the system information")
+    Map<String, Object> getInfo();
 }

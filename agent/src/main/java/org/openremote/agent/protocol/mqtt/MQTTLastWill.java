@@ -27,11 +27,11 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class MQTTLastWill {
     String topic;
-    JsonNode payload;
+    String payload;
     boolean retain;
 
     @JsonCreator
-    public MQTTLastWill(String topic, JsonNode payload, boolean retain) {
+    public MQTTLastWill(String topic, String payload, boolean retain) {
         this.topic = topic;
         this.payload = payload;
         this.retain = retain;
@@ -41,7 +41,7 @@ public class MQTTLastWill {
         return topic;
     }
 
-    public JsonNode getPayload() {
+    public String getPayload() {
         return payload;
     }
 

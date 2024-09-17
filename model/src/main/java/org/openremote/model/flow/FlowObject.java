@@ -5,14 +5,11 @@
 
 package org.openremote.model.flow;
 
+import jakarta.persistence.*;
 import org.openremote.model.IdentifiableEntity;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
@@ -21,7 +18,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 public class FlowObject implements IdentifiableEntity<FlowObject> {
 
     @Id
-    @Column(name = "ID", length = 43) // TODO Is this ideal long-term for reads when keys must be distributed on cluster?
+    @Column(name = "ID")
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     public String id;
 

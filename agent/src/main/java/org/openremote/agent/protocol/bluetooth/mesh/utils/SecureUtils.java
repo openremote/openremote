@@ -31,7 +31,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.openremote.agent.protocol.bluetooth.mesh.SecureNetworkBeacon;
 import org.openremote.model.syslog.SyslogCategory;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;

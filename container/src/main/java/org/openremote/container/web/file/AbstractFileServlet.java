@@ -34,12 +34,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * <p>
@@ -112,6 +112,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author Bauke Scholtz
  * @since 2.2
  */
+// TODO: Replace this with a standard file servlet
 public abstract class AbstractFileServlet extends HttpServlet {
 
 	// Constants ------------------------------------------------------------------------------------------------------

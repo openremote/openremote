@@ -21,11 +21,14 @@ package org.openremote.model.http;
 
 import org.openremote.model.util.TextUtil;
 
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.core.*;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.core.*;
 import java.net.URI;
 
 public class RequestParams {
+
+    @Context
+    public HttpHeaders headers;
 
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     public String authorization;
@@ -45,11 +48,15 @@ public class RequestParams {
         return authorization.split(" ")[1];
     }
 
+    public URI getExternalSchemeHostAndPort() {
+        return getExternalBaseUriBuilder().replacePath("").build();
+    }
+
     /**
      * Handles reverse proxying and returns the request base URI
      */
-    public UriBuilder getExternalRequestBaseUri() {
-        URI uri = this.uriInfo.getRequestUri();
+    public UriBuilder getExternalBaseUriBuilder() {
+        URI uri = this.uriInfo.getBaseUri();
         String scheme = TextUtil.isNullOrEmpty(this.forwardedProtoHeader) ? uri.getScheme() : this.forwardedProtoHeader;
         int port = uri.getPort();
         String host = uri.getHost();

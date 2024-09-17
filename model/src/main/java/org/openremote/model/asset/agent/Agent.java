@@ -20,16 +20,16 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
@@ -39,6 +39,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * providing an instance of the associated {@link Protocol} when requested via {@link #getProtocolInstance}.
  */
 @SuppressWarnings("unchecked")
+@TsIgnoreTypeParams
 public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V extends AgentLink<?>> extends Asset<T> {
 
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled", ValueType.BOOLEAN);
@@ -150,7 +151,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * Get the {@link AgentLink} for the specified linked agent
      */
     @SuppressWarnings("unchecked")
-    public V getAgentLink(Attribute<?> attribute) {
+    public <T extends MetaHolder> V getAgentLink(T attribute) {
         AgentLink<?> agentLink = attribute.getMetaValue(AGENT_LINK).orElseThrow(() -> new IllegalStateException("Failed to getAgentLink<?>despite attribute being linked to an agent"));
         return (V) agentLink;
     }
@@ -276,12 +277,11 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
             && ValueUtil.getAssetInfo(getType())
-            .map(info ->
-                Arrays.stream(info.getAttributeDescriptors())
-                    .anyMatch(ad -> ad.getName().equals(attributeName)))
+            .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false)
+            // Exclude attributes that have a descriptor from the base Asset class
             && ValueUtil.getAssetInfo(Asset.class)
-            .map(typeInfo -> Arrays.stream(typeInfo.getAttributeDescriptors()).noneMatch(ad -> ad.getName().equals(attributeName)))
+            .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false);
     }
 }

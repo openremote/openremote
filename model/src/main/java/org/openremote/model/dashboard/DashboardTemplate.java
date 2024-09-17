@@ -1,8 +1,8 @@
 package org.openremote.model.dashboard;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 public class DashboardTemplate {
 
@@ -15,6 +15,9 @@ public class DashboardTemplate {
     @Min(value = 1, message = "${Dashboard.template.maxScreenWidth.Min}")
     protected int maxScreenWidth;
 
+    @Valid
+    protected DashboardRefreshInterval refreshInterval;
+
     @NotNull(message = "{Dashboard.template.screenPresets.NotNull}")
     @Valid
     protected DashboardScreenPreset[] screenPresets;
@@ -26,15 +29,68 @@ public class DashboardTemplate {
 
     /* -------------------- */
 
-    public void setId(String id) { this.id = id; }
-    public void setColumns(int columns) { this.columns = columns; }
-    public void setMaxScreenWidth(int maxScreenWidth) { this.maxScreenWidth = maxScreenWidth; }
-    public void setScreenPresets(DashboardScreenPreset[] screenPresets) { this.screenPresets = screenPresets; }
-    public void setWidgets(DashboardWidget[] widgets) { this.widgets = widgets; }
+    public DashboardTemplate() {
 
-    public String getId() { return id; }
-    public int getColumns() { return columns; }
-    public int getMaxScreenWidth() { return maxScreenWidth; }
-    public DashboardScreenPreset[] getScreenPresets() { return screenPresets; }
-    public DashboardWidget[] getWidgets() { return widgets; }
+    }
+
+    public DashboardTemplate(DashboardScreenPreset[] screenPresets) {
+        this.columns = 1;
+        this.maxScreenWidth = 1;
+        this.refreshInterval = DashboardRefreshInterval.OFF;
+        this.screenPresets = screenPresets;
+    }
+
+    public DashboardTemplate setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public DashboardTemplate setColumns(int columns) {
+        this.columns = columns;
+        return this;
+    }
+
+    public DashboardTemplate setMaxScreenWidth(int maxScreenWidth) {
+        this.maxScreenWidth = maxScreenWidth;
+        return this;
+    }
+
+    public DashboardTemplate setRefreshInterval(DashboardRefreshInterval interval) {
+        this.refreshInterval = interval;
+        return this;
+    }
+
+    public DashboardTemplate setScreenPresets(DashboardScreenPreset[] screenPresets) {
+        this.screenPresets = screenPresets;
+        return this;
+    }
+
+    public DashboardTemplate setWidgets(DashboardWidget[] widgets) {
+        this.widgets = widgets;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public int getColumns() {
+        return columns;
+    }
+
+    public int getMaxScreenWidth() {
+        return maxScreenWidth;
+    }
+
+    public DashboardRefreshInterval getRefreshInterval() {
+        return this.refreshInterval;
+    }
+
+    public DashboardScreenPreset[] getScreenPresets() {
+        return screenPresets;
+    }
+
+    public DashboardWidget[] getWidgets() {
+        return widgets;
+    }
 }
