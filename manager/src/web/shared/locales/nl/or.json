@@ -822,5 +822,7 @@
     "assignedToMe": "Aan mij toegewezen",
     "noData": "Geen alarmen gevonden.",
     "source": "Bron"
-  }
+  },
+  "expandAll": "Alles uitklappen",
+  "collapseAll": "Alles inklappen"
 }

@@ -275,6 +275,7 @@ export class OrEditAssetPanel extends LitElement {
                         expandToggle(tdElems[i] as HTMLElement);
                     }
                 }
+                tdElem.setAttribute("label", this.expandedAll ? "expandAll" : "collapseAll");
                 this.expandedAll = !this.expandedAll;
             }
         };
@@ -295,7 +296,7 @@ export class OrEditAssetPanel extends LitElement {
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="type"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="value"></or-translate></th>
-                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" @click="${expandAllToggle}" style="font-weight: normal; color:blue; cursor:pointer;"><or-translate .value="${this.expandedAll ? "collapseAll" : "expandAll"}"></or-translate></th>
+                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" style="padding-right:8px;"><or-mwc-input style="float:right;" .type="${InputType.BUTTON}" .label="${i18next.t("expandAll")}" @or-mwc-input-changed="${expandAllToggle}"></or-mwc-input></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
