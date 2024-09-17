@@ -10,7 +10,7 @@ import {
     OrAssetViewerLoadUserEvent,
     saveAsset,
     SaveResult,
-    ViewerConfig
+    ViewerConfig, OrAssetViewerLoadAlarmEvent
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig,
@@ -29,7 +29,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
-import {getAssetsRoute, getUsersRoute} from "../routes";
+import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageAssetsConfig {
@@ -191,6 +191,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
         this.addEventListener(OrAssetViewerLoadUserEvent.NAME, this._onLoadUserEvent);
+        this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME,(ev) =>  this._onLoadAlarmEvent(ev));
     }
 
     public connectedCallback() {
@@ -358,6 +359,13 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     protected _onLoadUserEvent(event: OrAssetViewerLoadUserEvent, silent: boolean = false) {
         router.navigate(getUsersRoute(event.detail), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
+    }
+
+    protected _onLoadAlarmEvent(event: OrAssetViewerLoadAlarmEvent, silent: boolean = false) {
+        router.navigate(getAlarmsRoute(event.detail.toString()), {
             callHooks: !silent,
             callHandler: !silent
         });

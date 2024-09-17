@@ -9,6 +9,7 @@ import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.model.ContainerService
 import spock.util.concurrent.PollingConditions
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -58,7 +59,11 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     long getClockTimeOf(Container container) {
-        container.getService(TimerService.class).getClock().getCurrentTimeMillis()
+        container.getService(TimerService.class).getCurrentTimeMillis()
+    }
+
+    Instant getInstantTimeOf(Container container) {
+        container.getService(TimerService.class).getNow()
     }
 
     void advancePseudoClock(long amount, TimeUnit unit, Container container) {
