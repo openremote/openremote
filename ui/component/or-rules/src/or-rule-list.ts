@@ -250,7 +250,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         </div>
 
                         <p>${i18next.t("globalRules")}</p>
-                        <or-mwc-input style="--or-icon-fill:white;" type="${InputType.BUTTON}" icon="cog" @or-mwc-input-changed="${() => this._onSettingsClicked()}"></or-mwc-input>
                     </div>
                 ` : ``}
 
@@ -614,21 +613,6 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected _onSearchClicked() {
 
-    }
-
-    protected _onSettingsClicked() {
-        if (this._globalRulesets) {
-            showOkCancelDialog("Global rules settings", html`
-                <span>status</span>
-                <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="reset" @or-mwc-input-changed=""
-            `)
-        }
-        else {
-            showOkCancelDialog("Realm rules settings", html`
-                <span>status</span>
-                <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="reset" @or-mwc-input-changed=""
-            `)
-        }
     }
 
     protected _onSortClicked(sortBy: string) {
