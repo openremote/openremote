@@ -202,7 +202,7 @@ export class OrConfRealmCard extends LitElement {
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
-            return "/images/" + this.name + "/" + fileName + extension
+            return `${this.name}/${fileName}${extension}`
         }
         return null
     }
@@ -210,17 +210,18 @@ export class OrConfRealmCard extends LitElement {
     protected files: {[name:string] : FileInfo} = {}
 
     protected async _setImageForUpload(file: File, fileName: string) {
-        const path = this._getImagePath(file, fileName)
-        if (path){
-            this.files[path] = {
-                path: path,
+        const imagePath = this._getImagePath(file, fileName)
+        const fullPath = `api/master/configuration/manager/image/${imagePath}`
+        if (fullPath){
+            this.files[imagePath] = {
+                path: fullPath,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
-            this.realm[fileName] = path
-            this[fileName] = this.files[path].contents
+            this.realm[fileName] = fullPath
+            this[fileName] = this.files[imagePath].contents
             this.requestUpdate()
             this.notifyConfigChange(this.realm);
-            return this.files[path].contents;
+            return this.files[imagePath].contents;
         }
     }
 

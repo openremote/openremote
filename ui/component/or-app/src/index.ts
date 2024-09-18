@@ -376,7 +376,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._config.logoMobile = DefaultMobileLogo;
             }
 
-            const favIcon = this._config && this._config.favicon ? this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? MANAGER_URL+"/"+this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 

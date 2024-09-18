@@ -21,6 +21,7 @@ import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 
+declare const MANAGER_URL: string;
 
 export {DEFAULT_LANGUAGES, Languages}
 
@@ -370,6 +371,9 @@ export class OrHeader extends LitElement {
         if (changedProperties.has("realm")) {
             this._getAlarmButton();
         }
+        this.logo = MANAGER_URL+"/"+this.logo;
+        this.logoMobile = MANAGER_URL+"/"+this.logoMobile;
+
         return super.shouldUpdate(changedProperties);
     }
 
