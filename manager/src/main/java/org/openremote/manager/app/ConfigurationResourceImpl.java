@@ -32,6 +32,7 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
 import java.io.*;
+import java.net.URI;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -55,7 +56,15 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     @Override
     public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         this.configurationService.saveImageFile(path, fileInfo);
-        return path;
+        requestParams.getExternalSchemeHostAndPort();
+        URI managerConfigPath = requestParams.getExternalBaseUriBuilder()
+                .path("master")
+                .path("configuration")
+                .path("manager")
+                .path("image")
+                .path(path)
+                .build();
+        return managerConfigPath.toString();
     }
 
     @Override
@@ -78,5 +87,10 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
             LOG.severe("Error reading manager config file: " + e.getMessage());
         }
         return null;
+    }
+
+    @Override
+    public Object getManagerConfigImages(String realm, String fileName) {
+        return configurationService.getManagerConfigImage(realm+"/"+fileName).orElse(null);
     }
 }

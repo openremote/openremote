@@ -110,7 +110,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveManagerConfigFile(Object managerConfiguration) {
         LOG.log(Level.INFO, "Saving manager_config.json..");
-        try (OutputStream out = new FileOutputStream(persistenceService.getStorageDir().resolve("manager_config.json").toFile())) {
+        try (OutputStream out = new FileOutputStream(persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json").toFile())) {
             out.write(ValueUtil.JSON.writeValueAsString(managerConfiguration).getBytes());
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
@@ -121,7 +121,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveImageFile(String path, FileInfo fileInfo) {
         LOG.log(Level.INFO, "Saving image in manager_config.json..");
-        File file = new File(pathPublicRoot + path);
+        File file = getManagerConfigImagePath().resolve(path).toFile();
         try {
             file.getParentFile().mkdirs();
             if (file.exists()) {
@@ -138,6 +138,17 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             LOG.log(Level.WARNING, "Error when saving image in manager_config.json", exception);
         }
 
+    }
+
+    public Optional<File> getManagerConfigImage(String filename){
+        File file = getManagerConfigImagePath().resolve(filename).toFile();
+
+        // fallback to OR_CUSTOM_APP_DOCROOT
+        if(!file.isFile()){
+            file = pathPublicRoot.resolve("images").resolve(filename).toFile();
+        }
+
+        return file.isFile() ? Optional.of(file) : Optional.empty();
     }
 
     public Optional<File> getManagerConfig(){
@@ -183,5 +194,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         } catch (IOException | NullPointerException exception) {
             LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
         }
+    }
+
+    public Path getManagerConfigImagePath(){
+        return this.persistenceService.resolvePath("manager").resolve("images");
     }
 }

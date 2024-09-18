@@ -19,6 +19,7 @@
  */
 package org.openremote.model.manager;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
@@ -59,5 +60,11 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
-    Object getManagerConfig();
+    ObjectNode getManagerConfig();
+
+    @GET
+    @Produces("image/*")
+    @Path("manager/image/{realm}/{filename}")
+    @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
+    Object getManagerConfigImages(@PathParam("realm")String realm, @PathParam("filename")String fileName);
 }
