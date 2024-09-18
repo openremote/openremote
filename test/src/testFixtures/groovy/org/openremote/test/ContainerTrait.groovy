@@ -266,7 +266,7 @@ trait ContainerTrait {
 
         if (container == null) {
             try {
-                TestFixture.container = new Container(config, services)
+                TestFixture.container = new Container(config << System.getenv(), services)
                 container.startBackground()
             } catch (Exception e) {
                 LOG.warn("Failed to start the container")

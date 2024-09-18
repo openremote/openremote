@@ -33,8 +33,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
-                (TIMER_CLOCK_TYPE)        : PSEUDO.name(),
-                (OR_METRICS_ENABLED):  "false"
+                (TIMER_CLOCK_TYPE)        : PSEUDO.name()
         ]
     }
 

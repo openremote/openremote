@@ -80,23 +80,18 @@ public class MessageBrokerService implements ContainerService {
 
                 ExecutorService executorService;
 
-                // SEDA routes always create a custom thread pool so we will force them to use our shared executor to
-                // minimise the number of threads
-                executorService = container.getExecutor();
+                // Force any endpoints that use the default profile to use the container executor to reduce thread count
+                if (profile.isDefaultProfile()) {
+                    executorService = container.getExecutor();
+                } else {
+                    executorService = super.newThreadPool(profile, threadFactory);
 
-//                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
-//                if (profile.isDefaultProfile()) {
-//                    executorService = container.getExecutor();
-//                } else {
-//                    executorService = super.newThreadPool(profile, threadFactory);
-//
-//                    // Want to instrument pools that use defaultThreadPool profile (ProducerTemplate and multiple consumer SEDA endpoints)
-//                    if (meterRegistry != null) {
-//                        String name = getExecutorName("Pool", threadFactory);
-//                        name = "Pool".equals(name) ? profile.getId() : name;
-//                        executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
-//                    }
-//                }
+                    if (meterRegistry != null) {
+                        String name = getExecutorName("Pool", threadFactory);
+                        name = "Pool".equals(name) ? profile.getId() : name;
+                        executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
+                    }
+                }
 
                 return executorService;
             }
@@ -142,7 +137,7 @@ public class MessageBrokerService implements ContainerService {
             }
         };
 
-        executorServiceManager.setThreadNamePattern("#counter# #name#");
+        executorServiceManager.setThreadNamePattern("#name#-#counter#");
         executorServiceManager.setThreadPoolFactory(threadPoolFactory);
 
         // TODO might need this for errorhandler?

@@ -33,7 +33,7 @@ public interface Container {
     String OR_DEV_MODE = "OR_DEV_MODE";
     boolean OR_DEV_MODE_DEFAULT = true;
     String OR_METRICS_ENABLED = "OR_METRICS_ENABLED";
-    boolean OR_METRICS_ENABLED_DEFAULT = true;
+    boolean OR_METRICS_ENABLED_DEFAULT = false;
 
     boolean isDevMode();
 
