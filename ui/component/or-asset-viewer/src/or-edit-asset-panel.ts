@@ -96,7 +96,7 @@ const style = css`
         transition: max-height 0.25s ease-out;
     }
     .attribute-meta-row.expanded  .meta-item-container {
-        transition: max-height 0.25s ease-in;
+        transition: max-height 0.5s ease-in-out;
     }
     .meta-item-container or-mwc-input {
         width: 100%;
@@ -245,10 +245,8 @@ export class OrEditAssetPanel extends LitElement {
             } else {
                 expanderIcon.icon = "chevron-right";
                 metaRow.classList.remove("expanded");
-                //metaContainer.style.transition = "none";
                 metaContainer.style.maxHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height) + "px";
                 window.setTimeout(() => {
-                    //metaContainer.style.transition = "";
                     metaContainer.style.maxHeight = "";
                 });
             }
