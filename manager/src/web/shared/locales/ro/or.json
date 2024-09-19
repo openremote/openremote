@@ -186,6 +186,7 @@
   "output": "Ieșire",
   "selectAsset": "Selectează obiectul",
   "selectAssetOnTheLeft": "Alege un obiect din stânga",
+  "selectAssetTypeOnTheLeft": "Alege un tip de obiect din stânga",
   "noRuleStateAttributes": "No attributes with 'rule state' or 'agent link' configuration item found",
   "noDatapointsAttributes": "No attributes with 'store data points' or 'agent link' configuration item found",
   "noAttributesToShow": "Niciun atribut găsit.",
