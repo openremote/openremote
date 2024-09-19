@@ -97,7 +97,6 @@ const style = css`
     .sort-button {
         padding-right: 0;
         border: none;
-        background-color: ${unsafeCSS(DefaultColor1)};
         color: ${unsafeCSS(DefaultColor3)};
         cursor: pointer;
     }
@@ -105,7 +104,6 @@ const style = css`
     .sort-button-reverse {
         padding-left: 0;
         border: none;
-        background-color: ${unsafeCSS(DefaultColor1)};
         color: ${unsafeCSS(DefaultColor3)};
         cursor: pointer;
     }
