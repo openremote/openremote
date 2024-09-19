@@ -20,6 +20,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
@@ -27,6 +28,7 @@ import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
@@ -72,6 +74,15 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         def password = keycloakTestSetup.serviceUser.secret
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
+        def assetIDs = new ArrayList<String>()
+
+        and: "assets are added for testing purposes"
+        for (i in 1..eventCount) {
+            def asset = assetStorageService.merge(new ThingAsset("TestThing$i").setRealm(keycloakTestSetup.realmBuilding.name).addAttributes(
+                    new Attribute<Object>("counter", ValueType.NUMBER)
+            ))
+            assetIDs.add(asset.id)
+        }
 
         when: "a mqtt client connects with valid credentials"
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
@@ -85,8 +96,8 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
 
-        when: "a mqtt client subscribes to all attributes of an asset"
-        def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$managerTestSetup.apartment1HallwayId".toString()
+        when: "a mqtt client subscribes to all attributes of all assets"
+        def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/$MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD/$MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD".toString()
         Consumer<MQTTMessage<String>> eventConsumer = { msg ->
             def event = ValueUtil.parse(msg.payload, SharedEvent.class)
             receivedEvents.add(event.get())
@@ -109,7 +120,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         when: "Many attribute events are sent by the mqtt client"
         startTime = System.currentTimeMillis()
         for (i in 1..eventCount) {
-            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/motionSensor/${managerTestSetup.apartment1HallwayId}".toString()
+            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
             def payload = i.toString()
             client.sendMessage(new MQTTMessage<String>(topic, payload))
         }
@@ -117,11 +128,11 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         then: "all attribute updates should be received by the client"
         new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
             getLOG().info("Events processed = ${receivedEvents.size()}")
-            assert noEventProcessedIn(assetProcessingService, 100)
+            assert endTime > 0
         }
 
         cleanup: "output processing time"
-        getLOG().info("Time taken to process $eventCount events = ${System.currentTimeMillis()-startTime}ms")
+        getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
         if (client != null) {
             client.disconnect()
         }
