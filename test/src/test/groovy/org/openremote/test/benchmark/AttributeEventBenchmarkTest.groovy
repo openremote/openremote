@@ -10,6 +10,7 @@ import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
@@ -32,6 +33,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
@@ -62,6 +64,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         def clientEventService = container.getService(ClientEventService.class)
         def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
@@ -114,11 +117,11 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         then: "all attribute updates should be received by the client"
         new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
             getLOG().info("Events processed = ${receivedEvents.size()}")
-            assert endTime > 0
+            assert noEventProcessedIn(assetProcessingService, 100)
         }
 
         cleanup: "output processing time"
-        getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
+        getLOG().info("Time taken to process $eventCount events = ${System.currentTimeMillis()-startTime}ms")
         if (client != null) {
             client.disconnect()
         }

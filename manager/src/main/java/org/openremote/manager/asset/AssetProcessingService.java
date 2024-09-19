@@ -29,7 +29,6 @@ import org.apache.camel.builder.RouteConfigurationBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
 import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.AttributeEventInterceptor;
@@ -51,8 +50,8 @@ import org.openremote.model.value.MetaItemType;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.IntStream;
 
 import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
@@ -85,15 +84,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     public static final String ATTRIBUTE_EVENT_ROUTE_CONFIG_ID = "attributeEvent";
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
-    public static final String ATTRIBUTE_EVENT_ROUTER_QUEUE = "seda://AttributeEventRouter?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=false&discardIfNoConsumers=false&size=10000";
-    public static final String OR_ATTRIBUTE_EVENT_THREADS = "OR_ATTRIBUTE_EVENT_THREADS";
-    public static final int OR_ATTRIBUTE_EVENT_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
-    protected static final String EVENT_ROUTE_COUNT_HEADER = "EVENT_ROUTE_COUNT_HEADER";
-    protected static final String EVENT_PROCESSOR_URI_PREFIX = "seda://AttributeEventProcessor";
-    protected static final String EVENT_PROCESSOR_URI_SUFFIX = "?size=3000&timeout=10000";
-    public static final String EVENT_PROCESSOR_ROUTE_ID_PREFIX = "AttributeEvent-Processor";
+    public static final String ATTRIBUTE_EVENT_PROCESSOR = "direct://AttributeEventProcessor";
     private static final System.Logger LOG = System.getLogger(AssetProcessingService.class.getName());
-
     final protected List<AttributeEventInterceptor> eventInterceptors = new ArrayList<>();
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
@@ -108,8 +100,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
-    protected int eventProcessingThreadCount;
     protected Counter queueFullCounter;
+    protected ExecutorService executorService;
 
     @Override
     public int getPriority() {
@@ -129,6 +121,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetAttributeLinkingService = container.getService(AttributeLinkingService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
+        executorService = container.getExecutor();
         MeterRegistry meterRegistry = container.getMeterRegistry();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
 
@@ -208,16 +201,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return true;
         });
 
-        // Get dynamic route count for event processing (multithreaded event processing but guaranteeing events for the same asset end up in the same route)
-        eventProcessingThreadCount = MapAccess.getInteger(container.getConfig(), OR_ATTRIBUTE_EVENT_THREADS, OR_ATTRIBUTE_EVENT_THREADS_DEFAULT);
-        if (eventProcessingThreadCount < 1) {
-            LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is less than 1; forcing to 1");
-            eventProcessingThreadCount = 1;
-        } else if (eventProcessingThreadCount > 20) {
-            LOG.log(System.Logger.Level.WARNING, OR_ATTRIBUTE_EVENT_THREADS + " value " + eventProcessingThreadCount + " is greater than max value of 20; forcing to 20");
-            eventProcessingThreadCount = 20;
-        }
-
         // Add exception handling for attribute event processing that logs queue full exceptions and counts them
         messageBrokerService.getContext().addRoutesConfigurations(new RouteConfigurationBuilder() {
             @SuppressWarnings("unchecked")
@@ -284,16 +267,17 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Router is responsible for routing events to the same processor for a given asset ID, this allows for
         // multithreaded processing across assets
-        from(ATTRIBUTE_EVENT_ROUTER_QUEUE)
-            .routeId("AttributeEvent-Router")
+        from(ATTRIBUTE_EVENT_PROCESSOR)
+            .routeId("AttributeEvent-Processor")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+            .threads().executorService(executorService)
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
 
                 if (event.getId() == null || event.getId().isEmpty())
-                    return; // Ignore events with no asset ID
+                    throw new AssetProcessingException(ASSET_ID_MISSING);
                 if (event.getName() == null || event.getName().isEmpty())
-                    return; // Ignore events with no attribute name
+                    throw new AssetProcessingException(ATTRIBUTE_NAME_MISSING);
 
                 if (event.getTimestamp() <= 0) {
                     // Set timestamp if not set
@@ -303,24 +287,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     event.setTimestamp(timerService.getCurrentTimeMillis());
                 }
 
-                exchange.getIn().setHeader(EVENT_ROUTE_COUNT_HEADER, getEventProcessingRouteNumber(event.getId()));
-            })
-            .toD(EVENT_PROCESSOR_URI_PREFIX + "${header." + EVENT_ROUTE_COUNT_HEADER + "}");
-
-        // Create the event processor routes
-        IntStream.rangeClosed(1, eventProcessingThreadCount).forEach(processorCount -> {
-            String camelRouteURI = getEventProcessingRouteURI(processorCount);
-
-            from(camelRouteURI)
-                .routeId(EVENT_PROCESSOR_ROUTE_ID_PREFIX + processorCount)
-                .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-                .process(exchange -> {
-                    AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                    LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: processor=" + processorCount + ", event=" + event);
-                    boolean processed = processAttributeEvent(event);
-                    exchange.getIn().setBody(processed);
-                });
-        });
+                LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + event);
+                boolean processed = processAttributeEvent(event);
+                exchange.getIn().setBody(processed);
+            });
     }
 
     public void addEventInterceptor(AttributeEventInterceptor eventInterceptor) {
@@ -329,14 +299,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     /**
-     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_ROUTER_QUEUE}.
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_PROCESSOR}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
         sendAttributeEvent(attributeEvent, null);
     }
 
     /**
-     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_ROUTER_QUEUE}.
+     * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_PROCESSOR}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent, Object source) {
         attributeEvent.setSource(source);
@@ -347,7 +317,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
         messageBrokerService.getFluentProducerTemplate()
                 .withBody(attributeEvent)
-                .to(ATTRIBUTE_EVENT_ROUTER_QUEUE)
+                .to(ATTRIBUTE_EVENT_PROCESSOR)
                 .asyncSend();
     }
 
@@ -458,14 +428,5 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
-    }
-
-    protected int getEventProcessingRouteNumber(String assetId) {
-        int charCode = Character.codePointAt(assetId, 0) + Character.codePointAt(assetId, 1);
-        return (charCode % eventProcessingThreadCount) + 1;
-    }
-
-    protected String getEventProcessingRouteURI(int routeNumber) {
-        return EVENT_PROCESSOR_URI_PREFIX + routeNumber + EVENT_PROCESSOR_URI_SUFFIX;
     }
 }

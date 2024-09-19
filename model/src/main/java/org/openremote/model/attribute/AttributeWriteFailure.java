@@ -65,5 +65,15 @@ public enum AttributeWriteFailure {
     /**
      * Fallback failure when no other value makes sense.
      */
-    UNKNOWN
+    UNKNOWN,
+
+    /**
+     * Asset ID is missing
+     */
+    ASSET_ID_MISSING,
+
+    /**
+     * Attribute name is missing
+     */
+    ATTRIBUTE_NAME_MISSING
 }

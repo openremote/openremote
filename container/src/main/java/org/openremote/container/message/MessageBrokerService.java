@@ -67,15 +67,11 @@ public class MessageBrokerService implements ContainerService {
     @SuppressWarnings("deprecation")
     @Override
     public void init(Container container) throws Exception {
-
-        MeterRegistry meterRegistry = container.getMeterRegistry();
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
 
         // Not using InstrumentedThreadPoolFactory directly as it only uses the ThreadPoolProfile ID for naming
         ThreadPoolFactory threadPoolFactory = new DefaultThreadPoolFactory() {
-            private static final AtomicLong COUNTER = new AtomicLong();
-
-            @Override
+                @Override
             public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
 
                 ExecutorService executorService;
@@ -85,12 +81,6 @@ public class MessageBrokerService implements ContainerService {
                     executorService = container.getExecutor();
                 } else {
                     executorService = super.newThreadPool(profile, threadFactory);
-
-                    if (meterRegistry != null) {
-                        String name = getExecutorName("Pool", threadFactory);
-                        name = "Pool".equals(name) ? profile.getId() : name;
-                        executorService = ExecutorServiceMetrics.monitor(meterRegistry, executorService, name(name));
-                    }
                 }
 
                 return executorService;
@@ -105,35 +95,9 @@ public class MessageBrokerService implements ContainerService {
                     scheduledExecutorService = container.getScheduledExecutor();
                 } else {
                     scheduledExecutorService = super.newScheduledThreadPool(profile, threadFactory);
-
-                    // Disabled as not very useful for SEDA components
-//                    if (meterRegistry != null) {
-//                        String name = getExecutorName("", threadFactory);
-//                        name = "ScheduledPool".equals(name) ? profile.getId() : name;
-//                        scheduledExecutorService = new TimedScheduledExecutorService(meterRegistry, scheduledExecutorService, name(name), Tags.empty());
-//                    }
                 }
 
                 return scheduledExecutorService;
-            }
-
-            @Override
-            public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
-                return super.newCachedThreadPool(threadFactory);
-            }
-
-            protected String getExecutorName(String name, ThreadFactory threadFactory) {
-                if (threadFactory instanceof CamelThreadFactory factory) {
-                    String camelName = factory.getName();
-                    camelName = camelName.contains("://") ? StringHelper.after(camelName, "://") : camelName;
-                    camelName = camelName.contains("?") ? StringHelper.before(camelName, "?") : camelName;
-                    name = name + "-" + camelName;
-                }
-                return name;
-            }
-
-            private String name(String prefix) {
-                return prefix + COUNTER.incrementAndGet();
             }
         };
 

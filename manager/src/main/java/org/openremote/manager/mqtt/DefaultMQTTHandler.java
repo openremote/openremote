@@ -121,7 +121,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
                     ))
                     .process(exchange -> {
                         // Get the subscriber consumer
-                        LOG.severe(Thread.currentThread().getName());
                         String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
                         SubscriberInfo subscriberInfo = connectionSubscriberInfoMap.get(connectionID);
                         if (subscriberInfo != null) {
