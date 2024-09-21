@@ -371,9 +371,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
+            }else{
+                this._config.logo = MANAGER_URL+"/"+this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
+            }else{
+                this._config.logoMobile = MANAGER_URL+"/"+this._config.logoMobile
             }
 
             const favIcon = this._config && this._config.favicon ? MANAGER_URL+"/"+this._config.favicon : DefaultFavIcon;

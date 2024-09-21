@@ -21,8 +21,6 @@ import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 
-declare const MANAGER_URL: string;
-
 export {DEFAULT_LANGUAGES, Languages}
 
 export interface HeaderConfig {
@@ -417,7 +415,7 @@ export class OrHeader extends LitElement {
            <!-- Header -->
             <div id="header" class="shadow">
                 <div id="toolbar-top">
-                    <div><img id="logo" src="${MANAGER_URL}/${this.logo}" /><img id="logo-mobile" src="${MANAGER_URL}/${this.logoMobile}" /></div>
+                    <div><img id="logo" src="${this.logo}" /><img id="logo-mobile" src="${this.logoMobile}" /></div>
 
                     <!-- This gets hidden on a small screen-->
                     <nav id="toolbar-list">
