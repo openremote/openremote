@@ -21,6 +21,7 @@ import {AppStateKeyed, router, updateRealm} from "./index";
 import {AnyAction, Store} from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 
+
 export {DEFAULT_LANGUAGES, Languages}
 
 export interface HeaderConfig {
@@ -369,7 +370,6 @@ export class OrHeader extends LitElement {
         if (changedProperties.has("realm")) {
             this._getAlarmButton();
         }
-
         return super.shouldUpdate(changedProperties);
     }
 
