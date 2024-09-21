@@ -23,14 +23,15 @@ import { i18next } from "@openremote/or-translate";
 import { FileInfo } from "@openremote/model";
 import "./or-loading-indicator";
 
-declare const MANAGER_URL: string;
-
 @customElement("or-file-uploader")
 export class OrFileUploader extends LitElement {
 
     // Contains the content that will be shown towards the user.
     @property({ attribute: false })
     public readonly src: string = "";
+
+    @property({ attribute: false })
+    public readonly managerUrl: string = "";
 
     @property()
     public readonly title: string = "";
@@ -135,7 +136,7 @@ export class OrFileUploader extends LitElement {
                 <div id="imageContainer">
 
                     ${this.src ? html`
-                          <img src="${MANAGER_URL}${this.src}" alt="OR-File-Uploader">
+                          <img src="${this.managerUrl}/${this.src}" alt="OR-File-Uploader">
                           <div class="pencil-container">
                               <or-icon icon="pencil-circle"></or-icon>
                           </div>

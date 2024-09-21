@@ -371,8 +371,6 @@ export class OrHeader extends LitElement {
         if (changedProperties.has("realm")) {
             this._getAlarmButton();
         }
-        this.logo = MANAGER_URL+"/"+this.logo;
-        this.logoMobile = MANAGER_URL+"/"+this.logoMobile;
 
         return super.shouldUpdate(changedProperties);
     }
@@ -419,7 +417,7 @@ export class OrHeader extends LitElement {
            <!-- Header -->
             <div id="header" class="shadow">
                 <div id="toolbar-top">
-                    <div><img id="logo" src="${this.logo}" /><img id="logo-mobile" src="${this.logoMobile}" /></div>
+                    <div><img id="logo" src="${MANAGER_URL}/${this.logo}" /><img id="logo-mobile" src="${MANAGER_URL}/${this.logoMobile}" /></div>
 
                     <!-- This gets hidden on a small screen-->
                     <nav id="toolbar-list">
