@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -33,6 +34,8 @@ import org.openremote.model.http.RequestParams;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -90,7 +93,30 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public Object getManagerConfigImages(String realm, String fileName) {
-        return configurationService.getManagerConfigImage(realm+"/"+fileName).orElse(null);
+    public Object getManagerConfigImages(String fileName) {
+
+        try {
+            File imageFile = configurationService.getManagerConfigImage(fileName).orElseThrow();
+            if (!imageFile.exists()) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            String mimeType = Files.probeContentType(imageFile.toPath());
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+
+            Response.ResponseBuilder response = Response.ok(imageFile, mimeType);
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+            response.header("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
+            return response.build();
+        }
+        catch (NoSuchElementException e){
+            return Response.status(Response.Status.NOT_FOUND).entity("Image not Found").build();
+        }
+        catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error retrieving image").build();
+        }
     }
 }

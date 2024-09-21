@@ -63,8 +63,7 @@ public interface ConfigurationResource {
     ObjectNode getManagerConfig();
 
     @GET
-    @Produces("image/*")
-    @Path("manager/image/{realm}/{filename}")
+    @Path("manager/image/{filename: .+}")
     @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
-    Object getManagerConfigImages(@PathParam("realm")String realm, @PathParam("filename")String fileName);
+    Object getManagerConfigImages(@PathParam("filename")String fileName);
 }
