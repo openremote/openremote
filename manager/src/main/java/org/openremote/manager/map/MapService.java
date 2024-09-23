@@ -83,7 +83,7 @@ public class MapService implements ContainerService {
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
         ObjectNode mapSettingsJson = configurationService.getMapConfig();
-        configurationService.storeMapConfig(mapConfiguration);
+        configurationService.saveMapConfigFile(mapConfiguration);
         return mapSettingsJson;
     }
 

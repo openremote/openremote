@@ -57,7 +57,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
     protected Path mapSettingsPath;
+
     protected ObjectNode mapConfig;
+    protected ObjectNode managerConfig;
 
     @Override
     public int getPriority() {
@@ -92,9 +94,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             }
         }
 
-        if(Files.isRegularFile(mapSettingsPath)){
-            mapConfig = loadMapSettingsJson();
-        }
+        // Will throw if failed, stopping startup fast and hard
+        loadMapSettingsJson();
+        loadManagerConfigJson();
     }
 
     @Override
@@ -107,19 +109,87 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         /* code not overridden yet */
     }
 
+    protected void loadMapSettingsJson() throws Exception {
+        try {
+            this.mapConfig = (ObjectNode) ValueUtil.JSON.readTree(Files.readAllBytes(mapSettingsPath));
+        } catch (Exception ex) {
+            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
+            throw ex;
+        }
+    }
 
-    public void saveManagerConfigFile(Object managerConfiguration) {
+    public Optional<File> getManagerConfigFile(){
+        File file = getManagerConfigPath().toFile();
+
+        if(file.exists() && !file.isDirectory()){
+            return Optional.of(file);
+        }else{
+            file = pathPublicRoot
+                    .resolve("manager_config.json")
+                    .toFile();
+            if (file.exists() && !file.isDirectory()){
+                return Optional.of(file);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public ObjectNode getManagerConfig(){
+        return this.managerConfig;
+    }
+
+    public Path getManagerConfigPath(){
+        return persistenceService.getStorageDir()
+                .resolve("manager")
+                .resolve("manager_config.json");
+    }
+
+
+    protected void loadManagerConfigJson(){
+        try {
+            this.managerConfig = (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
+        } catch (Exception ex) {
+            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
+        }
+    }
+
+
+
+    public ObjectNode getMapConfig(){
+        return this.mapConfig;
+    }
+
+    protected File getMapConfigFile(){
+        return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toFile();
+    }
+
+    public Path getManagerConfigImagePath(){
+        return this.persistenceService.resolvePath("manager").resolve("images");
+    }
+
+    public void saveMapConfigFile(Map<String, MapRealmConfig> mapConfiguration) {
+        try(OutputStream out = new FileOutputStream(getMapConfigFile())){
+            mapConfig.putPOJO("options", mapConfiguration);
+            out.write(ValueUtil.JSON.writeValueAsString(mapConfiguration).getBytes());
+            this.loadMapSettingsJson();
+        } catch (Exception exception) {
+            LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
+        }
+    }
+
+
+    public void saveManagerConfigFile(Object managerConfiguration) throws Exception {
         LOG.log(Level.INFO, "Saving manager_config.json..");
-        try (OutputStream out = new FileOutputStream(persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json").toFile())) {
+        try (OutputStream out = new FileOutputStream(getManagerConfigFile().orElseThrow())) {
             out.write(ValueUtil.JSON.writeValueAsString(managerConfiguration).getBytes());
+            this.loadManagerConfigJson();
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
         }
 
     }
 
-
-    public void saveImageFile(String path, FileInfo fileInfo) {
+    public void saveConfigImageFile(String path, FileInfo fileInfo) throws Exception {
         LOG.log(Level.INFO, "Saving image in manager_config.json..");
         File file = getManagerConfigImagePath().resolve(path).toFile();
         try {
@@ -140,63 +210,23 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     }
 
-    public Optional<File> getManagerConfigImage(String filename){
+    public Optional<File> getManagerConfigImage(String filename) {
         File file = getManagerConfigImagePath().resolve(filename).toFile();
 
-        // fallback to OR_CUSTOM_APP_DOCROOT
         if(!file.isFile()){
+            // fallback to OR_CUSTOM_APP_DOCROOT
             file = pathPublicRoot.resolve("images").resolve(filename).toFile();
+        }else{
+            try {
+                //Check if the file retrieved is somewhere within the storageDir/manager directory.
+                //If it is, return an Optional.empty file to denote Not Found
+                Boolean isValid = file.getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
+                if (!isValid) return Optional.empty();
+                } catch (IOException e) {
+                    return Optional.empty();
+                }
         }
 
         return file.isFile() ? Optional.of(file) : Optional.empty();
-    }
-
-    public Optional<File> getManagerConfig(){
-        File file = persistenceService.getStorageDir()
-                .resolve("manager")
-                .resolve("manager_config.json")
-                .toFile();
-
-        if(file.exists() && !file.isDirectory()){
-           return Optional.of(file);
-        }else{
-            file = pathPublicRoot
-                    .resolve("manager_config.json")
-                    .toFile();
-            if (file.exists() && !file.isDirectory()){
-                return Optional.of(file);
-            }
-        }
-        return Optional.empty();
-    }
-
-    protected ObjectNode loadMapSettingsJson() {
-        try {
-            return (ObjectNode) ValueUtil.JSON.readTree(Files.readAllBytes(mapSettingsPath));
-        } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
-            return ValueUtil.JSON.createObjectNode();
-        }
-    }
-
-    public ObjectNode getMapConfig() {
-        return mapConfig;
-    }
-
-    protected File getMapSettingsFile(){
-        return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toFile();
-    }
-
-    public void storeMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
-        try(OutputStream out = new FileOutputStream(getMapSettingsFile())){
-            mapConfig.putPOJO("options", mapConfiguration);
-            out.write(ValueUtil.JSON.writeValueAsString(mapConfiguration).getBytes());
-        } catch (IOException | NullPointerException exception) {
-            LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
-        }
-    }
-
-    public Path getManagerConfigImagePath(){
-        return this.persistenceService.resolvePath("manager").resolve("images");
     }
 }

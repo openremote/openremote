@@ -19,10 +19,8 @@
  */
 package org.openremote.manager.app;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
@@ -36,7 +34,6 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
@@ -52,14 +49,22 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
     @Override
     public Object update(RequestParams requestParams, Object managerConfiguration) {
-        this.configurationService.saveManagerConfigFile(managerConfiguration);
+        try {
+            this.configurationService.saveManagerConfigFile(managerConfiguration);
+        } catch (Exception e) {
+            LOG.warning("Couldn't store image:" +e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
+        }
         return managerConfiguration;
     }
 
     @Override
     public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
-        this.configurationService.saveImageFile(path, fileInfo);
-        requestParams.getExternalSchemeHostAndPort();
+        try {
+            this.configurationService.saveConfigImageFile(path, fileInfo);
+        } catch (Exception e) {
+            throw new WebApplicationException(e);
+        }
         URI managerConfigPath = requestParams.getExternalBaseUriBuilder()
                 .path("master")
                 .path("configuration")
@@ -72,29 +77,11 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
     @Override
     public ObjectNode getManagerConfig() {
-        Optional<File> file = configurationService.getManagerConfig();
-        if (file.isEmpty()) {
-            throw new NotFoundException("Configuration file not found");
-        }
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonNode = mapper.readTree(file.get());
-            if (jsonNode.isObject()) {
-                ObjectNode objectNode = (ObjectNode) jsonNode;
-                return objectNode;
-            } else {
-                throw new IOException("The provided JSON is not an object.");
-            }
-        } catch (IOException e) {
-            LOG.severe("Error reading manager config file: " + e.getMessage());
-        }
-        return null;
+        return configurationService.getManagerConfig();
     }
 
     @Override
     public Object getManagerConfigImages(String fileName) {
-
         try {
             File imageFile = configurationService.getManagerConfigImage(fileName).orElseThrow();
             if (!imageFile.exists()) {
@@ -107,9 +94,6 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
             }
 
             Response.ResponseBuilder response = Response.ok(imageFile, mimeType);
-            response.header("Access-Control-Allow-Origin", "*");
-            response.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-            response.header("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
             return response.build();
         }
         catch (NoSuchElementException e){
