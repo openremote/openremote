@@ -75,6 +75,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0")
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883)
         def assetIDs = new ArrayList<String>()
+        def assetMultiID = ""
 
         and: "assets are added for testing purposes"
         for (i in 1..eventCount) {
@@ -83,6 +84,13 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             ))
             assetIDs.add(asset.id)
         }
+        and: "one asset is added with many attributes"
+        def multiAsset = new ThingAsset("TestThingMulti").setRealm(keycloakTestSetup.realmBuilding.name)
+        for (i in 1..eventCount) {
+            multiAsset.addAttributes(new Attribute<Object>("counter$i", ValueType.NUMBER))
+        }
+        multiAsset = assetStorageService.merge(multiAsset)
+        assetMultiID = multiAsset.id
 
         when: "a mqtt client connects with valid credentials"
         client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null, null)
@@ -117,7 +125,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
         }
 
-        when: "Many attribute events are sent by the mqtt client"
+        when: "Attribute events are sent for each asset by the MQTT client"
         startTime = System.currentTimeMillis()
         for (i in 1..eventCount) {
             topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
@@ -130,9 +138,26 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             getLOG().info("Events processed = ${receivedEvents.size()}")
             assert endTime > 0
         }
+        getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
+
+        when: "Attribute events are sent for each attribute of the multi asset by the MQTT client"
+        endTime = 0
+        receivedEvents.clear()
+        startTime = System.currentTimeMillis()
+        for (i in 1..eventCount) {
+            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter$i/${assetMultiID}".toString()
+            def payload = i.toString()
+            client.sendMessage(new MQTTMessage<String>(topic, payload))
+        }
+
+        then: "all attribute updates should be received by the client"
+        new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
+            getLOG().info("Events processed = ${receivedEvents.size()}")
+            assert endTime > 0
+        }
+        getLOG().info("Time taken to process $eventCount events for multi attribute asset = ${endTime-startTime}ms")
 
         cleanup: "output processing time"
-        getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
         if (client != null) {
             client.disconnect()
         }

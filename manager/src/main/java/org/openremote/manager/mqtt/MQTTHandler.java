@@ -159,14 +159,11 @@ public abstract class MQTTHandler {
 
                 getLogger().finer(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
 
-                // Offload processing to a background thread
-                executorService.submit(() -> {
-                    try {
-                        onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
-                    } catch (Exception e) {
-                        getLogger().info("An error occurred whilst handling onPublish to topic '" + topic + "': clientID=" + clientID);
-                    }
-                });
+                try {
+                    onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
+                } catch (Exception e) {
+                    getLogger().info("An error occurred whilst handling onPublish to topic '" + topic + "': clientID=" + clientID);
+                }
             });
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);

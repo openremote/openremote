@@ -54,6 +54,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
@@ -429,12 +430,16 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
-        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        LOG.finer(() -> "Publishing to client inbound queue: " + attributeEvent);
+        // This is called by a single client thread (the session) once the container executor has no free threads
+        // the caller will execute (i.e. the client thread) which will effectively limit rate of publish consumption
+        // eventually filling the attribute queue in the broker and preventing additional attributes from being added
+        // to the queue. This gives us a consistent failure mode and natural rate limiting.
+        // TODO: set consumer window size to limit memory usage
+        // TODO: set message rate limit
+
         messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
             .withBody(attributeEvent)
-            .to(CLIENT_INBOUND_QUEUE)
+            .to(ATTRIBUTE_EVENT_PROCESSOR)
             .asyncSend();
     }
 
