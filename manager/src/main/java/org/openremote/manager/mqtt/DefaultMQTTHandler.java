@@ -426,6 +426,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         List<String> topicTokens = topic.getTokens();
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         Object value = ValueUtil.parse(payloadContent).orElse(null);
@@ -434,8 +439,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         // the caller will execute (i.e. the client thread) which will effectively limit rate of publish consumption
         // eventually filling the attribute queue in the broker and preventing additional attributes from being added
         // to the queue. This gives us a consistent failure mode and natural rate limiting.
-        // TODO: set consumer window size to limit memory usage
-        // TODO: set message rate limit
+        // TODO: set producer message rate limit (MQTT connection)
 
         messageBrokerService.getFluentProducerTemplate()
             .withBody(attributeEvent)

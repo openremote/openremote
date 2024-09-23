@@ -142,7 +142,7 @@ public abstract class MQTTHandler {
         try {
             getLogger().info("Adding publish consumer for topic '" + topic + "': handler=" + getName());
             String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
-            clientSession.createQueue(QueueConfiguration.of(coreTopic).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
+            clientSession.createQueue(QueueConfiguration.of(coreTopic).setDurable(false).setRoutingType(RoutingType.MULTICAST).setPurgeOnNoConsumers(true).setAutoCreateAddress(true).setAutoCreated(true));
             ClientConsumer consumer = clientSession.createConsumer(coreTopic);
             consumer.setMessageHandler(message -> {
                 Topic publishTopic = Topic.parse(MQTTUtil.getMqttTopicFromCoreAddress(message.getAddress(), mqttBrokerService.wildcardConfiguration));

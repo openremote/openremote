@@ -44,6 +44,7 @@ import org.apache.activemq.artemis.core.server.ServerSession;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPlugin;
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
+import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
@@ -185,7 +186,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 .setAutoDeleteAddressesSkipUsageCheck(true)
                 .setAutoDeleteAddressesDelay(86400000)
                 .setAutoDeleteQueuesDelay(0)
+                // Disable consumer buffering to keep messages on the server we're in the same VM anyway so shouldn't be harmful to performance
+                .setDefaultConsumerWindowSize(0)
+                // Persistence is disabled but fail any messages sent to a full address
+                .setAddressFullMessagePolicy(AddressFullMessagePolicy.BLOCK)
                 .setAutoDeleteQueuesMessageCount(-1L)
+        );
+
+        serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
+            new AddressSettings()
+                .setMaxSizeBytes(1L)
         );
 
         serverConfiguration.setPersistenceEnabled(false);
