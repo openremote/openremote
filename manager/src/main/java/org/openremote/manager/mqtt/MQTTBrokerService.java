@@ -21,6 +21,7 @@ package org.openremote.manager.mqtt;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelId;
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
@@ -33,6 +34,7 @@ import org.apache.activemq.artemis.api.core.management.CoreNotificationType;
 import org.apache.activemq.artemis.api.core.management.ManagementHelper;
 import org.apache.activemq.artemis.core.client.impl.ClientSessionInternal;
 import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.config.MetricsConfiguration;
 import org.apache.activemq.artemis.core.config.WildcardConfiguration;
 import org.apache.activemq.artemis.core.config.impl.ConfigurationImpl;
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
@@ -46,6 +48,7 @@ import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPl
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
 import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
+import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -173,6 +176,14 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
         serverConfiguration.registerBrokerPlugin(this);
+        if (container.getMeterRegistry() != null) {
+            serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false).setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
+                @Override
+                public MeterRegistry getRegistry() {
+                    return container.getMeterRegistry();
+                }
+            }));
+        }
         serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
 
         // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
@@ -185,18 +196,24 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
                 .setAutoDeleteAddressesSkipUsageCheck(true)
                 .setAutoDeleteAddressesDelay(86400000)
+                .setAutoDeleteQueuesMessageCount(-1L)
                 .setAutoDeleteQueuesDelay(0)
                 // Disable consumer buffering to keep messages on the server we're in the same VM anyway so shouldn't be harmful to performance
                 .setDefaultConsumerWindowSize(0)
-                // Persistence is disabled but fail any messages sent to a full address
                 .setAddressFullMessagePolicy(AddressFullMessagePolicy.BLOCK)
-                .setAutoDeleteQueuesMessageCount(-1L)
+                // We don't want excessive metrics so only enable metrics for each custom handler address
+                .setEnableMetrics(false)
         );
 
-        serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
-            new AddressSettings()
-                .setMaxSizeBytes(1L)
-        );
+        // The below is an example of rate limiting at the address level the FAIL policy will cause an exception
+        // that is handled by the MQTTProtocolHandler which will disconnect the client (MQTT doesn't have a nice
+        // way of handling rejected publishes)
+//        serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
+//            new AddressSettings()
+//                .setMaxSizeMessages(3)
+//                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+//                .setMaxSizeBytes(1L)
+//        );
 
         serverConfiguration.setPersistenceEnabled(false);
 

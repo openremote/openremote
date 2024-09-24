@@ -427,7 +427,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
         try {
-            Thread.sleep(60000);
+            Thread.sleep(10000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -435,11 +435,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
-        // This is called by a single client thread (the session) once the container executor has no free threads
-        // the caller will execute (i.e. the client thread) which will effectively limit rate of publish consumption
-        // eventually filling the attribute queue in the broker and preventing additional attributes from being added
-        // to the queue. This gives us a consistent failure mode and natural rate limiting.
-        // TODO: set producer message rate limit (MQTT connection)
+        // This is called by a single ActiveMQ client thread (the session) and async offloaded to the container executor,
+        // once the container executor has no free threads the caller will execute (i.e. the client thread) which will
+        // effectively limit rate of publish consumption eventually filling the attribute queue in the broker and
+        // preventing additional attribute events from being added to the queue. This gives us a consistent failure mode
+        // and natural rate limiting.
 
         messageBrokerService.getFluentProducerTemplate()
             .withBody(attributeEvent)
