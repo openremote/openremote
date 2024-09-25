@@ -32,7 +32,6 @@ import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.reader.MessageUtil;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.checkerframework.checker.units.qual.A;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
@@ -111,17 +110,7 @@ public abstract class MQTTHandler {
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
 
-        if (container.getMeterRegistry() != null) {
-            // Enable metrics on the consumer addresses
-            Set<String> publishListenerTopics = getPublishListenerTopics();
-            if (publishListenerTopics != null) {
-                publishListenerTopics.forEach(topic -> {
-                    String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
-                    serverConfiguration.addAddressSetting(coreTopic, new AddressSettings()
-                        .setEnableMetrics(true));
-                });
-            }
-        }
+        addPublishTopicServerConfiguration(container, serverConfiguration);
     }
 
     /**
@@ -150,6 +139,32 @@ public abstract class MQTTHandler {
             clientSession.close();
             clientSession = null;
         }
+    }
+
+    protected void addPublishTopicServerConfiguration(Container container, Configuration serverConfiguration) {
+        Set<String> publishListenerTopics = getPublishListenerTopics();
+        if (publishListenerTopics != null) {
+            publishListenerTopics.forEach(topic -> {
+                String coreTopic = MQTTUtil.getCoreAddressFromMqttTopic(topic, mqttBrokerService.wildcardConfiguration);
+                // Use literal address to avoid wildcard matching to other addresses
+                AddressSettings addressSettings = getPublishTopicAddressSettings(container, topic);
+                if (addressSettings != null) {
+                    serverConfiguration.addAddressSetting("(" + coreTopic + ")", addressSettings);
+                }
+            });
+        }
+    }
+
+    /**
+     * Just enable metrics on the topic by default but allow custom handlers to add more configuration as required
+     */
+    protected AddressSettings getPublishTopicAddressSettings(Container container, String publishTopic) {
+        if (container.getMeterRegistry() != null) {
+            return new AddressSettings()
+                .setEnableMetrics(true);
+        }
+
+        return null;
     }
 
     protected void addPublishConsumer(String topic) throws Exception {

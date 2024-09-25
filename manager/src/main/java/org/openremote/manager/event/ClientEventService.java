@@ -122,11 +122,11 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     public static final String HEADER_CONNECTION_TYPE_MQTT = "mqtt";
     public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
     public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
-    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&concurrentConsumers=2&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
-    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&concurrentConsumers=2&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    public static final String CLIENT_INBOUND_QUEUE = "seda://ClientInboundQueue?multipleConsumers=true&waitForTaskToComplete=IfReplyExpected&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    public static final String CLIENT_OUTBOUND_QUEUE = "seda://ClientOutboundQueue?multipleConsumers=true&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
-    protected static final String PUBLISH_QUEUE = "seda://ClientPublishQueue?multipleConsumers=false&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     final protected Collection<EventAuthorizer> eventAuthorizers = new CopyOnWriteArraySet<>();
@@ -165,7 +165,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         messageBrokerService = container.getService(MessageBrokerService.class);
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
         MeterRegistry meterRegistry = container.getMeterRegistry();
 
         if (meterRegistry != null) {
@@ -334,6 +334,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientInbound-EventProcessor")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+            .threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
             .process(exchange -> {
                 // Process session open before passing to any interceptors
                 Boolean isSessionOpen = exchange.getIn().getHeader(SESSION_OPEN, Boolean.class);
@@ -392,6 +393,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(PUBLISH_QUEUE)
             .routeId("ClientOutbound-Splitter")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+            .threads().executorService(executorService)
             .split(method(eventSubscriptions, "splitForSubscribers"))
             .process(exchange -> {
                 String sessionKey = getSessionKey(exchange);
@@ -408,6 +410,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         from(CLIENT_OUTBOUND_QUEUE)
             .routeId("ClientOutbound-Websocket")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+            //.threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
             .filter(header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_WEBSOCKET))
             .process(exchange -> {
                 String sessionKey = exchange.getIn().getHeader(SESSION_KEY, String.class);

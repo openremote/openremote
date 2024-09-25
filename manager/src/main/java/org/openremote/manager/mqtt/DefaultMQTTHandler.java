@@ -24,6 +24,8 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
+import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
+import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -116,6 +118,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
                 from(CLIENT_OUTBOUND_QUEUE)
                     .routeId("ClientOutbound-DefaultMQTTHandler")
                     .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+                    //.threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
                     .filter(and(
                         header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
                         body().isInstanceOf(TriggeredEventSubscription.class)
@@ -426,11 +429,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
     @Override
     public void onPublish(RemotingConnection connection, Topic topic, ByteBuf body) {
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         List<String> topicTokens = topic.getTokens();
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         Object value = ValueUtil.parse(payloadContent).orElse(null);

@@ -325,11 +325,35 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new AssetsEvent(sendAssets))
         gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
-        then: "the gateway connector sync should be completed"
+        then: "the gateway connector initial sync should be completed"
         conditions.eventually {
             def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
             assert gatewayConnector.isConnected()
             assert !gatewayConnector.isInitialSyncInProgress()
+        }
+
+        and: "the central manager should have requested the capabilities of the gateway"
+        conditions.eventually {
+            assert clientReceivedMessages.size() == 3
+            assert clientReceivedMessages.get(2).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
+            assert clientReceivedMessages.get(2).contains(GatewayCapabilitiesRequestEvent.TYPE)
+            def response = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
+            messageId = response.messageId
+            assert response.event instanceof GatewayCapabilitiesRequestEvent
+        }
+
+        when: "the gateway returns the capabilities"
+        def capabilitiesReplyEvent = new EventRequestResponseWrapper(
+                messageId,
+                new GatewayCapabilitiesResponseEvent(true))
+        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
+
+        then: "the gateway connector capabilities should be updated"
+        conditions.eventually {
+            def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
+            assert gatewayConnector.isConnected()
+            assert !gatewayConnector.isInitialSyncInProgress()
+            assert gatewayConnector.isTunnellingSupported()
         }
 
         and: "all the gateway assets should be replicated underneath the gateway"

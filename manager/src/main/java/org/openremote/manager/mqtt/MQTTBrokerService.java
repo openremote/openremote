@@ -185,6 +185,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             }));
         }
         serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
+        serverConfiguration.setLiteralMatchMarkers("()");
 
         // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),

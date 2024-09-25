@@ -34,7 +34,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
                 (TIMER_CLOCK_TYPE)        : PSEUDO.name()
-        ]
+        ] << System.getenv()
     }
 
     Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {

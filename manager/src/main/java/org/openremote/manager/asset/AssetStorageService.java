@@ -64,6 +64,7 @@ import org.postgresql.util.PGobject;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -229,6 +230,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
+    protected ExecutorService executorService;
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -314,6 +316,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
+        executorService = container.getExecutor();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, this);
 
         clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
@@ -384,6 +387,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // React if a client wants to read assets and attributes
         from(CLIENT_INBOUND_QUEUE)
             .routeId("ClientInbound-Query")
+            .threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
             .filter(body().isInstanceOf(HasAssetQuery.class))
             .process(exchange -> {
                 HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);

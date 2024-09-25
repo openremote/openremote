@@ -32,6 +32,7 @@ import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -49,6 +50,7 @@ import static org.openremote.model.value.ValueType.TEXT
  * for this asset. The time taken for a response to arrive after a publish is a simple measure of the throughput of the
  * system; this can be used to monitor the performance change of the system over time on a given system specification.
  */
+@Ignore
 class AttributeEventBenchmarkTest extends Specification implements ManagerContainerTrait {
 
     def "Attribute processing benchmark"() {

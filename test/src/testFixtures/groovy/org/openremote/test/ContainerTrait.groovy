@@ -91,7 +91,7 @@ trait ContainerTrait {
             def configsMatch = false
             def servicesMatch = false
             def currentConfig = container.getConfig()
-            if (currentConfig == config) {
+            if (Objects.equals(currentConfig, config)) {
                 configsMatch = true
             } else {
                 if (currentConfig.size() == config.size()) {
@@ -266,7 +266,7 @@ trait ContainerTrait {
 
         if (container == null) {
             try {
-                TestFixture.container = new Container(config << System.getenv(), services)
+                TestFixture.container = new Container(config, services)
                 container.startBackground()
             } catch (Exception e) {
                 LOG.warn("Failed to start the container")

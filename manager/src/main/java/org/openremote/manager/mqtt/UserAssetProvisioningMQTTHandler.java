@@ -28,7 +28,6 @@ import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
-import org.openremote.container.concurrent.ContainerThreadFactory;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -54,13 +53,13 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -110,17 +109,12 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public static final String RESPONSE_TOKEN = "response";
     public static final String UNIQUE_ID_PLACEHOLDER = "%UNIQUE_ID%";
     public static final String PROVISIONING_USER_PREFIX = "ps-";
-    public static final String OR_AUTO_PROVISIONING_THREADS_MIN = "OR_AUTO_PROVISIONING_THREADS_MIN";
-    public static final String OR_AUTO_PROVISIONING_THREADS_MAX = "OR_AUTO_PROVISIONING_THREADS_MAX";
-    public static final int OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT = 1;
-    public static final int OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT = 10;
     protected ProvisioningService provisioningService;
     protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
-    protected ExecutorService provisioningExecutorService;
 
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
@@ -152,12 +146,23 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(new ProvisioningPersistenceRouteBuilder(this));
-
-            int minThreadCount = getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MIN, OR_AUTO_PROVISIONING_MIN_THREAD_COUNT_DEFAULT);
-            int maxThreadCount = Math.max(minThreadCount, getInteger(container.getConfig(), OR_AUTO_PROVISIONING_THREADS_MAX, OR_AUTO_PROVISIONING_MAX_THREAD_COUNT_DEFAULT));
-
-            provisioningExecutorService = new ThreadPoolExecutor(minThreadCount, maxThreadCount, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("AutoProvisioningPool"), new ThreadPoolExecutor.CallerRunsPolicy());
         }
+    }
+
+    /**
+     * Limit the number of messages allowed in the address queue and fail when over; this will disconnect the client.
+     * Approx 20ms per request with 20s timeout on auto provisioning request = 1000
+     */
+    @Override
+    protected AddressSettings getPublishTopicAddressSettings(Container container, String publishTopic) {
+        if (container.getMeterRegistry() != null) {
+            return new AddressSettings()
+                .setMaxSizeMessages(1000L)
+                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+                .setEnableMetrics(true);
+        }
+
+        return null;
     }
 
     @Override
@@ -247,7 +252,10 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             LOG.fine(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
             return;
         }
-        this.processProvisioningRequest(connection, topic, body);
+        // When no more threads available in the executorService the calling ActiveMQ client thread will execute which
+        // will cause provisioning messages to wait in the address queue eventually hitting the message limit and
+        // additional requests will be failed until the queue drains, this provides natural rate limiting.
+        executorService.submit(() -> this.processProvisioningRequest(connection, topic, body));
     }
 
     @Override

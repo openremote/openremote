@@ -22,10 +22,10 @@ package org.openremote.manager.rules;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -35,7 +35,6 @@ import org.openremote.manager.event.AttributeEventInterceptor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.rules.flow.FlowResourceImpl;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -159,7 +158,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = new ContainerScheduledExecutor(getClass().getSimpleName(), 1);
+        executorService = container.getScheduledExecutor();
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
         rulesetStorageService = container.getService(RulesetStorageService.class);
@@ -807,6 +806,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected void updateAttributeEvent(AttributeEvent attributeEvent) {
         LOG.finest("Updating attribute event: " + attributeEvent);
 
+        // TODO: Use a hashmap for attribute events
         synchronized (attributeEvents) {
             boolean isNewer = attributeEvents.stream().filter(event -> event.getRef().equals(attributeEvent.getRef())).findFirst()
                 .map(existingEvent -> existingEvent.getTimestamp() < attributeEvent.getTimestamp()).orElse(true);
