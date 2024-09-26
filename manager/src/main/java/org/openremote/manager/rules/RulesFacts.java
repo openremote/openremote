@@ -68,8 +68,6 @@ public class RulesFacts extends Facts implements RuleListener {
     final protected Assets assetsFacade;
     final protected Object loggingContext;
     final protected Logger LOG;
-    final protected Map<String, Collection<AttributeInfo>> assetIdIndex = new HashMap<>();
-    final protected Map<String, Collection<AttributeInfo>> assetTypeIndex = new HashMap<>();
     protected int triggerCount;
     protected boolean trackLocationRules;
     protected Map<String, Set<GeofencePredicate>> assetStateLocationPredicateMap = null;
@@ -207,16 +205,6 @@ public class RulesFacts extends Facts implements RuleListener {
         getAssetStates().remove(assetState);
         getAssetStates().add(assetState);
 
-        // Maintain index of all asset states for this asset by ID
-        assetIdIndex.putIfAbsent(assetState.getId(), new ArrayDeque<>());
-        assetIdIndex.get(assetState.getId()).remove(assetState);
-        assetIdIndex.get(assetState.getId()).add(assetState);
-
-        // Maintain index of all asset states for this asset by type
-        assetTypeIndex.putIfAbsent(assetState.getAssetType(), new ArrayDeque<>());
-        assetTypeIndex.get(assetState.getAssetType()).remove(assetState);
-        assetTypeIndex.get(assetState.getAssetType()).add(assetState);
-
         return this;
     }
 
@@ -225,18 +213,6 @@ public class RulesFacts extends Facts implements RuleListener {
             LOG.finest("Fact change (DELETE): " + assetState + " - on: " + loggingContext);
         }
         getAssetStates().remove(assetState);
-
-        // Maintain index of all asset states for this asset by ID
-        Collection<AttributeInfo> assetIdIndexCollection = assetIdIndex.get(assetState.getId());
-        if (assetIdIndexCollection != null) {
-            assetIdIndexCollection.remove(assetState);
-        }
-
-        // Maintain index of all asset states for this asset by type
-        Collection<AttributeInfo> assetTypeIndexCollection = assetTypeIndex.get(assetState.getAssetType());
-        if (assetTypeIndexCollection != null) {
-            assetTypeIndexCollection.remove(assetState);
-        }
 
         return this;
     }
@@ -455,12 +431,22 @@ public class RulesFacts extends Facts implements RuleListener {
                 .filter(fact -> this.matchFact(fact, AttributeInfo.class, p).isPresent());
     }
 
+    @Deprecated
     public RulesFacts updateAssetState(String assetId, String attributeName, Object value) {
-        return invalidateAssetStateAndDispatch(assetId, attributeName, value);
+        // Dispatch the update to the asset processing service
+        AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeName, value);
+        LOG.finest("Dispatching " + attributeEvent + " - on: " + loggingContext);
+        assetsFacade.dispatch(attributeEvent);
+        return this;
     }
 
+    @Deprecated
     public RulesFacts updateAssetState(String assetId, String attributeName) {
-        return invalidateAssetStateAndDispatch(assetId, attributeName, null);
+        // Dispatch the update to the asset processing service
+        AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeName, null);
+        LOG.finest("Dispatching " + attributeEvent + " - on: " + loggingContext);
+        assetsFacade.dispatch(attributeEvent);
+        return this;
     }
 
     public void removeExpiredTemporaryFacts() {
@@ -601,37 +587,6 @@ public class RulesFacts extends Facts implements RuleListener {
         }
 
         return comparator;
-    }
-
-    protected RulesFacts invalidateAssetStateAndDispatch(String assetId, String attributeName, Object value) {
-        // Remove the asset state from the facts, it is invalid now
-        getAssetStates()
-                .removeIf(assetState -> {
-                    boolean invalid = assetState.getId().equals(assetId) && assetState.getName().equals(attributeName);
-                    if (invalid) {
-                        if (LOG.isLoggable(Level.FINEST)) {
-                            LOG.finest("Fact change (INTERNAL DELETE): " + assetState + " - on: " + loggingContext);
-                        }
-                        // Maintain index of all asset states for this asset by ID
-                        Collection<AttributeInfo> assetIdIndexCollection = assetIdIndex.get(assetState.getId());
-                        if (assetIdIndexCollection != null) {
-                            assetIdIndexCollection.remove(assetState);
-                        }
-                        // Maintain index of all asset states for this asset by type
-                        Collection<AttributeInfo> assetTypeIndexCollection = assetTypeIndex.get(assetState.getAssetType());
-                        if (assetTypeIndexCollection != null) {
-                            assetTypeIndexCollection.remove(assetState);
-                        }
-                    }
-                    return invalid;
-                });
-
-        // Dispatch the update to the asset processing service
-        AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeName, value);
-        LOG.finest("Dispatching " + attributeEvent + " - on: " + loggingContext);
-        assetsFacade.dispatch(attributeEvent);
-
-        return this;
     }
 
     protected void storeLocationPredicates(List<GeofencePredicate> foundLocationPredicates) {

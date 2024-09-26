@@ -213,20 +213,6 @@ public class RulesEngine<T extends Ruleset> {
         return id;
     }
 
-    /**
-     * @return a shallow copy of the asset state facts.
-     */
-    public synchronized Set<AttributeInfo> getAssetStates() {
-        return new HashSet<>(facts.getAssetStates());
-    }
-
-    /**
-     * @return a shallow copy of the asset event facts.
-     */
-    public synchronized List<TemporaryFact<AttributeInfo>> getAssetEvents() {
-        return new ArrayList<>(facts.getAssetEvents());
-    }
-
     public boolean isRunning() {
         return running;
     }
@@ -309,11 +295,14 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void start() {
-        if (running) {
-            return;
+        synchronized (this) {
+            if (running) {
+                return;
+            }
+            running = true;
         }
 
-        if (deployments.size() == 0) {
+        if (deployments.isEmpty()) {
             LOG.finest("No rulesets so nothing to start");
             return;
         }
@@ -326,7 +315,6 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         LOG.info("Starting: " + id);
-        running = true;
         trackLocationPredicates(true);
 
         deployments.values().forEach(this::startRuleset);
@@ -346,7 +334,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected synchronized void trackLocationPredicates(boolean track) {
+    protected void trackLocationPredicates(boolean track) {
         if (trackLocationPredicates == track) {
             return;
         }
@@ -362,10 +350,13 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void stop() {
-        if (!running) {
-            return;
+        synchronized (this) {
+            if (!running) {
+                return;
+            }
+            running = false;
         }
-        running = false;
+
         LOG.info("Stopping: " + id);
         if (fireTimer != null) {
             fireTimer.cancel(true);
@@ -385,7 +376,7 @@ public class RulesEngine<T extends Ruleset> {
         publishRulesEngineStatus();
     }
 
-    protected synchronized void startRuleset(RulesetDeployment deployment) {
+    protected void startRuleset(RulesetDeployment deployment) {
         if (!running) {
             return;
         }
@@ -395,7 +386,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected synchronized void stopRuleset(RulesetDeployment deployment) {
+    protected void stopRuleset(RulesetDeployment deployment) {
         if (deployment.stop(facts)) {
             publishRulesetStatus(deployment);
         }
@@ -430,12 +421,13 @@ public class RulesEngine<T extends Ruleset> {
         LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
         fireTimer = executorService.schedule(
             () -> {
-                synchronized (RulesEngine.this) {
-                    // Process rules for all deployments
-                    fireAllDeployments();
-                    fireTimer = null;
-                    scheduleFire(false);
+                fireTimer = null;
+                if (!running) {
+                    return;
                 }
+                // Process rules for all deployments
+                fireAllDeployments();
+                scheduleFire(false);
             },
             fireTimeMillis,
             TimeUnit.MILLISECONDS
@@ -525,7 +517,7 @@ public class RulesEngine<T extends Ruleset> {
         return id.realm + ":" + id.assetId;
     }
 
-    protected synchronized void notifyAssetStatesChanged(AssetStateChangeEvent event) {
+    protected void notifyAssetStatesChanged(AssetStateChangeEvent event) {
         for (RulesetDeployment deployment : deployments.values()) {
             if (!deployment.isError()) {
                 deployment.onAssetStatesChanged(facts, event);
@@ -533,7 +525,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
+    public void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
         facts.putAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || (insert && attributeInfo.getName().equals(Asset.LOCATION.getName())));
@@ -543,7 +535,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void removeAttributeInfo(AttributeInfo attributeInfo) {
+    public void removeAttributeInfo(AttributeInfo attributeInfo) {
         facts.removeAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
@@ -553,14 +545,14 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
+    public void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
         facts.insertAttributeEvent(expiresMillis, attributeInfo);
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public synchronized void removeAttributeEvents(AttributeRef attributeRef) {
+    public void removeAttributeEvents(AttributeRef attributeRef) {
         facts.removeAttributeEvents(attributeRef);
     }
 
@@ -572,7 +564,7 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    protected synchronized void printSessionStats() {
+    protected void printSessionStats() {
         Collection<AttributeInfo> assetStateFacts = facts.getAssetStates();
         Collection<TemporaryFact<AttributeInfo>> assetEventFacts = facts.getAssetEvents();
         Map<String, Object> namedFacts = facts.getNamedFacts();

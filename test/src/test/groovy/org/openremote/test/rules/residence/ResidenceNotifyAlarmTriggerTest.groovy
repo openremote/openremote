@@ -111,7 +111,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag of room should not be set"

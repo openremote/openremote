@@ -1,14 +1,8 @@
 package org.openremote.test.benchmark
 
-import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
-import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
-import com.hivemq.client.mqtt.MqttClientConfig
-import com.hivemq.client.mqtt.MqttClientConnectionConfig
-import io.netty.channel.socket.SocketChannel
-import org.openremote.agent.protocol.mqtt.MQTTLastWill
+
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -17,13 +11,9 @@ import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.AssetEvent
-import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.util.UniqueIdentifierGenerator
@@ -36,13 +26,11 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.mqtt.MQTTBrokerService.*
-import static org.openremote.model.value.ValueType.TEXT
 
 /**
  * This benchmark is intended to determine the throughput of AttributeEvents over MQTT which is a typical use case.
@@ -103,7 +91,7 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
+            assert clientEventService.sessionChannels.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to all attributes of all assets"

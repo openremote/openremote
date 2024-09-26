@@ -97,7 +97,7 @@ class BasicRulesImport {
                                KeycloakTestSetup keycloakTestSetup,
                                ManagerTestSetup managerTestSetup) {
 
-        globalEngine = rulesService.globalEngine
+        globalEngine = rulesService.globalEngine.get()
         assert globalEngine != null
         assert globalEngine.isRunning()
         assert globalEngine.deployments.size() == 1

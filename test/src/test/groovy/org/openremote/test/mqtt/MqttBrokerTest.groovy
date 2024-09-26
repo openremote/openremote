@@ -85,7 +85,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
+            assert clientEventService.sessionChannels.containsKey(getConnectionIDString(connection))
         }
 
         when: "the client disconnects"
@@ -94,8 +94,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the client resources should be freed"
         conditions.eventually {
-            assert clientEventService.sessionKeyInfoMap.isEmpty()
-            assert !clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(currentConnection))
+            assert clientEventService.sessionChannels.isEmpty()
+            assert !clientEventService.sessionChannels.containsKey(getConnectionIDString(currentConnection))
         }
 
         when: "a mqtt client connects with valid credentials"
@@ -108,7 +108,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
+            assert clientEventService.sessionChannels.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to an asset in another realm"

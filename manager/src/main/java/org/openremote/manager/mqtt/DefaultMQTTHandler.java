@@ -24,8 +24,6 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
-import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
-import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.builder.RouteBuilder;
@@ -433,12 +431,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
         Object value = ValueUtil.parse(payloadContent).orElse(null);
         AttributeEvent attributeEvent = buildAttributeEvent(topicTokens, value);
+
+        // Set timestamp as early as possible if not set
+        if (attributeEvent.getTimestamp() <= 0) {
+            attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+        }
+
         // This is called by a single ActiveMQ client thread (the session) and async offloaded to the container executor,
         // once the container executor has no free threads the caller will execute (i.e. the client thread) which will
         // effectively limit rate of publish consumption eventually filling the attribute queue in the broker and
         // preventing additional attribute events from being added to the queue. This gives us a consistent failure mode
         // and natural rate limiting.
-
         messageBrokerService.getFluentProducerTemplate()
             .withBody(attributeEvent)
             .to(ATTRIBUTE_EVENT_PROCESSOR)

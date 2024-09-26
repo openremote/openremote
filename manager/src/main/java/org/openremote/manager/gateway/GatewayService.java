@@ -196,7 +196,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-            clientEventService.addExchangeInterceptor(this::onMessageIntercept);
+            clientEventService.setWebsocketInterceptor(this::onMessageIntercept);
 
             // Gateways can send AssetsEvents into this central manager so we need to authorize those
             clientEventService.addEventAuthorizer((requestRealm, authContext, event) -> {
@@ -670,7 +670,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return null;
     }
 
-    protected void processGatewayConnected(String gatewayClientId, String sessionId) {
+    protected boolean processGatewayConnected(String gatewayClientId, String sessionId) {
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
@@ -678,20 +678,22 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             LOG.warning("Gateway connected but not recognised which shouldn't happen: GatewayID=" + gatewayId);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
             clientEventService.closeSession(sessionId);
-            return;
+            return false;
         }
 
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: " + this);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             clientEventService.closeSession(sessionId);
-            return;
+            return false;
         }
 
         connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
             clientEventService.closeSession(sessionId);
             tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
+            return false;
         });
+        return true;
     }
 
     protected void processGatewayDisconnected(String gatewayClientId, String sessionId) {

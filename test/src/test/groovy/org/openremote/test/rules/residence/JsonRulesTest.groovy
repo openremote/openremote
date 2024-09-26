@@ -175,7 +175,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp > 0
             assert !realmBuildingEngine.trackLocationPredicates
         }
@@ -308,7 +308,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the console location asset state should be in the rule engine"
         conditions.eventually {
-            def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
+            def assetState = realmBuildingEngine.facts.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
             assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
@@ -629,7 +629,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
             assert sunsetCalculator != null
@@ -758,7 +758,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
@@ -813,7 +813,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
@@ -903,7 +903,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.deployments.size() == 1
             assert realmBuildingEngine.deployments.values().iterator().next().name == "Webhook Rule"
             assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
-            assert realmBuildingEngine.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
+            assert realmBuildingEngine.facts.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
             assert realmBuildingEngine.lastFireTimestamp > 0
         }
 

@@ -57,7 +57,7 @@ public class EventSubscriptions {
                 cancelById(eventSubscription.getSubscriptionId());
             }
 
-            add(new SessionSubscription<>(timerService.getCurrentTimeMillis(), eventSubscription));
+            add(new SessionSubscription<>(eventSubscription));
         }
 
         protected void cancelByType(String eventType) {
@@ -66,22 +66,6 @@ public class EventSubscriptions {
 
         protected void cancelById(String subscriptionId) {
             removeIf(sessionSubscription -> sessionSubscription.subscription.getSubscriptionId().equals(subscriptionId));
-        }
-    }
-
-    static class SessionSubscription<T extends SharedEvent> {
-        long timestamp;
-        final EventSubscription<T> subscription;
-        final String subscriptionId;
-
-        public SessionSubscription(long timestamp, EventSubscription<T> subscription) {
-            this.timestamp = timestamp;
-            this.subscription = subscription;
-            this.subscriptionId = subscription.getSubscriptionId();
-        }
-
-        public boolean matches(SharedEvent event) {
-            return subscription.getEventType().equals(event.getEventType());
         }
     }
 
@@ -132,11 +116,12 @@ public class EventSubscriptions {
      */
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
-        List<Message> messageList = new ArrayList<>();
         T event = (T)exchange.getIn().getBody(SharedEvent.class);
 
         if (event == null)
-            return messageList;
+            return Collections.emptyList();
+
+        List<Message> messageList = new ArrayList<>();
 
         for (Map.Entry<String, SessionSubscriptions> entry : sessionSubscriptionIdMap.entrySet()) {
             String sessionKey = entry.getKey();

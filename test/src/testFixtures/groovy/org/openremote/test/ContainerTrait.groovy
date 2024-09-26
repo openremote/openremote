@@ -174,11 +174,11 @@ trait ContainerTrait {
                             rulesetStorageService.delete(RealmRuleset.class, it.id)
                         }
 
-                        def globalEngine = rulesService.globalEngine
+                        def globalEngine = rulesService.globalEngine.get()
                         if (globalEngine != null) {
                             LOG.info("Purging global engine")
                             globalEngine.stop()
-                            rulesService.globalEngine = null
+                            rulesService.globalEngine.set(null)
                         }
                         def globalRulesets = getRulesets(GlobalRuleset.class)
                         globalRulesets.forEach{
@@ -330,7 +330,7 @@ trait ContainerTrait {
         if (rulesService != null) {
             LOG.info("Waiting for global rulesets to be deployed")
             i=0
-            while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id) }) {
+            while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine.get() == null || !rulesService.globalEngine.get().deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }

@@ -37,6 +37,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -73,6 +74,7 @@ public abstract class MQTTHandler {
     protected MessageBrokerService messageBrokerService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ExecutorService executorService;
+    protected TimerService timerService;
     protected boolean isKeycloak;
     protected ClientSession clientSession;
     protected ClientProducer producer;
@@ -101,6 +103,7 @@ public abstract class MQTTHandler {
         messageBrokerService = container.getService(MessageBrokerService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         executorService = container.getExecutor();
+        timerService = container.getService(TimerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             getLogger().warning("MQTT connections are not supported when not using Keycloak identity provider");

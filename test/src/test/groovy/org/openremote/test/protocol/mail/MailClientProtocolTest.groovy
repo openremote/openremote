@@ -38,6 +38,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
 import org.openremote.model.query.filter.StringPredicate
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -100,6 +101,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def clientEventService = container.getService(ClientEventService.class)
+        ThingAsset asset = null
         List<AttributeEvent> attributeEvents = []
         def eventSessionID = clientEventService.addInternalSubscription(AttributeEvent.class,  null, it -> {
             attributeEvents.add(it)
@@ -119,7 +121,8 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         agent = assetStorageService.merge(agent)
 
         and: "an asset is created with attributes linked to the agent"
-        def asset = new ThingAsset("Test Asset")
+        asset = new ThingAsset("Test Asset")
+                .setId(UniqueIdentifierGenerator.generateId("MailTestAsset"))
                 .setParent(agent)
                 .addOrReplaceAttributes(
                         new Attribute<>("fromMatchUseBody", TEXT)

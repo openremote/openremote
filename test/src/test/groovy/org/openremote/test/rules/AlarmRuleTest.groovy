@@ -126,6 +126,7 @@ class AlarmRuleTest extends Specification implements ManagerContainerTrait {
         then: "the ruleset should reach the engine"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         conditions.eventually {
+            assert rulesService.realmEngines.containsKey(managerTestSetup.realmBuildingName)
             def deployment = rulesService.realmEngines.get(managerTestSetup.realmBuildingName).deployments.get(realmRuleset.id)
             assert deployment != null
             assert deployment.ruleset.version == realmRuleset.version
