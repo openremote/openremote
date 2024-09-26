@@ -48,7 +48,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
 
 
     @Override
-    public Object update(RequestParams requestParams, Object managerConfiguration) {
+    public Object update(RequestParams requestParams, ObjectNode managerConfiguration) {
         try {
             this.configurationService.saveManagerConfigFile(managerConfiguration);
         } catch (Exception e) {
