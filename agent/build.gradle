@@ -5,7 +5,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":container")
+    api project(":container")
 
     api "io.netty:netty-codec:$nettyVersion"
     api "io.netty:netty-codec-http:$nettyVersion"

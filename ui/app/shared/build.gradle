@@ -55,7 +55,7 @@ tasks.register('installDist', Copy) {
     dependsOn generateSources
     mustRunAfter resolveTask(":manager:installDist")
     from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
-    into "${project(':manager').buildDir}/install/manager/web/${project.name}"
+    into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
 processResources.dependsOn(generateSources)

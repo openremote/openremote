@@ -14,7 +14,7 @@ configurations {
 }
 
 dependencies {
-    implementation resolveProject(":manager")
+    implementation project(":manager")
 }
 
 task demoJar(type: Jar) {
@@ -34,5 +34,5 @@ task installDist(type: Copy) {
     dependsOn setupTask
     dependsOn resolveTask(":manager:installDist")
     from setupTask.archiveFile
-    into "${resolveProject(":manager").buildDir}/install/manager/deployment/manager/extensions"
+    into "${project(":manager").buildDir}/install/manager/deployment/manager/extensions"
 }

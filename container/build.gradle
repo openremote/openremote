@@ -5,7 +5,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":model")
+    api project(":model")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"

@@ -65,7 +65,7 @@ tasks.register('installDist', Copy) {
     dependsOn(npmBuild)
     mustRunAfter(resolveTask(":manager:installDist"))
     from layout.projectDirectory.dir("dist")
-    into "${project(':manager').buildDir}/install/manager/web/${project.name}"
+    into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
 clean.dependsOn(cleanDist)

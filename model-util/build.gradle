@@ -10,8 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation resolveProject(":model")
-    implementation resolveProject(":agent")
+    implementation project(":model")
+    implementation project(":agent")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
