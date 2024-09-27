@@ -181,7 +181,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
         electricityProducerWindAssets.forEach(this::startCalculation);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
                 AttributeEvent.class,
                 null,
                 this::processAttributeEvent);

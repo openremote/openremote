@@ -204,7 +204,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
             return false;
         });
 
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
 
         ServiceLoader.load(GeofenceAssetAdapter.class).forEach(geofenceAssetAdapter -> {
             LOG.fine("Adding GeofenceAssetAdapter: " + geofenceAssetAdapter.getClass().getName());

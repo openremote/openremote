@@ -23,43 +23,34 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
-import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
-import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.apache.camel.support.builder.PredicateBuilder.and;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
-import static org.openremote.manager.event.ClientEventService.*;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
@@ -68,31 +59,13 @@ import static org.openremote.model.syslog.SyslogCategory.API;
  */
 public class DefaultMQTTHandler extends MQTTHandler {
 
-    public static class SubscriberInfo {
-        protected Map<String, Consumer<Event>> topicSubscriptionMap;
-
-        public SubscriberInfo(String topic, Consumer<Event> subscriptionConsumer) {
-            this.topicSubscriptionMap = new HashMap<>();
-            this.topicSubscriptionMap.put(topic, subscriptionConsumer);
-        }
-
-        protected void add(String topic, Consumer<Event> subscriptionConsumer) {
-            topicSubscriptionMap.put(topic, subscriptionConsumer);
-        }
-
-        protected int remove(String topic) {
-            topicSubscriptionMap.remove(topic);
-            return topicSubscriptionMap.size();
-        }
-    }
-
     public static final int PRIORITY = Integer.MIN_VALUE + 1000;
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String ATTRIBUTE_VALUE_WRITE_TOPIC = "writeattributevalue";
     private static final Logger LOG = SyslogCategory.getLogger(API, DefaultMQTTHandler.class);
-    protected final ConcurrentMap<String, SubscriberInfo> connectionSubscriberInfoMap = new ConcurrentHashMap<>();
+    final protected Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
     // An authorisation cache for publishing
     // TODO: Switch to caffeine library once ActiveMQ has migrated
     protected final Cache<String, ConcurrentHashSet<String>> authorizationCache = CacheBuilder.newBuilder()
@@ -107,84 +80,36 @@ public class DefaultMQTTHandler extends MQTTHandler {
     }
 
     @Override
-    public void init(Container container, Configuration serverConfiguration) throws Exception {
-        super.init(container, serverConfiguration);
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-
-                // Route messages destined for MQTT clients
-                from(CLIENT_OUTBOUND_QUEUE)
-                    .routeId("ClientOutbound-DefaultMQTTHandler")
-                    .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-                    //.threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
-                    .filter(and(
-                        header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
-                        body().isInstanceOf(TriggeredEventSubscription.class)
-                    ))
-                    .process(exchange -> {
-                        // Get the subscriber consumer
-                        String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                        SubscriberInfo subscriberInfo = connectionSubscriberInfoMap.get(connectionID);
-                        if (subscriberInfo != null) {
-                            TriggeredEventSubscription<?> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
-                            String topic = triggeredEventSubscription.getSubscriptionId();
-                            // Should only be a single event in here
-                            SharedEvent event = triggeredEventSubscription.getEvents().get(0);
-                            Consumer<SharedEvent> eventConsumer = subscriberInfo.topicSubscriptionMap.get(topic);
-                            if (eventConsumer != null) {
-                                eventConsumer.accept(event);
-                            }
-                        }
-                    });
-            }
-        });
-    }
-
-    @Override
     public void onConnect(RemotingConnection connection) {
         super.onConnect(connection);
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_OPEN, true);
-
-        // Put a close connection runnable into the headers for the client event service
-        Runnable closeRunnable = () -> {
-            if (mqttBrokerService != null) {
-                LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
-                mqttBrokerService.doForceDisconnect(connection);
-            }
-        };
-        headers.put(SESSION_TERMINATOR, closeRunnable);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
     }
 
     @Override
     public void onDisconnect(RemotingConnection connection) {
         super.onDisconnect(connection);
-
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_CLOSE, true);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
-        connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
+        String sessionKey = getSessionKey(connection);
+        LOG.log(Level.FINER, "Removing subscriptions for connection: " + connectionToString(connection));
+        synchronized (sessionSubscriptionConsumers) {
+            sessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
+                subscriptionConsumers.forEach((subscriptionKey, consumer) -> clientEventService.removeSubscription(consumer));
+                return null;
+            });
+        }
         authorizationCache.invalidate(getConnectionIDString(connection));
     }
 
     @Override
     public void onConnectionLost(RemotingConnection connection) {
         super.onConnectionLost(connection);
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_CLOSE_ERROR, true);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
-        connectionSubscriberInfoMap.remove(getConnectionIDString(connection));
+        String sessionKey = getSessionKey(connection);
+        LOG.log(Level.FINER, "Removing subscriptions for connection: " + connectionToString(connection));
+        synchronized (sessionSubscriptionConsumers) {
+            sessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
+                subscriptionConsumers.forEach((subscriptionKey, consumer) -> clientEventService.removeSubscription(consumer));
+                return null;
+            });
+        }
+        authorizationCache.invalidate(getConnectionIDString(connection));
     }
 
     @Override
@@ -360,46 +285,42 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
         AssetFilter filter = buildAssetFilter(topic);
         Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
+        String sessionKey = getSessionKey(connection);
 
         if (filter == null) {
             LOG.info("Invalid event filter generated for topic '" + topic + "': " + connection);
             return;
         }
 
-        Consumer<? extends Event> eventConsumer = getSubscriptionEventConsumer(connection, topic);
+        Consumer<Event> consumer = getSubscriptionEventConsumer(connection, topic);
 
-        EventSubscription<? extends Event> subscription = new EventSubscription(
+        EventSubscription<Event> subscription = new EventSubscription(
             subscriptionClass,
             filter,
             subscriptionId
         );
 
-        clientEventService.addSubscription(subscription, eventConsumer);
-
-        // Track subscriptions
-        synchronized (connectionSubscriberInfoMap) {
-            connectionSubscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
-                if (subscriberInfo == null) {
-                    return new SubscriberInfo(topic.getString(), eventConsumer);
-                } else {
-                    subscriberInfo.add(topic.getString(), eventConsumer);
-                    return subscriberInfo;
-                }
-            });
+        synchronized (sessionSubscriptionConsumers) {
+            // Create subscription consumer and track it for future removal requests
+            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
+            String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
+            subscriptionConsumers.put(subscriptionKey, consumer);
+            clientEventService.addSubscription(subscription, consumer);
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
-dsdad
-        synchronized (connectionSubscriberInfoMap) {
-            connectionSubscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
-                if (subscriberInfo.remove(topic.getString()) == 0) {
+        String sessionKey = getSessionKey(connection);
+
+        synchronized (sessionSubscriptionConsumers) {
+            sessionSubscriptionConsumers.computeIfPresent(sessionKey, (connectionID, subscriptionConsumers) -> {
+                subscriptionConsumers.remove(subscriptionId);
+                if (subscriptionConsumers.isEmpty()) {
                     return null;
                 }
-                return subscriberInfo;
+                return subscriptionConsumers;
             });
         }
     }
@@ -436,12 +357,13 @@ dsdad
 
     @Override
     public void onUserAssetLinksChanged(RemotingConnection connection, List<PersistenceEvent<UserAssetLink>> changes) {
-        if (connectionSubscriberInfoMap.containsKey(getConnectionIDString(connection))) {
+        String sessionKey = getSessionKey(connection);
+        if (sessionSubscriptionConsumers.containsKey(sessionKey)) {
             if (changes.stream().allMatch(pe -> pe.getCause() == PersistenceEvent.Cause.CREATE)) {
                 // Do nothing if only links have been added
                 return;
             }
-            LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + mqttBrokerService.connectionToString(connection));
+            LOG.info("User asset links have changed for a connected user with active subscriptions so force disconnecting them: " + connectionToString(connection));
             mqttBrokerService.doForceDisconnect(connection);
         }
     }
@@ -453,7 +375,6 @@ dsdad
     }
 
     protected static AssetFilter<?> buildAssetFilter(Topic topic) {
-        boolean isAttributeTopic = isAttributeTopic(topic);
         boolean isAssetTopic = isAssetTopic(topic);
 
         String realm = topicRealm(topic);
@@ -532,7 +453,8 @@ dsdad
         if (!attributeNames.isEmpty()) {
             assetFilter.setAttributeNames(attributeNames.toArray(new String[0]));
         }
-        return assetFilter;
+        // Force subscription to filter only value changed attribute events
+        return assetFilter.setValueChanged(true);
     }
 
     protected <T extends Event> Consumer<T> getSubscriptionEventConsumer(RemotingConnection connection, Topic topic) {
@@ -599,11 +521,7 @@ dsdad
         return ASSET_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
     }
 
-    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(SESSION_KEY, getConnectionIDString(connection));
-        headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(REALM_PARAM_NAME, requestRealm);
-        return headers;
+    protected static String getSessionKey(RemotingConnection connection) {
+        return getConnectionIDString(connection);
     }
 }

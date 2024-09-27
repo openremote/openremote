@@ -63,7 +63,7 @@ public class AttributeLinkingService implements ContainerService {
         agentService = container.getService(AgentService.class);
         gatewayService = container.getService(GatewayService.class);
         ClientEventService clientEventService = container.getService(ClientEventService.class);
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
     @Override

@@ -235,6 +235,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     case ONERROR -> {
                         AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
                         String realm = (String)webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+                        String sessionKey = getSessionKey(exchange);
 
                         exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
                         exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
@@ -243,6 +244,14 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         try {
                             webSocketChannel.close();
                         } catch (Exception ignored) {}
+                        sessionChannels.remove(getSessionKey(exchange));
+                        LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
+                        synchronized (websocketSessionSubscriptionConsumers) {
+                            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
+                                subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
+                                return null;
+                            });
+                        }
                     }
                 }
 

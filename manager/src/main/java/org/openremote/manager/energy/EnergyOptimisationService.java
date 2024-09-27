@@ -137,7 +137,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         energyOptimisationAssets.forEach(this::startOptimisation);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
             AttributeEvent.class,
             null,
             this::processAttributeEvent);

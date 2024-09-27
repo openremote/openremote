@@ -101,7 +101,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
 
         ClientEventService clientEventService = container.getService(ClientEventService.class);
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
     public static boolean attributeIsStoreDatapoint(MetaHolder attributeInfo) {

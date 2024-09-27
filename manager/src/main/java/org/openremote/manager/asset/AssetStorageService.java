@@ -596,7 +596,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
 
         if (!skipGatewayCheck && gatewayId != null) {
-            String msg = "Cannot directly add a descendant asset to a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
+            String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
             LOG.info(msg);
             throw new IllegalStateException(msg);
         }
@@ -810,7 +810,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (gatewayDescendant) {
                 String msg = "Cannot delete one or more requested assets as they are descendants of a gateway asset";
                 LOG.info(msg);
-                throw new IllegalArgumentException(msg);
+                throw new IllegalStateException(msg);
             }
 
             List<String> gatewayIds = ids.stream().filter(id -> gatewayService.isLocallyRegisteredGateway(id)).toList();
@@ -832,25 +832,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         }
 
-        try {
-            persistenceService.doTransaction(em -> {
-                List<Asset<?>> assets = em
-                    .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
-                    .setParameter("ids", ids)
-                    .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
+        if (!ids.isEmpty()) {
+            try {
+                persistenceService.doTransaction(em -> {
+                    List<Asset<?>> assets = em
+                        .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
+                        .setParameter("ids", ids)
+                        .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
 
-                if (assetIds.size() != assets.size()) {
-                    throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
-                }
+                    if (assetIds.size() != assets.size()) {
+                        throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
+                    }
 
-                assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
-                assets.forEach(em::remove);
-                em.flush();
-            });
-        } catch (Exception e) {
-            return false;
+                    assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
+                    assets.forEach(em::remove);
+                    em.flush();
+                });
+            } catch (Exception e) {
+                return false;
+            }
         }
-
         return true;
     }
 

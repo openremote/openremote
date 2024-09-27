@@ -28,7 +28,6 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthClientCredentialsGrant
-import org.openremote.model.event.shared.EventRequestResponseWrapper
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.gateway.*
 import org.openremote.model.geo.GeoJSONPoint
@@ -146,12 +145,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the server should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
-            assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
-            def response = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            assert response.messageId == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
-            def localReadAssetsEvent = response.event as ReadAssetsEvent
-            assert localReadAssetsEvent.assetQuery != null
-            assert localReadAssetsEvent.assetQuery.recursive
+            def request = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            assert request.messageID == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
+            assert request.assetQuery != null
+            assert request.assetQuery.recursive
         }
 
         when: "the previously received messages are cleared"
@@ -228,21 +225,18 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         List<Asset> sendAssets = []
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(assets)
-        def readAssetsReplyEvent = new EventRequestResponseWrapper(
-            GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL,
-            new AssetsEvent(sendAssets))
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        def readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the central manager should have requested the full loading of the first batch of assets"
         String messageId = null
         ReadAssetsEvent readAssetsEvent = null
         conditions.eventually {
             assert clientReceivedMessages.size() == 1
-            assert clientReceivedMessages.get(0).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             assert clientReceivedMessages.get(0).contains("read-assets")
-            def response = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            messageId = response.messageId
-            readAssetsEvent = response.event as ReadAssetsEvent
+            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            messageId = readAssetsEvent.messageID
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
@@ -255,11 +249,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         sendAssets = []
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).filter{!agentAssetIds.contains(it)}.map{id -> assets.stream().filter{asset -> asset.id == id}.findFirst().orElse(null)}.collect(Collectors.toList()))
-        readAssetsReplyEvent = new EventRequestResponseWrapper(
-            messageId,
-            new AssetsEvent(sendAssets)
-        )
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the central manager should have added the first batch of assets under the gateway asset"
         conditions.eventually {
@@ -305,11 +297,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the central manager should have requested the full loading of the second batch of assets"
         conditions.eventually {
             assert clientReceivedMessages.size() == 2
-            assert clientReceivedMessages.get(1).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             assert clientReceivedMessages.get(1).contains("read-assets")
-            def response = ValueUtil.JSON.readValue(clientReceivedMessages[1].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            messageId = response.messageId
-            readAssetsEvent = response.event as ReadAssetsEvent
+            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[1].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            messageId = readAssetsEvent.messageID
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
@@ -320,10 +310,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "the gateway returns the requested assets"
         sendAssets = []
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).map{id -> assets.stream().filter{asset -> asset.id == id}.findFirst().orElse(null)}.collect(Collectors.toList()))
-        readAssetsReplyEvent = new EventRequestResponseWrapper(
-            messageId,
-            new AssetsEvent(sendAssets))
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the gateway connector initial sync should be completed"
         conditions.eventually {
@@ -335,18 +324,15 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the central manager should have requested the capabilities of the gateway"
         conditions.eventually {
             assert clientReceivedMessages.size() == 3
-            assert clientReceivedMessages.get(2).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             assert clientReceivedMessages.get(2).contains(GatewayCapabilitiesRequestEvent.TYPE)
-            def response = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            messageId = response.messageId
-            assert response.event instanceof GatewayCapabilitiesRequestEvent
+            def gatewayCapabilitiesRequest = ValueUtil.JSON.readValue(clientReceivedMessages[2].substring(SharedEvent.MESSAGE_PREFIX.length()), GatewayCapabilitiesRequestEvent.class)
+            messageId = gatewayCapabilitiesRequest.messageID
         }
 
         when: "the gateway returns the capabilities"
-        def capabilitiesReplyEvent = new EventRequestResponseWrapper(
-                messageId,
-                new GatewayCapabilitiesResponseEvent(true))
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
+        def capabilitiesReplyEvent = new GatewayCapabilitiesResponseEvent(true)
+        capabilitiesReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(capabilitiesReplyEvent).get())
 
         then: "the gateway connector capabilities should be updated"
         conditions.eventually {
@@ -471,77 +457,31 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "the client received messages are cleared"
         clientReceivedMessages.clear()
 
-        and: "an asset is added under the gateway in the local manager and the gateway responds that it successfully added the asset"
-        def responseFuture = new AtomicReference<ScheduledFuture>()
-        responseFuture.set(executorService.scheduleAtFixedRate({
-            if (!clientReceivedMessages.isEmpty()) {
-                def assetAddEvent = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), AssetEvent.class)
-                if (assetAddEvent.cause == AssetEvent.Cause.CREATE && assetAddEvent.asset.id == building1Room5AssetId) {
-                    gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.CREATE, building1Room5Asset, null)).get())
-                    responseFuture.get().cancel(false)
-                }
-            }
-        }, 100, 100, TimeUnit.MILLISECONDS))
+        and: "an attempt is made to add a child asset to the gateway in the local manager"
         assetStorageService.merge(localBuilding1Room5Asset)
-        localBuilding1Room5Asset = assetStorageService.find(mapAssetId(gateway.id, building1Room5AssetId, false)) // Re-fetch asset as modifying instance returned by merge will cause concurrency issues
 
-        then: "the asset should have been added to the gateway and eventually replicated in the local manager"
-        assert localBuilding1Room5Asset != null
-        assert assetStorageService.find(mapAssetId(gateway.id, building1Room5AssetId, false)).version == localBuilding1Room5Asset.version
+        then: "an exception should be thrown"
+        thrown(IllegalStateException)
 
         when: "the client received messages are cleared"
         clientReceivedMessages.clear()
 
-        and: "an asset is modified under the gateway in the local manager and the gateway responds that it successfully updated the asset"
+        and: "an attempt is made to modify a child asset of the gateway in the local manager"
         localBuilding1Room5Asset.setName("Test Building 1 Room 5")
         localBuilding1Room5Asset.getAttributes().remove("co2Level")
-        responseFuture.set(executorService.scheduleAtFixedRate({
-            if (!clientReceivedMessages.isEmpty()) {
-                def assetAddEvent = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), AssetEvent.class)
-                if (assetAddEvent.cause == AssetEvent.Cause.UPDATE && assetAddEvent.asset.id == building1Room5AssetId) {
-                    building1Room5Asset.setName(localBuilding1Room5Asset.name)
-                    building1Room5Asset.getAttributes().remove("co2Level")
-                    gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.UPDATE, building1Room5Asset, null)).get())
-                    responseFuture.get().cancel(false)
-                }
-            }
-        }, 100, 100, TimeUnit.MILLISECONDS))
         localBuilding1Room5Asset = assetStorageService.merge(localBuilding1Room5Asset)
-        def version = localBuilding1Room5Asset.version
-        localBuilding1Room5Asset = assetStorageService.find(mapAssetId(gateway.id, building1Room5AssetId, false)) // Re-fetch asset as modifying instance returned by merge will cause concurrency issues
 
-        then: "the asset should also be updated in the local manager"
-        assert localBuilding1Room5Asset != null
-        assert localBuilding1Room5Asset.getVersion() == 2
-        assert localBuilding1Room5Asset.getName() == "Test Building 1 Room 5"
-        assert localBuilding1Room5Asset.getType() == RoomAsset.DESCRIPTOR.getName()
-        assert localBuilding1Room5Asset.getRealm() == managerTestSetup.realmBuildingName
-        assert localBuilding1Room5Asset.getParentId() == mapAssetId(gateway.id, assetIds[0], false)
-        assert localBuilding1Room5Asset.getAttributes().size() == 6
-        assert localBuilding1Room5Asset.version == version
+        then: "an exception should be thrown"
+        thrown(IllegalStateException)
 
-        when: "the client received messages are cleared"
-        clientReceivedMessages.clear()
+        when: "an attempt is made to delete a child asset of the gateway in the local manager"
+        assetStorageService.delete([mapAssetId(gateway.id, assetIds[0], false)])
 
-        and: "an asset is deleted under the gateway in the local manager and the gateway responds that it successfully deleted the asset"
-        responseFuture.set(executorService.scheduleAtFixedRate({
-            if (!clientReceivedMessages.isEmpty()) {
-                def request = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-                def deleteRequest = request.event as DeleteAssetsRequestEvent
-                if (deleteRequest.assetIds.size() == 1 && deleteRequest.assetIds.get(0) == building1Room5AssetId) {
-                    gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(new EventRequestResponseWrapper(request.messageId, new DeleteAssetsResponseEvent(true, deleteRequest.assetIds))).get())
-                    gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(new AssetEvent(AssetEvent.Cause.DELETE, building1Room5Asset, null)).get())
-                    responseFuture.get().cancel(false)
-                }
-            }
-        }, 100, 100, TimeUnit.MILLISECONDS))
-        def deleted = assetStorageService.delete([mapAssetId(gateway.id, building1Room5AssetId, false)])
+        then: "an exception should be thrown"
+        thrown(IllegalStateException)
 
-        then: "the asset should have been deleted"
-        assert deleted
-        conditions.eventually {
-            assert assetStorageService.find(mapAssetId(gateway.id, building1Room5AssetId, false)) == null
-        }
+        then: "the asset should not have been deleted"
+        assert assetStorageService.find(mapAssetId(gateway.id, assetIds[0], false)) != null
 
         when: "time advances"
         advancePseudoClock(1, TimeUnit.SECONDS, container)
@@ -646,7 +586,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the local manager should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
-            assert clientReceivedMessages.find {it.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX) && it.contains("read-assets")} != null
+            assert clientReceivedMessages.find {it.startsWith(SharedEvent.MESSAGE_PREFIX) && it.contains("read-assets")} != null
         }
 
         when: "the previously received messages are cleared"
@@ -656,20 +596,16 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         sendAssets = [building1Room5Asset]
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(assets)
-        readAssetsReplyEvent = new EventRequestResponseWrapper(
-            GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL,
-            new AssetsEvent(sendAssets)
-        )
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the central manager should have requested the full loading of the first batch of assets"
         conditions.eventually {
             assert clientReceivedMessages.size() == 1
-            assert clientReceivedMessages.get(0).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             assert clientReceivedMessages.get(0).contains("read-assets")
-            def request = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            messageId = request.messageId
-            readAssetsEvent = request.event as ReadAssetsEvent
+            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            messageId = readAssetsEvent.messageID
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
@@ -712,17 +648,16 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         sendAssets = [building1Room5Asset]
         sendAssets.addAll(agentAssets)
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).filter{!agentAssetIds.contains(it) && it != removedAsset.id && it != building1Room5Asset.id}.map{id -> assets.stream().filter{it.id == id}.findFirst().orElse(null)}.collect(Collectors.toList()))
-        readAssetsReplyEvent = new EventRequestResponseWrapper(messageId, new AssetsEvent(sendAssets))
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the central manager should have requested the full loading of the second batch of assets"
         conditions.eventually {
             assert clientReceivedMessages.size() == 2
-            assert clientReceivedMessages.get(1).startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             assert clientReceivedMessages.get(1).contains("read-assets")
-            def request = ValueUtil.JSON.readValue(clientReceivedMessages[1].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
-            messageId = request.messageId
-            readAssetsEvent = request.event as ReadAssetsEvent
+            readAssetsEvent = ValueUtil.JSON.readValue(clientReceivedMessages[1].substring(SharedEvent.MESSAGE_PREFIX.length()), ReadAssetsEvent.class)
+            messageId = readAssetsEvent.messageID
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + (GatewayConnector.SYNC_ASSET_BATCH_SIZE - 1)
             assert readAssetsEvent.assetQuery != null
             assert readAssetsEvent.assetQuery.ids != null
@@ -733,8 +668,9 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "the gateway returns the requested assets"
         sendAssets = []
         sendAssets.addAll(Arrays.stream(readAssetsEvent.assetQuery.ids).map{id -> assets.stream().filter{asset -> asset.id == id}.findFirst().orElse(null)}.collect(Collectors.toList()))
-        readAssetsReplyEvent = new EventRequestResponseWrapper(messageId, new AssetsEvent(sendAssets))
-        gatewayClient.sendMessage(EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
+        readAssetsReplyEvent = new AssetsEvent(sendAssets)
+        readAssetsReplyEvent.setMessageID(messageId)
+        gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(readAssetsReplyEvent).get())
 
         then: "the gateway connector sync should be completed"
         conditions.eventually {
@@ -748,7 +684,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assert gatewayAssets.size() == 2 + agentAssets.size() + assets.size()
 
         when: "the gateway asset is deleted"
-        deleted = assetStorageService.delete([gateway.id])
+        def deleted = assetStorageService.delete([gateway.id])
 
         then: "all descendant assets should have been removed"
         conditions.eventually {

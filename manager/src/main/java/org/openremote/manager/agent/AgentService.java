@@ -245,7 +245,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
 
-        clientEventService.addInternalSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList(Agent.class)), this::onAgentAttributeEvent);
+        clientEventService.addSubscription(AttributeEvent.class, new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList(Agent.class)), this::onAgentAttributeEvent);
 
         initDone = true;
     }

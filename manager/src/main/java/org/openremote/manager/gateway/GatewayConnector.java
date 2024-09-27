@@ -25,7 +25,6 @@ import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
@@ -36,7 +35,10 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -77,7 +79,7 @@ public class GatewayConnector {
     int syncErrors;
     String expectedSyncResponseName;
     protected boolean tunnellingSupported;
-    protected final Map<Class<? extends SharedEvent>, BiConsumer<String, SharedEvent>> eventConsumerMap = new HashMap<>();
+    protected final Map<Class<? extends SharedEvent>, Consumer<SharedEvent>> eventConsumerMap = new HashMap<>();
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
 
@@ -110,8 +112,8 @@ public class GatewayConnector {
 
         // Setup static inbound event handling
         synchronized(eventConsumerMap) {
-            eventConsumerMap.put(AssetEvent.class, (msgId, e) -> onAssetEvent((AssetEvent) e));
-            eventConsumerMap.put(AttributeEvent.class, (msgId, e) -> onAttributeEvent((AttributeEvent) e));
+            eventConsumerMap.put(AssetEvent.class, (e) -> onAssetEvent((AssetEvent) e));
+            eventConsumerMap.put(AttributeEvent.class, (e) -> onAttributeEvent((AttributeEvent) e));
         }
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
@@ -211,7 +213,7 @@ public class GatewayConnector {
                 return CompletableFuture.failedFuture(new IllegalArgumentException("A capabilities request is already pending"));
             }
 
-            eventConsumerMap.put(GatewayCapabilitiesResponseEvent.class, (msgID, e) -> {
+            eventConsumerMap.put(GatewayCapabilitiesResponseEvent.class, (e) -> {
                 GatewayCapabilitiesResponseEvent response = (GatewayCapabilitiesResponseEvent) e;
 
                 synchronized (responseRef) {
@@ -222,10 +224,7 @@ public class GatewayConnector {
         }
 
         return CompletableFuture.supplyAsync(() -> {
-                sendMessageToGateway(new EventRequestResponseWrapper<>(
-                    UniqueIdentifierGenerator.generateId(),
-                    new GatewayCapabilitiesRequestEvent()
-                ));
+                sendMessageToGateway(new GatewayCapabilitiesRequestEvent());
 
                 // Wait for response indefinitely as timeout handled on CompletableFuture
                 try {
@@ -265,7 +264,7 @@ public class GatewayConnector {
                 return CompletableFuture.failedFuture(new IllegalArgumentException("A start tunnel request is already pending"));
             }
 
-            eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (msgID, e) -> {
+            eventConsumerMap.put(GatewayTunnelStartResponseEvent.class, (e) -> {
                 GatewayTunnelStartResponseEvent response = (GatewayTunnelStartResponseEvent) e;
 
                 synchronized (responseRef) {
@@ -276,10 +275,9 @@ public class GatewayConnector {
         }
 
         return CompletableFuture.runAsync(() -> {
-            sendMessageToGateway(new EventRequestResponseWrapper<>(
-                tunnelInfo.getId(),
+            sendMessageToGateway(
                 new GatewayTunnelStartRequestEvent(gatewayService.getTunnelSSHHostname(), gatewayService.getTunnelSSHPort(), tunnelInfo)
-            ));
+            );
 
             // Wait for response indefinitely as timeout handled on CompletableFuture
             try {
@@ -318,7 +316,7 @@ public class GatewayConnector {
                 return CompletableFuture.failedFuture(new IllegalArgumentException("A stop tunnel request is already pending"));
             }
 
-            eventConsumerMap.put(GatewayTunnelStopResponseEvent.class, (msgID, e) -> {
+            eventConsumerMap.put(GatewayTunnelStopResponseEvent.class, (e) -> {
                 GatewayTunnelStopResponseEvent response = (GatewayTunnelStopResponseEvent) e;
 
                 synchronized (responseRef) {
@@ -329,10 +327,7 @@ public class GatewayConnector {
         }
 
         return CompletableFuture.runAsync(() -> {
-                sendMessageToGateway(new EventRequestResponseWrapper<>(
-                    tunnelInfo.getId(),
-                    new GatewayTunnelStopRequestEvent(tunnelInfo)
-                ));
+                sendMessageToGateway(new GatewayTunnelStopRequestEvent(tunnelInfo));
 
                 // Wait for response indefinitely as timeout handled on CompletableFuture
                 try {
@@ -387,7 +382,7 @@ public class GatewayConnector {
 
         if (initialSyncInProgress) {
             if (e instanceof AssetsEvent) {
-                onSyncAssetsResponse(messageId, (AssetsEvent) e);
+                onSyncAssetsResponse((AssetsEvent) e);
             } else if (e instanceof AttributeEvent) {
                 cachedAttributeEvents.add((AttributeEvent) e);
             } else if (e instanceof AssetEvent) {
@@ -395,9 +390,9 @@ public class GatewayConnector {
             }
         } else {
             synchronized (eventConsumerMap) {
-                BiConsumer<String, SharedEvent> consumer = eventConsumerMap.get(e.getClass());
+                Consumer<SharedEvent> consumer = eventConsumerMap.get(e.getClass());
                 if (consumer != null) {
-                    consumer.accept(messageId, e);
+                    consumer.accept(e);
                 }
             }
         }
@@ -413,9 +408,9 @@ public class GatewayConnector {
         }
 
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
-        sendMessageToGateway(new EventRequestResponseWrapper<>(
-            ASSET_READ_EVENT_NAME_INITIAL,
-            new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true))));
+        ReadAssetsEvent event = new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true));
+        event.setMessageID(expectedSyncResponseName);
+        sendMessageToGateway(event);
         syncProcessorFuture = executorService.schedule(this::onSyncAssetsTimeout, RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
@@ -465,22 +460,21 @@ public class GatewayConnector {
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_BATCH + syncIndex;
 
         LOG.fine("Synchronising gateway assets " + syncIndex+1 + "-" + syncIndex + requestAssetIds.length + " of " + syncAssetIds.size() + ": " + this);
-        sendMessageToGateway(
-            new EventRequestResponseWrapper<>(
-                expectedSyncResponseName,
-                new ReadAssetsEvent(
-                    new AssetQuery()
-                        .ids(requestAssetIds)
-                )
-            )
+        ReadAssetsEvent event = new ReadAssetsEvent(
+            new AssetQuery()
+                .ids(requestAssetIds)
         );
+        event.setMessageID(expectedSyncResponseName);
+        sendMessageToGateway(event);
         syncProcessorFuture = executorService.schedule(this::requestAssets, RESPONSE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
-    synchronized protected void onSyncAssetsResponse(String messageId, AssetsEvent e) {
+    synchronized protected void onSyncAssetsResponse(AssetsEvent e) {
         if (!isConnected()) {
             return;
         }
+
+        String messageId = e.getMessageID();
 
         if (!expectedSyncResponseName.equalsIgnoreCase(messageId)) {
             LOG.info("Unexpected response from gateway so ignoring (expected=" + expectedSyncResponseName + ", actual =" + messageId + "): " + this);

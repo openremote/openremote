@@ -394,18 +394,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
         String messageId = null;
-        SharedEvent event = null;
-
-        if (message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
-            EventRequestResponseWrapper<?> wrapper = messageFromString(
-                message,
-                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                EventRequestResponseWrapper.class);
-            messageId = wrapper.getMessageId();
-            event = wrapper.getEvent();
-        } else if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-            event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
-        }
+        SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {
             if (event instanceof GatewayDisconnectEvent) {
@@ -416,15 +405,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 }
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
+                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
             } else if (event instanceof GatewayTunnelStartRequestEvent gatewayTunnelStartRequestEvent) {
                 LOG.info("Start tunnel request received: " + gatewayTunnelStartRequestEvent);
@@ -435,16 +420,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
-
+                GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayTunnelStartResponseEvent(error)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
 
             } else if (event instanceof GatewayTunnelStopRequestEvent stopRequestEvent) {
@@ -456,22 +436,16 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
-
+                GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayTunnelStopResponseEvent(error)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
 
             } else if (event instanceof AttributeEvent) {
                 assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());
-            } else if (event instanceof AssetEvent) {
-                AssetEvent assetEvent = (AssetEvent)event;
+            } else if (event instanceof AssetEvent assetEvent) {
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();
                     asset.setRealm(connection.getLocalRealm());
@@ -482,21 +456,16 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
                 }
-            } else if (event instanceof ReadAssetsEvent) {
-                ReadAssetsEvent readAssets = (ReadAssetsEvent)event;
+            } else if (event instanceof ReadAssetsEvent readAssets) {
                 AssetQuery query = readAssets.getAssetQuery();
                 // Force realm to be the one that this client is associated with
                 query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
-
+                AssetsEvent responseEvent = new AssetsEvent(assets);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                     connection.getLocalRealm(),
-                    messageToString(
-                        EventRequestResponseWrapper.MESSAGE_PREFIX,
-                        new EventRequestResponseWrapper<>(
-                            messageId,
-                            new AssetsEvent(assets)
-                        )));
+                    messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
             }
         }
     }

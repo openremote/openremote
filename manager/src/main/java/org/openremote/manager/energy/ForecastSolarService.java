@@ -143,7 +143,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
         electricityProducerSolarAssets.forEach(this::startProcessing);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
                 AttributeEvent.class,
                 null,
                 this::processAttributeEvent);
