@@ -48,7 +48,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
     protected List<String> attributeNames;
     protected boolean publicEvents;
     protected boolean restrictedEvents;
-    protected boolean internal;
+    protected boolean valueChanged;
     protected List<String> userAssetIds;
 
     public AssetFilter() {
@@ -174,12 +174,13 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
         return this;
     }
 
-    public boolean isInternal() {
-        return internal;
+    public boolean isValueChanged() {
+        return valueChanged;
     }
 
-    public void setInternal(boolean internal) {
-        this.internal = internal;
+    public AssetFilter<T> setValueChanged(boolean valueChanged) {
+        this.valueChanged = valueChanged;
+        return this;
     }
 
     public List<String> getUserAssetIds() {
@@ -197,11 +198,9 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
 
         MetaItemDescriptor<?> filterAttributesBy = null;
 
-        // Non internal subscribers of attribute events only get value updates so make sure the value has changed
-        if (!internal && event instanceof AttributeEvent attributeEvent) {
-            if (!attributeEvent.valueChanged()) {
-                return null;
-            }
+        // Only send attribute events where value has changed if requested
+        if (valueChanged && event instanceof AttributeEvent attributeEvent && !attributeEvent.valueChanged()) {
+            return null;
         }
 
         if (!TextUtil.isNullOrEmpty(realm)) {

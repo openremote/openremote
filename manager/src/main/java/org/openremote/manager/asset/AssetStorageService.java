@@ -49,7 +49,8 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.event.Event;
+import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
@@ -76,12 +77,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.*;
 import static java.util.stream.Collectors.groupingBy;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.*;
@@ -154,15 +153,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              }
 
              AssetFilter<T> filter = (AssetFilter<T>) subscription.getFilter();
+
              if (filter == null) {
                  filter = new AssetFilter<>();
                  subscription.setFilter(filter);
              }
 
-             filter.setInternal(subscription.isInternal());
-
-             // Internal subscribers and superusers can get events for any asset in any realm
-             if (subscription.isInternal() || (auth != null && auth.isSuperUser())) {
+             // Superusers can get events for any asset in any realm
+             if (auth != null && auth.isSuperUser()) {
                  return true;
              }
 
@@ -345,6 +343,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return authorize && authorizeAssetQuery(((HasAssetQuery)event).getAssetQuery(), auth, realm);
         });
 
+        // TODO: Update once client event service supports interface subscriptions
+        clientEventService.addSubscription(ReadAssetEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAssetsEvent.class, this::onReadRequest);
+        clientEventService.addSubscription(ReadAttributeEvent.class, this::onReadRequest);
+
         container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
@@ -383,61 +386,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .routeId("Persistence-Asset")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
-
-        // React if a client wants to read assets and attributes
-        from(CLIENT_INBOUND_QUEUE)
-            .routeId("ClientInbound-Query")
-            .threads().executorService(executorService) // Threads with SEDA here is ok as executor service has no queue, just makes processing multithreaded
-            .filter(body().isInstanceOf(HasAssetQuery.class))
-            .process(exchange -> {
-                HasAssetQuery hasAssetQuery = exchange.getIn().getBody(HasAssetQuery.class);
-                AssetQuery assetQuery = hasAssetQuery.getAssetQuery();
-                String sessionKey = ClientEventService.getSessionKey(exchange);
-                String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-                Object response = null;
-
-                if (hasAssetQuery instanceof ReadAssetsEvent) {
-                    List<Asset<?>> assets = findAll(assetQuery);
-                    response = new AssetsEvent(assets);
-                } else {
-                    Asset<?> asset = find(assetQuery);
-                    String assetId;
-                    String attributeName = null;
-
-                    if (asset != null) {
-                        if (hasAssetQuery instanceof ReadAttributeEvent readAttributeEvent) {
-                            assetId = readAttributeEvent.getAttributeRef().getId();
-                            attributeName = readAttributeEvent.getAttributeRef().getName();
-                        } else {
-                            assetId = ((ReadAssetEvent) hasAssetQuery).getAssetId();
-                        }
-
-                        if (!TextUtil.isNullOrEmpty(attributeName)) {
-                            Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
-                            if (assetAttribute != null) {
-                                // Check access constraints
-                                if (assetQuery.access == null
-                                    || assetQuery.access == PRIVATE
-                                    || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
-                                    || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
-                                    response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
-                                }
-                            }
-                        } else {
-                            response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
-                        }
-                    }
-                }
-
-                if (response != null) {
-                    if (!isNullOrEmpty(messageId)) {
-                        response = new EventRequestResponseWrapper<>(messageId, (SharedEvent)response);
-                    }
-                    clientEventService.sendToSession(sessionKey, response);
-                }
-
-            })
-            .end();
     }
 
     /**
@@ -645,15 +593,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LOG.finest("Merging asset: " + asset);
         }
 
+        String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+
+        if (!skipGatewayCheck && gatewayId != null) {
+            String msg = "Cannot directly add a descendant asset to a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
+            LOG.info(msg);
+            throw new IllegalStateException(msg);
+        }
+
         return persistenceService.doReturningTransaction(em -> {
 
             long startTime = System.currentTimeMillis();
-            String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
-
-            if (!skipGatewayCheck && gatewayId != null) {
-                LOG.fine("Sending asset merge request to gateway: Gateway ID=" + gatewayId);
-                return gatewayService.mergeGatewayAsset(gatewayId, asset);
-            }
 
             // Validate realm
             if (asset.getRealm() == null) {
@@ -852,9 +802,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public boolean delete(List<String> assetIds, boolean skipGatewayCheck) {
 
         List<String> ids = new ArrayList<>(assetIds);
-        Map<String, List<String>> gatewayIdAssetIdMap = new HashMap<>();
 
         if (!skipGatewayCheck) {
+
+            // Don't allow deletion of gateway descendant assets (they must be deleted on the gateway itself)
+            boolean gatewayDescendant = ids.stream().anyMatch(id -> gatewayService.getLocallyRegisteredGatewayId(id, null) != null);
+            if (gatewayDescendant) {
+                String msg = "Cannot delete one or more requested assets as they are descendants of a gateway asset";
+                LOG.info(msg);
+                throw new IllegalArgumentException(msg);
+            }
+
             List<String> gatewayIds = ids.stream().filter(id -> gatewayService.isLocallyRegisteredGateway(id)).toList();
 
             if (!gatewayIds.isEmpty()) {
@@ -867,53 +825,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             return false;
                         }
                     } catch (Exception e) {
+                        LOG.log(WARNING, "Failed to delete gateway asset: " + gatewayId, e);
                         return false;
                     }
-                }
-            }
-
-            ids.removeIf(id -> {
-                String gatewayId = gatewayService.getLocallyRegisteredGatewayId(id, null);
-                if (gatewayId != null) {
-
-                    if (gatewayIds.contains(gatewayId)) {
-                        // Gateway is being deleted so no need to try and delete this descendant asset
-                        return true;
-                    }
-
-                    gatewayIdAssetIdMap.compute(gatewayId, (gId, aIds) -> {
-                        if (aIds == null) {
-                            aIds = new ArrayList<>();
-                        }
-                        aIds.add(id);
-                        return aIds;
-                    });
-                    return true;
-                }
-                return false;
-            });
-
-            if (gatewayIdAssetIdMap.isEmpty() && ids.isEmpty()) {
-                return true;
-            }
-
-            // This is not atomic across gateways
-            if (!gatewayIdAssetIdMap.isEmpty()) {
-                for (Map.Entry<String, List<String>> gatewayIdAssetIds : gatewayIdAssetIdMap.entrySet()) {
-                    String gatewayId = gatewayIdAssetIds.getKey();
-                    List<String> gatewayAssetIds = gatewayIdAssetIds.getValue();
-                    try {
-                        boolean deleted = gatewayService.deleteGatewayAssets(gatewayId, gatewayAssetIds);
-                        if (!deleted) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        return false;
-                    }
-                }
-
-                if (ids.isEmpty()) {
-                    return true;
                 }
             }
         }
@@ -2123,5 +2037,55 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         throw new IllegalArgumentException("Unsupported operator: " + operator);
+    }
+
+    protected <T extends HasAssetQuery & RespondableEvent> void onReadRequest(T event) {
+        AssetQuery assetQuery = event.getAssetQuery();
+        Event response = null;
+
+        if (event.getResponseConsumer() == null) {
+            LOG.warning("Cannot respond to read request event as response consumer is not set");
+            return;
+        }
+
+        if (event instanceof ReadAssetsEvent) {
+            List<Asset<?>> assets = findAll(assetQuery);
+            response = new AssetsEvent(assets);
+        } else {
+            Asset<?> asset = find(assetQuery);
+            String assetId;
+            String attributeName = null;
+
+            if (asset != null) {
+                if (event instanceof ReadAttributeEvent readAttributeEvent) {
+                    assetId = readAttributeEvent.getAttributeRef().getId();
+                    attributeName = readAttributeEvent.getAttributeRef().getName();
+                } else {
+                    assetId = ((ReadAssetEvent) event).getAssetId();
+                }
+
+                if (!TextUtil.isNullOrEmpty(attributeName)) {
+                    Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
+                    if (assetAttribute != null) {
+                        // Check access constraints
+                        if (assetQuery.access == null
+                            || assetQuery.access == PRIVATE
+                            || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
+                            || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
+                            response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
+                        }
+                    }
+                } else {
+                    response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                }
+            }
+        }
+
+        if (response != null) {
+            if (!isNullOrEmpty(((SharedEvent) event).getMessageID())) {
+                response.setMessageID(((SharedEvent) event).getMessageID());
+            }
+            event.getResponseConsumer().accept(response);
+        }
     }
 }

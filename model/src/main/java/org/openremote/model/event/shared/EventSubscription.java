@@ -23,14 +23,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.event.Event;
 
 /**
- * A client can subscribe to {@link SharedEvent}s on the server, providing the
+ * A consumer can subscribe to {@link Event}s on the server, providing the
  * type of event it wants to receive as well as filter criteria to restrict the
  * events to an interesting subset.
  * <p>
  * A subscription can optionally contain a {@link #subscriptionId} which allows a client
  * to have multiple subscriptions for the same event type.
  */
-public class EventSubscription<E extends SharedEvent> {
+public class EventSubscription<E extends Event> {
 
     public static final String SUBSCRIBE_MESSAGE_PREFIX = "SUBSCRIBE:";
     public static final String SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";

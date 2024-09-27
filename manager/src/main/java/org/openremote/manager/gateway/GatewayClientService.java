@@ -54,6 +54,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -83,6 +84,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected final Map<String, GatewayIOClient> clientRealmMap = new HashMap<>();
     protected GatewayTunnelFactory gatewayTunnelFactory;
     protected Map<String, Map<AttributeRef, Long>> clientAttributeTimestamps = new ConcurrentHashMap<>();
+    protected Consumer<AssetEvent> realmAssetEventConsumer;
+    protected Consumer<AttributeEvent> realmAttributeEventConsumer;
+
 
     @Override
     public void init(Container container) throws Exception {
@@ -252,20 +256,22 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
+            realmAssetEventConsumer = assetEvent ->
+                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent));
+
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
-            clientEventService.addInternalSubscription(
-                getClientSessionKey(connection)+"Asset",
+            clientEventService.addSubscription(
                 AssetEvent.class,
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
-                assetEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
+                realmAssetEventConsumer);
 
-            clientEventService.addInternalSubscription(
-                getClientSessionKey(connection)+"Attribute",
+            realmAttributeEventConsumer = attributeEvent ->
+                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent));
+
+            clientEventService.addSubscription(
                 AttributeEvent.class,
                 getOutboundAttribueEventFilter(connection),
-                attributeEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
+                realmAttributeEventConsumer);
 
             client.connect();
             return client;
@@ -376,8 +382,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
 
         if (connection != null) {
-            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Asset");
-            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Attribute");
+            clientEventService.removeSubscription(realmAttributeEventConsumer);
+            clientEventService.removeSubscription(realmAssetEventConsumer);
         }
     }
 
@@ -475,25 +481,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     } catch (Exception e) {
                         LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
-                }
-            } else if (event instanceof DeleteAssetsRequestEvent) {
-                DeleteAssetsRequestEvent deleteRequest = (DeleteAssetsRequestEvent)event;
-                LOG.finest("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
-                boolean success = false;
-                try {
-                    success = assetStorageService.delete(deleteRequest.getAssetIds());
-                } catch (Exception e) {
-                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
-                } finally {
-                    sendCentralManagerMessage(
-                        connection.getLocalRealm(),
-                        messageToString(
-                            EventRequestResponseWrapper.MESSAGE_PREFIX,
-                            new EventRequestResponseWrapper<>(
-                                messageId,
-                                new DeleteAssetsResponseEvent(success, deleteRequest.getAssetIds())
-                            )
-                    ));
                 }
             } else if (event instanceof ReadAssetsEvent) {
                 ReadAssetsEvent readAssets = (ReadAssetsEvent)event;

@@ -360,8 +360,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             exchange.setRouteStop(true);
             String sessionKey = ClientEventService.getSessionKey(exchange);
             String gatewayId = getGatewayIdFromClientId(clientId);
-            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
-            processGatewayMessage(gatewayId, sessionKey, messageId, exchange.getIn().getBody(SharedEvent.class));
+            processGatewayMessage(gatewayId, sessionKey, exchange.getIn().getBody(SharedEvent.class));
         }
     }
 
@@ -462,19 +461,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return false;
     }
 
-    public <T extends Asset<?>> T mergeGatewayAsset(String gatewayId, T asset) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-
-        if (connector == null) {
-            String msg = "Gateway not found: Gateway ID=" + gatewayId;
-            LOG.info(msg);
-            throw new IllegalStateException(msg);
-        }
-
-        boolean isUpdate = asset.getId() != null && assetIdGatewayIdMap.containsKey(asset.getId());
-        return connector.mergeGatewayAsset(asset, isUpdate);
-    }
-
     public boolean deleteGateway(String gatewayId) {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
@@ -497,22 +483,6 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         gatewayAssetIds.add(gatewayId);
 
         return assetStorageService.delete(gatewayAssetIds, true);
-    }
-
-    public boolean deleteGatewayAssets(String gatewayId, List<String> assetIds) {
-        if (assetIds == null || assetIds.isEmpty()) {
-            return false;
-        }
-
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
-
-        if (connector == null || !connector.isConnected()) {
-            String msg = "Gateway is not connected: Gateway ID=" + gatewayId;
-            LOG.info(msg);
-            throw new IllegalStateException(msg);
-        }
-
-        return connector.deleteGatewayAssets(assetIds);
     }
 
     public Collection<GatewayTunnelInfo> getTunnelInfos() {
@@ -670,30 +640,28 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         return null;
     }
 
-    protected boolean processGatewayConnected(String gatewayClientId, String sessionId) {
+    protected void processGatewayConnected(String gatewayClientId, String sessionId) {
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
             LOG.warning("Gateway connected but not recognised which shouldn't happen: GatewayID=" + gatewayId);
-            clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
-            clientEventService.closeSession(sessionId);
-            return false;
+            clientEventService.sendToWebsocketSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.UNRECOGNISED));
+            clientEventService.closeWebsocketSession(sessionId);
+            return;
         }
 
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: " + this);
-            clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
-            clientEventService.closeSession(sessionId);
-            return false;
+            clientEventService.sendToWebsocketSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
+            clientEventService.closeWebsocketSession(sessionId);
+            return;
         }
 
         connector.connected(sessionId, createConnectorMessageConsumer(sessionId), () -> {
-            clientEventService.closeSession(sessionId);
+            clientEventService.closeWebsocketSession(sessionId);
             tunnelInfos.values().removeIf(tunnelInfo -> tunnelInfo.getGatewayId().equals(gatewayId));
-            return false;
         });
-        return true;
     }
 
     protected void processGatewayDisconnected(String gatewayClientId, String sessionId) {
@@ -705,7 +673,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
     }
 
-    protected void processGatewayMessage(String gatewayId, String sessionId, String messageId, SharedEvent event) {
+    protected void processGatewayMessage(String gatewayId, String sessionId, SharedEvent event) {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
         if (connector == null) {
             return;
@@ -714,7 +682,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             LOG.finest("Gateway event received for an obsolete session so ignoring: " + this);
             return;
         }
-        connector.onGatewayEvent(messageId, event);
+        connector.onGatewayEvent(event);
     }
 
     protected void processGatewayChange(GatewayAsset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -863,7 +831,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     }
 
     protected Consumer<Object> createConnectorMessageConsumer(String sessionId) {
-        return msg -> clientEventService.sendToSession(sessionId, msg);
+        return msg -> clientEventService.sendToWebsocketSession(sessionId, msg);
     }
 
     String getTunnelSSHHostname() {

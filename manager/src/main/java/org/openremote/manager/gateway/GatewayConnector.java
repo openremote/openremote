@@ -64,7 +64,6 @@ public class GatewayConnector {
     protected final AssetProcessingService assetProcessingService;
     protected final GatewayService gatewayService;
     protected final Map<String, Asset<?>> pendingAssetMerges = new HashMap<>();
-    protected final AtomicReference<EventRequestResponseWrapper<DeleteAssetsRequestEvent>> pendingAssetDelete = new AtomicReference<>();
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
     protected Consumer<Object> gatewayMessageConsumer;
@@ -113,7 +112,6 @@ public class GatewayConnector {
         synchronized(eventConsumerMap) {
             eventConsumerMap.put(AssetEvent.class, (msgId, e) -> onAssetEvent((AssetEvent) e));
             eventConsumerMap.put(AttributeEvent.class, (msgId, e) -> onAttributeEvent((AttributeEvent) e));
-            eventConsumerMap.put(DeleteAssetsResponseEvent.class, (msgId, e) -> onAssetDeleteResponseEvent(msgId, (DeleteAssetsResponseEvent) e));
         }
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
@@ -177,7 +175,6 @@ public class GatewayConnector {
 
         initialSyncInProgress = false;
         pendingAssetMerges.clear();
-        pendingAssetDelete.set(null);
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
 
@@ -386,7 +383,7 @@ public class GatewayConnector {
         assetProcessingService.sendAttributeEvent(event, GatewayService.class.getName());
     }
 
-    synchronized protected void onGatewayEvent(String messageId, SharedEvent e) {
+    synchronized protected void onGatewayEvent(SharedEvent e) {
 
         if (initialSyncInProgress) {
             if (e instanceof AssetsEvent) {
@@ -715,66 +712,6 @@ public class GatewayConnector {
                 asset.setId(id);
                 asset.setParentId(parentId);
             }
-        }
-    }
-
-    protected boolean deleteGatewayAssets(List<String> assetIds) {
-
-        if (!isConnected() || isInitialSyncInProgress()) {
-            String msg = "Gateway is not connected or initial sync in progress so cannot delete asset(s):  Asset<?> IDs=" + Arrays.toString(assetIds.toArray()) + ": " + this;
-            LOG.info(msg);
-            throw new IllegalStateException(msg);
-        }
-
-        synchronized (pendingAssetDelete) {
-
-            if (pendingAssetDelete.get() != null) {
-                String msg = "Gateway asset delete already pending: Asset<?> IDs Mapped=" + Arrays.toString(pendingAssetDelete.get().getEvent().getAssetIds().toArray()) + ": " + this;
-                LOG.info(msg);
-                throw new IllegalStateException(msg);
-            }
-
-            List<String> originalIds = assetIds.stream().map(id -> mapAssetId(gatewayId, id, true)).toList();
-
-            pendingAssetDelete.set(new EventRequestResponseWrapper<>(
-                UniqueIdentifierGenerator.generateId(),
-                new DeleteAssetsRequestEvent(new ArrayList<>(originalIds))
-            ));
-
-            try {
-                sendMessageToGateway(pendingAssetDelete.get());
-                pendingAssetDelete.wait(RESPONSE_TIMEOUT_MILLIS);
-                if (pendingAssetDelete.get() != null) {
-                    throw new IllegalStateException("Gateway asset delete failed: Asset<?> IDs=" + originalIds + ", Asset<?> IDs Mapped=" + Arrays.toString(assetIds.toArray()) + ": " + this);
-                }
-                return true;
-            } catch (InterruptedException e) {
-                String msg = "Gateway asset delete interrupted: Asset<?> IDs=" + originalIds + ", Asset<?> IDs Mapped=" + Arrays.toString(assetIds.toArray()) + ": " + this;
-                LOG.info(msg);
-                throw new IllegalStateException(msg);
-            } finally {
-                pendingAssetDelete.set(null);
-            }
-        }
-    }
-
-    protected void onAssetDeleteResponseEvent(String messageId, DeleteAssetsResponseEvent e) {
-
-        synchronized (pendingAssetDelete) {
-            if (pendingAssetDelete.get() == null) {
-                return;
-            }
-
-            if (!pendingAssetDelete.get().getMessageId().equals(messageId)) {
-                LOG.info("Gateway asset delete response name does not match request so ignoring: " + this);
-                return;
-            }
-
-            if (e.isDeleted()) {
-                pendingAssetDelete.set(null);
-            }
-
-            pendingAssetDelete.notify();
         }
     }
 

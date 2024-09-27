@@ -31,7 +31,7 @@ import java.time.temporal.ChronoUnit;
  * A rule fact that has a timestamp, it expires after a certain time.
  */
 @TsIgnore
-public class TemporaryFact<T> extends Event {
+public class TemporaryFact<T> extends Event<TemporaryFact<T>> {
 
     final protected long expirationMilliseconds;
     final protected T fact;

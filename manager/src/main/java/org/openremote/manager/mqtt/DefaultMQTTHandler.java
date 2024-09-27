@@ -36,6 +36,7 @@ import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.Event;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
@@ -68,14 +69,14 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class DefaultMQTTHandler extends MQTTHandler {
 
     public static class SubscriberInfo {
-        protected Map<String, Consumer<SharedEvent>> topicSubscriptionMap;
+        protected Map<String, Consumer<Event>> topicSubscriptionMap;
 
-        public SubscriberInfo(String topic, Consumer<SharedEvent> subscriptionConsumer) {
+        public SubscriberInfo(String topic, Consumer<Event> subscriptionConsumer) {
             this.topicSubscriptionMap = new HashMap<>();
             this.topicSubscriptionMap.put(topic, subscriptionConsumer);
         }
 
-        protected void add(String topic, Consumer<SharedEvent> subscriptionConsumer) {
+        protected void add(String topic, Consumer<Event> subscriptionConsumer) {
             topicSubscriptionMap.put(topic, subscriptionConsumer);
         }
 
@@ -365,22 +366,17 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return;
         }
 
-        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic);
+        Consumer<? extends Event> eventConsumer = getSubscriptionEventConsumer(connection, topic);
 
-        EventSubscription subscription = new EventSubscription(
+        EventSubscription<? extends Event> subscription = new EventSubscription(
             subscriptionClass,
             filter,
             subscriptionId
         );
 
-        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .withBody(subscription)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
+        clientEventService.addSubscription(subscription, eventConsumer);
 
-        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+        // Track subscriptions
         synchronized (connectionSubscriberInfoMap) {
             connectionSubscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
                 if (subscriberInfo == null) {
@@ -397,17 +393,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onUnsubscribe(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
-        boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
-        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
-        CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
-        messageBrokerService.getFluentProducerTemplate()
-            .withHeaders(headers)
-            .withBody(cancelEventSubscription)
-            .to(CLIENT_INBOUND_QUEUE)
-            .asyncSend();
-
-        // Track connection subscriptions for restricted user asset link changes (to determine if the client should be disconnected)
+dsdad
         synchronized (connectionSubscriberInfoMap) {
             connectionSubscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
                 if (subscriberInfo.remove(topic.getString()) == 0) {
@@ -533,7 +519,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             }
         }
 
-        AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm);
+        AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm).setValueChanged(true);
         if (!assetIds.isEmpty()) {
             assetFilter.setAssetIds(assetIds.toArray(new String[0]));
         }
@@ -549,7 +535,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return assetFilter;
     }
 
-    protected Consumer<SharedEvent> getSubscriptionEventConsumer(RemotingConnection connection, Topic topic) {
+    protected <T extends Event> Consumer<T> getSubscriptionEventConsumer(RemotingConnection connection, Topic topic) {
         boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
         boolean isAssetTopic = isAssetTopic(topic);
 
@@ -557,7 +543,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
 
         // Build topic expander (replace wildcards) so it isn't computed for each event
-        Function<SharedEvent, String> topicExpander;
+        Function<T, String> topicExpander;
 
         if (isAssetTopic) {
             String topicStr = topic.toString();
