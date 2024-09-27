@@ -1,0 +1,62 @@
+apply plugin: 'java'
+apply plugin: "maven-publish"
+apply plugin: "signing"
+
+sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
+
+jar {
+    archivesBaseName = "openremote-${project.name}"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            group = "io.openremote.ui"
+            artifactId = "openremote-${project.name}"
+            from components.java
+            pom {
+                name = 'OpenRemote Shared UI Files'
+                description = 'Provides a files shared between OpenRemote UIs'
+                url = 'https://github.com/openremote/openremote'
+                licenses {
+                    license {
+                        name = 'GNU Affero General Public License v3.0'
+                        url = 'https://www.gnu.org/licenses/agpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'developers'
+                        name = 'Developers'
+                        email = 'developers@openremote.io'
+                        organization = 'OpenRemote'
+                        organizationUrl = 'https://openremote.io'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/openremote/openremote.git'
+                    developerConnection = 'scm:git:ssh://github.com:openremote/openremote.git'
+                    url = 'https://github.com/openremote/openremote/tree/master'
+                }
+            }
+        }
+    }
+}
+
+tasks.register('generateSources', Copy) {
+    from fileTree(projectDir) {
+        exclude 'build.gradle'
+        exclude 'build/**'
+    }
+    into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
+}
+
+tasks.register('installDist', Copy) {
+    dependsOn generateSources
+    mustRunAfter resolveTask(":manager:installDist")
+    from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
+    into "${project(':manager').buildDir}/install/manager/web/${project.name}"
+}
+
+processResources.dependsOn(generateSources)
+jar.dependsOn(generateSources)
