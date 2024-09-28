@@ -20,7 +20,10 @@ import org.openremote.manager.gateway.JSchGatewayTunnelFactory
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.*
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetEvent
+import org.openremote.model.asset.AssetsEvent
+import org.openremote.model.asset.ReadAssetsEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
@@ -43,9 +46,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Paths
-import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
+import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
@@ -820,7 +822,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert mirroredMicrophone2.getAttribute("test").flatMap{it.getValue()}.orElse("") == "testValue"
         }
 
-        when: "an asset is added under the gateway asset"
+        when: "an attempt is made to add an asset under the gateway asset"
         def microphone3 = ValueUtil.clone(microphone1)
             .setName("Microphone 3")
             .setId(null)
@@ -828,19 +830,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             .setParentId(mapAssetId(gateway.id, managerTestSetup.area1Id, false))
         microphone3 = assetStorageService.merge(microphone3)
 
-        then: "the new asset should have been created in the gateway and also mirrored under the gateway asset"
-        assert microphone3.id != null
-        conditions.eventually {
-            def gatewayMicrophone3 = assetStorageService.find(mapAssetId(gateway.id, microphone3.id, true))
-            assert gatewayMicrophone3 != null
-            assert gatewayMicrophone3.getAttribute(MicrophoneAsset.SOUND_LEVEL).isPresent()
-        }
-
-        and: "the new asset microphone level should be correctly linked to the simulator protocol only on the gateway"
-        conditions.eventually {
-            assert !((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.agentId)).linkedAttributes.containsKey(new AttributeRef(microphone3.id, MicrophoneAsset.SOUND_LEVEL.name))
-            assert ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.smartCityServiceAgentId)).linkedAttributes.containsKey(new AttributeRef(mapAssetId(gateway.id, microphone3.id, true), MicrophoneAsset.SOUND_LEVEL.name))
-        }
+        then: "an exception should be thrown"
+        thrown(IllegalStateException)
 
         when: "an attribute is updated on the gateway client"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(microphone2.id, "test", "newValue"))
@@ -870,9 +861,10 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "we subscribe to attribute events"
         List<AttributeEvent> attributeEvents = []
-        def subscriptionId = clientEventService.addInternalSubscription(AttributeEvent.class, null, {attributeEvent ->
+        Consumer<AttributeEvent> eventConsumer = { attributeEvent ->
             attributeEvents.add(attributeEvent)
-        })
+        }
+        clientEventService.addSubscription(AttributeEvent.class, null, eventConsumer)
 
         and: "an attribute with an attribute link is updated on the gateway"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
@@ -905,8 +897,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 // Ignore any other attribute
                 new GatewayAttributeFilter().setSkipAlways(true)
         ])
-        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
         def oldClient = gatewayClientService.clientRealmMap.get(gatewayConnection.getLocalRealm())
+        gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
 
         then: "the gateway connection IO client should have been replaced and synchronisation should be complete"
         conditions.eventually {
@@ -915,6 +907,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             GatewayConnector connector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
             assert connector != null
             assert !connector.initialSyncInProgress
+            assert attributeEvents.any{it.id == gateway.id && it.value.get() == ConnectionStatus.CONNECTED}
         }
 
         when: "an attribute event occurs in the edge gateway realm for an attribute with a value change filter and the attribute value has not changed"
@@ -992,8 +985,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         cleanup: "Remove any subscriptions created"
-        if (clientEventService != null && subscriptionId != null) {
-            clientEventService.cancelInternalSubscription(subscriptionId)
+        if (clientEventService != null) {
+            clientEventService.removeSubscription(eventConsumer)
+        }
+        if (gateway != null) {
+            assetStorageService.delete([gateway.id])
         }
     }
 

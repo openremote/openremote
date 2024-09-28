@@ -174,7 +174,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
             Runnable task = () -> doSubscriptions(clientHeaders, websocketSubscriptions);
             addAttributeConnectedTask(attributeRef, task);
             if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
-                executorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
+                scheduledExecutorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
             }
         });
 
@@ -204,12 +204,12 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         // Look for any subscriptions that need to be processed
         if (protocolConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
 
         if (attributeConnectedTasks != null) {
             // Execute after a delay to ensure connection is properly initialised
-            executorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
         }
     }
 

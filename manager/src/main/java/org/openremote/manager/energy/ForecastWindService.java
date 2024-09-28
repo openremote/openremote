@@ -117,7 +117,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected GatewayService gatewayService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
     protected ClientEventService clientEventService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected RulesService rulesService;
     private ResteasyWebTarget weatherForecastWebTarget;
     private String openWeatherAppId;
@@ -141,7 +141,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getScheduledExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
 
         openWeatherAppId = getString(container.getConfig(), OR_OPEN_WEATHER_API_APP_ID, null);
@@ -258,7 +258,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     protected void startCalculation(ElectricityProducerWindAsset electricityProducerWindAsset) {
         LOG.fine("Starting calculation for producer wind asset: " + electricityProducerWindAsset);
-        calculationFutures.put(electricityProducerWindAsset.getId(), executorService.scheduleAtFixedRate(() -> {
+        calculationFutures.put(electricityProducerWindAsset.getId(), scheduledExecutorService.scheduleAtFixedRate(() -> {
             processWeatherData(electricityProducerWindAsset);
         }, 0, 1, TimeUnit.HOURS));
     }

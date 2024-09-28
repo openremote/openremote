@@ -48,7 +48,6 @@ import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPl
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
 import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
-import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -84,7 +83,7 @@ import java.security.Principal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -112,7 +111,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
     protected MessageBrokerService messageBrokerService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
     protected TimerService timerService;
     protected AssetProcessingService assetProcessingService;
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
@@ -146,11 +145,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 
-        userAssetDisconnectDebouncer = new Debouncer<>(executorService, id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         // This allows last will messages to be processed
         disconnectedConnectionCache = CacheBuilder.newBuilder()
                 .maximumSize(10000)

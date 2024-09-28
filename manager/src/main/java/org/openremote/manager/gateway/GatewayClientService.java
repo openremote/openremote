@@ -22,26 +22,29 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.manager.rules.AssetQueryPredicate;
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.*;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
@@ -53,7 +56,6 @@ import org.openremote.model.util.ValueUtil;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -78,7 +80,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
     protected TimerService timerService;
-    protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, GatewayIOClient> clientRealmMap = new HashMap<>();
@@ -90,7 +91,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getScheduledExecutor();
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         persistenceService = container.getService(PersistenceService.class);
@@ -393,7 +393,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
-        String messageId = null;
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {

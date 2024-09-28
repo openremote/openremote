@@ -49,10 +49,7 @@ import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -101,7 +98,8 @@ public class RulesEngine<T extends Ruleset> {
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
     final protected TimerService timerService;
     final protected RulesService rulesService;
-    final protected ScheduledExecutorService executorService;
+    final protected ExecutorService executorService;
+    final protected ScheduledExecutorService scheduledExecutorService;
     final protected AssetStorageService assetStorageService;
     final protected ClientEventService clientEventService;
 
@@ -133,7 +131,8 @@ public class RulesEngine<T extends Ruleset> {
     public RulesEngine(TimerService timerService,
                        RulesService rulesService,
                        ManagerIdentityService identityService,
-                       ScheduledExecutorService executorService,
+                       ExecutorService executorService,
+                       ScheduledExecutorService scheduledExecutorService,
                        AssetStorageService assetStorageService,
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
@@ -148,6 +147,7 @@ public class RulesEngine<T extends Ruleset> {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.executorService = executorService;
+        this.scheduledExecutorService = scheduledExecutorService;
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
         this.id = id;
@@ -261,7 +261,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);
@@ -330,7 +330,7 @@ public class RulesEngine<T extends Ruleset> {
             } else {
                 LOG.info("Enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
             }
-            statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
+            statsTimer = scheduledExecutorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
     }
 
@@ -419,7 +419,7 @@ public class RulesEngine<T extends Ruleset> {
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
         LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
-        fireTimer = executorService.schedule(
+        fireTimer = scheduledExecutorService.schedule(
             () -> {
                 fireTimer = null;
                 if (!running) {

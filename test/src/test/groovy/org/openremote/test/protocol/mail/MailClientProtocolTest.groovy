@@ -44,6 +44,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.function.Consumer
+
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.TEXT
 
@@ -103,9 +105,10 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         def clientEventService = container.getService(ClientEventService.class)
         ThingAsset asset = null
         List<AttributeEvent> attributeEvents = []
-        def eventSessionID = clientEventService.addInternalSubscription(AttributeEvent.class,  null, it -> {
+        Consumer<AttributeEvent> eventConsumer = it -> {
             attributeEvents.add(it)
-        })
+        }
+        clientEventService.addSubscription(AttributeEvent.class,  null, eventConsumer)
 
         when: "a mail client agent is created"
         def agent = new MailAgent("Test agent")
@@ -221,8 +224,8 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         cleanup: "the event subscription is removed"
-        if (eventSessionID != null) {
-            clientEventService.cancelInternalSubscription(eventSessionID)
+        if (clientEventService != null) {
+            clientEventService.removeSubscription(eventConsumer)
         }
         if (asset != null) {
             assetStorageService.delete([agent.id, asset.id])

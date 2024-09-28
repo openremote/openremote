@@ -119,7 +119,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> imp
 
     @Override
     public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
-        return container.getScheduledExecutor().submit(() -> {
+        return container.getExecutor().submit(() -> {
 
             // Simulate discovery init delay
             Thread.sleep(2000);

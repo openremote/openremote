@@ -74,7 +74,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             .append(ISO_LOCAL_TIME)
             .toFormatter();
 
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -106,7 +106,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getScheduledExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
@@ -220,7 +220,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     protected void startProcessing(ElectricityProducerSolarAsset electricityProducerSolarAsset) {
         LOG.fine("Starting calculation for producer solar asset: " + electricityProducerSolarAsset);
-        calculationFutures.put(electricityProducerSolarAsset.getId(), executorService.scheduleAtFixedRate(() -> {
+        calculationFutures.put(electricityProducerSolarAsset.getId(), scheduledExecutorService.scheduleAtFixedRate(() -> {
             processSolarData(electricityProducerSolarAsset);
         }, 0, 1, TimeUnit.HOURS));
     }

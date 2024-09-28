@@ -21,6 +21,7 @@ import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
 import java.nio.file.Paths
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 /*
  * Copyright 2023, OpenRemote Inc.
@@ -79,7 +80,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         List<ConnectionStatus> connectionEvents = new CopyOnWriteArrayList<>()
         List<MailMessage> messages = new CopyOnWriteArrayList<>()
         def conditions = new PollingConditions(delay: 1, initialDelay: 1, timeout: 10)
-        def executor = new ContainerScheduledExecutor("Scheduled task", 1)
+        def executor = Executors.newCachedThreadPool()
         def mailClient = new MailClientBuilder(
                 executor,
                 "pop3",

@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -59,11 +58,9 @@ public class ZWaveNetwork {
     private final Map<Consumer<Value>, ChannelConsumerLink> consumerLinkMap = new HashMap<>();
     protected String serialPort;
     protected ZWaveSerialIOClient ioClient;
-    protected ScheduledExecutorService executorService;
 
-    public ZWaveNetwork(String serialPort, ScheduledExecutorService executorService) {
+    public ZWaveNetwork(String serialPort) {
         this.serialPort = serialPort;
-        this.executorService = executorService;
     }
 
     public synchronized void connect() {

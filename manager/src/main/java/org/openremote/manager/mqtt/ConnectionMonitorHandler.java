@@ -80,7 +80,7 @@ public class ConnectionMonitorHandler extends MQTTHandler {
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
         super.init(container, serverConfiguration);
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
         mqttBrokerService = container.getService(MQTTBrokerService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);

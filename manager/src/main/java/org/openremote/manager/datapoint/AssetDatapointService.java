@@ -93,7 +93,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     @Override
     public void start(Container container) throws Exception {
         if (maxDatapointAgeDays > 0) {
-            dataPointsPurgeScheduledFuture = executorService.scheduleAtFixedRate(
+            dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
                 this::purgeDataPoints,
                 getFirstPurgeMillis(timerService.getNow()),
                 Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
@@ -236,7 +236,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
                                                   long fromTimestamp,
                                                   long toTimestamp) {
-        return executorService.schedule(() -> {
+        return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
             StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
                 .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))

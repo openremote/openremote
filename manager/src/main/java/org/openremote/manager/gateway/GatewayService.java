@@ -102,7 +102,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected ClientEventService clientEventService;
     protected RulesetStorageService rulesetStorageService;
     protected RulesService rulesService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected TimerService timerService;
     protected String tunnelSSHHostname;
     protected String tunnelHostname;
@@ -180,7 +181,8 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesetStorageService = container.getService(RulesetStorageService.class);
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
@@ -263,7 +265,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 }
 
                 // Create connector
-                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, scheduledExecutorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
 
                 // Get IDs of all assets under this gateway
@@ -691,7 +693,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
             case CREATE -> {
                 createUpdateGatewayServiceUser(gateway);
-                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, this, gateway);
+                GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, scheduledExecutorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
             }
             case UPDATE -> {

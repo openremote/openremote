@@ -62,6 +62,7 @@ import org.openremote.model.value.MetaItemType;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -121,7 +122,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected static final Object ENGINE_LOCK = new Object();
     protected List<GeofenceAssetAdapter> geofenceAssetAdapters = new ArrayList<>();
     protected TimerService timerService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected PersistenceService persistenceService;
     protected RulesetStorageService rulesetStorageService;
     protected ManagerIdentityService identityService;
@@ -157,7 +159,8 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getScheduledExecutor();
+        executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
         rulesetStorageService = container.getService(RulesetStorageService.class);
@@ -608,6 +611,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     this,
                     identityService,
                     executorService,
+                    scheduledExecutorService,
                     assetStorageService,
                     assetProcessingService,
                     notificationService,
@@ -655,22 +659,23 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
             if (isNewEngine) {
                 realmRulesEngine = new RulesEngine<>(
-                            timerService,
-                            this,
-                            identityService,
-                            executorService,
-                            assetStorageService,
-                            assetProcessingService,
-                            notificationService,
-                            webhookService,
-                            alarmService,
-                            clientEventService,
-                            assetDatapointService,
-                            assetPredictedDatapointService,
-                            new RulesEngineId<>(ruleset.getRealm()),
-                            locationPredicateRulesConsumer,
-                            meterRegistry
-                        );
+                    timerService,
+                    this,
+                    identityService,
+                    executorService,
+                    scheduledExecutorService,
+                    assetStorageService,
+                    assetProcessingService,
+                    notificationService,
+                    webhookService,
+                    alarmService,
+                    clientEventService,
+                    assetDatapointService,
+                    assetPredictedDatapointService,
+                    new RulesEngineId<>(ruleset.getRealm()),
+                    locationPredicateRulesConsumer,
+                    meterRegistry
+                );
                 realmEngines.put(ruleset.getRealm(), realmRulesEngine);
 
                 // Push all existing facts into the engine
@@ -740,6 +745,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     this,
                     identityService,
                     executorService,
+                    scheduledExecutorService,
                     assetStorageService,
                     assetProcessingService,
                     notificationService,

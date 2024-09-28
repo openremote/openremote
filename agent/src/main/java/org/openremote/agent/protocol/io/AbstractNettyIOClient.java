@@ -151,13 +151,15 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected Channel channel;
     protected Bootstrap bootstrap;
     protected EventLoopGroup workerGroup;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected CompletableFuture<Void> connectRetry;
     protected int connectTimeout = 5000;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
     protected AbstractNettyIOClient() {
-        this.executorService = Container.SCHEDULED_EXECUTOR;
+        this.executorService = Container.EXECUTOR;
+        this.scheduledExecutorService = Container.SCHEDULED_EXECUTOR;
     }
 
     @Override

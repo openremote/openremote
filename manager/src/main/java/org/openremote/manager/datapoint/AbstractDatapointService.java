@@ -67,7 +67,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
     protected TimerService timerService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected ScheduledFuture<?> dataPointsPurgeScheduledFuture;
 
     @Override
@@ -80,7 +80,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         persistenceService = container.getService(PersistenceService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
-        executorService = container.getScheduledExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
     }
 
     @Override

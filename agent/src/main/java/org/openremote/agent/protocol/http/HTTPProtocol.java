@@ -489,7 +489,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attribute);
 
-        return executorService.scheduleWithFixedDelay(() -> {
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             try {
                 Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(

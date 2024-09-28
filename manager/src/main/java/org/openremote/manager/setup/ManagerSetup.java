@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -63,7 +62,6 @@ public class ManagerSetup implements Setup {
     protected Path provisionDocRoot;
 
     final protected TimerService timerService;
-    final protected ScheduledExecutorService executorService;
     final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
@@ -76,7 +74,6 @@ public class ManagerSetup implements Setup {
 
     public ManagerSetup(Container container) {
         this.timerService = container.getService(TimerService.class);
-        this.executorService = container.getScheduledExecutor();
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
