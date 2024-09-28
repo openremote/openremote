@@ -41,6 +41,9 @@ public class EventSubscription<E extends Event> {
     @JsonIgnore
     protected boolean subscribed;
 
+    protected EventSubscription() {
+    }
+
     public EventSubscription(String eventType) {
         this.eventType = eventType;
     }

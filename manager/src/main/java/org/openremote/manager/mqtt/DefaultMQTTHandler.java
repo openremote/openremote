@@ -303,8 +303,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
             Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
-            String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
-            subscriptionConsumers.put(subscriptionKey, consumer);
+            subscriptionConsumers.put(subscriptionId, consumer);
             clientEventService.addSubscription(subscription, consumer);
         }
     }
@@ -316,7 +315,10 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
         synchronized (sessionSubscriptionConsumers) {
             sessionSubscriptionConsumers.computeIfPresent(sessionKey, (connectionID, subscriptionConsumers) -> {
-                subscriptionConsumers.remove(subscriptionId);
+                Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionId);
+                if (consumer != null) {
+                    clientEventService.removeSubscription(consumer);
+                }
                 if (subscriptionConsumers.isEmpty()) {
                     return null;
                 }

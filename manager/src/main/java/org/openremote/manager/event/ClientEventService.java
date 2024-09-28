@@ -331,7 +331,10 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                     synchronized (websocketSessionSubscriptionConsumers) {
                         websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
                             String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
-                            subscriptionConsumers.remove(subscriptionKey);
+                            Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
+                            if (consumer != null) {
+                                removeSubscription(consumer);
+                            }
                             if (subscriptionConsumers.isEmpty()) {
                                 return null;
                             }

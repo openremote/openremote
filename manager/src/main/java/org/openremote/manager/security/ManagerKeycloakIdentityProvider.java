@@ -1074,7 +1074,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 clientResource.remove();
                 return null;
             }, () -> {
-                throw new NotFoundException("Delete client failed as client not found: " + clientId);
+                // Do nothing as could have been deleted by cleanup of previous test
+                return null;
             });
         });
     }

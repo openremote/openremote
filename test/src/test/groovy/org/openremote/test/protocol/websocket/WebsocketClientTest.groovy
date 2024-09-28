@@ -323,7 +323,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
             new EventSubscription(
                 AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId))))
+                new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
+                "1")))
 
         then: "the server should return a subscribed event"
         conditions.eventually {
