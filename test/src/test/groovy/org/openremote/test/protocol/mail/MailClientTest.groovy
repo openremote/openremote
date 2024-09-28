@@ -81,8 +81,10 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         List<MailMessage> messages = new CopyOnWriteArrayList<>()
         def conditions = new PollingConditions(delay: 1, initialDelay: 1, timeout: 10)
         def executor = Executors.newCachedThreadPool()
+        def scheduledExecutor = new ContainerScheduledExecutor("Test", 1)
         def mailClient = new MailClientBuilder(
                 executor,
+                scheduledExecutor,
                 "pop3",
                 "localhost",
                 greenMail.getPop3().getServerSetup().getPort())
@@ -158,6 +160,7 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         and: "a new POP3 client is created"
         mailClient = new MailClientBuilder(
             executor,
+            scheduledExecutor,
             "pop3",
             "localhost",
             greenMail.getPop3().getServerSetup().getPort())
@@ -210,9 +213,11 @@ class MailClientTest extends Specification implements ManagerContainerTrait {
         List<ConnectionStatus> connectionEvents = new CopyOnWriteArrayList<>()
         List<MailMessage> messages = new CopyOnWriteArrayList<>()
         def conditions = new PollingConditions(delay: 1, initialDelay: 1, timeout: 10)
-        def executor = new ContainerScheduledExecutor("Scheduled task", 1)
+        def executor = Executors.newCachedThreadPool()
+        def scheduledExecutor = new ContainerScheduledExecutor("Scheduled task", 1)
         def mailClient = new MailClientBuilder(
                 executor,
+                scheduledExecutor,
                 "imap",
                 "localhost",
                 greenMail.getImap().getServerSetup().getPort())

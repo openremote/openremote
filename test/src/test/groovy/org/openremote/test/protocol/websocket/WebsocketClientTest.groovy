@@ -165,28 +165,24 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                 new EventSubscription(
                         AttributeEvent.class,
                         null,
-                        "attributes",
-                        null)))
+                        "attributes")))
         client2.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AttributeEvent.class,
                         null,
-                        "attributes2",
-                        null)))
+                        "attributes2")))
 
         and: "we subscribe to asset events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AssetEvent.class,
                         null,
-                        "assets",
-                        null)))
+                        "assets")))
         client2.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AssetEvent.class,
                         null,
-                        "assets2",
-                        null)))
+                        "assets2")))
 
         then: "the server should confirm the subscriptions"
         conditions.eventually {
@@ -327,9 +323,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
             new EventSubscription(
                 AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
-                "1",
-                null)))
+                new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId))))
 
         then: "the server should return a subscribed event"
         conditions.eventually {

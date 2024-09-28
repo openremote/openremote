@@ -5,7 +5,6 @@ import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
-import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
 import org.openremote.container.web.WebTargetBuilder
@@ -13,10 +12,7 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
-import org.openremote.manager.gateway.GatewayClientService
-import org.openremote.manager.gateway.GatewayConnector
-import org.openremote.manager.gateway.GatewayService
-import org.openremote.manager.gateway.JSchGatewayTunnelFactory
+import org.openremote.manager.gateway.*
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
@@ -28,7 +24,6 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthClientCredentialsGrant
 import org.openremote.model.event.shared.SharedEvent
@@ -107,7 +102,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the Gateway client is created"
-        def gatewayClient = new WebsocketIOClient<String>(
+        def gatewayClient = new GatewayIOClient(
             new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingName").build(),
             null,
             new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingName/protocol/openid-connect/token",
@@ -132,16 +127,16 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the gateway connects to this manager"
         gatewayClient.connect()
 
-        then: "the gateway netty client status should become CONNECTED"
+        then: "the gateway netty client status should become CONNECTING"
         conditions.eventually {
-            assert connectionStatus == ConnectionStatus.CONNECTED
-            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatus == ConnectionStatus.CONNECTING
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
         }
 
-        and: "the gateway asset connection status should be CONNECTED"
+        and: "the gateway asset connection status should be CONNECTING"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
         }
 
         and: "the server should have sent an asset read request"
@@ -342,6 +337,18 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert gatewayConnector.isConnected()
             assert !gatewayConnector.isInitialSyncInProgress()
             assert gatewayConnector.isTunnellingSupported()
+        }
+
+        and: "the gateway client should now be CONNECTED"
+        conditions.eventually {
+            assert connectionStatus == ConnectionStatus.CONNECTED
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        and: "the gateway asset connection status should be CONNECTED"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "all the gateway assets should be replicated underneath the gateway"
@@ -573,16 +580,16 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         })
         gatewayClient.connect()
 
-        then: "the gateway netty client status should become CONNECTED"
+        then: "the gateway netty client status should become CONNECTING"
         conditions.eventually {
-            assert connectionStatus == ConnectionStatus.CONNECTED
-            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
+            assert connectionStatus == ConnectionStatus.CONNECTING
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTING
         }
 
-        and: "the gateway asset connection status should be CONNECTED"
+        and: "the gateway asset connection status should be CONNECTING"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId())
-            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTING
         }
 
         and: "the local manager should have sent an asset read request"
@@ -679,6 +686,18 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             def gatewayConnector = gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT))
             assert gatewayConnector.isConnected()
             assert !gatewayConnector.isInitialSyncInProgress()
+        }
+
+        and: "the gateway netty client status should become CONNECTED"
+        conditions.eventually {
+            assert connectionStatus == ConnectionStatus.CONNECTED
+            assert gatewayClient.connectionStatus == ConnectionStatus.CONNECTED
+        }
+
+        and: "the gateway asset connection status should be CONNECTED"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId())
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "the gateway should have the correct assets"

@@ -52,13 +52,10 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         MQTT_IOClient client = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def mqttBrokerService = container.getService(MQTTBrokerService.class)
+        def defaultMQTTHandler = mqttBrokerService.getCustomHandlers().find{it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
         def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def clientEventService = container.getService(ClientEventService.class)
-        def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
         def username = keycloakTestSetup.realmBuilding.name + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
         def password = keycloakTestSetup.serviceUser.secret
@@ -90,8 +87,6 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionChannels.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client subscribes to all attributes of all assets"
@@ -111,8 +106,8 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             assert client.topicConsumerMap.get(topic).size() == 1
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
             def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
         }
 
         when: "Attribute events are sent for each asset by the MQTT client"
