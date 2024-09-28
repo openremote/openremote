@@ -84,7 +84,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the optimisation start time should be correctly calculated"
         def optimiser = optimisationService.assetOptimisationInstanceMap.get(managerTestSetup.electricityOptimisationAssetId).energyOptimiser
         def optimisationTime = optimisationService.getOptimisationStartTime(now.toEpochMilli(), (long)optimiser.intervalSize * 60 * 60)
-        def optimisationDateTime = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault())
+        def optimisationDateTime = optimisationTime.atZone(ZoneId.systemDefault()).toLocalDateTime()
         assert optimisationTime.isBefore(now)
         assert optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES).equals(now)
 
@@ -128,8 +128,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
                             (optimiser.intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -160,8 +160,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
                             (optimiser.intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -192,8 +192,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
                             (optimiser.intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true
@@ -255,7 +255,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         then: "the optimisation start time should be correctly calculated"
         def optimiser = optimisationService.assetOptimisationInstanceMap.get(managerTestSetup.electricityOptimisationAssetId).energyOptimiser
         def optimisationTime = optimisationService.getOptimisationStartTime(now.toEpochMilli(), (long)optimiser.intervalSize * 60 * 60)
-        def optimisationDateTime = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault())
+        def optimisationDateTime = optimisationTime.atZone(ZoneId.systemDefault())
         assert optimisationTime.isBefore(now)
         assert optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES).equals(now)
 
@@ -266,8 +266,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)))
 
         for (int i = 1; i < consumerPower.size(); i++) {
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), consumerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name), producerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), consumerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES).toLocalDateTime())
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name), producerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES).toLocalDateTime())
         }
 
         and: "supplier tariff values are set for the next 24hrs"
@@ -303,8 +303,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
                     managerTestSetup.electricityBatteryAssetId,
                     ElectricityAsset.POWER_SETPOINT.name,
                     new AssetDatapointIntervalQuery(
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
-                            LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
+                            optimisationTime.atZone(ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES).toLocalDateTime(),
                             (optimiser.intervalSize * 60) + " minutes",
                             AssetDatapointIntervalQuery.Formula.AVG,
                             true

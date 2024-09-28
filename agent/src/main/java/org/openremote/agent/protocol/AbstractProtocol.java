@@ -47,7 +47,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 
-    private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getSimpleName() + "." + PROTOCOL.name());
+    private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getName() + "." + PROTOCOL.name());
     protected final Map<AttributeRef, Attribute<?>> linkedAttributes = new ConcurrentHashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = Collections.synchronizedSet(new HashSet<>());
     protected DefaultCamelContext messageBrokerContext;

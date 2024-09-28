@@ -249,7 +249,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                     EstimateResponse responseModel = response.readEntity(EstimateResponse.class);
                     if (responseModel != null) {
                         // Forecast date time is ISO8601 without 'T' so needs special formatter
-                        LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
+                        LocalDateTime now = Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
                         LocalDateTime previousTimestamp = null;
                         boolean setActualValuePower = electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false);
                         boolean setActualValueForecastPower = true;

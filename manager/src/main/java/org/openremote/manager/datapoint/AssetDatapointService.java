@@ -26,10 +26,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +108,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public void onAttributeEvent(AttributeEvent attributeEvent) {
         if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store datapoints with null value
             try {
-                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), LocalDateTime.ofInstant(Instant.ofEpochMilli(attributeEvent.getTimestamp()), ZoneId.systemDefault()));
+                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), Instant.ofEpochMilli(attributeEvent.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime());
             } catch (Exception e) {
                 throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }

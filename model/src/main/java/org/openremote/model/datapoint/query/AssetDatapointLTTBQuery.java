@@ -5,6 +5,7 @@ import org.openremote.model.attribute.AttributeRef;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 
 public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
@@ -38,8 +39,8 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
-        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.fromTimestamp), ZoneId.systemDefault());
-        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.toTimestamp), ZoneId.systemDefault());
+        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : Instant.ofEpochMilli(this.fromTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : Instant.ofEpochMilli(this.toTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
         HashMap<Integer, Object> parameters = new HashMap<>();
         parameters.put(1, this.amountOfPoints);
         parameters.put(2, attributeRef.getId());

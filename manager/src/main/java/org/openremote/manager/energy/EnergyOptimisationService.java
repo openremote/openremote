@@ -682,7 +682,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             if (energySchedule != null) {
                 LOG.finest(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
-                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+                optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime());
             }
 
             double maxEnergyLevelMin = Arrays.stream(energyLevelMins).max().orElse(0);
@@ -795,7 +795,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
-            LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
+            LocalDateTime timestamp = optimisationTime.atZone(ZoneId.systemDefault()).toLocalDateTime();
             List<ValueDatapoint<?>> predictedData = assetPredictedDatapointService.queryDatapoints(
                     ref.getId(),
                     ref.getName(),

@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -91,7 +92,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     }
 
     public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
-        upsertValue(assetId, attributeName, value, timestamp.toInstant(ZoneOffset.UTC).toEpochMilli());
+        upsertValue(assetId, attributeName, value, timestamp.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
     }
     public void upsertValue(String assetId, String attributeName, Object value, long timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
@@ -288,7 +289,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         st.setString(1, assetId);
         st.setString(2, attributeName);
         st.setObject(3, pgJsonValue);
-        st.setObject(4, Instant.ofEpochMilli(timestamp).atZone(ZoneOffset.UTC).toLocalDateTime());
+        st.setObject(4, Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime());
     }
 
     protected abstract Class<T> getDatapointClass();

@@ -70,6 +70,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
@@ -809,7 +810,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected void updateAttributeEvent(AttributeEvent attributeEvent) {
-        LOG.finest("Updating attribute event: " + attributeEvent);
+        LOG.log(FINEST, () -> "Updating attribute event: " + attributeEvent);
 
         // TODO: Use a hashmap for attribute events
         boolean isNewer = attributeEvents.stream().filter(event -> event.getRef().equals(attributeEvent.getRef())).findFirst()

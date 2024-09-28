@@ -294,7 +294,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {
                     double powerForecast = calculatePower(electricityProducerWindAsset, weatherForecastModel);
 
-                    LocalDateTime timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(weatherForecastModel.getTimestamp()), ZoneId.systemDefault());
+                    LocalDateTime timestamp = Instant.ofEpochMilli(weatherForecastModel.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime();
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
 

@@ -235,7 +235,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     def yearMonthDay = doDynamicTimeReplace('%TIME:yyyy-MM-dd%', getInstantTimeOf(container))
                     def epochMillis = getInstantTimeOf(container).plus(1, ChronoUnit.HOURS).toEpochMilli()
                     def epochSeconds = getInstantTimeOf(container).minus(50, ChronoUnit.DAYS).getEpochSecond()
-                    def localInstant = LocalDateTime.ofInstant(getInstantTimeOf(container), ZoneId.systemDefault())
+                    def localInstant = getInstantTimeOf(container).atZone(ZoneId.systemDefault()).toLocalDateTime()
 
                     if (yearMonthDay.substring(4,5) != '-'
                         || yearMonthDay.substring(7,8) != '-'
