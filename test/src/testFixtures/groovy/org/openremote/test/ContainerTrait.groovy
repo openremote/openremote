@@ -259,6 +259,7 @@ trait ContainerTrait {
                 }
             } else {
                 LOG.info("Request to start container with different config and/or services as already running container so restarting")
+                LOG.info("Current config = ${currentConfig}, new config = ${config}")
                 stopContainer()
                 TestFixture.container = null
             }
