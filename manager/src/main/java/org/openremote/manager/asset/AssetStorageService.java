@@ -58,6 +58,7 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.util.LockByKey;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -67,10 +68,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -229,6 +227,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected ExecutorService executorService;
+    protected final LockByKey assetLocks = new LockByKey();
 
     /**
      * Will evaluate each {@link CalendarEventPredicate} and apply it depending on the {@link LogicGroup} type
@@ -593,15 +592,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LOG.finest("Merging asset: " + asset);
         }
 
-        String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
+        if (asset.getId() != null || asset.getParentId() != null) {
+            String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
 
-        if (!skipGatewayCheck && gatewayId != null) {
-            String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
-            LOG.info(msg);
-            throw new IllegalStateException(msg);
+            if (!skipGatewayCheck && gatewayId != null) {
+                String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
+            }
         }
 
-        return persistenceService.doReturningTransaction(em -> {
+        String assetId = asset.getId() != null ? asset.getId() : "";
+        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
 
             long startTime = System.currentTimeMillis();
 
@@ -789,7 +791,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             return updatedAsset;
-        });
+        }));
     }
 
     /**
@@ -834,6 +836,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (!ids.isEmpty()) {
             try {
+                // Get locks for each asset ID
+                ids.forEach(assetLocks::lock);
+
                 persistenceService.doTransaction(em -> {
                     List<Asset<?>> assets = em
                         .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
@@ -850,6 +855,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 });
             } catch (Exception e) {
                 return false;
+            } finally {
+                // Release all of the locks
+                ids.forEach(assetLocks::unlock);
             }
         }
         return true;
@@ -1120,6 +1128,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             createUserAssetLinks(em, newLinks);
         });
+    }
+
+    public <R> R withAssetLock(String assetId, Supplier<R> action) {
+        try {
+            assetLocks.lock(assetId);
+            return action.get();
+        } finally {
+            assetLocks.unlock(assetId);
+        }
+    }
+
+    public void withAssetLock(String assetId, Runnable action) {
+        withAssetLock(assetId, action);
     }
 
     protected void createUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {

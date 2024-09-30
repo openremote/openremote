@@ -327,45 +327,46 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      */
     protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException {
 
-        long startMillis = System.currentTimeMillis();
-        // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
-        // is not updated so tests can't then detect the problem.
-        lastProcessedEventTimestamp = startMillis;
+        return assetStorageService.withAssetLock(event.getId(),() -> {
 
-        // TODO: Get asset lock so it cannot be modified during event processing
-        persistenceService.doTransaction(em -> {
+            long startMillis = System.currentTimeMillis();
+            // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
+            // is not updated so tests can't then detect the problem.
+            lastProcessedEventTimestamp = startMillis;
 
-            // TODO: Retrieve optimised DTO rather than whole asset
-            Asset<?> asset = assetStorageService.find(em, event.getId(), true);
+            return persistenceService.doReturningTransaction(em -> {
 
-            if (asset == null) {
-                throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
-            }
+                // TODO: Retrieve optimised DTO rather than whole asset
+                Asset<?> asset = assetStorageService.find(em, event.getId(), true);
 
-            Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
-                new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
+                if (asset == null) {
+                    throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
+                }
 
-            // Type coercion
-            Object value = event.getValue().map(eventValue -> {
-                Class<?> attributeValueType = attribute.getTypeClass();
-                return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                    String msg = "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType;
-                    return new AssetProcessingException(INVALID_VALUE, msg);
-                });
-            }).orElse(null);
-            event.setValue(value);
+                Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
+                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
 
-            AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
+                // Type coercion
+                Object value = event.getValue().map(eventValue -> {
+                    Class<?> attributeValueType = attribute.getTypeClass();
+                    return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
+                        String msg = "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType;
+                        return new AssetProcessingException(INVALID_VALUE, msg);
+                    });
+                }).orElse(null);
+                event.setValue(value);
 
-            // Do standard JSR-380 validation on the event
-            Set<ConstraintViolation<AttributeEvent>> validationFailures = ValueUtil.validate(enrichedEvent);
+                AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
 
-            if (!validationFailures.isEmpty()) {
-                String msg = "Event processing failed value failed constraint validation: realm=" + enrichedEvent.getRealm() + ", attribute=" + enrichedEvent.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
-                throw new AssetProcessingException(INVALID_VALUE, msg);
-            }
+                // Do standard JSR-380 validation on the event
+                Set<ConstraintViolation<AttributeEvent>> validationFailures = ValueUtil.validate(enrichedEvent);
 
-            // TODO: Remove AttributeExecuteStatus
+                if (!validationFailures.isEmpty()) {
+                    String msg = "Event processing failed value failed constraint validation: realm=" + enrichedEvent.getRealm() + ", attribute=" + enrichedEvent.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
+                    throw new AssetProcessingException(INVALID_VALUE, msg);
+                }
+
+                // TODO: Remove AttributeExecuteStatus
 //            // For executable attributes, non-sensor sources can set a writable attribute execute status
 //            if (attribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
 //                Optional<AttributeExecuteStatus> status = event.getValue()
@@ -377,51 +378,52 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 //                }
 //            }
 
-            String interceptorName = null;
-            boolean intercepted = false;
+                String interceptorName = null;
+                boolean intercepted = false;
 
-            for (AttributeEventInterceptor interceptor : eventInterceptors) {
-                try {
-                    intercepted = interceptor.intercept(em, enrichedEvent);
-                } catch (AssetProcessingException ex) {
-                    throw new AssetProcessingException(ex.getReason(), "Interceptor '" + interceptor + "' error=" + ex.getMessage());
-                } catch (Throwable t) {
-                    throw new AssetProcessingException(
-                        INTERCEPTOR_FAILURE,
-                        "Interceptor '" + interceptor + "' uncaught exception error=" + t.getMessage(),
-                        t
-                    );
+                for (AttributeEventInterceptor interceptor : eventInterceptors) {
+                    try {
+                        intercepted = interceptor.intercept(em, enrichedEvent);
+                    } catch (AssetProcessingException ex) {
+                        throw new AssetProcessingException(ex.getReason(), "Interceptor '" + interceptor + "' error=" + ex.getMessage());
+                    } catch (Throwable t) {
+                        throw new AssetProcessingException(
+                            INTERCEPTOR_FAILURE,
+                            "Interceptor '" + interceptor + "' uncaught exception error=" + t.getMessage(),
+                            t
+                        );
+                    }
+                    if (intercepted) {
+                        interceptorName = interceptor.getName();
+                        break;
+                    }
                 }
+
                 if (intercepted) {
-                    interceptorName = interceptor.getName();
-                    break;
+                    LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
+                } else {
+                    if (enrichedEvent.isOutdated()) {
+                        LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
+                        // Generate an event for this so internal subscribers can act on it if needed
+                        clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
+                    } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
+                        throw new AssetProcessingException(
+                            STATE_STORAGE_FAILED, "database update failed, no rows updated"
+                        );
+                    }
                 }
-            }
 
-            if (intercepted) {
-                LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
-            } else {
-                if (enrichedEvent.isOutdated()) {
-                    LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
-                    // Generate an event for this so internal subscribers can act on it if needed
-                    clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
-                } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
-                    throw new AssetProcessingException(
-                        STATE_STORAGE_FAILED, "database update failed, no rows updated"
-                    );
+                long processingMillis = System.currentTimeMillis() - startMillis;
+
+                if (processingMillis > 50) {
+                    LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
+                } else {
+                    LOG.log(System.Logger.Level.TRACE, () -> "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
                 }
-            }
 
-            long processingMillis = System.currentTimeMillis() - startMillis;
-
-            if (processingMillis > 50) {
-                LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
-            } else {
-                LOG.log(System.Logger.Level.TRACE, () -> "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
-            }
+                return true;
+            });
         });
-
-        return true;
     }
 
     @Override
