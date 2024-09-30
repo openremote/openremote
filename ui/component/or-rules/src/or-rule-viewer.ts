@@ -33,6 +33,11 @@ export const style = css`
         overflow-y: auto;
     }
 
+    or-rule-validity {
+        margin-left: 10px;
+        margin-right: 20px;
+    }
+
     .wrapper {
         display: flex;
         flex-direction: column;
@@ -68,19 +73,10 @@ export const style = css`
         display: flex;
         align-items: center;
     }
-
-    #rule-status {
-        flex: 1;
-        text-align: center;
-    }
     
     #rule-id {
-        min-width: 70px;
-        margin-right: 10px;
-    }
-    
-    #rule-header-controls > * {
-        margin: 0 10px;
+        margin-left: 10px;
+        font-size: small;
     }
     
     #active-wrapper {
@@ -91,6 +87,16 @@ export const style = css`
     #rule-view {
         flex-grow: 1;
         background-color: var(--internal-or-rules-background-color);
+    }
+    
+    .iconfill-gray {
+        margin-left: 10px;
+        --or-icon-fill: var(--internal-or-rules-list-icon-color-ok);
+    }
+
+    .iconfill-red {
+        margin-left: 10px;
+        --or-icon-fill: var(--internal-or-rules-list-icon-color-error);
     }
 `;
 
@@ -167,20 +173,62 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         }
 
         let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
+        let statusIcon: string = "help";
+        let statusClass: string = "iconfill-gray";
+        let statusText: string = "NOSTATUS";
+        if (this.ruleset.status) statusText = this.ruleset.status;
+
+        switch (this.ruleset.status){
+            case "DEPLOYED":
+                statusIcon = "play";
+                statusClass = "iconfill-gray";
+                break;
+            case "READY":
+                statusIcon = "check";
+                statusClass = "iconfill-gray";
+                break;
+            case "COMPILATION_ERROR":
+            case "LOOP_ERROR":
+            case "VALIDITY_PERIOD_ERROR":
+            case "EXECUTION_ERROR":
+                statusIcon = "alert-octagon";
+                statusClass = "iconfill-red";
+                statusText = this.ruleset.error;
+                break;
+            case "DISABLED":
+                statusIcon = "minus-circle";
+                statusClass = "iconfill-gray";
+                break;
+            case "PAUSED":
+                statusIcon = "calendar-arrow-right";
+                statusClass = "iconfill-gray";
+                break;
+            case "EXPIRED":
+                statusIcon = "calendar-remove";
+                statusClass = "iconfill-gray";
+                break;
+            case "REMOVED":
+                statusIcon = "close";
+                statusClass = "iconfill-gray";
+                break;
+            default:
+                statusIcon = "stop";
+                statusClass = "iconfill-gray";
+                statusText = "NOSTATUS";
+        }
 
         return html`
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
-                    <h3 id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</h3>
                     <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
-                    <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
-                    ${this.ruleset.status ? html`<span id="rule-status" title="${this.ruleset.error}">${i18next.t("status") + ": " + this.ruleset.status}</span>` : ``}
+                    <or-icon class="${statusClass}" title="${i18next.t("rulesetStatus." + statusText)}" icon="${statusIcon}"></or-icon>
+                    <span id="rule-id">${this.ruleset.id ? "ID: " + this.ruleset.id : ""}</span>
                     <div id="rule-header-controls">
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
-                            <or-mwc-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
-           
+                        <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
                         <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" label="save" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
                     </div>                        
                 </div>

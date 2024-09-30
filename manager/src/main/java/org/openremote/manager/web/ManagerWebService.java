@@ -47,19 +47,18 @@ import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
 import jakarta.ws.rs.WebApplicationException;
+
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
@@ -123,36 +122,36 @@ public class ManagerWebService extends WebService {
 
         // Add swagger resource
         OpenAPI oas = new OpenAPI()
-                .servers(Collections.singletonList(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
+                .servers(List.of(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
                 .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
-                        new OAuthFlows().authorizationCode(
-                            new OAuthFlow()
-                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
-                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token"))
-                        .clientCredentials(
-                                // for service users
-                                new OAuthFlow()
-                                    .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
-                                    .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
-                                    .scopes(new Scopes().addString("serviceUser", "serviceUser"))
-                            )
-                )).security(Collections.singletonList(new SecurityRequirement().addList("openid")));
+                        new OAuthFlows() //
+                                .authorizationCode(
+                                        new OAuthFlow()
+                                                .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
+                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .scopes(new Scopes().addString("profile", "profile"))
+                                )
+                                .clientCredentials(
+                                        // for service users
+                                        new OAuthFlow()
+                                                .tokenUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                                                .scopes(new Scopes().addString("profile", "profile"))
+                                )
+                )).security(List.of(new SecurityRequirement().addList("openid")));
 
         Info info = new Info()
                 .title("OpenRemote Manager REST API")
                 .version("3.0.0")
                 .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [documentation](https://docs.openremote.io) for more info.")
-                .contact(new Contact()
-                        .email("info@openremote.io"))
-                .license(new License()
-                        .name("AGPL 3.0")
-                        .url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
+                .contact(new Contact().email("info@openremote.io"))
+                .license(new License().name("AGPL 3.0").url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
 
         oas.info(info);
         SwaggerConfiguration oasConfig = new SwaggerConfiguration()
-            .resourcePackages(Stream.of("org.openremote.model.*").collect(Collectors.toSet()))
-            .openAPI(oas);
+                .resourcePackages(Set.of("org.openremote.model.*"))
+                .openAPI(oas);
 
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
@@ -241,13 +240,13 @@ public class ManagerWebService extends WebService {
         // Redirect / to default app
         if (rootRedirectPath != null) {
             getRequestHandlers().add(
-                new RequestHandler(
-                    "Default app redirect",
-                    exchange -> exchange.getRequestPath().equals("/"),
-                    exchange -> {
-                        LOG.finest("Handling root request, redirecting client to default app");
-                        new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
-                    }));
+                    new RequestHandler(
+                            "Default app redirect",
+                            exchange -> exchange.getRequestPath().equals("/"),
+                            exchange -> {
+                                LOG.finest("Handling root request, redirecting client to default app");
+                                new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
+                            }));
         }
 
         if (apiHandler != null) {
@@ -327,8 +326,8 @@ public class ManagerWebService extends WebService {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "builtInAppDocRoot=" + builtInAppDocRoot +
-            ", customAppDocRoot=" + customAppDocRoot +
-            '}';
+                "builtInAppDocRoot=" + builtInAppDocRoot +
+                ", customAppDocRoot=" + customAppDocRoot +
+                '}';
     }
 }

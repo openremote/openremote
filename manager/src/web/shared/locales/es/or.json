@@ -139,6 +139,7 @@
   "output": "Salida",
   "selectAsset": "Seleccione activos",
   "selectAssetOnTheLeft": "Seleccione un activo a la izquierda",
+  "selectAssetTypeOnTheLeft": "Seleccione un tipo de activo a la izquierda",
   "noRuleStateAttributes": "No hay atributos de estado regla",
   "copy": "Copiar",
   "paste": "Pegar",

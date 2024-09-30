@@ -133,7 +133,7 @@ public class CustomX509TrustManagerFactorySpi extends TrustManagerFactorySpi {
 	// Register the provider
 	public static class CustomProvider extends Provider {
 		public CustomProvider() {
-			super("CustomX509TrustManagerFactory", 1.0, "Custom X509 TrustManager Factory");
+			super("CustomX509TrustManagerFactory", "1.0", "Custom X509 TrustManager Factory");
 			put("TrustManagerFactory.CustomX509TrustManagerFactory", this.getClass().getName());
 		}
 	}

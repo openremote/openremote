@@ -1,5 +1,6 @@
 package org.openremote.model.dashboard;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -10,7 +11,7 @@ import org.openremote.model.query.DashboardQuery;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Dashboard")
+@Tag(name = "Dashboard", description = "Operations on dashboards")
 @Path("dashboard")
 public interface DashboardResource {
 
@@ -21,6 +22,7 @@ public interface DashboardResource {
     @GET
     @Path("all/{realm}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAllRealmDashboards", summary = "Retrieve all accessible dashboards")
     Dashboard[] getAllRealmDashboards(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
@@ -30,6 +32,7 @@ public interface DashboardResource {
     @GET
     @Path("{realm}/{dashboardId}")
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getDashboard", summary = "Retrieve a dashboard")
     Dashboard get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("dashboardId") String dashboardId);
 
     /**
@@ -43,23 +46,27 @@ public interface DashboardResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @Operation(operationId = "queryDashboards", summary = "Retrieve dashboards using a query")
     Dashboard[] query(@BeanParam RequestParams requestParams, @Valid DashboardQuery dashboardQuery);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
+    @Operation(operationId = "createDashboard", summary = "Create a dashboard")
     Dashboard create(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 
     @PUT
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
+    @Operation(operationId = "updateDashboard", summary = "Update a dashboard")
     Dashboard update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 
     @DELETE
     @Path("{realm}/{dashboardId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_INSIGHTS_ROLE})
+    @Operation(operationId = "deleteDashboard", summary = "Delete a dashboard")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("dashboardId") String dashboardId);
 }

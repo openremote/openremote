@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import org.openremote.model.Constants;
@@ -40,11 +41,20 @@ import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 public class AttributeRef implements Serializable {
 
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
+    @Schema(description = "The asset identifier", example = "7Bt8M3cXEP6BHPh8r47DYf")
     protected String id;
+
     @NotBlank(message = "{Asset.valueHolder.name.NotBlank}")
     @Pattern(regexp = "^\\w+$")
+    @Schema(description = "The attribute name", example = "location")
     protected String name;
 
+    /**
+     * Constructs an attribute reference.
+
+     * @param id the asset identifier
+     * @param name the attribute name
+     */
     @JsonCreator
     public AttributeRef(@JsonProperty("id") String id, @JsonProperty("name") String name) {
         requireNonNullAndNonEmpty(id);
@@ -53,10 +63,20 @@ public class AttributeRef implements Serializable {
         this.name = name;
     }
 
+    /**
+     * Returns the asset identifier.
+     *
+     * @return the asset identifier.
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Returns the attribute name.
+     *
+     * @return the attribute name.
+     */
     public String getName() {
         return name;
     }

@@ -139,6 +139,7 @@
   "output": "Champs de sortie",
   "selectAsset": "Sélectionnez ressource",
   "selectAssetOnTheLeft": "Sélectionnez une ressource sur la gauche",
+  "selectAssetTypeOnTheLeft": "Sélectionnez une type de ressource sur la gauche",
   "noRuleStateAttributes": "Aucun attribut d'état de règle",
   "copy": "Copier",
   "paste": "Coller",
