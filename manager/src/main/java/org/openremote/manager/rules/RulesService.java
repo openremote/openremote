@@ -786,26 +786,22 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected void insertAttributeEvent(AttributeInfo event, long expiresMillis) {
-        synchronized (ENGINE_LOCK) {
-            // Get the chain of rule engines that we need to pass through
-            List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
+        // Get the chain of rule engines that we need to pass through
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
 
-            // Pass through each engine
-            for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.insertAttributeEvent(expiresMillis, event);
-            }
+        // Pass through each engine
+        for (RulesEngine<?> rulesEngine : rulesEngines) {
+            rulesEngine.insertAttributeEvent(expiresMillis, event);
         }
     }
 
     protected void removeAttributeEvents(AttributeInfo event) {
-        synchronized (ENGINE_LOCK) {
-            // Get the chain of rule engines that we need to pass through
-            List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
+        // Get the chain of rule engines that we need to pass through
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
 
-            // Remove all from each engine
-            for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.removeAttributeEvents(event.getRef());
-            }
+        // Remove all from each engine
+        for (RulesEngine<?> rulesEngine : rulesEngines) {
+            rulesEngine.removeAttributeEvents(event.getRef());
         }
     }
 
@@ -825,14 +821,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
         boolean inserted = !attributeEvents.remove(attributeEvent);
         attributeEvents.add(attributeEvent);
 
-        synchronized (ENGINE_LOCK) {
-            // Get the chain of rule engines that we need to pass through
-            List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
+        // Get the chain of rule engines that we need to pass through
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
 
-            // Pass through each rules engine
-            for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.updateOrInsertAttributeInfo(attributeEvent, inserted);
-            }
+        // Pass through each rules engine
+        for (RulesEngine<?> rulesEngine : rulesEngines) {
+            rulesEngine.updateOrInsertAttributeInfo(attributeEvent, inserted);
         }
     }
 
@@ -840,14 +834,12 @@ public class RulesService extends RouteBuilder implements ContainerService {
         // Remove asset state with same attribute ref
         attributeEvents.remove(attributeEvent);
 
-        synchronized (ENGINE_LOCK) {
-            // Get the chain of rule engines that we need to pass through
-            List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
+        // Get the chain of rule engines that we need to pass through
+        List<RulesEngine<?>> rulesEngines = getEnginesInScope(attributeEvent.getRealm(), attributeEvent.getPath());
 
-            // Pass through each rules engine
-            for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.removeAttributeInfo(attributeEvent);
-            }
+        // Pass through each rules engine
+        for (RulesEngine<?> rulesEngine : rulesEngines) {
+            rulesEngine.removeAttributeInfo(attributeEvent);
         }
     }
 

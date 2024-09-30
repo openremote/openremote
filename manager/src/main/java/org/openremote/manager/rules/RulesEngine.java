@@ -338,13 +338,14 @@ public class RulesEngine<T extends Ruleset> {
         if (trackLocationPredicates == track) {
             return;
         }
-
-        trackLocationPredicates = track;
-        if (track) {
-            facts.startTrackingLocationRules();
-        } else {
-            if (assetLocationPredicatesConsumer != null) {
-                processLocationRules(facts.stopTrackingLocationRules());
+        synchronized (this) {
+            trackLocationPredicates = track;
+            if (track) {
+                facts.startTrackingLocationRules();
+            } else {
+                if (assetLocationPredicatesConsumer != null) {
+                    processLocationRules(facts.stopTrackingLocationRules());
+                }
             }
         }
     }
@@ -376,19 +377,25 @@ public class RulesEngine<T extends Ruleset> {
         publishRulesEngineStatus();
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void startRuleset(RulesetDeployment deployment) {
         if (!running) {
             return;
         }
 
-        if (deployment.start(facts)) {
-            publishRulesetStatus(deployment);
+        synchronized (this) {
+            if (deployment.start(facts)) {
+                publishRulesetStatus(deployment);
+            }
         }
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void stopRuleset(RulesetDeployment deployment) {
-        if (deployment.stop(facts)) {
-            publishRulesetStatus(deployment);
+        synchronized (this) {
+            if (deployment.stop(facts)) {
+                publishRulesetStatus(deployment);
+            }
         }
     }
 
@@ -434,7 +441,7 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    protected void fireAllDeployments() {
+    protected synchronized void fireAllDeployments() {
         if (!running) {
             return;
         }
@@ -463,6 +470,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void doFire() {
         for (RulesetDeployment deployment : deployments.values()) {
             try {
@@ -482,6 +490,7 @@ public class RulesEngine<T extends Ruleset> {
                     facts.reset();
 
                     long startTimestamp = timerService.getCurrentTimeMillis();
+
                     engine.fire(deployment.getRules(), facts);
                     long executionMillis = (timerService.getCurrentTimeMillis() - startTimestamp);
                     LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + executionMillis + "ms");
@@ -525,7 +534,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
+    public synchronized void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
         facts.putAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || (insert && attributeInfo.getName().equals(Asset.LOCATION.getName())));
@@ -535,7 +544,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void removeAttributeInfo(AttributeInfo attributeInfo) {
+    public synchronized void removeAttributeInfo(AttributeInfo attributeInfo) {
         facts.removeAssetState(attributeInfo);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
         trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
@@ -545,14 +554,14 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
+    public synchronized void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
         facts.insertAttributeEvent(expiresMillis, attributeInfo);
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public void removeAttributeEvents(AttributeRef attributeRef) {
+    public synchronized void removeAttributeEvents(AttributeRef attributeRef) {
         facts.removeAttributeEvents(attributeRef);
     }
 
@@ -564,7 +573,7 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    protected void printSessionStats() {
+    protected synchronized void printSessionStats() {
         Collection<AttributeInfo> assetStateFacts = facts.getAssetStates();
         Collection<TemporaryFact<AttributeInfo>> assetEventFacts = facts.getAssetEvents();
         Map<String, Object> namedFacts = facts.getNamedFacts();

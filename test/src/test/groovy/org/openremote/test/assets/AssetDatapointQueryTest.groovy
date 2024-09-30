@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
@@ -16,6 +15,7 @@ import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -25,7 +25,6 @@ import spock.util.concurrent.PollingConditions
 
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 
 import static java.util.concurrent.TimeUnit.HOURS
 

@@ -50,6 +50,9 @@ import java.util.stream.StreamSupport;
 
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
 
+/**
+ * NOTE: THIS IS NOT THREADSAFE
+ */
 public class RulesFacts extends Facts implements RuleListener {
 
     // Loop detection
