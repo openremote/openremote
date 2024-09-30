@@ -98,7 +98,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         persistenceService.doTransaction(em ->
             em.unwrap(Session.class).doWork(connection -> {
 
-                getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
+                getLogger().log(Level.FINEST,() -> "Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
                 PreparedStatement st;
 
                 try {
