@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public enum AlgorithmType {
@@ -67,9 +68,9 @@ public enum AlgorithmType {
      * @param algorithmTypeValue algorithm type
      * @return selected output action type
      */
-    public static ArrayList<AlgorithmType> getAlgorithmTypeFromBitMask(final short algorithmTypeValue) {
+    public static List<AlgorithmType> getAlgorithmTypeFromBitMask(final short algorithmTypeValue) {
         final AlgorithmType[] algorithmTypes = {FIPS_P_256_ELLIPTIC_CURVE};
-        final ArrayList<AlgorithmType> supportedAlgorithms = new ArrayList<>();
+        final List<AlgorithmType> supportedAlgorithms = new ArrayList<>();
         for (AlgorithmType algorithmType : algorithmTypes) {
             if ((algorithmTypeValue & algorithmType.ordinal()) == algorithmType.ordinal()) {
                 supportedAlgorithms.add(algorithmType);
