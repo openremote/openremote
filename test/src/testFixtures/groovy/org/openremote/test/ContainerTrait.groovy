@@ -100,11 +100,7 @@ trait ContainerTrait {
                         if (entry.key == OR_WEBSERVER_LISTEN_PORT) {
                             return true
                         }
-                        if (entry.value != config.get(entry.key)) {
-                            LOG.info("Config key ${entry.key} values are different: current=${entry.value}, new=${config.get(entry.key)}")
-                            return false
-                        }
-                        return true
+                        entry.value == config.get(entry.key)
                     }
                 }
             }
