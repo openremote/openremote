@@ -7,6 +7,7 @@ import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.model.ContainerService
+import org.openremote.model.util.TextUtil
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
@@ -22,21 +23,21 @@ import static org.openremote.manager.rules.RulesService.OR_RULES_QUICK_FIRE_MILL
 
 trait ManagerContainerTrait extends ContainerTrait {
 
-    // We get this once as on github runners it continually mutates which prevents container reuse
-    static ENV_CONFIG = System.getenv()
-
     Map<String, String> defaultConfig(Integer serverPort) {
         if (serverPort == null) {
             serverPort = findEphemeralPort()
         }
-        [
+        def config = [
                 (OR_WEBSERVER_LISTEN_PORT): Integer.toString(serverPort),
                 (MQTT_SERVER_LISTEN_HOST) : "127.0.0.1", // Works best for cross platform test running,
                 (MQTTBrokerService.MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS): "10",
                 (OR_RULES_QUICK_FIRE_MILLIS): "500",
                 (OR_RULES_MIN_TEMP_FACT_EXPIRATION_MILLIS): "500",
                 (TIMER_CLOCK_TYPE)        : PSEUDO.name()
-        ] << ENV_CONFIG
+        ] << System.getenv()
+
+        config.values().removeIf { TextUtil.isNullOrEmpty(it)}
+        return config
     }
 
     Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
