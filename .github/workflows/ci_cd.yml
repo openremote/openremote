@@ -506,7 +506,7 @@ jobs:
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.event_name != 'release' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
-          command="./gradlew publish -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          command="./gradlew publish --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           if [ "$MAVEN_TAG" != "" ]; then
              command="$command -PopenremoteVersion=$MAVEN_TAG"
           fi

@@ -8,6 +8,11 @@ jar {
     archivesBaseName = "openremote-${project.name}"
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
@@ -16,7 +21,7 @@ publishing {
             from components.java
             pom {
                 name = 'OpenRemote Shared UI Files'
-                description = 'Provides a files shared between OpenRemote UIs'
+                description = 'Provides the files shared between OpenRemote UIs'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
@@ -41,6 +46,27 @@ publishing {
             }
         }
     }
+
+    repositories {
+        maven {
+            if (!version.endsWith('-LOCAL')) {
+                credentials {
+                    username findProperty("publishUsername")
+                    password findProperty("publishPassword")
+                }
+            }
+            url = version.endsWith('-LOCAL') ? layout.buildDirectory.dir('repo') : version.endsWith('-SNAPSHOT') ? findProperty("snapshotsRepoUrl") : findProperty("releasesRepoUrl")
+        }
+    }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }
 
 tasks.register('generateSources', Copy) {
@@ -58,5 +84,6 @@ tasks.register('installDist', Copy) {
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
-processResources.dependsOn(generateSources)
 jar.dependsOn(generateSources)
+processResources.dependsOn(generateSources)
+sourcesJar.dependsOn(generateSources)
