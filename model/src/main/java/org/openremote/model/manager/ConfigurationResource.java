@@ -49,7 +49,7 @@ public interface ConfigurationResource {
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "fileUpload", summary = "Upload a file")
-    String fileUpload(
+    Object fileUpload(
             @BeanParam RequestParams requestParams,
             @QueryParam("path")
             String path,
@@ -65,5 +65,5 @@ public interface ConfigurationResource {
     @GET
     @Path("manager/image/{filename: .+}")
     @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
-    Object getManagerConfigImages(@PathParam("filename")String fileName);
+    Object getManagerConfigImage(@PathParam("filename")String fileName);
 }

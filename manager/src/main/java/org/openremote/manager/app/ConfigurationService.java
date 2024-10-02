@@ -20,9 +20,7 @@
 package org.openremote.manager.app;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.ws.rs.NotFoundException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -36,17 +34,13 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.ValueUtil;
 
-import javax.net.ssl.TrustManager;
 import java.io.*;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
@@ -101,8 +95,17 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         }
 
         // Will throw if failed, stopping startup fast and hard
-        loadMapSettingsJson();
-        loadManagerConfigJson();
+        try {
+            loadMapSettingsJson();
+        }catch (Exception e){
+            LOG.severe("Could not load MapSettings.json file. Map functionality will be limited. Error: "+ e.getMessage());
+        }
+
+        try {
+            loadManagerConfigJson();
+        }catch (Exception e){
+            LOG.severe("Could not load manager_config.json file. Appearance will be default. Error: "+ e.getMessage());
+        }
     }
 
     @Override
@@ -159,11 +162,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
 
-    protected void loadManagerConfigJson(){
+    protected void loadManagerConfigJson() throws IOException {
         try {
             this.managerConfig = (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
+            LOG.log(Level.SEVERE, "Failed to extract manager config from: " + mapSettingsPath.toAbsolutePath(), ex);
+            throw ex;
         }
     }
 
@@ -195,11 +199,16 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public void saveManagerConfigFile(ObjectNode managerConfiguration) throws Exception {
         LOG.log(Level.INFO, "Saving manager_config.json..");
         try (OutputStream out = new FileOutputStream(getManagerConfigFile().orElseThrow())) {
+            // Check references to images
+            ObjectNode changedConfig = this.checkAndFixImageReferences(this.managerConfig);
+
+            if(changedConfig != null){
+                managerConfiguration = changedConfig.deepCopy();
+            }
+            // Write to file
             out.write(ValueUtil.JSON.writeValueAsString(managerConfiguration).getBytes());
 
-            // Check references to images
-
-
+            // Reload manager_config.json from file
             this.loadManagerConfigJson();
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
@@ -275,23 +284,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
                         File deploymentImageFile = path.toAbsolutePath().toFile();
 
-                        // This file is in the deployment folder, copy the file to the persistenceImageFile.
-                        if (deploymentImageFile.isFile()) {
-
+                        // If this file is in the deployment folder AND the storageDir doesn't contain that,
+                        // copy the file to the persistenceImageFile.
+                        if (deploymentImageFile.isFile() && !persistenceImageFile.isFile()) {
                             deploymentImageFile.mkdirs();
                             deploymentImageFile.createNewFile();
-
-                            // Copy the file
-                            try (InputStream in = new FileInputStream(deploymentImageFile);
-                                 OutputStream out = new FileOutputStream(persistenceImageFile)) {
-                                byte[] buffer = new byte[1024];
-                                int length;
-                                while ((length = in.read(buffer)) > 0) {
-                                    out.write(buffer, 0, length);
-                                }
-                            } catch (Exception e) {
-                                throw new FileSystemException(e.getMessage());
-                            }
+                            Files.copy(deploymentImageFile.toPath(), persistenceImageFile.toPath());
                         }
 
                         // Change the reference in the config to the typical API-like reference:

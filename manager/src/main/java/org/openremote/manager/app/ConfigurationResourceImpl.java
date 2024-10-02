@@ -20,7 +20,6 @@
 package org.openremote.manager.app;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
@@ -52,18 +51,19 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
         try {
             this.configurationService.saveManagerConfigFile(managerConfiguration);
         } catch (Exception e) {
-            LOG.warning("Couldn't store image:" +e.getMessage());
+            LOG.warning("Couldn't store manager_config.json:" +e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
         }
         return managerConfiguration;
     }
 
     @Override
-    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
+    public Object fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         try {
             this.configurationService.saveConfigImageFile(path, fileInfo);
         } catch (Exception e) {
-            throw new WebApplicationException(e);
+            LOG.warning("Couldn't store custom manager_config.json image: " +e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
         }
         URI managerConfigPath = requestParams.getExternalBaseUriBuilder()
                 .path("master")
@@ -81,7 +81,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public Object getManagerConfigImages(String fileName) {
+    public Object getManagerConfigImage(String fileName) {
         try {
             File imageFile = configurationService.getManagerConfigImage(fileName).orElseThrow();
             if (!imageFile.exists()) {
