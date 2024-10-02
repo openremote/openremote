@@ -627,7 +627,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(),
                     locationPredicateRulesConsumer,
-                    meterRegistry
+                    rulesFiringTimer
                 );
                 globalEngine.set(engine);
             }
@@ -679,7 +679,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm()),
                     locationPredicateRulesConsumer,
-                    meterRegistry
+                    rulesFiringTimer
                 );
                 realmEngines.put(ruleset.getRealm(), realmRulesEngine);
 
@@ -761,7 +761,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                     assetPredictedDatapointService,
                     new RulesEngineId<>(ruleset.getRealm(), ruleset.getAssetId()),
                     locationPredicateRulesConsumer,
-                    meterRegistry
+                    rulesFiringTimer
                 );
                 assetEngines.put(ruleset.getAssetId(), assetRulesEngine);
 
