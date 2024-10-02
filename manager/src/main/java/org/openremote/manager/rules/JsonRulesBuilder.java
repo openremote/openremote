@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.rules;
 
-import org.openremote.model.PersistenceEvent;
 import jakarta.ws.rs.core.MediaType;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
@@ -52,7 +52,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -226,6 +225,15 @@ public class JsonRulesBuilder extends RulesBuilder {
                             }
                         }
                         case DELETE -> unfilteredAssetStates.remove(event.assetState);
+                    }
+                }
+
+                // Replace any potentially stale asset states (values may have changed)
+                // only need up to date values in the previously matched asset states previously unmatched asset states is only
+                // used to compare asset ID and attribute name.
+                if (event != null) {
+                    if (previouslyMatchedAssetStates.remove(event.assetState)) {
+                        previouslyMatchedAssetStates.add(event.assetState);
                     }
                 }
 
@@ -700,10 +708,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Store last evaluation results in state
                     if (ruleConditionState.lastEvaluationResult != null) {
 
-                        // Replace any stale matched asset states (values may have changed equality is by asset ID and attribute name)
-                        // only need up to date values in the previously matched asset states previously unmatched asset states is only
-                        // used to compare asset ID and attribute name.
-                        ruleConditionState.previouslyMatchedAssetStates.removeAll(ruleConditionState.lastEvaluationResult.matchedAssetStates);
                         ruleConditionState.previouslyMatchedAssetStates.addAll(ruleConditionState.lastEvaluationResult.matchedAssetStates);
 
                         if (ruleConditionState.trackUnmatched) {

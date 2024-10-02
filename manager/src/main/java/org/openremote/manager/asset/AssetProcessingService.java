@@ -264,9 +264,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void configure() throws Exception {
 
         // All user authorisation checks MUST have been carried out before events reach this queue
-
-        // Router is responsible for routing events to the same processor for a given asset ID, this allows for
-        // multithreaded processing across assets
         from(ATTRIBUTE_EVENT_PROCESSOR)
             .routeId("AttributeEvent-Processor")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)

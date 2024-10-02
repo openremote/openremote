@@ -1,12 +1,8 @@
 package org.openremote.test.benchmark
 
-
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
-import org.openremote.manager.agent.AgentService
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTBrokerService
 import org.openremote.manager.mqtt.MQTTHandler
@@ -20,7 +16,6 @@ import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
-import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -98,17 +93,17 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
                 endTime = System.currentTimeMillis()
             }
         }
-        client.addMessageConsumer(topic, eventConsumer)
+        def subscribed = client.addMessageConsumer(topic, eventConsumer)
 
         then: "A subscription should exist"
-        conditions.eventually {
-            assert client.topicConsumerMap.get(topic) != null
-            assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
-            assert defaultMQTTHandler.sessionSubscriptionConsumers.sessionSubscriptionIdMap.get(getConnectionIDString(connection)).size() == 1
-        }
+        assert subscribed
+        assert client.topicConsumerMap.get(topic) != null
+        assert client.topicConsumerMap.get(topic).size() == 1
+        assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
+        def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
+        assert connection != null
+        assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
+        assert defaultMQTTHandler.sessionSubscriptionConsumers.get(getConnectionIDString(connection)).size() == 1
 
         when: "Attribute events are sent for each asset by the MQTT client"
         startTime = System.currentTimeMillis()

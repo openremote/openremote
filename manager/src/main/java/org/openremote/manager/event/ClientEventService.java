@@ -370,7 +370,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
         // Send event to each interested subscribers
         from(PUBLISH_QUEUE)
-            .routeId("ClientOutbound-Splitter")
+            .routeId("ClientPublishToSubscribers")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .threads().executorService(executorService)
             .filter(body().isInstanceOf(SharedEvent.class))

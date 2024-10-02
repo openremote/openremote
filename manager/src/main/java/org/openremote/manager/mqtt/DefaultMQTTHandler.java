@@ -281,6 +281,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
 
+        LOG.finest(() -> "onSubscribe for topic '" + topic + "': " + connection);
         boolean isAssetTopic = isAssetTopic(topic);
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
         AssetFilter filter = buildAssetFilter(topic);
