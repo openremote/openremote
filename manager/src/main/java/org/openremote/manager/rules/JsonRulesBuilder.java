@@ -419,10 +419,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         protected Set<String> otherwiseMatchedAssetIds;
         protected long nextRecur;
         protected boolean matched;
+        protected boolean skipMatch;
         protected Map<String, Long> nextRecurAssetIdMap = new HashMap<>();
 
-        public RuleState(JsonRule rule) {
+        public RuleState(JsonRule rule, boolean skipFirstMatch) {
             this.rule = rule;
+            this.skipMatch = skipFirstMatch;
         }
 
         public void update(Supplier<Long> currentMillisSupplier) {
@@ -577,10 +579,15 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         jsonRules = jsonRulesetDefinition.rules;
 
+        // Skip the first match if the ruleset has not been modified in the last minute
+        boolean recentlyModified = ruleset.getLastModified().toInstant().isAfter(ZonedDateTime.now().minusMinutes(1).toInstant());
+
         for (JsonRule jsonRule : jsonRules) {
-            add(jsonRule);
+            add(jsonRule, !recentlyModified);
         }
     }
+
+
 
     public void stop(RulesFacts facts) {
         Arrays.stream(jsonRules).forEach(jsonRule ->
@@ -605,13 +612,13 @@ public class JsonRulesBuilder extends RulesBuilder {
         ruleStateMap.values().forEach(triggerStateMap -> triggerStateMap.conditionStateMap.values().forEach(ruleConditionState -> ruleConditionState.updateUnfilteredAssetStates(facts, event)));
     }
 
-    protected JsonRulesBuilder add(JsonRule rule) throws Exception {
+    protected JsonRulesBuilder add(JsonRule rule, boolean skipFirstMatch) throws Exception {
 
         if (ruleStateMap.containsKey(rule.name)) {
             throw new IllegalArgumentException("Rules must have a unique name within a ruleset, rule name '" + rule.name + "' already used");
         }
 
-        RuleState ruleState = new RuleState(rule);
+        RuleState ruleState = new RuleState(rule, skipFirstMatch);
         ruleStateMap.put(rule.name, ruleState);
         addRuleConditionStates(rule.when, rule.otherwise != null, new AtomicInteger(0), ruleState.conditionStateMap);
 
@@ -671,19 +678,22 @@ public class JsonRulesBuilder extends RulesBuilder {
         return facts -> {
 
             try {
-                if (ruleState.thenMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
-                }
+                if (!ruleState.skipMatch) {
+                    if (ruleState.thenMatched()) {
+                        log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
 
-                if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    if (rule.otherwise != null && ruleState.otherwiseMatched()) {
+                        log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
                 throw e;
             } finally {
+                ruleState.skipMatch = false;
 
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
