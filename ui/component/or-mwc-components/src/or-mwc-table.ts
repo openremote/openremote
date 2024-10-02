@@ -98,6 +98,7 @@ const style = css`
         padding-right: 0;
         border: none;
         color: ${unsafeCSS(DefaultColor3)};
+        background-color: transparent;
         cursor: pointer;
     }
 

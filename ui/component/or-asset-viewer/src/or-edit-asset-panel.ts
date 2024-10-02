@@ -96,7 +96,7 @@ const style = css`
         transition: max-height 0.25s ease-out;
     }
     .attribute-meta-row.expanded  .meta-item-container {
-        transition: max-height 1s ease-in;
+        transition: max-height 0.5s ease-in-out;
     }
     .meta-item-container or-mwc-input {
         width: 100%;
@@ -182,6 +182,8 @@ export class OrEditAssetPanel extends LitElement {
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
     protected changedAttributes: string[] = [];
 
+    protected expandedAll: boolean = false;
+
     public static get styles() {
         return [
             unsafeCSS(tableStyle),
@@ -223,11 +225,7 @@ export class OrEditAssetPanel extends LitElement {
                 </div>`
         ];
 
-        const expanderToggle = (ev: MouseEvent) => {
-            const tdElem = ev.target as HTMLElement;
-            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
-                return;
-            }
+        const expandToggle = (tdElem: HTMLElement) => {
             const expanderIcon = tdElem.getElementsByTagName("or-icon")[0] as OrIcon;
             const headerRow = tdElem.parentElement! as HTMLTableRowElement;
             const metaRow = (headerRow.parentElement! as HTMLTableElement).rows[headerRow.rowIndex];
@@ -243,16 +241,40 @@ export class OrEditAssetPanel extends LitElement {
                 window.setTimeout(() => {
                     tdElem.classList.remove("expanding");
                     metaContainer.style.maxHeight = "unset";
-                }, 1100);
+                }, 250);
             } else {
                 expanderIcon.icon = "chevron-right";
                 metaRow.classList.remove("expanded");
-                metaContainer.style.transition = "none";
                 metaContainer.style.maxHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height) + "px";
                 window.setTimeout(() => {
-                    metaContainer.style.transition = "";
                     metaContainer.style.maxHeight = "";
                 });
+            }
+        }
+
+        const expanderToggle = (ev: MouseEvent) => {
+            const tdElem = ev.target as HTMLElement;
+            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
+                return;
+            }
+            expandToggle(tdElem);
+
+        };
+
+        const expandAllToggle = (ev: MouseEvent) => {
+            const tdElem = ev.target as HTMLElement;
+            const tdElems = tdElem.closest("table")?.getElementsByClassName("expander-cell");
+
+            if (tdElems) {
+                for (var i = 0; i < tdElems.length; i++) {
+                    const expanderIcon = tdElems[i].getElementsByTagName("or-icon")[0] as OrIcon;
+
+                    if ((expanderIcon.icon === "chevron-right" && !this.expandedAll) || (expanderIcon.icon === "chevron-down" && this.expandedAll)) {
+                        expandToggle(tdElems[i] as HTMLElement);
+                    }
+                }
+                tdElem.setAttribute("label", this.expandedAll ? "expandAll" : "collapseAll");
+                this.expandedAll = !this.expandedAll;
             }
         };
 
@@ -272,7 +294,7 @@ export class OrEditAssetPanel extends LitElement {
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="type"></or-translate></th>
                             <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="value"></or-translate></th>
-                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col"></or-translate></th>
+                            <th class="mdc-data-table__header-cell" role="columnheader" scope="col" style="padding-right:8px;"><or-mwc-input style="float:right;" .type="${InputType.BUTTON}" .label="${i18next.t("expandAll")}" @or-mwc-input-changed="${expandAllToggle}"></or-mwc-input></th>
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
@@ -293,8 +315,7 @@ export class OrEditAssetPanel extends LitElement {
             <div id="edit-wrapper">
                 ${getPanel("0", {type: "info", title: "properties"}, html`${properties}`) || ``}
                 ${getPanel("1", {type: "info", title: "attribute_plural"}, html`${attributes}`) || ``}
-            </div>
-        `;
+            </div>`;
     }
 
     protected _getAttributeTemplate(assetType: string, attribute: Attribute<any>): TemplateAndValidator {
