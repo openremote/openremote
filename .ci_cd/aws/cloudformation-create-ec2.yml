@@ -85,6 +85,13 @@ Parameters:
       - true
       - false
     Default: false
+  Metrics:
+    Description: Enable metrics collection
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
   DiskSize:
     Description: Root EBS volume size GB
     Type: Number
@@ -120,6 +127,7 @@ Parameters:
 
 Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
+  MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
 
 Resources:
@@ -237,184 +245,171 @@ Resources:
         cloudwatch_config:
           files:
             "/opt/aws/amazon-cloudwatch-agent/var/config.json":
-              content: |
-                {
-                  "metrics": {
-                    "append_dimensions": {
-                      "AutoScalingGroupName": "${aws:AutoScalingGroupName}",
-                      "ImageId": "${aws:ImageId}",
-                      "InstanceId": "${aws:InstanceId}",
-                      "InstanceType": "${aws:InstanceType}"
-                    },
-                    "metrics_collected": {
-                      "mem": {
-                        "measurement": [
-                          "mem_used_percent"
-                        ],
-                        "metrics_collection_interval": 600
+              content: !If
+                - MetricsEnabled
+                - !Sub |
+                  {
+                    "metrics": {
+                      "append_dimensions": {
+                        "InstanceName": "${Host}"
                       },
-                      "disk": {
-                        "drop_device": true,
-                        "measurement": [
-                          "used_percent"
-                        ],
-                        "resources": [
-                          "/"
-                        ],
-                        "metrics_collection_interval": 1800
+                      "metrics_collected": {
+                        "mem": {
+                          "measurement": [
+                            "mem_used_percent"
+                          ],
+                          "metrics_collection_interval": 600
+                        },
+                        "disk": {
+                          "drop_device": true,
+                          "measurement": [
+                            "used_percent"
+                          ],
+                          "resources": [
+                            "/"
+                          ],
+                          "metrics_collection_interval": 1800
+                        }
                       }
-                    }
-                  },
-                  "logs": {
-                    "metrics_collected": {
-                      "prometheus": {
-                        "log_group_name": "Prometheus",
-                        "prometheus_config_path": "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml",
-                        "emf_processor": {
-                          "metric_declaration_dedup": true,
-                          "metric_namespace": "CWAgent-Prometheus",
-                          "metric_unit": {
-                            "or_rules_facts": "Count",
-                            "or_rules_firing_sum": "Seconds",
-                            "or_rules_firing_count": "Count",
-                            "or_camel_route_queue_size": "Count",
-                            "or_camel_route_failed_total": "Count",
-                            "or_camel_route_failed_queue_full_total": "Count",
-                            "or_camel_route_total": "Count",
-                            "or_camel_route_seconds_sum": "Seconds",
-                            "or_camel_route_seconds_count": "Count",
-                            "executor_seconds_count": "Count",
-                            "executor_seconds_sum": "Seconds",
-                            "haproxy_server_current_sessions": "Count",
-                            "haproxy_server_bytes_in_total": "Bytes",
-                            "haproxy_server_bytes_out_total": "Bytes",
-                            "haproxy_server_status": "Count",
-                            "haproxy_server_http_responses_total": "Count",
-                            "haproxy_server_max_session_rate": "Count/Second",
-                            "haproxy_server_total_time_average_seconds": "Seconds"
-                          },
-                          "metric_declaration": [
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","id","type" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_rules.*$"
-                              ]
+                    },
+                    "logs": {
+                      "metrics_collected": {
+                        "prometheus": {
+                          "log_group_name": "Prometheus",
+                          "prometheus_config_path": "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml",
+                          "emf_processor": {
+                            "metric_declaration_dedup": true,
+                            "metric_namespace": "CWAgent-Prometheus",
+                            "metric_unit": {
+                              "or_rules_firing_sum": "Seconds",
+                              "or_rules_firing_count": "Count",
+                              "or_camel_route_seconds_sum": "Seconds",
+                              "or_camel_route_seconds_count": "Count",
+                              "executor_pool_size_threads": "Count",
+                              "executor_seconds_count": "Count",
+                              "executor_seconds_sum": "Seconds",
+                              "haproxy_server_current_sessions": "Count",
+                              "haproxy_server_bytes_in_total": "Bytes",
+                              "haproxy_server_bytes_out_total": "Bytes",
+                              "haproxy_server_status": "Count",
+                              "haproxy_server_http_responses_total": "Count",
+                              "haproxy_server_max_session_rate": "Count/Second",
+                              "haproxy_server_total_time_average_seconds": "Seconds"
                             },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","routeId" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_camel_route.*$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name" ]
-                              ],
-                              "metric_selectors": [
-                                "^or_camel_route_failed_queue_full_total$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^manager$",
-                              "dimensions": [
-                                [ "instance_name","name" ]
-                              ],
-                              "metric_selectors": [
-                                "^executor_seconds.*$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_total_time_average_seconds$",
-                                "^haproxy_server_max_session_rate$",
-                                "^haproxy_server_bytes.*$",
-                                "^haproxy_server_current_sessions$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server", "code" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_http_responses_total$"
-                              ]
-                            },
-                            {
-                              "source_labels": [ "job" ],
-                              "label_matcher": "^proxy$",
-                              "dimensions": [
-                                [ "instance_name", "proxy", "server", "state" ]
-                              ],
-                              "metric_selectors": [
-                                "^haproxy_server_status$"
-                              ]
-                            }
-                          ]
+                            "metric_declaration": [
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "instance_name" ]
+                                ],
+                                "metric_selectors": [
+                                  "^or_rules.*$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "instance_name","routeId" ]
+                                ],
+                                "metric_selectors": [
+                                  "^or_camel_route.*$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "instance_name","name" ]
+                                ],
+                                "metric_selectors": [
+                                  "^executor_.*$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "instance_name", "proxy", "server" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_total_time_average_seconds$",
+                                  "^haproxy_server_max_session_rate$",
+                                  "^haproxy_server_bytes.*$",
+                                  "^haproxy_server_current_sessions$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "instance_name", "proxy", "server", "code" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_http_responses_total$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^proxy$",
+                                "dimensions": [
+                                  [ "instance_name", "proxy", "server", "state" ]
+                                ],
+                                "metric_selectors": [
+                                  "^haproxy_server_status$"
+                                ]
+                              }
+                            ]
+                          }
                         }
                       }
                     }
                   }
-                }
-
+                - ""
             "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml":
-              content: !Sub |
-                # Prometheus scrape config file
-                global:
-                  scrape_interval: 5m
-                  scrape_timeout: 10s
-                scrape_configs:
-                  - job_name: proxy
-                    sample_limit: 10000
-                    static_configs:
-                      - targets:
-                          - localhost:8404
-                      - labels:
-                          instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
-                    metric_relabel_configs:
-                      - action: keep
-                        source_labels: [__name__,state,code]
-                        regex: '(haproxy_server_current_sessions;;|haproxy_server_bytes_in_total;;|haproxy_server_bytes_out_total;;|haproxy_server_status;UP;|haproxy_server_http_responses_total;;5xx|haproxy_server_max_session_rate;;|haproxy_server_total_time_average_seconds;;)'
-                      - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
-                        source_labels: [ instance_name ]
-                        regex: '(.*)'
-                        replacement: '${Host}'
-                        target_label: instance_name
-                
-                  - job_name: manager
-                    sample_limit: 10000
-                    static_configs:
-                      - targets:
-                          - localhost:8405
-                      - labels:
-                          instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
-                    metric_relabel_configs:
-                      - action: keep
-                        source_labels: [__name__,routeId,name]
-                        regex: '(or_camel_route_failed_queue_full_total;;|or_camel_route_total;AttributeEvent-Router;|or_camel_route_seconds_count;AttributeEvent-Processor1;|or_camel_route_seconds_sum;AttributeEvent-Processor1;|or_camel_route_total;NotificationQueue;|or_camel_route_failed_handled_total;NotificationQueue;|or_rules_.*|executor_seconds_count;;RulesService|executor_seconds_sum;;RulesService)'
-                      - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
-                        source_labels: [instance_name]
-                        regex: '(.*)'
-                        replacement: '${Host}'
-                        target_label: instance_name
-
+              content: !If
+                - MetricsEnabled
+                - !Sub |
+                  # Prometheus scrape config file
+                  global:
+                    scrape_interval: 5m
+                    scrape_timeout: 10s
+                  scrape_configs:
+                    - job_name: proxy
+                      sample_limit: 10000
+                      static_configs:
+                        - targets:
+                            - localhost:8404
+                        - labels:
+                            instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__,state,code]
+                          regex: '(haproxy_server_current_sessions;;|haproxy_server_bytes_in_total;;|haproxy_server_bytes_out_total;;|haproxy_server_status;UP;|haproxy_server_http_responses_total;;5xx|haproxy_server_max_session_rate;;|haproxy_server_total_time_average_seconds;;)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [ instance_name ]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: instance_name
+                  
+                    - job_name: manager
+                      sample_limit: 10000
+                      static_configs:
+                        - targets:
+                            - localhost:8405
+                        - labels:
+                            instance_name: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                      metric_relabel_configs:
+                        - action: keep
+                          source_labels: [__name__,routeId,name]
+                          regex: '(or_camel_route_failed_queue_full_total;;|or_camel_route_total;AttributeEvent-Router;|or_camel_route_seconds_count;AttributeEvent-Processor1;|or_camel_route_seconds_sum;AttributeEvent-Processor1;|or_camel_route_total;NotificationQueue;|or_camel_route_failed_handled_total;NotificationQueue;|or_rules_.*|executor_seconds_count;;RulesService|executor_seconds_sum;;RulesService)'
+                        - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
+                          source_labels: [instance_name]
+                          regex: '(.*)'
+                          replacement: '${Host}'
+                          target_label: instance_name
+                - ""
         daily_cleanup:
           files:
             "/usr/local/bin/daily-cleanup":

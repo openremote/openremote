@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.jeasy.rules.api.Facts;
@@ -143,13 +142,14 @@ public class RulesEngine<T extends Ruleset> {
                        AssetPredictedDatapointService assetPredictedDatapointService,
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer,
-                       MeterRegistry meterRegistry) {
+                       Timer rulesFiringTimer) {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
+        this.rulesFiringTimer = rulesFiringTimer;
         this.id = id;
 
         String ruleEngineCategory = id.scope.getSimpleName().replace("Ruleset", "Engine-") + id.getId().orElse("");
@@ -202,11 +202,6 @@ public class RulesEngine<T extends Ruleset> {
                 throw ex;
             }
         });
-
-        if (meterRegistry != null) {
-            meterRegistry.gauge("or.rules.facts", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()), facts, (facts) -> (double) facts.getFactCount());
-            rulesFiringTimer = meterRegistry.timer("or.rules.firing", Tags.of("type", id.getScope().getSimpleName(), "id", getEngineId()));
-        }
     }
 
     public RulesEngineId<T> getId() {

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.rules;
 
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -151,7 +151,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
     protected long quickFireMillis;
     protected boolean initDone;
     protected boolean startDone;
-    protected MeterRegistry meterRegistry;
+    protected io.micrometer.core.instrument.Timer rulesFiringTimer;
 
     @Override
     public int getPriority() {
@@ -234,6 +234,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 container.getService(ManagerIdentityService.class)
             )
         );
+
+        if (container.getMeterRegistry() != null) {
+            rulesFiringTimer = container.getMeterRegistry().timer("or.rules.firing", Tags.empty());
+        }
 
         initDone = true;
     }
