@@ -419,12 +419,11 @@ public class JsonRulesBuilder extends RulesBuilder {
         protected Set<String> otherwiseMatchedAssetIds;
         protected long nextRecur;
         protected boolean matched;
-        protected boolean skipMatch;
+        protected boolean executeActionsWhenMatched;
         protected Map<String, Long> nextRecurAssetIdMap = new HashMap<>();
 
-        public RuleState(JsonRule rule, boolean skipFirstMatch) {
+        public RuleState(JsonRule rule) {
             this.rule = rule;
-            this.skipMatch = skipFirstMatch;
         }
 
         public void update(Supplier<Long> currentMillisSupplier) {
@@ -533,6 +532,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
+    final protected RulesEngine<?> rulesEngine;
     final protected TimerService timerService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
@@ -548,11 +548,12 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Ruleset jsonRuleset;
     protected static Logger LOG;
 
-    public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService,
+    public JsonRulesBuilder(Logger logger, Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
-                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
+                                    Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
+        this.rulesEngine = rulesEngine;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
@@ -579,11 +580,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         jsonRules = jsonRulesetDefinition.rules;
 
-        // Skip the first match if the ruleset has not been modified in the last minute
-        boolean recentlyModified = ruleset.getLastModified().toInstant().isAfter(ZonedDateTime.now().minusMinutes(1).toInstant());
-
         for (JsonRule jsonRule : jsonRules) {
-            add(jsonRule, !recentlyModified);
+            add(jsonRule);
         }
     }
 
@@ -612,13 +610,13 @@ public class JsonRulesBuilder extends RulesBuilder {
         ruleStateMap.values().forEach(triggerStateMap -> triggerStateMap.conditionStateMap.values().forEach(ruleConditionState -> ruleConditionState.updateUnfilteredAssetStates(facts, event)));
     }
 
-    protected JsonRulesBuilder add(JsonRule rule, boolean skipFirstMatch) throws Exception {
+    protected JsonRulesBuilder add(JsonRule rule) throws Exception {
 
         if (ruleStateMap.containsKey(rule.name)) {
             throw new IllegalArgumentException("Rules must have a unique name within a ruleset, rule name '" + rule.name + "' already used");
         }
 
-        RuleState ruleState = new RuleState(rule, skipFirstMatch);
+        RuleState ruleState = new RuleState(rule);
         ruleStateMap.put(rule.name, ruleState);
         addRuleConditionStates(rule.when, rule.otherwise != null, new AtomicInteger(0), ruleState.conditionStateMap);
 
@@ -665,6 +663,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         return facts -> {
             ruleState.update(timerService::getCurrentTimeMillis);
+            // Execute the actions initially only when the rules engine has already fired and the rule state is matched
+            ruleState.executeActionsWhenMatched = rulesEngine.hasPreviouslyFired() && ruleState.matched;
             return ruleState.matched;
         };
     }
@@ -678,7 +678,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return facts -> {
 
             try {
-                if (!ruleState.skipMatch) {
+                if (ruleState.executeActionsWhenMatched) {
                     if (ruleState.thenMatched()) {
                         log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                         executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
@@ -693,7 +693,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
                 throw e;
             } finally {
-                ruleState.skipMatch = false;
+                // After the initial execution always allow the actions to execute when matched
+                ruleState.executeActionsWhenMatched = true;
 
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
