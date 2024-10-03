@@ -1628,10 +1628,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     query.recursive = true;
                 }
                 this._sendEventWithReply({
-                    event: {
-                        eventType: "read-assets",
-                        assetQuery: query
-                    }
+                    eventType: "read-assets",
+                    assetQuery: query
                 }).then((ev) => {
                     this._loading = false;
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)
