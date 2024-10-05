@@ -216,6 +216,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveConfigImageFile(String path, FileInfo fileInfo) throws Exception {
         LOG.log(Level.INFO, "Saving image in manager_config.json..");
+        path = path.contains("/images/") ? path.replace("/images/", "") : path;
         File file = getManagerConfigImagePath().
                 resolve(path.charAt(0) == '/' ? path.substring(1) : path)
                 .toAbsolutePath().toFile();
