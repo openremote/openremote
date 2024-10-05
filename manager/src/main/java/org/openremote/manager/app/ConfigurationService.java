@@ -286,14 +286,13 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         // If this file is in the deployment folder AND the storageDir doesn't contain that,
                         // copy the file to the persistenceImageFile.
                         if (deploymentImageFile.isFile() && !persistenceImageFile.isFile()) {
-                            deploymentImageFile.mkdirs();
-                            deploymentImageFile.createNewFile();
+                            persistenceImageFile.getParentFile().mkdirs();
                             Files.copy(deploymentImageFile.toPath(), persistenceImageFile.toPath());
                         }
 
                         // Change the reference in the config to the typical API-like reference:
 
-                        ((ObjectNode) managerConfig.get("realms").get(realmName)).put(type, "api/master/configuration/image/" + strippedImage);
+                        ((ObjectNode) managerConfig.get("realms").get(realmName)).put(type, strippedImage);
                         configChanged = true;
                     }
                 }

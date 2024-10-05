@@ -37,6 +37,8 @@ import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
 
+declare const MANAGER_URL: string
+
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
 
@@ -299,13 +301,13 @@ export class OrConfRealmCard extends LitElement {
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${app.logo ? app.logo : app.realm.logo}"></or-file-uploader>
+                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}"></or-file-uploader>
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${app.favicon ? app.favicon : app.realm.favicon}"></or-file-uploader>
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">
