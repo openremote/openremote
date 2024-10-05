@@ -128,6 +128,15 @@ export class OrFileUploader extends LitElement {
     }
 
     render() {
+        const file = () => {
+            if(this.src){
+                if(this.src.includes("data:image")){
+                    return this.src;
+                }else{
+                    return this.managerUrl+"/api/master/configuration/manager/image/"+this.src;
+                }
+            }
+        }
         return html`
             <div class="container">
                 ${this.loading ? html`
@@ -136,7 +145,7 @@ export class OrFileUploader extends LitElement {
                 <div id="imageContainer">
 
                     ${this.src ? html`
-                          <img src="${this.managerUrl}/${this.src}" alt="OR-File-Uploader">
+                          <img src="${file()}" alt="OR-File-Uploader">
                           <div class="pencil-container">
                               <or-icon icon="pencil-circle"></or-icon>
                           </div>

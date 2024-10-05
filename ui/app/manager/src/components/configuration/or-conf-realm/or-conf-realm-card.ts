@@ -37,9 +37,6 @@ import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
 
-
-declare const MANAGER_URL: string;
-
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
 
@@ -205,7 +202,7 @@ export class OrConfRealmCard extends LitElement {
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
-            return `${this.name}/${fileName}${extension}`
+            return "/images/" + this.name + "/" + fileName + extension
         }
         return null
     }
@@ -213,18 +210,17 @@ export class OrConfRealmCard extends LitElement {
     protected files: {[name:string] : FileInfo} = {}
 
     protected async _setImageForUpload(file: File, fileName: string) {
-        const imagePath = this._getImagePath(file, fileName)
-        const fullPath = `api/master/configuration/manager/image/${imagePath}`
-        if (fullPath){
-            this.files[imagePath] = {
-                path: fullPath,
+        const path = this._getImagePath(file, fileName)
+        if (path){
+            this.files[path] = {
+                path: path,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
-            this.realm[fileName] = fullPath
-            this[fileName] = this.files[imagePath].contents
+            this.realm[fileName] = path
+            this[fileName] = this.files[path].contents
             this.requestUpdate()
             this.notifyConfigChange(this.realm);
-            return this.files[imagePath].contents;
+            return this.files[path].contents;
         }
     }
 
@@ -303,13 +299,13 @@ export class OrConfRealmCard extends LitElement {
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.logo ? app.logo : app.realm.logo}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">

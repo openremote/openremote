@@ -6,13 +6,13 @@
     },
     "smartcity": {
       "styles": ":host > * {--or-app-color2: #F6F7FA; --or-app-color3: #1B1464; --or-app-color4: #662D91;}",
-      "logo": "api/master/configuration/manager/image/logo_smartcity.svg",
-      "logoMobile": "api/master/configuration/manager/image/logo-mobile_smartcity.svg"
+      "logo": "/images/logo_smartcity.svg",
+      "logoMobile": "/images/logo-mobile_smartcity.svg"
     },
     "manufacturer": {
       "styles": ":host > * {--or-app-color2: #F6FAFA; --or-app-color3: #1A2456; --or-app-color4: #29ABE2;}",
-      "logo": "api/master/configuration/manager/image/logo_manufacturer.svg",
-      "logoMobile": "api/master/configuration/manager/image/logo-mobile_manufacturer.svg"
+      "logo": "/images/logo_manufacturer.svg",
+      "logoMobile": "/images/logo-mobile_manufacturer.svg"
     }
   },
   "pages": {

@@ -114,7 +114,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         if(changedConfig != null){
             saveManagerConfigFile(changedConfig);
         }
-
     }
 
     @Override
@@ -193,8 +192,11 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
     public void saveManagerConfigFile(ObjectNode managerConfiguration) throws Exception {
-        LOG.log(Level.INFO, "Saving manager_config.json..");
-        try (OutputStream out = new FileOutputStream(getManagerConfigFile().orElseThrow())) {
+        LOG.log(Level.INFO, "Saving manager_config.json...");
+
+        // When saving the manager_config, automatically save it to the storageDir, as any other case would mean
+        // that it's stored in OR_CUSTOM_APP_DOCROOT
+        try (OutputStream out = new FileOutputStream(getManagerConfigPath().toFile())) {
             // Check references to images
             ObjectNode changedConfig = this.checkAndFixImageReferences(this.managerConfig);
 
@@ -222,7 +224,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             }
         } catch (SecurityException se) {
             LOG.log(Level.WARNING, "Could not access folder for editing image in manager_config.json");
-            return;
+            throw se;
         }
 
         try (OutputStream out = new FileOutputStream(file)) {
