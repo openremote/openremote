@@ -216,7 +216,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     public void saveConfigImageFile(String path, FileInfo fileInfo) throws Exception {
         LOG.log(Level.INFO, "Saving image in manager_config.json..");
-        File file = getManagerConfigImagePath().resolve(path).toFile();
+        File file = getManagerConfigImagePath().
+                resolve(path.charAt(0) == '/' ? path.substring(1) : path)
+                .toAbsolutePath().toFile();
         try {
             file.getParentFile().mkdirs();
             if (file.exists()) {
@@ -227,7 +229,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             throw se;
         }
 
-        try (OutputStream out = new FileOutputStream(file)) {
+        try (OutputStream out = new FileOutputStream(file.getAbsoluteFile())) {
             out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when saving image in manager_config.json", exception);

@@ -204,7 +204,7 @@ export class OrConfRealmCard extends LitElement {
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
-            return "/images/" + this.name + "/" + fileName + extension
+            return this.name + "/" + fileName + extension
         }
         return null
     }
