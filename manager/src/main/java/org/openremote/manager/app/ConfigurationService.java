@@ -101,11 +101,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             LOG.severe("Could not load MapSettings.json file. Map functionality will be limited. Error: "+ e.getMessage());
         }
 
-        try {
-            loadManagerConfigJson();
-        }catch (Exception e){
-            LOG.severe("Could not load manager_config.json file. Appearance will be default. Error: "+ e.getMessage());
-        }
+        loadManagerConfigJson();
     }
 
     @Override
@@ -162,12 +158,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
 
-    protected void loadManagerConfigJson() throws IOException {
+    protected void loadManagerConfigJson() {
         try {
             this.managerConfig = (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Failed to extract manager config from: " + mapSettingsPath.toAbsolutePath(), ex);
-            throw ex;
+            LOG.log(Level.INFO, "Could not load manager_config.json file. Appearance will be default. " +
+                    "Failed to extract manager config from: " + mapSettingsPath.toAbsolutePath(), ex);
         }
     }
 
@@ -233,6 +229,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             out.write(CodecUtil.decodeBase64(fileInfo.getContents()));
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when saving image in manager_config.json", exception);
+            throw exception;
         }
 
     }

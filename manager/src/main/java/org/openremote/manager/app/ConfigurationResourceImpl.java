@@ -52,7 +52,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
             this.configurationService.saveManagerConfigFile(managerConfiguration);
         } catch (Exception e) {
             LOG.warning("Couldn't store manager_config.json:" +e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error updating manager_config.json").build();
         }
         return managerConfiguration;
     }
