@@ -147,7 +147,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 width: 100%;
             }
         
-            @media only screen and (min-width: 415px){
+            @media only screen and (min-width: 40em){
                 or-map-asset-card {
                     position: absolute;
                     top: 10px;
