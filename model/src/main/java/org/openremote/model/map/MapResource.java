@@ -27,7 +27,7 @@ import org.openremote.model.manager.MapRealmConfig;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import java.io.IOException;
+
 import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")

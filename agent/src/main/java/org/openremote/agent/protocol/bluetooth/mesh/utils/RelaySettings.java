@@ -21,9 +21,6 @@ package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
 import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 /**
  * Class containing Relay Settings values in a {@link ProvisionedMeshNode}
  */

@@ -28,7 +28,6 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;

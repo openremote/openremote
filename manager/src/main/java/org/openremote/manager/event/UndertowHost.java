@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.event;
 
-import com.google.api.Http;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;

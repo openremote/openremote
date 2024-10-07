@@ -22,8 +22,6 @@ package org.openremote.manager.event;
 import org.openremote.container.security.AuthContext;
 import org.openremote.model.event.shared.EventSubscription;
 
-import java.util.function.BiFunction;
-
 /**
  * Authorizes event subscriptions.
  * <p>

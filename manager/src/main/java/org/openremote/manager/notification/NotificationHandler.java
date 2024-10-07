@@ -24,7 +24,6 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.NotificationSendResult;
 
 import java.util.List;
 

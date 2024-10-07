@@ -20,7 +20,6 @@
 package org.openremote.manager.event;
 
 import org.openremote.container.security.AuthContext;
-import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**

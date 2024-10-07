@@ -23,11 +23,10 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
-import java.util.Collection;
+
 import java.util.Optional;
 
 /**

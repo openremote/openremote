@@ -24,7 +24,6 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.TsIgnore;
 
 import java.util.concurrent.Future;
