@@ -27,4 +27,5 @@ public class ManagerAppRealmConfig {
     protected String favicon = null;
     protected String language = null;
     protected String[] headers = null;
+    protected ManagerAppRealmNotificationConfig notifications = null;
 }
