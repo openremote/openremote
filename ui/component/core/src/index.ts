@@ -59,6 +59,7 @@ export enum OREvent {
 
 export interface LoginOptions {
     redirectUrl?: string;
+    action?: string;
     credentials?: UsernamePassword;
 }
 
@@ -700,6 +701,9 @@ export class Manager implements EventProviderFactory {
                     if (options && options.redirectUrl && options.redirectUrl !== "") {
                         keycloakOptions.redirectUri = options.redirectUrl;
                     }
+                    if(options?.action && options.action !== "") {
+                        keycloakOptions.action = options.action;
+                    }
                     if (this.isMobile()) {
                         keycloakOptions.scope = "offline_access";
                     }
@@ -892,8 +896,13 @@ export class Manager implements EventProviderFactory {
             });
 
             if (!authenticated && offlineToken) {
-                this._keycloak.refreshToken = offlineToken;
-                authenticated  = await this._updateKeycloakAccessToken();
+                try {
+                    console.error("SETTING OFFLINE TOKEN");
+                    this._keycloak.refreshToken = offlineToken;
+                    authenticated = await this._updateKeycloakAccessToken();
+                } catch (e) {
+                    console.error("Failed to authenticate using offline token");
+                }
             }
 
             if (authenticated) {

@@ -387,7 +387,7 @@ export class OrAttributeCard extends LitElement {
 
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                const elemSize = entries[0].devicePixelContentBoxSize[0].inlineSize;
                 this.setLabelSizeByWidth(elemSize);
             }, 200))
             this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
@@ -842,10 +842,10 @@ export class OrAttributeCard extends LitElement {
         if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
-    protected setLabelSizeByWidth(blockSize: number) {
-        if(blockSize < 60) { this.mainValueSize = "s"; }
-        else if(blockSize < 100) { this.mainValueSize = "m"; }
-        else if(blockSize < 200) { this.mainValueSize = "l"; }
+    protected setLabelSizeByWidth(inlineSize: number) {
+        if(inlineSize < 60) { this.mainValueSize = "s"; }
+        else if(inlineSize < 100) { this.mainValueSize = "m"; }
+        else if(inlineSize < 200) { this.mainValueSize = "l"; }
         else { this.mainValueSize = "xl"; }
     }
 

@@ -26,7 +26,6 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.Response;
 import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
@@ -232,19 +231,24 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     protected void doSubscriptions(Map<String, List<String>> headers, WebsocketSubscription[] subscriptions) {
         LOG.info("Executing subscriptions for websocket: " + client.getClientUri());
 
-        // Inject OAuth header
-        if (!TextUtil.isNullOrEmpty(client.authHeaderValue)) {
-            if (headers == null) {
-                headers = new MultivaluedHashMap<>();
+        try {
+            // Inject OAuth header
+            String authHeaderValue = client.getAuthHeader();
+            if (authHeaderValue != null) {
+                if (headers == null) {
+                    headers = new MultivaluedHashMap<>();
+                }
+                headers.remove(HttpHeaders.AUTHORIZATION);
+                headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authHeaderValue));
             }
-            headers.remove(HttpHeaders.AUTHORIZATION);
-            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.authHeaderValue));
-        }
 
-        Map<String, List<String>> finalHeaders = headers;
-        Arrays.stream(subscriptions).forEach(
-            subscription -> doSubscription(finalHeaders, subscription)
-        );
+            Map<String, List<String>> finalHeaders = headers;
+            Arrays.stream(subscriptions).forEach(
+                subscription -> doSubscription(finalHeaders, subscription)
+            );
+        } catch (Exception e) {
+            LOG.info("An exception occurred executing subscriptions: " + e.getMessage());
+        }
     }
 
     protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {
@@ -288,19 +292,18 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
             WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient.get(), uri);
 
-            if (headers != null) {
-                webTargetBuilder.setInjectHeaders(headers);
-            }
-
             LOG.fine("Creating web target client for subscription '" + uri + "'");
-            ResteasyWebTarget target = webTargetBuilder.build();
-
+            Invocation.Builder request = webTargetBuilder.build().request();
             Invocation invocation;
 
+            if (headers != null) {
+                request = WebTargetBuilder.addHeaders(request, headers);
+            }
+
             if (httpSubscription.body == null) {
-                invocation = target.request().build(httpSubscription.method.toString());
+                invocation = request.build(httpSubscription.method.toString());
             } else {
-                invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
+                invocation = request.build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
             }
             Response response = invocation.invoke();
             response.close();

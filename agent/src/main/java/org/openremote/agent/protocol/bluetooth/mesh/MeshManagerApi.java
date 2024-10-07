@@ -283,9 +283,9 @@ public class MeshManagerApi implements MeshMngrApi{
                             }
 
                             if (!mMeshNetwork.ivIndex.getIvRecoveryFlag()) {
-                                final Iterator<Map.Entry<Integer, ArrayList<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
+                                final Iterator<Map.Entry<Integer, List<Integer>>> iterator = mMeshNetwork.networkExclusions.entrySet().iterator();
                                 while (iterator.hasNext()) {
-                                    final Map.Entry<Integer, ArrayList<Integer>> exclusions = iterator.next();
+                                    final Map.Entry<Integer, List<Integer>> exclusions = iterator.next();
                                     final int expectedIncrement = exclusions.getKey() + 2;
                                     if (mMeshNetwork.ivIndex.getIvIndex() >= expectedIncrement) {
                                         // Clear the last known sequence number of addresses that are to be removed from the exclusion list.

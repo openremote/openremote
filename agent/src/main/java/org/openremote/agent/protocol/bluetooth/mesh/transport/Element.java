@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -70,10 +71,10 @@ public final class Element {
         this.meshModels = models;
     }
 
-    private void sortModels(final HashMap<Integer, MeshModel> unorderedElements) {
+    private void sortModels(final Map<Integer, MeshModel> unorderedElements) {
         final Set<Integer> unorderedKeys = unorderedElements.keySet();
 
-        final ArrayList<Integer> orderedKeys = new ArrayList<>(unorderedKeys);
+        final List<Integer> orderedKeys = new ArrayList<>(unorderedKeys);
         Collections.sort(orderedKeys);
         for (int key : orderedKeys) {
             meshModels.put(key, unorderedElements.get(key));

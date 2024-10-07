@@ -29,6 +29,7 @@ import org.jeasy.rules.api.RulesEngineParameters;
 import org.jeasy.rules.core.AbstractRulesEngine;
 import org.jeasy.rules.core.DefaultRulesEngine;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.alarm.AlarmService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
@@ -109,6 +110,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected Users usersFacade;
     final protected Notifications notificationFacade;
     final protected Webhooks webhooksFacade;
+    final protected Alarms alarmsFacade;
     final protected PredictedDatapoints predictedFacade;
     final protected HistoricDatapoints historicFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
@@ -136,6 +138,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        WebhookService webhookService,
+                       AlarmService alarmService,
                        ClientEventService clientEventService,
                        AssetDatapointService assetDatapointService,
                        AssetPredictedDatapointService assetPredictedDatapointService,
@@ -163,6 +166,7 @@ public class RulesEngine<T extends Ruleset> {
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.webhooksFacade = new WebhooksFacade<>(id, webhookService);
+        this.alarmsFacade = new AlarmFacade<>(id, alarmService);
         this.historicFacade = new HistoricFacade<>(id, assetDatapointService);
         this.predictedFacade = new PredictedFacade<>(id, assetPredictedDatapointService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
@@ -271,7 +275,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);

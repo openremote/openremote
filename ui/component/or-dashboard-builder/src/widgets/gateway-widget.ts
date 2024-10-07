@@ -42,7 +42,7 @@ function getDefaultWidgetConfig(): GatewayWidgetConfig {
     return {
         type: GatewayTunnelInfoType.HTTPS,
         target: "localhost",
-        targetPort: 443,
+        targetPort: 443
     };
 }
 
@@ -98,7 +98,7 @@ export class GatewayWidget extends OrWidget {
         super.disconnectedCallback();
     }
 
-    protected firstUpdated(_changedProps: PropertyValues) {
+    protected firstUpdated(changedProps: PropertyValues) {
         if(this.widgetConfig) {
 
             // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
@@ -117,8 +117,9 @@ export class GatewayWidget extends OrWidget {
                     this._loading = false;
                 });
 
-            }, 500)
+            }, 500);
         }
+        return super.firstUpdated(changedProps);
     }
 
     protected render(): TemplateResult {
@@ -340,9 +341,9 @@ export class GatewayWidget extends OrWidget {
         switch (info.type) {
             case GatewayTunnelInfoType.HTTPS:
             case GatewayTunnelInfoType.HTTP:
-                return "//" + info.id + "." + window.location.host;
+                return "//" + info.id + "." + (info.hostname ? info.hostname : window.location.hostname);
             case GatewayTunnelInfoType.TCP:
-                return info.id + "." + window.location.hostname + ":" + info.assignedPort;
+                return (info.hostname ? info.hostname : window.location.hostname) + ":" + info.assignedPort;
         }
     }
 

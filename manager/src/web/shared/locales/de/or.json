@@ -151,6 +151,7 @@
   "output": "Ausgabe",
   "selectAsset": "Asset auswählen",
   "selectAssetOnTheLeft": "Bitte wählen Sie links ein Asset aus",
+  "selectAssetTypeOnTheLeft": "Bitte wählen Sie links ein Asset-Typ aus",
   "noRuleStateAttributes": "Keine Attribute mit 'rule state' Konfigurationselemente gefunden",
   "noDatapointsAttributes": "Keine Attribute mit 'store data points' oder 'agent link' Konfigurationselemente gefunden",
   "noAttributesToShow": "Keine Attribute gefunden",

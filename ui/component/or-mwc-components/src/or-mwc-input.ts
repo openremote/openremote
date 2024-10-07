@@ -1167,13 +1167,15 @@ export class OrMwcInput extends LitElement {
                             ev.stopPropagation();
                         }
 
-                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(false, true))
                     };
                     const onClick = (ev: MouseEvent) => {
                         if (this.disabled) {
                             ev.stopPropagation();
                         }
-                    }
+
+                        if (!isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;

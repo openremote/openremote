@@ -34,11 +34,12 @@ import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 @TsIgnoreTypeParams
-public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
+public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilter<T> {
 
     public static final String FILTER_TYPE = "asset";
 
     protected List<String> assetIds;
+    protected List<String> assetNames;
     protected List<String> assetTypes;
     protected List<Class<? extends Asset>> assetClasses;
     protected String realm;
@@ -48,6 +49,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     protected boolean publicEvents;
     protected boolean restrictedEvents;
     protected boolean internal;
+    protected List<String> userAssetIds;
 
     public AssetFilter() {
     }
@@ -85,6 +87,20 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
     public AssetFilter<T> setAssetTypes(List<String> assetTypes) {
         this.assetTypes = assetTypes;
+        return this;
+    }
+
+    public List<String> getAssetNames() {
+        return assetNames;
+    }
+
+    public AssetFilter<T> setAssetNames(String... assetNames) {
+        this.assetNames = Arrays.asList(assetNames);
+        return this;
+    }
+
+    public AssetFilter<T> setAssetNames(List<String> assetNames) {
+        this.assetNames = assetNames;
         return this;
     }
 
@@ -166,9 +182,13 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         this.internal = internal;
     }
 
-    @Override
-    public String getFilterType() {
-        return FILTER_TYPE;
+    public List<String> getUserAssetIds() {
+        return userAssetIds;
+    }
+
+    public AssetFilter<T> setUserAssetIds(List<String> userAssetIds) {
+        this.userAssetIds = userAssetIds;
+        return this;
     }
 
     @SuppressWarnings("unchecked")
@@ -182,6 +202,16 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             if (!attributeEvent.valueChanged()) {
                 return null;
             }
+        }
+
+        if (!TextUtil.isNullOrEmpty(realm)) {
+            if (!realm.equals(event.getRealm())) {
+                return null;
+            }
+        }
+
+        if (userAssetIds != null && !userAssetIds.contains(event.getId())) {
+            return null;
         }
 
         if (restrictedEvents) {
@@ -227,6 +257,12 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
             }
         }
 
+        if (assetNames != null && !assetNames.isEmpty()) {
+            if (!assetNames.contains(event.getAssetName())) {
+                return null;
+            }
+        }
+
         if (parentIds != null && !parentIds.isEmpty()) {
             if (!parentIds.contains(event.getParentId())) {
                 return null;
@@ -236,12 +272,6 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         if(path != null && !path.isEmpty()) {
             List<String> pathList = Arrays.asList(event.getPath());
             if (path.stream().noneMatch(pathList::contains)) {
-                return null;
-            }
-        }
-
-        if (!TextUtil.isNullOrEmpty(realm)) {
-            if (!realm.equals(event.getRealm())) {
                 return null;
             }
         }

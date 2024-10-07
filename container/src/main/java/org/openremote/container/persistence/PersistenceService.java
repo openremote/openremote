@@ -40,6 +40,8 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.EntityClassProvider;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.AlarmAssetLink;
+import org.openremote.model.alarm.SentAlarm;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -195,7 +197,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     // TODO: Make configurable
     public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
@@ -224,10 +226,10 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     public static final String OR_DB_USER_DEFAULT = "postgres";
     public static final String OR_DB_PASSWORD = "OR_DB_PASSWORD";
     public static final String OR_DB_PASSWORD_DEFAULT = "postgres";
-    public static final String OR_DB_MIN_POOL_SIZE = "OR_DB_MIN_POOL_SIZE";
-    public static final int OR_DB_MIN_POOL_SIZE_DEFAULT = 5;
-    public static final String OR_DB_MAX_POOL_SIZE = "OR_DB_MAX_POOL_SIZE";
-    public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String OR_DB_POOL_MIN_SIZE = "OR_DB_POOL_MIN_SIZE";
+    public static final int OR_DB_POOL_MIN_SIZE_DEFAULT = 5;
+    public static final String OR_DB_POOL_MAX_SIZE = "OR_DB_POOL_MAX_SIZE";
+    public static final int OR_DB_POOL_MAX_SIZE_DEFAULT = 20;
     public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
     public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
     public static final String OR_STORAGE_DIR = "OR_STORAGE_DIR";
@@ -360,6 +362,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(Dashboard.class.getName());
         entityClasses.add(ProvisioningConfig.class.getName());
         entityClasses.add(X509ProvisioningConfig.class.getName());
+        entityClasses.add(SentAlarm.class.getName());
+        entityClasses.add(AlarmAssetLink.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.util");
@@ -503,8 +507,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
     protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {
 
-        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_MIN_POOL_SIZE, OR_DB_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_MAX_POOL_SIZE, OR_DB_MAX_POOL_SIZE_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MIN_SIZE, OR_DB_POOL_MIN_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MAX_SIZE, OR_DB_POOL_MAX_SIZE_DEFAULT);
         int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS, OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
@@ -526,7 +530,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
         StringBuilder initSql = new StringBuilder();
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
+//        initSql.append("ALTER EXTENSION timescaledb UPDATE;");
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
+//        initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
 
         flyway = Flyway.configure()
             .cleanDisabled(false)
