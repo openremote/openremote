@@ -419,7 +419,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         protected Set<String> otherwiseMatchedAssetIds;
         protected long nextRecur;
         protected boolean matched;
-        protected boolean executeActionsWhenMatched;
         protected Map<String, Long> nextRecurAssetIdMap = new HashMap<>();
 
         public RuleState(JsonRule rule) {
@@ -663,8 +662,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
         return facts -> {
             ruleState.update(timerService::getCurrentTimeMillis);
-            // Execute the actions initially only when the rules engine has already fired and the rule state is matched
-            ruleState.executeActionsWhenMatched = rulesEngine.hasPreviouslyFired() && ruleState.matched;
             return ruleState.matched;
         };
     }
@@ -678,7 +675,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         return facts -> {
 
             try {
-                if (ruleState.executeActionsWhenMatched) {
+                // Execute actions only when the rules engine has already fired to prevent execution during startup
+                if (rulesEngine.hasPreviouslyFired()) {
                     if (ruleState.thenMatched()) {
                         log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                         executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
@@ -693,9 +691,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
                 throw e;
             } finally {
-                // After the initial execution always allow the actions to execute when matched
-                ruleState.executeActionsWhenMatched = true;
-
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
                 long currentTime = timerService.getCurrentTimeMillis();
