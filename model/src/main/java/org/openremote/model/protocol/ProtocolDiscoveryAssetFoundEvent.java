@@ -21,9 +21,7 @@ package org.openremote.model.protocol;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**

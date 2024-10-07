@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.TextNode;
-import org.openremote.model.asset.AssetDescriptor;
 
 import java.io.IOException;
 import java.util.function.Function;

@@ -22,7 +22,6 @@ package org.openremote.model.rules;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TsIgnore;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 /**

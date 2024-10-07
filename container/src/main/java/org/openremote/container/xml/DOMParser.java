@@ -44,7 +44,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;

@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.rules;
 
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;

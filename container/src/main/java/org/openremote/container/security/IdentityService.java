@@ -32,8 +32,6 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.*;
-
 public abstract class IdentityService implements ContainerService {
 
     public static final int PRIORITY = PersistenceService.PRIORITY + 10;

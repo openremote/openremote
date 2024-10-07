@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
-import org.openremote.model.Constants;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
