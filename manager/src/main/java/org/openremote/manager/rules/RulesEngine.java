@@ -148,6 +148,7 @@ public class RulesEngine<T extends Ruleset> {
                        MeterRegistry meterRegistry) {
         this.timerService = timerService;
         this.rulesService = rulesService;
+        this.previouslyFired = rulesService.startDone;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
