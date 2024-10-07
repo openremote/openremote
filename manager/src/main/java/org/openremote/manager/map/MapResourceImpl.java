@@ -28,7 +28,7 @@ import org.openremote.model.map.MapResource;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
+
 import java.util.Map;
 
 public class MapResourceImpl extends WebResource implements MapResource {

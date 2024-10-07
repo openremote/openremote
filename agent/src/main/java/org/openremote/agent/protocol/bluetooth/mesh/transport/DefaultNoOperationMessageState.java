@@ -39,7 +39,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilterType;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.RelaySettings;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
