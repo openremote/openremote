@@ -203,7 +203,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         AssetFilter<?> filter = buildAssetFilter(topic);
 
         if (filter == null) {
-            LOG.finest("Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
+            LOG.info("Failed to process subscription topic: topic=" + topic + ", " + mqttBrokerService.connectionToString(connection));
             return false;
         }
 
@@ -213,7 +213,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         );
 
         if (!clientEventService.authorizeEventSubscription(topicRealm(topic), authContext, subscription)) {
-            LOG.finest("Subscription was not authorised for this user and topic: topic=" + topic + ", subject=" + authContext);
             return false;
         }
 
@@ -281,7 +280,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void onSubscribe(RemotingConnection connection, Topic topic) {
 
-        LOG.finest(() -> "onSubscribe for topic '" + topic + "': " + connection);
         boolean isAssetTopic = isAssetTopic(topic);
         String subscriptionId = topic.getString(); // Use topic as unique subscription ID
         AssetFilter filter = buildAssetFilter(topic);
@@ -289,7 +287,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         String sessionKey = getSessionKey(connection);
 
         if (filter == null) {
-            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connection);
+            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connectionToString(connection));
             return;
         }
 
@@ -306,6 +304,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
             subscriptionConsumers.put(subscriptionId, consumer);
             clientEventService.addSubscription(subscription, consumer);
+            LOG.finest(() -> "Client event subscription created for topic '" + topic + "': " + connectionToString(connection));
         }
     }
 

@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.event;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.apache.camel.Exchange;
@@ -61,7 +58,6 @@ import java.util.function.Consumer;
 import static java.lang.System.Logger.Level.*;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
-import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.Constants.*;
 
 /**
@@ -123,7 +119,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected ManagerIdentityService identityService;
     protected GatewayService gatewayService;
     protected boolean started;
-    protected Counter queueFullCounter;
     protected Consumer<Exchange> websocketInterceptor;
 
     public static String getSessionKey(Exchange exchange) {
@@ -150,11 +145,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         identityService = container.getService(ManagerIdentityService.class);
         gatewayService = container.getService(GatewayService.class);
         executorService = container.getExecutor();
-        MeterRegistry meterRegistry = container.getMeterRegistry();
-
-        if (meterRegistry != null) {
-            queueFullCounter = meterRegistry.counter(OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_queue_full", Tags.empty());
-        }
 
         UndertowComponent undertowWebsocketComponent = new UndertowComponent(messageBrokerService.getContext()) {
             @Override
@@ -382,7 +372,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     @SuppressWarnings("unchecked")
     protected <T extends SharedEvent> void sendToSubscribers(T event) {
-        eventSubscriptions.parallelStream().forEach(eventSubscriptionConsumerPair -> {
+        eventSubscriptions.forEach(eventSubscriptionConsumerPair -> {
             EventSubscription<?> subscription = eventSubscriptionConsumerPair.getKey();
 
             if (!subscription.getEventType().equals(event.getEventType())) {

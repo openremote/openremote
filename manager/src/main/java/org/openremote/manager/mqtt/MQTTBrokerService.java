@@ -434,11 +434,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     public void onSubscribe(RemotingConnection connection, String topicStr) {
         Topic topic = Topic.parse(topicStr);
-
+        LOG.log(TRACE, () -> "onSubscribe '" + topicStr + "': " + connectionToString(connection));
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(DEBUG, "Client subscribed '" + topicStr + "': " + connectionStr);
+                LOG.log(DEBUG, () -> "Client subscribed '" + topicStr + "': " + connectionToString(connection));
                 handler.onSubscribe(connection, topic);
                 break;
             }
@@ -447,11 +446,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
     public void onUnsubscribe(RemotingConnection connection, String topicStr) {
         Topic topic = Topic.parse(topicStr);
-
+        LOG.log(TRACE, () -> "onUnsubscribe '" + topicStr + "': " + connectionToString(connection));
         for (MQTTHandler handler : getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                String connectionStr = LOG.isLoggable(DEBUG) ? connectionToString(connection) : null;
-                LOG.log(DEBUG, "Client unsubscribed '" + topicStr + "': " + connectionStr);
+                LOG.log(DEBUG, () -> "Client unsubscribed '" + topicStr + "': " + connectionToString(connection));
                 handler.onUnsubscribe(connection, topic);
                 break;
             }

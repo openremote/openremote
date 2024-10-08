@@ -189,7 +189,7 @@ public abstract class MQTTHandler {
                     return;
                 }
 
-                getLogger().finer(() -> "Client published to '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
+                getLogger().finest(() -> "onPublish '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
 
                 try {
                     onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
@@ -239,11 +239,9 @@ public abstract class MQTTHandler {
      */
     public boolean handlesTopic(Topic topic) {
         if (!topicTokenCountGreaterThan(topic, 2)) {
-            getLogger().finest("Topic must contain more than 2 tokens");
             return false;
         }
         if (!topicMatches(topic)) {
-            getLogger().finest("Topic failed to match this handler");
             return false;
         }
         return true;

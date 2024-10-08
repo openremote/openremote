@@ -249,6 +249,9 @@ Resources:
                 - MetricsEnabled
                 - |
                   {
+                    "agent":{  
+                      "metrics_collection_interval": 300
+                    },
                     "metrics": {
                       "append_dimensions": {
                         "InstanceId": "${aws:InstanceId}"
@@ -373,7 +376,7 @@ Resources:
                 - !Sub |
                   # Prometheus scrape config file
                   global:
-                    scrape_interval: 5m
+                    scrape_interval: 100s
                     scrape_timeout: 10s
                   scrape_configs:
                     - job_name: proxy
@@ -403,7 +406,7 @@ Resources:
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,routeId,name]
-                          regex: '(or_camel_route_failed_queue_full_total;;|or_camel_route_total;AttributeEvent-Router;|or_camel_route_seconds_count;AttributeEvent-Processor1;|or_camel_route_seconds_sum;AttributeEvent-Processor1;|or_camel_route_total;NotificationQueue;|or_camel_route_failed_handled_total;NotificationQueue;|or_rules_.*|executor_seconds_count;;RulesService|executor_seconds_sum;;RulesService)'
+                          regex: '(or_camel_route_seconds_count;AttributeEvent-Processor;|or_camel_route_seconds_sum;AttributeEvent-Processor;|or_rules_.*|executor_pool_size_threads;;ContainerExecutor|executor_seconds_count;;ContainerExecutor|executor_seconds_sum;;ContainerExecutor)'
                         - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
                           source_labels: [ InstanceName ]
                           regex: '(.*)'

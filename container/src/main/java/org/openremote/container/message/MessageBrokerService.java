@@ -19,8 +19,6 @@
  */
 package org.openremote.container.message;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.DefaultErrorHandlerBuilder;
@@ -39,15 +37,13 @@ import org.apache.camel.spi.ThreadPoolProfile;
 import org.apache.camel.support.DefaultRegistry;
 import org.apache.camel.support.DefaultThreadPoolFactory;
 import org.apache.camel.support.SimpleRegistry;
-import org.apache.camel.util.StringHelper;
-import org.apache.camel.util.concurrent.CamelThreadFactory;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
 import java.util.Map;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 public class MessageBrokerService implements ContainerService {
@@ -64,7 +60,6 @@ public class MessageBrokerService implements ContainerService {
         return PRIORITY;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void init(Container container) throws Exception {
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();

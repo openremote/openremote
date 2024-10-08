@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.asset;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import jakarta.validation.ConstraintViolation;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -53,7 +50,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
-import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
 import static org.openremote.model.attribute.AttributeWriteFailure.*;
 
 /**
@@ -100,7 +96,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
-    protected Counter queueFullCounter;
     protected ExecutorService executorService;
 
     @Override
@@ -122,12 +117,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         executorService = container.getExecutor();
-        MeterRegistry meterRegistry = container.getMeterRegistry();
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
-
-        if (meterRegistry != null) {
-            queueFullCounter = meterRegistry.counter(OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_queue_full", Tags.empty());
-        }
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -216,9 +206,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                         if (exception instanceof RejectedExecutionException || (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage()))) {
                             exception = new AssetProcessingException(QUEUE_FULL, "Queue for this message is full");
-                            if (queueFullCounter != null) {
-                                queueFullCounter.increment();
-                            }
                         }
 
                         // Make the exception available if MEP is InOut
