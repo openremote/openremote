@@ -219,7 +219,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return true;
     }
 
-    // TODO: improve authorisation performance
     // We make heavy use of authorisation caching as clients can hit this a lot and it is currently quite slow with DB calls
     @Override
     public boolean canPublish(RemotingConnection connection, KeycloakSecurityContext securityContext, Topic topic) {

@@ -95,6 +95,7 @@ import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
+// TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
 public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
 
     public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";

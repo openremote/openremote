@@ -284,6 +284,7 @@ Resources:
                             "metric_declaration_dedup": true,
                             "metric_namespace": "CWAgent-Prometheus",
                             "metric_unit": {
+                              "artemis_message_count": "Count",
                               "or_rules_firing_sum": "Seconds",
                               "or_rules_firing_count": "Count",
                               "or_camel_route_seconds_sum": "Seconds",
@@ -328,6 +329,16 @@ Resources:
                                 ],
                                 "metric_selectors": [
                                   "^executor_.*$"
+                                ]
+                              },
+                              {
+                                "source_labels": [ "job" ],
+                                "label_matcher": "^manager$",
+                                "dimensions": [
+                                  [ "InstanceName","queue" ]
+                                ],
+                                "metric_selectors": [
+                                  "^artemis_message_count$"
                                 ]
                               },
                               {
@@ -406,7 +417,7 @@ Resources:
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,routeId,name]
-                          regex: '(or_camel_route_seconds_count;AttributeEvent-Processor;|or_camel_route_seconds_sum;AttributeEvent-Processor;|or_rules_.*|executor_pool_size_threads;;ContainerExecutor|executor_seconds_count;;ContainerExecutor|executor_seconds_sum;;ContainerExecutor)'
+                          regex: '(or_camel_route_seconds_count;AttributeEvent-Processor;|or_camel_route_seconds_sum;AttributeEvent-Processor;|or_rules_.*|executor_pool_size_threads;;ContainerExecutor|executor_seconds_count;;ContainerExecutor|executor_seconds_sum;;ContainerExecutor|artemis_message_count.*)'
                         - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
                           source_labels: [ InstanceName ]
                           regex: '(.*)'

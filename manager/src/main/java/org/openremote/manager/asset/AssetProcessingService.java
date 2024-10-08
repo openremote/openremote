@@ -319,7 +319,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             lastProcessedEventTimestamp = startMillis;
 
             return persistenceService.doReturningTransaction(em -> {
-
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 // TODO: Retrieve optimised DTO rather than whole asset
                 Asset<?> asset = assetStorageService.find(em, event.getId(), true);
 
@@ -397,14 +401,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
                 }
 
-                long processingMillis = System.currentTimeMillis() - startMillis;
-
-                if (processingMillis > 50) {
-                    LOG.log(System.Logger.Level.DEBUG, () -> "<<< Attribute event processing took a long time " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
-                } else {
-                    LOG.log(System.Logger.Level.TRACE, () -> "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
+                if (LOG.isLoggable(System.Logger.Level.DEBUG)) {
+                    long processingMillis = System.currentTimeMillis() - startMillis;
+                    LOG.log(System.Logger.Level.DEBUG, "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
                 }
-
                 return true;
             });
         });

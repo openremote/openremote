@@ -33,7 +33,7 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.*
  * for this asset. The time taken for a response to arrive after a publish is a simple measure of the throughput of the
  * system; this can be used to monitor the performance change of the system over time on a given system specification.
  */
-@Ignore
+
 class AttributeEventBenchmarkTest extends Specification implements ManagerContainerTrait {
 
     def "Attribute processing benchmark"() {
@@ -118,7 +118,27 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
             getLOG().info("Events processed = ${receivedEvents.size()}")
             assert endTime > 0
         }
+        def processingTime = endTime-startTime
         getLOG().info("Time taken to process $eventCount events = ${endTime-startTime}ms")
+
+        when: "Attribute events are again sent for each asset by the MQTT client"
+        endTime = 0
+        receivedEvents.clear()
+        startTime = System.currentTimeMillis()
+        for (i in 1..eventCount) {
+            topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$DefaultMQTTHandler.ATTRIBUTE_VALUE_WRITE_TOPIC/counter/${assetIDs.get(i-1)}".toString()
+            def payload = i.toString()
+            client.sendMessage(new MQTTMessage<String>(topic, payload))
+        }
+
+        then: "all attribute updates should be received by the client in a shorter time due to auth caching"
+        new PollingConditions(timeout: 300, initialDelay: 10, delay: 10).eventually {
+            getLOG().info("Events processed = ${receivedEvents.size()}")
+            assert endTime > 0
+        }
+        assert processingTime > endTime-startTime
+        getLOG().info("Time taken to process $eventCount events (with hot cache) = ${endTime-startTime}ms")
+
 
         when: "Attribute events are sent for each attribute of the multi asset by the MQTT client"
         endTime = 0
