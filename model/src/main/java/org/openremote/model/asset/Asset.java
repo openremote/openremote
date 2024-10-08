@@ -544,7 +544,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         "]";
     }
 
-    /* WELL KNNOWN ATTRIBUTE GETTER / SETTERS */
+    /* WELL KNOWN ATTRIBUTE GETTER / SETTERS */
 
 
     public Optional<GeoJSONPoint> getLocation() {
