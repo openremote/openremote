@@ -458,7 +458,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
     protected abstract V createAndConfigureBootstrap();
 
     /**
-     * Should return a descriptor to identify the speficied client for use in log files etc.
+     * Should return a descriptor to identify the specified client for use in log files etc.
      */
     protected abstract String getClientDescriptor(U client);
 

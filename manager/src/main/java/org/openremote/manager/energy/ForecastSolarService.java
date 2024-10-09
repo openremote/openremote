@@ -255,8 +255,12 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     protected void processAssetChange(PersistenceEvent<ElectricityProducerSolarAsset> persistenceEvent) {
         LOG.fine("Processing producer solar asset change: " + persistenceEvent);
-        // Remove asset from solar forecast map on asset deletion
-        if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+
+        if (persistenceEvent.getCause() == PersistenceEvent.Cause.CREATE && persistenceEvent.getEntity().isIncludeForecastSolarService().orElse(false)) {
+            electricityProducerSolarAssetMap.put(persistenceEvent.getEntity().getId(), persistenceEvent.getEntity());
+            getSolarForecast(persistenceEvent.getEntity());
+            updateSolarForecastAttribute(persistenceEvent.getEntity());
+        } else if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
             electricityProducerSolarAssetMap.remove(persistenceEvent.getEntity().getId());
         }
     }
