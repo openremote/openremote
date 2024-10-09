@@ -1039,7 +1039,7 @@ Resources:
               "properties": {
                 "metrics": [
                   [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Rule Engines", "id": "e1", "region": "${AWS::Region}" } ],
-                  [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Attr. Processor", "id": "e2", "yAxis": "left" } ],
+                  [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Attr. Processor", "id": "e2", "yAxis": "right" } ],
                   [ "CWAgent-Prometheus", "or_rules_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "visible": false } ],
                   [ ".", "or_rules_seconds_count", ".", ".", { "id": "m2", "visible": false } ],
                   [ ".", "or_attributes_seconds_sum", ".", ".", { "id": "m3", "visible": false } ],
@@ -1055,6 +1055,10 @@ Resources:
                   "left": {
                     "showUnits": false,
                     "label": "ms"
+                  },
+                  "right": {
+                      "showUnits": false,
+                      "label": "ms"
                   }
                 }
               }
