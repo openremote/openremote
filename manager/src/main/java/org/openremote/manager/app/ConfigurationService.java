@@ -106,14 +106,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     @Override
     public void start(Container container) throws Exception {
-
-        // Check if the configuration contains references to files that are located in the deployment, and if they are,
-        // move them to the storageDir.
-        ObjectNode changedConfig = this.checkAndFixImageReferences(this.managerConfig);
-
-        if(changedConfig != null){
-            saveManagerConfigFile(changedConfig);
-        }
     }
 
     @Override
