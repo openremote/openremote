@@ -76,7 +76,7 @@ public enum OutputOOBAction {
      * Returns the Output OOB Action description
      *
      * @param type Output OOB type
-     * @return Input OOB type descrption
+     * @return Input OOB type description
      */
     public static String getOutputOOBActionDescription(final OutputOOBAction type) {
         switch (type) {

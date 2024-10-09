@@ -46,7 +46,6 @@ import org.openremote.model.util.TimeUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -300,11 +299,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    public void setNotificationAcknowleged(long id, String acknowledgement) {
-        setNotificationAcknowleged(id, acknowledgement, timerService.getCurrentTimeMillis());
+    public void setNotificationAcknowledged(long id, String acknowledgement) {
+        setNotificationAcknowledged(id, acknowledgement, timerService.getCurrentTimeMillis());
     }
 
-    public void setNotificationAcknowleged(long id, String acknowledgement, long timestamp) {
+    public void setNotificationAcknowledged(long id, String acknowledgement, long timestamp) {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE SentNotification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
             query.setParameter("id", id);
