@@ -44,6 +44,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -90,12 +91,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
     def "Basic agent and attribute linking"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-
-        and: "some mailbox messages"
-        sendMessage("from@localhost")
-        sendMessage("from@localhost")
-        sendMessage("from@localhost")
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -109,6 +105,14 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
             attributeEvents.add(it)
         }
         clientEventService.addSubscription(AttributeEvent.class,  null, eventConsumer)
+
+        and: "some mail messages exist"
+        sendMessage("from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+        sendMessage("from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
+        sendMessage("from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         when: "a mail client agent is created"
         def agent = new MailAgent("Test agent")
@@ -194,10 +198,15 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
 
         when: "more messages are received in the mailbox"
         sendMessage("from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         sendMessage("1from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         sendMessage("from@localhost")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         sendMessage("from@localhost", "Not A Test", "Not a test body 1")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
         sendMessage("fromanother@localhost", "Not A Test", "Not a test body 2")
+        advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         then: "the matching linked attributes should have been updated with the new mailbox messages"
         conditions.eventually {

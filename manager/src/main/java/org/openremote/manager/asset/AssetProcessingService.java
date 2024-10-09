@@ -228,7 +228,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             .append(body);
 
                         if (exception instanceof AssetProcessingException processingException) {
-                            error.append(" ").append(" - ").append(processingException.getMessage());
                             if (processingException.getReason() == ASSET_NOT_FOUND) {
                                 LOG.log(System.Logger.Level.DEBUG, error::toString);
                             } else {
@@ -345,11 +344,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 Asset<?> asset = assetStorageService.find(em, event.getId(), true);
 
                 if (asset == null) {
-                    throw new AssetProcessingException(ASSET_NOT_FOUND, "Asset may have been deleted before event could be processed or it never existed");
+                    throw new AssetProcessingException(ASSET_NOT_FOUND, event.getId());
                 }
 
                 Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
-                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, "Attribute may have been deleted before event could be processed or it never existed"));
+                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, event.getRef().toString()));
 
                 // Type coercion
                 Object value = event.getValue().map(eventValue -> {
