@@ -146,7 +146,7 @@ class OrSurvey extends LitElement {
                                                                    ` : html`
                                                                         ${question.attributes && question.attributes.answerOptions.value.map((answer:AnswerOption, index:number) => {
                 return html`
-                                                                                <div class="anwser-card ${this.getType(question.type)}">
+                                                                                <div class="answer-card ${this.getType(question.type)}">
                                                                                     
                                                                                     ${!currentAnswer ? html`
                                                                                         <input type="${this.getInputType(question.type)}" id="${question.id}_${index}"
