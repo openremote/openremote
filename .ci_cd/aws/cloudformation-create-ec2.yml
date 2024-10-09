@@ -1175,9 +1175,8 @@ Resources:
                 "metrics": [
                   [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Processing Time", "id": "e1", "yAxis": "right" } ],
                   [ "CWAgent-Prometheus", "or_provisioning_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "yAxis": "left", "visible": false } ],
-                  [ ".", "or_provisioning_seconds_count", ".", ".", { "id": "m2", "yAxis": "left", "visible": false } ],
-                  [ ".", "artemis_messages_added", ".", ".", "queue", "provisioning.*.request", { "id": "m3", "yAxis": "left", "label": "Total" } ],
-                  [ ".", "artemis_message_count", ".", ".", ".", ".", { "id": "m4", "yAxis": "left", "label": "Backlog" } ]
+                  [ ".", "or_provisioning_seconds_count", ".", ".", { "id": "m2", "yAxis": "left", "label": "Count" } ],
+                  [ ".", "artemis_message_count", ".", ".", "queue", "provisioning.*.request", { "id": "m3", "yAxis": "left", "label": "Backlog" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
