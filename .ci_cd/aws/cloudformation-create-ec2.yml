@@ -249,7 +249,7 @@ Resources:
                 - MetricsEnabled
                 - |
                   {
-                    "agent":{  
+                    "agent":{
                       "metrics_collection_interval": 300
                     },
                     "metrics": {
@@ -285,11 +285,12 @@ Resources:
                             "metric_namespace": "CWAgent-Prometheus",
                             "metric_unit": {
                               "artemis_message_count": "Count",
-                              "or_rules_firing_seconds_max": "Seconds",
-                              "or_rules_firing_seconds_sum": "Seconds",
-                              "or_rules_firing_seconds_count": "Count",
-                              "or_camel_route_seconds_sum": "Seconds",
-                              "or_camel_route_seconds_count": "Count",
+                              "or_rules_seconds_max": "Seconds",
+                              "or_rules_seconds_sum": "Seconds",
+                              "or_rules_seconds_count": "Count",
+                              "or_attributes_seconds_max": "Seconds",
+                              "or_attributes_seconds_sum": "Seconds",
+                              "or_attributes_seconds_count": "Count",
                               "executor_pool_size_threads": "Count",
                               "executor_seconds_count": "Count",
                               "executor_seconds_sum": "Seconds",
@@ -309,20 +310,21 @@ Resources:
                                   [ "InstanceName" ]
                                 ],
                                 "metric_selectors": [
-                                  "^or_rules_firing_seconds_count$",
-                                  "^or_rules_firing_seconds_sum$",
-                                  "^or_rules_firing_seconds_max$"
+                                  "^or_rules_seconds_count$",
+                                  "^or_rules_seconds_sum$",
+                                  "^or_rules_seconds_max$"
                                 ]
                               },
                               {
-                                "source_labels": [ "job", "routeId" ],
-                                "label_matcher": "manager;^AttributeEvent-Processor",
+                                "source_labels": [ "job", "source" ],
+                                "label_matcher": "manager;(RulesEngine|AgentService|DefaultMQTTHandler|AssetResource|WebsocketClient)",
                                 "dimensions": [
-                                  [ "InstanceName","routeId" ]
+                                  [ "InstanceName", "source" ]
                                 ],
                                 "metric_selectors": [
-                                  "^or_camel_route_seconds_count$",
-                                  "^or_camel_route_seconds_sum$"
+                                  "^or_attributes_seconds_count$",
+                                  "^or_attributes_seconds_sum$",
+                                  "^or_attributes_seconds_max$"
                                 ]
                               },
                               {
@@ -422,8 +424,8 @@ Resources:
                             InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
                       metric_relabel_configs:
                         - action: keep
-                          source_labels: [__name__,routeId,name]
-                          regex: '(or_camel_route_seconds_count;AttributeEvent-Processor;|or_camel_route_seconds_sum;AttributeEvent-Processor;|or_rules_.*|executor_pool_size_threads;;ContainerExecutor|executor_seconds_count;;ContainerExecutor|executor_seconds_sum;;ContainerExecutor|artemis_message_count.*)'
+                          source_labels: [__name__,name]
+                          regex: '(or_rules_.*|or_attributes.*|executor_pool_size_threads;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*)'
                         - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
                           source_labels: [ InstanceName ]
                           regex: '(.*)'
