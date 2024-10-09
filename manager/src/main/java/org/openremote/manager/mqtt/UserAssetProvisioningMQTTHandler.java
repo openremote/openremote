@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.mqtt;
 
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
@@ -115,6 +117,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
     protected final ConcurrentMap<Long, Set<RemotingConnection>> provisioningConfigAuthenticatedConnectionMap = new ConcurrentHashMap<>();
+    protected Timer provisioningTimer;
 
     @Override
     public void init(Container container, Configuration serverConfiguration) throws Exception {
@@ -129,6 +132,10 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 .setPageLimitMessages(0L)
                 .setDefaultConsumerWindowSize(-1)
         );
+
+        if (container.getMeterRegistry() != null) {
+            provisioningTimer = container.getMeterRegistry().timer("or.provisioning", Tags.empty());
+        }
     }
 
     @Override
@@ -255,7 +262,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         // When no more threads available in the executorService the calling ActiveMQ client thread will execute which
         // will cause provisioning messages to wait in the address queue eventually hitting the message limit and
         // additional requests will be failed until the queue drains, this provides natural rate limiting.
-        executorService.submit(() -> this.processProvisioningRequest(connection, topic, body));
+        executorService.submit(() -> {
+            if (provisioningTimer != null) {
+                provisioningTimer.record(() -> processProvisioningRequest(connection, topic, body));
+            } else {
+                processProvisioningRequest(connection, topic, body);
+            }
+        });
     }
 
     @Override

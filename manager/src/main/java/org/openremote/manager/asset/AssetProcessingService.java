@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -102,7 +103,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
     protected ExecutorService executorService;
     protected MeterRegistry meterRegistry;
-    protected Map<String, Timer> eventTimers;
+    protected Timer eventTimer;
+    protected Map<String, Counter> eventCounters;
 
     @Override
     public int getPriority() {
@@ -244,7 +246,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         if (container.getMeterRegistry() != null) {
             meterRegistry = container.getMeterRegistry();
-            eventTimers = new ConcurrentHashMap<>();
+            eventCounters = new ConcurrentHashMap<>();
+            eventTimer = meterRegistry.timer("or.attributes", Tags.empty());
         }
     }
 
@@ -281,21 +284,26 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + event);
-                Timer timer = getEventTimer(event.getSource());
-                boolean processed = timer != null ?
-                    timer.record(() -> processAttributeEvent(event)) :
+                Counter counter = getEventCounter(event.getSource());
+                if (counter != null) {
+                    counter.increment();
+                }
+
+                boolean processed = eventTimer != null ?
+                    eventTimer.record(() -> processAttributeEvent(event)) :
                     processAttributeEvent(event);
+
                 exchange.getIn().setBody(processed);
             });
     }
 
-    protected Timer getEventTimer(String source) {
-        if (eventTimers == null) {
+    protected Counter getEventCounter(String source) {
+        if (eventCounters == null) {
             return null;
         }
         String sourceStr = source == null ? "none" : source;
-        return eventTimers.computeIfAbsent(sourceStr, eventSource ->
-            meterRegistry.timer("or.attributes", Tags.of("source", eventSource)));
+        return eventCounters.computeIfAbsent(sourceStr, eventSource ->
+            meterRegistry.counter("or.attributes", Tags.of("source", eventSource)));
     }
 
     public void addEventInterceptor(AttributeEventInterceptor eventInterceptor) {

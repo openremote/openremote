@@ -285,12 +285,17 @@ Resources:
                             "metric_namespace": "CWAgent-Prometheus",
                             "metric_unit": {
                               "artemis_message_count": "Count",
+                              "artemis_messages_added": "Count",
                               "or_rules_seconds_max": "Seconds",
                               "or_rules_seconds_sum": "Seconds",
                               "or_rules_seconds_count": "Count",
                               "or_attributes_seconds_max": "Seconds",
                               "or_attributes_seconds_sum": "Seconds",
                               "or_attributes_seconds_count": "Count",
+                              "or_attributes_total": "Count",
+                              "or_provisioning_seconds_max": "Seconds",
+                              "or_provisioning_seconds_sum": "Seconds",
+                              "or_provisioning_seconds_count": "Count",                
                               "executor_pool_size_threads": "Count",
                               "executor_seconds_count": "Count",
                               "executor_seconds_sum": "Seconds",
@@ -312,7 +317,13 @@ Resources:
                                 "metric_selectors": [
                                   "^or_rules_seconds_count$",
                                   "^or_rules_seconds_sum$",
-                                  "^or_rules_seconds_max$"
+                                  "^or_rules_seconds_max$",
+                                  "^or_attributes_seconds_count$",
+                                  "^or_attributes_seconds_sum$",
+                                  "^or_attributes_seconds_max$",
+                                  "^or_provisioning_seconds_count$",
+                                  "^or_provisioning_seconds_sum$",
+                                  "^or_provisioning_seconds_max$"
                                 ]
                               },
                               {
@@ -322,9 +333,7 @@ Resources:
                                   [ "InstanceName", "source" ]
                                 ],
                                 "metric_selectors": [
-                                  "^or_attributes_seconds_count$",
-                                  "^or_attributes_seconds_sum$",
-                                  "^or_attributes_seconds_max$"
+                                  "^or_attributes_total$"
                                 ]
                               },
                               {
@@ -346,7 +355,8 @@ Resources:
                                   [ "InstanceName","queue" ]
                                 ],
                                 "metric_selectors": [
-                                  "^artemis_message_count$"
+                                  "^artemis_message_count$",
+                                  "^artemis_messages_added$"
                                 ]
                               },
                               {
@@ -425,7 +435,7 @@ Resources:
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,name]
-                          regex: '(or_rules_.*|or_attributes.*|executor_pool_size_threads;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*)'
+                          regex: '(or_rules_.*|or_attributes.*|or.provisioning.*|executor_pool_size_threads;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*|artemis_messages_added.*)'
                         - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
                           source_labels: [ InstanceName ]
                           regex: '(.*)'
@@ -982,145 +992,111 @@ Resources:
               "inputType": "input",
               "id": "InstanceId",
               "label": "InstanceId",
-              "defaultValue": "i-085debf7b6107b693",
+              "defaultValue": "${EC2Instance}",
               "visible": true
             }
           ],
           "widgets": [
             {
               "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 6,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "m11 / m12", "label": "Avg Processor 1 (s)", "id": "e1", "region": "eu-west-1" } ],
-                  [ "CWAgent-Prometheus", "or_camel_route_seconds_sum", "routeId", "AttributeEvent-Processor1", "instance_name", "test4.openremote.app", { "id": "m11", "visible": false, "region": "eu-west-1" } ],
-                  [ "CWAgent-Prometheus", "or_camel_route_seconds_count", "routeId", "AttributeEvent-Processor1", "instance_name", "test4.openremote.app", { "id": "m12", "visible": false, "stat": "Maximum", "region": "eu-west-1" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "eu-west-1",
-                "stat": "Average",
-                "period": 300,
-                "title": "Attr Event Processing Time",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
+              "width": 8,
               "y": 0,
               "x": 0,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ { "expression": "m1/PERIOD(m1)", "label": "Success [/s]", "id": "e1", "region": "eu-west-1" } ],
-                  [ { "expression": "m2/PERIOD(m2)", "label": "Fail (Queue Full) [/s]", "id": "e2", "region": "eu-west-1" } ],
-                  [ "CWAgent-Prometheus", "or_camel_route_total", "routeId", "AttributeEvent-Router", "instance_name", "test4.openremote.app", { "id": "m1", "label": "Success", "visible": false } ],
-                  [ ".", "or_camel_route_failed_queue_full_total", "instance_name", "test4.openremote.app", { "id": "m2", "label": "Fail (Queue Full)", "visible": false } ]
+                  [ "CWAgent-Prometheus", "or_attributes_total", "InstanceName", "${Host}", "source", "RulesEngine", { "id": "m1", "yAxis": "left", "label": "Rules" } ],
+                  [ "...", "AgentService", { "id": "m3", "yAxis": "left", "label": "Agents" } ],
+                  [ "...", "DefaultMQTTHandler", { "id": "m2", "yAxis": "left", "label": "MQTT" } ],
+                  [ "...", "AssetResource", { "id": "m4", "yAxis": "left", "label": "HTTP API" } ],
+                  [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
+                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m6", "yAxis": "left", "label": "Backlog" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
-                "title": "Attr Events Processed",
+                "region": "${AWS::Region}",
                 "stat": "Sum",
                 "period": 300,
+                "title": "Attribute Events",
                 "yAxis": {
                   "left": {
-                    "showUnits": false
+                    "showUnits": false,
+                    "label": "Count"
+                  },
+                  "right": {
+                    "showUnits": false,
+                    "label": "Seconds"
                   }
                 }
               }
             },
             {
               "height": 6,
-              "width": 6,
+              "width": 8,
               "y": 6,
               "x": 0,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ { "expression": "m1 / m2", "label": "Max (s)", "id": "e1" } ],
-                  [ "CWAgent-Prometheus", "executor_seconds_sum", "instance_name", "test4.openremote.app", "name", "RulesService", { "id": "m1", "visible": false } ],
-                  [ ".", "executor_seconds_count", ".", ".", ".", ".", { "id": "m2", "visible": false } ]
+                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Rule Engines", "id": "e1", "region": "${AWS::Region}" } ],
+                  [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Attr. Processor", "id": "e2", "yAxis": "left" } ],
+                  [ "CWAgent-Prometheus", "or_rules_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "visible": false } ],
+                  [ ".", "or_rules_seconds_count", ".", ".", { "id": "m2", "visible": false } ],
+                  [ ".", "or_attributes_seconds_sum", ".", ".", { "id": "m3", "visible": false } ],
+                  [ ".", "or_attributes_seconds_count", ".", ".", { "id": "m4", "visible": false } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
+                "stat": "Sum",
+                "period": 300,
+                "title": "Execution Time",
+                "yAxis": {
+                  "left": {
+                    "showUnits": false,
+                    "label": "ms"
+                  }
+                }
+              }
+            },
+            {
+              "height": 6,
+              "width": 8,
+              "y": 0,
+              "x": 8,
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  [ "CWAgent-Prometheus", "haproxy_server_current_sessions", "server", "manager", "proxy", "mqtt", "InstanceName", "${Host}", { "label": "MQTT", "region": "${AWS::Region}" } ],
+                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS", "region": "${AWS::Region}" } ],
+                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak", "region": "${AWS::Region}" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Proxy Sessions",
                 "stat": "Maximum",
-                "period": 300,
-                "title": "Rule Engine Execution Time",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false
-                  }
-                }
+                "period": 300
               }
             },
             {
               "height": 6,
-              "width": 6,
+              "width": 8,
               "y": 6,
-              "x": 12,
+              "x": 8,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_current_sessions", "server", "manager", "proxy", "mqtt", "instance_name", "test4.openremote.app", { "label": "MQTT" } ],
-                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ]
+                  [ "CWAgent-Prometheus", "haproxy_server_bytes_in_total", "server", "manager", "proxy", "mqtt", "InstanceName", "${Host}", { "label": "MQTT Bytes In", "region": "${AWS::Region}" } ],
+                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "MQTT Bytes Out", "region": "${AWS::Region}" } ],
+                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak Bytes Out", "region": "${AWS::Region}" } ],
+                  [ ".", "haproxy_server_bytes_in_total", ".", ".", ".", ".", ".", ".", { "label": "Keycloak Bytes In", "region": "${AWS::Region}" } ],
+                  [ "...", "manager", ".", "manager_backend", ".", ".", { "label": "HTTP/WS Bytes In", "region": "${AWS::Region}" } ],
+                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "HTTP/WS Bytes Out", "region": "${AWS::Region}" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
-                "title": "Proxy Active Sessions",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 0,
-              "x": 12,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_max_session_rate", "server", "manager", "proxy", "mqtt", "instance_name", "test4.openremote.app", { "label": "MQTT" } ],
-                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "eu-west-1",
-                "title": "Proxy Session Rate",
-                "stat": "Average",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 6,
-              "y": 12,
-              "x": 12,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_bytes_in_total", "server", "manager", "proxy", "mqtt", "instance_name", "test4.openremote.app", { "label": "MQTT Bytes In" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "MQTT Bytes Out" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak Bytes Out" } ],
-                  [ ".", "haproxy_server_bytes_in_total", ".", ".", ".", ".", ".", ".", { "label": "Keycloak Bytes In" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", { "label": "HTTP/WS Bytes In" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "HTTP/WS Bytes Out" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
                 "title": "Proxy I/O",
                 "stat": "Sum",
                 "period": 300
@@ -1128,32 +1104,32 @@ Resources:
             },
             {
               "height": 6,
-              "width": 6,
+              "width": 8,
               "y": 12,
-              "x": 6,
+              "x": 8,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_http_responses_total", "server", "keycloak", "proxy", "keycloak_backend", "instance_name", "test4.openremote.app", "code", "5xx", { "label": "Keycloak 5xx" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx" } ]
+                  [ "CWAgent-Prometheus", "haproxy_server_http_responses_total", "server", "keycloak", "proxy", "keycloak_backend", "InstanceName", "${Host}", "code", "5xx", { "label": "Keycloak 5xx", "region": "${AWS::Region}" } ],
+                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx", "region": "${AWS::Region}" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
                 "title": "HTTP Error Responses",
                 "stat": "Sum",
                 "period": 300
               }
             },
             {
-              "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 18,
+              "height": 9,
+              "width": 8,
+              "y": 9,
+              "x": 16,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "AWS/EC2", "EBSReadOps", "InstanceId", "i-085debf7b6107b693", { "label": "Read", "region": "eu-west-1", "id": "m1", "visible": false, "stat": "Sum" } ],
+                  [ "AWS/EC2", "EBSReadOps", "InstanceId", "${EC2Instance}", { "label": "Read", "id": "m1", "visible": false, "stat": "Sum" } ],
                   [ ".", "EBSWriteOps", ".", ".", { "label": "Write", "id": "m2", "stat": "Sum", "visible": false } ],
                   [ ".", "CPUCreditBalance", ".", ".", { "yAxis": "left", "label": "CPU Credit Balance", "id": "m3", "stat": "Average", "visible": false } ],
                   [ ".", "CPUUtilization", ".", ".", { "label": "CPU Utilization %", "id": "m4", "yAxis": "right" } ],
@@ -1164,26 +1140,26 @@ Resources:
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
                 "title": "EC2",
                 "stat": "Maximum",
                 "period": 300
               }
             },
             {
-              "height": 6,
-              "width": 6,
+              "height": 9,
+              "width": 8,
               "y": 0,
-              "x": 18,
+              "x": 16,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent", "mem_used_percent", "InstanceId", "i-085debf7b6107b693", { "label": "Memory Usage %", "region": "eu-west-1" } ],
-                  [ ".", "disk_used_percent", ".", ".", "path", "/", "fstype", "xfs", { "label": "Disk Usage %", "region": "eu-west-1" } ]
+                  [ "CWAgent", "mem_used_percent", "InstanceId", "${EC2Instance}", { "label": "Memory Usage %", "region": "${AWS::Region}" } ],
+                  [ "CWAgent", "disk_used_percent", "InstanceId", "${EC2Instance}", "path", "/", "fstype", "xfs", { "label": "Disk Usage %", "region": "${AWS::Region}" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
                 "stat": "Average",
                 "period": 900,
                 "title": "Disk & Memory"
@@ -1191,24 +1167,32 @@ Resources:
             },
             {
               "height": 6,
-              "width": 6,
-              "y": 6,
-              "x": 6,
+              "width": 8,
+              "y": 12,
+              "x": 0,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent-Prometheus", "or_camel_route_total", "instance_name", "test4.openremote.app", "routeId", "NotificationQueue", { "label": "Success" } ],
-                  [ ".", "or_camel_route_failed_total", ".", ".", ".", ".", { "label": "Fail" } ]
+                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Processing Time", "id": "e1", "yAxis": "right" } ],
+                  [ "CWAgent-Prometheus", "or_provisioning_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "yAxis": "left", "visible": false } ],
+                  [ ".", "or_provisioning_seconds_count", ".", ".", { "id": "m2", "yAxis": "left", "visible": false } ],
+                  [ ".", "artemis_messages_added", ".", ".", "queue", "provisioning.*.request", { "id": "m3", "yAxis": "left", "label": "Total" } ],
+                  [ ".", "artemis_message_count", ".", ".", ".", ".", { "id": "m4", "yAxis": "left", "label": "Backlog" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
-                "title": "Notifications",
-                "region": "eu-west-1",
+                "region": "${AWS::Region}",
                 "stat": "Sum",
                 "period": 300,
+                "title": "Provisioning Requests",
                 "yAxis": {
                   "left": {
-                    "showUnits": false
+                    "showUnits": false,
+                    "label": "Count"
+                  },
+                  "right": {
+                    "showUnits": false,
+                    "label": "ms"
                   }
                 }
               }
