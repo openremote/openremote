@@ -62,7 +62,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
         try {
             this.configurationService.saveConfigImageFile(path, fileInfo);
         } catch (Exception e) {
-            LOG.warning("Couldn't store custom manager_config.json image: " +e.getMessage());
+            LOG.warning("Save image failed '" + path + "': " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
         }
         URI managerConfigPath = requestParams.getExternalBaseUriBuilder()
