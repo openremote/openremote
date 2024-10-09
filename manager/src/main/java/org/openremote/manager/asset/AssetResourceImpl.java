@@ -560,6 +560,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Process synchronously - need to directly use the ATTRIBUTE_EVENT_QUEUE as the client inbound queue
             // has multiple consumers and so doesn't support In/Out MEP
+            event.setSource(AssetResource.class.getSimpleName());
             Object result = messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
                 .to(ATTRIBUTE_EVENT_PROCESSOR)

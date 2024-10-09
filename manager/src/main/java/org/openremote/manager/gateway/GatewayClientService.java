@@ -307,7 +307,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             }
 
             // Allow attribute events that came from the central manager to be returned
-            if (getClass().getName().equals(ev.getSource())) {
+            if (getClass().getSimpleName().equals(ev.getSource())) {
                 return ev;
             }
 
@@ -443,7 +443,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 );
 
             } else if (event instanceof AttributeEvent) {
-                assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());
+                assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getSimpleName());
             } else if (event instanceof AssetEvent assetEvent) {
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();

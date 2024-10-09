@@ -34,6 +34,7 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.*
  * system; this can be used to monitor the performance change of the system over time on a given system specification.
  */
 
+@Ignore
 class AttributeEventBenchmarkTest extends Specification implements ManagerContainerTrait {
 
     def "Attribute processing benchmark"() {

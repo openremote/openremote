@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.asset;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import jakarta.validation.ConstraintViolation;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -47,6 +50,7 @@ import org.openremote.model.value.MetaItemType;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -97,6 +101,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
     protected ExecutorService executorService;
+    protected MeterRegistry meterRegistry;
+    protected Map<String, Timer> eventTimers;
 
     @Override
     public int getPriority() {
@@ -236,6 +242,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         });
 
         messageBrokerService.getContext().addRoutes(this);
+
+        if (container.getMeterRegistry() != null) {
+            meterRegistry = container.getMeterRegistry();
+            eventTimers = new ConcurrentHashMap<>();
+        }
     }
 
     @Override
@@ -246,7 +257,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void stop(Container container) throws Exception {
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void configure() throws Exception {
 
@@ -272,9 +282,21 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + event);
-                boolean processed = processAttributeEvent(event);
+                Timer timer = getEventTimer(event.getSource());
+                boolean processed = timer != null ?
+                    timer.record(() -> processAttributeEvent(event)) :
+                    processAttributeEvent(event);
                 exchange.getIn().setBody(processed);
             });
+    }
+
+    protected Timer getEventTimer(String source) {
+        if (eventTimers == null) {
+            return null;
+        }
+        String sourceStr = source == null ? "none" : source;
+        return eventTimers.computeIfAbsent(sourceStr, eventSource ->
+            meterRegistry.timer("or.attributes", Tags.of("source", eventSource)));
     }
 
     public void addEventInterceptor(AttributeEventInterceptor eventInterceptor) {
@@ -292,7 +314,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     /**
      * Send internal attribute change events into the {@link #ATTRIBUTE_EVENT_PROCESSOR}.
      */
-    public void sendAttributeEvent(AttributeEvent attributeEvent, Object source) {
+    public void sendAttributeEvent(AttributeEvent attributeEvent, String source) {
         attributeEvent.setSource(source);
 
         // Set event source time if not already set

@@ -236,7 +236,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         );
 
         if (container.getMeterRegistry() != null) {
-            rulesFiringTimer = container.getMeterRegistry().timer("or.rules.firing", Tags.empty());
+            rulesFiringTimer = container.getMeterRegistry().timer("or.rules", Tags.empty());
         }
 
         initDone = true;

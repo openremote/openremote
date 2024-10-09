@@ -381,7 +381,7 @@ public class GatewayConnector {
     }
 
     protected void publishAttributeEvent(AttributeEvent event) {
-        assetProcessingService.sendAttributeEvent(event, GatewayService.class.getName());
+        assetProcessingService.sendAttributeEvent(event, GatewayService.class.getSimpleName());
     }
 
     synchronized protected void onGatewayEvent(SharedEvent e) {

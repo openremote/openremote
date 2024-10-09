@@ -369,7 +369,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
 
         // If the event came from a gateway then we don't want to process it here
-        if (getClass().getName().equals(event.getSource())) {
+        if (getClass().getSimpleName().equals(event.getSource())) {
             // Clear out agentlink meta so agent interceptor doesn't try intercepting the event
             event.getMeta().remove(MetaItemType.AGENT_LINK);
             return false;
