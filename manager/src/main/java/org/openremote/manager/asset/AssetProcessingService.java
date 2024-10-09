@@ -319,11 +319,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             lastProcessedEventTimestamp = startMillis;
 
             return persistenceService.doReturningTransaction(em -> {
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
                 // TODO: Retrieve optimised DTO rather than whole asset
                 Asset<?> asset = assetStorageService.find(em, event.getId(), true);
 

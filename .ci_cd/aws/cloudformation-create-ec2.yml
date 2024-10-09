@@ -308,27 +308,31 @@ Resources:
                                   [ "InstanceName" ]
                                 ],
                                 "metric_selectors": [
-                                  "^or_rules.*$"
+                                  "^or_rules_firing_seconds_count$",
+                                  "^or_rules_firing_seconds_sum$"
                                 ]
                               },
                               {
-                                "source_labels": [ "job" ],
-                                "label_matcher": "^manager$",
+                                "source_labels": [ "job", "routeId" ],
+                                "label_matcher": "^manager;AttributeEvent-Processor$",
                                 "dimensions": [
                                   [ "InstanceName","routeId" ]
                                 ],
                                 "metric_selectors": [
-                                  "^or_camel_route.*$"
+                                  "^or_camel_route_seconds_count$",
+                                  "^or_camel_route_seconds_sum$"
                                 ]
                               },
                               {
-                                "source_labels": [ "job" ],
-                                "label_matcher": "^manager$",
+                                "source_labels": [ "job", "name" ],
+                                "label_matcher": "^manager;ContainerExecutor$",
                                 "dimensions": [
                                   [ "InstanceName","name" ]
                                 ],
                                 "metric_selectors": [
-                                  "^executor_.*$"
+                                  "^executor_pool_size_threads$",
+                                  "^executor_seconds_count$",
+                                  "^executor_seconds_sum$"
                                 ]
                               },
                               {
