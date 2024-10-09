@@ -283,7 +283,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         startDone = false;
 
         if (!geofenceAssetAdapters.isEmpty()) {
-            LOG.fine("GeoefenceAssetAdapters found: " + geofenceAssetAdapters.size());
+            LOG.fine("GeofenceAssetAdapters found: " + geofenceAssetAdapters.size());
             locationPredicateRulesConsumer = this::onEngineLocationRulesChanged;
 
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {

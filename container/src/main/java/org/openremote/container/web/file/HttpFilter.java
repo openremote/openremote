@@ -69,7 +69,7 @@ public abstract class HttpFilter implements Filter {
 	// Constants ------------------------------------------------------------------------------------------------------
 
 	private static final String ERROR_NO_FILTERCONFIG = "FilterConfig is not available."
-		+ " It seems that you've overriden HttpFilter#init(FilterConfig)."
+		+ " It seems that you've overridden HttpFilter#init(FilterConfig)."
 		+ " You should be overriding HttpFilter#init() instead, otherwise you have to call super.init(config).";
 
 	// Properties -----------------------------------------------------------------------------------------------------
