@@ -3,6 +3,15 @@ import java.nio.file.Paths
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
+buildscript {
+    repositories {
+        maven { url 'https://plugins.gradle.org/m2' }
+    }
+    dependencies {
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.25.0'
+    }
+}
+
 allprojects {
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
 }
@@ -41,8 +50,10 @@ task checkFilesGitIgnoredNew(type: Exec) {
 def gitFile = Paths.get(projectDir.path, ".git").toFile()
 checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 
-task clean() {
+tasks.register('cleanTmp') {
+    mustRunAfter("clean")
     doLast {
         delete "tmp"
     }
 }
+
