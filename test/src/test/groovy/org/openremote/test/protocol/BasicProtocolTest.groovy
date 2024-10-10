@@ -380,4 +380,75 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert !mockThing.getAttribute("filterRegexSubstring").get().getValue().isPresent()
         }
     }
+    def "Check Value Mutator functionality"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.3, delay: 0.2)
+        Map<String, Integer> protocolExpectedLinkedAttributeCount = [:]
+        protocolExpectedLinkedAttributeCount["mockAgent1"] = 1
+        protocolExpectedLinkedAttributeCount["mockAgent2"] = 2
+        protocolExpectedLinkedAttributeCount["mockAgent3"] = 2
+        protocolExpectedLinkedAttributeCount['mockConfig4'] = 2
+
+        and: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+
+        when: "several mock agents that uses the mock protocol are created"
+        def mockAgent1 = new MockAgent("Mock agent 1")
+                .setRealm(MASTER_REALM)
+                .setRequired(true)
+
+        mockAgent1 = assetStorageService.merge(mockAgent1)
+
+
+
+        then: "the protocol instances should have been created and the agent status attributes should be updated"
+        conditions.eventually {
+            assert agentService.agents.values().count {it instanceof MockAgent} == 1
+            assert agentService.protocolInstanceMap.values().count {it instanceof MockProtocol} == 1
+            assert agentService.getAgent(mockAgent1.id) != null
+            assert agentService.getProtocolInstance(mockAgent1.id) != null
+            assert agentService.getAgent(mockAgent1.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+        }
+
+        when: "a mock thing asset is created that links to the mock agents"
+        def mockThing = new ThingAsset("Mock Thing Asset")
+                .setRealm(MASTER_REALM)
+                        .addOrReplaceAttributes(
+                                new Attribute<>("testAttribute", NUMBER)
+                                        .addOrReplaceMeta(
+                                                new MetaItem<>(
+                                                        AGENT_LINK,
+                                                        new MockAgentLink(mockAgent1.id)
+                                                                .setRequiredValue("true")
+                                                                .setValueMutator("4*x")
+                                                )
+                                        )
+                        )
+
+        mockThing = assetStorageService.merge(mockThing)
+
+        then: "the mock thing to be fully deployed in the correct order"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(mockAgent1.id) != null
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).protocolMethodCalls.get(0) == "START"
+            assert agentService.getProtocolInstance(mockAgent1.id).linkedAttributes.size() == protocolExpectedLinkedAttributeCount["mockAgent1"]
+        }
+
+        when: "values are sent to the linked attributes by the protocol"
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent1.id)).updateReceived(new AttributeRef(mockThing.id, "testAttribute"), "5", null)
+
+        then: "the linked attributes values should have been updated by the protocol"
+        conditions.eventually {
+            def mockAsset = assetStorageService.find(mockThing.id, true)
+            // Check all valid linked attributes have the new values
+            assert mockAsset.getAttribute("testAttribute").flatMap{it.getValue()}.orElse(false)
+            assert mockAsset.getAttribute("testAttribute").flatMap{it.getValue()}.orElse(0d) == 20d
+        }
+
+
+    }
 }

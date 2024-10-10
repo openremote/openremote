@@ -32,6 +32,7 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
+import javax.script.*;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
@@ -130,6 +131,17 @@ public final class ProtocolUtil {
 
         valRef.set(ignoreAndConvertedValue.value);
 
+        ignoreAndConvertedValue = agentLink.getValueMutator().map(mutator -> {
+            Pair<Boolean, Object> booleanObjectPair = applyValueMutator(valRef.get(), mutator);
+            return booleanObjectPair;
+        }).orElse(new Pair<>(false, valRef.get()));
+
+        valRef.set(ignoreAndConvertedValue.value);
+
+        if (ignoreAndConvertedValue.key) {
+            return ignoreAndConvertedValue;
+        }
+
         if (valRef.get() == null) {
             return new Pair<>(false, null);
         }
@@ -150,6 +162,35 @@ public final class ProtocolUtil {
         }
 
         return new Pair<>(false, valRef.get());
+    }
+
+    private static Pair<Boolean, Object> applyValueMutator(Object value, String mutator) {
+
+        if (value == null || mutator == null) {
+            return new Pair<>(true, value);
+        }
+
+        double x = ValueUtil.getValueCoerced(value, Double.class).orElse(0D);
+        String expression = mutator.replace("x", String.valueOf(x));
+
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("nashorn");
+
+        // Setup sandbox security
+        engine.setBindings(new SimpleBindings(), ScriptContext.ENGINE_SCOPE);
+        engine.getContext().setAttribute("javax.script.filename", "sandbox.js", ScriptContext.ENGINE_SCOPE);
+
+        long startTime = System.nanoTime(); // Start timer
+        try {
+            Object result = engine.eval(expression);
+            long endTime = System.nanoTime(); // End timer
+            long duration = (endTime - startTime)/1_000_000; // Calculate elapsed time
+            LOG.info("applyValueMutator execution time: " + duration + "ms");
+            return new Pair<>(false, result);
+        } catch (ScriptException e) {
+            LOG.warning("Failed to evaluate mutator expression: " + mutator);
+            return new Pair<>(false, value);
+        }
     }
 
     @SuppressWarnings("unchecked")

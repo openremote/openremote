@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
-import org.openremote.model.Constants;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
@@ -73,6 +72,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     protected ValueFilter[] messageMatchFilters;
     @JsonPropertyDescription("Don't expect a response from the protocol just update the attribute immediately on write")
     protected Boolean updateOnWrite;
+    protected String valueMutator;
 
     // For Hydrators
     protected AgentLink() {
@@ -166,6 +166,16 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @SuppressWarnings("unchecked")
     public T setUpdateOnWrite(Boolean updateOnWrite) {
         this.updateOnWrite = updateOnWrite;
+        return (T) this;
+    }
+
+    public Optional<String> getValueMutator() {
+        return Optional.ofNullable(valueMutator);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setValueMutator(String valueMutator) {
+        this.valueMutator = valueMutator;
         return (T) this;
     }
 }
