@@ -43,11 +43,10 @@ Parameters:
   EFSDNS:
     Description: EFS DNS entry (for maps - IP address of EFS mount target in the same AZ ID)
     Type: String
-# Old string based image ID
-#  ImageId:
-#    Description: AMI ID
-#    Type: String
-#    Default: "ami-0ad71aff41c394ba8"
+  ImageId:
+    Description: AMI ID
+    Type: String
+    Default: ""
   ImageAMI:
     Description: AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
@@ -129,6 +128,7 @@ Conditions:
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
   MetricsEnabled: !Equals [!Ref Metrics, "true"]
   CreateHealthChecks: !Equals [!Ref HealthChecks, "true"]
+  UseAMIID: !Equals [!Ref ImageId, ""]
 
 Resources:
   InstanceRoleProfile:
@@ -742,6 +742,12 @@ Resources:
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "AWS_ROUTE53_ROLE=${DNSHostedZoneRoleArn}" >> /etc/environment
                 fi
+            04_metrics:
+              command: !Sub |
+                # Output OR_METRICS_ENABLED to /etc/environment for use by manager container
+                if [ -n "${Metrics}" ]; then
+                  echo "OR_METRICS_ENABLED=${Metrics}" >> /etc/environment
+                fi
 
         docker_setup:
           packages:
@@ -812,7 +818,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: "developers"
-      ImageId: !Ref ImageAMI
+      ImageId: !If [UseAMIID, !Ref ImageAMI, !Ref ImageId]
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - Ref: SSHSecurityGroupId

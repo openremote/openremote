@@ -44,6 +44,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
@@ -100,7 +102,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         def agentService = container.getService(AgentService.class)
         def clientEventService = container.getService(ClientEventService.class)
         ThingAsset asset = null
-        List<AttributeEvent> attributeEvents = []
+        def attributeEvents = new CopyOnWriteArrayList<AttributeEvent>()
         Consumer<AttributeEvent> eventConsumer = it -> {
             attributeEvents.add(it)
         }
