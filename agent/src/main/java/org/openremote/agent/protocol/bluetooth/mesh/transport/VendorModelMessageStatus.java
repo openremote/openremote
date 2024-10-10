@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * To be used as a wrapper class for when creating the VendorModelMessageStatus Message.
@@ -65,4 +65,3 @@ public final class VendorModelMessageStatus extends GenericStatusMessage {
         return mModelIdentifier;
     }
 }
-

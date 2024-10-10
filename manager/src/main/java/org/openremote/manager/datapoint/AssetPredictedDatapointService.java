@@ -19,15 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
-import org.openremote.model.datapoint.ValueDatapoint;
+import static java.time.temporal.ChronoUnit.HOURS;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +30,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.HOURS;
+import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 
 public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint> implements ProtocolPredictedDatapointService {
 

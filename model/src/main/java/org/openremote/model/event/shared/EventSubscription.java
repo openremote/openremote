@@ -19,10 +19,11 @@
  */
 package org.openremote.model.event.shared;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.openremote.model.event.Event;
-
 import java.util.function.Consumer;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.openremote.model.event.Event;
 
 /**
  * A client can subscribe to {@link SharedEvent}s on the server, providing the

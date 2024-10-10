@@ -19,18 +19,19 @@
  */
 package org.openremote.model.gateway;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.http.RequestParams;
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.util.List;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.http.RequestParams;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 
 /**
  * Resource for managing the connection to a central manager

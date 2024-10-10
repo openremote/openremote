@@ -19,12 +19,13 @@
  */
 package org.openremote.container.web;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * A filter for following 300 range response re-directions.

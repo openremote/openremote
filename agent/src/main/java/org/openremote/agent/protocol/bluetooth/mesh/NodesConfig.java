@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-
 import java.util.List;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 
 /**
  * Contains the configuration required when exporting a selected number of mesh nodes in a mesh network.
@@ -85,4 +85,3 @@ public class NodesConfig extends ExportConfig {
         super(config);
     }
 }
-

@@ -19,14 +19,15 @@
  */
 package org.openremote.container.web;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.ext.Provider;
 import jakarta.ws.rs.ext.WriterInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptorContext;
-import java.io.IOException;
-import java.util.Arrays;
 
 @Provider
 @Priority(Priorities.ENTITY_CODER+1)

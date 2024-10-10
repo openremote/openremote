@@ -19,14 +19,15 @@
  */
 package org.openremote.model.syslog;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.*;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "SYSLOG_EVENT")
@@ -85,13 +86,11 @@ public class SyslogEvent extends SharedEvent {
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
-    @NotNull
-    @Enumerated(EnumType.ORDINAL)
+    @NotNull @Enumerated(EnumType.ORDINAL)
     @Column(name = "LEVEL", nullable = false)
     protected SyslogLevel level;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
+    @NotNull @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false)
     protected SyslogCategory category;
 

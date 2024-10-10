@@ -19,11 +19,12 @@
  */
 package org.openremote.model.value;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
-
-import java.util.Optional;
 
 public interface MetaHolder {
 

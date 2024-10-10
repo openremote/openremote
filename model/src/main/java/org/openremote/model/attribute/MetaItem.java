@@ -19,15 +19,16 @@
  */
 package org.openremote.model.attribute;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import java.io.IOException;
 
 /**
  * A named value whose name must match the name of a {@link MetaItemDescriptor} and whose value must match the value

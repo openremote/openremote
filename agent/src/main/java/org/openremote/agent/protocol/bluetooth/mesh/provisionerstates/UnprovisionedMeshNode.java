@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
 import java.util.UUID;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 public final class UnprovisionedMeshNode extends UnprovisionedBaseMeshNode {
 

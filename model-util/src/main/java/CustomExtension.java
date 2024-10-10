@@ -17,6 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.provisioning.X509ProvisioningConfig;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.TsType;
@@ -29,14 +37,6 @@ import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
 import cz.habarta.typescript.generator.parser.BeanModel;
 import cz.habarta.typescript.generator.parser.Model;
-import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.provisioning.X509ProvisioningConfig;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:

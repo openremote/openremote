@@ -20,6 +20,7 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.databind.util.StdConverter;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;

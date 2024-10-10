@@ -19,6 +19,12 @@
  */
 package org.openremote.container.web;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.logging.Logger;
+
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -26,11 +32,6 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A filter that once a HTTP status code is received that matches any in the {@link #failureResponses} will result

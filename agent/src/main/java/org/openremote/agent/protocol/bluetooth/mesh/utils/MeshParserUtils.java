@@ -19,7 +19,8 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
-import jakarta.validation.constraints.NotNull;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.SimpleDateFormat;
@@ -37,7 +38,7 @@ import org.openremote.agent.protocol.bluetooth.mesh.NodeKey;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import jakarta.validation.constraints.NotNull;
 
 public class MeshParserUtils {
 

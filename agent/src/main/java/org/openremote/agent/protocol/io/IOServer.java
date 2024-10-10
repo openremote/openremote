@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.io;
 
-import org.openremote.model.asset.agent.ConnectionStatus;
-
 import java.net.SocketAddress;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 /**
  * Represents an IO server that accepts incoming clients.

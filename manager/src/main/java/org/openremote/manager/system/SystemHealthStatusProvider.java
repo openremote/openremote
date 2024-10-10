@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class SystemHealthStatusProvider implements HealthStatusProvider {
 

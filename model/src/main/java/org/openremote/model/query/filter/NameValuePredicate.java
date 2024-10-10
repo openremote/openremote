@@ -19,14 +19,16 @@
  */
 package org.openremote.model.query.filter;
 
+import java.util.Arrays;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+
 import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.NameHolder;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.Arrays;
 
 /**
  * A predicate that can be applied to a {@link NameValuePredicate}; there is an implicit AND condition between the name and the value; one or both the name and value should be supplied

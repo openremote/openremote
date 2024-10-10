@@ -19,9 +19,15 @@
  */
 package org.openremote.setup.integration;
 
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
+
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.RoleRepresentation;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
@@ -29,13 +35,7 @@ import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
-
-import java.util.Arrays;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
-
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 
 /**
  * We have the following demo users:

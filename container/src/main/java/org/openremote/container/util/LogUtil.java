@@ -19,9 +19,7 @@
  */
 package org.openremote.container.util;
 
-import org.openremote.model.util.TextUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.openremote.model.Container.OR_DEV_MODE;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +29,9 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import static org.openremote.model.Container.OR_DEV_MODE;
+import org.openremote.model.util.TextUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * If system property <code>java.util.logging.config.file</code> or <code>java.util.logging.config.file</code> has been

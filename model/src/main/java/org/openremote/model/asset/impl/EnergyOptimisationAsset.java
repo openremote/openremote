@@ -19,18 +19,18 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.READ_ONLY;
+import static org.openremote.model.value.ValueType.*;
+
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
-
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.READ_ONLY;
-import static org.openremote.model.value.ValueType.*;
 
 @Entity
 public class EnergyOptimisationAsset extends Asset<EnergyOptimisationAsset> {

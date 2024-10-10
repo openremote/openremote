@@ -60,4 +60,3 @@ public class ConfigDefaultTtlStatus extends ConfigStatusMessage {
         return mTtl;
     }
 }
-

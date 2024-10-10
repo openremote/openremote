@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.model.util.EnumUtil;
-
 import java.util.Optional;
+
+import org.openremote.model.util.EnumUtil;
 
 /**
  * Abstract processor for channel related operations

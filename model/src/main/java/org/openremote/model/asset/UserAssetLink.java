@@ -19,14 +19,14 @@
  */
 package org.openremote.model.asset;
 
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Objects;
+
 import org.hibernate.annotations.Formula;
 import org.openremote.model.value.MetaItemType;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.

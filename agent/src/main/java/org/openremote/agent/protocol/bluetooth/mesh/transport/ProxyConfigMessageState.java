@@ -65,4 +65,3 @@ class ProxyConfigMessageState extends MeshMessageState {
         proxyConfigMessage.setMessage(message);
     }
 }
-

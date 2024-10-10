@@ -19,13 +19,15 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.validation.constraints.Pattern;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
 import java.util.Arrays;
 import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.openremote.model.util.TsIgnoreTypeParams;
+
+import jakarta.validation.constraints.Pattern;
 
 @TsIgnoreTypeParams
 public abstract class AbstractNameValueDescriptorHolder<T> implements ValueDescriptorHolder<T>, NameHolder {

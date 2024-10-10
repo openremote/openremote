@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.io;
 
-import org.openremote.model.asset.agent.ConnectionStatus;
-
 import java.util.function.Consumer;
+
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 /**
  * Represents an IO client that communicates with a server

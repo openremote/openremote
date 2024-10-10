@@ -19,6 +19,19 @@
  */
 package org.openremote.manager.rules;
 
+import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import org.jeasy.rules.api.Fact;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
@@ -36,19 +49,6 @@ import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.RulesClock;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TimeUtil;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
 
 public class RulesFacts extends Facts implements RuleListener {
 

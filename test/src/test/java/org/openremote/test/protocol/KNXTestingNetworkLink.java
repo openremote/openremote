@@ -1,3 +1,22 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.test.protocol;
 
 import java.util.logging.Logger;
@@ -16,10 +35,10 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 public class KNXTestingNetworkLink extends AbstractLink {
 
     private static final Logger LOG = Logger.getLogger(KNXTestingNetworkLink.class.getName());
-    
+
     private static KNXTestingNetworkLink instance;
     private String lastDataReceived;
-    
+
     public KNXTestingNetworkLink(Object... args) throws KNXFormatException {
        super("KNXTestingLink",  KNXMediumSettings.create(KNXMediumSettings.MEDIUM_TP1, new IndividualAddress("1.1.1")));
        KNXTestingNetworkLink.instance = this;
@@ -32,23 +51,23 @@ public class KNXTestingNetworkLink extends AbstractLink {
             this.lastDataReceived = byteArrayToHex(msg.getPayload());
         }
     }
-    
+
     @Override
     protected CEMI onReceive(FrameEvent e) throws KNXFormatException {
         return super.onReceive(e);
     }
-    
+
     public static KNXTestingNetworkLink getInstance() {
         return KNXTestingNetworkLink.instance;
     }
-    
+
     public static String byteArrayToHex(byte[] a) {
         StringBuilder sb = new StringBuilder(a.length * 2);
         for(byte b: a)
            sb.append(String.format("%02x", b));
         return sb.toString();
      }
-    
+
     public String getLastDataReceived() {
         return this.lastDataReceived;
     }
@@ -56,6 +75,6 @@ public class KNXTestingNetworkLink extends AbstractLink {
     @Override
     protected void onSend(KNXAddress dst, byte[] msg, boolean waitForCon) throws KNXTimeoutException, KNXLinkClosedException {
         // TODO Auto-generated method stub
-        
+
     }
 }

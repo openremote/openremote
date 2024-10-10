@@ -19,22 +19,22 @@
  */
 package org.openremote.model.asset.agent;
 
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
-import org.openremote.model.Constants;
+
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
-
-import java.io.Serializable;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Represents the configuration of an {@link Attribute} linked to an {@link Agent}; each {@link Agent} should have its'

@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.List;
+
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.Group;
-
-import java.util.List;
 
 /**
  * Upper transport layer call backs

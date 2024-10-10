@@ -19,17 +19,19 @@
  */
 package org.openremote.model.auth;
 
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+
+import java.io.Serializable;
+import java.util.*;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import java.io.Serializable;
-import java.util.*;
-
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property = OAuthGrant.VALUE_KEY_GRANT_TYPE)
 @JsonSubTypes({

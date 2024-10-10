@@ -19,16 +19,17 @@
  */
 package org.openremote.model.flow.catalog.console;
 
+import java.util.List;
+import java.util.function.Supplier;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.Slot;
 import org.openremote.model.flow.catalog.CatalogCategory;
 import org.openremote.model.flow.catalog.ConsoleNodeDescriptor;
 import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
 import org.openremote.model.util.ValueUtil;
-
-import java.util.List;
-import java.util.function.Supplier;
 
 public class ScreenNodeDescriptor extends ConsoleNodeDescriptor {
 

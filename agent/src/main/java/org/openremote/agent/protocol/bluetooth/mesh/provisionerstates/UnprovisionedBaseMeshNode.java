@@ -19,13 +19,13 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
+import java.util.UUID;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.StaticOOBType;
-
-import java.util.UUID;
-import java.util.logging.Logger;
 
 public class UnprovisionedBaseMeshNode {
 

@@ -19,6 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
+import java.nio.ByteBuffer;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.InternalProvisioningCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -26,9 +29,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallba
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.util.logging.Logger;
 
 public class ProvisioningDataState extends ProvisioningState {
 
@@ -169,4 +169,3 @@ public class ProvisioningDataState extends ProvisioningState {
         return buffer.array();
     }
 }
-

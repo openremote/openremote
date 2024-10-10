@@ -19,17 +19,18 @@
  */
 package org.openremote.manager.system;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
-import org.apache.camel.health.HealthCheck;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
+import org.apache.camel.health.HealthCheck;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface HealthCheckResultMixin {

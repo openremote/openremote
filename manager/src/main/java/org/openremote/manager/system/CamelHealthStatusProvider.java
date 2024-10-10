@@ -19,6 +19,11 @@
  */
 package org.openremote.manager.system;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.camel.Endpoint;
 import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.health.HealthCheck;
@@ -28,11 +33,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class CamelHealthStatusProvider implements HealthStatusProvider {
 

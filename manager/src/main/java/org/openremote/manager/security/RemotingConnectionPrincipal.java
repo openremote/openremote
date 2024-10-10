@@ -19,10 +19,11 @@
  */
 package org.openremote.manager.security;
 
-import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import java.security.Principal;
 
 import javax.security.auth.Subject;
-import java.security.Principal;
+
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 
 /**
  * A {@link Principal} for associating an ActiveMQ {@link RemotingConnection} with the {@link javax.security.auth.Subject}

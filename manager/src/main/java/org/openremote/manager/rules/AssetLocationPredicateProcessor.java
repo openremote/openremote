@@ -26,4 +26,3 @@ public interface AssetLocationPredicateProcessor {
 
     void accept(RulesEngine t, List<RulesEngine.AssetLocationPredicates> u);
 }
-

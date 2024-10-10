@@ -71,4 +71,3 @@ abstract class GenericMessage extends MeshMessage {
      */
     abstract void assembleMessageParameters();
 }
-

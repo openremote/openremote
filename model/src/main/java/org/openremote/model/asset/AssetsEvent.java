@@ -19,12 +19,13 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * This event is used in response to a {@link ReadAssetsEvent}.

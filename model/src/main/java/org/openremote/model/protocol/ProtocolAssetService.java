@@ -19,14 +19,14 @@
  */
 package org.openremote.model.protocol;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Interface for protocols to perform limited asset related operations within their own realm

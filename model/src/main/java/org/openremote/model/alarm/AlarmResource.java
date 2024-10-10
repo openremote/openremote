@@ -19,18 +19,18 @@
  */
 package org.openremote.model.alarm;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
-import org.openremote.model.http.RequestParams;
-
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.ws.rs.*;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.util.List;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import org.openremote.model.Constants;
+import org.openremote.model.http.RequestParams;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.*;
 
 @Tag(name = "Alarm", description = "Operations on alarms")
 @Path("alarm")

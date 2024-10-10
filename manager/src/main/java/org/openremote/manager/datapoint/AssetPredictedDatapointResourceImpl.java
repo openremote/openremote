@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.datapoint;
 
+import java.util.Arrays;
+import java.util.logging.Logger;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -26,19 +29,16 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.AssetPredictedDatapointResource;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.MetaItemType;
 
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import org.openremote.model.security.ClientRole;
-import org.openremote.model.value.MetaItemType;
-
-import java.util.Arrays;
-import java.util.logging.Logger;
 
 public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
 

@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.util.logging.Logger;
 
 /**
  * Creates the ConfigBeaconStatus message.
@@ -63,4 +63,3 @@ public class ConfigBeaconStatus extends ConfigStatusMessage {
         return enable;
     }
 }
-

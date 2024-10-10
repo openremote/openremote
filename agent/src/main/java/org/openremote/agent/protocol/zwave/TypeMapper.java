@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.zwave;
 
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.*;
-import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelType;
+import static org.openremote.model.Constants.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.openremote.model.Constants.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.*;
+import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelType;
 
 public class TypeMapper {
 
@@ -59,7 +59,7 @@ public class TypeMapper {
             this.valueFormat = valueFormat;
         }
     }
-    
+
     static private final Map<ChannelType, TypeInfo> typeMap = new HashMap<>();
 
     static {

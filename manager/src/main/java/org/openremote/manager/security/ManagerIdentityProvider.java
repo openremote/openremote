@@ -19,7 +19,14 @@
  */
 package org.openremote.manager.security;
 
-import jakarta.persistence.Query;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.query.filter.StringPredicate.toSQLParameter;
+
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityProvider;
@@ -30,15 +37,8 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
+import jakarta.persistence.Query;
 import jakarta.persistence.Tuple;
-
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.openremote.model.query.filter.StringPredicate.toSQLParameter;
-import static org.openremote.model.Constants.MASTER_REALM;
 
 // TODO: Normalise interface for Basic and Keycloak providers and add client CRUD
 

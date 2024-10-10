@@ -66,4 +66,3 @@ class ConfigMessageState extends MeshMessageState {
         configMessage.setMessage(message);
     }
 }
-

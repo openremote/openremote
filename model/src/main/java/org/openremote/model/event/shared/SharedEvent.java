@@ -21,6 +21,8 @@ package org.openremote.model.event.shared;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import org.openremote.model.alarm.AlarmEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
@@ -30,7 +32,6 @@ import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.alarm.AlarmEvent;
 
 /**
  * An event that can be serialized and shared between client and server.

@@ -19,16 +19,17 @@
  */
 package org.openremote.model.map;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapRealmConfig;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")

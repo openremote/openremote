@@ -19,18 +19,18 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.logging.Logger;
-
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.addressIntToBytes;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.formatAddress;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.isAddressInRange;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.isValidUnicastAddress;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 
 /**
@@ -257,4 +257,3 @@ public class ConfigModelPublicationSet extends ConfigMessage {
         return modelIdentifier;
     }
 }
-

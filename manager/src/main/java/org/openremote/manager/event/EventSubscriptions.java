@@ -19,6 +19,14 @@
  */
 package org.openremote.manager.event;
 
+import static org.openremote.model.Constants.SESSION_KEY;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -29,14 +37,6 @@ import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.Constants.SESSION_KEY;
 
 /**
  * Manages subscriptions to events for WebSocket sessions.

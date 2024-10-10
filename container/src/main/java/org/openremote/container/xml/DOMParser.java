@@ -19,8 +19,13 @@
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.*;
-import org.xml.sax.*;
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -41,14 +46,9 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-import java.io.*;
-import java.net.URI;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.w3c.dom.*;
+import org.xml.sax.*;
 
 /**
  * Condensed API for parsing of XML into DOM with (optional) XML schema validation.

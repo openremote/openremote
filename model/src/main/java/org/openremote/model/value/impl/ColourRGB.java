@@ -19,16 +19,17 @@
  */
 package org.openremote.model.value.impl;
 
+import java.awt.*;
+import java.io.Serializable;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
+
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
-
-import java.awt.*;
-import java.io.Serializable;
-import java.util.Objects;
 
 @JsonDeserialize(converter = ColourRGB.HexStringColourRGBConverter.class)
 public class ColourRGB implements Serializable {

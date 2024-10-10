@@ -19,20 +19,22 @@
  */
 package org.openremote.model.value;
 
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
-
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.Optional;
 
 public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, Serializable {
     @JsonIgnore
@@ -60,8 +62,7 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
 
     @JsonSerialize(converter = ValueDescriptor.NameHolderToStringConverter.class)
     @Override
-    @Nullable
-    public ValueDescriptor<T> getType() {
+    @Nullable public ValueDescriptor<T> getType() {
         return type;
     }
 

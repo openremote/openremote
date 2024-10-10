@@ -19,10 +19,11 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.openremote.model.attribute.Attribute;
-
 import java.io.Serializable;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.openremote.model.attribute.Attribute;
 
 /**
  * Represents formatting rules to apply to date and number values when converting to {@link String} representation; based on

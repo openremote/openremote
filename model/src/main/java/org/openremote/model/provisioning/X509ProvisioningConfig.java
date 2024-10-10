@@ -19,17 +19,19 @@
  */
 package org.openremote.model.provisioning;
 
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.openremote.model.util.TextUtil;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 
 @Entity
 @DiscriminatorValue("x509")

@@ -19,15 +19,17 @@
  */
 package org.openremote.model.notification;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import com.fasterxml.jackson.databind.JsonNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Notification", description = "Operations on notifications")
 @Path("notification")

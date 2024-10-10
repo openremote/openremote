@@ -19,14 +19,10 @@
  */
 package org.openremote.manager.event;
 
-import com.google.api.Http;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.SecurityConstraint;
-import io.undertow.servlet.api.SecurityInfo;
-import io.undertow.servlet.api.WebResourceCollection;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+
+import java.net.URI;
+
 import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
 import org.apache.camel.component.undertow.UndertowConsumer;
 import org.apache.camel.component.undertow.UndertowHostKey;
@@ -34,9 +30,13 @@ import org.apache.camel.component.undertow.UndertowHostOptions;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 
-import java.net.URI;
-
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.SecurityConstraint;
+import io.undertow.servlet.api.SecurityInfo;
+import io.undertow.servlet.api.WebResourceCollection;
 
 /**
  * Customised to use existing undertow instance so websocket doesn't have to be on a separate web server instance

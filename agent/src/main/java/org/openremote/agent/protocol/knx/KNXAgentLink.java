@@ -19,16 +19,16 @@
  */
 package org.openremote.agent.protocol.knx;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.AgentLink;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import java.util.Optional;
 
 public class KNXAgentLink extends AgentLink<KNXAgentLink> {
 
-    @NotNull
-    @Pattern(regexp = "^\\d{1,3}\\.\\d{1,3}$")
+    @NotNull @Pattern(regexp = "^\\d{1,3}\\.\\d{1,3}$")
     protected String dpt;
 
     @Pattern(regexp = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$")

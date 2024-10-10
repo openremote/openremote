@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.rules.geofence;
 
-import org.openremote.model.ContainerService;
+import java.util.List;
+
 import org.openremote.manager.rules.RulesEngine;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
-
-import java.util.List;
 
 /**
  * Defines an adapter that can take a collection of {@link LocationAttributePredicate} that apply to a given

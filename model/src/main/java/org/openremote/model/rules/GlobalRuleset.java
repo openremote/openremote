@@ -19,12 +19,13 @@
  */
 package org.openremote.model.rules;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import org.openremote.model.calendar.CalendarEvent;
-
 import java.util.Date;
 import java.util.Map;
+
+import org.openremote.model.calendar.CalendarEvent;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 /**
  * Rules that apply to all realms and assets, for the whole system.

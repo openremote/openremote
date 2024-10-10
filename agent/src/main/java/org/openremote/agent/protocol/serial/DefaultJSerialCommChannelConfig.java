@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.serial;
 
+import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+
+import java.util.Map;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.MessageSizeEstimator;
 import io.netty.channel.RecvByteBufAllocator;
-
-import java.util.Map;
-
-import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 
 /**
  * A configuration class for jSerialComm device connections.

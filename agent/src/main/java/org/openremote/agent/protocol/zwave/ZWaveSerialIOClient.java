@@ -19,7 +19,9 @@
  */
 package org.openremote.agent.protocol.zwave;
 
-import io.netty.channel.ChannelHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.controller.protocol.zwave.ZWaveCommandBuilder;
@@ -29,8 +31,7 @@ import org.openremote.protocol.zwave.LoggerUtil;
 import org.openremote.protocol.zwave.port.TransportLayer;
 import org.openremote.protocol.zwave.port.TransportLayerListener;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.netty.channel.ChannelHandler;
 
 /**
  * Wrapper around {@link SerialIOClient} to allow compatibility with Z Wave library

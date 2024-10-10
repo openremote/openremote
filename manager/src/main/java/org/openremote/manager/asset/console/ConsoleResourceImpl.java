@@ -19,7 +19,11 @@
  */
 package org.openremote.manager.asset.console;
 
-import jakarta.ws.rs.BadRequestException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -42,10 +46,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import jakarta.ws.rs.BadRequestException;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
 

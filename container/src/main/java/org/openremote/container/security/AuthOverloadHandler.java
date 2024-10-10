@@ -19,14 +19,14 @@
  */
 package org.openremote.container.security;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 import java.util.Deque;
 
-import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static org.openremote.model.Constants.REALM_PARAM_NAME;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
 /**
  * If a client can't set Authorization header (e.g. Javascript websocket API), use a request

@@ -20,6 +20,7 @@
 package org.openremote.model.provisioning;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import org.openremote.model.asset.Asset;
 
 public class SuccessResponseMessage extends ProvisioningMessage {

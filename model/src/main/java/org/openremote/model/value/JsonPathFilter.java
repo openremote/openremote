@@ -30,6 +30,7 @@ import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -53,8 +54,7 @@ public class JsonPathFilter extends ValueFilter {
 
     public static final String NAME = "jsonPath";
 
-    @NotNull
-    @JsonProperty
+    @NotNull @JsonProperty
     public String path;
 
     @JsonProperty

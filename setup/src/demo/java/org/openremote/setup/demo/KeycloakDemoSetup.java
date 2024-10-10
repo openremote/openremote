@@ -19,15 +19,15 @@
  */
 package org.openremote.setup.demo;
 
+import java.util.Arrays;
+import java.util.logging.Logger;
+
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
-
-import java.util.Arrays;
-import java.util.logging.Logger;
 
 /**
  * We have the following demo users:

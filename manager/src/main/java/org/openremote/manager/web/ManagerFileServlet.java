@@ -19,18 +19,6 @@
  */
 package org.openremote.manager.web;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.ServletInfo;
-import io.undertow.servlet.util.ImmediateInstanceHandle;
-import org.openremote.model.Container;
-import org.openremote.container.web.file.FileServlet;
-import org.openremote.container.web.file.GzipResponseFilter;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +27,19 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.openremote.container.web.file.FileServlet;
+import org.openremote.container.web.file.GzipResponseFilter;
+import org.openremote.model.Container;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 
 public class ManagerFileServlet extends FileServlet {
 

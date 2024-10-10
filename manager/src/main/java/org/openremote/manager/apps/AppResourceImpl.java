@@ -19,6 +19,12 @@
  */
 package org.openremote.manager.apps;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.model.apps.AppResource;
 import org.openremote.model.apps.ConsoleAppConfig;
@@ -29,11 +35,6 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AppResourceImpl extends WebResource implements AppResource {
 

@@ -19,12 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.util.List;
+
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
-
-import java.util.List;
 
 public interface InternalTransportCallbacks {
 
@@ -95,4 +95,3 @@ public interface InternalTransportCallbacks {
 
     void deleteScene(final int address, final int currentScene, final List<Integer> scenes);
 }
-

@@ -20,6 +20,17 @@
 package org.openremote.setup.load1;
 
 
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
+import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
+import static org.openremote.model.value.ValueType.NUMBER;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
 import org.apache.commons.io.IOUtils;
 import org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler;
 import org.openremote.manager.provisioning.ProvisioningService;
@@ -36,17 +47,6 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
-
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
-import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
-import static org.openremote.model.value.ValueType.NUMBER;
 
 public class ManagerSetup extends org.openremote.manager.setup.ManagerSetup {
     public static final String OR_SETUP_DEVICES = "OR_SETUP_DEVICES";

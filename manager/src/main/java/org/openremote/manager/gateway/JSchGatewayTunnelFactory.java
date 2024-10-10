@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.manager.gateway;
-
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JulLogger;
-import com.jcraft.jsch.Session;
-import org.openremote.model.gateway.GatewayTunnelInfo;
-import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JulLogger;
+import com.jcraft.jsch.Session;
+
+import org.openremote.model.gateway.GatewayTunnelInfo;
+import org.openremote.model.gateway.GatewayTunnelStartRequestEvent;
 
 public class JSchGatewayTunnelFactory implements GatewayTunnelFactory {
 

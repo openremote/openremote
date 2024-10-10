@@ -19,14 +19,14 @@
  */
 package org.openremote.setup.integration.protocol.http;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 public class TestHTTPServerProtocol extends AbstractHTTPServerProtocol<TestHTTPServerProtocol, HTTPServerTestAgent, DefaultAgentLink> {
 

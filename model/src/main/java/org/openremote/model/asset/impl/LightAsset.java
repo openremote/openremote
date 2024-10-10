@@ -19,6 +19,11 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.UNITS_KELVIN;
+import static org.openremote.model.Constants.UNITS_PERCENTAGE;
+
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
@@ -28,10 +33,6 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_KELVIN;
-import static org.openremote.model.Constants.UNITS_PERCENTAGE;
 
 @Entity
 public class LightAsset extends Asset<LightAsset> {

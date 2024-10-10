@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.http;
 
+import static org.openremote.agent.protocol.http.HTTPAgent.VALUE_HTTP_METHOD;
+
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
-
-import java.util.Optional;
-
-import static org.openremote.agent.protocol.http.HTTPAgent.VALUE_HTTP_METHOD;
 
 public abstract class AbstractHTTPServerAgent<T extends AbstractHTTPServerAgent<T, U, V>, U extends AbstractHTTPServerProtocol<U, T, V>, V extends AgentLink<?>> extends Agent<T, U, V> {
 

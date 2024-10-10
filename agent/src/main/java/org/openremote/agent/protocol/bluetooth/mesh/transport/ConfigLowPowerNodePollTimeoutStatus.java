@@ -69,4 +69,3 @@ public class ConfigLowPowerNodePollTimeoutStatus extends ConfigStatusMessage {
         return pollTimeout;
     }
 }
-

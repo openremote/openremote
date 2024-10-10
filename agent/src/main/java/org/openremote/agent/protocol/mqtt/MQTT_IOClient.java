@@ -19,12 +19,13 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import org.openremote.model.auth.UsernamePassword;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
+
+import org.openremote.model.auth.UsernamePassword;
 
 public class MQTT_IOClient extends AbstractMQTT_IOClient<String> {
 

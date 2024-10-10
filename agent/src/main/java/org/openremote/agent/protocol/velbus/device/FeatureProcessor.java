@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.value.ValueDescriptor;
-
 import java.util.Collections;
 import java.util.List;
+
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.value.ValueDescriptor;
 
 /**
  * Base class for reading/writing a set of device properties that relate to a feature/capability.

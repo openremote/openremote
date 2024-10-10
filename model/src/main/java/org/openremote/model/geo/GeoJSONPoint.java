@@ -19,14 +19,14 @@
  */
 package org.openremote.model.geo;
 
+import static org.openremote.model.geo.GeoJSONPoint.TYPE;
+
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import com.vividsolutions.jts.geom.Coordinate;
-
-import java.util.Objects;
-
-import static org.openremote.model.geo.GeoJSONPoint.TYPE;
 
 @JsonTypeName(TYPE)
 public class GeoJSONPoint extends GeoJSONGeometry {

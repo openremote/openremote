@@ -19,17 +19,32 @@
  */
 package org.openremote.container.security.keycloak;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebClient.getTarget;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.Constants.*;
+
+import java.net.URI;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.security.auth.Subject;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.LoginConfig;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.UriBuilder;
+
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
@@ -52,26 +67,14 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.util.TextUtil;
 
-import javax.security.auth.Subject;
-import java.net.URI;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.model.Constants.*;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.LoginConfig;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.UriBuilder;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 

@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.MessageSizeEstimator;

@@ -19,7 +19,16 @@
  */
 package org.openremote.manager.notification;
 
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.model.notification.Notification.Source.CLIENT;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
@@ -34,13 +43,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.model.notification.Notification.Source.CLIENT;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
 

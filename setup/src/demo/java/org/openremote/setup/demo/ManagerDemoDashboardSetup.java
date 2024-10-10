@@ -19,13 +19,13 @@
  */
 package org.openremote.setup.demo;
 
+import java.io.InputStream;
+
 import org.openremote.manager.dashboard.DashboardStorageService;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.dashboard.Dashboard;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.InputStream;
 
 public class ManagerDemoDashboardSetup extends ManagerSetup {
 

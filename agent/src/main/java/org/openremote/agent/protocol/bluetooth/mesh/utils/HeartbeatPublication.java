@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
-import org.openremote.agent.protocol.bluetooth.mesh.Features;
-
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
+
+import org.openremote.agent.protocol.bluetooth.mesh.Features;
 
 public class HeartbeatPublication extends Heartbeat {
 
@@ -130,4 +130,3 @@ public class HeartbeatPublication extends Heartbeat {
         }
     }
 }
-

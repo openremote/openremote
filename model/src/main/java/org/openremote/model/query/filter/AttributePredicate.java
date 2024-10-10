@@ -19,11 +19,11 @@
  */
 package org.openremote.model.query.filter;
 
+import java.util.Arrays;
+
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.value.NameHolder;
-
-import java.util.Arrays;
 
 /**
  * Adds additional predicate logic to {@link NameValuePredicate}, allowing predicating on {@link Attribute#getMeta}

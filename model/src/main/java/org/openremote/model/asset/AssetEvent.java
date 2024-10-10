@@ -19,12 +19,13 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
-
 import java.util.Arrays;
 import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or more top

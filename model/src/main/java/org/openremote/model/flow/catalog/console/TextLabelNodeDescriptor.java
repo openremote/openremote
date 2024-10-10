@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow.catalog.console;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.flow.Slot;
-import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
 
 import java.util.List;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.model.flow.Slot;
+import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
 
 public class TextLabelNodeDescriptor extends WidgetNodeDescriptor {
 

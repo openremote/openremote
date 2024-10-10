@@ -19,16 +19,17 @@
  */
 package org.openremote.model.alarm;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.Formula;
-import org.openremote.model.asset.Asset;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.hibernate.annotations.Formula;
+import org.openremote.model.asset.Asset;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "ALARM")
@@ -38,8 +39,7 @@ public class SentAlarm {
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     protected Long id;
 
-    @NotNull
-    @Column(name = "REALM", nullable = false, updatable = false)
+    @NotNull @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
     @Column(name = "TITLE", nullable = false)
@@ -48,18 +48,15 @@ public class SentAlarm {
     @Column(name = "CONTENT", length = 4096)
     protected String content;
 
-    @NotNull
-    @Column(name = "SEVERITY", nullable = false, length = 15)
+    @NotNull @Column(name = "SEVERITY", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Severity severity;
 
-    @NotNull
-    @Column(name = "STATUS", nullable = false, length = 15)
+    @NotNull @Column(name = "STATUS", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Status status;
 
-    @NotNull()
-    @Column(name = "SOURCE", nullable = false, length = 50)
+    @NotNull() @Column(name = "SOURCE", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     protected Alarm.Source source;
 

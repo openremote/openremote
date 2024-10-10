@@ -19,11 +19,10 @@
  */
 package org.openremote.model.rules;
 
+import java.util.stream.Stream;
+
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TsIgnore;
-
-import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Facade for writing rules RHS actions, supporting {@link UserQuery} within the scope

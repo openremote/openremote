@@ -19,13 +19,13 @@
  */
 package org.openremote.setup.load1;
 
-import org.openremote.model.Container;
-import org.openremote.model.setup.Setup;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.openremote.model.Container;
+import org.openremote.model.setup.Setup;
 
 public class SetupTasks implements org.openremote.model.setup.SetupTasks {
 

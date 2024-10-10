@@ -19,15 +19,8 @@
  */
 package org.openremote.agent.protocol.simulator.storage;
 
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.impl.ElectricityStorageAsset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.asset.impl.ElectricityStorageAsset.*;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -40,8 +33,15 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.impl.ElectricityStorageAsset.*;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.Container;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.ElectricityStorageAsset;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorAgent, StorageSimulatorAgentLink> {
 

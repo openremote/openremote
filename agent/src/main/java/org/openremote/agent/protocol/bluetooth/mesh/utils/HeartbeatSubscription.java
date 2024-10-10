@@ -119,4 +119,3 @@ public class HeartbeatSubscription extends Heartbeat {
         else throw new IllegalArgumentException("Period Log out of range");
     }
 }
-

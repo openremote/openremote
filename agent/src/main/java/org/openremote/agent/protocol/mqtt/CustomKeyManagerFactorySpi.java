@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.agent.protocol.mqtt;
 
-import javax.net.ssl.*;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.logging.Logger;
+
+import javax.net.ssl.*;
 
 public class CustomKeyManagerFactorySpi extends KeyManagerFactorySpi {
 

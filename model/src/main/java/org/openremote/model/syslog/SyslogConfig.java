@@ -19,23 +19,19 @@
  */
 package org.openremote.model.syslog;
 
-import org.hibernate.validator.constraints.Range;
+import java.util.Arrays;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.Arrays;
 
 public class SyslogConfig {
 
     public static final int DEFAULT_LIMIT = 50;
 
-    @NotNull
-    protected SyslogLevel storedLevel;
+    @NotNull protected SyslogLevel storedLevel;
 
-    @NotNull
-    protected SyslogCategory[] storedCategories;
+    @NotNull protected SyslogCategory[] storedCategories;
 
-    @NotNull
-    protected int storedMaxAgeMinutes;
+    @NotNull protected int storedMaxAgeMinutes;
 
     public SyslogConfig() {
     }

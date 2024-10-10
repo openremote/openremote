@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.snmp;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.AgentLink;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.Optional;
 
 public class SNMPAgentLink extends AgentLink<SNMPAgentLink> {
 
-    @NotNull
-    protected String oid;
+    @NotNull protected String oid;
 
     // For Hydrators
     protected SNMPAgentLink() {

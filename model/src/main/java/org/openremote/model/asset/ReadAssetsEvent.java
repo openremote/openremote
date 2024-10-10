@@ -21,7 +21,7 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
+
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 

@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.agent.protocol.velbus.device.VelbusDevice;
-import org.openremote.model.asset.agent.ConnectionStatus;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.agent.protocol.velbus.device.VelbusDevice;
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class VelbusNetwork {
 

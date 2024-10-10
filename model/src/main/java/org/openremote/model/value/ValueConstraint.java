@@ -19,9 +19,6 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.*;
-import org.openremote.model.util.ValueUtil;
-
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.time.Instant;
@@ -31,6 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.PatternSyntaxException;
+
+import com.fasterxml.jackson.annotation.*;
+
+import org.openremote.model.util.ValueUtil;
 
 // TODO: Switch to JSONSchema with a validator that supports POJOs (something like
 //  https://github.com/java-json-tools/json-schema-validator which is no longer maintained) or find a JSR-380

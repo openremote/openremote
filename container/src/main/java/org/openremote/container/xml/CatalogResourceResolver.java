@@ -19,15 +19,15 @@
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.ls.LSInput;
-import org.w3c.dom.ls.LSResourceResolver;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import org.w3c.dom.ls.LSInput;
+import org.w3c.dom.ls.LSResourceResolver;
 
 /**
  * Another namespace-URI-to-whatever (namespace, context, resolver, map) magic thingy.

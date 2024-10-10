@@ -19,17 +19,18 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFilter;
+import static java.util.Objects.requireNonNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueFilter;
 
 /**
  * A link from one attribute to another with a definition of how to map the value from the source attribute

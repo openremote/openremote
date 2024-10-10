@@ -19,18 +19,19 @@
  */
 package org.openremote.model.asset;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.*;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class AssetTypeInfo {
     protected AssetDescriptor<?> assetDescriptor;

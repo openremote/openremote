@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.UUID;
+
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
-import java.util.UUID;
 
 /**
  * Abstract state class that handles Generic Message States
@@ -100,4 +100,3 @@ class GenericMessageState extends MeshMessageState {
         return MessageState.GENERIC_MESSAGE_STATE;
     }
 }
-

@@ -22,6 +22,7 @@ package org.openremote.model.event.shared;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.syslog.SyslogEvent;
 

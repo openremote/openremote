@@ -19,6 +19,17 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
@@ -31,17 +42,6 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
-
-import java.nio.file.Path;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends AbstractProtocol<T, V> {
     protected MailClient mailClient;

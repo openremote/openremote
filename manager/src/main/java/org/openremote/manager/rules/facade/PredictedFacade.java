@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.rules.facade;
 
+import java.time.LocalDateTime;
+
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
@@ -26,8 +28,6 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Ruleset;
-
-import java.time.LocalDateTime;
 
 public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
 

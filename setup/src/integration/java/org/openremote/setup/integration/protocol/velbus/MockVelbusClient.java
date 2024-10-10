@@ -19,16 +19,17 @@
  */
 package org.openremote.setup.integration.protocol.velbus;
 
-import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.NettyIOClient;
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.asset.agent.ConnectionStatus;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import org.openremote.agent.protocol.io.NettyIOClient;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.asset.agent.ConnectionStatus;
+
+import io.netty.channel.ChannelHandler;
 
 public class MockVelbusClient implements NettyIOClient<VelbusPacket> {
     protected final List<Consumer<VelbusPacket>> messageConsumers = new ArrayList<>();

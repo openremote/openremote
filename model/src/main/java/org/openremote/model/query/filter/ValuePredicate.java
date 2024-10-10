@@ -19,13 +19,13 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(value = StringPredicate.class, name = StringPredicate.name),

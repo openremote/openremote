@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.websocket;
 
+import java.util.Optional;
+
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
@@ -26,7 +28,6 @@ import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgentLink> {

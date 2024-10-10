@@ -19,20 +19,22 @@
  */
 package org.openremote.container.persistence;
 
-import com.zaxxer.hikari.HikariPoolMXBean;
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
+import static org.openremote.container.persistence.Database.PROPERTY_POOL_NAME;
 
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.Database.PROPERTY_POOL_NAME;
+import javax.management.JMX;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+
+import com.zaxxer.hikari.HikariPoolMXBean;
+
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class PersistenceHealthStatusProvider implements HealthStatusProvider {
 

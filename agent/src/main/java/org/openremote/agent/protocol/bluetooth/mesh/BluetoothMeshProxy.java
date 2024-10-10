@@ -19,6 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+
 import com.welie.blessed.BluetoothCentralManager;
 import com.welie.blessed.BluetoothCentralManagerCallback;
 import com.welie.blessed.BluetoothCommandStatus;
@@ -28,14 +34,9 @@ import com.welie.blessed.BluetoothGattService;
 import com.welie.blessed.BluetoothPeripheral;
 import com.welie.blessed.BluetoothPeripheralCallback;
 import com.welie.blessed.ScanResult;
+
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class BluetoothMeshProxy extends BluetoothCentralManagerCallback {
 

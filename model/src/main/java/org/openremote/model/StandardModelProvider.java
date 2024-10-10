@@ -19,6 +19,13 @@
  */
 package org.openremote.model;
 
+import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Logger;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
@@ -26,13 +33,6 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 
 /**
  * Built in model provider that scans the model classes for asset classes and also includes {@link MetaItemType} and

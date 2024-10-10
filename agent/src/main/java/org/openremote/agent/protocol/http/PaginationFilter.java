@@ -19,10 +19,11 @@
  */
 package org.openremote.agent.protocol.http;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 import java.net.URI;
+
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 public class PaginationFilter implements ClientRequestFilter {
 

@@ -19,15 +19,16 @@
  */
 package org.openremote.agent.protocol.tcp;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
+import org.openremote.agent.protocol.io.AbstractNettyIOServer;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.openremote.agent.protocol.io.AbstractNettyIOServer;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 /**
  * Abstract IO Server for creating TCP socket servers that clients can connect to. Concrete implementation need

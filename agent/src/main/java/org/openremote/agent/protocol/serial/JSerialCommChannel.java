@@ -19,16 +19,17 @@
  */
 package org.openremote.agent.protocol.serial;
 
-import com.fazecast.jSerialComm.SerialPort;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
+import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_SEMI_BLOCKING;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
-import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_SEMI_BLOCKING;
-import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+import com.fazecast.jSerialComm.SerialPort;
+
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
 
 /**
  * A channel to a serial device using the jSerialComm library.

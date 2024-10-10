@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow;
+
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,7 +28,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import java.io.Serializable;
 
 @IdClass(Wire.Id.class)
 @Entity
@@ -71,18 +71,15 @@ public class Wire {
     }
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "SOURCE_NODE_ID")
+    @NotNull @Column(name = "SOURCE_NODE_ID")
     public String sourceId;
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "SINK_NODE_ID")
+    @NotNull @Column(name = "SINK_NODE_ID")
     public String sinkId;
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "FLOW_ID")
+    @NotNull @Column(name = "FLOW_ID")
 
     @JsonIgnore
     public String flowId;

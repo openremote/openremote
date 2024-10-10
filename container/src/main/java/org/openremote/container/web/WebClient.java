@@ -19,7 +19,8 @@
  */
 package org.openremote.container.web;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import java.net.URI;
+
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
@@ -27,7 +28,6 @@ import org.openremote.container.security.BearerAuthClientRequestFilter;
 import org.openremote.container.security.ClientSecretRequestFilter;
 
 import jakarta.ws.rs.client.Client;
-import java.net.URI;
 
 public interface WebClient {
 

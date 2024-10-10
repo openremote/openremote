@@ -19,12 +19,12 @@
  */
 package org.openremote.model.rules;
 
+import java.time.LocalDateTime;
+
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.util.TsIgnore;
-
-import java.time.LocalDateTime;
 
 /**
  * Facade for predicted datapoints in rules

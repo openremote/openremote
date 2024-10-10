@@ -19,6 +19,18 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createNetworkNonce;
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createProxyNonce;
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.deObfuscateNetworkHeader;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Logger;
+
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -29,18 +41,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherT
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createNetworkNonce;
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createProxyNonce;
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.deObfuscateNetworkHeader;
 
 /**
  * Abstract class that handles mesh messages
@@ -335,4 +335,3 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
         currentState.executeSend();
     }
 }
-

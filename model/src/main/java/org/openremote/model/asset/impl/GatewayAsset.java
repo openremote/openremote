@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset.impl;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -28,7 +30,6 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class GatewayAsset extends Asset<GatewayAsset> {

@@ -61,4 +61,3 @@ public class ExtendedInvalidCipherTextException extends InvalidCipherTextExcepti
         return cause;
     }
 }
-

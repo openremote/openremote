@@ -19,10 +19,29 @@
  */
 package org.openremote.manager.rules;
 
-import org.openremote.model.PersistenceEvent;
-import jakarta.ws.rs.core.MediaType;
+import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
+import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+import static org.openremote.model.util.ValueUtil.distinctByKey;
+
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.alarm.Alarm;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
@@ -48,25 +67,7 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
-import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.distinctByKey;
+import jakarta.ws.rs.core.MediaType;
 
 public class JsonRulesBuilder extends RulesBuilder {
 

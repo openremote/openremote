@@ -19,11 +19,11 @@
  */
 package org.openremote.model.value;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

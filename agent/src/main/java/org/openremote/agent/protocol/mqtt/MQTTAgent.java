@@ -19,14 +19,15 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import jakarta.persistence.Entity;
+import java.util.Optional;
+
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import java.util.Optional;
+import jakarta.persistence.Entity;
 
 @Entity
 public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {

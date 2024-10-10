@@ -19,13 +19,14 @@
  */
 package org.openremote.model.notification;
 
+import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
+import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.openremote.model.attribute.AttributeRef;
 
-import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
-import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
+import org.openremote.model.attribute.AttributeRef;
 
 
 public class PushNotificationAction {

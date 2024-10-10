@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.model.util.Pair;
-
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.openremote.model.util.Pair;
 
 /**
  * Abstract processor for channel related operations

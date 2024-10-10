@@ -19,17 +19,17 @@
  */
 package org.openremote.agent.protocol.serial;
 
-import io.netty.channel.Channel;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+
+import java.util.concurrent.Future;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
-
-import java.util.concurrent.Future;
-
-import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
-import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
-import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+import io.netty.channel.Channel;
 
 /**
  * This is a {@link IOClient} implementation for serial ports.

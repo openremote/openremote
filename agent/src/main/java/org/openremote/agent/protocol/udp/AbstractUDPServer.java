@@ -19,6 +19,12 @@
  */
 package org.openremote.agent.protocol.udp;
 
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.logging.Level;
+
+import org.openremote.agent.protocol.io.AbstractNettyIOServer;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -29,11 +35,6 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.DatagramPacketEncoder;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.io.AbstractNettyIOServer;
-
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.logging.Level;
 
 /**
  * UDP in Netty is crap; everything goes through the single server channel as it is connectionless but there is no way

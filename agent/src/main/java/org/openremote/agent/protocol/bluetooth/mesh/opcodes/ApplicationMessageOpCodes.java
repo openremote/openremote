@@ -172,4 +172,3 @@ public class ApplicationMessageOpCodes {
     public static final int SCENE_DELETE_UNACKNOWLEDGED = 0x829F;
 
 }
-

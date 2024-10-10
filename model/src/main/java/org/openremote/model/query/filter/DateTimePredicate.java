@@ -19,15 +19,16 @@
  */
 package org.openremote.model.query.filter;
 
+import java.util.Date;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
-
-import java.util.Date;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Predicate for date time values; provided values should be valid ISO 8601 datetime strings

@@ -19,6 +19,23 @@
  */
 package org.openremote.container.security.basic;
 
+import static io.undertow.util.Headers.AUTHORIZATION;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.IdentityProvider;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+
 import io.undertow.UndertowMessages;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanismFactory;
@@ -33,24 +50,8 @@ import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
-import org.openremote.model.Container;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.IdentityProvider;
-import org.openremote.model.Constants;
-
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import static io.undertow.util.Headers.AUTHORIZATION;
 
 public abstract class BasicIdentityProvider implements IdentityProvider {
 

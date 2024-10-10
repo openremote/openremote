@@ -19,9 +19,7 @@
  */
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.io.Serializable;
 import java.util.EnumSet;
@@ -30,7 +28,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.openremote.model.syslog.SyslogCategory;
 
 /**
  * Basic cron expression parser (unfortunately the quartz cron expression class

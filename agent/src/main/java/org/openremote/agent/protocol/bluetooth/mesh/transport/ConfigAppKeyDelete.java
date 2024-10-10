@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.logging.Logger;
 
 /**
  * To be used as a wrapper class to create the ConfigAppKeyAdd message.
@@ -95,4 +95,3 @@ public class ConfigAppKeyDelete extends ConfigMessage {
         mParameters = paramsBuffer.array();
     }
 }
-

@@ -19,12 +19,13 @@
  */
 package org.openremote.container.security;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-import java.io.IOException;
-
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_ACCESS_TOKEN;
+
+import java.io.IOException;
+
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 /**
  * Add Bearer authentication header if request context is configured with accessToken.
@@ -39,4 +40,3 @@ public class BearerAuthClientRequestFilter implements ClientRequestFilter {
         }
     }
 }
-

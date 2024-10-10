@@ -19,13 +19,13 @@
  */
 package org.openremote.model.query;
 
+import java.io.Serializable;
+import java.util.Arrays;
+
 import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-
-import java.io.Serializable;
-import java.util.Arrays;
 
 public class DashboardQuery implements Serializable {
 

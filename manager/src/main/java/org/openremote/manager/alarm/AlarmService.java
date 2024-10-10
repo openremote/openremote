@@ -19,33 +19,9 @@
  */
 package org.openremote.manager.alarm;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
-import org.apache.camel.builder.RouteBuilder;
-import org.hibernate.Session;
-import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.security.ManagerIdentityProvider;
-import org.openremote.model.Constants;
-import org.openremote.model.PersistenceEvent;
-import org.openremote.model.alarm.*;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.manager.event.ClientEventService;
-
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.RealmFilter;
-import org.openremote.model.notification.*;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.security.User;
-import org.openremote.model.util.TextUtil;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.OR_HOSTNAME;
+import static org.openremote.model.alarm.Alarm.Source.*;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -55,9 +31,33 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.OR_HOSTNAME;
-import static org.openremote.model.alarm.Alarm.Source.*;
+import org.apache.camel.builder.RouteBuilder;
+import org.hibernate.Session;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.security.ManagerIdentityProvider;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.*;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.notification.*;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQuery;
 
 /**
  * A service for managing {@link SentAlarm}s. It also provides functionality for managing links between {@link SentAlarm}s

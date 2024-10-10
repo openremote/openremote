@@ -20,6 +20,7 @@
 package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import jakarta.validation.constraints.NotNull;
 
 public class Alarm {
@@ -49,27 +50,21 @@ public class Alarm {
     public static final String HEADER_SOURCE = Alarm.class.getName() + ".SOURCE";
     public static final String HEADER_SOURCE_ID = Alarm.class.getName() + ".SOURCEID";
 
-    @NotNull
-    protected String title;
+    @NotNull protected String title;
 
     protected String content;
 
-    @NotNull
-    protected Severity severity;
+    @NotNull protected Severity severity;
 
-    @NotNull
-    protected Status status;
+    @NotNull protected Status status;
 
     protected String assigneeId;
 
-    @NotNull
-    protected String realm;
+    @NotNull protected String realm;
 
-    @NotNull
-    protected String sourceId;
+    @NotNull protected String sourceId;
 
-    @NotNull
-    protected Source source;
+    @NotNull protected Source source;
 
     @JsonCreator
     public Alarm(String title, String content, Severity severity, String assigneeId, String realm) {

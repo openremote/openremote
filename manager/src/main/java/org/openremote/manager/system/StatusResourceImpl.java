@@ -19,11 +19,6 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.system.StatusResource;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -32,6 +27,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
+import org.openremote.model.system.StatusResource;
 
 public class StatusResourceImpl implements StatusResource {
 

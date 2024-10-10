@@ -19,12 +19,12 @@
  */
 package org.openremote.model.flow.catalog;
 
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
 import org.openremote.model.flow.Slot;
-
-import java.util.List;
-import java.util.function.Supplier;
 
 public class AssetNodeDescriptor extends NodeDescriptor {
 

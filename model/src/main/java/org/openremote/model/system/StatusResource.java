@@ -19,17 +19,18 @@
  */
 package org.openremote.model.system;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+import java.util.Map;
+
+import org.openremote.model.Constants;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import org.openremote.model.Constants;
-
-import java.util.Map;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Status", description = "Operations on system status")
 @Path("")

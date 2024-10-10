@@ -19,20 +19,21 @@
  */
 package org.openremote.container.security;
 
+import static org.openremote.container.util.MapAccess.*;
+
+import java.util.logging.Logger;
+
+import org.jboss.resteasy.spi.CorsHeaders;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.util.HttpString;
-import org.jboss.resteasy.spi.CorsHeaders;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.*;
 
 public abstract class IdentityService implements ContainerService {
 

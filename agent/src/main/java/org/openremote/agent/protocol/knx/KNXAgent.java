@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.knx;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
@@ -27,7 +29,6 @@ import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.Pattern;
-import java.util.Optional;
 
 @Entity
 public class KNXAgent extends Agent<KNXAgent, KNXProtocol, KNXAgentLink> {

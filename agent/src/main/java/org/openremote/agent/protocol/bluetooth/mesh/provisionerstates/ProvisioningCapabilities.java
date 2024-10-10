@@ -19,22 +19,22 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AlgorithmType;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AlgorithmType;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 
 public class ProvisioningCapabilities {
     private static final int PUBLIC_KEY_INFORMATION_AVAILABLE = 0x01;
     private static final int STATIC_OOB_INFO_AVAILABLE = 0x01;
 
 
-    private static final Logger LOG = java.util.logging.Logger.getLogger(ProvisioningCapabilities.class.getName());    
+    private static final Logger LOG = java.util.logging.Logger.getLogger(ProvisioningCapabilities.class.getName());
     private byte numberOfElements;
     private short rawAlgorithm;
     private List<AlgorithmType> supportedAlgorithmTypes;

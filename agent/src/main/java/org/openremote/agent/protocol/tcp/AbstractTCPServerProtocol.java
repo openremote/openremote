@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.tcp;
 
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
-
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 /**
  * This is an abstract protocol for creating TCP Server protocols. This allows TCP clients to connect and exchange data.

@@ -19,15 +19,15 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
+import static org.openremote.agent.protocol.bluetooth.mesh.Scene.isValidSceneNumber;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.bluetooth.mesh.Scene.isValidSceneNumber;
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 /**
  * To be used as a wrapper class when creating a SceneStore message.
@@ -70,4 +70,3 @@ public class SceneStore extends GenericMessage {
         mParameters = paramsBuffer.array();
     }
 }
-

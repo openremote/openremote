@@ -19,8 +19,12 @@
  */
 package org.openremote.manager.system;
 
-import io.micrometer.core.instrument.Tags;
-import io.prometheus.client.exporter.HTTPServer;
+import static org.apache.camel.component.micrometer.MicrometerConstants.ROUTE_ID_TAG;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.NamedNode;
 import org.apache.camel.Route;
@@ -37,11 +41,8 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ServiceLoader;
-
-import static org.apache.camel.component.micrometer.MicrometerConstants.ROUTE_ID_TAG;
+import io.micrometer.core.instrument.Tags;
+import io.prometheus.client.exporter.HTTPServer;
 
 /**
  * This service is here to initialise the discovered {@link HealthStatusProvider}s and ({@link StatusResource}

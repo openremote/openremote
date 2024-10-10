@@ -19,10 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Date;
 
 public class ValueDatapoint<T> {
 

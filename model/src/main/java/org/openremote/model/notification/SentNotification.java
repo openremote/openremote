@@ -19,14 +19,15 @@
  */
 package org.openremote.model.notification;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.Date;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "NOTIFICATION")
@@ -41,21 +42,17 @@ public class SentNotification {
     @Column(name = "NAME")
     protected String name;
 
-    @NotNull
-    @Column(name = "TYPE", nullable = false, length = 50)
+    @NotNull @Column(name = "TYPE", nullable = false, length = 50)
     protected String type;
 
-    @NotNull
-    @Column(name = "TARGET", length = 50)
+    @NotNull @Column(name = "TARGET", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.TargetType target;
 
-    @NotNull
-    @Column(name = "TARGET_ID")
+    @NotNull @Column(name = "TARGET_ID")
     protected String targetId;
 
-    @NotNull()
-    @Column(name = "SOURCE", length = 50)
+    @NotNull() @Column(name = "SOURCE", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.Source source;
 

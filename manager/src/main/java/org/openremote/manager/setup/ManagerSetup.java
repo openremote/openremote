@@ -19,6 +19,19 @@
  */
 package org.openremote.manager.setup;
 
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -41,19 +54,6 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
-import static org.openremote.model.value.ValueType.*;
 
 public class ManagerSetup implements Setup {
 

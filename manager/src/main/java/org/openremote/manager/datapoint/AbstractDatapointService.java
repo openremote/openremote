@@ -19,25 +19,7 @@
  */
 package org.openremote.manager.datapoint;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.persistence.TypedQuery;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.Session;
-import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.Datapoint;
-import org.openremote.model.datapoint.DatapointPeriod;
-import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
-import org.openremote.model.util.ValueUtil;
-import org.postgresql.util.PGobject;
+import static java.time.temporal.ChronoUnit.DAYS;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -56,7 +38,27 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.hibernate.Session;
+import org.hibernate.jdbc.AbstractReturningWork;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.Datapoint;
+import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
+import org.openremote.model.util.ValueUtil;
+import org.postgresql.util.PGobject;
+
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Base class for all classes that store and retrieve {@link org.openremote.model.datapoint.Datapoint}.

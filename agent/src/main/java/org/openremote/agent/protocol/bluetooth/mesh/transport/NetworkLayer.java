@@ -19,6 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
 import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
@@ -27,14 +35,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherT
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * NetworkLayer implementation of the mesh network architecture as per the mesh profile specification.
@@ -655,4 +655,3 @@ abstract class NetworkLayer extends LowerTransportLayer {
         return SecureUtils.encryptCCM(unencryptedNetworkPayload, encryptionKey, nonce, micLength);
     }
 }
-

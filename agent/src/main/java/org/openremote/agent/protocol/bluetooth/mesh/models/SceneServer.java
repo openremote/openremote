@@ -41,4 +41,3 @@ public class SceneServer extends SigModel {
         return currentScene;
     }
 }
-

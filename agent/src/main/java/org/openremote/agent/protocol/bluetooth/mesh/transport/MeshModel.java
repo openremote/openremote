@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
 import java.util.*;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 /**
  * Base mesh model class

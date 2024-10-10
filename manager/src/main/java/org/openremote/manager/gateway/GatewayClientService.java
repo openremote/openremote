@@ -19,36 +19,10 @@
  */
 package org.openremote.manager.gateway;
 
-import io.netty.channel.ChannelHandler;
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.http.client.utils.URIBuilder;
-import org.openremote.manager.rules.AssetQueryPredicate;
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.auth.OAuthClientCredentialsGrant;
-import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.model.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.*;
-import org.openremote.model.gateway.*;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 import java.io.File;
 import java.util.*;
@@ -58,10 +32,37 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.http.client.utils.URIBuilder;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetProcessingService;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.AssetQueryPredicate;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.event.shared.*;
+import org.openremote.model.gateway.*;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.netty.channel.ChannelHandler;
 
 /**
  * Handles outbound connections to central managers

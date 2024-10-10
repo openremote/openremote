@@ -19,13 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class BluetoothMeshAgent extends Agent<BluetoothMeshAgent, BluetoothMeshProtocol, BluetoothMeshAgentLink> {

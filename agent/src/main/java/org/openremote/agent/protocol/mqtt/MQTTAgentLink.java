@@ -19,10 +19,11 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class MQTTAgentLink extends AgentLink<MQTTAgentLink> {
 

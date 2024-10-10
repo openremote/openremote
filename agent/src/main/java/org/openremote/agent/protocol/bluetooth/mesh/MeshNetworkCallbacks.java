@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-
 import java.util.List;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 
 public interface MeshNetworkCallbacks {
 

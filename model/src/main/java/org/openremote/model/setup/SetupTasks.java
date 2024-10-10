@@ -19,9 +19,9 @@
  */
 package org.openremote.model.setup;
 
-import org.openremote.model.Container;
-
 import java.util.List;
+
+import org.openremote.model.Container;
 
 /**
  * Provides a list of {@link Setup} tasks to execute.

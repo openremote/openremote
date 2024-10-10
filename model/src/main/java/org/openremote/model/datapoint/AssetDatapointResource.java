@@ -19,17 +19,18 @@
  */
 package org.openremote.model.datapoint;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.Constants;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.Suspended;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Asset Datapoint", description = "Operations on asset datapoints")
 @Path("asset/datapoint")

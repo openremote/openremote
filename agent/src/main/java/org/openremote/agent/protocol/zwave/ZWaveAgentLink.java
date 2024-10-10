@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.zwave;
 
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class ZWaveAgentLink extends AgentLink<ZWaveAgentLink> {
 

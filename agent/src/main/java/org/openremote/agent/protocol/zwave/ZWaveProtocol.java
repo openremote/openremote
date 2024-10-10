@@ -19,6 +19,15 @@
  */
 package org.openremote.agent.protocol.zwave;
 
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
 import org.openremote.model.asset.AssetTreeNode;
@@ -30,15 +39,6 @@ import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.impl.ColourRGB;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
 public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> implements ProtocolAssetDiscovery {
 

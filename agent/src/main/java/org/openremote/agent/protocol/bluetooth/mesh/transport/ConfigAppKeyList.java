@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
 /**
  * Creates the ConfigAppKeyList Message.
@@ -87,4 +87,3 @@ public class ConfigAppKeyList extends ConfigStatusMessage  {
         return mKeyIndexes;
     }
 }
-

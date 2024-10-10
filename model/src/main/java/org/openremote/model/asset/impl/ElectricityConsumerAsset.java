@@ -19,13 +19,13 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.UNITS_KILO;
+import static org.openremote.model.Constants.UNITS_WATT;
+
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
-
-import static org.openremote.model.Constants.UNITS_KILO;
-import static org.openremote.model.Constants.UNITS_WATT;
 
 @Entity
 public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsumerAsset> {

@@ -19,6 +19,8 @@
  */
 package org.openremote.setup.demo.model;
 
+import static org.openremote.model.Constants.*;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
@@ -26,8 +28,6 @@ import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class SoilSensorAsset extends Asset<SoilSensorAsset> {

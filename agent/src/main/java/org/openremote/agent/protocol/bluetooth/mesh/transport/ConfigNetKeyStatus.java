@@ -19,11 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
 /**
  * Creates the ConfigNetKeyStatus Message.
@@ -82,4 +81,3 @@ public class ConfigNetKeyStatus extends ConfigStatusMessage {
         return mStatusCode == 0x00;
     }
 }
-

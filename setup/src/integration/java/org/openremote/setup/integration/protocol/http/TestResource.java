@@ -19,13 +19,13 @@
  */
 package org.openremote.setup.integration.protocol.http;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("resource1")
 public interface TestResource {

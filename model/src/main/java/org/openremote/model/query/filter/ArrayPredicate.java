@@ -19,15 +19,16 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.util.ValueUtil;
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Determines if the value is an array and meets the following:

@@ -19,13 +19,13 @@
  */
 package org.openremote.agent.protocol.udp;
 
+import java.net.InetSocketAddress;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-
-import java.net.InetSocketAddress;
 
 /**
  * This is an {@link AbstractUDPServer} implementation that handles {@link String} messages.

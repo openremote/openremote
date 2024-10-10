@@ -19,16 +19,16 @@
  */
 package org.openremote.manager.app;
 
+import java.io.*;
+import java.util.logging.Logger;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-
-import java.io.*;
-import java.util.logging.Logger;
+import org.openremote.model.manager.ConfigurationResource;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 

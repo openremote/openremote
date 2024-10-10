@@ -19,13 +19,17 @@
  */
 package org.openremote.agent.protocol.http;
 
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.Lists;
-import io.undertow.server.HttpHandler;
-import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.ServletInfo;
-import io.undertow.util.HttpString;
+
 import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
@@ -43,16 +47,14 @@ import org.openremote.model.http.HTTPMethod;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
+import io.undertow.server.HttpHandler;
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.util.HttpString;
 import jakarta.servlet.ServletException;
 import jakarta.ws.rs.core.Application;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be created for each

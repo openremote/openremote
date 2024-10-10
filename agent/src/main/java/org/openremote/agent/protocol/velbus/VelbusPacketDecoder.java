@@ -19,13 +19,13 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 
 import java.util.List;
 
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
 public final class VelbusPacketDecoder extends ByteToMessageDecoder {
 

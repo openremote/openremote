@@ -19,10 +19,26 @@
  */
 package org.openremote.manager.mqtt;
 
+import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
+import static org.openremote.manager.event.ClientEventService.*;
+import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.syslog.SyslogCategory.API;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.mqtt.MqttQoS;
+
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
@@ -43,22 +59,8 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import static org.apache.camel.support.builder.PredicateBuilder.and;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
-import static org.openremote.manager.event.ClientEventService.*;
-import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.syslog.SyslogCategory.API;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.mqtt.MqttQoS;
 
 /**
  * This handler uses the {@link ClientEventService} to publish and subscribe to asset and attribute events; converting

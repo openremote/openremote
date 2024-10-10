@@ -19,12 +19,9 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.util.Pair;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.ValueType;
+import static org.openremote.agent.protocol.velbus.VelbusPacket.InboundCommand.DIMMER_STATUS;
+import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.*;
+import static org.openremote.model.util.TextUtil.*;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -32,9 +29,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.openremote.agent.protocol.velbus.VelbusPacket.InboundCommand.DIMMER_STATUS;
-import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.*;
-import static org.openremote.model.util.TextUtil.*;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.util.EnumUtil;
+import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.ValueType;
 
 public class AnalogOutputProcessor extends OutputChannelProcessor {
 

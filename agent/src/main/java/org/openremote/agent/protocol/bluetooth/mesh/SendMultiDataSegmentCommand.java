@@ -19,15 +19,16 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothGattCharacteristic;
-import com.welie.blessed.BluetoothPeripheral;
-import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
+
+import com.welie.blessed.BluetoothCommandStatus;
+import com.welie.blessed.BluetoothGattCharacteristic;
+import com.welie.blessed.BluetoothPeripheral;
+
+import org.openremote.model.syslog.SyslogCategory;
 
 public class SendMultiDataSegmentCommand implements SendDataCommand {
 

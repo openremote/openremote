@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol;
 
+import java.time.LocalDateTime;
+
 import org.openremote.model.ContainerService;
 import org.openremote.model.attribute.AttributeRef;
-
-import java.time.LocalDateTime;
 
 public interface ProtocolPredictedDatapointService extends ContainerService {
 

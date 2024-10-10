@@ -19,13 +19,14 @@
  */
 package org.openremote.container.web;
 
-import org.openremote.model.Container;
-
-import jakarta.ws.rs.core.Application;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import org.openremote.model.Container;
+
+import jakarta.ws.rs.core.Application;
 
 public class WebApplication extends Application {
 
@@ -56,4 +57,3 @@ public class WebApplication extends Application {
         return container;
     }
 }
-

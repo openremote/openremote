@@ -19,11 +19,22 @@
  */
 package org.openremote.manager.event;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.undertow.websockets.core.WebSocketChannel;
-import io.undertow.websockets.spi.WebSocketHttpExchange;
+import static java.lang.System.Logger.Level.*;
+import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
+import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
+import static org.openremote.model.Constants.*;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.UndertowComponent;
@@ -46,21 +57,11 @@ import org.openremote.model.event.Event;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
-
-import static java.lang.System.Logger.Level.*;
-import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
-import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
-import static org.openremote.model.Constants.*;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.undertow.websockets.core.WebSocketChannel;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.

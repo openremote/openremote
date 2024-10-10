@@ -19,6 +19,11 @@
  */
 package org.openremote.model.asset.agent;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.Map;
+import java.util.logging.Logger;
+
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
@@ -29,12 +34,6 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A protocol instance is responsible for connecting devices and services to the context broker. A protocol instance has

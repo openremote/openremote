@@ -19,9 +19,9 @@
  */
 package org.openremote.model;
 
-import org.openremote.model.util.TsIgnore;
-
 import java.util.List;
+
+import org.openremote.model.util.TsIgnore;
 
 /**
  * Interface for providing a list of entity class names to be registered for JPA, this can be used for registering

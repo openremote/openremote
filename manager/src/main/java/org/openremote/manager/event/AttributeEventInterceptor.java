@@ -19,9 +19,10 @@
  */
 package org.openremote.manager.event;
 
-import jakarta.persistence.EntityManager;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.model.attribute.AttributeEvent;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * An interceptor that can choose to intercept the {@link org.openremote.model.attribute.AttributeEvent} passing through

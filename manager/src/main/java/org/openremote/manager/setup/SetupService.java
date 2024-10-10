@@ -19,6 +19,11 @@
  */
 package org.openremote.manager.setup;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.logging.Logger;
+
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -26,11 +31,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.setup.Setup;
 import org.openremote.model.setup.SetupTasks;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ServiceLoader;
-import java.util.logging.Logger;
 
 /**
  * Executes setup tasks for a clean installation when the application starts.

@@ -19,12 +19,13 @@
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import javax.xml.xpath.XPath;
 import java.net.URI;
 import java.net.URL;
+
+import javax.xml.xpath.XPath;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * Wraps a W3C document and provides an entry point for browsing the DOM (in subclasses).

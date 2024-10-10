@@ -19,13 +19,12 @@
  */
 package org.openremote.model.rules;
 
+import java.util.stream.Stream;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
-
-import java.util.stream.Stream;
 
 /**
  * Facade for writing rules RHS actions, supporting asset queries within the scope

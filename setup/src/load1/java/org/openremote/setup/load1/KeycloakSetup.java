@@ -19,20 +19,20 @@
  */
 package org.openremote.setup.load1;
 
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.manager.setup.AbstractKeycloakSetup;
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.security.User;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.model.Constants.MASTER_REALM;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.openremote.manager.setup.AbstractKeycloakSetup;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.security.User;
 
 public class KeycloakSetup extends AbstractKeycloakSetup {
 

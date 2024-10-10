@@ -19,14 +19,10 @@
  */
 package org.openremote.manager.apps;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.PathHandler;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -35,10 +31,15 @@ import java.nio.file.Paths;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.PathHandler;
 
 public class ConsoleAppService implements ContainerService {
 

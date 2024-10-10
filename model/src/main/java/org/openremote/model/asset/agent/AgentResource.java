@@ -19,8 +19,8 @@
  */
 package org.openremote.model.asset.agent;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
@@ -29,10 +29,10 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should

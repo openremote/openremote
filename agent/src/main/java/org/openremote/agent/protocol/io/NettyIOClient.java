@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.io;
 
-import io.netty.channel.ChannelHandler;
-
 import java.util.function.Supplier;
+
+import io.netty.channel.ChannelHandler;
 
 /**
  * This is for IO clients that use Netty and are based on  {@link io.netty.channel.ChannelHandler}s for

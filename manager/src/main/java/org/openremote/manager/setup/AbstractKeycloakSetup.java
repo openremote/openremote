@@ -19,6 +19,13 @@
  */
 package org.openremote.manager.setup;
 
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -29,13 +36,6 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.setup.Setup;
-
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
-import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 

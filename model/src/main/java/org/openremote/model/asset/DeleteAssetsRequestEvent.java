@@ -19,13 +19,13 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.query.AssetQuery;
-
 import java.util.Arrays;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * A client sends this event to the server to delete one or more assets, expecting

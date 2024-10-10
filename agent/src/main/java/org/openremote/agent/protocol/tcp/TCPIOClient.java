@@ -19,15 +19,16 @@
  */
 package org.openremote.agent.protocol.tcp;
 
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import java.net.InetSocketAddress;
+import java.util.concurrent.Future;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
-import java.net.InetSocketAddress;
-import java.util.concurrent.Future;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 /**
  * This is a {@link IOClient} implementation for TCP.

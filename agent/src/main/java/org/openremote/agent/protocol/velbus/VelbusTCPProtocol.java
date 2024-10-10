@@ -19,13 +19,14 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import io.netty.channel.ChannelHandler;
+import java.util.Objects;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.tcp.TCPIOClient;
 import org.openremote.model.util.TextUtil;
 
-import java.util.Objects;
+import io.netty.channel.ChannelHandler;
 
 public class VelbusTCPProtocol extends AbstractVelbusProtocol<VelbusTCPProtocol, VelbusTCPAgent> {
 

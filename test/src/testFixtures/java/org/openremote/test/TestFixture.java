@@ -19,6 +19,8 @@
  */
 package org.openremote.test;
 
+import java.util.List;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.Asset;
@@ -29,8 +31,6 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.User;
 import org.spockframework.runtime.extension.IGlobalExtension;
-
-import java.util.List;
 
 /**
  * Used to store state for tests to help improve test performance

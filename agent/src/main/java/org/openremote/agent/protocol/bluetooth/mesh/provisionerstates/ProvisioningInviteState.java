@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
-
-import java.util.logging.Logger;
 
 public class ProvisioningInviteState extends ProvisioningState {
 
@@ -73,4 +73,3 @@ public class ProvisioningInviteState extends ProvisioningState {
         return data;
     }
 }
-

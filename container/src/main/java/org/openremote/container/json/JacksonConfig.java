@@ -20,6 +20,7 @@
 package org.openremote.container.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.Produces;

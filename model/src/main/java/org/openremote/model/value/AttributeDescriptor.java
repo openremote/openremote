@@ -19,15 +19,16 @@
  */
 package org.openremote.model.value;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.util.TsIgnoreTypeParams;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Describes an {@link Attribute} that can be added to an {@link Asset}; the {@link #getName()} must match the {@link

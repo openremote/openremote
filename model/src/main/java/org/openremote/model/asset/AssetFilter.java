@@ -19,6 +19,10 @@
  */
 package org.openremote.model.asset;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
@@ -27,10 +31,6 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.MetaItemType;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 @TsIgnoreTypeParams

@@ -19,6 +19,14 @@
  */
 package org.openremote.container.web;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.io.IOException;
+import java.net.SocketException;
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.logging.Logger;
+
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
@@ -30,13 +38,6 @@ import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.SocketException;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A filter to support OAuth access token (including refresh)
