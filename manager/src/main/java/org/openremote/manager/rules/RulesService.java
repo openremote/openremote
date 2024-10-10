@@ -280,6 +280,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        startDone = false;
 
         if (!geofenceAssetAdapters.isEmpty()) {
             LOG.fine("GeofenceAssetAdapters found: " + geofenceAssetAdapters.size());

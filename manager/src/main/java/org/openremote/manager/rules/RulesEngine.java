@@ -117,6 +117,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected AbstractRulesEngine engine;
 
     protected boolean running;
+    protected boolean previouslyFired;
     protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
     protected ScheduledFuture<?> fireTimer;
@@ -144,6 +145,7 @@ public class RulesEngine<T extends Ruleset> {
                        Timer rulesFiringTimer) {
         this.timerService = timerService;
         this.rulesService = rulesService;
+        this.previouslyFired = rulesService.startDone;
         this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.assetStorageService = assetStorageService;
@@ -255,7 +257,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);
@@ -464,7 +466,6 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void doFire() {
         for (RulesetDeployment deployment : deployments.values()) {
             try {
@@ -506,6 +507,7 @@ public class RulesEngine<T extends Ruleset> {
                 // Reset facts after this firing (loop detection etc.)
                 facts.reset();
                 lastFireTimestamp = timerService.getCurrentTimeMillis();
+                previouslyFired = true;
             }
         }
     }
@@ -592,6 +594,10 @@ public class RulesEngine<T extends Ruleset> {
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }
+    }
+
+    public boolean hasPreviouslyFired() {
+        return previouslyFired;
     }
 
     protected RulesEngineStatus getStatus() {

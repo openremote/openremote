@@ -540,6 +540,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
+    final protected RulesEngine<?> rulesEngine;
     final protected TimerService timerService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
@@ -554,10 +555,11 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Ruleset jsonRuleset;
     protected static Logger LOG;
 
-    public JsonRulesBuilder(Logger logger, Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService,
-                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
+    public JsonRulesBuilder(Logger logger, Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService, AssetStorageService assetStorageService,
+                                    Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
+        this.rulesEngine = rulesEngine;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.assetsFacade = assetsFacade;
@@ -677,20 +679,22 @@ public class JsonRulesBuilder extends RulesBuilder {
         return facts -> {
 
             try {
-                if (ruleState.thenMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
-                }
+                // Execute actions only when the rules engine has already fired to prevent execution during startup
+                if (rulesEngine.hasPreviouslyFired()) {
+                    if (ruleState.thenMatched()) {
+                        log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
 
-                if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                    log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
-                    executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    if (rule.otherwise != null && ruleState.otherwiseMatched()) {
+                        log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                        executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
+                    }
                 }
             } catch (Exception e) {
                 log(Level.SEVERE, "Exception thrown during rule RHS execution", e);
                 throw e;
             } finally {
-
                 // Store recurrence times as required
                 boolean recurPerAsset = rule.recurrence == null || rule.recurrence.scope != RuleRecurrence.Scope.GLOBAL;
                 long currentTime = timerService.getCurrentTimeMillis();

@@ -97,6 +97,7 @@ public class RulesetDeployment {
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
     final protected List<ScheduledFuture<?>> scheduledRuleActions = Collections.synchronizedList(new ArrayList<>());
+    final protected RulesEngine<?> rulesEngine;
     protected final Logger LOG;
     protected boolean running;
     protected RulesetStatus status = RulesetStatus.READY;
@@ -106,11 +107,12 @@ public class RulesetDeployment {
     protected CalendarEvent validity;
     protected Pair<Long, Long> nextValidity;
 
-    public RulesetDeployment(Ruleset ruleset, TimerService timerService,
+    public RulesetDeployment(Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
                              AssetStorageService assetStorageService, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
                              Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                              Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         this.ruleset = ruleset;
+        this.rulesEngine = rulesEngine;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
@@ -287,7 +289,7 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            jsonRulesBuilder = new JsonRulesBuilder(LOG, ruleset, timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(LOG, ruleset, rulesEngine, timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 LOG.finest("Registering JSON rule: " + rule.getName());
