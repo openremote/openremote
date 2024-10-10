@@ -471,8 +471,6 @@ public class RulesEngine<T extends Ruleset> {
         } else {
             LOG.fine("Rules firing took " + executionTotalMillis + "ms");
         }
-
-        previouslyFired = true;
     }
 
     protected void doFire() {
@@ -515,6 +513,7 @@ public class RulesEngine<T extends Ruleset> {
                 // Reset facts after this firing (loop detection etc.)
                 facts.reset();
                 lastFireTimestamp = timerService.getCurrentTimeMillis();
+                previouslyFired = true;
             }
         }
     }
