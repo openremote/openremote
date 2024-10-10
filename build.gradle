@@ -182,6 +182,17 @@ scmVersion {
     }
 }
 
+buildscript {
+    repositories {
+        maven {
+            url = 'https://plugins.gradle.org/m2'
+        }
+    }
+    dependencies {
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.25.0'
+    }
+}
+
 allprojects {
     apply from: "${findProject(':openremote') != null ? project(':openremote').projectDir : rootDir}/project.gradle"
     version = scmVersion.version
@@ -238,7 +249,6 @@ checkFilesGitIgnoredNew.enabled = gitFile.exists() && gitFile.isDirectory()
 tasks.named('clean') {
     delete 'tmp'
 }
-
 
 buildscript {
     repositories {
