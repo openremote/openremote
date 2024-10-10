@@ -1,0 +1,47 @@
+# Keep these patterns compatible with Gradle Ant patterns.
+# Do not use negation, root-anchored patterns, or gitignore escaping.
+
+# Dependencies
+**/node_modules/**
+
+# Gradle and Spotless output
+**/build/**
+
+# Compiled output
+**/dist/**
+**/lib/**
+
+# Test and coverage output
+**/coverage/**
+**/test-results/**
+**/playwright-report/**
+
+# Generated files
+**/generated/**
+**/*.generated.*
+**/custom-elements.json
+**/src/model.ts
+**/src/restclient.ts
+
+# Caches
+**/.cache/**
+**/.gradle/**
+**/.yarn/**
+
+# IDE metadata
+**/.idea/**
+**/.settings/**
+**/.vscode/**
+
+# Minified and bundled files
+**/*.bundle.js
+**/*.min.js
+**/*.min.css
+**/*.zip
+**/fonts/**
+**/map/sprites/*.json
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

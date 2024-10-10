@@ -1,8 +1,20 @@
 // Common configuration applied to all projects
 
-import org.jetbrains.gradle.ext.JUnit
+import java.io.Serializable
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFileAttributes
+import java.nio.file.attribute.PosixFilePermission
+import java.util.stream.Collectors
+import java.util.stream.StreamSupport
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
+
+import org.gradle.language.base.plugins.LifecycleBasePlugin
+import groovy.json.JsonSlurper
+import org.jetbrains.gradle.ext.Application
+import org.jetbrains.gradle.ext.JUnit
+
 import cz.habarta.typescript.generator.DateMapping
 import cz.habarta.typescript.generator.EnumMapping
 import cz.habarta.typescript.generator.Jackson2Configuration
@@ -14,18 +26,10 @@ import cz.habarta.typescript.generator.RestNamespacing
 import cz.habarta.typescript.generator.TypeScriptFileType
 import cz.habarta.typescript.generator.TypeScriptOutputKind
 
-import java.io.Serializable
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.attribute.PosixFileAttributes
-import java.nio.file.attribute.PosixFilePermission
-import java.util.stream.Collectors
-import java.util.stream.StreamSupport
-
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
-import org.jetbrains.gradle.ext.Application
+
 
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual
@@ -219,6 +223,9 @@ repositories {
     maven {
         url = 'https://jitpack.io'
     }
+    maven {
+        url = 'https://plugins.gradle.org/m2'
+    }
 }
 
 // Eclipse needs help
@@ -312,10 +319,10 @@ def createTSGeneratorConfig(boolean outputAPIClient, String outputFileName, Proj
                     srcPath = files[0]
                 }
             }
-            java.nio.file.Path packagePath = it.toPath().relativize(srcPath.toPath())
+            Path packagePath = it.toPath().relativize(srcPath.toPath())
             return StreamSupport
                     .stream(packagePath.spliterator(), false)
-                    .map(java.nio.file.Path::toString)
+                    .map({ java.nio.file.Path path -> path.toString() })
                     .collect(Collectors.joining(".")) + (outputAPIClient ? ".**Resource" : ".**")
         }
     }.toList()
@@ -429,6 +436,11 @@ plugins.withType(JavaPlugin).whenPluginAdded {
         // JAR/ZIP base name is the fully qualified subproject name
         archivesName = "${rootProject.name}${path.replaceAll(":", "-")}"
     }
+}
+
+// Configure Spotless
+if (project == rootProject) {
+  apply from: "${rootDir}/spotless.gradle"
 }
 
 // POM generator

@@ -142,8 +142,10 @@ export class Console {
     }
 
     public get shellApple(): boolean {
+        // prettier-ignore
         // @ts-ignore
         const platform = navigator.userAgentData && navigator.userAgentData.platform ? navigator.userAgentData.platform : navigator.platform;
+        // prettier-ignore
         // @ts-ignore
         return platform && (platform.substring(0, 2) === 'iP' || platform.substring(0, 3) === 'Mac') && window.webkit && window.webkit.messageHandlers;
     }
