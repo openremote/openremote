@@ -21,7 +21,7 @@
 #
 # - [DAILY] - Cleanup journalctl logs
 #
-# ---------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating'
@@ -47,8 +47,8 @@ Parameters:
 #  ImageId:
 #    Description: AMI ID
 #    Type: String
-#    Default: "ami-062cd09187a31b743"
-  ImageId:
+#    Default: "ami-0ad71aff41c394ba8"
+  ImageAMI:
     Description: AMI ID
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64'
@@ -295,7 +295,7 @@ Resources:
                               "or_attributes_total": "Count",
                               "or_provisioning_seconds_max": "Seconds",
                               "or_provisioning_seconds_sum": "Seconds",
-                              "or_provisioning_seconds_count": "Count",                
+                              "or_provisioning_seconds_count": "Count",
                               "executor_pool_size_threads": "Count",
                               "executor_seconds_count": "Count",
                               "executor_seconds_sum": "Seconds",
@@ -398,7 +398,7 @@ Resources:
                       }
                     }
                   }
-                - "{}"
+                - '{}'
             "/opt/aws/amazon-cloudwatch-agent/var/prometheus.yaml":
               content: !If
                 - MetricsEnabled
@@ -414,7 +414,7 @@ Resources:
                         - targets:
                             - localhost:8404
                         - labels:
-                            InstanceId: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,state,code]
@@ -812,7 +812,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: "developers"
-      ImageId: !Ref ImageId
+      ImageId: !Ref ImageAMI
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - Ref: SSHSecurityGroupId
@@ -914,6 +914,7 @@ Resources:
 
   CPUUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: AWS/EC2
       MetricName: CPUUtilization
@@ -932,6 +933,7 @@ Resources:
 
   DiskUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: CWAgent
       MetricName: disk_used_percent
@@ -947,10 +949,6 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
-        - Name: ImageId
-          Value: !Ref ImageId
-        - Name: InstanceType
-          Value: !Ref InstanceType
         - Name: path
           Value: /
         - Name: fstype
@@ -958,6 +956,7 @@ Resources:
 
   MemoryUtilizationAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
     Properties:
       Namespace: CWAgent
       MetricName: mem_used_percent
@@ -973,232 +972,3 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
-        - Name: ImageId
-          Value: !Ref ImageId
-        - Name: InstanceType
-          Value: !Ref InstanceType
-
-  CloudWatchDashboard:
-    Type: AWS::CloudWatch::Dashboard
-    Condition: MetricsEnabled
-    Properties:
-      DashboardName: !Join ["-", !Split [ '.', !Ref Host] ]
-      DashboardBody: !Sub |
-        {
-          "variables": [
-            {
-              "type": "property",
-              "property": "InstanceId",
-              "inputType": "input",
-              "id": "InstanceId",
-              "label": "InstanceId",
-              "defaultValue": "${EC2Instance}",
-              "visible": true
-            }
-          ],
-          "widgets": [
-            {
-              "height": 6,
-              "width": 8,
-              "y": 0,
-              "x": 0,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "or_attributes_total", "InstanceName", "${Host}", "source", "RulesEngine", { "id": "m1", "yAxis": "left", "label": "Rules" } ],
-                  [ "...", "AgentService", { "id": "m3", "yAxis": "left", "label": "Agents" } ],
-                  [ "...", "DefaultMQTTHandler", { "id": "m2", "yAxis": "left", "label": "MQTT" } ],
-                  [ "...", "AssetResource", { "id": "m4", "yAxis": "left", "label": "HTTP API" } ],
-                  [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
-                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m6", "yAxis": "left", "label": "MQTT Backlog" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Sum",
-                "period": 300,
-                "title": "Attribute Events",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false,
-                    "label": "Count"
-                  },
-                  "right": {
-                    "showUnits": false,
-                    "label": "Seconds"
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 8,
-              "y": 6,
-              "x": 0,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Rule Engines", "id": "e1" } ],
-                  [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Attr. Processor", "id": "e2", "yAxis": "right" } ],
-                  [ "CWAgent-Prometheus", "or_rules_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "visible": false } ],
-                  [ ".", "or_rules_seconds_count", ".", ".", { "id": "m2", "visible": false } ],
-                  [ ".", "or_attributes_seconds_sum", ".", ".", { "id": "m3", "visible": false } ],
-                  [ ".", "or_attributes_seconds_count", ".", ".", { "id": "m4", "visible": false } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Sum",
-                "period": 300,
-                "title": "Execution Time",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false,
-                    "label": "ms"
-                  },
-                  "right": {
-                      "showUnits": false,
-                      "label": "ms"
-                  }
-                }
-              }
-            },
-            {
-              "height": 6,
-              "width": 8,
-              "y": 0,
-              "x": 8,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_current_sessions", "server", "manager", "proxy", "mqtt", "InstanceName", "${Host}", { "label": "MQTT", "region": "${AWS::Region}" } ],
-                  [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS", "region": "${AWS::Region}" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak", "region": "${AWS::Region}" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Proxy Sessions",
-                "stat": "Maximum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 8,
-              "y": 6,
-              "x": 8,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_bytes_in_total", "server", "manager", "proxy", "mqtt", "InstanceName", "${Host}", { "label": "MQTT Bytes In", "region": "${AWS::Region}" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "MQTT Bytes Out", "region": "${AWS::Region}" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak Bytes Out", "region": "${AWS::Region}" } ],
-                  [ ".", "haproxy_server_bytes_in_total", ".", ".", ".", ".", ".", ".", { "label": "Keycloak Bytes In", "region": "${AWS::Region}" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", { "label": "HTTP/WS Bytes In", "region": "${AWS::Region}" } ],
-                  [ ".", "haproxy_server_bytes_out_total", ".", ".", ".", ".", ".", ".", { "label": "HTTP/WS Bytes Out", "region": "${AWS::Region}" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Proxy I/O",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 6,
-              "width": 8,
-              "y": 12,
-              "x": 8,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_http_responses_total", "server", "keycloak", "proxy", "keycloak_backend", "InstanceName", "${Host}", "code", "5xx", { "label": "Keycloak 5xx", "region": "${AWS::Region}" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx", "region": "${AWS::Region}" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "HTTP Error Responses",
-                "stat": "Sum",
-                "period": 300
-              }
-            },
-            {
-              "height": 9,
-              "width": 8,
-              "y": 9,
-              "x": 16,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "AWS/EC2", "EBSReadOps", "InstanceId", "${EC2Instance}", { "label": "Read", "id": "m1", "visible": false, "stat": "Sum" } ],
-                  [ ".", "EBSWriteOps", ".", ".", { "label": "Write", "id": "m2", "stat": "Sum", "visible": false } ],
-                  [ ".", "CPUCreditBalance", ".", ".", { "yAxis": "left", "label": "CPU Credit Balance", "id": "m3", "stat": "Average", "visible": false } ],
-                  [ ".", "CPUUtilization", ".", ".", { "label": "CPU Utilization %", "id": "m4", "yAxis": "right" } ],
-                  [ ".", "EBSIOBalance%", ".", ".", { "label": "EBS IO Balance %", "yAxis": "right" } ],
-                  [ { "expression": "m1/DIFF_TIME(m1)", "label": "Read IOPS", "id": "e1" } ],
-                  [ { "expression": "m2/DIFF_TIME(m2)", "label": "Write IOPS", "id": "e2" } ],
-                  [ { "expression": "m3/100", "label": "CPU Credit Balance (x100)", "id": "e3" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "EC2",
-                "stat": "Maximum",
-                "period": 300
-              }
-            },
-            {
-              "height": 9,
-              "width": 8,
-              "y": 0,
-              "x": 16,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ "CWAgent", "mem_used_percent", "InstanceId", "${EC2Instance}", { "label": "Memory Usage %", "region": "${AWS::Region}" } ],
-                  [ "CWAgent", "disk_used_percent", "InstanceId", "${EC2Instance}", "path", "/", "fstype", "xfs", { "label": "Disk Usage %", "region": "${AWS::Region}" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Average",
-                "period": 900,
-                "title": "Disk & Memory"
-              }
-            },
-            {
-              "height": 6,
-              "width": 8,
-              "y": 12,
-              "x": 0,
-              "type": "metric",
-              "properties": {
-                "metrics": [
-                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Processing Time", "id": "e1", "yAxis": "right" } ],
-                  [ "CWAgent-Prometheus", "or_provisioning_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "yAxis": "left", "visible": false } ],
-                  [ ".", "or_provisioning_seconds_count", ".", ".", { "id": "m2", "yAxis": "left", "label": "Count" } ],
-                  [ ".", "artemis_message_count", ".", ".", "queue", "provisioning.*.request", { "id": "m3", "yAxis": "left", "label": "Backlog" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "stat": "Sum",
-                "period": 300,
-                "title": "Provisioning Requests",
-                "yAxis": {
-                  "left": {
-                    "showUnits": false,
-                    "label": "Count"
-                  },
-                  "right": {
-                    "showUnits": false,
-                    "label": "ms"
-                  }
-                }
-              }
-            }
-          ]
-        }
