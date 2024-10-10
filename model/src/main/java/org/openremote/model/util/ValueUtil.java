@@ -223,7 +223,7 @@ public class ValueUtil {
         try {
             return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to parse JSON", e);
+//            LOG.log(Level.WARNING, "Failed to parse JSON", e);
         }
         return Optional.empty();
     }
