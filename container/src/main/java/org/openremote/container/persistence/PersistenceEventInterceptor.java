@@ -19,8 +19,12 @@
  */
 package org.openremote.container.persistence;
 
-import jakarta.transaction.Status;
-import jakarta.transaction.Synchronization;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.camel.CamelExecutionException;
 import org.hibernate.CallbackException;
 import org.hibernate.Interceptor;
@@ -28,11 +32,8 @@ import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 import org.openremote.model.PersistenceEvent;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 
 /**
  * Intercept Hibernate lifecycle events and publish a message.

@@ -19,9 +19,10 @@
  */
 package org.openremote.container.security.keycloak;
 
+import org.keycloak.adapters.NodesRegistrationManagement;
+
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
-import org.keycloak.adapters.NodesRegistrationManagement;
 
 /**
  * This is a copy of the same class from the now obsolete keycloak-undertow-adapter but for jakarta EE.

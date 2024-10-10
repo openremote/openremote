@@ -69,4 +69,3 @@ public final class ConfigProxyStatus extends ConfigStatusMessage {
         return mProxyState == ConfigProxySet.PROXY_FEATURE_ENABLED;
     }
 }
-

@@ -19,6 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Objects;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.openremote.model.attribute.AttributeEvent;
@@ -26,9 +30,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
-import java.util.Date;
-import java.util.Objects;
 
 /**
  * <p>

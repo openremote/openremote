@@ -19,10 +19,14 @@
  */
 package org.openremote.manager.asset;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import jakarta.validation.ConstraintViolation;
+import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
+import static org.openremote.model.attribute.AttributeWriteFailure.*;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.stream.IntStream;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.RouteConfigurationBuilder;
@@ -49,13 +53,10 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.stream.IntStream;
-
-import static org.openremote.manager.system.HealthService.OR_CAMEL_ROUTE_METRIC_PREFIX;
-import static org.openremote.model.attribute.AttributeWriteFailure.*;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import jakarta.validation.ConstraintViolation;
 
 /**
  * Receives {@link AttributeEvent} from various sources (clients and services) and processes them.

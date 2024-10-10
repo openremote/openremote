@@ -19,13 +19,14 @@
  */
 package org.openremote.container.util;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import org.openremote.model.mail.MailMessage;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.openremote.model.mail.MailMessage;
+
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
 
 public class MailUtil {
 

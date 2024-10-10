@@ -19,12 +19,13 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.openremote.model.Constants;
-
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.openremote.model.Constants;
 
 /**
  * Roles available for our client application on Keycloak.

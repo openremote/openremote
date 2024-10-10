@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow.catalog;
 
 
+import java.util.function.Supplier;
+
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
-import org.openremote.model.flow.catalog.NodeDescriptor;
-
-import java.util.function.Supplier;
 
 public abstract class ConsoleNodeDescriptor extends NodeDescriptor {
 

@@ -19,6 +19,20 @@
  */
 package org.openremote.manager.rules.geofence;
 
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
+import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
+import static org.openremote.model.syslog.SyslogCategory.RULES;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -38,20 +52,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
-import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
-import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * This implementation is for handling geofences on console assets that support the OR Console Geofence Provider (i.e.

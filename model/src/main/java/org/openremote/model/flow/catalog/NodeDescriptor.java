@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow.catalog;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.flow.Node;
-import org.openremote.model.flow.NodeColor;
-import org.openremote.model.flow.Slot;
+import static org.openremote.model.util.ValueUtil.JSON;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static org.openremote.model.util.ValueUtil.JSON;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.model.flow.Node;
+import org.openremote.model.flow.NodeColor;
+import org.openremote.model.flow.Slot;
 
 
 public abstract class NodeDescriptor {

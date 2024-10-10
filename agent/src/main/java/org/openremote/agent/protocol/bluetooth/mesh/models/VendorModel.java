@@ -19,12 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.models;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.CompanyIdentifiers;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.CompanyIdentifiers;
 
 public class VendorModel extends MeshModel {
 

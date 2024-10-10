@@ -19,24 +19,24 @@
  */
 package org.openremote.agent.protocol.mqtt;
 
-import org.apache.http.client.utils.URIBuilder;
-import org.openremote.model.Container;
-import org.openremote.model.security.KeyStoreService;
-import org.openremote.model.util.UniqueIdentifierGenerator;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-import javax.net.ssl.*;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.syslog.SyslogCategory.getLogger;
+import javax.net.ssl.*;
+
+import org.apache.http.client.utils.URIBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.security.KeyStoreService;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.UniqueIdentifierGenerator;
+import org.openremote.model.util.ValueUtil;
 
 public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTAgent, String, MQTT_IOClient, MQTTAgentLink> {
 

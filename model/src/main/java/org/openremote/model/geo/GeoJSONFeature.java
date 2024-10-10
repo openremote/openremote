@@ -19,14 +19,14 @@
  */
 package org.openremote.model.geo;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import static org.openremote.model.geo.GeoJSONFeature.TYPE;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.openremote.model.geo.GeoJSONFeature.TYPE;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(TYPE)
 public class GeoJSONFeature extends GeoJSON {

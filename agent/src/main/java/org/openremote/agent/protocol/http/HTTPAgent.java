@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.http;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.http.HTTPMethod;
@@ -27,7 +29,6 @@ import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgentLink> {

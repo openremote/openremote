@@ -19,6 +19,14 @@
  */
 package org.openremote.model.value;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Objects;
+import java.util.function.Function;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JacksonException;
@@ -27,23 +35,16 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.validation.constraints.Pattern;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Objects;
-import java.util.function.Function;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * A simple wrapper around a {@link Class} that describes a value that can be used by {@link Attribute}s and

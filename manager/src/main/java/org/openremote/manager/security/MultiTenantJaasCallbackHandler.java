@@ -19,22 +19,23 @@
  */
 package org.openremote.manager.security;
 
-import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
-import org.apache.activemq.artemis.spi.core.security.jaas.JaasCallbackHandler;
-import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalsCallback;
-import org.keycloak.adapters.KeycloakDeployment;
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
 
-import javax.security.auth.Subject;
-import javax.security.auth.callback.*;
-import javax.security.auth.kerberos.KerberosPrincipal;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.KerberosPrincipal;
+
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
+import org.apache.activemq.artemis.spi.core.security.jaas.JaasCallbackHandler;
+import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalsCallback;
+import org.keycloak.adapters.KeycloakDeployment;
 
 /**
  * A version of {@link JaasCallbackHandler} that supports multi-tenancy by introducing support for

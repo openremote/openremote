@@ -150,4 +150,3 @@ public abstract class Heartbeat {
             return seconds / 3600 + " h " + ((seconds % 3600) / 60) + " min " + ((seconds % 3600 % 60) - 1) + " sec";
     }
 }
-

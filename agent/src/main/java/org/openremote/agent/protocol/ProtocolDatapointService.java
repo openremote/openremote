@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol;
 
-import org.openremote.model.ContainerService;
-import org.openremote.model.datapoint.ValueDatapoint;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.openremote.model.ContainerService;
+import org.openremote.model.datapoint.ValueDatapoint;
 
 public interface ProtocolDatapointService extends ContainerService {
 

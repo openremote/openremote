@@ -19,11 +19,12 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.model.util.TextUtil;
+
+import io.netty.channel.ChannelHandler;
 
 public class VelbusSerialProtocol extends AbstractVelbusProtocol<VelbusSerialProtocol, VelbusSerialAgent> {
 

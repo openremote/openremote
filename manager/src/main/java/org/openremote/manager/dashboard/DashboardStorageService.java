@@ -19,7 +19,11 @@
  */
 package org.openremote.manager.dashboard;
 
-import jakarta.persistence.Query;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -36,10 +40,7 @@ import org.openremote.model.query.DashboardQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import jakarta.persistence.Query;
 
 public class DashboardStorageService extends RouteBuilder implements ContainerService {
 

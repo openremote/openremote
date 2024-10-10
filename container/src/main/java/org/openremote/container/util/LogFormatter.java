@@ -19,8 +19,6 @@
  */
 package org.openremote.container.util;
 
-import org.openremote.model.util.TextUtil;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -29,6 +27,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+
+import org.openremote.model.util.TextUtil;
 
 public class LogFormatter extends Formatter {
 

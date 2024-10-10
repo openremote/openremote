@@ -19,13 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import java.util.ArrayList;
+import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes.CONFIG_KEY_REFRESH_PHASE_STATUS;
+
 import java.util.List;
 import java.util.logging.Logger;
-
-// import static org.openremote.agent.protocol.bluetooth.mesh.NetworkKey.KeyRefreshPhase;
-// import static org.openremote.agent.protocol.bluetooth.mesh.NetworkKey.KeyRefreshPhaseTransition;
-import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes.CONFIG_KEY_REFRESH_PHASE_STATUS;
 
 
 /**
@@ -95,4 +92,3 @@ public class ConfigKeyRefreshPhaseStatus extends ConfigStatusMessage {
         return mStatusCode == 0x00;
     }
 }
-

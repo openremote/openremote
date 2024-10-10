@@ -19,16 +19,16 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+
+import java.util.*;
+import java.util.logging.Level;
+
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-
-import java.util.*;
-import java.util.logging.Level;
-
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 public class ProgramsProcessor extends ChannelProcessor {
 

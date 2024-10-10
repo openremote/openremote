@@ -19,9 +19,17 @@
  */
 package org.openremote.setup.integration;
 
+import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -34,18 +42,10 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
-import static org.openremote.model.value.ValueType.*;
 
 public class ManagerTestSetup extends ManagerSetup {
 

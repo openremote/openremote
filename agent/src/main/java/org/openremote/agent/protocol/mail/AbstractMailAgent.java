@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.auth.UsernamePassword;
@@ -26,18 +28,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.Optional;
 
 public abstract class AbstractMailAgent<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends Agent<T, U, V> {
 
-    @NotNull
-    public static final AttributeDescriptor<String> PROTOCOL = new AttributeDescriptor<>("protocol", ValueType.TEXT);
-    @NotNull
-    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = Agent.USERNAME_AND_PASSWORD.withOptional(false);
-    @NotNull
-    public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
-    @NotNull
-    public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
+    @NotNull public static final AttributeDescriptor<String> PROTOCOL = new AttributeDescriptor<>("protocol", ValueType.TEXT);
+    @NotNull public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = Agent.USERNAME_AND_PASSWORD.withOptional(false);
+    @NotNull public static final AttributeDescriptor<String> HOST = Agent.HOST.withOptional(false);
+    @NotNull public static final AttributeDescriptor<Integer> PORT = Agent.PORT.withOptional(false);
     public static final AttributeDescriptor<Integer> CHECK_INTERVAL_SECONDS = new AttributeDescriptor<>("checkIntervalSeconds", ValueType.POSITIVE_INTEGER).withOptional(true);
     public static final AttributeDescriptor<Boolean> DELETE_PROCESSED_MAIL = new AttributeDescriptor<>("deleteProcessedMail", ValueType.BOOLEAN).withOptional(true);
     public static final AttributeDescriptor<Boolean> PREFER_HTML = new AttributeDescriptor<>("preferHTML", ValueType.BOOLEAN).withOptional(true);

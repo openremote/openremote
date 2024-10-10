@@ -19,8 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.bouncycastle.crypto.InvalidCipherTextException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.List;
+import java.util.logging.Logger;
 
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.Group;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -28,11 +32,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherT
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * UpperTransportLayer implementation of the mesh network architecture as per the mesh profile specification.

@@ -19,14 +19,14 @@
  */
 package org.openremote.manager.setup;
 
+import static org.openremote.model.Constants.*;
+
+import java.util.logging.Logger;
+
 import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
-
-import java.util.logging.Logger;
-
-import static org.openremote.model.Constants.*;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
 

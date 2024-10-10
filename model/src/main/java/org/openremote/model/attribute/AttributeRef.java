@@ -19,16 +19,18 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import org.openremote.model.Constants;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 import java.io.Serializable;
 
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.Constants;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * A reference to an entity and an {@link Attribute}.

@@ -19,6 +19,10 @@
  */
 package org.openremote.model.asset.agent;
 
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
@@ -29,10 +33,6 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
-
-import java.util.Optional;
-
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
  * An agent is a special sub type of {@link Asset} that is associated with a {@link Protocol} and is responsible for

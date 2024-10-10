@@ -113,4 +113,3 @@ public abstract class MeshMessage {
         this.messageTtl = messageTtl;
     }
 }
-

@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-import com.fasterxml.jackson.databind.JsonNode;
-import cz.habarta.typescript.generator.TsType;
-import cz.habarta.typescript.generator.TypeProcessor;
-import cz.habarta.typescript.generator.util.GenericsResolver;
-import cz.habarta.typescript.generator.util.Utils;
-import org.openremote.model.util.TsIgnore;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.TsIgnoreTypeParams;
+
+import cz.habarta.typescript.generator.TsType;
+import cz.habarta.typescript.generator.TypeProcessor;
+import cz.habarta.typescript.generator.util.Utils;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:

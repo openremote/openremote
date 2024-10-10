@@ -19,14 +19,14 @@
  */
 package org.openremote.setup.demo;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
 import org.openremote.container.util.MapAccess;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Realm;
-
-import java.util.logging.Logger;
 
 public class ManagerDemoAgentSetup extends ManagerSetup {
 

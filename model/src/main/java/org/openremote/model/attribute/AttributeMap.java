@@ -19,12 +19,12 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueDescriptor;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 public class AttributeMap extends NamedMap<Attribute<?>> {
 

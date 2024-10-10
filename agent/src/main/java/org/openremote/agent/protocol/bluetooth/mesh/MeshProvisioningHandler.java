@@ -19,6 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.ProvisioningCapabilities;
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.ProvisioningCapabilitiesState;
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.ProvisioningCompleteState;
@@ -37,10 +41,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.StaticOOBType;
-
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import java.util.logging.Logger;
 
 class MeshProvisioningHandler implements InternalProvisioningCallbacks {
     public static final Logger LOG = Logger.getLogger(MeshProvisioningHandler.class.getName());
@@ -574,4 +574,3 @@ class MeshProvisioningHandler implements InternalProvisioningCallbacks {
         return confirmationInputs;
     }
 }
-

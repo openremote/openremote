@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.control.TransportControlMessage;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.openremote.agent.protocol.bluetooth.mesh.control.TransportControlMessage;
 
 public final class ControlMessage extends Message {
 
@@ -63,4 +63,3 @@ public final class ControlMessage extends Message {
         this.transportControlMessage = transportControlMessage;
     }
 }
-

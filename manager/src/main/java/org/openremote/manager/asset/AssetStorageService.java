@@ -19,12 +19,32 @@
  */
 package org.openremote.manager.asset;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import static java.util.logging.Level.FINE;
+import static java.util.stream.Collectors.groupingBy;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.query.AssetQuery.*;
+import static org.openremote.model.query.AssetQuery.Access.*;
+import static org.openremote.model.query.filter.ValuePredicate.asPredicateOrTrue;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
+import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
+
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -62,31 +82,12 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static java.util.logging.Level.FINE;
-import static java.util.stream.Collectors.groupingBy;
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
-import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.query.AssetQuery.*;
-import static org.openremote.model.query.AssetQuery.Access.*;
-import static org.openremote.model.query.filter.ValuePredicate.asPredicateOrTrue;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
-import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService {
 

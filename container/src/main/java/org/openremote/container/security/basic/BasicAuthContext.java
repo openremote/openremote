@@ -19,9 +19,9 @@
  */
 package org.openremote.container.security.basic;
 
-import org.openremote.container.security.AuthContext;
-
 import java.security.Principal;
+
+import org.openremote.container.security.AuthContext;
 
 /**
  * Basic authorization, any user has all roles and is superuser.

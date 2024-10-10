@@ -1,11 +1,38 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.agent.protocol.tradfri;
+
+import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Gateway;
 import org.openremote.agent.protocol.tradfri.device.Light;
 import org.openremote.agent.protocol.tradfri.device.Plug;
 import org.openremote.agent.protocol.tradfri.util.Credentials;
-
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.asset.impl.PlugAsset;
@@ -13,15 +40,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
-
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * The class that represents the configuration for the IKEA TRÅDFRI connection.

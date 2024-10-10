@@ -19,14 +19,15 @@
  */
 package org.openremote.agent.protocol.http;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.http.HTTPMethod;
-import org.openremote.model.value.ValueType;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.http.HTTPMethod;
+import org.openremote.model.value.ValueType;
 
 public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
 

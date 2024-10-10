@@ -23,6 +23,7 @@ import com.devskiller.friendly_id.Url62;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.NameBasedGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
+
 import org.openremote.model.IdentifiableEntity;
 
 /**

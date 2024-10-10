@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
-import org.openremote.model.syslog.SyslogCategory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
+import org.openremote.model.syslog.SyslogCategory;
 
 public abstract class ShadowMeshModel {
 

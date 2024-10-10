@@ -19,15 +19,7 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothCentralManager;
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothGattCharacteristic;
-import com.welie.blessed.BluetoothGattService;
-import com.welie.blessed.BluetoothPeripheral;
-import com.welie.blessed.BluetoothPeripheralCallback;
-import com.welie.blessed.ScanResult;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.agent.protocol.bluetooth.mesh.BluetoothMeshProxy.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -39,7 +31,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.bluetooth.mesh.BluetoothMeshProxy.*;
+import com.welie.blessed.BluetoothCentralManager;
+import com.welie.blessed.BluetoothCommandStatus;
+import com.welie.blessed.BluetoothGattCharacteristic;
+import com.welie.blessed.BluetoothGattService;
+import com.welie.blessed.BluetoothPeripheral;
+import com.welie.blessed.BluetoothPeripheralCallback;
+import com.welie.blessed.ScanResult;
+
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class BluetoothMeshProxyStateMachine {
 

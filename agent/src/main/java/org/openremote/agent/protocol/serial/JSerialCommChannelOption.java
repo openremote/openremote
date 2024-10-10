@@ -19,9 +19,10 @@
  */
 package org.openremote.agent.protocol.serial;
 
-import io.netty.channel.ChannelOption;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit;
 import org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits;
+
+import io.netty.channel.ChannelOption;
 
 /**
  * Option for configuring a serial port connection.

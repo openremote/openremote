@@ -19,18 +19,19 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import com.vividsolutions.jts.geom.Coordinate;
-import org.geotools.referencing.GeodeticCalculator;
-import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.util.ValueUtil;
-
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import com.vividsolutions.jts.geom.Coordinate;
+
+import org.geotools.referencing.GeodeticCalculator;
+import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified

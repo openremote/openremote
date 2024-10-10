@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
 import java.util.UUID;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 public class Group {
 

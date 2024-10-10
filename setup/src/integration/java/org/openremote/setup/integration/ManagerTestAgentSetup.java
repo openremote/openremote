@@ -19,15 +19,15 @@
  */
 package org.openremote.setup.integration;
 
+import static org.openremote.container.util.MapAccess.*;
+
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Realm;
-
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.*;
 
 public class ManagerTestAgentSetup extends ManagerSetup {
 

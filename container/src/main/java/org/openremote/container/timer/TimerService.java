@@ -19,9 +19,7 @@
  */
 package org.openremote.container.timer;
 
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.rules.RulesClock;
+import static org.openremote.container.util.MapAccess.getString;
 
 import java.time.Instant;
 import java.util.Date;
@@ -29,7 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getString;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.rules.RulesClock;
 
 /**
  * Wall real clock timer or pseudo clock time (for testing).

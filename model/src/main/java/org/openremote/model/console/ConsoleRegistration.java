@@ -19,12 +19,13 @@
  */
 package org.openremote.model.console;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.Map;
 
 /**
  * Encapsulates data about a console instance that is used to generate an {@link org.openremote.model.asset.Asset} of
@@ -95,8 +96,7 @@ public class ConsoleRegistration {
     @NotBlank
     protected String platform;
     protected String model;
-    @NotNull
-    protected Map<String, ConsoleProvider> providers;
+    @NotNull protected Map<String, ConsoleProvider> providers;
     protected String[] apps;
 
     @JsonCreator

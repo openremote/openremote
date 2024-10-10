@@ -19,16 +19,17 @@
  */
 package org.openremote.model.security;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+
 import org.hibernate.annotations.Subselect;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import java.util.Objects;
 
 @Entity
 @Subselect("select * from PUBLIC.KEYCLOAK_ROLE where NOT CLIENT_ROLE") // Map this immutable to an SQL view, don't use/create table

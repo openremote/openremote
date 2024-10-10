@@ -19,11 +19,8 @@
  */
 package org.openremote.manager.setup.database;
 
-import org.flywaydb.core.api.migration.BaseJavaMigration;
-import org.flywaydb.core.api.migration.Context;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import org.flywaydb.core.api.migration.Context;
 
 /**
  * TODO An example in the right place

@@ -19,12 +19,13 @@
  */
 package org.openremote.model;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import org.openremote.model.util.TsIgnore;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+
+import org.openremote.model.util.TsIgnore;
+
+import io.micrometer.core.instrument.MeterRegistry;
 
 @TsIgnore
 public interface Container {

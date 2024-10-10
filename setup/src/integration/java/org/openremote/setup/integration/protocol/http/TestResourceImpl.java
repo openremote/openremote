@@ -19,10 +19,10 @@
  */
 package org.openremote.setup.integration.protocol.http;
 
-import org.openremote.model.asset.Asset;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.openremote.model.asset.Asset;
 
 public class TestResourceImpl implements TestResource {
 

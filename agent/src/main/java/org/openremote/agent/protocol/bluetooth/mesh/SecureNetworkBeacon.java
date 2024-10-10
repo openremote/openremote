@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
 import java.nio.ByteBuffer;
 import java.util.Calendar;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * Contains the information related to a secure network beacon.
@@ -196,4 +196,3 @@ public class SecureNetworkBeacon extends MeshBeacon {
     }
 
 }
-

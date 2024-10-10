@@ -19,17 +19,18 @@
  */
 package org.openremote.container.xml;
 
-import org.xml.sax.*;
-import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.DefaultHandler;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import java.util.Map;
-import java.util.logging.Logger;
+
+import org.xml.sax.*;
+import org.xml.sax.helpers.AttributesImpl;
+import org.xml.sax.helpers.DefaultHandler;
 
 public class SAXParser {
 

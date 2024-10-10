@@ -19,12 +19,12 @@
  */
 package org.openremote.model.query.filter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class LocationAttributePredicate extends AttributePredicate {
 

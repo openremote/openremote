@@ -19,6 +19,19 @@
  */
 package org.openremote.manager.mqtt;
 
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.model.syslog.SyslogCategory.API;
+
+import java.util.Set;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.security.auth.Subject;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.security.CheckType;
 import org.apache.activemq.artemis.core.security.Role;
@@ -32,18 +45,6 @@ import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.syslog.SyslogCategory;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
-import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a

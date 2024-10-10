@@ -19,14 +19,14 @@
  */
 package org.openremote.model.event.bus;
 
-import org.openremote.model.event.Event;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.openremote.model.event.Event;
 
 /**
  * Simple observer/observable implementation, thread-safe.

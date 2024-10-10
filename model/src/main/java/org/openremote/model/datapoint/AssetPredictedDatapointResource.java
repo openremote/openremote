@@ -19,13 +19,14 @@
  */
 package org.openremote.model.datapoint;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.ws.rs.*;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.*;
 
 @Tag(name = "Asset Predicted Datapoint", description = "Operations on asset predicted datapoints")
 @Path("asset/predicted")

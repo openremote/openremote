@@ -19,13 +19,14 @@
  */
 package org.openremote.model.webhook;
 
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.http.HTTPMethod;
-
-import java.util.List;
-import java.util.Map;
 
 public class Webhook {
 

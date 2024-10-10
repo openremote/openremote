@@ -19,12 +19,13 @@
  */
 package org.openremote.container.persistence;
 
+import java.util.Properties;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.hibernate.cfg.AvailableSettings;
 import org.openremote.container.concurrent.ContainerThreadFactory;
-
-import java.util.Properties;
 
 public interface Database {
 

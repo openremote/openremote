@@ -19,6 +19,21 @@
  */
 package org.openremote.agent.protocol.velbus;
 
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
@@ -37,20 +52,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,T>, T extends VelbusAgent<T, S>> extends AbstractProtocol<T, VelbusAgentLink> implements
     ProtocolAssetImport {

@@ -19,6 +19,16 @@
  */
 package org.openremote.manager.rules;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
@@ -34,16 +44,6 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.util.ValueUtil;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class RulesetStorageService implements ContainerService {
 

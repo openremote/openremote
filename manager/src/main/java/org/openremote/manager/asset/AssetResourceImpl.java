@@ -19,16 +19,18 @@
  */
 package org.openremote.manager.asset;
 
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
+import static org.openremote.model.query.AssetQuery.Access;
+import static org.openremote.model.value.MetaItemType.*;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
+
 import com.fasterxml.jackson.databind.node.NullNode;
-import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionImpl;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -47,15 +49,15 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTER_QUEUE;
-import static org.openremote.model.query.AssetQuery.Access;
-import static org.openremote.model.value.MetaItemType.*;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 

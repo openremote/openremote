@@ -19,16 +19,16 @@
  */
 package org.openremote.container.security.keycloak;
 
+import static jakarta.ws.rs.core.MediaType.*;
+
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
-import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.ClientCredentialsAuthForm;
+import org.openremote.container.security.PasswordAuthForm;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-
-import static jakarta.ws.rs.core.MediaType.*;
 
 public interface KeycloakResource {
 

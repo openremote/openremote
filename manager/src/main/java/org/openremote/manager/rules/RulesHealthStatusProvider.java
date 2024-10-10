@@ -19,14 +19,14 @@
  */
 package org.openremote.manager.rules;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.system.HealthStatusProvider;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class RulesHealthStatusProvider implements HealthStatusProvider {
 

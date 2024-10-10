@@ -19,14 +19,14 @@
  */
 package org.openremote.model.apps;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.http.RequestParams;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "UI Apps", description = "Operations on UI apps")
 @Path("apps")

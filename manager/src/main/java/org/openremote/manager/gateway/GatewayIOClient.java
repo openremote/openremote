@@ -17,14 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.manager.gateway;
 
-import org.openremote.agent.protocol.websocket.WebsocketIOClient;
-import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
-import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.net.URI;
 import java.util.List;
@@ -35,7 +30,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.websocket.WebsocketIOClient;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
+import org.openremote.model.syslog.SyslogCategory;
 
 /**
  * This is a special version of {@link WebsocketIOClient} that waits for a

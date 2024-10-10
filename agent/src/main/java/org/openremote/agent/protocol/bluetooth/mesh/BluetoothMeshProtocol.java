@@ -19,17 +19,7 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.*;
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -42,7 +32,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import com.welie.blessed.*;
+
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 

@@ -19,12 +19,6 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +27,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
 
 /**
  * MeshTransport class is responsible for building the configuration and application layer mesh messages.

@@ -19,13 +19,14 @@
  */
 package org.openremote.model.auth;
 
+import java.util.Collections;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import jakarta.ws.rs.core.MultivaluedMap;
-import java.util.Collections;
-import java.util.Objects;
 
 @JsonTypeName(OAuthPasswordGrant.PASSWORD_GRANT_TYPE)
 public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {

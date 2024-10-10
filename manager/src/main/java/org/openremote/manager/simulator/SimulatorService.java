@@ -19,6 +19,12 @@
  */
 package org.openremote.manager.simulator;
 
+import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
+import static org.openremote.manager.event.ClientEventService.getSessionKey;
+
+import java.util.List;
+import java.util.logging.Logger;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.message.MessageBrokerService;
@@ -33,12 +39,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorAttributeInfo;
 import org.openremote.model.simulator.SimulatorState;
-
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
 
 // RT: Removed this from META-INF as RequestSimulatorState not used anywhere
 /**

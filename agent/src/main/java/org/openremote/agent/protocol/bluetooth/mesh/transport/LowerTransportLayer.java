@@ -19,21 +19,19 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
 import org.openremote.agent.protocol.bluetooth.mesh.control.BlockAcknowledgementMessage;
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.TransportLayerOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Future;
-import java.util.logging.Logger;
 
 /**
  * LowerTransportLayer implementation of the mesh network architecture as per the mesh profile specification.
@@ -873,4 +871,3 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
         return lastSeqAuth == null || lastSeqAuth < seqAuth;
     }
 }
-

@@ -19,16 +19,16 @@
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-import jakarta.ws.rs.ext.Provider;
+import static org.openremote.model.util.ValueUtil.doDynamicValueReplace;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import static org.openremote.model.util.ValueUtil.doDynamicValueReplace;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * A filter for replacing {@link org.openremote.model.Constants#DYNAMIC_VALUE_PLACEHOLDER_REGEXP} in the request URI and

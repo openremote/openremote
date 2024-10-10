@@ -19,12 +19,6 @@
  */
 package org.openremote.agent.protocol.mail;
 
-import org.openremote.container.web.OAuthFilter;
-import org.openremote.container.web.WebTargetBuilder;
-import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.auth.UsernamePassword;
-
-import jakarta.ws.rs.client.Client;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.Date;
@@ -32,6 +26,13 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.openremote.container.web.OAuthFilter;
+import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.UsernamePassword;
+
+import jakarta.ws.rs.client.Client;
 
 public class MailClientBuilder {
     public static final String DEFAULT_FOLDER_NAME = "INBOX";

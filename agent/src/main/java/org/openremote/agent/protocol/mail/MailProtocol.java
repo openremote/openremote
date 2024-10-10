@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.mail;
 
+import java.util.Arrays;
+import java.util.function.Predicate;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.query.filter.StringPredicate;
-
-import java.util.Arrays;
-import java.util.function.Predicate;
 
 public class MailProtocol extends AbstractMailProtocol<MailAgent, MailProtocol, MailAgentLink> {
 

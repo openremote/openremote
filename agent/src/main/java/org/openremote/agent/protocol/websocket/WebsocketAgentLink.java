@@ -19,10 +19,11 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class WebsocketAgentLink extends AgentLink<WebsocketAgentLink> {
 

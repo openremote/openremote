@@ -19,17 +19,6 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayerCallbacks;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.UpperTransportLayerCallbacks;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherTextException;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
 import java.nio.ByteBuffer;
 import java.security.Security;
 import java.util.ArrayList;
@@ -44,6 +33,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayerCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.UpperTransportLayerCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherTextException;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 public class MeshManagerApi implements MeshMngrApi{
 

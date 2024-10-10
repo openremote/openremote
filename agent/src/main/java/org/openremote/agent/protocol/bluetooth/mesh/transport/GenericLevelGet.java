@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.util.logging.Logger;
 
 /**
  * To be used as a wrapper class to create generic level get message.

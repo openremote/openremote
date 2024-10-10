@@ -19,9 +19,9 @@
  */
 package org.openremote.manager.security;
 
-import org.keycloak.adapters.KeycloakDeployment;
-
 import javax.security.auth.callback.Callback;
+
+import org.keycloak.adapters.KeycloakDeployment;
 
 /**
  * A {@link Callback} that should return the {@link org.keycloak.adapters.KeycloakDeployment} for the specified realm

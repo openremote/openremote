@@ -30,4 +30,3 @@ interface InternalMeshManagerCallbacks {
      */
     void onNodeProvisioned(final ProvisionedMeshNode meshNode);
 }
-

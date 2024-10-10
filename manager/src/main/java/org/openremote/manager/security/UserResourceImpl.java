@@ -19,6 +19,14 @@
  */
 package org.openremote.manager.security;
 
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Constants.MASTER_REALM;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -32,14 +40,6 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.model.Constants.MASTER_REALM;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
@@ -384,4 +384,3 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
     }
 }
-

@@ -19,6 +19,11 @@
  */
 package org.openremote.manager.rules.facade;
 
+import java.util.Arrays;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
+
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
@@ -28,13 +33,8 @@ import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
-
-import java.util.Arrays;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
+import org.openremote.model.rules.Ruleset;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not use assets in global scope).

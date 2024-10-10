@@ -19,6 +19,19 @@
  */
 package org.openremote.model.asset;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+import java.util.List;
+
+import org.openremote.model.Constants;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeWriteResult;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.value.MetaItemType;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,18 +42,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-import org.openremote.model.Constants;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.AttributeWriteResult;
-import org.openremote.model.http.RequestParams;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.util.TsIgnore;
-import org.openremote.model.value.MetaItemType;
-
-import java.util.List;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Asset<?> access rules:

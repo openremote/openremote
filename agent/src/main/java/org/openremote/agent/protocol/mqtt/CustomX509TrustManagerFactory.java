@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.agent.protocol.mqtt;
 
-import javax.net.ssl.TrustManagerFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.Provider;
+
+import javax.net.ssl.TrustManagerFactory;
 
 public class CustomX509TrustManagerFactory extends TrustManagerFactory {
 	public CustomX509TrustManagerFactory(KeyStore... keystores) throws KeyStoreException {

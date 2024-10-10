@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow;
 
-import jakarta.persistence.*;
 import java.util.*;
+
+import jakarta.persistence.*;
 
 
 @Entity

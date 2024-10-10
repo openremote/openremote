@@ -19,9 +19,9 @@
  */
 package org.openremote.model;
 
-import org.openremote.model.asset.Asset;
-
 import java.lang.annotation.*;
+
+import org.openremote.model.asset.Asset;
 
 /**
  * To be used on {@link Asset} classes to include another class in descriptor scans (only used when {@link

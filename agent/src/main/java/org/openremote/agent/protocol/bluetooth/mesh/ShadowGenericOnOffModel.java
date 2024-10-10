@@ -19,18 +19,18 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;
+
+import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.GenericOnOffGet;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.GenericOnOffSetUnacknowledged;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.GenericOnOffStatus;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
 import org.openremote.model.syslog.SyslogCategory;
-
-import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;
 
 public class ShadowGenericOnOffModel extends ShadowMeshModel {
 

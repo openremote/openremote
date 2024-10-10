@@ -19,13 +19,13 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.Features;
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.HeartbeatPublication;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.util.logging.Logger;
 
 /**
  * ConfigHeartbeatPublicationStatus message.
@@ -88,4 +88,3 @@ public class ConfigHeartbeatPublicationStatus extends ConfigStatusMessage {
         return heartbeatPublication;
     }
 }
-

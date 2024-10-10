@@ -53,4 +53,3 @@ public abstract class GenericStatusMessage extends MeshMessage {
         return mMessage.getSrc();
     }
 }
-

@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.List;
+
 import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
 import org.openremote.agent.protocol.bluetooth.mesh.Provisioner;
-
-import java.util.List;
 
 public interface NetworkLayerCallbacks {
 

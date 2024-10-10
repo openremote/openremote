@@ -19,9 +19,9 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
 /**
  * To be used as a wrapper class for when creating the ConfigAppKeyStatus Message.
@@ -53,4 +53,3 @@ public class ConfigNodeResetStatus extends ConfigStatusMessage {
         return OP_CODE;
     }
 }
-

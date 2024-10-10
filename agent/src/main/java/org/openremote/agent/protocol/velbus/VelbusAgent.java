@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.velbus;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
-
-import java.util.Optional;
 
 public abstract class VelbusAgent<T extends VelbusAgent<T, U>, U extends AbstractVelbusProtocol<U, T>> extends Agent<T, U, VelbusAgentLink> {
 

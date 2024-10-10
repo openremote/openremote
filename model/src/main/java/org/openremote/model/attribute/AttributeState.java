@@ -19,11 +19,11 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * The desired or current or past state of an {@link AttributeRef}.

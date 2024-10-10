@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.container.util;
+
+import java.io.Serializable;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.util.UniqueIdentifierGenerator;
-
-import java.io.Serializable;
 
 /**
  * DO NOT REMOVE; String reference in package-info.java

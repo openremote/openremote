@@ -19,23 +19,6 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
-import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
-
-
-import org.bouncycastle.jce.ECNamedCurveTable;
-import org.bouncycastle.jce.interfaces.ECPrivateKey;
-import org.bouncycastle.jce.interfaces.ECPublicKey;
-import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.jce.spec.ECPublicKeySpec;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.BigIntegers;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import javax.crypto.KeyAgreement;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -47,6 +30,22 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.logging.Logger;
+
+import javax.crypto.KeyAgreement;
+
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.interfaces.ECPrivateKey;
+import org.bouncycastle.jce.interfaces.ECPublicKey;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.jce.spec.ECParameterSpec;
+import org.bouncycastle.jce.spec.ECPublicKeySpec;
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.BigIntegers;
+import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 public class ProvisioningPublicKeyState extends ProvisioningState {
 
@@ -197,4 +196,3 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
         return buffer.array();
     }
 }
-

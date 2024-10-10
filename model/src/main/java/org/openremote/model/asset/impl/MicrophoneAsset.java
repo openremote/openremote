@@ -19,15 +19,16 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.UNITS_DECIBEL;
+
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_DECIBEL;
 
 @Entity
 public class MicrophoneAsset extends Asset<MicrophoneAsset> {

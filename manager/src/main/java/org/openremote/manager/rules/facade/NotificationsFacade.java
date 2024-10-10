@@ -19,17 +19,17 @@
  */
 package org.openremote.manager.rules.facade;
 
+import static org.openremote.model.notification.Notification.Source.ASSET_RULESET;
+import static org.openremote.model.notification.Notification.Source.GLOBAL_RULESET;
+import static org.openremote.model.notification.Notification.Source.REALM_RULESET;
+
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Notifications;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
-
-import static org.openremote.model.notification.Notification.Source.ASSET_RULESET;
-import static org.openremote.model.notification.Notification.Source.GLOBAL_RULESET;
-import static org.openremote.model.notification.Notification.Source.REALM_RULESET;
+import org.openremote.model.rules.Ruleset;
 
 public class NotificationsFacade<T extends Ruleset> extends Notifications {
 

@@ -19,16 +19,16 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.*;
+
+import java.util.Optional;
+
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
-
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 public abstract class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorageAsset> {
 

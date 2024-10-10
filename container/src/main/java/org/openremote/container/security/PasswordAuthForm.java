@@ -50,4 +50,3 @@ public class PasswordAuthForm extends AuthForm {
         this.grantType = grantType;
     }
 }
-

@@ -17,25 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.manager.security;
+
+import static org.openremote.container.util.MapAccess.getString;
+
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
 import org.openremote.model.security.KeyStoreService;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.util.logging.Logger;
-import java.util.Optional;
-
-import static org.openremote.container.util.MapAccess.getString;
 
 /**
  * <p>

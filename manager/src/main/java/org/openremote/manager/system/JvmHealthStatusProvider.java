@@ -19,15 +19,15 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class JvmHealthStatusProvider implements HealthStatusProvider {
 

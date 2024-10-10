@@ -19,11 +19,12 @@
  */
 package org.openremote.container.web;
 
+import java.util.logging.Logger;
+
 import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.util.logging.Logger;
 
 @Provider
 public class ClientErrorExceptionHandler implements ExceptionMapper<ClientErrorException> {

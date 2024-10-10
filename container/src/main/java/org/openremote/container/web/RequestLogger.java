@@ -19,6 +19,8 @@
  */
 package org.openremote.container.web;
 
+import java.io.IOException;
+
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -29,7 +31,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
-import java.io.IOException;
 
 @Provider
 public class RequestLogger implements ContainerRequestFilter {

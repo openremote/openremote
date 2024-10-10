@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.rules;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
-
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The scope of a {@link RulesEngine} and, optional, the realm or asset it belongs to.

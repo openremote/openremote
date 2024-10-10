@@ -19,11 +19,10 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.openremote.model.value.ValueType;
 
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
+import org.openremote.model.value.ValueType;
 
 @JsonTypeName(WebsocketHTTPSubscription.TYPE)
 public class WebsocketHTTPSubscription extends WebsocketSubscription {

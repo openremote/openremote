@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.logging.Logger;
-
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.bytesToHex;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.createVendorOpCode;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.getOpCode;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.getOpCodeLength;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.logging.Logger;
 
 
 /**

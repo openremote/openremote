@@ -19,14 +19,15 @@
  */
 package org.openremote.model.rules;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import java.util.Date;
+import java.util.Map;
+
 import org.hibernate.annotations.Formula;
 import org.openremote.model.calendar.CalendarEvent;
 
-import java.util.Date;
-import java.util.Map;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 /**
  * Rules that can only be triggered by asset modifications in a particular

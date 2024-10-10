@@ -19,17 +19,17 @@
  */
 package org.openremote.model.asset;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
+import java.util.Map;
+
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.*;
-
-import java.util.Map;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * Resource for handling model requests and also providing server side validation of {@link Asset}s

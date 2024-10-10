@@ -19,7 +19,13 @@
  */
 package org.openremote.manager.dashboard;
 
-import jakarta.ws.rs.WebApplicationException;
+import static jakarta.ws.rs.core.Response.Status.*;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Logger;
+
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -34,13 +40,7 @@ import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.Status.*;
+import jakarta.ws.rs.WebApplicationException;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
 

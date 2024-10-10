@@ -19,11 +19,12 @@
  */
 package org.openremote.agent.protocol.io;
 
-import io.netty.channel.ChannelHandler;
+import java.util.function.Supplier;
+
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.Protocol;
 
-import java.util.function.Supplier;
+import io.netty.channel.ChannelHandler;
 
 /**
  * This is an abstract {@link Protocol} for protocols that require an {@link NettyIOClient}.

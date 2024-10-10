@@ -19,16 +19,16 @@
  */
 package org.openremote.manager.security;
 
+import static org.openremote.container.util.MapAccess.getString;
+
+import java.util.Locale;
+import java.util.logging.Logger;
+
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
-
-import java.util.Locale;
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerIdentityService extends IdentityService {
 

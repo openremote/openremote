@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.rules.facade;
 
+import java.util.logging.Logger;
+
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
@@ -26,8 +28,6 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.rules.HistoricDatapoints;
 import org.openremote.model.rules.Ruleset;
-
-import java.util.logging.Logger;
 
 public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
     private static final Logger LOG = Logger.getLogger(HistoricFacade.class.getName());

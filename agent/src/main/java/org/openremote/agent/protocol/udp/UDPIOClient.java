@@ -19,22 +19,23 @@
  */
 package org.openremote.agent.protocol.udp;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.model.syslog.SyslogCategory;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.handler.codec.MessageToMessageEncoder;
 
 /**
  * This is a {@link IOClient} implementation for UDP.

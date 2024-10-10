@@ -19,15 +19,16 @@
  */
 package org.openremote.model.value.impl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import net.fortuna.ical4j.model.Dur;
-import org.openremote.model.util.TextUtil;
-
-import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Period;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import org.openremote.model.util.TextUtil;
+
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Allows proper ISO8601 duration values which combine {@link java.time.Duration} and {@link java.time.Period}

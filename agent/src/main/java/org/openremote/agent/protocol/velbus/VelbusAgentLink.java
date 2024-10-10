@@ -19,15 +19,17 @@
  */
 package org.openremote.agent.protocol.velbus;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.model.asset.agent.AgentLink;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.Optional;
 
 public class VelbusAgentLink extends AgentLink<VelbusAgentLink> {
 
@@ -36,8 +38,7 @@ public class VelbusAgentLink extends AgentLink<VelbusAgentLink> {
 
     @Min(1)
     @Max(255)
-    @NotNull
-    protected Integer deviceAddress;
+    @NotNull protected Integer deviceAddress;
 
     // For Hydrators
     protected VelbusAgentLink() {

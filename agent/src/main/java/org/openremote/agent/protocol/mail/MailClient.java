@@ -19,14 +19,6 @@
  */
 package org.openremote.agent.protocol.mail;
 
-import io.undertow.util.Headers;
-import org.openremote.container.util.MailUtil;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.auth.UsernamePassword;
-import org.openremote.model.mail.MailMessage;
-import org.openremote.model.syslog.SyslogCategory;
-
-import jakarta.mail.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +31,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import org.openremote.container.util.MailUtil;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.mail.MailMessage;
+import org.openremote.model.syslog.SyslogCategory;
+
+import io.undertow.util.Headers;
+import jakarta.mail.*;
 
 public class MailClient {
 

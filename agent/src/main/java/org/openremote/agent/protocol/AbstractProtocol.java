@@ -19,6 +19,14 @@
  */
 package org.openremote.agent.protocol;
 
+import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.openremote.container.message.MessageBrokerService;
@@ -35,14 +43,6 @@ import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.util.Pair;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 

@@ -19,12 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes.CONFIG_KEY_REFRESH_PHASE_SET;
 
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes.CONFIG_KEY_REFRESH_PHASE_SET;
+import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * Creates the ConfigKeyRefreshPhaseSet message.
@@ -60,4 +60,3 @@ public class ConfigKeyRefreshPhaseSet extends ConfigMessage {
         mParameters = new byte[]{netKeyIndex[1], (byte) ((netKeyIndex[0] & 0xFF) & 0x0F), (byte) transition};
     }
 }
-

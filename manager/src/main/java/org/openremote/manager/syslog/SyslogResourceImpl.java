@@ -19,6 +19,12 @@
  */
 package org.openremote.manager.syslog;
 
+import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
+
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.syslog.*;
@@ -27,12 +33,6 @@ import org.openremote.model.util.Pair;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-
-import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 public class SyslogResourceImpl extends WebResource implements SyslogResource {
 

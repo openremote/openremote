@@ -170,6 +170,7 @@ repositories {
     maven {
         url "https://s01.oss.sonatype.org/content/repositories/snapshots"
     }
+    maven { url 'https://plugins.gradle.org/m2' }
 }
 
 // Eclipse needs help
@@ -189,7 +190,6 @@ idea {
         excludeDirs += file("build")
     }
 }
-
 
 
 // Helper functions for project/task resolution when the main 
@@ -441,6 +441,32 @@ plugins.withType(JavaPlugin).whenPluginAdded {
 
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
+}
+
+pluginManager.withPlugin('java') {
+    plugins.apply('com.diffplug.spotless')
+
+    spotless {
+        java {
+            target '**/*.java'
+            targetExclude(
+                    '**/org/keycloak/adapters/spi/*',
+                    '**/org/keycloak/adapters/undertow/*',
+                    '**/org/openremote/container/security/basic/PasswordStorage.java',
+                    '**/org/openremote/container/security/keycloak/SimpleKeycloakServletExtension.java',
+                    '**/org/openremote/container/web/file/*',
+                    '**/org/openremote/model/util/TimeUtil.java',
+                    '**/org/openremote/model/util/ValueUtil.java'
+            )
+
+            licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
+            importOrder('java', 'javax', 'com', 'org')
+            removeUnusedImports()
+            formatAnnotations()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
 }
 
 // POM generator

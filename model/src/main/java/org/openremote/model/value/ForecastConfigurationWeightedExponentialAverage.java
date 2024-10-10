@@ -19,6 +19,13 @@
  */
 package org.openremote.model.value;
 
+import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
+
+import java.time.Duration;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -27,17 +34,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
+
 import org.openremote.model.Constants;
 import org.openremote.model.value.impl.PeriodAndDuration;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.Duration;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.util.regex.Pattern;
-
-import static org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage.TYPE;
 
 @JsonTypeName(TYPE)
 public class ForecastConfigurationWeightedExponentialAverage extends ForecastConfiguration {
@@ -46,20 +48,14 @@ public class ForecastConfigurationWeightedExponentialAverage extends ForecastCon
 
     protected static final Pattern iso8601Pattern = Pattern.compile(Constants.ISO8601_DURATION_REGEXP);
 
-    @NotNull
-    @JsonSerialize(using = ToStringSerializer.class)
+    @NotNull @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration pastPeriod;
-    @NotNull
-    @Positive
-    protected Integer pastCount;
-    @NotNull
-    @JsonSerialize(using = ToStringSerializer.class)
+    @NotNull @Positive protected Integer pastCount;
+    @NotNull @JsonSerialize(using = ToStringSerializer.class)
     @JsonDeserialize(converter = PeriodAndDurationConverter.class)
     protected ForecastConfigurationWeightedExponentialAverage.ExtendedPeriodAndDuration forecastPeriod;
-    @NotNull
-    @Positive
-    protected Integer forecastCount;
+    @NotNull @Positive protected Integer forecastCount;
 
     @JsonCreator
     public ForecastConfigurationWeightedExponentialAverage(@JsonProperty("pastPeriod") ExtendedPeriodAndDuration pastPeriod, @JsonProperty("pastCount") Integer pastCount, @JsonProperty("forecastPeriod") ExtendedPeriodAndDuration forecastPeriod, @JsonProperty("forecastCount") Integer forecastCount) {

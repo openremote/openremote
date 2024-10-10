@@ -19,23 +19,11 @@
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import jakarta.ws.rs.core.UriInfo;
-import org.openremote.container.web.WebService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
-import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
@@ -50,10 +38,23 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.API_PATH;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.container.web.WebService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class MapService implements ContainerService {
 

@@ -19,10 +19,10 @@
  */
 package org.openremote.container.persistence.migrations;
 
+import java.sql.PreparedStatement;
+
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
-
-import java.sql.PreparedStatement;
 
 public class V0_1_2__ExampleMigration extends BaseJavaMigration {
 

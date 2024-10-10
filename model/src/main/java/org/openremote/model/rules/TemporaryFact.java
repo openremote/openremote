@@ -19,13 +19,13 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.event.Event;
-import org.openremote.model.util.TsIgnore;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+
+import org.openremote.model.event.Event;
+import org.openremote.model.util.TsIgnore;
 
 /**
  * A rule fact that has a timestamp, it expires after a certain time.

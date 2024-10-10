@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.mqtt;
 
-import org.apache.activemq.artemis.core.config.WildcardConfiguration;
-import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
-import org.openremote.model.util.TextUtil;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.activemq.artemis.core.config.WildcardConfiguration;
+import org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil;
+import org.openremote.model.util.TextUtil;
 
 public class Topic {
 

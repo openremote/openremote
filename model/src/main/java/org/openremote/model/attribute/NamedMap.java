@@ -19,18 +19,20 @@
  */
 package org.openremote.model.attribute;
 
-import com.google.common.collect.ForwardingMap;
-import jakarta.validation.constraints.NotNull;
-import org.openremote.model.value.AbstractNameValueDescriptorHolder;
-import org.openremote.model.value.AbstractNameValueHolder;
-import org.openremote.model.value.NameHolder;
-import org.openremote.model.value.ValueHolder;
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import com.google.common.collect.ForwardingMap;
+
+import org.openremote.model.value.AbstractNameValueDescriptorHolder;
+import org.openremote.model.value.AbstractNameValueHolder;
+import org.openremote.model.value.NameHolder;
+import org.openremote.model.value.ValueHolder;
+
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Special map for {@link NameHolder} items where item names are used as map keys.

@@ -19,13 +19,14 @@
  */
 package org.openremote.model.datapoint.query;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.attribute.AttributeRef;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import org.openremote.model.attribute.AttributeRef;
 
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AssetDatapointAllQuery.class, name = "all"),

@@ -19,11 +19,11 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 
 @JsonSchemaTitle("Any value")
 @JsonSchemaDescription("Predicate that matches any value including null.")

@@ -19,15 +19,6 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigNetKeyUpdate;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigAppKeyUpdate;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigKeyRefreshPhaseSet;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -38,6 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigAppKeyUpdate;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigKeyRefreshPhaseSet;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigNetKeyUpdate;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 
 abstract public class BaseMeshNetwork {

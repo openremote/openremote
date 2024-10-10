@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ProxyConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AddressArray;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ProxyConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AddressArray;
 
 /**
  * To be used as a wrapper class to create the ProxyConfigSetFilterType message.

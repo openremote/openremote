@@ -19,11 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ProxyConfigMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilterType;
-
-import java.util.logging.Logger;
 
 /**
  * To be used as a wrapper class to create the ProxyConfigSetFilterType message.
@@ -74,4 +74,3 @@ public class ProxyConfigFilterStatus extends ProxyConfigStatusMessage {
         return mAddressListSize;
     }
 }
-

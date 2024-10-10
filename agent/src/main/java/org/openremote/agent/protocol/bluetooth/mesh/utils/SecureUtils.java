@@ -19,6 +19,16 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.security.SecureRandom;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -32,15 +42,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.SecureNetworkBeacon;
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.validation.constraints.NotNull;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 
 public class SecureUtils {

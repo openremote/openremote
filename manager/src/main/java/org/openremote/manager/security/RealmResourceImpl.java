@@ -19,12 +19,17 @@
  */
 package org.openremote.manager.security;
 
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.openremote.model.Constants.MASTER_REALM;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
+
 import org.apache.http.HttpStatus;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Container;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.RealmResource;
 
@@ -32,11 +37,6 @@ import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.openremote.model.Constants.MASTER_REALM;
 
 public class RealmResourceImpl extends ManagerWebResource implements RealmResource {
 

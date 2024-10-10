@@ -19,6 +19,18 @@
  */
 package org.openremote.manager.agent;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.asset.AssetStorageService;
@@ -35,17 +47,6 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 // TODO: Redirect gateway agent requests to the gateway
 // TODO: Allow user to select which assets/attributes are actually added to the DB

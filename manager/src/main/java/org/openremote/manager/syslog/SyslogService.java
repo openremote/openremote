@@ -19,21 +19,8 @@
  */
 package org.openremote.manager.syslog;
 
-import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.syslog.SyslogLevel;
-import org.openremote.model.util.Pair;
+import static java.time.temporal.ChronoUnit.DAYS;
 
-import jakarta.persistence.TypedQuery;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +34,21 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogConfig;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.util.Pair;
+
+import jakarta.persistence.TypedQuery;
 
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores

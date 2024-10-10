@@ -19,9 +19,9 @@
  */
 package org.openremote.manager.persistence;
 
-import org.openremote.container.persistence.PersistenceService;
-
 import java.util.List;
+
+import org.openremote.container.persistence.PersistenceService;
 
 public class ManagerPersistenceService extends PersistenceService {
 

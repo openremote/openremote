@@ -19,11 +19,17 @@
  */
 package org.openremote.container.web;
 
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.ExceptionHandler;
 import io.undertow.util.HttpString;
-
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.ws.rs.ForbiddenException;
@@ -31,12 +37,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 
 /**
  * Unified exception handling for all web services (Resteasy, Undertow, Servlets, WebSockets).

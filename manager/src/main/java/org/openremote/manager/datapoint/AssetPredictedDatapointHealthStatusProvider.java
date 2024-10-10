@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.datapoint;
 
+import java.util.Map;
+
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
-
-import java.util.Map;
 
 public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider {
     public static final String NAME = "predicted";

@@ -19,18 +19,19 @@
  */
 package org.openremote.model.attribute;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
 public class MetaMap extends NamedMap<MetaItem<?>> {

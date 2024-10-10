@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.flow.catalog;
 
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.model.flow.Node;
-import org.openremote.model.flow.Slot;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.model.flow.Node;
+import org.openremote.model.flow.Slot;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * TODO Deploy this as a JSON file + some HTML files to create a widget

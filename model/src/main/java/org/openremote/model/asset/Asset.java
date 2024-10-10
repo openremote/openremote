@@ -19,6 +19,13 @@
  */
 package org.openremote.model.asset;
 
+import static jakarta.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -28,13 +35,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.persistence.Table;
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+
 import org.hibernate.annotations.*;
 import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
@@ -54,12 +55,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import jakarta.persistence.*;
+import jakarta.persistence.Table;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 // @formatter:off
 

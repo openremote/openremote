@@ -19,9 +19,18 @@
  */
 package org.openremote.manager.rules;
 
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
-import groovy.lang.Script;
+import static org.openremote.model.rules.RulesetStatus.*;
+
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.script.*;
+
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.jeasy.rules.api.Action;
 import org.jeasy.rules.api.Condition;
@@ -41,16 +50,9 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.script.*;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.rules.RulesetStatus.*;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.lang.Script;
 
 public class RulesetDeployment {
 

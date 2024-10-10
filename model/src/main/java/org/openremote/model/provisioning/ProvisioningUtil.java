@@ -19,12 +19,6 @@
  */
 package org.openremote.model.provisioning;
 
-import org.openremote.model.util.TsIgnore;
-
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
-import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +28,12 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.security.auth.x500.X500Principal;
+
+import org.openremote.model.util.TsIgnore;
 
 @TsIgnore
 public class ProvisioningUtil {

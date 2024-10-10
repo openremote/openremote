@@ -19,11 +19,12 @@
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
+import static org.openremote.container.web.WebClient.*;
+
 import java.io.IOException;
 
-import static org.openremote.container.web.WebClient.*;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 
 /**
  * Add X-Forwarded-* headers if request context is configured with values.
@@ -50,4 +51,3 @@ public class ProxyClientRequestFilter implements ClientRequestFilter {
         }
     }
 }
-

@@ -19,18 +19,6 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.Formula;
-import org.hibernate.annotations.Subselect;
-import org.openremote.model.persistence.InstantEpochConverter;
-
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,6 +26,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Subselect;
+import org.openremote.model.persistence.InstantEpochConverter;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.

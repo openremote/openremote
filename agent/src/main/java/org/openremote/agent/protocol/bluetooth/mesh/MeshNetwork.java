@@ -19,16 +19,16 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.Element;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.Element;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 public class MeshNetwork extends BaseMeshNetwork{
 

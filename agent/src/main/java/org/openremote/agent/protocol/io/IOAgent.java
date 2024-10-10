@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.io;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
-
-import java.util.Optional;
 
 @SuppressWarnings("unchecked")
 public abstract class IOAgent<T extends IOAgent<T, U, V>, U extends AbstractIOClientProtocol<U, T, ?, ?, V>, V extends AgentLink<?>> extends Agent<T, U, V> {

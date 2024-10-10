@@ -19,15 +19,7 @@
  */
 package org.openremote.agent.protocol.io;
 
-import io.netty.bootstrap.AbstractBootstrap;
-import io.netty.channel.*;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import org.openremote.container.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -41,7 +33,16 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.container.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
+
+import io.netty.bootstrap.AbstractBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 /**
  * Abstract implementation of {@link IOServer} that uses the Netty library.

@@ -19,9 +19,9 @@
  */
 package org.openremote.setup.integration.protocol;
 
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class MockAgentLink extends AgentLink<MockAgentLink> {
 

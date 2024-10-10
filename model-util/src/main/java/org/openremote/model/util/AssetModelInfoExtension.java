@@ -17,23 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.util;
-
-import cz.habarta.typescript.generator.Extension;
-import cz.habarta.typescript.generator.Settings;
-import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
-import cz.habarta.typescript.generator.emitter.TsModel;
-import org.openremote.agent.protocol.AgentModelProvider;
-import org.openremote.model.Constants;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.value.MetaItemDescriptor;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.openremote.agent.protocol.AgentModelProvider;
+import org.openremote.model.Constants;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.value.MetaItemDescriptor;
+
+import cz.habarta.typescript.generator.Extension;
+import cz.habarta.typescript.generator.Settings;
+import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
+import cz.habarta.typescript.generator.emitter.TsModel;
 
 
 /**

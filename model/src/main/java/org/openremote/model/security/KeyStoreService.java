@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.openremote.model.security;
 
-import org.openremote.model.ContainerService;
+import java.util.logging.Logger;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
-import java.util.logging.Logger;
+
+import org.openremote.model.ContainerService;
 
 public interface KeyStoreService extends ContainerService {
 	Logger LOG = Logger.getLogger(KeyStoreService.class.getName());

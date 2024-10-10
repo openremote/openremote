@@ -19,17 +19,17 @@
  */
 package org.openremote.manager.asset;
 
+import java.util.Map;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
-import org.openremote.model.http.RequestParams;
 import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import java.util.Map;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 

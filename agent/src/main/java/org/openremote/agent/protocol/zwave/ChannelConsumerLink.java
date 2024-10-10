@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.zwave;
 
+import java.util.function.Consumer;
+
 import org.openremote.protocol.zwave.model.Controller;
 import org.openremote.protocol.zwave.model.ControllerListener;
 import org.openremote.protocol.zwave.model.ZWaveNode;
 import org.openremote.protocol.zwave.model.commandclasses.channel.Channel;
 import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelListener;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
-
-import java.util.function.Consumer;
 
 public class ChannelConsumerLink implements ChannelListener, ControllerListener {
 

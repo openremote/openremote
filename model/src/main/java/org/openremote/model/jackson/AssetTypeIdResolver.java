@@ -19,16 +19,17 @@
  */
 package org.openremote.model.jackson;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.IOException;
 
 /**
  * Resolves asset type strings using {@link org.openremote.model.util.ValueUtil}

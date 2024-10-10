@@ -19,14 +19,14 @@
  */
 package org.openremote.model.protocol;
 
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.util.TsIgnore;
-
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 /**
  * To be used by protocols that support {@link Protocol} instance discovery; these instances can be represented as

@@ -19,6 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import static org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser.CONFIGURATION_SERVER;
+import static org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser.SCENE_SERVER;
+import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.isValidUnassignedAddress;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.Features;
 import org.openremote.agent.protocol.bluetooth.mesh.Group;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -38,15 +46,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.NetworkTransmitSetting
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilterType;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.RelaySettings;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser.CONFIGURATION_SERVER;
-import static org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser.SCENE_SERVER;
-import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.isValidUnassignedAddress;
 
 class DefaultNoOperationMessageState extends MeshMessageState {
 

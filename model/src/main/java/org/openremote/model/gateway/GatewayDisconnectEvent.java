@@ -19,11 +19,12 @@
  */
 package org.openremote.model.gateway;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Date;
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * Used to indicate to a connected gateway should disconnect

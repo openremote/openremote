@@ -19,9 +19,16 @@
  */
 package org.openremote.manager.notification;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+
+import java.io.UnsupportedEncodingException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 import org.openremote.agent.protocol.mail.MailClientBuilder;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -39,15 +46,9 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 
-import java.io.UnsupportedEncodingException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 public class EmailNotificationHandler implements NotificationHandler {
 

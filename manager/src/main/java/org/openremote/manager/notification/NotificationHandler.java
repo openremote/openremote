@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.notification;
 
+import java.util.List;
+
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
-
-import java.util.List;
 
 /**
  * A {@link NotificationHandler} is responsible for sending compatible {@link AbstractNotificationMessage} messages to

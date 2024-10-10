@@ -19,7 +19,33 @@
  */
 package org.openremote.manager.web;
 
+import static io.undertow.util.RedirectBuilder.redirect;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.UriBuilder.fromUri;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
+import static org.openremote.model.util.ValueUtil.configureObjectMapper;
+
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.web.WebService;
+import org.openremote.model.Container;
+
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
@@ -40,32 +66,7 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
-import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
-import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.web.WebService;
-import org.openremote.model.Container;
-
 import jakarta.ws.rs.WebApplicationException;
-
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static io.undertow.util.RedirectBuilder.redirect;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static jakarta.ws.rs.core.UriBuilder.fromUri;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.REALM_PARAM_NAME;
-import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
 

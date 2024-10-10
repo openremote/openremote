@@ -19,10 +19,10 @@
  */
 package org.openremote.model.value;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.util.Optional;
 
 /**
  * Indicates that the implementing class provides a value of &lt;T&gt; the value should be immutable.

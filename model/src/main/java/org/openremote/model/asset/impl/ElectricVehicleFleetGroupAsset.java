@@ -19,6 +19,11 @@
  */
 package org.openremote.model.asset.impl;
 
+import static org.openremote.model.Constants.*;
+
+import java.util.Collection;
+import java.util.Optional;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
@@ -28,10 +33,6 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Collection;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricVehicleFleetGroupAsset extends GroupAsset {
@@ -57,19 +58,19 @@ public class ElectricVehicleFleetGroupAsset extends GroupAsset {
     public Optional<String> getFleetCategory() {
         return getAttributes().getValue(FLEET_CATEGORY);
     }
-    
+
     public Optional<Integer> getAvailableChargingSpaces() {
         return getAttributes().getValue(AVAILABLE_CHARGING_SPACES);
     }
-    
+
     public Optional<Integer> getAvailableDischargingSpaces() {
         return getAttributes().getValue(AVAILABLE_DISCHARGING_SPACES);
     }
-    
+
     public Optional<Integer> getPowerImportMax() {
         return getAttributes().getValue(POWER_IMPORT_MAX);
     }
-    
+
     public Optional<Integer> getPowerExportMax() {
         return getAttributes().getValue(POWER_EXPORT_MAX);
     }

@@ -19,15 +19,15 @@
  */
 package org.openremote.manager.setup;
 
-import org.openremote.model.Container;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.RealmPredicate;
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
+import static org.openremote.model.Constants.*;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
-import static org.openremote.model.Constants.*;
+import org.openremote.model.Container;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 

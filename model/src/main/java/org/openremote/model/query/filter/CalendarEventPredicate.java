@@ -19,18 +19,19 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import java.util.Date;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-
-import java.util.Date;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type {@link ValueType#CALENDAR_EVENT}.

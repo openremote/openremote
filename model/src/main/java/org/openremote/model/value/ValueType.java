@@ -19,6 +19,14 @@
  */
 package org.openremote.model.value;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.time.Period;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -35,14 +43,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.CronExpressionParser;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.impl.*;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.Duration;
-import java.time.Period;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 
 @TsIgnore
 public final class ValueType {
@@ -132,7 +132,7 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.EMAIL_REGEXP)
     );
 
-    public static final ValueDescriptor<String> UUID = new ValueDescriptor<>("UUID", String.class, 
+    public static final ValueDescriptor<String> UUID = new ValueDescriptor<>("UUID", String.class,
         new ValueConstraint.Pattern(Constants.UUID_REGEXP)
     );
 

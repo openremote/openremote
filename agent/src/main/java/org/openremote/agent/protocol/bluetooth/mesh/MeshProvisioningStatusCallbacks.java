@@ -56,4 +56,3 @@ public interface MeshProvisioningStatusCallbacks {
     void onProvisioningCompleted(final ProvisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data);
 
 }
-

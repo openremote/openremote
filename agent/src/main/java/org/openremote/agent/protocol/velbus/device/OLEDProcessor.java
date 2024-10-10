@@ -19,9 +19,7 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -29,7 +27,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueType;
 
 /**
  * Covers OLED specific features:

@@ -19,8 +19,21 @@
  */
 package org.openremote.manager.notification;
 
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
+import static java.time.temporal.ChronoUnit.*;
+import static java.util.Map.entry;
+import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
+import static org.openremote.model.notification.Notification.HEADER_SOURCE;
+import static org.openremote.model.notification.Notification.Source.*;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -43,20 +56,8 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.time.temporal.ChronoUnit.*;
-import static java.util.Map.entry;
-import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
-import static org.openremote.model.notification.Notification.HEADER_SOURCE;
-import static org.openremote.model.notification.Notification.Source.*;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 public class NotificationService extends RouteBuilder implements ContainerService {
 

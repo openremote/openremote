@@ -19,16 +19,16 @@
  */
 package org.openremote.container.persistence;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.List;
+
 import org.apache.commons.io.IOUtils;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor;
 import org.hibernate.tool.schema.internal.script.SingleLineSqlScriptExtractor;
 import org.hibernate.tool.schema.spi.SqlScriptCommandExtractor;
 import org.hibernate.tool.schema.spi.SqlScriptException;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.util.List;
 
 /**
  * Load and parse import SQL files, either the whole file as a single statement if its first line

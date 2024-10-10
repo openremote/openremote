@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,14 +28,14 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.validation.constraints.Pattern;
+
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.NameHolder;
 
-import java.io.IOException;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * Describes an {@link Asset} that can be added to this instance; the {@link #getName()} must match the {@link Asset#type}

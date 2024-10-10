@@ -19,12 +19,22 @@
  */
 package org.openremote.agent.protocol.zwave;
 
+import static java.util.stream.Collectors.toList;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
+
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+
 import org.openremote.controller.exception.ConfigurationException;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
@@ -43,16 +53,6 @@ import org.openremote.protocol.zwave.model.commandclasses.ZWParameterShort;
 import org.openremote.protocol.zwave.model.commandclasses.channel.Channel;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.*;
 import org.openremote.protocol.zwave.port.ZWavePortConfiguration;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-
-import static java.util.stream.Collectors.toList;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
-import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
 
 public class ZWaveNetwork {
 

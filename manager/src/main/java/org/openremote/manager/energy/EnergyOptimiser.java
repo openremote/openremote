@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.energy;
 
-import org.openremote.model.util.Pair;
+import static org.openremote.manager.energy.EnergyOptimisationService.LOG;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -36,7 +36,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.openremote.manager.energy.EnergyOptimisationService.LOG;
+import org.openremote.model.util.Pair;
 
 public class EnergyOptimiser {
 

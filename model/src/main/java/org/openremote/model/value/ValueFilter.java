@@ -19,10 +19,10 @@
  */
 package org.openremote.model.value;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
 
 /**
  * Interface for a filter that can be applied to a value, the filter can return a different value type to the supplied

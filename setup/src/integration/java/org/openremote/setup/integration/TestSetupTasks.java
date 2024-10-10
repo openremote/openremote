@@ -19,12 +19,12 @@
  */
 package org.openremote.setup.integration;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.openremote.model.Container;
 import org.openremote.model.setup.Setup;
 import org.openremote.model.setup.SetupTasks;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Test setup tasks.

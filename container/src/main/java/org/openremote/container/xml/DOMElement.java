@@ -19,14 +19,15 @@
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import javax.xml.namespace.QName;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+
+import org.w3c.dom.*;
 
 /**
  * Wraps a W3C element.

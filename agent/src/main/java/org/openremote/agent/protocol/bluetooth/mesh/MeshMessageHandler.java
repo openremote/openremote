@@ -53,4 +53,3 @@ final class MeshMessageHandler extends BaseMeshMessageHandler {
         super.parseMeshPduNotifications(pdu, network);
     }
 }
-

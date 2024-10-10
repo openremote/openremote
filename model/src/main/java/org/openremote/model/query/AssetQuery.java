@@ -19,14 +19,14 @@
  */
 package org.openremote.model.query;
 
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.

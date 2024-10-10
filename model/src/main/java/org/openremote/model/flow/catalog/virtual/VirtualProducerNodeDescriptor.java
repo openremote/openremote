@@ -19,11 +19,11 @@
  */
 package org.openremote.model.flow.catalog.virtual;
 
-import org.openremote.model.flow.Node;
-import org.openremote.model.flow.Slot;
-
 import java.util.List;
 import java.util.function.Supplier;
+
+import org.openremote.model.flow.Node;
+import org.openremote.model.flow.Slot;
 
 public class VirtualProducerNodeDescriptor extends VirtualNodeDescriptor {
 

@@ -19,15 +19,14 @@
  */
 package org.openremote.manager.agent;
 
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.system.HealthStatusProvider;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class AgentHealthStatusProvider implements HealthStatusProvider {
 

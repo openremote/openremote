@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.rules;
 
-import org.jeasy.rules.api.Rule;
-import org.jeasy.rules.core.RuleBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jeasy.rules.api.Rule;
+import org.jeasy.rules.core.RuleBuilder;
 
 /**
  * Call {@link #add()} to add rules.

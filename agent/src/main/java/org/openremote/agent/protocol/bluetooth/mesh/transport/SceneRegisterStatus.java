@@ -19,14 +19,14 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 /**
  * To be used as a wrapper class for when creating the GenericOnOffStatus Message.
@@ -105,4 +105,3 @@ public final class SceneRegisterStatus extends GenericStatusMessage implements S
         return mSceneList;
     }
 }
-

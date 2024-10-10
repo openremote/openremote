@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.util.Optional;
+
 import org.openremote.model.asset.agent.AgentLink;
 
 import jakarta.validation.constraints.Max;
@@ -26,14 +28,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import java.util.Optional;
 
 public class BluetoothMeshAgentLink extends AgentLink<BluetoothMeshAgentLink> {
 
     @Min(0)
     @Max(2147483647)
-    @NotNull
-    protected Integer appKeyIndex;
+    @NotNull protected Integer appKeyIndex;
 
     @Pattern(regexp = "^([0-9A-Fa-f]{4})$")
     protected String address;

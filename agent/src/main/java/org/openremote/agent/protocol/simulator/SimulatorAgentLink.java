@@ -19,11 +19,12 @@
  */
 package org.openremote.agent.protocol.simulator;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
-
-import java.util.Optional;
 
 public class SimulatorAgentLink extends AgentLink<SimulatorAgentLink> {
 

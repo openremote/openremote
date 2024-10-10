@@ -29,4 +29,3 @@ public interface AssetLocationPredicateConsumer {
      */
     void accept(RulesEngine t, List<RulesEngine.AssetLocationPredicates> u);
 }
-

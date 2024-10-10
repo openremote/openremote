@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.websocket;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(value = WebsocketSubscriptionImpl.class, name = WebsocketSubscriptionImpl.TYPE),

@@ -19,10 +19,10 @@
  */
 package org.openremote.model.asset;
 
+import java.util.Arrays;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Arrays;
 
 /**
  * Allows {@link Asset}s to be represented in a hierarchical structure

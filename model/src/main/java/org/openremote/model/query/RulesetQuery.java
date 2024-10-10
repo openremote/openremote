@@ -19,10 +19,10 @@
  */
 package org.openremote.model.query;
 
+import java.util.Arrays;
+
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.rules.Ruleset;
-
-import java.util.Arrays;
 
 public class RulesetQuery {
 

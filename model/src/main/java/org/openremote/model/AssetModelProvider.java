@@ -19,6 +19,10 @@
  */
 package org.openremote.model;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.ServiceLoader;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.util.TsIgnore;
@@ -26,10 +30,6 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.ServiceLoader;
 
 /**
  * Provides model descriptors that are processed by {@link ValueUtil}; implementations can be discovered using the

@@ -19,15 +19,16 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.NameHolder;
-
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.NameHolder;
 
 /**
  * Predicate for string values; will match based on configured options.

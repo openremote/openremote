@@ -19,10 +19,10 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-
 import java.util.UUID;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 
 class VendorModelMessageUnackedState extends GenericMessageState {
 
@@ -92,4 +92,3 @@ class VendorModelMessageUnackedState extends GenericMessageState {
         super.executeSend();
     }
 }
-

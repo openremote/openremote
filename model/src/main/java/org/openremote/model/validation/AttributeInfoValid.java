@@ -19,17 +19,18 @@
  */
 package org.openremote.model.validation;
 
-import jakarta.validation.Constraint;
-import jakarta.validation.Payload;
-import org.openremote.model.util.TsIgnore;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import org.openremote.model.util.TsIgnore;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
 
 @Target({ FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE })
 @Retention(RUNTIME)

@@ -19,6 +19,20 @@
  */
 package org.openremote.model.protocol;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
+import static org.openremote.model.util.ValueUtil.applyValueFilters;
+
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
@@ -32,25 +46,11 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
-import java.time.Instant;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
-import static org.openremote.model.util.ValueUtil.applyValueFilters;
-
 @TsIgnore
 public final class ProtocolUtil {
 
     protected static Logger LOG = SyslogCategory.getLogger(PROTOCOL, ProtocolUtil.class);
-    
+
     protected ProtocolUtil() {
     }
 

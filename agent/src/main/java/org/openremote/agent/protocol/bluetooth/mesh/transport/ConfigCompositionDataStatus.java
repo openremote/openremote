@@ -19,18 +19,18 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.models.VendorModel;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.models.VendorModel;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * To be used as a wrapper class for when creating the ConfigCompositionDataStatus Message.

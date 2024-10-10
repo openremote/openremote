@@ -19,12 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
+import java.util.List;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshStatusCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * This generic class handles the mesh messages received or sent.
@@ -187,4 +187,3 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
         }
     }
 }
-

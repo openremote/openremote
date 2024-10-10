@@ -19,17 +19,16 @@
  */
 package org.openremote.model.manager;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.Constants;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-import java.io.IOException;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Configuration", description = "Operations on configurations")
 @Path("configuration")

@@ -19,11 +19,12 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.openremote.model.util.TextUtil;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.Arrays;
-import java.util.Objects;
 
 abstract class MeshKey implements Cloneable {
 

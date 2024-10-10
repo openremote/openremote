@@ -19,15 +19,15 @@
  */
 package org.openremote.setup.demo;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
+
 import org.apache.commons.io.IOUtils;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
-
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.logging.Logger;
 
 public class RulesDemoSetup extends ManagerSetup {
 

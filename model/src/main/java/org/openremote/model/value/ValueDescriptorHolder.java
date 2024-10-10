@@ -21,6 +21,7 @@ package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.openremote.model.util.TsIgnoreTypeParams;
 
 /**

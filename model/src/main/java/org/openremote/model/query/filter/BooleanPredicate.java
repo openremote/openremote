@@ -19,11 +19,12 @@
  */
 package org.openremote.model.query.filter;
 
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import org.openremote.model.util.ValueUtil;
-
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value

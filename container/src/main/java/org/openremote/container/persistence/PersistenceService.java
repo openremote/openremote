@@ -19,10 +19,24 @@
  */
 package org.openremote.container.persistence;
 
-import jakarta.persistence.*;
-import jakarta.persistence.spi.ClassTransformer;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
-import jakarta.ws.rs.core.UriBuilder;
+import static org.openremote.container.util.MapAccess.*;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
+
+import javax.sql.DataSource;
+
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
 import org.flywaydb.core.Flyway;
@@ -64,22 +78,10 @@ import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
 
-import javax.sql.DataSource;
-import java.io.File;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import static org.openremote.container.util.MapAccess.*;
+import jakarta.persistence.*;
+import jakarta.persistence.spi.ClassTransformer;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
