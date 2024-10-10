@@ -414,7 +414,7 @@ Resources:
                         - targets:
                             - localhost:8404
                         - labels:
-                            InstanceName: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
+                            InstanceId: '${Host}' # DOESN'T WORK https://github.com/aws/amazon-cloudwatch-agent/issues/751
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,state,code]
@@ -1010,7 +1010,7 @@ Resources:
                   [ "...", "DefaultMQTTHandler", { "id": "m2", "yAxis": "left", "label": "MQTT" } ],
                   [ "...", "AssetResource", { "id": "m4", "yAxis": "left", "label": "HTTP API" } ],
                   [ "...", "WebsocketClient", { "id": "m5", "yAxis": "left", "label": "Websocket" } ],
-                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m6", "yAxis": "left", "label": "Backlog" } ]
+                  [ ".", "artemis_message_count", ".", ".", "queue", "*.*.writeattributevalue.#", { "id": "m6", "yAxis": "left", "label": "MQTT Backlog" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -1038,7 +1038,7 @@ Resources:
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Rule Engines", "id": "e1", "region": "${AWS::Region}" } ],
+                  [ { "expression": "IF(m2,(m1/m2)*1000,0)", "label": "Rule Engines", "id": "e1" } ],
                   [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Attr. Processor", "id": "e2", "yAxis": "right" } ],
                   [ "CWAgent-Prometheus", "or_rules_seconds_sum", "InstanceName", "${Host}", { "id": "m1", "visible": false } ],
                   [ ".", "or_rules_seconds_count", ".", ".", { "id": "m2", "visible": false } ],
