@@ -1,18 +1,40 @@
 {
+  "root": true,
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": "tsconfig.json",
     "sourceType": "module"
   },
   "extends": [
     "eslint:recommended",
     "standard",
     "plugin:@typescript-eslint/recommended",
+    "plugin:wc/recommended",
+    "plugin:lit/recommended",
     "prettier"
   ],
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "env": {
-    "es6": true
+    "browser": true,
+    "es2021": true
   },
-  "ignorePatterns": ["dist", "lib", "node_modules"]
+  "ignorePatterns": [
+    "build",
+    "dist",
+    "lib",
+    "node_modules"
+  ],
+  "rules": {
+    // Required because inline type imports may otherwise appear duplicated
+    "import/no-duplicates": "off",
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "@typescript-eslint/no-import-type-side-effects": "error"
+  }
 }
