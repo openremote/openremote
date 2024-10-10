@@ -121,6 +121,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected AbstractRulesEngine engine;
 
     protected boolean running;
+    protected boolean previouslyFired;
     protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
     protected ScheduledFuture<?> fireTimer;
@@ -147,6 +148,7 @@ public class RulesEngine<T extends Ruleset> {
                        MeterRegistry meterRegistry) {
         this.timerService = timerService;
         this.rulesService = rulesService;
+        this.previouslyFired = rulesService.startDone;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.clientEventService = clientEventService;
@@ -275,7 +277,7 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);
@@ -313,7 +315,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        if (deployments.size() == 0) {
+        if (deployments.isEmpty()) {
             LOG.finest("No rulesets so nothing to start");
             return;
         }
@@ -511,6 +513,7 @@ public class RulesEngine<T extends Ruleset> {
                 // Reset facts after this firing (loop detection etc.)
                 facts.reset();
                 lastFireTimestamp = timerService.getCurrentTimeMillis();
+                previouslyFired = true;
             }
         }
     }
@@ -597,6 +600,10 @@ public class RulesEngine<T extends Ruleset> {
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }
+    }
+
+    public boolean hasPreviouslyFired() {
+        return previouslyFired;
     }
 
     protected RulesEngineStatus getStatus() {
