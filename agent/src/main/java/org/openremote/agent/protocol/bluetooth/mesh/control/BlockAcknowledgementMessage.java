@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.control;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class BlockAcknowledgementMessage extends TransportControlMessage {
@@ -86,8 +87,8 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
      * @param blockAcknowledgement acknowledgement payload received
      * @param segmentCount         number of segments
      */
-    public static ArrayList<Integer> getSegmentsToBeRetransmitted(final byte[] blockAcknowledgement, final int segmentCount) {
-        final ArrayList<Integer> retransmitSegments = new ArrayList<>();
+    public static List<Integer> getSegmentsToBeRetransmitted(final byte[] blockAcknowledgement, final int segmentCount) {
+        final List<Integer> retransmitSegments = new ArrayList<>();
         final int blockAck = ByteBuffer.wrap(blockAcknowledgement).order(ByteOrder.BIG_ENDIAN).getInt();
         for (int i = 0; i < segmentCount; i++) {
             int bit = (blockAck >> i) & 1;

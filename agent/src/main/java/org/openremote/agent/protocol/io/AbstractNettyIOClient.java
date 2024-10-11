@@ -403,7 +403,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 } else if (cause instanceof EncoderException encoderException) {
                     onEncodeException(ctx, encoderException);
                 } else {
-                    // Agressively force close the channel on other exceptions which will cause a reconnect
+                    // Aggressively force close the channel on other exceptions which will cause a reconnect
                     ctx.close();
                 }
             }
