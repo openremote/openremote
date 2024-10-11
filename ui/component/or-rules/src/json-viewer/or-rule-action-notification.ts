@@ -262,7 +262,7 @@ export class OrRuleActionNotification extends LitElement {
         const messageType = message.type!;
         let baseAssetQuery: AssetQuery;
 
-        if (messageType === "push") {
+        if (messageType === "push" || messageType === "push_localized") {
             baseAssetQuery = {
                 types: [
                     WellknownAssets.CONSOLEASSET
@@ -296,8 +296,17 @@ export class OrRuleActionNotification extends LitElement {
                     </or-rule-notification-modal>
                 `;
             }
+            else if(messageType === "push_localized") {
+                const languages = this.config?.notifications?.[manager.displayRealm]?.languages;
+                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
+                modalTemplate = html`
+                    <or-rule-notification-modal title="push-notification" .action="${this.action}">
+                        <or-rule-form-push-notification .action="${this.action}" .languages="${languages}" .lang="${locale}"></or-rule-form-push-notification>
+                    </or-rule-notification-modal>
+                `;
+            }
             
-            if (messageType === "email") {
+            else if (messageType === "email") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="email" .action="${this.action}">
                         <or-rule-form-email-message .action="${this.action}"></or-rule-form-email-message>

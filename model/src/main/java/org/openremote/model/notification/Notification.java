@@ -46,12 +46,19 @@ public class Notification {
 
         protected TargetType type;
         protected String id;
+        protected String locale;
         protected Object data; // Handlers can store temporary data here
 
         @JsonCreator
         public Target(@JsonProperty("type") TargetType type, @JsonProperty("id") String id) {
             this.type = type;
             this.id = id;
+        }
+
+        public Target(TargetType type, String id, String locale) {
+            this.type = type;
+            this.id = id;
+            this.locale = locale;
         }
 
         public TargetType getType() {
@@ -64,6 +71,14 @@ public class Notification {
 
         public String getId() {
             return id;
+        }
+
+        public void setLocale(String locale) {
+            this.locale = locale;
+        }
+
+        public String getLocale() {
+            return locale;
         }
 
         public Target setData(Object data) {

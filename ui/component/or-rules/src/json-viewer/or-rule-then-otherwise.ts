@@ -9,9 +9,9 @@ import {
     AlarmStatus,
     Asset,
     AssetModelUtil,
-    AssetTypeInfo,
+    AssetTypeInfo, EmailNotificationMessage,
     HTTPMethod,
-    JsonRule,
+    JsonRule, PushNotificationLocalizedMessage, PushNotificationMessage,
     RuleActionAlarm,
     RuleActionNotification,
     RuleActionUnion,
@@ -23,7 +23,7 @@ import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Util} from "@openremote/core";
+import {manager, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import "./or-rule-action-webhook";
@@ -368,9 +368,11 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
                 case ActionType.PUSH_NOTIFICATION:
+                case ActionType.PUSH_NOTIFICATION_LOCALIZED:
                     template = html`<or-rule-action-notification id="push-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.PUSH_NOTIFICATION}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.EMAIL:
+                case ActionType.EMAIL_LOCALIZED:
                     template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.WEBHOOK:
@@ -535,18 +537,36 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     type: "email",
                     subject: "%RULESET_NAME%",
                     html: "%TRIGGER_ASSETS%"
-                }
+                } as EmailNotificationMessage
             };
         }  else if (value === ActionType.PUSH_NOTIFICATION) {
+            const languageCodes = this.config?.notifications?.[manager.displayRealm]?.languages;
             action = action as RuleActionNotification;
             action.action = "notification";
-            action.notification = {
-                message: {
+
+            if(languageCodes && languageCodes.length > 0) {
+                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage || "en";
+                const languages: { [p: string]: PushNotificationMessage } = {}
+                languages[locale] = {
                     type: "push",
                     title: "%RULESET_NAME%",
                     body: "%TRIGGER_ASSETS%"
                 }
-            };
+                action.notification = {
+                    message: {
+                        type: "push_localized",
+                        languages: languages
+                    } as PushNotificationLocalizedMessage
+                };
+            } else {
+                action.notification = {
+                    message: {
+                        type: "push",
+                        title: "%RULESET_NAME%",
+                        body: "%TRIGGER_ASSETS%"
+                    } as PushNotificationMessage
+                };
+            }
         } else {
             action.action = "write-attribute";
             action.target = {

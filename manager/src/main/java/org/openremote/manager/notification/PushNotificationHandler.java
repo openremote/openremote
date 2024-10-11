@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
+import static org.openremote.model.security.User.LOCALE_ATTRIBUTE;
 import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
 @SuppressWarnings("deprecation")
@@ -198,19 +199,20 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     .map(Notification.Target::getId).toArray(String[]::new);
 
             if (assetTargets.length > 0) {
-                List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
-                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
-                    .stream().map(Asset::getId).toList();
+                List<Asset<?>> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
+                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class));
 
                 if (!consoleAssets.isEmpty()) {
                     targets = targets.stream()
                         .filter(target -> {
-                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
-                            if (isConsoleAsset) {
+                            ConsoleAsset asset = (ConsoleAsset) consoleAssets.stream().filter(a -> a.getId().equals(target.getId())).findFirst().orElse(null);
+                            if (asset != null) {
+                                User[] users = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId()).limit(1));
+
                                 // Don't filter out consoles without FCM here so we can record the failure in the actual send
-                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), users[0].getAttributeMap().get(LOCALE_ATTRIBUTE).get(0)));
                             }
-                            return !isConsoleAsset;
+                            return asset != null;
                         }).collect(Collectors.toList());
                 }
             }

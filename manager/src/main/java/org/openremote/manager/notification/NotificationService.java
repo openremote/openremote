@@ -33,10 +33,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.NotificationSendResult;
-import org.openremote.model.notification.RepeatFrequency;
-import org.openremote.model.notification.SentNotification;
+import org.openremote.model.notification.*;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
@@ -46,7 +43,6 @@ import org.openremote.model.util.TimeUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -205,15 +201,20 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         target -> {
                             Exception notificationError = persistenceService.doReturningTransaction(em -> {
 
+                                AbstractNotificationMessage message = notification.getMessage();
+                                if(message.isLocalized()) {
+                                    message = ((LocalizedNotificationMessage) message).getMessage(target.getLocale());
+                                }
+
                                 // commit the notification first to get the ID
                                 SentNotification sentNotification = new SentNotification()
                                     .setName(notification.getName())
-                                    .setType(notification.getMessage().getType())
+                                    .setType(message.getType())
                                     .setSource(source)
                                     .setSourceId(sourceId.get())
                                     .setTarget(target.getType())
                                     .setTargetId(target.getId())
-                                    .setMessage(notification.getMessage())
+                                    .setMessage(message)
                                     .setSentOn(Date.from(timerService.getNow()));
 
                                 sentNotification = em.merge(sentNotification);
@@ -225,13 +226,13 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                         source,
                                         sourceId.get(),
                                         target,
-                                        notification.getMessage());
+                                        message);
 
                                     NotificationSendResult result = NotificationSendResult.success();
                                     LOG.fine("Notification sent '" + id + "': " + target);
 
                                     // Merge the sent notification again with the message included just in case the handler modified the message
-                                    sentNotification.setMessage(notification.getMessage());
+                                    sentNotification.setMessage(message);
 
                                 } catch (Exception e) {
                                     NotificationProcessingException notificationProcessingException;

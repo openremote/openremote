@@ -2758,6 +2758,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
     ace-builds: "npm:^1.4.13"
+    iso-639-1: "npm:^3.1.3"
     linqts: "npm:^1.12.6"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"

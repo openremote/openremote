@@ -166,7 +166,7 @@ fetch(configURL).then(async (result) => {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {
-                const config = appConfig.pages[pageProvider.name];
+                const config: {[p: string]: any} | undefined = appConfig.pages[pageProvider.name];
 
                 switch (pageProvider.name) {
                     case "map": {
@@ -178,7 +178,15 @@ fetch(configURL).then(async (result) => {
                         break;
                     }
                     case "rules": {
-                        pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
+                        const newConfig = (config || {
+                            rules: {}
+                        }) as PageRulesConfig;
+                        if(!newConfig.rules?.notifications) {
+                            newConfig.rules.notifications = Object.fromEntries(
+                                Object.entries(appConfig.realms).map(entry => [entry[0], entry[1].notifications])
+                            );
+                        }
+                        pageProvider = pageRulesProvider(store, newConfig);
                         break;
                     }
                     case "insights": {
@@ -278,6 +286,7 @@ fetch(configURL).then(async (result) => {
             });
         }
 
+        console.log(manager.displayRealm);
         return orAppConfig;
     };
 
