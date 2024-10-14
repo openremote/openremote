@@ -280,9 +280,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        startDone = false;
 
         if (!geofenceAssetAdapters.isEmpty()) {
-            LOG.fine("GeoefenceAssetAdapters found: " + geofenceAssetAdapters.size());
+            LOG.fine("GeofenceAssetAdapters found: " + geofenceAssetAdapters.size());
             locationPredicateRulesConsumer = this::onEngineLocationRulesChanged;
 
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {

@@ -828,5 +828,7 @@
     "assignedToMe": "Assigned to me",
     "noData": "No alarms found.",
     "source": "Source"
-  }
+  },
+  "expandAll": "Expand all",
+  "collapseAll": "Collapse all"
 }

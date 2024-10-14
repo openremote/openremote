@@ -135,9 +135,9 @@ public final class Element {
     }
 
     /**
-     * Returns a list of sig models avaialable in this element
+     * Returns a list of sig models available in this element
      *
-     * @return List containing sig models
+     * @return Map containing sig models
      */
     public Map<Integer, MeshModel> getMeshModels() {
         return Collections.unmodifiableMap(meshModels);

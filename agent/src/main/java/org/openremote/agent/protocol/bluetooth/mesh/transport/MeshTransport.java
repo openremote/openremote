@@ -146,7 +146,7 @@ final class MeshTransport extends NetworkLayer {
      * @param key                     Device Key
      * @param akf                     Application key flag defines which key to be used to decrypt the message i.e device key or application key.
      * @param aid                     Identifier of the application key.
-     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt withn 64 bit and 0 with 32 bit encryption.
+     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit encryption.
      * @param accessOpCode            Operation code for the access message.
      * @param accessMessageParameters Parameters for the access message.
      * @return access message containing the mesh pdu
@@ -204,7 +204,7 @@ final class MeshTransport extends NetworkLayer {
      * @param key                     Application Key
      * @param akf                     Application key flag defines which key to be used to decrypt the message i.e device key or application key.
      * @param aid                     Identifier of the application key.
-     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt withn 64 bit and 0 with 32 bit encryption.
+     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit encryption.
      * @param accessOpCode            Operation code for the access message.
      * @param accessMessageParameters Parameters for the access message.
      * @return access message containing the mesh pdu
