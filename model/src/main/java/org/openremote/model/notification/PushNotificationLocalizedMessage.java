@@ -62,8 +62,13 @@ public class PushNotificationLocalizedMessage extends AbstractNotificationMessag
         return getMessage(language).getTtlSeconds();
     }
 
+    @Override
     public PushNotificationMessage getMessage(String language) {
         return Optional.ofNullable(languages.get(language)).orElse(languages.get(defaultLanguage));
     }
 
+    @Override
+    public Map<String, PushNotificationMessage> getMessages() {
+        return languages;
+    }
 }

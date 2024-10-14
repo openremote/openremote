@@ -39,6 +39,7 @@ import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationLocalizedMessage;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
@@ -167,17 +168,24 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     @Override
     public boolean isMessageValid(AbstractNotificationMessage message) {
 
-        if (!(message instanceof PushNotificationMessage pushMessage)) {
-            LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
-            return false;
+        List<AbstractNotificationMessage> messages = new ArrayList<>();
+        if(message.isLocalized()) {
+            messages.addAll(((PushNotificationLocalizedMessage) message).getMessages().values());
+        } else {
+            messages.add(message);
         }
 
-        if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
-            LOG.warning("Invalid message: must either contain a title and/or data");
+        return messages.stream().noneMatch(m -> {
+            if(!(m instanceof PushNotificationMessage pushMessage)) {
+                LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
+                return true;
+            }
+            if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
+                LOG.warning("Invalid message: must either contain a title and/or data");
+                return true;
+            }
             return false;
-        }
-
-        return true;
+        });
     }
 
     @Override

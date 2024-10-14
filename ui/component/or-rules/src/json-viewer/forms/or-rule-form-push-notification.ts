@@ -166,7 +166,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                                   required
                                   placeholder=" "></or-mwc-input>
                     <or-mwc-input .value="${message?.buttons?.[1]?.title}"
-                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then(msg => this._onButtonTitleChange(ev, 0, msg))}"
+                                  @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then(msg => this._onButtonTitleChange(ev, 1, msg))}"
                                   .label="${i18next.t("buttonTextDecline")}"
                                   type="${InputType.TEXT}"
                                   class="input-small"
