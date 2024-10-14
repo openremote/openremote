@@ -36,6 +36,7 @@ import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {when} from 'lit/directives/when.js';
+import ISO6391 from 'iso-639-1';
 
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
@@ -152,6 +153,8 @@ export class OrConfRealmCard extends LitElement {
         "logout"
 
     ];
+
+    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getNativeName(entry[0]))
 
     protected _getColors() {
         const colors: { [name: string]: string } = {
@@ -274,6 +277,16 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
+        const languageNames = ISO6391.getAllNativeNames();
+        const languages: string[][] = ISO6391.getAllCodes()
+            .map((code, index) => ([code, languageNames[index]]))
+            .sort((a, b) => a[1].localeCompare(b[1]));
+
+        // On an empty search; return the common language as set in DEFAULT_LANGUAGES
+        // If searching, compare strings using lowercase. (with no maximum)
+        const searchProvider = (search: string) => languages.filter(entry =>
+            (!search && this.commonLanguages.includes(entry[1])) || entry[1].toLowerCase().includes(search?.toLowerCase()))
+
         return html`
             <or-collapsible-panel .expanded="${app.expanded}">
                 <div slot="header" class="header-container">
@@ -358,6 +371,50 @@ export class OrConfRealmCard extends LitElement {
                                     .options="${app.headerListSecondary}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListSecondary)}"
                             ></or-mwc-input>
+                        </div>
+                    </div>
+                    <div class="header-group">
+                        <div class="subheader">${i18next.t("configuration.notificationLanguages")}</div>
+                        <span>${i18next.t("configuration.notificationLanguagesDesc")}</span>
+                        <div>
+                            <or-mwc-input
+                                    .type="${InputType.SELECT}" multiple
+                                    class="header-item"
+                                    .label="${i18next.t("configuration.notificationLanguages")}"
+                                    .value="${app.realm.notifications?.languages || []}"
+                                    .options="${languages}"
+                                    .searchProvider="${searchProvider}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                        const newLanguages: string[] | undefined = e.detail.value;
+                                        const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
+                                        app.realm.notifications = {
+                                            languages: newLanguages,
+                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : undefined
+                                        }
+                                        app.notifyConfigChange(app.realm);
+                                        this.requestUpdate(); // force render
+                                    }}"
+                            ></or-mwc-input>
+                            ${when(app.realm.notifications?.languages?.length > 0, () => html`
+                                <or-mwc-input
+                                        .type="${InputType.SELECT}"
+                                        class="header-item"
+                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                        .value="${app.realm.notifications?.defaultLanguage || []}"
+                                        .options="${languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
+                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                            app.realm.notifications.defaultLanguage = e.detail.value;
+                                            app.notifyConfigChange(app.realm);
+                                            this.requestUpdate(); // force render
+                                        }}"
+                                ></or-mwc-input>
+                            `, () => html`
+                                <or-mwc-input
+                                        .type="${InputType.SELECT}" disabled
+                                        class="header-item"
+                                        .label="${i18next.t("configuration.defaultLanguage")}"
+                                ></or-mwc-input>
+                            `)}
                         </div>
                     </div>
 

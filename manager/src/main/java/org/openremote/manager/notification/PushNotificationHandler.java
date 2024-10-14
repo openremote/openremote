@@ -39,6 +39,7 @@ import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationLocalizedMessage;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
@@ -58,6 +59,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
+import static org.openremote.model.security.User.LOCALE_ATTRIBUTE;
 import static org.openremote.model.security.User.PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE;
 
 @SuppressWarnings("deprecation")
@@ -166,17 +168,24 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     @Override
     public boolean isMessageValid(AbstractNotificationMessage message) {
 
-        if (!(message instanceof PushNotificationMessage pushMessage)) {
-            LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
-            return false;
+        List<AbstractNotificationMessage> messages = new ArrayList<>();
+        if(message.isLocalized()) {
+            messages.addAll(((PushNotificationLocalizedMessage) message).getMessages().values());
+        } else {
+            messages.add(message);
         }
 
-        if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
-            LOG.warning("Invalid message: must either contain a title and/or data");
+        return messages.stream().noneMatch(m -> {
+            if(!(m instanceof PushNotificationMessage pushMessage)) {
+                LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
+                return true;
+            }
+            if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
+                LOG.warning("Invalid message: must either contain a title and/or data");
+                return true;
+            }
             return false;
-        }
-
-        return true;
+        });
     }
 
     @Override
@@ -198,19 +207,33 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     .map(Notification.Target::getId).toArray(String[]::new);
 
             if (assetTargets.length > 0) {
-                List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
-                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
-                    .stream().map(Asset::getId).toList();
+                List<Asset<?>> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
+                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class));
 
                 if (!consoleAssets.isEmpty()) {
                     targets = targets.stream()
                         .filter(target -> {
-                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
-                            if (isConsoleAsset) {
+
+                            ConsoleAsset asset = (ConsoleAsset) consoleAssets.stream()
+                                    .filter(a -> a.getId().equals(target.getId())).findFirst().orElse(null);
+
+                            if (asset != null) {
+                                User[] users = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId()).serviceUsers(false).limit(1));
+
                                 // Don't filter out consoles without FCM here so we can record the failure in the actual send
-                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                                Optional.ofNullable(users)
+                                        .filter(u -> u.length > 0)
+                                        .map(u -> u[0])
+                                        .map(User::getAttributeMap)
+                                        .map(attrMap -> attrMap.get(LOCALE_ATTRIBUTE))
+                                        .filter(values -> !values.isEmpty())
+                                        .map(values -> values.get(0))
+                                        .ifPresentOrElse(
+                                                locale -> mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), locale)),
+                                                () -> mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()))
+                                        );
                             }
-                            return !isConsoleAsset;
+                            return asset == null;
                         }).collect(Collectors.toList());
                 }
             }
