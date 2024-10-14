@@ -205,7 +205,10 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 if (!consoleAssets.isEmpty()) {
                     targets = targets.stream()
                         .filter(target -> {
-                            ConsoleAsset asset = (ConsoleAsset) consoleAssets.stream().filter(a -> a.getId().equals(target.getId())).findFirst().orElse(null);
+
+                            ConsoleAsset asset = (ConsoleAsset) consoleAssets.stream()
+                                    .filter(a -> a.getId().equals(target.getId())).findFirst().orElse(null);
+
                             if (asset != null) {
                                 User[] users = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId()).serviceUsers(false).limit(1));
 
@@ -218,15 +221,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                         .filter(values -> !values.isEmpty())
                                         .map(values -> values.get(0))
                                         .ifPresentOrElse(
-                                                locale -> {
-                                                    mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), locale));
-                                                },
-                                                () -> {
-                                                    mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
-                                                }
+                                                locale -> mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), locale)),
+                                                () -> mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()))
                                         );
                             }
-                            return asset != null;
+                            return asset == null;
                         }).collect(Collectors.toList());
                 }
             }
