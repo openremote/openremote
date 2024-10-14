@@ -207,10 +207,24 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .filter(target -> {
                             ConsoleAsset asset = (ConsoleAsset) consoleAssets.stream().filter(a -> a.getId().equals(target.getId())).findFirst().orElse(null);
                             if (asset != null) {
-                                User[] users = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId()).limit(1));
+                                User[] users = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId()).serviceUsers(false).limit(1));
 
                                 // Don't filter out consoles without FCM here so we can record the failure in the actual send
-                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), users[0].getAttributeMap().get(LOCALE_ATTRIBUTE).get(0)));
+                                Optional.ofNullable(users)
+                                        .filter(u -> u.length > 0)
+                                        .map(u -> u[0])
+                                        .map(User::getAttributeMap)
+                                        .map(attrMap -> attrMap.get(LOCALE_ATTRIBUTE))
+                                        .filter(values -> !values.isEmpty())
+                                        .map(values -> values.get(0))
+                                        .ifPresentOrElse(
+                                                locale -> {
+                                                    mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId(), locale));
+                                                },
+                                                () -> {
+                                                    mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                                                }
+                                        );
                             }
                             return asset != null;
                         }).collect(Collectors.toList());
