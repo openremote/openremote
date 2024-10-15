@@ -28,8 +28,8 @@ export * from "./or-header";
 export * from "./types";
 
 // Declare MANAGER_URL and KEYCLOAK_URL - Global var injected by webpack
-declare var MANAGER_URL: string | undefined;
-declare var KEYCLOAK_URL: string | undefined;
+declare const MANAGER_URL: string;
+declare const KEYCLOAK_URL: string;
 
 export {HeaderConfig, DEFAULT_LANGUAGES};
 
@@ -372,15 +372,15 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
             }else{
-                this._config.logo = MANAGER_URL+"/api/master/configuration/manager/image/"+this._config.logo
+                this._config.logo = MANAGER_URL!+this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
             }else{
-                this._config.logoMobile = MANAGER_URL+"/api/master/configuration/manager/image/"+this._config.logoMobile
+                this._config.logoMobile = MANAGER_URL!+this._config.logoMobile
             }
 
-            const favIcon = this._config && this._config.favicon ? MANAGER_URL+"/api/master/configuration/manager/image/"+this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? MANAGER_URL!+this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 

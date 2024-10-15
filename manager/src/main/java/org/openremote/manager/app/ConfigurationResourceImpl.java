@@ -30,8 +30,8 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 
 import java.io.*;
-import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
@@ -65,13 +65,13 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
             LOG.warning("Save image failed '" + path + "': " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
         }
-        URI managerConfigPath = requestParams.getExternalBaseUriBuilder()
-                .path("master")
-                .path("configuration")
-                .path("manager")
-                .path("image")
-                .path(path)
-                .build();
+        Path managerConfigPath = Path.of("/api")
+                .resolve("master")
+                .resolve("configuration")
+                .resolve("manager")
+                .resolve("image")
+                .resolve(path);
+
         return managerConfigPath.toString();
     }
 

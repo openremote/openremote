@@ -210,12 +210,13 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         LOG.log(Level.INFO, "Saving image in manager_config.json..");
         path = path.contains("/images/") ? path.replace("/images/", "") : path;
 
-        Path canonicalPath = Path.of(path.charAt(0) == '/' ? path.substring(1) : path).toFile().getCanonicalFile().toPath();
-        boolean isValid = canonicalPath.toFile().getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
+        Path resolvedPath = Path.of(path.charAt(0) == '/' ? path.substring(1) : path);
+        resolvedPath = getManagerConfigImagePath().resolve(resolvedPath);
+        boolean isValid = resolvedPath.toFile().getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
         if(!isValid) throw new Exception("Reference to location outside the permitted directory");
 
         File file = getManagerConfigImagePath().
-                resolve(canonicalPath)
+                resolve(path)
                 .toAbsolutePath().toFile();
         try {
             file.getParentFile().mkdirs();

@@ -133,7 +133,7 @@ export class OrFileUploader extends LitElement {
                 if(this.src.includes("data:image")){
                     return this.src;
                 }else{
-                    return this.managerUrl+"/api/master/configuration/manager/image/"+this.src;
+                    return this.managerUrl+this.src;
                 }
             }
         }

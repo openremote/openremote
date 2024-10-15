@@ -315,20 +315,22 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         this.loading = true;
         let managerPromise;
 
-        // POST manager config if changed...
-        if (this.managerConfigurationChanged) {
-            managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
-                // Not sure what this does and how to adapt it to fetch from axios, so I just replaced the urlPrefix with the managerUrl
-                fetch(this.managerConfiguration.manager.managerUrl + "/api/master/configuration/manager", {cache: "reload"});
-                this.managerConfiguration = config;
-                Object.entries(this.managerConfiguration.realms).forEach(([name, settings]) => {
-                    fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});
+        // Save the images to the server that have been uploaded by the user.
+        // TODO: Optimize code so it only saves images that have been changed.
+        const imagePromises = [];
+        if(this.realmConfigPanel !== undefined) {
+            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
+            elems.forEach((elem, index) => {
+                const files = elem?.getFiles();
+                Object.entries(files).forEach(async ([x, y]) => {
+                    imagePromises.push(
+                        manager.rest.api.ConfigurationResource.fileUpload(y, {path: (y as any).path}).then(file =>{
+                            config.realms[elem.name][x] = file.data;
+                        })
+                    );
                 });
-            }).catch((reason) => {
-                console.error(reason);
-            });
+            })
+            this.managerConfiguration = config;
         }
 
         // POST map config if changed...
@@ -342,25 +344,22 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
-        // Save the images to the server that have been uploaded by the user.
-        // TODO: Optimize code so it only saves images that have been changed.
-        const imagePromises = [];
-        if(this.realmConfigPanel !== undefined) {
-            const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
-            elems.forEach((elem, index) => {
-                const files = elem?.getFiles();
-                Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
-                });
-            })
-        }
 
-        // Wait for all requests to complete, then finish loading.
-        const promises = [...imagePromises, managerPromise, mapPromise];
-        Promise.all(promises).finally(() => {
-            this.loading = false;
-            this.managerConfigurationChanged = false;
-            this.mapConfigChanged = false;
+        // We first wait for the imagePromises to finish, so that
+        // we can use the path returned from the backend to store to the
+        // manager_config.
+        Promise.all(imagePromises).then((arr:string[]) => {
+            // Wait for all requests to complete, then finish loading.
+            const promises = [
+                this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,
+                this.mapConfigChanged ?  mapPromise : null];
+            Promise.all(promises).finally(() => {
+                this.requestUpdate();
+                this.loading = false;
+                this.managerConfigurationChanged = false;
+                this.mapConfigChanged = false;
+            })
         })
+
     }
 }

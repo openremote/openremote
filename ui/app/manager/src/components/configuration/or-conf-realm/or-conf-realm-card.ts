@@ -214,15 +214,16 @@ export class OrConfRealmCard extends LitElement {
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
         if (path){
-            this.files[path] = {
+            this.files[fileName] = {
+                name: fileName,
                 path: path,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
             this.realm[fileName] = path
-            this[fileName] = this.files[path].contents
+            this[fileName] = this.files[fileName].contents
             this.requestUpdate()
             this.notifyConfigChange(this.realm);
-            return this.files[path].contents;
+            return this.files[fileName].contents;
         }
     }
 

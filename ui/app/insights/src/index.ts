@@ -53,13 +53,6 @@ fetch(configURL).then(async (result) => {
         }
     }
 
-    // Add config prefix if defined (used in dev)
-    if (CONFIG_URL_PREFIX) {
-        if (appConfig.manager.translationsLoadPath) {
-            appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
-        }
-    }
-
     // Override specific for Insights app, since it doesn't require login.
     // Login and logout buttons can be found in the sidebar menu of the app.
     appConfig.manager.autoLogin = false;
@@ -101,18 +94,6 @@ fetch(configURL).then(async (result) => {
                 manager.language = 'en'
             }
         })
-
-        // Add config prefix if defined (used in dev)
-        if (CONFIG_URL_PREFIX) {
-            Object.values(orAppConfig.realms).forEach((realmConfig) => {
-                if (typeof (realmConfig.logo) === "string") {
-                    realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
-                }
-                if (typeof (realmConfig.logoMobile) === "string") {
-                    realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
-                }
-            });
-        }
 
         // Add insights page with correct parameters
         orAppConfig.pages.push(pageViewProvider(store, orAppConfig.realms))
