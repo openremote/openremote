@@ -21,6 +21,7 @@ package org.openremote.manager.app;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.ws.rs.NotFoundException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -190,7 +191,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         // that it's stored in OR_CUSTOM_APP_DOCROOT
         try (OutputStream out = new FileOutputStream(getManagerConfigPath().toFile())) {
             // Check references to images
-            ObjectNode changedConfig = this.checkAndFixImageReferences(this.managerConfig);
+            ObjectNode changedConfig = this.checkAndFixImageReferences(managerConfiguration);
 
             if(changedConfig != null){
                 managerConfiguration = changedConfig.deepCopy();
@@ -289,12 +290,15 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         if (deploymentImageFile.isFile() && !persistenceImageFile.isFile()) {
                             persistenceImageFile.getParentFile().mkdirs();
                             Files.copy(deploymentImageFile.toPath(), persistenceImageFile.toPath());
+                            // Change the reference in the config to the typical API-like reference:
+                            ((ObjectNode) managerConfig.get("realms").get(realmName)).put(type, "/api/master/configuration/manager/image/"+strippedImage);
+                            configChanged = true;
                         }
-
-                        // Change the reference in the config to the typical API-like reference:
-
-                        ((ObjectNode) managerConfig.get("realms").get(realmName)).put(type, strippedImage);
-                        configChanged = true;
+                        // If there is no file in either locations, throw since we can't resolve the reference to the image
+                        // Will be caught at the resource implementation
+                        else if (!deploymentImageFile.isFile() && !persistenceImageFile.isFile()) {
+                            throw new NotFoundException("File not found in both persistence directory and storage directory");
+                        }
                     }
                 }
             }
