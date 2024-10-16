@@ -173,8 +173,8 @@ Resources:
                 "metrics": [
                   [ { "expression": "m1-m2", "label": "Dynamic Threads", "id": "e1" } ],
                   [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Execution Time", "id": "e2", "yAxis": "right" } ],
-                  [ "CWAgent-Prometheus", "executor_pool_size_threads", "InstanceName", "a", "name", "ContainerExecutor", { "id": "m1", "visible": false } ],
-                  [ ".", "executor_pool_core_threads", ".", ".", ".", ".", { "id": "m2", "visible": false } ],
+                  [ "CWAgent-Prometheus", "executor_pool_size_threads", "InstanceName", "a", "name", "ContainerExecutor", { "id": "m1", "visible": false, "stat": "Maximum" } ],
+                  [ ".", "executor_pool_core_threads", ".", ".", ".", ".", { "id": "m2", "visible": false, "stat": "Maximum" } ],
                   [ ".", "executor_seconds_sum", ".", ".", ".", ".", { "id": "m3", "visible": false } ],
                   [ ".", "executor_seconds_count", ".", ".", ".", ".", { "id": "m4", "visible": false } ]
                 ],
