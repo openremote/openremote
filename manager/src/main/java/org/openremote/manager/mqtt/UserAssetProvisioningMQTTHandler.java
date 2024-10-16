@@ -26,7 +26,6 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
-import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
@@ -123,16 +122,6 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public void init(Container container, Configuration serverConfiguration) throws Exception {
         super.init(container, serverConfiguration);
 
-        // Set all provisioning addresses to fail on full
-        serverConfiguration.addAddressSetting(PROVISIONING_TOKEN + "." + mqttBrokerService.wildcardConfiguration.getAnyWordsString(),
-            new AddressSettings()
-                .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
-                .setMaxSizeMessages(1000)
-                .setPageLimitMessages(0L)
-                .setDefaultConsumerWindowSize(-1)
-        );
-
         if (container.getMeterRegistry() != null) {
             provisioningTimer = container.getMeterRegistry().timer("or.provisioning", Tags.empty());
         }
@@ -162,14 +151,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
      */
     @Override
     protected AddressSettings getPublishTopicAddressSettings(Container container, String publishTopic) {
-        if (container.getMeterRegistry() != null) {
-            return new AddressSettings()
+        AddressSettings addressSettings = super.getPublishTopicAddressSettings(container, publishTopic);
+        if (addressSettings != null) {
+            addressSettings
                 .setMaxSizeMessages(1000L)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
-                .setEnableMetrics(true);
+                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL);
         }
-
-        return null;
+        return addressSettings;
     }
 
     @Override

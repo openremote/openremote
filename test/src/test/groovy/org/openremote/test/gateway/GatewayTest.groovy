@@ -41,6 +41,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Paths
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 import java.util.stream.Collectors
@@ -879,7 +880,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "we subscribe to attribute events"
-        List<AttributeEvent> attributeEvents = []
+        List<AttributeEvent> attributeEvents = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> eventConsumer = { attributeEvent ->
             attributeEvents.add(attributeEvent)
         }
@@ -889,8 +890,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.light2Id, LightAsset.ON_OFF, true))
 
         then: "only four attribute events should have been generated, one for each of light1 and light2 and one for each of their mirrored assets below the gateway asset"
-        Thread.sleep(1000)
-        conditions.eventually {
+        delayedConditions.eventually {
             assert attributeEvents.size() == 4
             assert attributeEvents.any{it.id == managerTestSetup.light2Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}
             assert attributeEvents.any{it.id == managerTestSetup.light1Id && it.name == LightAsset.ON_OFF.name && it.value.orElse(false)}

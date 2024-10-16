@@ -21,6 +21,7 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
@@ -43,8 +44,8 @@ class AttributeEventBenchmarkTest extends Specification implements ManagerContai
         def eventCount = 1000
         def startTime = -1l
         def endTime = -1l
-        List<SharedEvent> receivedEvents = []
-        List<Object> receivedValues = []
+        List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+        List<Object> receivedValues = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())

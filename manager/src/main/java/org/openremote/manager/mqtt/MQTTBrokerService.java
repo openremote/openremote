@@ -48,6 +48,7 @@ import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerConnectionPl
 import org.apache.activemq.artemis.core.server.plugin.ActiveMQServerSessionPlugin;
 import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
+import org.apache.activemq.artemis.core.settings.impl.PageFullMessagePolicy;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalConversionLoginModule;
@@ -201,7 +202,9 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 .setAutoDeleteQueuesDelay(0)
                 // Disable consumer buffering to keep messages on the server we're in the same VM anyway so shouldn't be harmful to performance
                 .setDefaultConsumerWindowSize(0)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.BLOCK)
+                .setPageLimitMessages(0L)
+                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+                .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
                 // We don't want excessive metrics so only enable metrics for each custom handler address
                 .setEnableMetrics(false)
         );

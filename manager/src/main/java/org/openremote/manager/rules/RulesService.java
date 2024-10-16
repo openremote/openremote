@@ -87,11 +87,6 @@ import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
  * sync with the asset state changes that occur. If an asset attribute value changes, the {@link AttributeInfo} in the
  * rules engines will be updated to reflect the change.
  * <p>
- * If an updated attribute's {@link MetaItemType#RULE_EVENT} is true, another temporary {@link AttributeInfo} fact is
- * inserted in the rules engines in scope. This fact expires automatically if the lifetime set in {@link
- * RulesService#OR_RULE_EVENT_EXPIRES} is reached, or if the lifetime set in the attribute {@link
- * MetaItemType#RULE_EVENT_EXPIRES} is reached.
- * <p>
  * Each asset attribute update is processed in the following order:
  * <ol>
  * <li>Global Rulesets</li>
@@ -340,7 +335,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                         ruleAttribute.getTimestamp().orElse(0L),
                         ruleAttribute.getValue().orElse(null),
                         ruleAttribute.getTimestamp().orElse(0L));
-                    updateAttributeEvent(attributeEvent);
+                    insertOrUpdateAttributeInfo(attributeEvent);
                 });
             });
 
@@ -410,31 +405,10 @@ public class RulesService extends RouteBuilder implements ContainerService {
     }
 
     protected void doProcessAttributeUpdate(AttributeEvent attributeEvent) {
-        // We might process two facts for a single attribute update, if that is what the user wants
-
-        // First as attribute event
-        retractAttributeEvent(attributeEvent);
         if (isRuleState(attributeEvent) && !attributeEvent.isDeleted()) {
-            updateAttributeEvent(attributeEvent);
-        }
-
-        // Then as rule event
-        removeAttributeEvents(attributeEvent);
-        if (attributeEvent.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
-            if (!attributeEvent.isDeleted()) {
-                long expireMillis = attributeEvent.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).map(expires -> {
-                    long expMillis = defaultEventExpiresMillis;
-
-                    try {
-                        expMillis = TimeUtil.parseTimeDuration(expires);
-                    } catch (RuntimeException exception) {
-                        LOG.log(Level.WARNING, "Failed to parse '" + MetaItemType.RULE_EVENT_EXPIRES.getName() + "' value '" + expires + "' for attribute: " + attributeEvent, exception);
-                    }
-                    return expMillis;
-                }).orElse(defaultEventExpiresMillis);
-
-                insertAttributeEvent(attributeEvent, expireMillis);
-            }
+            insertOrUpdateAttributeInfo(attributeEvent);
+        } else {
+            retractAttributeInfo(attributeEvent);
         }
     }
 
@@ -636,7 +610,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
             if (isNewEngine) {
                 // Push all existing facts into the engine
                 RulesEngine<GlobalRuleset> finalEngine = engine;
-                attributeEvents.forEach(assetState -> finalEngine.updateOrInsertAttributeInfo(assetState, true));
+                attributeEvents.forEach(assetState -> finalEngine.insertOrUpdateAttributeInfo(assetState, true));
             }
 
             engine.addRuleset(ruleset);
@@ -688,7 +662,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 RulesEngine<RealmRuleset> finalRealmRulesEngine = realmRulesEngine;
                 attributeEvents.forEach(assetState -> {
                     if (assetState.getRealm().equals(ruleset.getRealm())) {
-                        finalRealmRulesEngine.updateOrInsertAttributeInfo(assetState, true);
+                        finalRealmRulesEngine.insertOrUpdateAttributeInfo(assetState, true);
                     }
                 });
             }
@@ -769,7 +743,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 // Push all existing facts for this asset (and it's children into the engine)
                 RulesEngine<AssetRuleset> finalAssetRulesEngine = assetRulesEngine;
                 getAssetStatesInScope(ruleset.getAssetId())
-                    .forEach(assetState -> finalAssetRulesEngine.updateOrInsertAttributeInfo(assetState, true));
+                    .forEach(assetState -> finalAssetRulesEngine.insertOrUpdateAttributeInfo(assetState, true));
             }
 
             assetRulesEngine.addRuleset(ruleset);
@@ -790,37 +764,13 @@ public class RulesService extends RouteBuilder implements ContainerService {
         }
     }
 
-    protected void insertAttributeEvent(AttributeInfo event, long expiresMillis) {
-        // Get the chain of rule engines that we need to pass through
-        List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
-
-        // Pass through each engine
-        for (RulesEngine<?> rulesEngine : rulesEngines) {
-            rulesEngine.insertAttributeEvent(expiresMillis, event);
-        }
-    }
-
-    protected void removeAttributeEvents(AttributeInfo event) {
-        // Get the chain of rule engines that we need to pass through
-        List<RulesEngine<?>> rulesEngines = getEnginesInScope(event.getRealm(), event.getPath());
-
-        // Remove all from each engine
-        for (RulesEngine<?> rulesEngine : rulesEngines) {
-            rulesEngine.removeAttributeEvents(event.getRef());
-        }
-    }
-
-    protected void updateAttributeEvent(AttributeEvent attributeEvent) {
-        LOG.log(FINEST, () -> "Updating attribute event: " + attributeEvent);
-
-        // TODO: Use a hashmap for attribute events
-        boolean isNewer = attributeEvents.stream().filter(event -> event.getRef().equals(attributeEvent.getRef())).findFirst()
-            .map(existingEvent -> existingEvent.getTimestamp() < attributeEvent.getTimestamp()).orElse(true);
-
-        if (!isNewer) {
-            // Attribute event is older than the state already loaded
+    protected void insertOrUpdateAttributeInfo(AttributeEvent attributeEvent) {
+        if (attributeEvent.isOutdated()) {
+            // Attribute event is old so ignore
             return;
         }
+
+        LOG.log(FINEST, () -> "Inserting attribute event: " + attributeEvent);
 
         // Remove asset state with same attribute ref as new state, add new state
         boolean inserted = !attributeEvents.remove(attributeEvent);
@@ -831,11 +781,13 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         // Pass through each rules engine
         for (RulesEngine<?> rulesEngine : rulesEngines) {
-            rulesEngine.updateOrInsertAttributeInfo(attributeEvent, inserted);
+            rulesEngine.insertOrUpdateAttributeInfo(attributeEvent, inserted);
         }
     }
 
-    protected void retractAttributeEvent(AttributeEvent attributeEvent) {
+    protected void retractAttributeInfo(AttributeEvent attributeEvent) {
+        LOG.log(FINEST, () -> "Retracting attribute event: " + attributeEvent);
+
         // Remove asset state with same attribute ref
         attributeEvents.remove(attributeEvent);
 
@@ -844,7 +796,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
 
         // Pass through each rules engine
         for (RulesEngine<?> rulesEngine : rulesEngines) {
-            rulesEngine.removeAttributeInfo(attributeEvent);
+            rulesEngine.retractAttributeInfo(attributeEvent);
         }
     }
 

@@ -40,7 +40,6 @@ import org.openremote.manager.webhook.WebhookService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeInfo;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
@@ -122,6 +121,9 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean trackLocationPredicates;
     protected ScheduledFuture<?> fireTimer;
     protected ScheduledFuture<?> statsTimer;
+    protected final Set<AttributeInfo> updateInfos = new HashSet<>();
+    protected final Set<AttributeInfo> insertInfos = new HashSet<>();
+    protected final Set<AttributeInfo> retractInfos = new HashSet<>();
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
@@ -334,14 +336,12 @@ public class RulesEngine<T extends Ruleset> {
         if (trackLocationPredicates == track) {
             return;
         }
-        synchronized (this) {
-            trackLocationPredicates = track;
-            if (track) {
-                facts.startTrackingLocationRules();
-            } else {
-                if (assetLocationPredicatesConsumer != null) {
-                    processLocationRules(facts.stopTrackingLocationRules());
-                }
+        trackLocationPredicates = track;
+        if (track) {
+            facts.startTrackingLocationRules();
+        } else {
+            if (assetLocationPredicatesConsumer != null) {
+                processLocationRules(facts.stopTrackingLocationRules());
             }
         }
     }
@@ -437,9 +437,36 @@ public class RulesEngine<T extends Ruleset> {
         );
     }
 
-    protected synchronized void fireAllDeployments() {
+    protected void fireAllDeployments() {
         if (!running) {
             return;
+        }
+
+        // Synchronise attribute events and states
+        synchronized (insertInfos) {
+
+            retractInfos.forEach(attributeInfo -> {
+                facts.removeAssetState(attributeInfo);
+                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
+            });
+
+            insertInfos.forEach(attributeInfo -> {
+                facts.putAssetState(attributeInfo);
+                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
+                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
+            });
+
+            updateInfos.forEach(attributeInfo -> {
+                facts.putAssetState(attributeInfo);
+                notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.UPDATE, attributeInfo));
+            });
+
+            insertInfos.clear();
+            updateInfos.clear();
+            retractInfos.clear();
         }
 
         if (trackLocationPredicates && assetLocationPredicatesConsumer != null) {
@@ -530,35 +557,37 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public synchronized void updateOrInsertAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
-        facts.putAssetState(attributeInfo);
-        // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || (insert && attributeInfo.getName().equals(Asset.LOCATION.getName())));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, attributeInfo));
+    public void insertOrUpdateAttributeInfo(AttributeInfo attributeInfo, boolean insert) {
+
+        synchronized (insertInfos) {
+            insert = insert || insertInfos.remove(attributeInfo);
+            updateInfos.remove(attributeInfo);
+            retractInfos.remove(attributeInfo);
+
+            if (insert) {
+                insertInfos.add(attributeInfo);
+            } else {
+                updateInfos.add(attributeInfo);
+            }
+        }
+
         if (running) {
             scheduleFire(true);
         }
     }
 
-    public synchronized void removeAttributeInfo(AttributeInfo attributeInfo) {
-        facts.removeAssetState(attributeInfo);
-        // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
-        notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
+    public void retractAttributeInfo(AttributeInfo attributeInfo) {
+
+        synchronized (insertInfos) {
+            insertInfos.remove(attributeInfo);
+            updateInfos.remove(attributeInfo);
+            retractInfos.remove(attributeInfo);
+            retractInfos.add(attributeInfo);
+        }
+
         if (running) {
             scheduleFire(true);
         }
-    }
-
-    public synchronized void insertAttributeEvent(long expiresMillis, AttributeInfo attributeInfo) {
-        facts.insertAttributeEvent(expiresMillis, attributeInfo);
-        if (running) {
-            scheduleFire(true);
-        }
-    }
-
-    public synchronized void removeAttributeEvents(AttributeRef attributeRef) {
-        facts.removeAttributeEvents(attributeRef);
     }
 
     protected void updateDeploymentInfo() {
@@ -571,14 +600,12 @@ public class RulesEngine<T extends Ruleset> {
 
     protected synchronized void printSessionStats() {
         Collection<AttributeInfo> assetStateFacts = facts.getAssetStates();
-        Collection<TemporaryFact<AttributeInfo>> assetEventFacts = facts.getAssetEvents();
         Map<String, Object> namedFacts = facts.getNamedFacts();
         Collection<Object> anonFacts = facts.getAnonymousFacts();
         long temporaryFactsCount = facts.getTemporaryFacts().count();
-        long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
+        long total = assetStateFacts.size() + namedFacts.size() + anonFacts.size();
         STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
             + ", AssetState: " + assetStateFacts.size()
-            + ", AssetEvent: " + assetEventFacts.size()
             + ", Named: " + namedFacts.size()
             + ", Anonymous: " + anonFacts.size()
             + ", Temporary: " + temporaryFactsCount);

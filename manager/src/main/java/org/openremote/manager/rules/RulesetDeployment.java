@@ -126,7 +126,7 @@ public class RulesetDeployment {
         this.predictedDatapointsFacade = predictedDatapointsFacade;
 
         String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
-        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, Ruleset.class.getName() + "." + ruleCategory);
+        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleCategory);
     }
 
     protected void init() throws IllegalStateException {

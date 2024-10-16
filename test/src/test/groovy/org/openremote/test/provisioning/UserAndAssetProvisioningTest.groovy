@@ -60,6 +60,7 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString
@@ -106,7 +107,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         })
 
         and: "an internal attribute event subscriber is added for test validation purposes"
-        List<AttributeEvent> internalAttributeEvents = []
+        List<AttributeEvent> internalAttributeEvents = new CopyOnWriteArrayList<>()
         Consumer<AttributeEvent> internalConsumer = { ev ->
             internalAttributeEvents.add(ev)
         }
@@ -153,8 +154,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         RemotingConnection connection = null
         def device1UniqueId = "device1"
         def mqttDevice1ClientId = UniqueIdentifierGenerator.generateId("device1")
-        List<String> subscribeFailures = []
-        List<ConnectionStatus> connectionStatuses = []
+        List<String> subscribeFailures = new CopyOnWriteArrayList<>()
+        List<ConnectionStatus> connectionStatuses = new CopyOnWriteArrayList<>()
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
         device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
@@ -168,7 +169,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client subscribes to the provisioning endpoints"
-        List<ProvisioningMessage> device1Responses = []
+        List<ProvisioningMessage> device1Responses = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> device1MessageConsumer = { MQTTMessage<String> msg ->
             device1Responses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
         }
@@ -276,8 +277,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
         def assetSubscriptionTopic = "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ASSET_TOPIC/#".toString()
         def attributeSubscriptionTopic = "$provisioningConfig.realm/$mqttDevice1ClientId/$DefaultMQTTHandler.ATTRIBUTE_TOPIC/+/$asset.id".toString()
-        List<AssetEvent> assetEvents = []
-        List<AttributeEvent> attributeEvents = []
+        List<AssetEvent> assetEvents = new CopyOnWriteArrayList<>()
+        List<AttributeEvent> attributeEvents = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> eventConsumer = { MQTTMessage<String> msg ->
             def event = ValueUtil.parse(msg.payload, SharedEvent.class).orElse(null)
             if (event instanceof AssetEvent) {
@@ -442,7 +443,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the client subscribes to the provisioning endpoints"
-        List<ProvisioningMessage> deviceNResponses = []
+        List<ProvisioningMessage> deviceNResponses = new CopyOnWriteArrayList<>()
         Consumer<MQTTMessage<String>> deviceNMessageConsumer = { MQTTMessage<String> msg ->
             deviceNResponses.add(ValueUtil.parse(msg.payload, ProvisioningMessage.class).orElse(null))
         }

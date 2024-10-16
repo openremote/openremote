@@ -47,6 +47,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
+
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -130,8 +132,8 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         and: "we add callback consumers to the clients"
         def connectionStatus = client.getConnectionStatus()
         def connectionStatus2 = client2.getConnectionStatus()
-        List<Object> receivedMessages = []
-        List<Object> receivedMessages2 = []
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        List<Object> receivedMessages2 = new CopyOnWriteArrayList<>()
         client.addMessageConsumer({
             message -> receivedMessages.add(messageFromString(message))
         })
@@ -295,7 +297,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()
-        List<String> receivedMessages = []
+        List<String> receivedMessages = new CopyOnWriteArrayList<>()
         client.addMessageConsumer(
             message -> receivedMessages.add(messageFromString(message))
         )

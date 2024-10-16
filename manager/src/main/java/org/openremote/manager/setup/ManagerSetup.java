@@ -171,8 +171,7 @@ public class ManagerSetup implements Setup {
             Supplier<AgentLink<?>> agentLinker) {
         room.getAttributes().addOrReplace(new Attribute<>("co2Level", POSITIVE_INTEGER).addMeta(
                 new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)), new MetaItem<>(LABEL, "CO2 level"),
-                new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                 new MetaItem<>(READ_ONLY, true), new MetaItem<>(STORE_DATA_POINTS)));
 
         if (shouldBeLinked) {
@@ -185,8 +184,7 @@ public class ManagerSetup implements Setup {
             Supplier<AgentLink<?>> agentLinker) {
         room.getAttributes()
                 .addOrReplace(new Attribute<>("humidity", POSITIVE_INTEGER).addMeta(new MetaItem<>(LABEL, "Humidity"),
-                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                        new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
+                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
                         new MetaItem<>(STORE_DATA_POINTS)));
 
@@ -240,8 +238,7 @@ public class ManagerSetup implements Setup {
                 new Attribute<>("smartSwitchMode" + switchName, TEXT).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch mode " + switchName),
                         new MetaItem<>(ACCESS_RESTRICTED_READ, true), new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                        new MetaItem<>(RULE_STATE, true), new MetaItem<>(RULE_EVENT, true),
-                        new MetaItem<>(RULE_EVENT_EXPIRES, "PT48H")),
+                        new MetaItem<>(RULE_STATE, true)),
                 // Time
                 new Attribute<>("smartSwitchBeginEnd" + switchName, TIMESTAMP).addMeta(
                         new MetaItem<>(LABEL, "Smart Switch begin/end cycle " + switchName),

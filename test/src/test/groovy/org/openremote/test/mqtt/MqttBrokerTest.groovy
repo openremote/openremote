@@ -32,6 +32,7 @@ import org.openremote.setup.integration.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 
 import static org.openremote.container.util.MapAccess.getInteger
@@ -45,8 +46,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
     def "Mqtt broker event test"() {
         given: "the container environment is started"
-        List<SharedEvent> receivedEvents = []
-        List<Object> receivedValues = []
+        List<SharedEvent> receivedEvents = new CopyOnWriteArrayList<>()
+        List<Object> receivedValues = new CopyOnWriteArrayList<>()
         MQTT_IOClient client = null
         MQTT_IOClient newClient = null
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0.1, delay: 0.2)

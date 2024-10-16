@@ -367,7 +367,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
-            log(Level.FINEST, "Rule evaluation result: " + lastEvaluationResult);
+            log(Level.FINE, "Rule evaluation result: " + lastEvaluationResult);
         }
 
         Collection<String> getMatchedAssetIds() {
@@ -682,12 +682,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 // Execute actions only when the rules engine has already fired to prevent execution during startup
                 if (rulesEngine.hasPreviouslyFired()) {
                     if (ruleState.thenMatched()) {
-                        log(Level.FINEST, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+                        log(Level.FINE, "Triggered rule so executing 'then' actions for rule: " + rule.name);
                         executeRuleActions(rule, rule.then, "then", false, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                     }
 
                     if (rule.otherwise != null && ruleState.otherwiseMatched()) {
-                        log(Level.FINEST, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                        log(Level.FINE, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
                         executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, ruleState, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, predictedDatapointsFacade, scheduledActionConsumer);
                     }
                 }
