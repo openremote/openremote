@@ -272,9 +272,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                 String image = realm.get(type) != null ? realm.get(type).asText() : "";
                 if (!image.isBlank()) {
                     // Remove initial `/`
+                    image = image.contains("/api/master/configuration/manager/image/")
+                            ? image.replace("/api/master/configuration/manager/image/", "")
+                            : image;
                     image = image.charAt(0) == '/' ? image.substring(1) : image;
                     Path imagePath = Path.of(image);
-                    Path path = pathPublicRoot.resolve(imagePath).toAbsolutePath();
+                    Path path = pathPublicRoot.resolve("images").resolve(imagePath).toAbsolutePath();
 
                     if (path.toFile().isFile()) {
 
