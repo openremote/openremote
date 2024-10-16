@@ -2,7 +2,7 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"docker": "develop,latest"
+				"docker": "develop"
 			},
 			"deploy": {
 				"managerTag": "develop",
