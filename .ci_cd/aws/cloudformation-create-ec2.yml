@@ -297,6 +297,8 @@ Resources:
                               "or_provisioning_seconds_sum": "Seconds",
                               "or_provisioning_seconds_count": "Count",
                               "executor_pool_size_threads": "Count",
+                              "executor_pool_core_threads": "Count",
+                              "executor_pool_max_threads": "Count",
                               "executor_seconds_count": "Count",
                               "executor_seconds_sum": "Seconds",
                               "haproxy_server_current_sessions": "Count",
@@ -343,7 +345,7 @@ Resources:
                                   [ "InstanceName","name" ]
                                 ],
                                 "metric_selectors": [
-                                  "^executor_pool_size_threads$",
+                                  "^executor_pool_",
                                   "^executor_seconds_count$",
                                   "^executor_seconds_sum$"
                                 ]
@@ -368,7 +370,7 @@ Resources:
                                 "metric_selectors": [
                                   "^haproxy_server_total_time_average_seconds$",
                                   "^haproxy_server_max_session_rate$",
-                                  "^haproxy_server_bytes.*$",
+                                  "^haproxy_server_bytes",
                                   "^haproxy_server_current_sessions$"
                                 ]
                               },
@@ -435,7 +437,7 @@ Resources:
                       metric_relabel_configs:
                         - action: keep
                           source_labels: [__name__,name]
-                          regex: '(or_rules_.*|or_attributes.*|or.provisioning.*|executor_pool_size_threads;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*|artemis_messages_added.*)'
+                          regex: '(or_rules_.*|or_attributes.*|or.provisioning.*|executor_pool_(core|size).*;ContainerExecutor|executor_seconds_count;ContainerExecutor|executor_seconds_sum;ContainerExecutor|artemis_message_count.*|artemis_messages_added.*)'
                         - action: replace # THIS IS A WORKAROUND FOR BROKEN LABELS ABOVE
                           source_labels: [ InstanceName ]
                           regex: '(.*)'
@@ -978,3 +980,45 @@ Resources:
       Dimensions:
         - Name: InstanceId
           Value: !Ref EC2Instance
+
+  ThreadPoolAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: MetricsEnabled
+    Properties:
+      Metrics:
+        - Expression: m1-m2
+          Id: e1
+          ReturnData: true
+        - Id: m1
+          MetricStat:
+            Metric:
+              MetricName: executor_pool_size_threads
+              Namespace: CWAgent-Prometheus
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+                - Name: name
+                  Value: ContainerExecutor
+            Period: 300
+            Stat: Average
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              MetricName: executor_pool_core_threads
+              Namespace: CWAgent-Prometheus
+              Dimensions:
+                - Name: InstanceName
+                  Value: !Ref Host
+                - Name: name
+                  Value: ContainerExecutor
+            Period: 300
+            Stat: Average
+          ReturnData: false
+      EvaluationPeriods: 3
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Ref SnsTopic
+      OKActions:
+        - !Ref SnsTopic

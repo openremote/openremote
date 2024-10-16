@@ -104,24 +104,33 @@ Resources:
             {
               "height": 6,
               "width": 8,
-              "y": 0,
+              "y": 12,
               "x": 8,
               "type": "metric",
               "properties": {
                 "metrics": [
                   [ "CWAgent-Prometheus", "haproxy_server_current_sessions", "server", "manager", "proxy", "mqtt", "InstanceName", "a", { "label": "MQTT" } ],
                   [ "...", "manager_backend", ".", ".", { "label": "HTTP/WS" } ],
-                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ]
+                  [ "...", "keycloak", ".", "keycloak_backend", ".", ".", { "label": "Keycloak" } ],
+                  [ ".", "haproxy_server_http_responses_total", ".", ".", ".", ".", ".", ".", "code", "5xx", { "label": "Keycloak 5xx", "yAxis": "right" } ],
+                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx", "yAxis": "right" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "${AWS::Region}",
-                "title": "Proxy Sessions",
+                "title": "Proxy Sessions & Errors",
                 "stat": "Maximum",
                 "period": 300,
                 "yAxis": {
                   "left": {
-                    "min": 0
+                    "min": 0,
+                    "label": "Count",
+                    "showUnits": false
+                  },
+                  "right": {
+                    "min": 0,
+                    "label": "Count",
+                    "showUnits": false
                   }
                 }
               }
@@ -129,8 +138,8 @@ Resources:
             {
               "height": 6,
               "width": 8,
-              "y": 6,
-              "x": 8,
+              "y": 12,
+              "x": 0,
               "type": "metric",
               "properties": {
                 "metrics": [
@@ -157,23 +166,34 @@ Resources:
             {
               "height": 6,
               "width": 8,
-              "y": 12,
+              "y": 0,
               "x": 8,
               "type": "metric",
               "properties": {
                 "metrics": [
-                  [ "CWAgent-Prometheus", "haproxy_server_http_responses_total", "server", "keycloak", "proxy", "keycloak_backend", "InstanceName", "a", "code", "5xx", { "label": "Keycloak 5xx" } ],
-                  [ "...", "manager", ".", "manager_backend", ".", ".", ".", ".", { "label": "Manager 5xx" } ]
+                  [ { "expression": "m1-m2", "label": "Dynamic Threads", "id": "e1" } ],
+                  [ { "expression": "IF(m4,(m3/m4)*1000,0)", "label": "Execution Time", "id": "e2", "yAxis": "right" } ],
+                  [ "CWAgent-Prometheus", "executor_pool_size_threads", "InstanceName", "a", "name", "ContainerExecutor", { "id": "m1", "visible": false } ],
+                  [ ".", "executor_pool_core_threads", ".", ".", ".", ".", { "id": "m2", "visible": false } ],
+                  [ ".", "executor_seconds_sum", ".", ".", ".", ".", { "id": "m3", "visible": false } ],
+                  [ ".", "executor_seconds_count", ".", ".", ".", ".", { "id": "m4", "visible": false } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "${AWS::Region}",
-                "title": "HTTP Error Responses",
+                "title": "Container Threads",
                 "stat": "Sum",
                 "period": 300,
                 "yAxis": {
                   "left": {
-                    "min": 0
+                    "min": 0,
+                    "showUnits": false,
+                    "label": "Count"
+                  },
+                  "right": {
+                    "min": 0,
+                    "showUnits": false,
+                    "label": "ms"
                   }
                 }
               }
@@ -240,8 +260,8 @@ Resources:
             {
               "height": 6,
               "width": 8,
-              "y": 12,
-              "x": 0,
+              "y": 6,
+              "x": 8,
               "type": "metric",
               "properties": {
                 "metrics": [
