@@ -47,8 +47,8 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string;
-declare var MANAGER_URL: string;
+declare var CONFIG_URL_PREFIX: string | undefined;
+declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -127,6 +127,8 @@ const configURL = (MANAGER_URL || "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
     if (!result.ok) {
+        return DefaultAppConfig;
+    }else if(await result.text() === "null"){
         return DefaultAppConfig;
     }
 

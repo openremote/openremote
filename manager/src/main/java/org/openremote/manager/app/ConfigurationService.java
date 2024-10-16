@@ -123,7 +123,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         }
     }
 
-    public Optional<File> getManagerConfigFile(){
+    protected Optional<File> getManagerConfigFile(){
         File file = getManagerConfigPath().toFile();
 
         if(file.exists() && !file.isDirectory()){
@@ -143,7 +143,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         return this.managerConfig;
     }
 
-    public Path getManagerConfigPath(){
+    protected Path getManagerConfigPath(){
         return persistenceService.getStorageDir()
                 .resolve("manager")
                 .resolve("manager_config.json");
@@ -258,7 +258,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         return file.isFile() ? Optional.of(file) : Optional.empty();
     }
 
-    public ObjectNode checkAndFixImageReferences(ObjectNode managerConfig) throws Exception{
+    protected ObjectNode checkAndFixImageReferences(ObjectNode managerConfig) throws Exception{
 
         Boolean configChanged = false;
 
