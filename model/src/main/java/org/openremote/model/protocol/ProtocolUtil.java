@@ -19,6 +19,8 @@
  */
 package org.openremote.model.protocol;
 
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
@@ -32,7 +34,10 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
+import org.graalvm.polyglot.Context;
+
 import javax.script.*;
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
@@ -166,6 +171,10 @@ public final class ProtocolUtil {
 
     private static Pair<Boolean, Object> applyValueMutator(Object value, String mutator) {
 
+        Context.Builder contextBuilder = Context.newBuilder("js")
+                .out(new ByteArrayOutputStream())
+                .err(new ByteArrayOutputStream());
+
         if (value == null || mutator == null) {
             return new Pair<>(true, value);
         }
@@ -180,14 +189,23 @@ public final class ProtocolUtil {
         engine.setBindings(new SimpleBindings(), ScriptContext.ENGINE_SCOPE);
         engine.getContext().setAttribute("javax.script.filename", "sandbox.js", ScriptContext.ENGINE_SCOPE);
 
+
+
         long startTime = System.nanoTime(); // Start timer
         try {
-            Object result = engine.eval(expression);
+            Object res = null;
+
+            try (Context ctx = contextBuilder.build()) {
+                Value result = ctx.eval("js", expression);
+                if(result.isNumber()){
+                    res = result.asDouble();
+                }
+            }
             long endTime = System.nanoTime(); // End timer
             long duration = (endTime - startTime)/1_000_000; // Calculate elapsed time
             LOG.info("applyValueMutator execution time: " + duration + "ms");
-            return new Pair<>(false, result);
-        } catch (ScriptException e) {
+            return new Pair<>(false, res);
+        } catch (PolyglotException e) {
             LOG.warning("Failed to evaluate mutator expression: " + mutator);
             return new Pair<>(false, value);
         }
