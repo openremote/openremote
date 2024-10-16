@@ -128,11 +128,15 @@ const configURL = (MANAGER_URL || "") + "/api/master/configuration/manager";
 fetch(configURL).then(async (result) => {
     if (!result.ok) {
         return DefaultAppConfig;
-    }else if(await result.text() === "null"){
+    }
+
+    const appConfig = await result.json() as ManagerAppConfig;
+
+    if (appConfig === null) {
         return DefaultAppConfig;
     }
 
-    return await result.json() as ManagerAppConfig;
+    return appConfig;
 
 }).then((appConfig: ManagerAppConfig) => {
 
