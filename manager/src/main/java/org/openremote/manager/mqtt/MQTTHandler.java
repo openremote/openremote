@@ -55,10 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.System.Logger.Level.TRACE;
-import static java.lang.System.Logger.Level.WARNING;
 import static org.apache.activemq.artemis.core.protocol.mqtt.MQTTUtil.MQTT_QOS_LEVEL_KEY;
-import static org.openremote.manager.mqtt.MQTTBrokerService.LOG;
 
 /**
  * This allows custom handlers to be discovered by the {@link MQTTBrokerService} during system startup using the
@@ -185,11 +182,11 @@ public abstract class MQTTHandler {
                 // Need to be able to get connection/auth from the message somehow
                 // Cannot use connection.getTransportConnection().isOpen() check as well due to last will publishes
                 if (connection == null) {
-                    LOG.log(TRACE, "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
+                    getLogger().finer(() -> "Client is no longer connected so dropping publish to topic '" + topic + "': clientID=" + clientID);
                     return;
                 }
 
-                getLogger().finest(() -> "onPublish '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
+                getLogger().finer(() -> "onPublish '" + publishTopic + "': " + MQTTBrokerService.connectionToString(connection));
 
                 try {
                     onPublish(connection, publishTopic, message.getReadOnlyBodyBuffer().byteBuf());
@@ -198,7 +195,7 @@ public abstract class MQTTHandler {
                 }
             });
         } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
+            getLogger().log(Level.SEVERE, "Failed to create handler consumer for topic '" + topic + "': handler=" + getName(), e);
             throw e;
         }
     }
@@ -299,7 +296,7 @@ public abstract class MQTTHandler {
                 }
             }
         } catch (Exception e) {
-            LOG.log(WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
+            getLogger().log(Level.WARNING, "Couldn't publish to MQTT client: topic=" + topic, e);
         }
     }
 

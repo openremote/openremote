@@ -24,7 +24,6 @@ import io.micrometer.core.instrument.Timer;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.core.config.Configuration;
-import org.apache.activemq.artemis.core.settings.impl.AddressFullMessagePolicy;
 import org.apache.activemq.artemis.core.settings.impl.AddressSettings;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.camel.builder.RouteBuilder;
@@ -93,7 +92,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                     if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                         // Force disconnect if the certain properties have changed
                         forceDisconnect = persistenceEvent.hasPropertyChanged(ProvisioningConfig.DISABLED_PROPERTY_NAME)
-                                || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
+                            || persistenceEvent.hasPropertyChanged(ProvisioningConfig.DATA_PROPERTY_NAME);
                     }
 
                     if (forceDisconnect) {
@@ -154,8 +153,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         AddressSettings addressSettings = super.getPublishTopicAddressSettings(container, publishTopic);
         if (addressSettings != null) {
             addressSettings
-                .setMaxSizeMessages(1000L)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL);
+                .setMaxSizeMessages(1000L);
         }
         return addressSettings;
     }
@@ -244,7 +242,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         // Offload messages to the thread pool to improve processing rate
         if (!connection.getTransportConnection().isOpen()) {
             // Drop provisioning requests for closed connections
-            LOG.fine(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
+            LOG.finest(() -> "Skipping provisioning request as connection is now closed: " + MQTTBrokerService.connectionToString(connection));
             return;
         }
         // When no more threads available in the executorService the calling ActiveMQ client thread will execute which
@@ -406,7 +404,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return connections;
         });
 
-        LOG.fine("Client successfully provisioned");
+        LOG.fine("Client successfully provisioned: " + uniqueId);
         publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 

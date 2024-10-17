@@ -200,8 +200,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 .setAutoDeleteAddressesDelay(86400000)
                 .setAutoDeleteQueuesMessageCount(-1L)
                 .setAutoDeleteQueuesDelay(0)
-                // Disable consumer buffering to keep messages on the server we're in the same VM anyway so shouldn't be harmful to performance
-                .setDefaultConsumerWindowSize(0)
+                // This has a negative impact on performance if set to 0
+                .setDefaultConsumerWindowSize(-1)
                 .setPageLimitMessages(0L)
                 .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
                 .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
