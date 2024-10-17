@@ -33,7 +33,7 @@ export const DefaultAppConfig: AppConfig<RootState> = {
 const configURL = (MANAGER_URL || "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
-    if (!result.ok || result.headers.get("content-type")?.includes("text/html")) {
+    if (!result.ok) {
         return DefaultAppConfig;
     }
 
