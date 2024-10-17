@@ -46,7 +46,6 @@ dependencies {
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
-    api "org.apache.camel:camel-micrometer:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 

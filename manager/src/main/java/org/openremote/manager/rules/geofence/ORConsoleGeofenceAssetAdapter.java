@@ -72,7 +72,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
     protected ManagerIdentityService identityService;
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected ConcurrentMap<String, String> consoleIdRealmMap = new ConcurrentHashMap<>();
     protected ScheduledFuture<?> notifyAssetsScheduledFuture;
     protected final Set<String> notifyAssets = new HashSet<>();
@@ -87,7 +87,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
         gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
@@ -183,7 +183,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
             if (notifierDebounce.get()) {
                 if (notifyAssetsScheduledFuture == null || notifyAssetsScheduledFuture.cancel(false)) {
-                    notifyAssetsScheduledFuture = executorService.schedule(() -> {
+                    notifyAssetsScheduledFuture = scheduledExecutorService.schedule(() -> {
                             synchronized (notifyAssets) {
                                 notifyAssetGeofencesChanged(notifyAssets);
                                 notifyAssets.clear();
@@ -259,7 +259,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null, null, null);
                 notification.setTargets(subTargets);
 
-                executorService.schedule(() -> {
+                scheduledExecutorService.schedule(() -> {
                     LOG.fine("Notifying consoles that geofences have changed: " + notification.getTargets());
                     notificationService.sendNotification(notification);
                 }, (long) i * NOTIFY_ASSETS_BATCH_MILLIS, TimeUnit.MILLISECONDS);

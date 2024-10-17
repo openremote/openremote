@@ -51,7 +51,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the ventilation should be off"
@@ -84,7 +84,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
             // Wait for event to be processed
             conditions.eventually {
-                assert apartment1Engine.assetEvents.any() {
+                assert apartment1Engine.facts.assetEvents.any() {
                     it.fact.matches(co2LevelIncrement, SENSOR, true)
                 }
                 assert noEventProcessedIn(assetProcessingService, 500)
@@ -107,7 +107,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         then: "the decreasing CO2 should have been detected in rules"
         conditions.eventually {
-            assert apartment1Engine.assetEvents.any() {
+            assert apartment1Engine.facts.assetEvents.any() {
                 it.fact.matches(co2LevelDecrement, SENSOR, true)
             }
             assert noEventProcessedIn(assetProcessingService, 500)
@@ -133,7 +133,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
             // Wait for event to be processed
             conditions.eventually {
-                assert apartment1Engine.assetEvents.any() {
+                assert apartment1Engine.facts.assetEvents.any() {
                     it.fact.matches(co2LevelIncrement, SENSOR, true)
                 }
                 assert noEventProcessedIn(assetProcessingService, 500)
@@ -154,7 +154,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         )
         simulatorProtocol.putValue(co2LevelDecrement2)
         conditions.eventually {
-            assert apartment1Engine.assetEvents.any() {
+            assert apartment1Engine.facts.assetEvents.any() {
                 it.fact.matches(co2LevelDecrement2, SENSOR, true)
             }
             assert noEventProcessedIn(assetProcessingService, 500)
@@ -175,7 +175,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         )
         simulatorProtocol.putValue(co2LevelDecrement3)
         conditions.eventually {
-            assert apartment1Engine.assetEvents.any() {
+            assert apartment1Engine.facts.assetEvents.any() {
                 it.fact.matches(co2LevelDecrement3, SENSOR, true)
             }
             assert noEventProcessedIn(assetProcessingService, 500)

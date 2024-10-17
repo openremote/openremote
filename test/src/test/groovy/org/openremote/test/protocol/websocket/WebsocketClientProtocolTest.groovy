@@ -151,8 +151,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new EventSubscription(
                         AttributeEvent.class,
                         new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
-                        "1",
-                        null)).orElse(null)),
+                        "1")).orElse(null)),
                 new WebsocketHTTPSubscription()
                     .contentType(MediaType.APPLICATION_JSON)
                     .method(WebsocketHTTPSubscription.Method.POST)

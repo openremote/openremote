@@ -29,10 +29,7 @@ public class ValueDatapoint<T> {
     protected long timestamp;
     protected T value;
 
-    protected ValueDatapoint() {
-    }
-
-    public ValueDatapoint(@JsonProperty("x") Date timestamp,
+    protected ValueDatapoint(@JsonProperty("x") Date timestamp,
                           @JsonProperty("y") T value) {
         this(timestamp.getTime(), value);
     }

@@ -20,18 +20,24 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.event.Event;
+import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
+
+import java.util.function.Consumer;
 
 /**
  * A client sends this event to the server to query assets, expecting
  * the server to answer "soon" with an {@link AssetsEvent} with the results.
  */
-public class ReadAssetsEvent extends SharedEvent implements HasAssetQuery {
+public class ReadAssetsEvent extends SharedEvent implements HasAssetQuery, RespondableEvent {
 
     protected AssetQuery assetQuery;
+    @JsonIgnore
+    protected Consumer<Event> responseConsumer;
 
     @JsonCreator
     public ReadAssetsEvent(@JsonProperty("assetQuery") AssetQuery assetQuery) {
@@ -43,6 +49,16 @@ public class ReadAssetsEvent extends SharedEvent implements HasAssetQuery {
             assetQuery = new AssetQuery();
         }
         return assetQuery;
+    }
+
+    @Override
+    public Consumer<Event> getResponseConsumer() {
+        return responseConsumer;
+    }
+
+    @Override
+    public void setResponseConsumer(Consumer<Event> responseConsumer) {
+        this.responseConsumer = responseConsumer;
     }
 
     @Override

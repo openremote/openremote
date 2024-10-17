@@ -196,7 +196,7 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     }
 
     protected ScheduledFuture<?> scheduleUpdate(String assetId) {
-        return executorService.scheduleAtFixedRate(() -> {
+        return scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
                 updateStorageAsset(assetId);
             } catch (Exception e) {

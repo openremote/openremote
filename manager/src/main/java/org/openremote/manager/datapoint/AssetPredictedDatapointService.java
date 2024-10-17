@@ -65,7 +65,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
 
     @Override
     public void start(Container container) throws Exception {
-        dataPointsPurgeScheduledFuture = executorService.scheduleAtFixedRate(
+        dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
             this::purgeDataPoints,
             getFirstPurgeMillis(timerService.getNow()),
             Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS

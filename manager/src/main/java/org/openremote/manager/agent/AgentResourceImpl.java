@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import jakarta.ws.rs.*;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.asset.AssetStorageService;
@@ -34,15 +35,14 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.ws.rs.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,13 +54,13 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     private static final Logger LOG = Logger.getLogger(AgentResourceImpl.class.getName());
     protected final AgentService agentService;
     protected final AssetStorageService assetStorageService;
-    protected final ScheduledExecutorService executorService;
+    protected final ExecutorService executorService;
 
     public AgentResourceImpl(TimerService timerService,
                              ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
                              AgentService agentService,
-                             ScheduledExecutorService executorService) {
+                             ExecutorService executorService) {
         super(timerService, identityService);
         this.agentService = agentService;
         this.assetStorageService = assetStorageService;

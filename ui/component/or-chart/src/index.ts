@@ -744,11 +744,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         } else {
             // fully load the asset
             const assetEvent: AssetEvent = await manager.events.sendEventWithReply({
-                event: {
-                    eventType: "read-asset",
-                    assetId: selectedNode.asset!.id
-                } as ReadAssetEvent
-            });
+                eventType: "read-asset",
+                assetId: selectedNode.asset!.id
+            } as ReadAssetEvent);
             this.activeAsset = assetEvent.asset;
         }
     }

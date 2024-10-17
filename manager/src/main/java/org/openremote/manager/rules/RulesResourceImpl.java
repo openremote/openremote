@@ -71,7 +71,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        return getEngineInfo(rulesService.globalEngine);
+        return getEngineInfo(rulesService.globalEngine.get());
     }
 
     @Override

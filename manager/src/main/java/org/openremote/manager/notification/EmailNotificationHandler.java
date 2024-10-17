@@ -98,7 +98,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
             String protocol = startTls ? "smtp" : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
             MailClientBuilder mailClientBuilder = new MailClientBuilder(
-                    container.getExecutorService(), protocol, host, port
+                    container.getExecutor(), container.getScheduledExecutor(), protocol, host, port
             );
 
             // Add authentication

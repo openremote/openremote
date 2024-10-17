@@ -19,9 +19,7 @@
  */
 package org.openremote.manager.simulator;
 
-import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.agent.AgentService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -37,14 +35,11 @@ import org.openremote.model.simulator.SimulatorState;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
-
 // RT: Removed this from META-INF as RequestSimulatorState not used anywhere
 /**
  * Connects the client/UI to the {@link SimulatorProtocol}.
  */
-public class SimulatorService extends RouteBuilder implements ContainerService {
+public class SimulatorService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SimulatorService.class.getName());
 
@@ -93,7 +88,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
             return false;
         });
 
-        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
+        clientEventService.addSubscription(RequestSimulatorState.class, this::onRequestSimulatorState);
     }
 
     @Override
@@ -106,23 +101,15 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
 
     }
 
-    @Override
-    public void configure() throws Exception {
-        from(CLIENT_INBOUND_QUEUE)
-            .routeId("ClientInbound-ReadSimulatorState")
-            .filter(body().isInstanceOf(RequestSimulatorState.class))
-            .process(exchange -> {
-                RequestSimulatorState event = exchange.getIn().getBody(RequestSimulatorState.class);
-                LOG.finest("Handling from client: " + event);
+    // TODO Should realm admins be able to work with simulators in their realm?
+    protected void onRequestSimulatorState(RequestSimulatorState event) {
+        LOG.finest("Handling from client: " + event);
+        if (event.getResponseConsumer() == null) {
+            LOG.warning("Requested simulator state but no response consumer provided");
+            return;
+        }
 
-                String sessionKey = getSessionKey(exchange);
-
-                // TODO Should realm admins be able to work with simulators in their realm?
-                publishSimulatorState(sessionKey, event.getAgentId());
-            });
-    }
-
-    protected void publishSimulatorState(String sessionKey, String agentId) {
+        String agentId = event.getAgentId();
         LOG.finest("Attempting to publish simulator state: Agent ID=" + agentId);
 
         Protocol<?> protocol = agentService.getProtocolInstance(agentId);
@@ -133,12 +120,8 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
         }
 
         SimulatorState simulatorState = getSimulatorState(simulatorProtocol);
-
-        if (sessionKey != null) {
-            clientEventService.sendToSession(sessionKey, simulatorState);
-        } else {
-            clientEventService.publishEvent(simulatorState);
-        }
+        simulatorState.setMessageID(event.getMessageID());
+        event.getResponseConsumer().accept(simulatorState);
     }
 
     /**

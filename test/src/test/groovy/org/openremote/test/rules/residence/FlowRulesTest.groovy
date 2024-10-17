@@ -60,9 +60,9 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the flow should be deployed"
         conditions.eventually {
-            assert rulesService.globalEngine != null
-            assert rulesService.globalEngine.isRunning()
-            assert rulesService.globalEngine.deployments.values().any({ it.name == realCollection.name && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get() != null
+            assert rulesService.globalEngine.get().isRunning()
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == realCollection.name && it.status == DEPLOYED})
         }
 
         and: "the flow should be executed correctly"
