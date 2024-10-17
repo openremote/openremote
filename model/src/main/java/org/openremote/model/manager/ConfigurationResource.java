@@ -19,6 +19,7 @@
  */
 package org.openremote.model.manager;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
@@ -27,7 +28,6 @@ import org.openremote.model.http.RequestParams;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-import java.io.IOException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -41,7 +41,7 @@ public interface ConfigurationResource {
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "updateConfiguration", summary = "Update manager configuration")
-    Object update(@BeanParam RequestParams requestParams, Object managerConfiguration);
+    Object update(@BeanParam RequestParams requestParams, ObjectNode managerConfiguration);
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -49,12 +49,21 @@ public interface ConfigurationResource {
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "fileUpload", summary = "Upload a file")
-    String fileUpload(
+    Object fileUpload(
             @BeanParam RequestParams requestParams,
             @QueryParam("path")
             String path,
             FileInfo fileInfo
     );
 
+    @GET
+    @Produces(APPLICATION_JSON)
+    @Path("manager")
+    @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
+    ObjectNode getManagerConfig();
 
+    @GET
+    @Path("manager/image/{filename: .+}")
+    @Operation(operationId = "getManagerConfigImage", summary = "Retrieve manager configuration images")
+    Object getManagerConfigImage(@PathParam("filename")String fileName);
 }
