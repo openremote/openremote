@@ -81,7 +81,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
             setConnectionStatus(ConnectionStatus.ERROR);
             return;
         }
-        network = new ZWaveNetwork(serialPort, executorService);
+        network = new ZWaveNetwork(serialPort);
         network.addConnectionStatusConsumer(this::setConnectionStatus);
         network.connect();
     }

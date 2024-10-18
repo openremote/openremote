@@ -24,10 +24,7 @@ import com.welie.blessed.BluetoothGattCharacteristic;
 import com.welie.blessed.BluetoothPeripheral;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 public class SendSingleDataSegmentCommand implements SendDataCommand {
@@ -40,7 +37,7 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
     private final BluetoothGattCharacteristic dataInCharacteristic;
     protected final BluetoothMeshProxySendDataCallback callback;
     private final byte[] data;
-    protected final ScheduledExecutorService executorService;
+    protected final ExecutorService executorService;
     private final BluetoothMeshProxy meshProxy;
     private final MainThreadManager commandSerializer;
     private volatile boolean isWaitForCallback = false;
@@ -49,7 +46,7 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
 
     // Constructors ---------------------------------------------------------------------------
 
-    public SendSingleDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, ScheduledExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    public SendSingleDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
         this.meshProxy = proxy;
         this.commandSerializer = commandSerializer;
         this.executorService = executorService;

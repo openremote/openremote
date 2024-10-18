@@ -20,7 +20,6 @@
 package org.openremote.manager.rules;
 
 import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.system.HealthStatusProvider;
@@ -32,11 +31,6 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
 
     public static final String NAME = "rules";
     protected RulesService rulesService;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -64,12 +58,13 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
         int stoppedEngines = 0;
         int errorEngines = 0;
 
-        if (rulesService.globalEngine != null) {
+        RulesEngine<?> globalEngine = rulesService.globalEngine.get();
+        if (globalEngine != null) {
             totalEngines++;
-            if (!rulesService.globalEngine.isRunning()) {
+            if (!globalEngine.isRunning()) {
                 stoppedEngines++;
             }
-            if (rulesService.globalEngine.isError()) {
+            if (globalEngine.isError()) {
                 errorEngines++;
             }
         }
@@ -105,8 +100,9 @@ public class RulesHealthStatusProvider implements HealthStatusProvider {
         objectValue.put("totalEngines", totalEngines);
         objectValue.put("stoppedEngines", stoppedEngines);
         objectValue.put("errorEngines", errorEngines);
-        if (rulesService.globalEngine != null) {
-            objectValue.put("global", getEngineHealthStatus(rulesService.globalEngine));
+
+        if (globalEngine != null) {
+            objectValue.put("global", getEngineHealthStatus(globalEngine));
         }
         objectValue.put("realm", realmEngines);
         objectValue.put("asset", assetEngines);

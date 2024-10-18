@@ -19,17 +19,24 @@
  */
 package org.openremote.model.simulator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.event.Event;
+import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
+
+import java.util.function.Consumer;
 
 /**
  * A client sends this event to the server to request {@link SimulatorState} for the specified {@link Agent} expecting
  * the server to answer "soon". If the server decides that the client doesn't have the right permissions, or if anything
  * else is not in order (e.g. the agent doesn't exist), the server might not react at all.
  */
-public class RequestSimulatorState extends SharedEvent {
+public class RequestSimulatorState extends SharedEvent implements RespondableEvent {
 
     protected String agentId;
+    @JsonIgnore
+    protected Consumer<Event> responseConsumer;
 
     public RequestSimulatorState(String agentId) {
         this.agentId = agentId;
@@ -37,5 +44,16 @@ public class RequestSimulatorState extends SharedEvent {
 
     public String getAgentId() {
         return agentId;
+    }
+
+
+    @Override
+    public Consumer<Event> getResponseConsumer() {
+        return responseConsumer;
+    }
+
+    @Override
+    public void setResponseConsumer(Consumer<Event> responseConsumer) {
+        this.responseConsumer = responseConsumer;
     }
 }

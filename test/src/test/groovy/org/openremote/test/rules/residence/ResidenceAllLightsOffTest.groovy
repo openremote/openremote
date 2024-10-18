@@ -50,7 +50,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
         }
 
         and: "the room lights in an apartment to be on"
@@ -69,8 +69,8 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         then: "the room lights in the apartment should be off"
         conditions.eventually {
-            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert apartment2Engine.assetEvents.size() == 1
+            assert apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert apartment2Engine.facts.assetEvents.size() == 1
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().value.get()
             def bathRoomAsset = assetStorageService.find(managerTestSetup.apartment2BathroomId, true)
@@ -87,8 +87,8 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"
         new PollingConditions(timeout: 5, initialDelay: 3).eventually {
-            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert apartment2Engine.assetEvents.size() == 0
+            assert apartment2Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert apartment2Engine.facts.assetEvents.size() == 0
             def livingroomAsset = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().value.get()
         }

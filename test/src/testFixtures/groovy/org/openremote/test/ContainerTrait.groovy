@@ -91,7 +91,7 @@ trait ContainerTrait {
             def configsMatch = false
             def servicesMatch = false
             def currentConfig = container.getConfig()
-            if (currentConfig == config) {
+            if (Objects.equals(currentConfig, config)) {
                 configsMatch = true
             } else {
                 if (currentConfig.size() == config.size()) {
@@ -174,11 +174,11 @@ trait ContainerTrait {
                             rulesetStorageService.delete(RealmRuleset.class, it.id)
                         }
 
-                        def globalEngine = rulesService.globalEngine
+                        def globalEngine = rulesService.globalEngine.get()
                         if (globalEngine != null) {
                             LOG.info("Purging global engine")
                             globalEngine.stop()
-                            rulesService.globalEngine = null
+                            rulesService.globalEngine.set(null)
                         }
                         def globalRulesets = getRulesets(GlobalRuleset.class)
                         globalRulesets.forEach{
@@ -259,6 +259,7 @@ trait ContainerTrait {
                 }
             } else {
                 LOG.info("Request to start container with different config and/or services as already running container so restarting")
+                LOG.info("Current config = ${currentConfig}, new config = ${config}")
                 stopContainer()
                 TestFixture.container = null
             }
@@ -330,7 +331,7 @@ trait ContainerTrait {
         if (rulesService != null) {
             LOG.info("Waiting for global rulesets to be deployed")
             i=0
-            while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id) }) {
+            while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine.get() == null || !rulesService.globalEngine.get().deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
                 i++
             }

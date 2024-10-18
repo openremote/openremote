@@ -33,6 +33,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -67,11 +68,11 @@ public class BluetoothMeshProxy extends BluetoothCentralManagerCallback {
 
     // Constructors -------------------------------------------------------------------------------
 
-    public BluetoothMeshProxy(MainThreadManager bluetoothCommandSerializer, ScheduledExecutorService executorService, BluetoothCentralManager central, BluetoothPeripheral peripheral, ScanResult scanResult) {
+    public BluetoothMeshProxy(MainThreadManager bluetoothCommandSerializer, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, BluetoothCentralManager central, BluetoothPeripheral peripheral, ScanResult scanResult) {
         this.scanResult = scanResult;
         this.rssi = scanResult.getRssi();
         this.peripheralCallback = new BluetoothPeripheralCallbackImpl();
-        this.stateMachine = new BluetoothMeshProxyStateMachine(this, central, executorService, bluetoothCommandSerializer, peripheral, peripheralCallback);
+        this.stateMachine = new BluetoothMeshProxyStateMachine(this, central, executorService, scheduledExecutorService, bluetoothCommandSerializer, peripheral, peripheralCallback);
     }
 
 

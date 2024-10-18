@@ -124,9 +124,9 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     // Not ideal this but will do for now
     private static SequenceNumberPersistencyManager sequenceNumberManager;
 
-    public synchronized static void initMainThread(ScheduledExecutorService executorService) {
+    public synchronized static void initMainThread(ScheduledExecutorService scheduledExecutorService) {
         if (mainThreadFuture == null) {
-            mainThreadFuture = executorService.schedule(mainThread, 0, TimeUnit.MILLISECONDS);
+            mainThreadFuture = scheduledExecutorService.schedule(mainThread, 0, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -229,14 +229,10 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         Map<Integer, ApplicationKey> applicationKeyMap = new HashMap<>();
         applicationKeyMap.put(appKeyIndex, applicationKey);
-        final ScheduledExecutorService finalExecutorService = executorService;
-        Consumer<ConnectionStatus> statusConsumer = new Consumer<ConnectionStatus>() {
-            @Override
-            public void accept(ConnectionStatus connectionStatus) {
-                setConnectionStatus(connectionStatus);
-                if (connectionStatus == ConnectionStatus.CONNECTED) {
-                    finalExecutorService.execute(() -> updateAllAttributes());
-                }
+        Consumer<ConnectionStatus> statusConsumer = connectionStatus -> {
+            setConnectionStatus(connectionStatus);
+            if (connectionStatus == ConnectionStatus.CONNECTED) {
+                executorService.execute(this::updateAllAttributes);
             }
         };
 
@@ -245,10 +241,10 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             oldSequenceNumber = sequenceNumberParam;
             BluetoothMeshProtocol.sequenceNumberManager.save(networkKey, sourceAddress, oldSequenceNumber);
         }
-        BluetoothMeshProtocol.initMainThread(executorService);
+        BluetoothMeshProtocol.initMainThread(scheduledExecutorService);
         meshNetwork = new BluetoothMeshNetwork(
             BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
-            proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
+            proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, scheduledExecutorService, statusConsumer
         );
         BluetoothMeshProtocol.addNetwork(meshNetwork);
         BluetoothMeshProtocol.mainThread.enqueue(() -> meshNetwork.start());

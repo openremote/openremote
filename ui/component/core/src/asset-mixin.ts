@@ -1,6 +1,6 @@
 import {EventProviderFactory, EventProviderStatus} from "./event";
 import {objectsEqual} from "./util";
-import {AttributeRef, SharedEvent, EventRequestResponseWrapper} from "@openremote/model";
+import {AttributeRef, SharedEvent} from "@openremote/model";
 import { Util } from ".";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
@@ -178,7 +178,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
             eventProviderFactory.getEventProvider()!.sendEvent(event);
         }
 
-        public _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: EventRequestResponseWrapper<U>): Promise<V> {
+        public _sendEventWithReply<U extends SharedEvent, V extends SharedEvent>(event: U): Promise<V> {
             return eventProviderFactory.getEventProvider()!.sendEventWithReply(event);
         }
 

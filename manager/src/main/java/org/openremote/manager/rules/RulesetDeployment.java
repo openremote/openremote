@@ -43,10 +43,7 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.script.*;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,7 +87,8 @@ public class RulesetDeployment {
     final protected Rules rules = new Rules();
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
-    final protected ScheduledExecutorService executorService;
+    final protected ExecutorService executorService;
+    final protected ScheduledExecutorService scheduledExecutorService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected Notifications notificationsFacade;
@@ -110,7 +108,7 @@ public class RulesetDeployment {
     protected Pair<Long, Long> nextValidity;
 
     public RulesetDeployment(Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
-                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
+                             AssetStorageService assetStorageService, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
                              Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                              Alarms alarmsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         this.ruleset = ruleset;
@@ -118,6 +116,7 @@ public class RulesetDeployment {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.executorService = executorService;
+        this.scheduledExecutorService = scheduledExecutorService;
         this.assetsFacade = assetsFacade;
         this.usersFacade = usersFacade;
         this.notificationsFacade = notificationsFacade;
@@ -127,7 +126,7 @@ public class RulesetDeployment {
         this.predictedDatapointsFacade = predictedDatapointsFacade;
 
         String ruleCategory = ruleset.getClass().getSimpleName() + "-" + ruleset.getId();
-        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, Ruleset.class.getName() + "." + ruleCategory);
+        LOG = SyslogCategory.getLogger(SyslogCategory.RULES, RulesEngine.class.getName() + "." + ruleCategory);
     }
 
     protected void init() throws IllegalStateException {
@@ -280,7 +279,7 @@ public class RulesetDeployment {
     }
 
     protected void scheduleRuleAction(Runnable action, long delayMillis) {
-        ScheduledFuture<?> future = executorService.schedule(() -> {
+        ScheduledFuture<?> future = scheduledExecutorService.schedule(() -> {
             scheduledRuleActions.removeIf(Future::isDone);
             action.run();
         }, delayMillis, TimeUnit.MILLISECONDS);
@@ -290,7 +289,7 @@ public class RulesetDeployment {
     protected boolean compileRulesJson(Ruleset ruleset) {
 
         try {
-            jsonRulesBuilder = new JsonRulesBuilder(LOG, ruleset, rulesEngine, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
+            jsonRulesBuilder = new JsonRulesBuilder(LOG, ruleset, rulesEngine, timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, webhooksFacade, alarmsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 LOG.finest("Registering JSON rule: " + rule.getName());

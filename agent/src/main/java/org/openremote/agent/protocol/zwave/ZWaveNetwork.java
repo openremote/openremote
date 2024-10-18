@@ -21,10 +21,10 @@ package org.openremote.agent.protocol.zwave;
 
 import org.openremote.controller.exception.ConfigurationException;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
@@ -34,19 +34,16 @@ import org.openremote.protocol.zwave.model.Controller;
 import org.openremote.protocol.zwave.model.ZWEndPoint;
 import org.openremote.protocol.zwave.model.ZWManufacturerID;
 import org.openremote.protocol.zwave.model.ZWaveNode;
-import org.openremote.protocol.zwave.model.commandclasses.ZWCommandClass;
-import org.openremote.protocol.zwave.model.commandclasses.ZWCommandClassID;
-import org.openremote.protocol.zwave.model.commandclasses.ZWParameterByte;
-import org.openremote.protocol.zwave.model.commandclasses.ZWParameterInt;
-import org.openremote.protocol.zwave.model.commandclasses.ZWParameterItem;
-import org.openremote.protocol.zwave.model.commandclasses.ZWParameterShort;
+import org.openremote.protocol.zwave.model.commandclasses.*;
 import org.openremote.protocol.zwave.model.commandclasses.channel.Channel;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.*;
 import org.openremote.protocol.zwave.port.ZWavePortConfiguration;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -61,11 +58,9 @@ public class ZWaveNetwork {
     private final Map<Consumer<Value>, ChannelConsumerLink> consumerLinkMap = new HashMap<>();
     protected String serialPort;
     protected ZWaveSerialIOClient ioClient;
-    protected ScheduledExecutorService executorService;
 
-    public ZWaveNetwork(String serialPort, ScheduledExecutorService executorService) {
+    public ZWaveNetwork(String serialPort) {
         this.serialPort = serialPort;
-        this.executorService = executorService;
     }
 
     public synchronized void connect() {

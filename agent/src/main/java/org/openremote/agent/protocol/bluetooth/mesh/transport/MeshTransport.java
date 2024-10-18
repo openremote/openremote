@@ -28,10 +28,7 @@ import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 /**
@@ -55,7 +52,7 @@ final class MeshTransport extends NetworkLayer {
      */
     MeshTransport() {
         super();
-        executor = new ContainerScheduledExecutor("Bluetooth-Mesh Thread Pool", 2);
+        scheduledExecutor = new ContainerScheduledExecutor("Bluetooth-Mesh Thread Pool", 2);
         initHandler();
     }
 
@@ -64,24 +61,24 @@ final class MeshTransport extends NetworkLayer {
      *
      * @param node    Mesh node
      */
-    MeshTransport(final ProvisionedMeshNode node) {
+    MeshTransport(ScheduledExecutorService scheduledExecutorService, final ProvisionedMeshNode node) {
         super();
         // this.mContext = context;
         this.mMeshNode = node;
-        executor = new ContainerScheduledExecutor("Bluetooth-Mesh Thread Pool", 2);
+        this.scheduledExecutor = scheduledExecutorService;
         initHandler();
     }
 
-    private final ScheduledThreadPoolExecutor executor;
+    private final ScheduledExecutorService scheduledExecutor;
     private final List<Future<?>> tasks = new CopyOnWriteArrayList<>();
 
     @Override
     protected Future<?> startTask(Runnable runnable, Long delay) {
         Future<?> task = null;
         if (delay == null || delay == 0) {
-            task = executor.submit(runnable);
+            task = scheduledExecutor.submit(runnable);
         } else {
-            task = executor.schedule(runnable, delay, TimeUnit.MILLISECONDS);
+            task = scheduledExecutor.schedule(runnable, delay, TimeUnit.MILLISECONDS);
         }
         tasks.add(task);
         return task;

@@ -5,7 +5,6 @@ import org.openremote.agent.protocol.tradfri.device.Gateway;
 import org.openremote.agent.protocol.tradfri.device.Light;
 import org.openremote.agent.protocol.tradfri.device.Plug;
 import org.openremote.agent.protocol.tradfri.util.Credentials;
-
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.asset.impl.PlugAsset;
@@ -14,10 +13,9 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
@@ -37,11 +35,6 @@ public class TradfriConnection {
      * The connection status consumers of the IKEA TRÅDFRI connection
      */
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
-
-    /**
-     * The executor service of the IKEA TRÅDFRI connection
-     */
-    protected final ScheduledExecutorService executorService;
 
     /**
      * The IP address of the gateway
@@ -67,12 +60,10 @@ public class TradfriConnection {
      * Construct the TradfriConnection class.
      * @param gatewayIp the IP address of the gateway.
      * @param securityCode the security code to connect to the gateway.
-     * @param executorService the executor service.
      */
-    public TradfriConnection(String gatewayIp, String securityCode, ScheduledExecutorService executorService) {
+    public TradfriConnection(String gatewayIp, String securityCode) {
         this.gatewayIp = gatewayIp;
         this.securityCode = securityCode;
-        this.executorService = executorService;
     }
 
     /**
