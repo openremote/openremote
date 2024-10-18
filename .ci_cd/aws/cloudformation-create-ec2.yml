@@ -869,6 +869,7 @@ Resources:
   # Telemetry and Alarms
 
   EmailSubscription:
+    Condition: CreateHealthChecks
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: support@openremote.io
@@ -876,6 +877,7 @@ Resources:
       TopicArn: !Ref SnsTopic
 
   SnsTopic:
+    Condition: CreateHealthChecks
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Sub ${Host}.${EC2Instance}

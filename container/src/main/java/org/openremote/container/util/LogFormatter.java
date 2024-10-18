@@ -26,7 +26,6 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -62,7 +61,7 @@ public class LogFormatter extends Formatter {
     }
 
     protected OffsetDateTime fromMillis(long epochMillis) {
-        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        return OffsetDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
 

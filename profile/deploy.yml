@@ -280,7 +280,7 @@ services:
       OR_LOGGING_CONFIG_FILE:
 
       # The number of threads to be used for the scheduled executor service which can be used for scheduling
-      # non-blocking, short-lived tasks in a standard way; defaults to 1.
+      # non-blocking, short-lived tasks in a standard way; defaults to number of CPU cores.
       OR_SCHEDULED_EXECUTOR_THREADS:
 
       # The number of threads (min and max) to be used for the executor service which can be used for executing

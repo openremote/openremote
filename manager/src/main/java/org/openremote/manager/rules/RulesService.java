@@ -512,36 +512,6 @@ public class RulesService extends RouteBuilder implements ContainerService {
                 });
             case UPDATE -> {
                 // Attribute events are also published for updated/new attributes so nothing to do here
-//                boolean attributesChanged = persistenceEvent.hasPropertyChanged("attributes");
-//
-//                // Attribute changes will be published to the client event bus - if anything else has changed then we need to reload
-//                if (!attributesChanged) {
-//
-//                }
-//                AttributeMap oldAttributes = attributesChanged ? ((AttributeMap) persistenceEvent.getPreviousState("attributes")) : asset.getAttributes();
-//                AttributeMap currentAttributes = asset.getAttributes();
-//
-//                List<Attribute<?>> oldStateAttributes = oldAttributes
-//                    .stream()
-//                    .filter(RulesService::isRuleState).toList();
-//
-//                List<Attribute<?>> newStateAttributes = currentAttributes
-//                    .stream()
-//                    .filter(RulesService::isRuleState).toList();
-//
-//                // Just retract all old attributes rather than compare every value that might cause asset state to mutate
-//                oldStateAttributes.forEach(attribute -> {
-//                    AttributeEvent attributeEvent = new AttributeEvent(asset.getId(), attribute.getName(), null);
-//                    LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), retracting obsolete fact: " + attributeEvent);
-//                    retractAttributeEvent(attributeEvent);
-//                });
-//
-//                // Insert new states for new or changed attributes
-//                newStateAttributes.forEach(attribute -> {
-//                    AttributeEvent attributeEvent = new AttributeEvent(asset, attribute, null, attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
-//                    LOG.finest("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + attributeEvent);
-//                    updateAttributeEvent(attributeEvent);
-//                });
             }
         }
     }

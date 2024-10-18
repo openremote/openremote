@@ -5,7 +5,6 @@ import org.openremote.model.attribute.AttributeRef;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 
 public class AssetDatapointAllQuery extends AssetDatapointQuery {

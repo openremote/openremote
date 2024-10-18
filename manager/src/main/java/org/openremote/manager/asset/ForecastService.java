@@ -456,7 +456,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 scheduledFuture = scheduledExecutorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
             } else {
                 scheduledFuture = null;
-                if (forecastAttributes.size() > 0) {
+                if (!forecastAttributes.isEmpty()) {
                     LOG.fine("Scheduling next forecast calculation in '" + DEFAULT_SCHEDULE_DELAY + " [ms]'.");
                     scheduleForecastCalculation(now, Optional.of(DEFAULT_SCHEDULE_DELAY));
                 }
