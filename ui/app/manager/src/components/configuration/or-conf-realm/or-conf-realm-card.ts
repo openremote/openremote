@@ -277,6 +277,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
+        const managerUrl = (typeof MANAGER_URL !== 'undefined' ? MANAGER_URL : "");
         return html`
             <or-collapsible-panel .expanded="${app.expanded}">
                 <div slot="header" class="header-container">
@@ -302,13 +303,13 @@ export class OrConfRealmCard extends LitElement {
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${MANAGER_URL}"></or-file-uploader>
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${managerUrl}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">
