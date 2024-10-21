@@ -197,7 +197,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         HttpResponse<String> testResponse = testClient.send(testRequest, HttpResponse.BodyHandlers.ofString())
 
         then:
-        if(testResponse.statusCode() != 200) throw new TestAbortedException("Should be 200");
+        if(testResponse.statusCode() != 200) throw new TestAbortedException("Mosquitto server unavailable");
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
