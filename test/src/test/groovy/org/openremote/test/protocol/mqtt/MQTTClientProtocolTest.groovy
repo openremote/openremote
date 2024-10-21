@@ -186,8 +186,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def conditions = new PollingConditions(timeout: 100, delay: 0.2)
 
         when:
-        assert new Socket("test.mosquitto.org", 8884) != null
-        assert new Socket("test.mosquitto.org", 443) != null
+        Socket webSocket = new Socket("test.mosquitto.org", 443)
+        Socket mqttSocket = new Socket("test.mosquitto.org", 8884)
         HttpClient testClient = HttpClient.newHttpClient()
         HttpRequest testRequest = HttpRequest.newBuilder()
                 .GET()
@@ -197,7 +197,9 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         HttpResponse<String> testResponse = testClient.send(testRequest, HttpResponse.BodyHandlers.ofString())
 
         then:
-        if(testResponse.statusCode() != 200) throw new TestAbortedException("Mosquitto server unavailable");
+        if(webSocket == null) throw new TestAbortedException("Mosquitto web server unavailable");
+        if(mqttSocket == null) throw new TestAbortedException("Mosquitto MQTT broker unavailable");
+        if(testResponse.statusCode() != 200) throw new TestAbortedException("Mosquitto signing service unavailable");
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
