@@ -807,7 +807,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Transfer the rule action target into notification targets
             Notification.TargetType targetType = Notification.TargetType.ASSET;
             if (ruleAction.target != null) {
-                if ((ruleAction.target.users != null || Objects.equals(Boolean.TRUE, ruleAction.target.linkedUsers))
+                if ((ruleAction.target.users != null || Boolean.TRUE.equals(ruleAction.target.linkedUsers))
                     && ruleAction.target.conditionAssets == null
                     && ruleAction.target.assets == null
                     && ruleAction.target.matchedAssets == null) {
