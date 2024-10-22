@@ -346,6 +346,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 2" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 1
         }
 
+        and: "no push notification should have been sent for the test-realm-role-3 notification action"
+        conditions.eventually {
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 3" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration.id} == 0
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 3" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 0
+        }
+
         and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body but only containing the triggered asset states"
         conditions.eventually {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
