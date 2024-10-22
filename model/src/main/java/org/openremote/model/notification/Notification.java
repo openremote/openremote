@@ -22,6 +22,7 @@ package org.openremote.model.notification;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,6 +48,7 @@ public class Notification {
         protected TargetType type;
         protected String id;
         protected String locale;
+        protected List<String> allowedLocales = new ArrayList<>();
         protected Object data; // Handlers can store temporary data here
 
         @JsonCreator
@@ -79,6 +81,18 @@ public class Notification {
 
         public String getLocale() {
             return locale;
+        }
+
+        public void setAllowedLocales(List<String> allowedLocales) {
+            this.allowedLocales = allowedLocales;
+        }
+
+        public void addAllowedLocale(String locale) {
+            this.allowedLocales.add(locale);
+        }
+
+        public List<String> getAllowedLocales() {
+            return allowedLocales;
         }
 
         public Target setData(Object data) {

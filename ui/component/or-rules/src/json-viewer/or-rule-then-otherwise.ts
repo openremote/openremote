@@ -588,6 +588,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 name: this.rule.name,
                 message: {
                     type: "localized",
+                    defaultLanguage: locale,
                     languages: languages
                 } as LocalizedNotificationMessage
             };

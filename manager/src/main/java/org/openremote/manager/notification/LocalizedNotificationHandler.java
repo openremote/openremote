@@ -1,12 +1,18 @@
 package org.openremote.manager.notification;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.LocalizedNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
 
 import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
+import static org.openremote.model.security.User.LOCALE_ATTRIBUTE;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -14,13 +20,18 @@ import java.util.logging.Logger;
 public class LocalizedNotificationHandler extends RouteBuilder implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(LocalizedNotificationHandler.class.getName());
+    private ManagerIdentityService identityService;
+    private AssetStorageService assetStorageService;
+
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
     protected boolean valid;
 
     @Override
     public void init(Container container) throws Exception {
+        identityService = container.getService(ManagerIdentityService.class);
+        assetStorageService = container.getService(AssetStorageService.class);
         container.getServices(NotificationHandler.class).forEach(notificationHandler -> {
-            if(!notificationHandler.getTypeName().equals(this.getTypeName())) {
+            if (!notificationHandler.getTypeName().equals(this.getTypeName())) {
                 notificationHandlerMap.put(notificationHandler.getTypeName(), notificationHandler);
             }
         });
@@ -55,14 +66,14 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             return false;
         }
 
-        if(localizedMessage.getMessages().isEmpty()) {
+        if (localizedMessage.getMessages().isEmpty()) {
             LOG.warning("Invalid message: must either contain at least one localized message.");
             return false;
         }
 
         // For each language message, check its handler if the message is valid.
         return localizedMessage.getMessages().values().stream().allMatch(msg -> {
-            if(notificationHandlerMap.containsKey(msg.getType())) {
+            if (notificationHandlerMap.containsKey(msg.getType())) {
                 return notificationHandlerMap.get(msg.getType()).isMessageValid(msg);
             }
             return false;
@@ -83,15 +94,16 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
         try {
             return localizedMessage.getMessages().entrySet().stream().map(entry -> {
 
-                // Check if handler exists for this language
-                if(!notificationHandlerMap.containsKey(entry.getKey())) {
+                // Check if handler exists for this message type
+                if (!notificationHandlerMap.containsKey(entry.getValue().getType())) {
                     return Collections.<Notification.Target>emptyList();
                 }
                 // Get valid targets for this language
-                List<Notification.Target> langTargets = notificationHandlerMap.get(entry.getKey()).getTargets(source, sourceId, requestedTargets, entry.getValue());
+                List<Notification.Target> langTargets = notificationHandlerMap.get(entry.getValue().getType()).getTargets(source, sourceId, requestedTargets, entry.getValue());
 
                 // Save in the 'data' variable of the Notification.Target, what languages of this Notification are 'supported'
-                langTargets.forEach(t -> t.setData(t.getData().toString() + "," + entry.getKey()));
+                langTargets.forEach(t -> t.addAllowedLocale(entry.getKey()));
+
                 return langTargets;
 
             }).flatMap(List::stream).toList();
@@ -99,20 +111,6 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
         } catch (Exception e) {
             LOG.severe(e.getMessage());
         }
-
-        // TODO: Delete this
-        // For each language, we check if the target is valid for that message (using super.getTargets())
-        // After, we append the verified language to the "data" variable of the notification target.
-        /*try {
-            return localizedMessage.getMessages().entrySet().stream().map(entry -> {
-                List<Notification.Target> languageTargets = super.getTargets(source, sourceId, targets, entry.getValue());
-                languageTargets.forEach(t -> t.setData(t.getData().toString() + "," + entry.getKey()));
-                return languageTargets;
-
-            }).flatMap(List::stream).toList();
-        } catch (Exception e) {
-            LOG.severe(e.getMessage());
-        }*/
 
         return Collections.emptyList();
     }
@@ -124,20 +122,46 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             throw new NotificationProcessingException(SEND_FAILURE, "Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of LocalizedNotificationMessage");
         }
 
-        if(target.getData() == null) {
+        // If all locales are 'blocked' for this target, don't send any message
+        if (target.getAllowedLocales() == null || target.getAllowedLocales().isEmpty()) {
             throw new NotificationProcessingException(SEND_FAILURE, "No localized message could not be sent to target " + target.getId());
         }
-        List<String> supportedMessageLocales = Arrays.asList(target.getData().toString().split(","));
-        if(!supportedMessageLocales.contains(target.getLocale())) {
+
+        String targetLocale = target.getLocale();
+        if (TextUtil.isNullOrEmpty(targetLocale)) {
+
+            if (target.getType().equals(Notification.TargetType.ASSET)) {
+
+                // If locale of the target cannot be found,
+                // we check the linked user of this console asset, to get the user preferred language through the identity provider.
+                List<UserAssetLink> links = assetStorageService.findUserAssetLinks(null, null, target.getId());
+                if (!links.isEmpty()) {
+                    User user = identityService.getIdentityProvider().getUser(links.get(0).getId().getUserId());
+                    if (user != null) {
+                        targetLocale = user.getAttributeMap().get(LOCALE_ATTRIBUTE).get(0);
+                    }
+                }
+            }
+        }
+
+        // If target locale is not set yet, we either use;
+        // - the default language configured in the notification message.
+        // - use one of the languages that got a 'green light' to be sent.
+        if (TextUtil.isNullOrEmpty(targetLocale)) {
+            targetLocale = Optional.ofNullable(localizedMessage.getDefaultLanguage()).orElse(target.getAllowedLocales().get(0));
+        }
+
+        // Check if the message configured for this language is allowed to be sent towards this target.
+        if (!target.getAllowedLocales().contains(targetLocale)) {
             throw new NotificationProcessingException(SEND_FAILURE, "The localized message could not be sent to target " + target.getId());
         }
 
-        AbstractNotificationMessage targetMsg = localizedMessage.getMessage(target.getLocale());
-        if(targetMsg == null) {
-            throw new NotificationProcessingException(SEND_FAILURE, "Could not get message for the '" + target.getLocale() + "' language of target " + target.getId());
+        AbstractNotificationMessage targetMsg = localizedMessage.getMessage(targetLocale);
+        if (targetMsg == null) {
+            throw new NotificationProcessingException(SEND_FAILURE, "Could not get message for the '" + targetLocale + "' language of target " + target.getId());
         }
 
-        if(!notificationHandlerMap.containsKey(targetMsg.getType())) {
+        if (!notificationHandlerMap.containsKey(targetMsg.getType())) {
             throw new NotificationProcessingException(SEND_FAILURE, "Could not find the handler of type '" + targetMsg.getType() + "' for the message of target " + target.getId());
         }
 
