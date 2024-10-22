@@ -305,7 +305,7 @@ while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
 done
 
 if [ "$STATUS" != 'CREATE_COMPLETE' ] && [ "$STATUS" != 'UPDATE_COMPLETE' ]; then
-  echo "Stack creation has failed status is '$STATUS'"
+  echo "Stack creation has failed status is '$STATUS'" >&2
   exit 1
 else
   echo "Stack creation is complete"
