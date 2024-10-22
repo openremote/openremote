@@ -513,9 +513,9 @@ public class RulesEngine<T extends Ruleset> {
                 // Reset facts after this firing (loop detection etc.)
                 facts.reset();
                 lastFireTimestamp = timerService.getCurrentTimeMillis();
-                previouslyFired = true;
             }
         }
+        previouslyFired = true;
     }
 
     protected String getEngineId() {
