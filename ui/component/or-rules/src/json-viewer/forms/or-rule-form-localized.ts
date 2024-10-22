@@ -16,7 +16,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
     public message?: LocalizedNotificationMessage;
 
     @property({type: String})
-    public type?: "push" | "email";
+    public type: "push" | "email" = "push";
 
     @property()
     public languages?: string[];
@@ -80,14 +80,18 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
         if(!message?.languages) {
             return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
         }
+        if(!message.languages[lang]) {
+            message.languages[lang] = {
+                type: this.type
+            };
+        }
         const msg = message.languages[lang];
-        const type = msg?.type || this.type;
 
-        if(type === "push") {
+        if(msg.type === "push") {
             return html`
                 <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification>
             `;
-        } else if(type === "email") {
+        } else if(msg.type === "email") {
             return html`
                 <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message>
             `;
