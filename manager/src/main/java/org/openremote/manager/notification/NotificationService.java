@@ -33,7 +33,10 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.notification.*;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.NotificationSendResult;
+import org.openremote.model.notification.RepeatFrequency;
+import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
@@ -189,8 +192,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     // Filter targets based on repeat frequency
                     if (!TextUtil.isNullOrEmpty(notification.getName()) && (!TextUtil.isNullOrEmpty(notification.getRepeatInterval()) || notification.getRepeatFrequency() != null)) {
                         mappedTargetsList = mappedTargetsList.stream()
-                            .filter(target -> okToSendNotification(source, sourceId.get(), target, notification))
-                            .collect(Collectors.toList());
+                                .filter(target -> okToSendNotification(source, sourceId.get(), target, notification))
+                                .collect(Collectors.toList());
                     }
 
                     // Send message to each applicable target
@@ -198,62 +201,57 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     // As we can have multiple targets in a single exchange we'll track the first exception that occurs
                     mappedTargetsList.forEach(
-                        target -> {
-                            Exception notificationError = persistenceService.doReturningTransaction(em -> {
+                            target -> {
+                                Exception notificationError = persistenceService.doReturningTransaction(em -> {
 
-                                AbstractNotificationMessage message = notification.getMessage();
-                                if(message.isLocalized()) {
-                                    message = ((LocalizedNotificationMessage) message).getMessage(target.getLocale());
-                                }
+                                    // commit the notification first to get the ID
+                                    SentNotification sentNotification = new SentNotification()
+                                            .setName(notification.getName())
+                                            .setType(notification.getMessage().getType())
+                                            .setSource(source)
+                                            .setSourceId(sourceId.get())
+                                            .setTarget(target.getType())
+                                            .setTargetId(target.getId())
+                                            .setMessage(notification.getMessage())
+                                            .setSentOn(Date.from(timerService.getNow()));
 
-                                // commit the notification first to get the ID
-                                SentNotification sentNotification = new SentNotification()
-                                    .setName(notification.getName())
-                                    .setType(message.getType())
-                                    .setSource(source)
-                                    .setSourceId(sourceId.get())
-                                    .setTarget(target.getType())
-                                    .setTargetId(target.getId())
-                                    .setMessage(message)
-                                    .setSentOn(Date.from(timerService.getNow()));
+                                    sentNotification = em.merge(sentNotification);
+                                    long id = sentNotification.getId();
 
-                                sentNotification = em.merge(sentNotification);
-                                long id = sentNotification.getId();
+                                    try {
+                                        handler.sendMessage(
+                                                id,
+                                                source,
+                                                sourceId.get(),
+                                                target,
+                                                notification.getMessage());
 
-                                try {
-                                    handler.sendMessage(
-                                        id,
-                                        source,
-                                        sourceId.get(),
-                                        target,
-                                        message);
+                                        NotificationSendResult result = NotificationSendResult.success();
+                                        LOG.fine("Notification sent '" + id + "': " + target);
 
-                                    NotificationSendResult result = NotificationSendResult.success();
-                                    LOG.fine("Notification sent '" + id + "': " + target);
+                                        // Merge the sent notification again with the message included just in case the handler modified the message
+                                        sentNotification.setMessage(notification.getMessage());
 
-                                    // Merge the sent notification again with the message included just in case the handler modified the message
-                                    sentNotification.setMessage(message);
-
-                                } catch (Exception e) {
-                                    NotificationProcessingException notificationProcessingException;
-                                    if (e instanceof NotificationProcessingException) {
-                                        notificationProcessingException = (NotificationProcessingException) e;
-                                    } else {
-                                        notificationProcessingException = new NotificationProcessingException(SEND_FAILURE, e.getMessage());
+                                    } catch (Exception e) {
+                                        NotificationProcessingException notificationProcessingException;
+                                        if (e instanceof NotificationProcessingException) {
+                                            notificationProcessingException = (NotificationProcessingException) e;
+                                        } else {
+                                            notificationProcessingException = new NotificationProcessingException(SEND_FAILURE, e.getMessage());
+                                        }
+                                        LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
+                                        sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
+                                        return notificationProcessingException;
+                                    } finally {
+                                        em.merge(sentNotification);
                                     }
-                                    LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
-                                    sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
-                                    return notificationProcessingException;
-                                } finally {
-                                    em.merge(sentNotification);
-                                }
-                                return null;
-                            });
+                                    return null;
+                                });
 
-                            if (notificationError != null && error.get() == null) {
-                                error.set(notificationError);
+                                if (notificationError != null && error.get() == null) {
+                                    error.set(notificationError);
+                                }
                             }
-                        }
                     );
 
                     exchange.getMessage().setBody(error.get() == null);
@@ -261,13 +259,13 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         throw error.get();
                     }
                 })
-            .onException(Exception.class)
-            .logStackTrace(false)
-            .handled(true)
-            .process(exchange -> {
-                // Just notify sender in case of RequestReply
-                exchange.getMessage().setBody(false);
-            });
+                .onException(Exception.class)
+                .logStackTrace(false)
+                .handled(true)
+                .process(exchange -> {
+                    // Just notify sender in case of RequestReply
+                    exchange.getMessage().setBody(false);
+                });
     }
 
     public boolean sendNotification(Notification notification) {
@@ -276,15 +274,15 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void sendNotificationAsync(Notification notification, Notification.Source source, String sourceId) {
         Map<String, Object> headers = Map.ofEntries(
-            entry(Notification.HEADER_SOURCE, source),
-            entry(Notification.HEADER_SOURCE_ID, sourceId));
+                entry(Notification.HEADER_SOURCE, source),
+                entry(Notification.HEADER_SOURCE_ID, sourceId));
         messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).send();
     }
 
     public boolean sendNotification(Notification notification, Notification.Source source, String sourceId) {
         Map<String, Object> headers = Map.ofEntries(
-            entry(Notification.HEADER_SOURCE, source),
-            entry(Notification.HEADER_SOURCE_ID, sourceId));
+                entry(Notification.HEADER_SOURCE, source),
+                entry(Notification.HEADER_SOURCE_ID, sourceId));
         return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
     }
 
@@ -493,9 +491,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     if (target.getType() == Notification.TargetType.USER) {
                         realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(
-                            // Exclude service accounts and system accounts
-                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
-                            )).allMatch(user -> realm.equals(user.getRealm()));
+                                // Exclude service accounts and system accounts
+                                new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
+                        )).allMatch(user -> realm.equals(user.getRealm()));
                     } else {
                         // Can only send to the same realm as the requester realm
                         realmMatch = realm.equals(target.getId());
@@ -539,7 +537,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         Date lastSend = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-                "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
+                        "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
                 .setParameter("source", source)
                 .setParameter("sourceId", sourceId)
                 .setParameter("target", target.getType())

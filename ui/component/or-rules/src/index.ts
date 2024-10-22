@@ -57,7 +57,7 @@ export const enum ActionType {
     EMAIL = "email",
     EMAIL_LOCALIZED = "email_localized",
     PUSH_NOTIFICATION = "push",
-    PUSH_NOTIFICATION_LOCALIZED = "push_localized",
+    PUSH_LOCALIZED = "push_localized",
     ATTRIBUTE = "attribute",
     WEBHOOK = "webhook"
 }

@@ -11,13 +11,14 @@ import {
     RuleActionNotification,
     UserQuery,
     WellknownAssets,
-    NotificationTargetType
+    NotificationTargetType, PushNotificationMessage, EmailNotificationMessage, LocalizedNotificationMessage
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-email-message";
 import "./forms/or-rule-form-push-notification";
+import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
 import {i18next} from "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
@@ -61,6 +62,33 @@ export class OrRuleActionNotification extends LitElement {
 
     @property({type: Object})
     public config?: RulesConfig;
+
+    connectedCallback() {
+        this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        return super.connectedCallback();
+    }
+
+    protected _onJsonRuleChanged() {
+
+        // Upon rule change, we update the name of the "Notification action" to a sensible value, for example with the subject of an email
+        // This is to prevent the NAME (for example showing up in the logs) being NULL or not identifiable.
+        if(this.action.notification) {
+            const message = this.action.notification.message;
+            if(message?.type === "localized") {
+                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
+                const msg = message.languages?.[locale]; // if localized, we use the default language
+                if(msg?.type === "push") {
+                    this.action.notification.name = msg.title;
+                } else if(msg?.type === "email") {
+                    this.action.notification.name = msg.subject;
+                }
+            } else if (message?.type === "push") {
+                this.action.notification.name = message.title;
+            } else if (message?.type === "email") {
+                this.action.notification.name = message.subject;
+            }
+        }
+    }
 
     protected static getActionTargetTemplate(targetTypeMap: [string, string?][], action: RuleAction, actionType: ActionType, readonly: boolean, config: RulesConfig | undefined, baseAssetQuery: AssetQuery | undefined, onTargetTypeChangedCallback: (type: NotificationTargetType) => void, onTargetChangedCallback: (type: NotificationTargetType, value: string | undefined) => void): PromiseLike<TemplateResult> | undefined {
 
@@ -262,7 +290,7 @@ export class OrRuleActionNotification extends LitElement {
         const messageType = message.type!;
         let baseAssetQuery: AssetQuery;
 
-        if (messageType === "push" || messageType === "push_localized") {
+        if (messageType === "push") {
             baseAssetQuery = {
                 types: [
                     WellknownAssets.CONSOLEASSET
@@ -292,16 +320,7 @@ export class OrRuleActionNotification extends LitElement {
             if (messageType === "push") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="push-notification" .action="${this.action}">
-                        <or-rule-form-push-notification .action="${this.action}"></or-rule-form-push-notification>
-                    </or-rule-notification-modal>
-                `;
-            }
-            else if(messageType === "push_localized") {
-                const languages = this.config?.notifications?.[manager.displayRealm]?.languages;
-                const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
-                modalTemplate = html`
-                    <or-rule-notification-modal title="push-notification" .action="${this.action}">
-                        <or-rule-form-push-notification .action="${this.action}" .languages="${languages}" .lang="${locale}"></or-rule-form-push-notification>
+                        <or-rule-form-push-notification .message="${message as PushNotificationMessage}"></or-rule-form-push-notification>
                     </or-rule-notification-modal>
                 `;
             }
@@ -309,7 +328,28 @@ export class OrRuleActionNotification extends LitElement {
             else if (messageType === "email") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="email" .action="${this.action}">
-                        <or-rule-form-email-message .action="${this.action}"></or-rule-form-email-message>
+                        <or-rule-form-email-message .message="${message as EmailNotificationMessage}"></or-rule-form-email-message>
+                    </or-rule-notification-modal>
+                `;
+            }
+
+            else if(messageType === "localized") {
+                const languages = [...new Set([
+                    ...(this.config?.notifications?.[manager.displayRealm]?.languages || []),
+                    ...(Object.keys((message as LocalizedNotificationMessage).languages || {}) || [])
+                ])] as string[];
+                let locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
+                if(languages.length === 0 && locale) {
+                    languages.push(locale);
+                }
+                if(languages.length > 0 && !languages.includes(locale)) {
+                    locale = languages[0];
+                }
+                const type = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push";
+                const title = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push-notification";
+                modalTemplate = html`
+                    <or-rule-notification-modal title="${title}" .action="${this.action}">
+                        <or-rule-form-localized .message="${message}" .type="${type}" .languages="${languages}" .lang="${locale}"></or-rule-form-localized>
                     </or-rule-notification-modal>
                 `;
             }

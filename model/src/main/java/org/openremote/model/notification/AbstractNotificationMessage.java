@@ -23,10 +23,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = PushNotificationLocalizedMessage.class, name = PushNotificationLocalizedMessage.TYPE),
         @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE),
-        /*@JsonSubTypes.Type(value = EmailNotificationLocalizedMessage.class, name = "email"),*/
-        @JsonSubTypes.Type(value = EmailNotificationMessage.class, name = EmailNotificationMessage.TYPE)
+        @JsonSubTypes.Type(value = EmailNotificationMessage.class, name = EmailNotificationMessage.TYPE),
+        @JsonSubTypes.Type(value = LocalizedNotificationMessage.class, name = LocalizedNotificationMessage.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -43,9 +42,5 @@ public abstract class AbstractNotificationMessage {
 
     public String getType() {
         return type;
-    }
-
-    public boolean isLocalized() {
-        return type.contains("localized");
     }
 }
