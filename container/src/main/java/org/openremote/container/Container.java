@@ -60,10 +60,10 @@ public class Container implements org.openremote.model.Container {
     public static ScheduledExecutorService SCHEDULED_EXECUTOR;
     public static ExecutorService EXECUTOR;
     public static final String OR_SCHEDULED_EXECUTOR_THREADS = "OR_SCHEDULED_EXECUTOR_THREADS";
-    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
+    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 4);
     public static final String OR_EXECUTOR_THREADS_MIN = "OR_EXECUTOR_THREADS_MIN";
     public static final String OR_EXECUTOR_THREADS_MAX = "OR_EXECUTOR_THREADS_MAX";
-    public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Runtime.getRuntime().availableProcessors();
+    public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 8);
     public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors()*10;
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
