@@ -95,7 +95,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the client resources should be freed"
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
-            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 0
+            assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).isEmpty()
         }
 
         when: "a mqtt client connects with valid credentials"
