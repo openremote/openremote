@@ -87,7 +87,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     border: 1px solid #e5e5e5;
                     border-radius: 5px;
                     position: relative;
-                    margin: 0 auto 10px;
+                    margin: 0 auto 16px;
                     padding: 12px 24px 24px;
                     display: flex;
                     flex-direction: column;
