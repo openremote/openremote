@@ -105,7 +105,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     protected _onTitleChange(ev: OrInputChangedEvent, message: PushNotificationMessage) {
         message.title = ev.detail.value;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 
     /**
@@ -114,7 +113,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     protected _onBodyChange(ev: OrInputChangedEvent, message: PushNotificationMessage) {
         message.body = ev.detail.value;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 
     /**
@@ -124,7 +122,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
         message.action = message.action || {};
         message.action.url = ev.detail.value;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 
     /**
@@ -134,7 +131,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
         message.action = message.action || {};
         message.action.openInBrowser = ev.detail.value;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 
     /**
@@ -146,6 +142,5 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
             title: ev.detail.value
         } as PushNotificationButton;
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-        this.requestUpdate();
     }
 }
