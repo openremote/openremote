@@ -53,6 +53,13 @@ import static org.openremote.container.util.MapAccess.getInteger;
  * Access environment configuration through {@link #getConfig()} and the helper methods
  * in {@link org.openremote.container.util.MapAccess}. Consider using {@link org.openremote.model.Container#OR_DEV_MODE}
  * to distinguish between development and production environments.
+ * To execute tasks in a standard way two {@link ExecutorService}s are provided:
+ * <ul>
+ * <li>{@link #EXECUTOR} - A dynamic {@link ThreadPoolExecutor} with {@link #OR_EXECUTOR_THREADS_MIN} core
+ * threads and max pool size of {@link #OR_EXECUTOR_THREADS_MAX} for general task execution/li>
+ * <li>{@link #SCHEDULED_EXECUTOR} - A {@link ScheduledThreadPoolExecutor} which is a fixed thread pool of size
+ * {@link #OR_SCHEDULED_EXECUTOR_THREADS} for scheduled task execution</li>
+ * </ul>
  */
 public class Container implements org.openremote.model.Container {
 

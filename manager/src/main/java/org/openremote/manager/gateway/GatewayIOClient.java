@@ -55,7 +55,12 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected Future<Void> startChannel() {
-        CompletableFuture<Void> connectedFuture = toCompletableFuture(super.startChannel());
+        CompletableFuture<Void> connectedFuture;
+        try {
+            connectedFuture = toCompletableFuture(super.startChannel());
+        } catch (Exception e) {
+            connectedFuture = CompletableFuture.failedFuture(e);
+        }
 
         return connectedFuture
             .orTimeout(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS)

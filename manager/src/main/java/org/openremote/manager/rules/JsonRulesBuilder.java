@@ -367,7 +367,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
-            log(Level.FINE, "Rule evaluation result: " + lastEvaluationResult);
+            log(Level.FINEST, "Rule evaluation result: " + lastEvaluationResult);
         }
 
         Collection<String> getMatchedAssetIds() {

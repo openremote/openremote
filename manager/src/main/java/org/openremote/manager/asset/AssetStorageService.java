@@ -845,7 +845,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         .setParameter("ids", ids)
                         .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
 
-                    if (assetIds.size() != assets.size()) {
+                    if (ids.size() != assets.size()) {
                         throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
                     }
 
@@ -854,6 +854,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     em.flush();
                 });
             } catch (Exception e) {
+                LOG.log(SEVERE, "Failed to delete one or more requested assets: " + Arrays.toString(assetIds.toArray()), e);
                 return false;
             } finally {
                 // Release all of the locks

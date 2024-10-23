@@ -483,19 +483,24 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         }
         if (future instanceof ChannelFuture channelFuture) {
             CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-            channelFuture.addListener(cf -> {
-                if (cf.isCancelled()) {
-                    completableFuture.cancel(true);
-                    return;
-                }
-                if (cf.cause() != null) {
-                    completableFuture.completeExceptionally(cf.cause());
-                } else if (!cf.isSuccess()) {
-                    completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
-                } else {
-                    completableFuture.complete(null);
-                }
-            });
+
+            try {
+                channelFuture.addListener(cf -> {
+                    if (cf.isCancelled()) {
+                        completableFuture.cancel(true);
+                        return;
+                    }
+                    if (cf.cause() != null) {
+                        completableFuture.completeExceptionally(cf.cause());
+                    } else if (!cf.isSuccess()) {
+                        completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+                    } else {
+                        completableFuture.complete(null);
+                    }
+                });
+            } catch (Exception e) {
+                completableFuture.completeExceptionally(e);
+            }
             return completableFuture;
         }
         throw new UnsupportedOperationException("Future must be a ChannelFuture or already a CompletableFuture");

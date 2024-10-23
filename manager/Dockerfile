@@ -60,7 +60,7 @@ ENV OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE ${OR_GATEWAY_TUNNEL_LOCALHOST_REWRITE:-1
 ENV OR_JAVA_OPTS ${OR_JAVA_OPTS:--Xms500m -Xmx2g \
     -XX:NativeMemoryTracking=summary \
     -Xlog:all=warning:stdout:uptime,level,tags \
-    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
+    -XX:+HeapDumpOcontainernOutOfMemoryError -XX:HeapDumpPath=/dump.hprof}
 
 # OpenMetrics _created series breaks cloudwatch prometheus scraper
 ENV PROMETHEUS_DISABLE_CREATED_SERIES ${PROMETHEUS_DISABLE_CREATED_SERIES:-true}

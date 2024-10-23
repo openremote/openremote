@@ -1504,7 +1504,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
-        let uniqueAssets = new Set<Asset>();
+        const uniqueAssets = new Set<Asset>();
 
         // Add gateway nodes first
         const nodes = this._selectedNodes.filter((node) => {
@@ -1516,10 +1516,22 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return true;
         })
 
-        // Get all unique descendant IDs of selected nodes
+        // Iterate through descendants of selected nodes that aren't gateways
+        // and add to delete list (don't recurse descendant gateway nodes)
         OrAssetTree._forEachNodeRecursive(nodes, (node) => {
-            if (node.asset?.type === WellknownAssets.GATEWAYASSET)
-            uniqueAssets.add(node.asset!);
+            // Check no ancestor is of type gateway
+            let ancestor = node.parent;
+            let okToAdd = true;
+            while (ancestor && okToAdd) {
+                const ancestorType = ancestor?.asset?.type;
+                if (ancestorType === WellknownAssets.GATEWAYASSET) {
+                    okToAdd = false;
+                }
+                ancestor = ancestor.parent;
+            }
+            if (okToAdd) {
+                uniqueAssets.add(node.asset!);
+            }
         });
         const assetIds: string[] = Array.from(uniqueAssets).map(asset => asset.id!);
         const assetNames: string[] = Array.from(uniqueAssets).map(asset => asset.name!);
