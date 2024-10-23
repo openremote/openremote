@@ -229,7 +229,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             .onRetryScheduled((execution) ->
                 LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
             .onFailedAttempt((execution) -> {
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri());
+                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
                 doDisconnect();
             })
             .withMaxRetries(Integer.MAX_VALUE)
@@ -292,6 +292,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 workerGroup = null;
             }
         } catch (Exception ignored) {}
+        bootstrap = null;
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
@@ -315,8 +316,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), e);
-        } finally {
-            bootstrap = null;
         }
         LOG.finest("Disconnect done: " + getClientUri());
     }

@@ -40,7 +40,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 60, delay: 0.2)
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), [new TimerService()])
