@@ -177,25 +177,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         return true;
-
-        /*List<AbstractNotificationMessage> messages = new ArrayList<>();
-        if(message.isLocalized()) {
-            messages.addAll(((PushNotificationLocalizedMessage) message).getMessages().values());
-        } else {
-            messages.add(message);
-        }
-
-        return messages.stream().noneMatch(m -> {
-            if(!(m instanceof PushNotificationMessage pushMessage)) {
-                LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
-                return true;
-            }
-            if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
-                LOG.warning("Invalid message: must either contain a title and/or data");
-                return true;
-            }
-            return false;
-        });*/
     }
 
     @Override
@@ -218,19 +199,19 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
             if (assetTargets.length > 0) {
                 List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
-                                .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
-                        .stream().map(Asset::getId).toList();
+                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
+                    .stream().map(Asset::getId).toList();
 
                 if (!consoleAssets.isEmpty()) {
                     targets = targets.stream()
-                            .filter(target -> {
-                                boolean isConsoleAsset = consoleAssets.contains(target.getId());
-                                if (isConsoleAsset) {
-                                    // Don't filter out consoles without FCM here so we can record the failure in the actual send
-                                    mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
-                                }
-                                return !isConsoleAsset;
-                            }).collect(Collectors.toList());
+                        .filter(target -> {
+                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
+                            if (isConsoleAsset) {
+                                // Don't filter out consoles without FCM here so we can record the failure in the actual send
+                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                            }
+                            return !isConsoleAsset;
+                        }).collect(Collectors.toList());
                 }
             }
 
@@ -239,25 +220,25 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 Notification.TargetType targetType = target.getType();
                 String targetId = target.getId();
                 AssetQuery assetQuery = new AssetQuery()
-                        .select(new AssetQuery.Select().excludeAttributes())
-                        .types(ConsoleAsset.class)
-                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token")));
+                    .select(new AssetQuery.Select().excludeAttributes())
+                    .types(ConsoleAsset.class)
+                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path(PushNotificationMessage.TYPE, "data", "token")));
 
                 switch (targetType) {
                     case REALM ->
                         // Any console assets in the target realm
-                            assetQuery.realm(new RealmPredicate(targetId));
+                        assetQuery.realm(new RealmPredicate(targetId));
                     case USER ->
                         // Any console assets linked to the target user
-                            assetQuery.userIds(targetId);
+                        assetQuery.userIds(targetId);
                     case ASSET ->
                         // Any users linked to this asset and then their linked console assets
-                            assetQuery.userIds(
-                                    assetStorageService.findUserAssetLinks(null, null, targetId)
-                                            .stream()
-                                            .map(ual -> ual.getId().getUserId())
-                                            .collect(Collectors.toSet())
-                                            .toArray(String[]::new));
+                        assetQuery.userIds(
+                            assetStorageService.findUserAssetLinks(null, null, targetId)
+                                .stream()
+                                .map(ual -> ual.getId().getUserId())
+                                .collect(Collectors.toSet())
+                                .toArray(String[]::new));
                 }
 
                 List<String> consoleAssetIds = assetStorageService.findAll(assetQuery).stream().map(Asset::getId).distinct().toList();
@@ -266,32 +247,32 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     // Special handling if target type is user (don't need to find all linked users)
                     if (targetType == Notification.TargetType.USER) {
                         if (Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                                        // Exclude service accounts, system accounts and accounts with disabled push notifications
-                                        new UserQuery().ids(targetId).serviceUsers(false).attributes(
-                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                                        )))
-                                .allMatch(User::isSystemAccount)) {
+                            // Exclude service accounts, system accounts and accounts with disabled push notifications
+                            new UserQuery().ids(targetId).serviceUsers(false).attributes(
+                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                            )))
+                            .allMatch(User::isSystemAccount)) {
                             consoleAssetIds = Collections.emptyList();
                         }
                     } else {
 
                         consoleAssetIds = consoleAssetIds.stream()
-                                .filter(consoleId -> {
+                            .filter(consoleId -> {
 
-                                    //  Check there are no regular users with disabled push notifications linked to this console
-                                    // TODO: This should be handled by the console provider on the console itself
-                                    long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
-                                            // Exclude service accounts, system accounts and accounts with disabled email notifications
-                                            new UserQuery()
-                                                    .assets(consoleId)
-                                                    .serviceUsers(false).attributes(
-                                                            new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                                                            new UserQuery.AttributeValuePredicate(false, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                                                    )
+                                //  Check there are no regular users with disabled push notifications linked to this console
+                                // TODO: This should be handled by the console provider on the console itself
+                                long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
+                                        // Exclude service accounts, system accounts and accounts with disabled email notifications
+                                        new UserQuery()
+                                            .assets(consoleId)
+                                            .serviceUsers(false).attributes(
+                                                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                                                new UserQuery.AttributeValuePredicate(false, new StringPredicate(PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
+                                            )
                                     )).count();
-                                    return count == 0;
-                                }).collect(Collectors.toList());
+                                return count == 0;
+                            }).collect(Collectors.toList());
                     }
                 }
 
@@ -299,11 +280,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     LOG.fine("No console asset targets have been mapped");
                 } else {
                     mappedTargets.addAll(
-                            consoleAssetIds
-                                    .stream()
-                                    .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
-                                    .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
-                                    .toList());
+                        consoleAssetIds
+                            .stream()
+                            .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
+                            .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
+                            .toList());
                 }
             });
         }
