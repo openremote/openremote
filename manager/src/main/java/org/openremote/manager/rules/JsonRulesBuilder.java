@@ -549,7 +549,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public JsonRulesBuilder(Logger logger, Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService,
                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
-                                    Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
+                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
                             Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.rulesEngine = rulesEngine;
