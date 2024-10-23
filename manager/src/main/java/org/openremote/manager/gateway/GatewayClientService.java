@@ -377,6 +377,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             client.disconnect();
             client.removeAllConnectionStatusConsumers();
             client.removeAllMessageConsumers();
+            client.setEncoderDecoderProvider(null);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }

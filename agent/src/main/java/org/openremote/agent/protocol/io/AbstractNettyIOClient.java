@@ -279,15 +279,19 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
-        if (connectRetry != null) {
-            connectRetry.cancel(true);
-            connectRetry = null;
-        }
+        try {
+            if (connectRetry != null) {
+                connectRetry.cancel(true);
+                connectRetry = null;
+            }
+        } catch (Exception ignored) {}
         doDisconnect();
-        if (workerGroup != null) {
-            workerGroup.shutdownGracefully();
-            workerGroup = null;
-        }
+        try {
+            if (workerGroup != null) {
+                workerGroup.shutdownGracefully();
+                workerGroup = null;
+            }
+        } catch (Exception ignored) {}
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
@@ -311,6 +315,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to disconnect gracefully: " + getClientUri(), e);
+        } finally {
+            bootstrap = null;
         }
         LOG.finest("Disconnect done: " + getClientUri());
     }
