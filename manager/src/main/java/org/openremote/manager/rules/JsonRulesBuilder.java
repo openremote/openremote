@@ -785,7 +785,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
-            boolean linkedUsersTarget = ruleAction.target != null && ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers;
+            boolean linkedUsersTarget = ruleAction.target != null && Boolean.TRUE.equals(ruleAction.target.linkedUsers);
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
             boolean isHtml;
@@ -807,10 +807,10 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Transfer the rule action target into notification targets
             Notification.TargetType targetType = Notification.TargetType.ASSET;
             if (ruleAction.target != null) {
-                if (ruleAction.target.users != null
-                        && ruleAction.target.conditionAssets == null
-                        && ruleAction.target.assets == null
-                        && ruleAction.target.matchedAssets == null) {
+                if ((ruleAction.target.users != null || Boolean.TRUE.equals(ruleAction.target.linkedUsers))
+                    && ruleAction.target.conditionAssets == null
+                    && ruleAction.target.assets == null
+                    && ruleAction.target.matchedAssets == null) {
                     targetType = Notification.TargetType.USER;
                 } else if (ruleAction.target.custom != null
                         && ruleAction.target.conditionAssets == null
@@ -824,13 +824,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             boolean bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
 
             if (linkedUsersTarget) {
-                targetType = Notification.TargetType.USER;
-
-                // Find users linked to the matched assets
+                // Find users linked to the matched assets applying any additional use query in the action
                 Set<String> assetIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+                UserQuery userQuery = ruleAction.target.users != null ? ruleAction.target.users : new UserQuery();
                 List<String> userIds = assetIds == null || assetIds.isEmpty()
-                        ? Collections.emptyList()
-                        : usersFacade.getResults(new UserQuery().assets(assetIds.toArray(String[]::new))).toList();
+                    ? Collections.emptyList()
+                    : usersFacade.getResults(userQuery.assets(assetIds.toArray(String[]::new))).toList();
 
                 if (userIds.isEmpty()) {
                     LOG.info("No users linked to matched assets for triggered rule so nothing to do: " + jsonRuleset);
