@@ -66,7 +66,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
                 --or-collapisble-panel-background-color: #fff;
                 --or-panel-background-color: #fff;
-                --or-panel-padding: 18px 24px 24px;
+                --or-panel-padding: 12px 24px 24px;
                 --or-panel-heading-margin: 0 0 10px 0;
                 --or-panel-background-color: var(--or-app-color1, ${unsafeCSS(DefaultColor1)});
                 --or-panel-heading-font-size: 14px;
