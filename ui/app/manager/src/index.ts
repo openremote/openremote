@@ -286,7 +286,6 @@ fetch(configURL).then(async (result) => {
             });
         }
 
-        console.log(manager.displayRealm);
         return orAppConfig;
     };
 

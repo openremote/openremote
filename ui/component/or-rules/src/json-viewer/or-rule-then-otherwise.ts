@@ -59,6 +59,8 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         addWebhook = config.controls.allowedActionTypes.indexOf(ActionType.WEBHOOK) >= 0;
     }
 
+    // If the RulesConfig has an entry for notifications, check if there are languages configured.
+    // When there are, new notifications will be a "multi-language notification", with a different modal form.
     if (config?.notifications) {
         multiLanguage = Object.entries(config.notifications).filter(x => x[1] !== undefined).length > 0;
     }

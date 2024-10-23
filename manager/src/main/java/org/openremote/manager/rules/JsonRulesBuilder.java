@@ -769,8 +769,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected static Collection<String> getAssetIds(Assets assets, AssetQuery assetQuery) {
         return assets.getResults(assetQuery)
-                .map(Asset::getId)
-                .collect(Collectors.toList());
+            .map(Asset::getId)
+            .collect(Collectors.toList());
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -1048,7 +1048,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 .findFirst().orElseGet(() -> {
                                     log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
                                     return null;
-                                }))
+                        }))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
@@ -1127,7 +1127,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         assetsFacade.dispatch(assetState.getId(), attributeUpdateAction.attributeName, value);
                     }
                 }),
-                0);
+            0);
         }
 
         log(Level.FINE, "Unsupported rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -1143,8 +1143,8 @@ public class JsonRulesBuilder extends RulesBuilder {
             .filter(conditionState -> conditionState.lastEvaluationResult.matches)
             .flatMap(conditionState -> {
                 Collection<AttributeInfo> as = useUnmatched
-                        ? conditionState.lastEvaluationResult.unmatchedAssetStates
-                        : conditionState.lastEvaluationResult.matchedAssetStates;
+                    ? conditionState.lastEvaluationResult.unmatchedAssetStates
+                    : conditionState.lastEvaluationResult.matchedAssetStates;
                 return as.stream();
             })
             // Get the asset states that are in the assetId list and optionally linked to this user

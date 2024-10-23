@@ -40,9 +40,6 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
     protected setActionNotificationName(value: string | undefined, key?: string) {
         if(key && this.message){
             (this.message as any)[key] = value;
-
-            // TODO: Remove if not necessary
-            /*this.action.notification.message = {...message};*/
         }
 
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
