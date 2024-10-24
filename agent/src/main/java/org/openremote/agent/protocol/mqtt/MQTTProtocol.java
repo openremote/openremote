@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.syslog.SyslogCategory.getLogger;
 
 public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTAgent, String, MQTT_IOClient, MQTTAgentLink> {
 
