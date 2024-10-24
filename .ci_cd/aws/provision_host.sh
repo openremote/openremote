@@ -21,7 +21,8 @@
 # 4 - DISK_SIZE to use for created EBS root volume (GB)
 # 5 - ELASTIC_IP if 'true' then create an elastic public IP for this host
 # 6 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
-# 7 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
+# 7 - ENABLE_METRICS set to 'false' to not enable cloudwatch metrics for this instance
+# 8 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -35,7 +36,8 @@ INSTANCE_TYPE=${3,,}
 DISK_SIZE=${4,,}
 ELASTIC_IP=${5,,}
 PROVISION_S3_BUCKET=${6,,}
-WAIT_FOR_STACK=${7,,}
+ENABLE_METRICS=${7,,}
+WAIT_FOR_STACK=${8,,}
 
 if [ -z "$HOST" ]; then
   echo "Host must be set"
@@ -138,6 +140,10 @@ else
 
   if [ -n "$ELASTIC_IP" ]; then
     PARAMS="$PARAMS ParameterKey=ElasticIP,ParameterValue=$ELASTIC_IP"
+  fi
+
+  if [ -n "$ENABLE_METRICS" ]; then
+    PARAMS="$PARAMS ParameterKey=Metrics,ParameterValue=$ENABLE_METRICS"
   fi
 
   # Get SMTP credentials

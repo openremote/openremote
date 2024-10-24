@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,6 +39,7 @@ public class MailClientBuilder {
     public static final int DEFAULT_CHECK_INTERVAL_SECONDS = 5 * 60;
     protected static int MIN_CHECK_INTERVAL_SECONDS = 10;
     protected static final AtomicReference<Client> jaxrsClient = new AtomicReference<>();
+    protected ExecutorService executorService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected int checkInitialDelaySeconds = 0;
     protected int checkIntervalSeconds = DEFAULT_CHECK_INTERVAL_SECONDS;
@@ -56,7 +58,8 @@ public class MailClientBuilder {
     protected boolean startTls;
     protected Properties properties = new Properties();
 
-    public MailClientBuilder(ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port) {
+    public MailClientBuilder(ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, String protocol, String host, int port) {
+        this.executorService = executorService;
         this.scheduledExecutorService = scheduledExecutorService;
         this.protocol = protocol;
         this.host = host;
@@ -209,7 +212,7 @@ public class MailClientBuilder {
         if (oAuthGrant != null) {
             synchronized (jaxrsClient) {
                 if (jaxrsClient.get() == null) {
-                    jaxrsClient.set(WebTargetBuilder.createClient(scheduledExecutorService));
+                    jaxrsClient.set(WebTargetBuilder.createClient(executorService));
                 }
             }
             synchronized (this) {

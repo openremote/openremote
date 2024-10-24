@@ -19,19 +19,11 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothCentralManager;
-import com.welie.blessed.BluetoothCentralManagerCallback;
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothPeripheral;
-import com.welie.blessed.ScanResult;
+import com.welie.blessed.*;
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModel;
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ControlMessage;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.Element;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -39,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -62,7 +55,8 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
     private volatile MeshManagerApi meshManagerApi;
     private volatile boolean isStarted = false;
 
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
+    private final ScheduledExecutorService scheduledExecutorService;
     private final BluetoothCentralManager bluetoothCentral;
     private final SequenceNumberPersistencyManager sequenceNumberManager;
     private final MainThreadManager mainThreadManager;
@@ -79,7 +73,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
 
     public BluetoothMeshNetwork(BluetoothCentralManager bluetoothCentral, SequenceNumberPersistencyManager sequenceNumberManager, MainThreadManager mainThread,
                                 String proxyAddress, int unicastAddress, NetworkKey networkKey, Map<Integer, ApplicationKey> applicationKeyMap,
-                                int mtu, int sequenceNumber, ScheduledExecutorService executorService, Consumer<ConnectionStatus> statusConsumer) {
+                                int mtu, int sequenceNumber, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, Consumer<ConnectionStatus> statusConsumer) {
         this.bluetoothCentral = bluetoothCentral;
         this.sequenceNumberManager = sequenceNumberManager;
         this.mainThreadManager = mainThread;
@@ -89,9 +83,10 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         this.applicationKeyMap = applicationKeyMap;
         this.mtu = mtu;
         this.executorService = executorService;
+        this.scheduledExecutorService = scheduledExecutorService;
         this.statusConsumer = statusConsumer;
 
-        this.meshManagerApi = new MeshManagerApi(executorService);
+        this.meshManagerApi = new MeshManagerApi(scheduledExecutorService);
         this.meshManagerApi.setMeshManagerCallbacks(this);
         this.meshManagerApi.setMeshStatusCallbacks(this);
 
@@ -457,7 +452,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
             proxyScanner.stop();
         }
         executorService.execute(() -> statusConsumer.accept(ConnectionStatus.CONNECTING));
-        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService);
+        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService, scheduledExecutorService);
         proxyScanner.start(networkKey, proxyAddress, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
             @Override
             public void onMeshProxiesScanned(List<BluetoothMeshProxy> meshProxies, Integer errorCode) {

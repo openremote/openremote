@@ -10,6 +10,8 @@
 #
 # `DEPLOYMENT1_DO_NOTHING` (default: false) - Do not do anything with deployment1; useful when running the test multiple times to speed up deployment
 # `DEPLOYMENT1_RESTART_ONLY` (default: false) - Will only restart the manager container on deployment 1 rather than the default behaviour of stack down/up
+# `DEPLOYMENT1_MQTT_RATE_LIMIT` (default: 100/s) - Will set the MQTT_RATE_LIMIT on the proxy container to limit the connection rate of MQTT devices
+# `DEPLOYMENT1_ENV` (default: unset) - Provide custom environment variables to the deployment
 # `DEPLOYMENT2_THREAD_COUNT` (default: unset) - Override console user test `THREAD_COUNT` (set to `0` to skip deployment 2 test)
 # `DEPLOYMENT2_DURATION` (default: unset) - Override console user test `DURATION`
 # `DEPLOYMENT2_RAMP_RATE` (default: unset) - Override console user test `RAMP_RATE`
@@ -63,6 +65,10 @@ else
     $SSH_PREFIX $SERVER1 << EOF
 
 cd deployment1
+
+if [ -n "$DEPLOYMENT1_MQTT_RATE_LIMIT" ]; then
+  \$DEPLOYMENT1_ENV = "MQTT_RATE_LIMIT=$DEPLOYMENT1_MQTT_RATE_LIMIT $DEPLOYMENT1_ENV"
+fi
 
 if ! [ -f .env ]; then
   OR_ADMIN_PASSWORD=\$(date +%s | sha256sum | base64 | head -c 15)

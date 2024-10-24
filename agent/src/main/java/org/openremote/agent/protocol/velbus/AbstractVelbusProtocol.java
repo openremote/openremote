@@ -78,7 +78,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
             int timeInjectionSeconds = agent.getTimeInjectionInterval().orElse(DEFAULT_TIME_INJECTION_INTERVAL_SECONDS);
 
             LOG.fine("Creating new VELBUS network instance for protocol instance: " + agent);
-            network = new VelbusNetwork(messageProcessor, executorService, timeInjectionSeconds);
+            network = new VelbusNetwork(messageProcessor, scheduledExecutorService, timeInjectionSeconds);
             network.connect();
             network.addConnectionStatusConsumer(this::setConnectionStatus);
 

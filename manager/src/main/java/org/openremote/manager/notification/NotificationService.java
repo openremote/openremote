@@ -46,6 +46,7 @@ import org.openremote.model.util.TimeUtil;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,13 +61,14 @@ import static org.openremote.model.notification.Notification.Source.*;
 
 public class NotificationService extends RouteBuilder implements ContainerService {
 
-    public static final String NOTIFICATION_QUEUE = "seda://NotificationQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
+    public static final String NOTIFICATION_QUEUE = "direct://NotificationQueue";
     private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
+    protected ExecutorService executorService;
     protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
 
     @Override
@@ -81,6 +83,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
+        executorService = container.getExecutor();
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         container.getServices(NotificationHandler.class).forEach(notificationHandler ->
@@ -109,6 +112,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         from(NOTIFICATION_QUEUE)
                 .routeId("NotificationQueue")
+                .threads().executorService(executorService)
                 .process(exchange -> {
                     Notification notification = exchange.getIn().getBody(Notification.class);
 
