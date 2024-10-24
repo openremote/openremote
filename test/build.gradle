@@ -16,8 +16,8 @@ dependencies {
     // SLF4J facade
     testImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation resolveProject(":setup").sourceSets.integration.output
-    testFixturesApi resolveProject(":manager")
+    testImplementation project(":setup").sourceSets.integration.output
+    testFixturesApi project(":manager")
 
     testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
@@ -40,7 +40,7 @@ tasks.withType(Test) {
 
 test {
     outputs.upToDateWhen { false }
-    workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
+    workingDir = findProject(":openremote") != null ? project("").projectDir : rootProject.projectDir
     useJUnitPlatform()
 
     testLogging {
@@ -136,6 +136,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

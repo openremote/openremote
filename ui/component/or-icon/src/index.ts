@@ -1,7 +1,7 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {unsafeSVG} from 'lit/directives/unsafe-svg.js';
 import {customElement, property, state} from "lit/decorators.js";
-import {AssetDescriptor, AssetModelUtil, WellknownAssets} from "@openremote/model";
+import {AssetDescriptor, AssetModelUtil} from "@openremote/model";
 
 import OrIconSet from "./or-icon-set";
 export {OrIconSet};
@@ -124,7 +124,7 @@ export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | und
     const color = overrideColor ? overrideColor : AssetModelUtil.getAssetDescriptorColour(descriptor, fallbackColor);
     let icon = overrideIcon ? overrideIcon : AssetModelUtil.getAssetDescriptorIcon(descriptor, fallbackIcon);
     if (!icon) {
-        icon = AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET);
+        icon = AssetModelUtil.getAssetDescriptorIcon("ThingAsset");
     }
     return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon>`;
 }
