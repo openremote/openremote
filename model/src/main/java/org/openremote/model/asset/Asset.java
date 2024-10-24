@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
+
+import static jakarta.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
@@ -28,13 +34,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.persistence.Table;
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+
 import org.hibernate.annotations.*;
 import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
@@ -54,12 +54,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import jakarta.persistence.*;
+import jakarta.persistence.Table;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 // @formatter:off
 

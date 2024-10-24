@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
 
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-import jakarta.ws.rs.ext.Provider;
+import static org.openremote.model.util.ValueUtil.doDynamicTimeReplace;
 
 import java.io.IOException;
 import java.net.URI;
@@ -30,7 +27,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static org.openremote.model.util.ValueUtil.doDynamicTimeReplace;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * A filter for replacing {@link org.openremote.model.Constants#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the request URI and

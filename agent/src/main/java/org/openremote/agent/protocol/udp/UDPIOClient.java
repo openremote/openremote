@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.udp;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.model.syslog.SyslogCategory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -25,16 +35,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.model.syslog.SyslogCategory;
-
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a {@link IOClient} implementation for UDP.

@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static java.lang.System.Logger.Level.*;
+import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
+
+import java.net.Inet4Address;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
+import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.json.JacksonConfig;
+import org.openremote.container.security.CORSFilter;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
+import org.xnio.Options;
 
 import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
@@ -34,29 +57,6 @@ import io.undertow.util.HeaderMap;
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
-import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.json.JacksonConfig;
-import org.openremote.container.security.CORSFilter;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
-import org.xnio.Options;
-
-import java.net.Inet4Address;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static java.lang.System.Logger.Level.*;
-import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
-import static org.openremote.model.Constants.OR_HOSTNAME;
 
 public abstract class WebService implements ContainerService {
 

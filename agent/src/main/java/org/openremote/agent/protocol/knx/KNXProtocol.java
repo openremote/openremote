@@ -1,30 +1,27 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.knx;
 
-import org.apache.commons.io.IOUtils;
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.attribute.*;
-import org.openremote.model.protocol.ProtocolAssetImport;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueDescriptor;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.datapoint.CommandDP;
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -37,9 +34,32 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+
+import org.apache.commons.io.IOUtils;
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.Container;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.attribute.*;
+import org.openremote.model.protocol.ProtocolAssetImport;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueDescriptor;
+
+import tuwien.auto.calimero.GroupAddress;
+import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.datapoint.CommandDP;
+import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XmlInputFactory;
+import tuwien.auto.calimero.xml.XmlReader;
 
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
@@ -163,7 +183,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
             LOG.info("Attribute registered for sending commands: " + attributeRef + " with datapoint: " + datapoint);
         }
     }
-    
+
     protected void removeActionDatapoint(AttributeRef attributeRef) {
         synchronized (attributeActionMap) {
             attributeActionMap.remove(attributeRef);
@@ -174,17 +194,17 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implem
         synchronized (attributeStatusMap) {
             StateDP datapoint = new StateDP(new GroupAddress(groupAddress), attributeRef.getName(), 0, dpt);
             connection.addDatapointValueConsumer(datapoint, value -> handleKNXValueChange(attributeRef, value));
-           
+
             attributeStatusMap.put(attributeRef, datapoint);
             LOG.info("Attribute registered for status updates: " + attributeRef + " with datapoint: " + datapoint);
         }
     }
-    
+
     protected void handleKNXValueChange(AttributeRef attributeRef, Object value) {
         LOG.fine("KNX protocol received value '" + value + "' for : " + attributeRef);
         updateLinkedAttribute(attributeRef, value);
     }
-    
+
     protected void removeStatusDatapoint(AttributeRef attributeRef) {
         synchronized (attributeStatusMap) {
             StateDP statusDP = attributeStatusMap.remove(attributeRef);

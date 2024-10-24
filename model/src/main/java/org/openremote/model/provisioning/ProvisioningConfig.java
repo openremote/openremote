@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.provisioning;
+
+import static jakarta.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+
+import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import org.openremote.model.security.ClientRole;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.openremote.model.security.ClientRole;
-
-import java.util.Date;
-
-import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @SuppressWarnings("unchecked")
 @Entity
@@ -64,8 +65,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @NotNull @Column(name = "NAME", nullable = false)
     @Size(min = 1, max = 255, message = "{ProvisioningConfig.name.Size}")
     protected String name;
 

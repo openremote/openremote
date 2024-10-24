@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import static java.util.logging.Level.*;
+import static java.util.stream.Collectors.groupingBy;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.query.AssetQuery.*;
+import static org.openremote.model.query.AssetQuery.Access.*;
+import static org.openremote.model.query.filter.ValuePredicate.asPredicateOrTrue;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
+import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
+
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -64,28 +80,12 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
-import java.sql.*;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static java.util.logging.Level.*;
-import static java.util.stream.Collectors.groupingBy;
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.query.AssetQuery.*;
-import static org.openremote.model.query.AssetQuery.Access.*;
-import static org.openremote.model.query.filter.ValuePredicate.asPredicateOrTrue;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-import static org.openremote.model.value.MetaItemType.ACCESS_PUBLIC_READ;
-import static org.openremote.model.value.MetaItemType.ACCESS_RESTRICTED_READ;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService {
 

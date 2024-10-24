@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.serial;
 
-import com.fazecast.jSerialComm.SerialPort;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
+import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_SEMI_BLOCKING;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
-import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_SEMI_BLOCKING;
-import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+import com.fazecast.jSerialComm.SerialPort;
+
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
 
 /**
  * A channel to a serial device using the jSerialComm library.

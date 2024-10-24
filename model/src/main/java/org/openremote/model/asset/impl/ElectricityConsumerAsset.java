@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.UNITS_KILO;
+import static org.openremote.model.Constants.UNITS_WATT;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
-
-import static org.openremote.model.Constants.UNITS_KILO;
-import static org.openremote.model.Constants.UNITS_WATT;
 
 @Entity
 public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsumerAsset> {

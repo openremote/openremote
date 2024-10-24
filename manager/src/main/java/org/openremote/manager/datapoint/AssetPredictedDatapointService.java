@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.datapoint;
 
-import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetPredictedDatapoint;
-import org.openremote.model.datapoint.ValueDatapoint;
+import static java.time.temporal.ChronoUnit.HOURS;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +29,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.HOURS;
+import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
+import org.openremote.model.datapoint.ValueDatapoint;
 
 public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint> implements ProtocolPredictedDatapointService {
 

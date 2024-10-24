@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.demo;
+
+import static java.time.temporal.ChronoField.SECOND_OF_DAY;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.MultivaluedStringMap;
+
+import java.time.Duration;
+import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
+import java.util.function.Supplier;
 
 import org.openremote.agent.protocol.http.HTTPAgent;
 import org.openremote.agent.protocol.http.HTTPAgentLink;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
@@ -39,24 +49,13 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Realm;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.*;
 import org.openremote.setup.demo.model.HarvestRobotAsset;
 import org.openremote.setup.demo.model.HarvestRobotAsset.OperationMode;
 import org.openremote.setup.demo.model.HarvestRobotAsset.VegetableType;
 import org.openremote.setup.demo.model.IrrigationAsset;
 import org.openremote.setup.demo.model.SoilSensorAsset;
-
-import java.time.Duration;
-import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
-import java.util.function.Supplier;
-
-import static java.time.temporal.ChronoField.SECOND_OF_DAY;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
-import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 
 public class ManagerDemoSetup extends ManagerSetup {
 
@@ -920,7 +919,7 @@ public class ManagerDemoSetup extends ManagerSetup {
                                         new SimulatorReplayDatapoint(midnight.plusHours(22).get(SECOND_OF_DAY), getRandomNumberInRange(80,90)),
                                         new SimulatorReplayDatapoint(midnight.plusHours(23).get(SECOND_OF_DAY), getRandomNumberInRange(80,90))
                                     }
-                                )                            
+                                )
                         )
                 );
             });
@@ -1309,7 +1308,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         microphone1Asset.setId(UniqueIdentifierGenerator.generateId(microphone1Asset.getName()));
         microphone1Asset = assetStorageService.merge(microphone1Asset);
 
-        MicrophoneAsset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> 
+        MicrophoneAsset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () ->
             new SimulatorAgentLink(smartcitySimulatorAgentId).setReplayData(
                 new SimulatorReplayDatapoint[] {
                     new SimulatorReplayDatapoint(midnight.get(SECOND_OF_DAY), getRandomNumberInRange(50,60)),
@@ -1701,9 +1700,9 @@ public class ManagerDemoSetup extends ManagerSetup {
 
         manufacturerSimulatorAgent = assetStorageService.merge(manufacturerSimulatorAgent);
         manufacturerSimulatorAgentId = manufacturerSimulatorAgent.getId();
-        
+
         // ################################ Manufacturer realm assets ###################################
-        
+
         // ### Greenhouse equipment distribution ###
 
         Asset<?> distributor1 = new ThingAsset("GreenEquipment Distribution");
@@ -1718,10 +1717,10 @@ public class ManagerDemoSetup extends ManagerSetup {
 
         HarvestRobotAsset harvestRobot1 = createDemoHarvestRobotAsset("Robot 1", vegetablesAndMore, new GeoJSONPoint(4.279166, 51.978078), OperationMode.CUTTING, VegetableType.BELL_PEPPER, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot1.setId(UniqueIdentifierGenerator.generateId(harvestRobot1.getName()));
-        harvestRobot1 = assetStorageService.merge(harvestRobot1);   
+        harvestRobot1 = assetStorageService.merge(harvestRobot1);
         HarvestRobotAsset harvestRobot2 = createDemoHarvestRobotAsset("Robot 2", vegetablesAndMore, new GeoJSONPoint(4.277852, 51.977487), OperationMode.SCANNING, VegetableType.BELL_PEPPER, 26, 45, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         harvestRobot2.setId(UniqueIdentifierGenerator.generateId(harvestRobot2.getName()));
-        harvestRobot2 = assetStorageService.merge(harvestRobot2); 
+        harvestRobot2 = assetStorageService.merge(harvestRobot2);
         SoilSensorAsset soilSensor1 = createDemoSoilSensorAsset("Water sensor", vegetablesAndMore, new GeoJSONPoint(4.279010, 51.977391), 41, 53, () -> new SimulatorAgentLink(manufacturerSimulatorAgentId));
         soilSensor1.setId(UniqueIdentifierGenerator.generateId(soilSensor1.getName()));
         soilSensor1 = assetStorageService.merge(soilSensor1);
@@ -2284,7 +2283,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Make user restricted ###################################
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         identityProvider.updateUserRealmRoles(realmManufacturer.getName(), KeycloakDemoSetup.customerUserId, identityProvider
-                .addRealmRoles(realmManufacturer.getName(), 
+                .addRealmRoles(realmManufacturer.getName(),
                         KeycloakDemoSetup.customerUserId, RESTRICTED_USER_REALM_ROLE));
     }
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2015, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.flow;
 
 import jakarta.persistence.Column;
@@ -27,21 +25,17 @@ import jakarta.validation.constraints.NotNull;
 
 public class EditorSettings {
 
-    @NotNull
-    @Column(name = "EDITOR_TYPE_LABEL", nullable = false)
+    @NotNull @Column(name = "EDITOR_TYPE_LABEL", nullable = false)
     public String typeLabel = "Unknown Type";
 
-    @NotNull
-    @Column(name = "EDITOR_NODE_COLOR", nullable = false)
+    @NotNull @Column(name = "EDITOR_NODE_COLOR", nullable = false)
     @Enumerated(EnumType.STRING)
     public NodeColor nodeColor = NodeColor.DEFAULT;
 
-    @NotNull
-    @Column(name = "EDITOR_POSITION_X", nullable = false)
+    @NotNull @Column(name = "EDITOR_POSITION_X", nullable = false)
     public double positionX;
 
-    @NotNull
-    @Column(name = "EDITOR_POSITION_Y", nullable = false)
+    @NotNull @Column(name = "EDITOR_POSITION_Y", nullable = false)
     public double positionY;
 
     @Column(name = "EDITOR_COMPONENTS")

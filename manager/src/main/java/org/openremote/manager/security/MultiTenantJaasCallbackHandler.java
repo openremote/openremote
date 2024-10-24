@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,28 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
+
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Set;
+import java.util.function.Function;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.KerberosPrincipal;
 
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
 import org.apache.activemq.artemis.spi.core.security.jaas.JaasCallbackHandler;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalsCallback;
 import org.keycloak.adapters.KeycloakDeployment;
-
-import javax.security.auth.Subject;
-import javax.security.auth.callback.*;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Set;
-import java.util.function.Function;
-
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
 
 /**
  * A version of {@link JaasCallbackHandler} that supports multi-tenancy by introducing support for

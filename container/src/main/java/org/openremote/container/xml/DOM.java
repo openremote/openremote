@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import javax.xml.xpath.XPath;
 import java.net.URI;
 import java.net.URL;
+
+import javax.xml.xpath.XPath;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * Wraps a W3C document and provides an entry point for browsing the DOM (in subclasses).

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.Date;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "NOTIFICATION")
@@ -41,21 +41,17 @@ public class SentNotification {
     @Column(name = "NAME")
     protected String name;
 
-    @NotNull
-    @Column(name = "TYPE", nullable = false, length = 50)
+    @NotNull @Column(name = "TYPE", nullable = false, length = 50)
     protected String type;
 
-    @NotNull
-    @Column(name = "TARGET", length = 50)
+    @NotNull @Column(name = "TARGET", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.TargetType target;
 
-    @NotNull
-    @Column(name = "TARGET_ID")
+    @NotNull @Column(name = "TARGET_ID")
     protected String targetId;
 
-    @NotNull()
-    @Column(name = "SOURCE", length = 50)
+    @NotNull() @Column(name = "SOURCE", length = 50)
     @Enumerated(EnumType.STRING)
     protected Notification.Source source;
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration.protocol;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -30,11 +34,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.value.ValueType;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 /**
  * A mock protocol for testing purposes that records the various method calls and supports protocol discovery

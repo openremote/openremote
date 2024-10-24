@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
+
+import static java.util.stream.Collectors.toList;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import org.openremote.controller.exception.ConfigurationException;
 import org.openremote.model.asset.Asset;
@@ -38,18 +49,6 @@ import org.openremote.protocol.zwave.model.commandclasses.*;
 import org.openremote.protocol.zwave.model.commandclasses.channel.Channel;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.*;
 import org.openremote.protocol.zwave.port.ZWavePortConfiguration;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-
-import static java.util.stream.Collectors.toList;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
-import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
 
 public class ZWaveNetwork {
 

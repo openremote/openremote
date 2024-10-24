@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
+
+import java.lang.reflect.Field;
+import java.util.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -27,11 +33,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.lang.reflect.Field;
-import java.util.*;
-
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
@@ -115,8 +116,7 @@ public class Realm {
         this.id = id;
     }
 
-    @NotNull(message = "{Realm.realm.NotNull}")
-    @Size(min = 3, max = 255, message = "{Realm.realm.Size}")
+    @NotNull(message = "{Realm.realm.NotNull}") @Size(min = 3, max = 255, message = "{Realm.realm.Size}")
     @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Realm.realm.Pattern}")
     public String getName() {
         return name;
@@ -127,8 +127,7 @@ public class Realm {
         return this;
     }
 
-    @NotNull(message = "{Realm.displayName.NotNull}")
-    @Size(min = 3, max = 255, message = "{Realm.displayName.Size}")
+    @NotNull(message = "{Realm.displayName.NotNull}") @Size(min = 3, max = 255, message = "{Realm.displayName.Size}")
     public String getDisplayName() {
         return displayName;
     }

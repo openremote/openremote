@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.security.basic;
+
+import static io.undertow.util.Headers.AUTHORIZATION;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.IdentityProvider;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
 
 import io.undertow.UndertowMessages;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -33,24 +49,8 @@ import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
-import org.openremote.model.Container;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.IdentityProvider;
-import org.openremote.model.Constants;
-
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import static io.undertow.util.Headers.AUTHORIZATION;
 
 public abstract class BasicIdentityProvider implements IdentityProvider {
 

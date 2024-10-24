@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,31 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset;
 
-import jakarta.persistence.TypedQuery;
+import static java.util.stream.Collectors.toList;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import static org.openremote.model.value.MetaItemType.FORECAST;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -45,25 +63,7 @@ import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.MetaItemType;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
-import static org.openremote.model.value.MetaItemType.FORECAST;
+import jakarta.persistence.TypedQuery;
 
 /**
  * Calculates forecast values for asset attributes with an attached {@link MetaItemType#FORECAST}

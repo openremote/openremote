@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
 
-import io.netty.channel.ChannelHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.controller.protocol.zwave.ZWaveCommandBuilder;
@@ -29,8 +30,7 @@ import org.openremote.protocol.zwave.LoggerUtil;
 import org.openremote.protocol.zwave.port.TransportLayer;
 import org.openremote.protocol.zwave.port.TransportLayerListener;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.netty.channel.ChannelHandler;
 
 /**
  * Wrapper around {@link SerialIOClient} to allow compatibility with Z Wave library

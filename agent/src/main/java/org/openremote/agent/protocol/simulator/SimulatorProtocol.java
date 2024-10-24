@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.simulator;
 
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.simulator.SimulatorReplayDatapoint;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -37,7 +29,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, SimulatorAgentLink> {
 
