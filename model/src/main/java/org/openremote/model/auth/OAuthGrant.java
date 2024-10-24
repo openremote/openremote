@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.auth;
+
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+
+import java.io.Serializable;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.openremote.model.util.TextUtil;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import java.io.Serializable;
-import java.util.*;
-
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.EXISTING_PROPERTY, property = OAuthGrant.VALUE_KEY_GRANT_TYPE)
 @JsonSubTypes({

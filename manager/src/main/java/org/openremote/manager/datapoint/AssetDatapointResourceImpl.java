@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.datapoint;
 
+import static org.openremote.model.syslog.SyslogCategory.DATA;
+import static org.openremote.model.util.ValueUtil.JSON;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.concurrent.ScheduledFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.container.AsyncResponse;
-import jakarta.ws.rs.container.ConnectionCallback;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
+
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -46,16 +49,14 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import static org.openremote.model.syslog.SyslogCategory.DATA;
-import static org.openremote.model.util.ValueUtil.JSON;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 

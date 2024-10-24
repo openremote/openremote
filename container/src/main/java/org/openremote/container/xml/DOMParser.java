@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.*;
-import org.xml.sax.*;
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -41,13 +45,9 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-import java.io.*;
-import java.net.URI;
-import java.net.URL;
-import java.util.Map;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.w3c.dom.*;
+import org.xml.sax.*;
 
 /**
  * Condensed API for parsing of XML into DOM with (optional) XML schema validation.

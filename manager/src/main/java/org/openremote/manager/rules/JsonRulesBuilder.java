@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,31 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules;
 
-import jakarta.ws.rs.core.MediaType;
+import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
+import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+import static org.openremote.model.util.ValueUtil.distinctByKey;
+
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.PersistenceEvent;
@@ -48,25 +66,7 @@ import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
 
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
-import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.util.ValueUtil.distinctByKey;
+import jakarta.ws.rs.core.MediaType;
 
 public class JsonRulesBuilder extends RulesBuilder {
 

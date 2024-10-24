@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules;
 
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
-import groovy.lang.Script;
+import static org.openremote.model.rules.RulesetStatus.*;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.script.*;
+
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.jeasy.rules.api.Action;
 import org.jeasy.rules.api.Condition;
@@ -41,13 +46,9 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import javax.script.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.rules.RulesetStatus.*;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.lang.Script;
 
 public class RulesetDeployment {
 

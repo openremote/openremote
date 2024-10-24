@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-import com.fasterxml.jackson.databind.JsonNode;
-import cz.habarta.typescript.generator.TsType;
-import cz.habarta.typescript.generator.TypeProcessor;
-import cz.habarta.typescript.generator.util.Utils;
-import org.openremote.model.util.TsIgnore;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.TsIgnoreTypeParams;
+
+import cz.habarta.typescript.generator.TsType;
+import cz.habarta.typescript.generator.TypeProcessor;
+import cz.habarta.typescript.generator.util.Utils;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:

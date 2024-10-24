@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules.geofence;
+
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
+import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
+import static org.openremote.model.syslog.SyslogCategory.RULES;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
@@ -38,20 +51,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
-import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
-import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * This implementation is for handling geofences on console assets that support the OR Console Geofence Provider (i.e.

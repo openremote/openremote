@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.integration;
+
+import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
@@ -37,15 +45,6 @@ import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
-import static org.openremote.model.value.ValueType.*;
 
 public class ManagerTestSetup extends ManagerSetup {
 

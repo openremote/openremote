@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.webhook;
 
-import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import static org.openremote.container.util.MapAccess.getInteger;
+
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -34,11 +33,12 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.webhook.Webhook;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getInteger;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class WebhookService extends RouteBuilder implements ContainerService {
 

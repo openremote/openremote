@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -35,20 +40,16 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import jakarta.annotation.Nonnull;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Stores a named value with associated {@link MetaItem}s.

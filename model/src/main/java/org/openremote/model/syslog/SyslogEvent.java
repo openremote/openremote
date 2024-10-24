@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.syslog;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.*;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "SYSLOG_EVENT")
@@ -85,13 +85,11 @@ public class SyslogEvent extends SharedEvent {
     @SequenceGenerator(name = PERSISTENCE_SEQUENCE_ID_GENERATOR, initialValue = 1000, allocationSize = 1)
     protected Long id;
 
-    @NotNull
-    @Enumerated(EnumType.ORDINAL)
+    @NotNull @Enumerated(EnumType.ORDINAL)
     @Column(name = "LEVEL", nullable = false)
     protected SyslogLevel level;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
+    @NotNull @Enumerated(EnumType.STRING)
     @Column(name = "CATEGORY", nullable = false)
     protected SyslogCategory category;
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.Converter;
-import cz.habarta.typescript.generator.compiler.ModelCompiler;
-import cz.habarta.typescript.generator.compiler.ModelTransformer;
-import cz.habarta.typescript.generator.compiler.SymbolTable;
-import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
-import cz.habarta.typescript.generator.parser.BeanModel;
-import cz.habarta.typescript.generator.parser.Model;
-import cz.habarta.typescript.generator.parser.PropertyModel;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -35,6 +23,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.util.Converter;
+
+import cz.habarta.typescript.generator.compiler.ModelCompiler;
+import cz.habarta.typescript.generator.compiler.ModelTransformer;
+import cz.habarta.typescript.generator.compiler.SymbolTable;
+import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
+import cz.habarta.typescript.generator.parser.BeanModel;
+import cz.habarta.typescript.generator.parser.Model;
+import cz.habarta.typescript.generator.parser.PropertyModel;
 
 /**
  * Extension for applying {@link JsonSerialize} annotation. Supports:

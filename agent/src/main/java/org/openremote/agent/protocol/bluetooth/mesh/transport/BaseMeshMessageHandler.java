@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createNetworkNonce;
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createProxyNonce;
+import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.deObfuscateNetworkHeader;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
@@ -29,18 +40,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherT
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createNetworkNonce;
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.createProxyNonce;
-import static org.openremote.agent.protocol.bluetooth.mesh.transport.NetworkLayer.deObfuscateNetworkHeader;
 
 /**
  * Abstract class that handles mesh messages
@@ -335,4 +334,3 @@ public abstract class BaseMeshMessageHandler implements MeshMessageHandlerApi, I
         currentState.executeSend();
     }
 }
-

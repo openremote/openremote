@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFilter;
+import static java.util.Objects.requireNonNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueFilter;
 
 /**
  * A link from one attribute to another with a definition of how to map the value from the source attribute

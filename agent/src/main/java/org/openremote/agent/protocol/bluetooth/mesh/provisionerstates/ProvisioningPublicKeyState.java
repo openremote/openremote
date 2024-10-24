@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,26 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
-import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
-
-
-import org.bouncycastle.jce.ECNamedCurveTable;
-import org.bouncycastle.jce.interfaces.ECPrivateKey;
-import org.bouncycastle.jce.interfaces.ECPublicKey;
-import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
-import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.jce.spec.ECPublicKeySpec;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.BigIntegers;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import javax.crypto.KeyAgreement;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -47,6 +29,22 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.logging.Logger;
+
+import javax.crypto.KeyAgreement;
+
+import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.interfaces.ECPrivateKey;
+import org.bouncycastle.jce.interfaces.ECPublicKey;
+import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.bouncycastle.jce.spec.ECParameterSpec;
+import org.bouncycastle.jce.spec.ECPublicKeySpec;
+import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.BigIntegers;
+import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 public class ProvisioningPublicKeyState extends ProvisioningState {
 
@@ -197,4 +195,3 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
         return buffer.array();
     }
 }
-

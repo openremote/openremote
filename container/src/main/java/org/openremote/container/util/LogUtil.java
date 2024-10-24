@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.util;
 
-import org.openremote.model.util.TextUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.openremote.model.Container.OR_DEV_MODE;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +28,9 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import static org.openremote.model.Container.OR_DEV_MODE;
+import org.openremote.model.util.TextUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * If system property <code>java.util.logging.config.file</code> or <code>java.util.logging.config.file</code> has been

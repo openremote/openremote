@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,24 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.agent;
+
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
-
-import java.io.Serializable;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Represents the configuration of an {@link Attribute} linked to an {@link Agent}; each {@link Agent} should have its'

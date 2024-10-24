@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,24 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.syslog;
 
-import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.syslog.SyslogLevel;
-import org.openremote.model.util.Pair;
+import static java.time.temporal.ChronoUnit.DAYS;
 
-import jakarta.persistence.TypedQuery;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +33,21 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogConfig;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.util.Pair;
+
+import jakarta.persistence.TypedQuery;
 
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores

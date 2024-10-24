@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
+
+import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.core.JsonParser;
@@ -26,14 +27,14 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.validation.constraints.Pattern;
+
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.NameHolder;
 
-import java.io.IOException;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * Describes an {@link Asset} that can be added to this instance; the {@link #getName()} must match the {@link Asset#type}

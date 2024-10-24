@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.datapoint;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -26,19 +28,16 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.datapoint.AssetPredictedDatapointResource;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.MetaItemType;
 
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import org.openremote.model.security.ClientRole;
-import org.openremote.model.value.MetaItemType;
-
-import java.util.Arrays;
-import java.util.logging.Logger;
 
 public class AssetPredictedDatapointResourceImpl extends ManagerWebResource implements AssetPredictedDatapointResource {
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.system.HealthStatusProvider;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 
-import javax.net.ssl.*;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -33,9 +31,11 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import javax.net.ssl.*;
+
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.system.HealthStatusProvider;
 
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider {
 
@@ -47,13 +47,13 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
     @Override
     public void init(Container container) throws Exception {
-        
+
         int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
 
         if (SSLPort < 0) {
             SSLPort = 443;
         }
-        
+
         if (SSLPort > 0 && SSLPort <= 65536) {
             this.SSLPort = SSLPort;
             host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);

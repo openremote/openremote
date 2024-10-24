@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.gateway;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,10 +33,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.util.List;
 
 @Entity
 @Table(name = "GATEWAY_CONNECTION")
@@ -42,8 +42,7 @@ public class GatewayConnection {
     @Column(name = "LOCAL_REALM", nullable = false)
     protected String localRealm;
 
-    @NotNull(message = "{GatewayConnection.host.NotNull}")
-    @Size(min = 1, max = 255, message = "{GatewayConnection.host.Size}")
+    @NotNull(message = "{GatewayConnection.host.NotNull}") @Size(min = 1, max = 255, message = "{GatewayConnection.host.Size}")
     @Column(name = "HOST", nullable = false)
     protected String host;
 
@@ -55,13 +54,11 @@ public class GatewayConnection {
     @Column(name = "REALM", nullable = false)
     protected String realm;
 
-    @NotNull(message = "{GatewayConnection.clientId.NotNull}")
-    @Size(min = 1, max = 255, message = "{GatewayConnection.clientId.Size}")
+    @NotNull(message = "{GatewayConnection.clientId.NotNull}") @Size(min = 1, max = 255, message = "{GatewayConnection.clientId.Size}")
     @Column(name = "CLIENT_ID", nullable = false, length = 36)
     protected String clientId;
 
-    @NotNull(message = "{GatewayConnection.clientSecret.NotNull}")
-    @Size(min = 36, max = 36, message = "{GatewayConnection.clientSecret.Size}")
+    @NotNull(message = "{GatewayConnection.clientSecret.NotNull}") @Size(min = 36, max = 36, message = "{GatewayConnection.clientSecret.Size}")
     @Column(name = "CLIENT_SECRET", nullable = false, length = 36)
     protected String clientSecret;
 

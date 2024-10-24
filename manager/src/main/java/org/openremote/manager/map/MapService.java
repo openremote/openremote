@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import org.openremote.container.web.WebService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
-import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
@@ -49,10 +37,23 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.API_PATH;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.container.web.WebService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class MapService implements ContainerService {
 

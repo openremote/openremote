@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.io;
-
-import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.net.SocketAddress;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 /**
  * Represents an IO server that accepts incoming clients.

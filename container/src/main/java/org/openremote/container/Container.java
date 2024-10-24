@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,22 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.prometheus.client.CollectorRegistry;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.concurrent.ContainerThreadFactory;
-import org.openremote.container.util.LogUtil;
-import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static java.lang.System.Logger.Level.*;
+import static java.util.stream.StreamSupport.stream;
+import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getInteger;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,10 +29,21 @@ import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.*;
-import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
+import org.openremote.container.concurrent.ContainerThreadFactory;
+import org.openremote.container.util.LogUtil;
+import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.prometheus.client.CollectorRegistry;
 
 /**
  * A thread-safe registry of {@link ContainerService}s.

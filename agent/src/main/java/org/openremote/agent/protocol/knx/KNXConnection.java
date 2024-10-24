@@ -1,10 +1,42 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.knx;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.StateDP;
@@ -18,23 +50,10 @@ import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-
 public class KNXConnection implements NetworkLinkListener, ProcessListener {
 
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
-    
+
     protected final static int INITIAL_RECONNECT_DELAY_MILLIS = 1000;
     protected final static int MAX_RECONNECT_DELAY_MILLIS = 60000;
     protected final static int RECONNECT_BACKOFF_MULTIPLIER = 2;
@@ -53,9 +72,9 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     protected ProcessCommunicator processCommunicator;
     protected final Map<GroupAddress, byte[]> groupAddressStateMap = new HashMap<>();
     protected final Map<GroupAddress, List<Pair<StateDP, Consumer<Object>>>> groupAddressConsumerMap = new HashMap<>();
-    
+
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXConnection.class);
-    
+
     public KNXConnection(String gatewayAddress, String bindAddress, Integer gatewayPort, String messageSourceAddress, boolean routingMode, boolean natMode) {
         this.gatewayAddress = gatewayAddress;
         this.scheduledExecutorService = Container.SCHEDULED_EXECUTOR;
@@ -89,7 +108,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             } else {
                 knxLink = KNXNetworkLinkIP.newRoutingLink(localEndPoint.getAddress(), remoteEndPoint.getAddress(), tpSettings);
             }
-            
+
             if (knxLink.isOpen()) {
                 LOG.fine("Successfully connected to: " + gatewayAddress + ":" + port);
                 processCommunicator = new ProcessCommunicatorImpl(knxLink);
@@ -145,7 +164,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         }
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
-        
+
     public synchronized void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
         if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
             connectionStatusConsumers.add(connectionStatusConsumer);
@@ -163,7 +182,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             consumer -> consumer.accept(connectionStatus)
         );
     }
-    
+
     public void sendCommand(Datapoint datapoint, Optional<Object> value) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && value.isPresent()) {

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import com.welie.blessed.BluetoothCentralManager;
-import com.welie.blessed.BluetoothCentralManagerCallback;
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothPeripheral;
-import com.welie.blessed.ScanResult;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -41,6 +33,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import com.welie.blessed.BluetoothCentralManager;
+import com.welie.blessed.BluetoothCentralManagerCallback;
+import com.welie.blessed.BluetoothCommandStatus;
+import com.welie.blessed.BluetoothPeripheral;
+import com.welie.blessed.ScanResult;
+
+import org.openremote.model.syslog.SyslogCategory;
 
 public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
 
