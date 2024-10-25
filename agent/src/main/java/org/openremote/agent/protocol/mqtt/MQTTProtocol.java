@@ -120,11 +120,9 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
         //It's fine if they're null, they're not going to be used when creating the client
         TrustManagerFactory trustManagerFactory = null;
         KeyManagerFactory keyManagerFactory = null;
-        if(agent.isSecureMode().orElse(false)){
+        if(agent.isSecureMode().orElse(false) && agent.getCertificateAlias().isPresent()){
             trustManagerFactory = keyStoreService.getTrustManagerFactory();
-            if(agent.getCertificateAlias().isPresent()){
-                keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
-            }
+            keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
         }
 
         return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
