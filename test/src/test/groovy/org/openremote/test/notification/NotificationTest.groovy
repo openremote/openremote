@@ -912,6 +912,36 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         /* ------------ */
 
+        when: "testuser1 their language is updated to an unknown language, like italian"
+        testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "it")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        and: "the same notification is sent again, to both users"
+        adminNotificationResource.sendNotification(null, notification)
+
+        then: "testuser1 should still receive the notification, but in the default language"
+        conditions.eventually {
+            assert localizedNotificationMessages.size() == 2
+            assert pushNotificationMessages.size() == 2
+            assert pushNotificationMessages.stream().allMatch { msg -> (msg as PushNotificationMessage).title == "English title" && (msg as PushNotificationMessage).body == "English body" }
+        }
+
+        and: "we clear the cached notifications again"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+        and: "testuser1 sets their language back to dutch"
+        testuser1.setAttribute(User.LOCALE_ATTRIBUTE, "nl")
+        identityService.getIdentityProvider().createUpdateUser(MASTER_REALM, testuser1, null, true)
+
+        /* ----------- */
+
         when: "a complex notification with different types per language is set up"
         def complexNotification = new Notification(
                 "MultiTypeAction",

@@ -37,6 +37,9 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * Class description
+ */
 public class LocalizedNotificationHandler extends RouteBuilder implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(LocalizedNotificationHandler.class.getName());
@@ -179,17 +182,15 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             }
 
         }
-
-        // If target locale is not set yet, we either use;
-        // - the default language configured in the notification message.
-        // - use one of the languages that got a 'green light' to be sent.
-        if (TextUtil.isNullOrEmpty(targetLocale)) {
-            targetLocale = Optional.ofNullable(localizedMessage.getDefaultLanguage()).orElse(target.getAllowedLocales().get(0));
+        // If target locale is not set yet, or there is no message available for that locale,
+        // use the default language configured in the notification message
+        if (TextUtil.isNullOrEmpty(targetLocale) || !localizedMessage.getMessages().containsKey(targetLocale)) {
+            targetLocale = localizedMessage.getDefaultLanguage();
         }
 
         // Check if the message configured for this language is allowed to be sent towards this target.
         if (!target.getAllowedLocales().contains(targetLocale)) {
-            throw new NotificationProcessingException(SEND_FAILURE, "The localized message (" + targetLocale + ") could not be sent to target " + target.getId());
+            throw new NotificationProcessingException(SEND_FAILURE, "The localized message could not be sent to target '" + target.getId() + "' (" + targetLocale + "), because only " + target.getAllowedLocales() + " were allowed.");
         }
 
         AbstractNotificationMessage targetMsg = localizedMessage.getMessage(targetLocale);
