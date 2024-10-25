@@ -83,12 +83,19 @@ public class Notification {
             return locale;
         }
 
-        public void setAllowedLocales(List<String> allowedLocales) {
+        public Target setAllowedLocales(List<String> allowedLocales) {
             this.allowedLocales = allowedLocales;
+            return this;
         }
 
-        public void addAllowedLocale(String locale) {
+        public Target addAllowedLocale(String locale) {
             this.allowedLocales.add(locale);
+            return this;
+        }
+
+        public Target addAllowedLocales(List<String> allowedLocales) {
+            this.allowedLocales.addAll(allowedLocales);
+            return this;
         }
 
         public List<String> getAllowedLocales() {

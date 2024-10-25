@@ -747,6 +747,7 @@
     "secondaryNavigation" : "Secondary menu",
     "notificationLanguages": "Notification languages",
     "notificationLanguagesDesc": "Languages set here can be used in notifications to be sent to users with locale attribute set.",
+    "notificationLanguagesLabel": "Search other languages...",
     "reloadPage" : "To see the changes that have been made, reload the page",
     "deleteRealmCustomization": "Delete Style",
     "deleteRealmCustomizationConfirm":"Are you sure you want to delete this Realm style?",

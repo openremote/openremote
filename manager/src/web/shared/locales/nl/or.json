@@ -743,6 +743,7 @@
     "navigationDescription": "De primaire navigatie staat in de header, secundaire items kun je in het menu rechtsboven vinden.",
     "notificationLanguages": "Notificatie talen",
     "notificationLanguagesDesc": "Talen die hier ingesteld zijn kunnen gebruikt worden in notificaties voor gebruikers die hun taal hebben ingesteld.",
+    "notificationLanguagesLabel": "Zoek naar andere talen...",
     "primaryNavigation" : "Primair menu",
     "secondaryNavigation" : "Secundair menu",
     "reloadPage" : "Om de wijzigingen te zien die gemaakt zijn, herlaad de pagina",

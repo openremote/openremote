@@ -380,6 +380,7 @@ export class OrConfRealmCard extends LitElement {
                             <or-mwc-input
                                     .type="${InputType.SELECT}" multiple
                                     class="header-item"
+                                    searchLabel="configuration.notificationLanguagesLabel"
                                     .label="${i18next.t("configuration.notificationLanguages")}"
                                     .value="${app.realm.notifications?.languages || []}"
                                     .options="${languages}"
