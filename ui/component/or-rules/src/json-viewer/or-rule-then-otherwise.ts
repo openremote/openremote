@@ -62,7 +62,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     // If the RulesConfig has an entry for notifications, check if there are languages configured.
     // When there are, new notifications will be a "multi-language notification", with a different modal form.
     if (config?.notifications) {
-        multiLanguage = Object.entries(config.notifications).filter(x => x[1] !== undefined).length > 0;
+        multiLanguage = Object.entries(config.notifications).filter(x => x[0] === manager.displayRealm && x[1] !== undefined).length > 0;
     }
 
     const menu: (ListItem | null)[] = [];
