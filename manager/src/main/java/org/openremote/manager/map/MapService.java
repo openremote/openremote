@@ -36,6 +36,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.core.UriBuilder;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,8 +58,6 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 public class MapService implements ContainerService {
 
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
-    public static final String OR_MAP_TILES_PATH = "OR_MAP_TILES_PATH";
-    public static final String OR_MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
     public static final String OR_MAP_TILESERVER_HOST = "OR_MAP_TILESERVER_HOST";
     public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
     public static final String OR_MAP_TILESERVER_PORT = "OR_MAP_TILESERVER_PORT";
@@ -68,22 +67,24 @@ public class MapService implements ContainerService {
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
     public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
+    private static ConfigurationService configurationService;
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
-    protected Path mapTilesPath;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    protected ConfigurationService configurationService;
-
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
-        this.mapConfig.putNull("options");
-        this.mapSettings.clear();
-        ObjectNode mapSettingsJson = configurationService.getMapConfig();
+//        this.mapConfig.putNull("options");
+        setMapSettings(new ConcurrentHashMap<>());
+        ObjectNode mapSettingsJson = loadMapSettingsJson();
+        if(mapSettingsJson == null) {
+            mapSettingsJson = ValueUtil.JSON.createObjectNode();
+        }
         configurationService.saveMapConfigFile(mapConfiguration);
+        mapSettingsJson = loadMapSettingsJson();
         return mapSettingsJson;
     }
 
@@ -102,7 +103,7 @@ public class MapService implements ContainerService {
                 resultMap.put(result.getString(1), result.getString(2));
             }
 
-            if (resultMap.isEmpty()) {
+            if (resultMap.size() == 0) {
                 return new Metadata();
             }
 
@@ -127,6 +128,18 @@ public class MapService implements ContainerService {
         return metadata;
     }
 
+    protected static ObjectNode loadMapSettingsJson() {
+        return configurationService.getMapConfig();
+    }
+
+    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
+        return this.mapSettings;
+    }
+
+    protected void setMapSettings(ConcurrentMap<String, ObjectNode> settings){
+        this.mapSettings = settings;
+    }
+
     protected static void closeQuietly(PreparedStatement query, ResultSet result) {
         try {
             if (result != null) {
@@ -141,25 +154,14 @@ public class MapService implements ContainerService {
     }
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
 
         configurationService = container.getService(ConfigurationService.class);
-
-        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
-        if (!Files.isRegularFile(mapTilesPath)) {
-            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath() + "', falling back to built in map");
-            mapTilesPath = null;
-        }
-
-        if (mapTilesPath == null) {
-            if (Files.isRegularFile(Paths.get("/deployment/map/mapdata.mbtiles"))) {
-                mapTilesPath = Paths.get("/deployment/map/mapdata.mbtiles");
-            } else if (Files.isRegularFile(Paths.get("/opt/map/mapdata.mbtiles"))) {
-                mapTilesPath = Paths.get("/opt/map/mapdata.mbtiles");
-            } else if (Files.isRegularFile(Paths.get("manager/src/map/mapdata.mbtiles"))) {
-                mapTilesPath = Paths.get("manager/src/map/mapdata.mbtiles");
-            }
-        }
 
         container.getService(ManagerWebService.class).addApiSingleton(
                 new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
@@ -200,21 +202,23 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        this.mapConfig = configurationService.getMapConfig();
         this.setData();
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
-        if (mapTilesPath == null || mapSettings == null) {
-            return;
-        }
-
-        LOG.info("Starting map service with tile data: " + mapTilesPath.toAbsolutePath());
         Class.forName(org.sqlite.JDBC.class.getName());
-        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath.toAbsolutePath());
+        connection = DriverManager.getConnection("jdbc:sqlite:" + configurationService.getMapTilesPath().toAbsolutePath());
 
         metadata = getMetadata(connection);
-        if (!metadata.isValid()) {
+        if (metadata.isValid()) {
+            mapConfig = loadMapSettingsJson();
+            if (mapConfig == null) {
+                LOG.warning("Map config could not be loaded from '" +
+                        configurationService.getMapTilesPath().toAbsolutePath() +
+                        "', map functionality will not work");
+                return;
+            }
+        } else {
             LOG.warning("Map meta data could not be loaded, map functionality will not work");
             return;
         }
@@ -259,15 +263,15 @@ public class MapService implements ContainerService {
      */
     public ObjectNode getMapSettings(String realm, URI host) {
         String realmUriKey = realm + host.toString();
-        if (mapSettings.containsKey(realmUriKey)) {
-            return mapSettings.get(realmUriKey);
+        if (getMapSettings().containsKey(realmUriKey)) {
+            return getMapSettings().get(realmUriKey);
         }
 
         if (mapConfig == null) {
             return null;
         }
 
-        final ObjectNode settings = mapSettings.computeIfAbsent(realmUriKey, r -> {
+        final ObjectNode settings = getMapSettings().computeIfAbsent(realmUriKey, r -> {
             if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
                 return mapConfig.deepCopy();
@@ -398,7 +402,7 @@ public class MapService implements ContainerService {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "mapTilesPath=" + mapTilesPath +
+                "mapTilesPath=" + configurationService.getMapTilesPath() +
                 '}';
     }
 

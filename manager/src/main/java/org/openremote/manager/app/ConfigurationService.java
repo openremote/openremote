@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,15 +53,20 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public static final String OR_MAP_SETTINGS_PATH = "OR_MAP_SETTINGS_PATH";
     public static final String OR_MAP_SETTINGS_PATH_DEFAULT = "manager/src/map/mapsettings.json";
 
+    public static final String OR_MAP_TILES_PATH = "OR_MAP_TILES_PATH";
+    public static final String OR_MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
+
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
     protected Path pathPublicRoot;
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
-    protected Path mapSettingsPath;
 
     protected ObjectNode mapConfig;
     protected ObjectNode managerConfig;
+
+    protected Path mapTilesPath;
+    protected Path mapSettingsPath;
 
     @Override
     public int getPriority() {
@@ -83,7 +89,10 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         identityService, this)
         );
 
+
+
         mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT));
+        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
             mapSettingsPath = persistenceService.getStorageDir().resolve("mapsettings.json");
@@ -123,6 +132,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         }
     }
 
+    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
+        return (ConcurrentMap<String, ObjectNode>) this.mapConfig.get("settings");
+    }
+//    protected ObjectNode getMapConfig(){
+//        return (ObjectNode) this.mapConfig.get("realms");
+//    }
     protected Optional<File> getManagerConfigFile(){
         File file = getManagerConfigPath().toFile();
 
@@ -181,6 +196,10 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         } catch (Exception exception) {
             LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
         }
+    }
+
+    public Path getMapTilesPath(){
+        return mapTilesPath.toAbsolutePath();
     }
 
 
