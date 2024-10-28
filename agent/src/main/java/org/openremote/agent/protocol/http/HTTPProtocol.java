@@ -464,7 +464,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     protected static void initClient() {
         synchronized (client) {
             if (client.get() == null) {
-                client.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                client.set(createClient(org.openremote.container.Container.SCHEDULED_EXECUTOR));
             }
         }
     }
@@ -489,7 +489,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attribute);
 
-        return executorService.scheduleWithFixedDelay(() -> {
+        return scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             try {
                 Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(

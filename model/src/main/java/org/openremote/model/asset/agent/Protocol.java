@@ -31,7 +31,6 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;

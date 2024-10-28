@@ -21,7 +21,6 @@ package org.openremote.model.rules;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
 

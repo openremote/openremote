@@ -51,7 +51,7 @@ import static org.openremote.model.util.ValueUtil.parse
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
     def getOccurrenceFromTo(long baseTime, int occurrence) {
-        def tomorrowMidnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(baseTime).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS), ZoneId.systemDefault())
+        def tomorrowMidnight = Instant.ofEpochMilli(baseTime).truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS).atZone(ZoneId.systemDefault())
         def from = LocalDateTime.of(tomorrowMidnight.get(ChronoField.YEAR), tomorrowMidnight.get(ChronoField.MONTH_OF_YEAR), tomorrowMidnight.get(ChronoField.DAY_OF_MONTH), 6, 0, 0)
         from = from.plus(occurrence, ChronoUnit.WEEKS)
         def to = from.plus(2, ChronoUnit.HOURS)
@@ -111,7 +111,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             apartment1Engine = rulesService.assetEngines.get(managerTestSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.facts.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag of room should not be set"

@@ -15,7 +15,6 @@ import jakarta.ws.rs.HttpMethod;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Logger;
 
 public class CORSFilter extends HttpFilter {
     protected boolean allowCredentials = true;

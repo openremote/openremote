@@ -433,11 +433,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         } catch (Exception ex) {
             if (tx != null && tx.isActive()) {
                 try {
-                    if (LOG.isLoggable(Level.FINER)) {
-                        LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
-                    } else {
-                        LOG.log(Level.FINE, "Rolling back failed transaction");
-                    }
+                    LOG.log(Level.FINE, "Rolling back failed transaction");
                     tx.rollback();
                 } catch (RuntimeException rbEx) {
                     LOG.log(Level.SEVERE, "Rollback of transaction failed!", rbEx);
