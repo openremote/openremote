@@ -280,6 +280,7 @@
   "openInBrowser": "Open in browser (for external websites)",
   "buttonTextConfirm": "Text for action button",
   "buttonTextDecline": "Text for decline button",
+  "languagesInvalidError": "Some languages are invalid: ",
   "custom": "Custom attribute",
   "realm": "Realm",
   "realm_plural": "Realms",

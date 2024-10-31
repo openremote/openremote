@@ -280,6 +280,7 @@
   "openInBrowser": "Openen in browser (voor externe websites)",
   "buttonTextConfirm": "Tekst voor actie knop",
   "buttonTextDecline": "Tekst voor negeerknop",
+  "languagesInvalidError": "Talen die niet geldig zijn: ",
   "custom": "Nieuw attribuut",
   "realm": "Realm",
   "realm_plural": "Realms",

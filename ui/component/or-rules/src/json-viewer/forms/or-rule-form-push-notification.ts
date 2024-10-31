@@ -29,7 +29,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
 
             .divider {
                 margin-bottom: 20px;
-                border-top: 1px solid black;
+                border-top: 1px solid rgba(0, 0, 0, 12%);
             }
         `;
     }

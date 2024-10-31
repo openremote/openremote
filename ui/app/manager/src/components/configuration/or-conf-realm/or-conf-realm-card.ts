@@ -154,7 +154,7 @@ export class OrConfRealmCard extends LitElement {
 
     ];
 
-    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getNativeName(entry[0]))
+    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]))
 
     protected _getColors() {
         const colors: { [name: string]: string } = {
@@ -277,7 +277,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
-        const languageNames = ISO6391.getAllNativeNames();
+        const languageNames = ISO6391.getAllNames();
         const languages: string[][] = ISO6391.getAllCodes()
             .map((code, index) => ([code, languageNames[index]]))
             .sort((a, b) => a[1].localeCompare(b[1]));

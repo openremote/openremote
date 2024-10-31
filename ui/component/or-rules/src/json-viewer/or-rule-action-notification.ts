@@ -68,6 +68,11 @@ export class OrRuleActionNotification extends LitElement {
         return super.connectedCallback();
     }
 
+    disconnectedCallback() {
+        this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        return super.disconnectedCallback();
+    }
+
     protected _onJsonRuleChanged() {
 
         // Upon rule change, we update the name of the "Notification action" to a sensible value, for example with the subject of an email
