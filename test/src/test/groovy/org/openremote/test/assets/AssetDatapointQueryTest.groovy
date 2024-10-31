@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
@@ -16,6 +15,7 @@ import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -24,6 +24,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 import static java.util.concurrent.TimeUnit.HOURS
 
@@ -69,11 +70,11 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         when: "datapoints are added to the asset"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
             [
-                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 50d),
-                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 40d),
-                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 30d),
-                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 20d),
-                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 10d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 50d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 40d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 30d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
             ]
         )
 
@@ -124,12 +125,12 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         assetDatapointService.upsertValues(asset.getId(), attributeName,
             [
                 // placing them in a random order to verify order that is returned with the query
-                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 25d),
-                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 30d),
-                new ValueDatapoint<>(dateTime.minusMinutes(30).toDate(), 10d),
-                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 90d),
-                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 15d),
-                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 20d),
+                new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 25d),
+                new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 30d),
+                new ValueDatapoint<>(dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
+                new ValueDatapoint<>(dateTime.minusMinutes(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 90d),
+                new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 15d),
+                new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
             ]
         )
 

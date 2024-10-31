@@ -61,7 +61,7 @@ public class SyslogService extends Handler implements ContainerService {
     public static final int OR_SYSLOG_MAX_AGE_DAYS_DEFAULT = 5;
     private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
     protected SyslogConfig config;
@@ -77,7 +77,7 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
 
         if (container.hasService(ClientEventService.class) && container.hasService(PersistenceService.class)) {
             LOG.info("Syslog service enabled");
@@ -110,7 +110,7 @@ public class SyslogService extends Handler implements ContainerService {
             TimerService timerService = container.getService(TimerService.class);
 
             // Flush batch every 3 seconds (wait 10 seconds for database (schema) to be ready in dev mode)
-            flushBatchFuture = executorService.scheduleAtFixedRate(this::flushBatch, 10, 3, TimeUnit.SECONDS);
+            flushBatchFuture = scheduledExecutorService.scheduleAtFixedRate(this::flushBatch, 10, 3, TimeUnit.SECONDS);
 
             // Clear outdated events once a day
             if (config.getStoredMaxAgeMinutes() > 0) {
@@ -119,7 +119,7 @@ public class SyslogService extends Handler implements ContainerService {
                     timerService.getNow(),
                     timerService.getNow().truncatedTo(DAYS).plus(27, ChronoUnit.HOURS));
 
-                deleteOldFuture = executorService.scheduleAtFixedRate(
+                deleteOldFuture = scheduledExecutorService.scheduleAtFixedRate(
                     this::purgeSyslog,
                     initialDelay,
                     Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS

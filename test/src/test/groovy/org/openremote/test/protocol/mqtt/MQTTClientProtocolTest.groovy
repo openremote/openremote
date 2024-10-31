@@ -86,6 +86,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def brokerService = container.getService(MQTTBrokerService.class)
+        def defaultMQTTHandler = brokerService.getCustomHandlers().find{it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
@@ -132,7 +133,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert !(agentService.getProtocolInstance(agent.id) as MQTTProtocol).protocolMessageConsumers.isEmpty()
             def connection = brokerService.getConnectionFromClientID(clientId)
             assert connection != null
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "the attribute referenced in the agent link is updated"
