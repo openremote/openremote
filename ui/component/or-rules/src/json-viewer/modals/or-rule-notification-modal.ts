@@ -15,7 +15,6 @@ import {OrRuleFormLocalized} from "../forms/or-rule-form-localized";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 
 const checkValidity = (form:HTMLElement | null) => {
-    console.log("checkValidity", form);
     if(form) {
         const inputs = form.querySelectorAll('or-mwc-input');
         const elements = Array.prototype.slice.call(inputs);
@@ -147,10 +146,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
         const onOk = () => {
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-            setTimeout(() => {
-                console.log(this.action);
-            }, 50);
-        }
+        };
 
         const dismissAction: DialogActionBase = {
             actionName: "cancel",
