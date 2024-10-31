@@ -993,7 +993,44 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert sentEmails.size() == 1
         }
 
+        and: "we clear the cached notifications once again"
+        localizedNotificationIds.clear()
+        localizedNotificationTargetTypes.clear()
+        localizedNotificationTargetIds.clear()
+        localizedNotificationMessages.clear()
+        pushNotificationIds.clear()
+        pushNotificationTargetTypes.clear()
+        pushNotificationTargetIds.clear()
+        pushNotificationMessages.clear()
+
+
         /* ------------ */
 
+        when: "an invalid notification is created"
+        def invalidNotification = new Notification(
+                "InvalidNotification",
+                new LocalizedNotificationMessage(
+                        "en",
+                        new HashMap<String, AbstractNotificationMessage>() {{
+                            put("nl", new PushNotificationMessage())
+                            put("en", new PushNotificationMessage("English title", "English body", null, null, null))
+                        }}
+                ),
+                null,
+                null,
+                null)
+
+        and: "the invalid notification is sent to all users"
+        adminNotificationResource.sendNotification(null, invalidNotification)
+
+        then: "it should return a BAD_REQUEST, because the message is invalid"
+        thrown(BadRequestException)
+
+        and: "all users should receive the english message"
+        conditions.eventually {
+            assert localizedNotificationMessages.size() == 0
+            assert localizedNotificationTargetIds.size() == 0
+            assert pushNotificationMessages.size() == 0
+        }
     }
 }
