@@ -556,9 +556,9 @@ public class JsonRulesBuilder extends RulesBuilder {
     protected static Logger LOG;
 
     public JsonRulesBuilder(Logger logger, Ruleset ruleset, RulesEngine<?> rulesEngine, TimerService timerService, AssetStorageService assetStorageService,
-                                    Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
-                                    Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
-                                    BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
+                            Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, Webhooks webhooksFacade,
+                            Alarms alarmsFacade, HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
+                            BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
         this.rulesEngine = rulesEngine;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
@@ -567,7 +567,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.notificationsFacade = notificationsFacade;
         this.webhooksFacade = webhooksFacade;
         this.alarmsFacade = alarmsFacade;
-        this.historicDatapointsFacade= historicDatapoints;
+        this.historicDatapointsFacade = historicDatapoints;
         this.predictedDatapointsFacade = predictedDatapoints;
         this.scheduledActionConsumer = scheduledActionConsumer;
         LOG = logger;
