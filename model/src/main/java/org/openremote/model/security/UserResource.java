@@ -187,7 +187,7 @@ public interface UserResource {
     @Path("locale")
     @Consumes(APPLICATION_JSON)
     @Operation(operationId = "updateCurrentUserLocale", summary = "Update locale for the current user in a realm")
-    void updateCurrentUserLocale(@BeanParam RequestParams requestParams, JsonNode locale);
+    void updateCurrentUserLocale(@BeanParam RequestParams requestParams, String locale);
 
     @GET
     @Path("{realm}/userSessions/{userId}")

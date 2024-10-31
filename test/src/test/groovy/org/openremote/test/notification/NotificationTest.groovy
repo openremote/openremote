@@ -717,7 +717,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 pushNotificationMessages << message
                 callRealMethod()
         }
-        // Auto accept the messages sent to FIrebase (without calling its logic)
+        // Auto accept the messages sent to Firebase (without calling its logic)
         mockPushNotificationHandler.sendMessage(_ as com.google.firebase.messaging.Message) >> {
             message -> return NotificationSendResult.success()
         }

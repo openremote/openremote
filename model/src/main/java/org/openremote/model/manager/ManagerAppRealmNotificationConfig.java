@@ -20,6 +20,6 @@
 package org.openremote.model.manager;
 
 public class ManagerAppRealmNotificationConfig {
-    protected String[] languages = null;
-    protected String defaultLanguage = null;
+    protected String[] languages;
+    protected String defaultLanguage;
 }

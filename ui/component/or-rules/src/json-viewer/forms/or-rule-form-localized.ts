@@ -143,7 +143,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
 
     /**
      * A public function that checks if the localized {@link message} is valid.
-     * By looping through the languages, we very for each email- and push notification if some required variables are empty.
+     * By looping through the languages, we verify for each email- and push notification if some required variables are empty.
      * Returns true, or false if ANY language is not valid.
      */
     public isValid(): boolean {

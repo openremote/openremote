@@ -337,8 +337,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public void updateCurrentUserLocale(RequestParams requestParams, JsonNode locale) {
-        String parsed = ValueUtil.asJSON(locale).orElse("").replaceAll("\"", "");
+    public void updateCurrentUserLocale(RequestParams requestParams, String locale) {
+        String parsed = locale.replaceAll("\"", "");
         if(TextUtil.isNullOrEmpty(parsed)) {
             throw new BadRequestException("Locale cannot be empty");
         }

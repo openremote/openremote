@@ -154,7 +154,17 @@ export class OrConfRealmCard extends LitElement {
 
     ];
 
-    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]))
+    protected commonLanguages: string[] = Object.entries(DEFAULT_LANGUAGES).map(entry => ISO6391.getName(entry[0]));
+    protected _languages: string[][] = [];
+
+    connectedCallback() {
+        const languageNames = ISO6391.getAllNames();
+        this._languages = ISO6391.getAllCodes()
+            .map((code, index) => ([code, languageNames[index]]))
+            .sort((a, b) => a[1].localeCompare(b[1]));
+
+        return super.connectedCallback();
+    }
 
     protected _getColors() {
         const colors: { [name: string]: string } = {
@@ -277,14 +287,10 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
-        const languageNames = ISO6391.getAllNames();
-        const languages: string[][] = ISO6391.getAllCodes()
-            .map((code, index) => ([code, languageNames[index]]))
-            .sort((a, b) => a[1].localeCompare(b[1]));
 
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)
-        const searchProvider = (search: string) => languages.filter(entry =>
+        const searchProvider = (search: string) => this._languages.filter(entry =>
             (!search && this.commonLanguages.includes(entry[1])) || entry[1].toLowerCase().includes(search?.toLowerCase()))
 
         return html`
@@ -383,7 +389,7 @@ export class OrConfRealmCard extends LitElement {
                                     searchLabel="configuration.notificationLanguagesLabel"
                                     .label="${i18next.t("configuration.notificationLanguages")}"
                                     .value="${app.realm.notifications?.languages || []}"
-                                    .options="${languages}"
+                                    .options="${this._languages}"
                                     .searchProvider="${searchProvider}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                         const newLanguages: string[] | undefined = e.detail.value;
@@ -402,7 +408,7 @@ export class OrConfRealmCard extends LitElement {
                                         class="header-item"
                                         .label="${i18next.t("configuration.defaultLanguage")}"
                                         .value="${app.realm.notifications?.defaultLanguage || []}"
-                                        .options="${languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
+                                        .options="${this._languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                             app.realm.notifications.defaultLanguage = e.detail.value;
                                             app.notifyConfigChange(app.realm);

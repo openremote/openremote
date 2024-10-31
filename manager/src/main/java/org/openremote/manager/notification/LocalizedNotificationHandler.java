@@ -38,7 +38,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Class description
+ * This {@link LocalizedNotificationHandler} handles notification differently compared to other handlers.
+ * When a {@link LocalizedNotificationMessage} is processed, that normally contains a configuration for multiple languages,
+ * we repeat the {@link #isMessageValid} and {@link #getTargets} methods for each individual locale. (using the {@link #notificationHandlerMap})
  */
 public class LocalizedNotificationHandler extends RouteBuilder implements NotificationHandler {
 
@@ -135,7 +137,7 @@ public class LocalizedNotificationHandler extends RouteBuilder implements Notifi
             targetsMap.forEach((language, targets) -> {
                 for (Notification.Target target : targets) {
                     mergedTargetsMap.computeIfAbsent(target.getId(), k -> target)
-                            .addAllowedLocales(Collections.singletonList(language));
+                            .addAllowedLocales(new HashSet<>(Collections.singletonList(language)));
                 }
             });
             return new ArrayList<>(mergedTargetsMap.values());
