@@ -277,8 +277,16 @@ export class OrMwcDialog extends LitElement {
         }
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        console.log("or-mwc-dialog connectedCallback()");
+        window.addEventListener("popstate", this._onBrowserNavigate);
+    }
+
     disconnectedCallback(): void {
         super.disconnectedCallback();
+        console.log("or-mwc-dialog disconnectedCallback()")
+        window.removeEventListener("popstate", this._onBrowserNavigate);
         if (this._mdcComponent) {
             this._mdcComponent.destroy();
             this._mdcComponent = undefined;
@@ -353,5 +361,9 @@ export class OrMwcDialog extends LitElement {
             this._mdcComponent = undefined;
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
+    }
+
+    protected _onBrowserNavigate(ev: PopStateEvent) {
+        console.log(ev);
     }
 }
