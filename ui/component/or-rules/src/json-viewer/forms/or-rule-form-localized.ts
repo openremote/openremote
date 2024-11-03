@@ -43,24 +43,6 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
         `;
     }
 
-    willUpdate(changedProps: PropertyValues) {
-
-        // On every UI update, loop through the languages present in the LocalizedNotificationMessage.
-        // Remove empty (or not filled in-) messages, by checking the amount of keys in the JS object.
-        if(this.message?.languages) {
-            const languageEntries = Object.entries(this.message.languages).filter(([lang, msg]) => {
-                if(Object.keys(msg).filter(key => key !== "type").length == 0) {
-                    console.debug(`Removing fields of notification language '${lang}', as they were all empty.`)
-                    return false;
-                }
-                return true;
-            });
-            this.message.languages = Object.fromEntries(languageEntries) as {[p: string]: AbstractNotificationMessageUnion};
-        }
-
-        return super.willUpdate(changedProps);
-    }
-
     protected render() {
         return html`
             <div>
@@ -134,7 +116,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
     protected async _getLanguageErrorTemplate(languages: string[], validLanguages: string[]): Promise<TemplateResult> {
         const invalidLocalesStr = languages.filter(l => !validLanguages.includes(l)).map(l => ISO6391.getName(l)).join(", ");
         return html`
-            <div style="margin-top: 20px; display: flex; justify-content: end; color: ${DefaultColor6};">
+            <div style="margin-top: 10px; display: flex; justify-content: end; color: ${DefaultColor6};">
                 <or-translate value="languagesInvalidError"></or-translate>
                 <span style="padding-left: 4px;">${invalidLocalesStr}</span>
             </div>
@@ -148,6 +130,9 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      */
     public isValid(): boolean {
         if(this.message?.languages && this.languages?.length) {
+
+            // First, cleanup the message
+            this._cleanNotificationMessage();
 
             const validLanguages = this.languages?.filter(lang => {
                 if(!this.message?.languages?.[lang]) {
@@ -166,10 +151,49 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                 }
             });
             // Update cached list of valid languages
-            this._validLanguages = validLanguages;
+            if(JSON.stringify(this._validLanguages) !== JSON.stringify(validLanguages)) {
+                this._validLanguages = validLanguages;
+            }
 
             return validLanguages.length === this.languages.length;
         }
         return false;
+    }
+
+    /**
+     * Function that cleans up the localized notification message, by removing empty (or not filled in-) messages.
+     * By looping through the languages, checking the amount of keys in the JS object, we delete languages that can be cleared.
+     */
+    protected _cleanNotificationMessage() {
+        console.debug("Cleaning the notification message:", JSON.stringify(this.message));
+
+        if(this.message?.languages) {
+            const languageEntries = Object.entries(this.message.languages).filter(([lang, msg]) => {
+
+                const userDefinedFields = Object.entries(msg).filter(entry => {
+                    if(entry[0] === "type") return false;
+                    if(entry[1] == null) return false; // key has no value
+                    if(Array.isArray(entry[1])) {
+                        // Check if any object in the array has at least one key-value pair with a truthy value
+                        const arrayHasValue = entry[1].some(obj =>
+                            Object.keys(obj).length > 0 && Object.values(obj).some(value => value)
+                        );
+                        if(!arrayHasValue) return false;
+
+                    } else if(typeof entry[1] === "object") {
+                        if(Object.keys(entry[1]).length === 0 || Object.values(entry[1]).filter(value => value).length === 0) return false;
+                    }
+                    return true;
+                });
+
+                if(userDefinedFields.length === 0) {
+                    console.debug(`Removing fields of notification language '${lang}', as they were all empty.`);
+                    return false;
+                }
+                return true;
+            });
+            this.message.languages = Object.fromEntries(languageEntries) as {[p: string]: AbstractNotificationMessageUnion};
+            console.debug("After cleanup, the message is now:", JSON.stringify(this.message));
+        }
     }
 }

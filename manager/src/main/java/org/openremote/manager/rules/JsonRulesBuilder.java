@@ -30,9 +30,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.notification.EmailNotificationMessage;
-import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.notification.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
@@ -788,6 +786,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
             boolean linkedUsersTarget = ruleAction.target != null && Boolean.TRUE.equals(ruleAction.target.linkedUsers);
+            boolean isLocalized = Objects.equals(notification.getMessage().getType(), LocalizedNotificationMessage.TYPE);
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
             boolean isHtml;
@@ -823,9 +822,35 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             Collection<String> targetIds;
-            boolean bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
+            boolean bodyContainsTriggeredAssetInfo;
+
+            // In case of a localized message, we build a Map of all bodies in each language.
+            // We also cache a list of languages that are using HTML, to use later
+            Map<String, String> localizedBodies = new HashMap<>();
+            Map<String, Boolean> localizedIsHtml = new HashMap<>();
+            if(isLocalized) {
+                ((LocalizedNotificationMessage) notification.getMessage()).getMessages().forEach((lang, msg) -> {
+                    if (msg instanceof PushNotificationMessage pushMsg) {
+                        localizedBodies.put(lang, pushMsg.getBody());
+                        localizedIsHtml.put(lang, false);
+                    } else if (msg instanceof EmailNotificationMessage emailMsg) {
+                        boolean isMsgHtml = !TextUtil.isNullOrEmpty(emailMsg.getHtml());
+                        localizedBodies.put(lang, isMsgHtml ? emailMsg.getHtml() : emailMsg.getText());
+                        localizedIsHtml.put(lang, true);
+                    }
+                });
+            }
+
+            // Check if the body containers the PLACEHOLDER_TRIGGER_ASSETS
+            if(isLocalized) {
+                bodyContainsTriggeredAssetInfo = localizedBodies.values().stream().anyMatch(
+                        text -> !TextUtil.isNullOrEmpty(text) && text.contains(PLACEHOLDER_TRIGGER_ASSETS));
+            } else {
+                bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
+            }
 
             if (linkedUsersTarget) {
+
                 // Find users linked to the matched assets applying any additional use query in the action
                 Set<String> assetIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
                 UserQuery userQuery = ruleAction.target.users != null ? ruleAction.target.users : new UserQuery();
@@ -857,18 +882,18 @@ public class JsonRulesBuilder extends RulesBuilder {
                         Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, userAssetLinks, userId);
 
                         Notification customNotification = ValueUtil.clone(notification);
-                        String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
 
-                        if (isEmail) {
-                            EmailNotificationMessage email = (EmailNotificationMessage) customNotification.getMessage();
-                            if (isHtml) {
-                                email.setHtml(newBody);
-                            } else {
-                                email.setText(newBody);
-                            }
-                        } else if (isPush) {
-                            PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) customNotification.getMessage();
-                            pushNotificationMessage.setBody(newBody);
+
+                        if(isLocalized) {
+                            LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) notification.getMessage());
+                            localizedMsg.getMessages().forEach((lang, msg) -> {
+                                String newBody = insertTriggeredAssetInfo(localizedBodies.get(lang), assetStates, localizedIsHtml.get(lang), false);
+                                localizedMsg.setMessage(lang, insertBodyInMessage(msg, localizedIsHtml.get(lang), newBody));
+                            });
+
+                        } else {
+                            String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
+                            notification.setMessage(insertBodyInMessage(notification.getMessage(), isHtml, newBody));
                         }
 
                         customNotification.setTargets(new Notification.Target(Notification.TargetType.USER, userId));
@@ -896,18 +921,17 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (bodyContainsTriggeredAssetInfo) {
                 // Extract asset states for matched asset IDs
                 Map<String, Set<AttributeInfo>> assetStates = getMatchedAssetStates(ruleState, useUnmatched, null, null);
-                body = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
 
-                if (isEmail) {
-                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
-                    if (isHtml) {
-                        email.setHtml(body);
-                    } else {
-                        email.setText(body);
-                    }
-                } else if (isPush) {
-                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                    pushNotificationMessage.setBody(body);
+                if(isLocalized) {
+                    LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) notification.getMessage());
+                    localizedMsg.getMessages().forEach((lang, msg) -> {
+                        String newBody = insertTriggeredAssetInfo(localizedBodies.get(lang), assetStates, localizedIsHtml.get(lang), false);
+                        localizedMsg.setMessage(lang, insertBodyInMessage(msg, localizedIsHtml.get(lang), newBody));
+                    });
+
+                } else {
+                    String newBody = insertTriggeredAssetInfo(body, assetStates, isHtml, false);
+                    notification.setMessage(insertBodyInMessage(notification.getMessage(), isHtml, newBody));
                 }
             }
 
@@ -1215,6 +1239,19 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
+    }
+
+    protected AbstractNotificationMessage insertBodyInMessage(AbstractNotificationMessage sourceMessage, boolean isHtml, String body) {
+        if(sourceMessage instanceof EmailNotificationMessage emailMsg) {
+            if (isHtml) {
+                emailMsg.setHtml(body);
+            } else {
+                emailMsg.setText(body);
+            }
+        } else if(sourceMessage instanceof PushNotificationMessage pushMsg) {
+            pushMsg.setBody(body);
+        }
+        return sourceMessage;
     }
 
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, RuleState ruleState, Assets assetsFacade, Users usersFacade, RulesFacts facts) {

@@ -291,7 +291,9 @@ export class OrConfRealmCard extends LitElement {
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)
         const searchProvider = (search: string) => this._languages.filter(entry =>
-            (!search && this.commonLanguages.includes(entry[1])) || entry[1].toLowerCase().includes(search?.toLowerCase()))
+            (!search && this.commonLanguages.includes(entry[1])) ||
+            (!search && app.realm.notifications?.languages.includes(entry[0])) ||
+            entry[1].toLowerCase().includes(search?.toLowerCase()))
 
         return html`
             <or-collapsible-panel .expanded="${app.expanded}">

@@ -147,6 +147,28 @@
           }
         },
         {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "email",
+                  "subject": "%RULESET_NAME%",
+                  "html": "%TRIGGER_ASSETS%",
+                  "to": [
+                    {
+                      "address": "test2@openremote.io",
+                      "name": "OR localized test"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
           "action": "write-attribute",
           "target": {
             "assets": {

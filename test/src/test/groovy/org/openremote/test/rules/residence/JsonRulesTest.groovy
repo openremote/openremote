@@ -10,6 +10,9 @@ import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
+import org.openremote.manager.notification.LocalizedNotificationHandler
+import org.openremote.model.notification.EmailNotificationMessage
+import org.openremote.model.notification.LocalizedNotificationMessage
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -111,6 +114,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = []
         List<jakarta.mail.Message> emailMessages = []
         List<Notification.Target> emailTargets = []
+        List<LocalizedNotificationMessage> localizedMessages = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
         Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
@@ -121,6 +125,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def localizedNotificationHandler = container.getService(LocalizedNotificationHandler.class)
         def notificationService = container.getService(NotificationService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
@@ -161,6 +166,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 return NotificationSendResult.success()
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
+
+        // Register localized handler
+        LocalizedNotificationHandler mockLocalizedNotificationHandler = Spy(localizedNotificationHandler)
+        mockLocalizedNotificationHandler.isValid() >> true
+        mockLocalizedNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                localizedMessages << message
+        }
+        mockLocalizedNotificationHandler.notificationHandlerMap = notificationService.notificationHandlerMap
+        notificationService.notificationHandlerMap.put(localizedNotificationHandler.getTypeName(), mockLocalizedNotificationHandler)
 
         and: "some rules"
         Ruleset ruleset = new RealmRuleset(
@@ -364,6 +379,17 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
                     && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
                     && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+        }
+
+        and: "an localized email notification should have been sent to test2@openremote.io with the triggered asset in the body but only containing the triggered asset states"
+        String expectedHtml = "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+        conditions.eventually {
+            assert localizedMessages.size() == 3
+            assert localizedMessages.stream().allMatch {
+                it.getMessages().values().stream().allMatch(m -> {
+                    m.type == EmailNotificationMessage.TYPE && ((EmailNotificationMessage) m).getHtml() == expectedHtml
+                })
+            }
         }
 
         and: "after a few seconds the rule should not have fired again"

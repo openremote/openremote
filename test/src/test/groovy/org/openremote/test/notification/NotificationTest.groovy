@@ -1032,5 +1032,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert localizedNotificationTargetIds.size() == 0
             assert pushNotificationMessages.size() == 0
         }
+
+
+        /* ------------------------ */
+
+        /*when: "if the notification became valid, and the TRIGGER_ASSETS placeholder is inserted"
+        ((LocalizedNotificationMessage) invalidNotification.getMessage()).setMessage("nl", new PushNotificationMessage())*/
     }
 }
