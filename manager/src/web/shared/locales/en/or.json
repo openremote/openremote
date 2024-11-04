@@ -280,6 +280,7 @@
   "openInBrowser": "Open in browser (for external websites)",
   "buttonTextConfirm": "Text for action button",
   "buttonTextDecline": "Text for decline button",
+  "defaultLanguageChangedError": "Update default language",
   "languagesInvalidError": "Incomplete language forms: ",
   "custom": "Custom attribute",
   "realm": "Realm",

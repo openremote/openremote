@@ -343,18 +343,18 @@ export class OrRuleActionNotification extends LitElement {
                     ...(this.config?.notifications?.[manager.displayRealm]?.languages || []),
                     ...(Object.keys((message as LocalizedNotificationMessage).languages || {}) || [])
                 ])] as string[];
-                let locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
-                if(languages.length === 0 && locale) {
-                    languages.push(locale);
+                let defaultLang = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage;
+                if(languages.length === 0 && defaultLang) {
+                    languages.push(defaultLang);
                 }
-                if(languages.length > 0 && !languages.includes(locale)) {
-                    locale = languages[0];
-                }
+                const defaultLangHasChanged = defaultLang !== (message as LocalizedNotificationMessage).defaultLanguage;
                 const type = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push";
                 const title = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push-notification";
                 modalTemplate = html`
                     <or-rule-notification-modal title="${title}" .action="${this.action}">
-                        <or-rule-form-localized .message="${message}" .type="${type}" .languages="${languages}" .lang="${locale}"></or-rule-form-localized>
+                        <or-rule-form-localized .message="${message}" .type="${type}" .languages="${languages}" .defaultLang="${defaultLang}" 
+                                                .wrongLanguage="${defaultLangHasChanged}"
+                        ></or-rule-form-localized>
                     </or-rule-notification-modal>
                 `;
             }

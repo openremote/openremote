@@ -1,10 +1,12 @@
 import {i18next, translate} from "@openremote/or-translate";
-import { LitElement, PropertyValues, TemplateResult, css, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import {LitElement, TemplateResult, css, html} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
 import {AbstractNotificationMessageUnion, LocalizedNotificationMessage} from "@openremote/model";
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { when } from "lit/directives/when.js";
-import { until } from "lit/directives/until.js";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
+import {when} from "lit/directives/when.js";
+import {until} from "lit/directives/until.js";
 import "./or-rule-form-email-message";
 import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
@@ -20,10 +22,16 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
     public type: "push" | "email" = "push";
 
     @property()
-    public languages?: string[];
+    public languages: string[] = ["en"];
 
     @property()
-    public lang = "en";
+    public defaultLang = "en";
+
+    @property()
+    public wrongLanguage = false;
+
+    @state()
+    protected _selectedLanguage = "en";
 
     @state()
     protected _validLanguages?: string[];
@@ -43,11 +51,20 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
         `;
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        if(!this.defaultLang || !this.languages.includes(this.defaultLang)) {
+            this.defaultLang = this.languages[0];
+        }
+        this._selectedLanguage = this.defaultLang;
+    }
+
     protected render() {
         return html`
             <div>
-                ${until(this._getLanguageSelectForm(this.lang, this.languages), html`Loading...`)}
-                ${until(this._getNotificationForm(this.message, this.lang), html`Loading...`)}
+                ${when(this.wrongLanguage, () => until(this._getWrongLanguageTemplate()))}
+                ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
+                ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
                 ${when(this.languages?.length && this._validLanguages && (this._validLanguages.length < this.languages.length), 
                         () => until(this._getLanguageErrorTemplate(this.languages!, this._validLanguages!))
                 )}
@@ -56,10 +73,40 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
     }
 
     /**
+     * Internal function that returns we "the default language has changed! Fix here" warning. (using {@link TemplateResult})
+     * This template includes a button that will update the default language to the correct one.
+     */
+    protected async _getWrongLanguageTemplate(): Promise<TemplateResult> {
+        return html`
+            <or-mwc-input .type="${InputType.BUTTON}" fullWidth outlined
+                          label="defaultLanguageChangedError" style="margin-top: 10px;"
+                          @or-mwc-input-changed="${this._fixDefaultLanguage}"
+            ></or-mwc-input>
+        `;
+    }
+
+    /**
+     * Function that corrects the default language in the {@link LocalizedNotificationMessage},
+     * to the one provided by parent elements using {@link defaultLang}.
+     * The {@link wrongLanguage} property will be updated to 'false'.
+     */
+    protected _fixDefaultLanguage(): void {
+        if(this.message) {
+            console.debug("Updating default language from " + this.message.defaultLanguage + " to " + this.defaultLang);
+            this.message.defaultLanguage = this.defaultLang;
+            this.wrongLanguage = false;
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+        } else {
+            console.warn("Could not fix language, because the message could not be found.");
+            showSnackbar(undefined, "Could not fix language, because the message could not be found.");
+        }
+    }
+
+    /**
      * Internal function that returns the "select language" controls form. (using {@link TemplateResult})
      * Based on {@link languageCodes}, it lists all languages of the ISO6391 specification.
      */
-    protected async _getLanguageSelectForm(selected: string, languageCodes: string[] = [this.lang], divider = true): Promise<TemplateResult> {
+    protected async _getLanguageSelectForm(selected: string, languageCodes: string[] = [this._selectedLanguage], divider = true): Promise<TemplateResult> {
         const languages = languageCodes.map(key => [key, ISO6391.getName(key)]);
         return html`
             <div style="display: flex; justify-content: space-between;">
@@ -76,14 +123,14 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * HTML callback for when the selected language changes.
      */
     protected _onLanguageChange(ev: OrInputChangedEvent) {
-        this.lang = ev.detail.value;
+        this._selectedLanguage = ev.detail.value;
     }
 
     /**
      * Internal function that returns the correct notification form, based on the type.
      * Based on {@link lang}, it uses the Notification configured for that language.
      */
-    protected async _getNotificationForm(message = this.message, lang = this.lang): Promise<TemplateResult> {
+    protected async _getNotificationForm(message = this.message, lang = this._selectedLanguage): Promise<TemplateResult> {
         if(!message?.languages) {
             return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
         }
