@@ -95,6 +95,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
+            mapSettingsPath.getParent().toFile().mkdirs();
             Files.copy(Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT), persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json"));
             mapSettingsPath = persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
             if(!Files.isRegularFile(mapSettingsPath)){
