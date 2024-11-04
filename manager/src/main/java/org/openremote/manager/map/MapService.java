@@ -36,11 +36,8 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.core.UriBuilder;
-import java.io.*;
+
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,20 +69,14 @@ public class MapService implements ContainerService {
     protected Connection connection;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
-    protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
-//        this.mapConfig.putNull("options");
-        setMapSettings(new ConcurrentHashMap<>());
-        ObjectNode mapSettingsJson = loadMapSettingsJson();
-        if(mapSettingsJson == null) {
-            mapSettingsJson = ValueUtil.JSON.createObjectNode();
-        }
-        configurationService.saveMapConfigFile(mapConfiguration);
-        mapSettingsJson = loadMapSettingsJson();
-        return mapSettingsJson;
+        this.mapConfig.set("options", ValueUtil.JSON.valueToTree(mapConfiguration));
+        configurationService.saveMapConfigFile(this.mapConfig);
+        this.mapConfig = loadMapSettingsJson();
+        return this.mapConfig;
     }
 
     protected static Metadata getMetadata(Connection connection) {
@@ -132,12 +123,9 @@ public class MapService implements ContainerService {
         return configurationService.getMapConfig();
     }
 
+    @SuppressWarnings("unchecked")
     protected ConcurrentMap<String, ObjectNode> getMapSettings(){
-        return this.mapSettings;
-    }
-
-    protected void setMapSettings(ConcurrentMap<String, ObjectNode> settings){
-        this.mapSettings = settings;
+        return (ConcurrentMap<String, ObjectNode>) ValueUtil.JSON.convertValue(this.mapConfig, ConcurrentMap.class);
     }
 
     protected static void closeQuietly(PreparedStatement query, ResultSet result) {
@@ -307,15 +295,6 @@ public class MapService implements ContainerService {
                     String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
-
-//                    vectorTilesObj.put(
-//                            "url",
-//                            baseUriBuilder.clone()
-//                                    .replacePath(API_PATH)
-//                                    .path(realm)
-//                                    .path("map/source")
-//                                    .build()
-//                                    .toString());
                 });
 
         // Set sprite URL to shared folder

@@ -91,20 +91,20 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
 
-        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT));
+        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toString()));
         mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
-            mapSettingsPath = persistenceService.getStorageDir().resolve("mapsettings.json");
+            Files.copy(Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT), persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json"));
+            mapSettingsPath = persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
             if(!Files.isRegularFile(mapSettingsPath)){
-                mapSettingsPath = Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT).resolve("mapsettings.json");
+                mapSettingsPath = Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT);
                 if(!Files.isRegularFile(mapSettingsPath)){
                     LOG.severe("Map settings file not found, map functionality will not work");
                 }
             }
         }
 
-        // Will throw if failed, stopping startup fast and hard
         try {
             loadMapSettingsJson();
         }catch (Exception e){
@@ -177,7 +177,13 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
     public ObjectNode getMapConfig(){
-        return this.mapConfig;
+        try {
+            return (ObjectNode) ValueUtil.JSON.readTree(getMapConfigFile());
+        } catch (IOException e) {
+            LOG.info("failed to getMapConfig");
+        }
+
+        return null;
     }
 
     protected File getMapConfigFile(){
@@ -188,9 +194,8 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         return this.persistenceService.resolvePath("manager").resolve("images");
     }
 
-    public void saveMapConfigFile(Map<String, MapRealmConfig> mapConfiguration) {
+    public void saveMapConfigFile(ObjectNode mapConfiguration) {
         try(OutputStream out = new FileOutputStream(getMapConfigFile())){
-            mapConfig.putPOJO("options", mapConfiguration);
             out.write(ValueUtil.JSON.writeValueAsString(mapConfiguration).getBytes());
             this.loadMapSettingsJson();
         } catch (Exception exception) {
