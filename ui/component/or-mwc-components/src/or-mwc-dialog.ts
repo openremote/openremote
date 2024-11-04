@@ -221,6 +221,7 @@ export class OrMwcDialog extends LitElement {
     protected _mdcElem!: HTMLElement;
 
     protected _mdcComponent?: MDCDialog;
+    protected _popstateEventBind = (ev: PopStateEvent) => this._onBrowserNavigate(ev);
 
     public get isOpen() {
         return this._mdcComponent ? this._mdcComponent.isOpen : false;
@@ -279,14 +280,12 @@ export class OrMwcDialog extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        console.log("or-mwc-dialog connectedCallback()");
-        window.addEventListener("popstate", this._onBrowserNavigate);
+        window.addEventListener("popstate", this._popstateEventBind);
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
-        console.log("or-mwc-dialog disconnectedCallback()")
-        window.removeEventListener("popstate", this._onBrowserNavigate);
+        window.removeEventListener("popstate", this._popstateEventBind);
         if (this._mdcComponent) {
             this._mdcComponent.destroy();
             this._mdcComponent = undefined;
@@ -364,6 +363,6 @@ export class OrMwcDialog extends LitElement {
     }
 
     protected _onBrowserNavigate(ev: PopStateEvent) {
-        console.log(ev);
+        this.close();
     }
 }
