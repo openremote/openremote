@@ -369,6 +369,6 @@ export class OrMwcDialog extends LitElement {
      * We attempt to close the dialog when this occurs.
      */
     protected _onBrowserNavigate(ev: PopStateEvent) {
-        this.close();
+        this.close("close");
     }
 }
