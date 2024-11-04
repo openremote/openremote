@@ -221,6 +221,8 @@ export class OrMwcDialog extends LitElement {
     protected _mdcElem!: HTMLElement;
 
     protected _mdcComponent?: MDCDialog;
+
+    // Bind for the 'popstate' event that tracks changes in the browser history.
     protected _popstateEventBind = (ev: PopStateEvent) => this._onBrowserNavigate(ev);
 
     public get isOpen() {
@@ -362,6 +364,10 @@ export class OrMwcDialog extends LitElement {
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
     }
 
+    /**
+     * Function callback for when the browser window navigates to another place.
+     * We attempt to close the dialog when this occurs.
+     */
     protected _onBrowserNavigate(ev: PopStateEvent) {
         this.close();
     }
