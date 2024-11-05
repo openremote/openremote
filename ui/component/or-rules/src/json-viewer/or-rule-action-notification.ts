@@ -335,6 +335,7 @@ export class OrRuleActionNotification extends LitElement {
         };
 
         const onModalOk = (ev: OrRulesNotificationModalOkEvent) => {
+            this._initialAction = structuredClone(this.action); // update initial action for opening the modal in the future
             this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         };
 
