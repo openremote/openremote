@@ -355,6 +355,12 @@ export class OrHeader extends LitElement {
     private alarmButton = 'bell-outline';
 
     @state()
+    private notificationButton = 'message-outline';
+
+    @state()
+    private notificationColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}'
+
+    @state()
     private alarmColor = '--or-app-color3, ${unsafeCSS(DefaultColor3)}';
 
     private _eventSubscriptionId?: string;
@@ -393,6 +399,9 @@ export class OrHeader extends LitElement {
                 eventType: "alarm"
             }, (ev) => this._getAlarmButton());
         }
+
+        //TODO add smt for notifications here? 
+        
     }
 
     protected _unsubscribeEvents() {
@@ -428,7 +437,12 @@ export class OrHeader extends LitElement {
                         </div>
                     </nav>
                     <div id="desktop-right">
-                        <div id="alarm-btn">
+                    <div id="notification-btn">
+                        <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('notifications')}">
+                            <or-icon icon="${this.notificationButton}" style="color:var(${this.notificationColor})"></or-icon>
+                        </a>
+                    </div>
+                    <div id="alarm-btn">
                             <a class="menu-item" @click="${(e: MouseEvent) => router.navigate('alarms')}">
                                 <or-icon icon="${this.alarmButton}" style="color:var(${this.alarmColor})"></or-icon>
                             </a>

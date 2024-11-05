@@ -44,6 +44,7 @@ import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
 import {pageAlarmsProvider} from "./pages/page-alarms";
+import { pageNotificationsProvider } from "./pages/page-notifications";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
@@ -78,7 +79,8 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageExportProvider(store),
     pageProvisioningProvider(store),
     pageConfigurationProvider(store),
-    pageAlarmsProvider(store)
+    pageAlarmsProvider(store),
+    pageNotificationsProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
