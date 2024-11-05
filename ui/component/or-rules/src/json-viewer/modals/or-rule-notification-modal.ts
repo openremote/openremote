@@ -37,10 +37,35 @@ const checkValidity = (form:HTMLElement | null) => {
         });
     }
 }
+
+export class OrRulesNotificationModalCancelEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-rules-notification-modal-cancel";
+
+    constructor() {
+        super(OrRulesNotificationModalCancelEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrRulesNotificationModalOkEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-rules-notification-modal-ok";
+
+    constructor() {
+        super(OrRulesNotificationModalOkEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 @customElement("or-rule-notification-modal")
 export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
-    @property({type: Object, attribute: false})
+    @property({type: Object})
     public action!: RuleActionNotification;
 
     @property({type: String})
@@ -51,8 +76,6 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
     @query("#notification-modal")
     protected _orMwcDialog?: OrMwcDialog;
-
-    protected initialAction?: RuleActionNotification;
     
     constructor() {
         super();
@@ -61,7 +84,6 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
     connectedCallback() {
         this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
-        this.initialAction = structuredClone(this.action);
         return super.connectedCallback();
     }
 
@@ -136,16 +158,12 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
     protected render() {
 
-        // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
         const onCancel = () => {
-            if(this.initialAction) {
-                this.action = this.initialAction;
-                this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
-            }
+            this.dispatchEvent(new OrRulesNotificationModalCancelEvent());
         };
 
         const onOk = () => {
-            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+            this.dispatchEvent(new OrRulesNotificationModalOkEvent());
         };
 
         const dismissAction: DialogActionBase = {

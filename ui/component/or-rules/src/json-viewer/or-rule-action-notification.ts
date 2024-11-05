@@ -22,6 +22,7 @@ import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
 import {i18next} from "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
+import {OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent} from "./modals/or-rule-notification-modal";
 
 // language=CSS
 const style = css`
@@ -63,8 +64,12 @@ export class OrRuleActionNotification extends LitElement {
     @property({type: Object})
     public config?: RulesConfig;
 
+    protected _initialAction?: RuleActionNotification;
+
     connectedCallback() {
         this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        console.log("Setting initial action!");
+        this._initialAction = structuredClone(this.action);
         return super.connectedCallback();
     }
 
@@ -321,6 +326,18 @@ export class OrRuleActionNotification extends LitElement {
             return ``;
         }
 
+        // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
+        const onModalCancel = (ev: OrRulesNotificationModalCancelEvent) => {
+            if(this._initialAction) {
+                console.debug("Rolling back the notification to former state...");
+                this.action = structuredClone(this._initialAction);
+            }
+        };
+
+        const onModalOk = (ev: OrRulesNotificationModalOkEvent) => {
+            this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+        };
+
         if (message) {
             if (messageType === "push") {
                 modalTemplate = html`
@@ -351,7 +368,9 @@ export class OrRuleActionNotification extends LitElement {
                 const type = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push";
                 const title = this.actionType === ActionType.EMAIL_LOCALIZED ? "email" : "push-notification";
                 modalTemplate = html`
-                    <or-rule-notification-modal title="${title}" .action="${this.action}">
+                    <or-rule-notification-modal title="${title}" .action="${this.action}"
+                                                @or-rules-notification-modal-cancel="${onModalCancel}"
+                                                @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-localized .message="${message}" .type="${type}" .languages="${languages}" .defaultLang="${defaultLang}" 
                                                 .wrongLanguage="${defaultLangHasChanged}"
                         ></or-rule-form-localized>
