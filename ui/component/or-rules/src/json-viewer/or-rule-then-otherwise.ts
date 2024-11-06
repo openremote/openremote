@@ -62,7 +62,8 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     // If the RulesConfig has an entry for notifications, check if there are languages configured.
     // When there are, new notifications will be a "multi-language notification", with a different modal form.
     if (config?.notifications) {
-        multiLanguage = Object.entries(config.notifications).filter(x => x[0] === manager.displayRealm && x[1] !== undefined).length > 0;
+        multiLanguage = Object.entries(config.notifications).filter(x =>
+            (x[0] === manager.displayRealm || x[0] === "default") && x[1] !== undefined).length > 0;
     }
 
     const menu: (ListItem | null)[] = [];
@@ -571,7 +572,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         } else if (value === ActionType.EMAIL_LOCALIZED || value === ActionType.PUSH_LOCALIZED) {
             action = action as RuleActionNotification;
             action.action = "notification";
-            const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || manager.config.defaultLanguage || "en";
+            const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage || "en";
             const languages: { [p: string]: AbstractNotificationMessageUnion } = {};
             if(value === ActionType.EMAIL_LOCALIZED) {
                 languages[locale] = {

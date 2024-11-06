@@ -14,6 +14,7 @@ export interface PageRulesConfig {
 }
 
 export function pageRulesProvider(store: Store<AppStateKeyed>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<AppStateKeyed> {
+    console.log(config);
     return {
         name: "rules",
         routes: [
