@@ -36,6 +36,7 @@ import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import {DefaultAppConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
 
@@ -299,7 +300,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
-        return response.data as ManagerAppConfig;
+        return response.status === 200 ? response.data as ManagerAppConfig : DefaultAppConfig;
     }
 
     protected async getMapConfig(): Promise<{[id: string]: any}> {

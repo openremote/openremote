@@ -26,13 +26,11 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
-import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
@@ -41,8 +39,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
@@ -60,10 +60,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     protected PersistenceService persistenceService;
     protected Path pathPublicRoot;
 
-    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
-
-    protected ObjectNode mapConfig;
-    protected ObjectNode managerConfig;
+    private static final Logger LOG = Logger.getLogger(ConfigurationService.class.getName());
 
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
@@ -89,30 +86,39 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         identityService, this)
         );
 
+        Predicate<Path> checkFilePred = (path) -> Files.isRegularFile(path.toAbsolutePath());
 
+        Path defaultMapSettingsPath = Stream.of("/opt/map/mapsettings.json", "manager/src/map/mapsettings.json")
+                .map(Path::of)
+                .filter(checkFilePred)
+                .toList().get(0);
 
-        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toString()));
-        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
-        if (!Files.isRegularFile(mapSettingsPath)) {
-            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
-            mapSettingsPath.getParent().toFile().mkdirs();
-            Files.copy(Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT), persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json"));
-            mapSettingsPath = persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
-            if(!Files.isRegularFile(mapSettingsPath)){
-                mapSettingsPath = Paths.get(OR_MAP_SETTINGS_PATH_DEFAULT);
-                if(!Files.isRegularFile(mapSettingsPath)){
-                    LOG.severe("Map settings file not found, map functionality will not work");
-                }
+        Path defaultMapTilesPath = Stream.of("/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", "manager/src/map/mapdata.mbtiles")
+                .map(Path::of)
+                .filter(checkFilePred)
+                .toList().get(0);
+
+        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, defaultMapTilesPath.toAbsolutePath().toString()));
+        mapTilesPath = Files.isRegularFile(mapTilesPath) ? mapTilesPath : defaultMapTilesPath;
+
+        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, defaultMapSettingsPath.toAbsolutePath().toString()));
+        Path persistencePath = persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toAbsolutePath();
+
+        if(!Files.isRegularFile(mapSettingsPath)) {
+            if(!Files.isRegularFile(persistencePath)){
+                persistencePath.getParent().toFile().mkdirs();
+                LOG.warning("Copying defaults to and using " + persistencePath.toString() + " for mapsettings.json");
+                Files.copy(defaultMapSettingsPath, persistencePath);
+                mapSettingsPath = persistencePath;
             }
         }
-
-        try {
-            loadMapSettingsJson();
-        }catch (Exception e){
-            LOG.severe("Could not load MapSettings.json file. Map functionality will be limited. Error: "+ e.getMessage());
+        if(Files.isRegularFile(persistencePath)) {
+            mapSettingsPath = persistencePath;
         }
-
-        loadManagerConfigJson();
+        LOG.info("Configuration Service Used files:");
+        LOG.info("\t- manager_config.json: " + getManagerConfigPath().toAbsolutePath().toString());
+        LOG.info("\t- mapsettings.json: " + mapSettingsPath.toAbsolutePath().toString());
+        LOG.info("\t- mapdata.mbtiles: " + mapTilesPath.toAbsolutePath().toString());
     }
 
     @Override
@@ -124,21 +130,11 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         /* code not overridden yet */
     }
 
-    protected void loadMapSettingsJson() throws Exception {
-        try {
-            this.mapConfig = (ObjectNode) ValueUtil.JSON.readTree(Files.readAllBytes(mapSettingsPath));
-        } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
-            throw ex;
-        }
+    @SuppressWarnings("unchecked")
+    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
+        return (ConcurrentMap<String, ObjectNode>) getMapConfig().get("settings");
     }
 
-    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
-        return (ConcurrentMap<String, ObjectNode>) this.mapConfig.get("settings");
-    }
-//    protected ObjectNode getMapConfig(){
-//        return (ObjectNode) this.mapConfig.get("realms");
-//    }
     protected Optional<File> getManagerConfigFile(){
         File file = getManagerConfigPath().toFile();
 
@@ -156,7 +152,12 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
     public ObjectNode getManagerConfig(){
-        return this.managerConfig;
+        try {
+            return (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
+        } catch (Exception e) {
+            LOG.severe("Could not read manager_config.json from "+ getManagerConfigPath().toFile());
+            return null;
+        }
     }
 
     protected Path getManagerConfigPath(){
@@ -165,23 +166,20 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                 .resolve("manager_config.json");
     }
 
-
-    protected void loadManagerConfigJson() {
-        try {
-            this.managerConfig = (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
-        } catch (Exception ex) {
-            LOG.log(Level.INFO, "Could not load manager_config.json file. Appearance will be default. " +
-                    "Failed to extract manager config from: " + mapSettingsPath.toAbsolutePath(), ex);
-        }
+    @Override
+    public String toString() {
+        return "ConfigurationService{" +
+                "mapTilesPath=" + mapTilesPath +
+                ", mapSettingsPath=" + mapSettingsPath +
+                ", managerConfigPath=" + getManagerConfigPath() +
+                '}';
     }
-
-
 
     public ObjectNode getMapConfig(){
         try {
-            return (ObjectNode) ValueUtil.JSON.readTree(getMapConfigFile());
+            return (ObjectNode) ValueUtil.JSON.readTree(mapSettingsPath.toFile());
         } catch (IOException e) {
-            LOG.info("failed to getMapConfig");
+            LOG.severe("failed to getMapConfig");
         }
 
         return null;
@@ -198,7 +196,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public void saveMapConfigFile(ObjectNode mapConfiguration) {
         try(OutputStream out = new FileOutputStream(getMapConfigFile())){
             out.write(ValueUtil.JSON.writeValueAsString(mapConfiguration).getBytes());
-            this.loadMapSettingsJson();
+            this.mapSettingsPath = getMapConfigFile().toPath();
         } catch (Exception exception) {
             LOG.log(Level.WARNING, "Error trying to save mapsettings.json", exception);
         }
@@ -223,9 +221,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             }
             // Write to file
             out.write(ValueUtil.JSON.writeValueAsString(managerConfiguration).getBytes());
-
-            // Reload manager_config.json from file
-            this.loadManagerConfigJson();
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
         }

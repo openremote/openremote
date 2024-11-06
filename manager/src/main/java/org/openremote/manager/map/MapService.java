@@ -190,6 +190,7 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        this.mapConfig = configurationService.getMapConfig();
         this.setData();
     }
 
@@ -199,7 +200,6 @@ public class MapService implements ContainerService {
 
         metadata = getMetadata(connection);
         if (metadata.isValid()) {
-            mapConfig = loadMapSettingsJson();
             if (mapConfig == null) {
                 LOG.warning("Map config could not be loaded from '" +
                         configurationService.getMapTilesPath().toAbsolutePath() +

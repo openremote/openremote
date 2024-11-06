@@ -126,13 +126,12 @@ export const DefaultAppConfig: AppConfig<RootState> = {
 const configURL =  (typeof MANAGER_URL !== 'undefined' ? MANAGER_URL : "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
-    if (!result.ok) {
+    if (!result.ok || result.status === 204) {
         return DefaultAppConfig;
     }
 
     const appConfig = await result.json() as ManagerAppConfig;
 
-    console.log(appConfig);
     if (appConfig === null) {
         return DefaultAppConfig;
     }
