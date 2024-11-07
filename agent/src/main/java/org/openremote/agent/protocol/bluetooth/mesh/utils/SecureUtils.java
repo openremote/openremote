@@ -324,7 +324,7 @@ public class SecureUtils {
 
         final byte[] result = calculateCMAC(cmacInput, t);
 
-        //Only the least siginificant 6 bytes are returned
+        //Only the least significant 6 bytes are returned
         return (byte) ((result[15]) & 0x3F);
     }
 

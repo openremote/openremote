@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -49,7 +49,7 @@ public class ConfigNetKeyStatus extends ConfigStatusMessage {
     final void parseStatusParameters() {
         mStatusCode = mParameters[0];
         mStatusCodeName = getStatusCodeName(mStatusCode);
-        final ArrayList<Integer> keyIndexes = decode(mParameters.length, 1);
+        final List<Integer> keyIndexes = decode(mParameters.length, 1);
         //NetKey status will only contain one index so we just take the first element
         mNetKeyIndex = keyIndexes.get(0);//ByteBuffer.wrap(netKeyIndex).order(ByteOrder.BIG_ENDIAN).getShort();
 

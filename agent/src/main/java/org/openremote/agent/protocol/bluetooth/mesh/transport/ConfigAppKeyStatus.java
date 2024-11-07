@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -50,7 +50,7 @@ public class ConfigAppKeyStatus extends ConfigStatusMessage {
         mStatusCode = mParameters[0];
         mStatusCodeName = getStatusCodeName(mStatusCode);
 
-        final ArrayList<Integer> keyIndexes = decode(mParameters.length, 1);
+        final List<Integer> keyIndexes = decode(mParameters.length, 1);
         mNetKeyIndex = keyIndexes.get(0);
         mAppKeyIndex = keyIndexes.get(1);
 

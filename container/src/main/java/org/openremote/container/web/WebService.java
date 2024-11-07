@@ -364,7 +364,7 @@ public abstract class WebService implements ContainerService {
 
     public static Set<String> getAllowedOrigins(Container container) {
         // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
-        HashSet<String> allowedOrigins = new HashSet<>(
+        Set<String> allowedOrigins = new HashSet<>(
             getExternalHostnames(container)
                 .stream().map(hostname -> "https://" + hostname).toList()
         );

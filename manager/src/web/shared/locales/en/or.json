@@ -191,6 +191,7 @@
   "output": "Output",
   "selectAsset": "Select asset",
   "selectAssetOnTheLeft": "Select an asset on the left",
+  "selectAssetTypeOnTheLeft": "Select an asset type on the left",
   "noRuleStateAttributes": "No attributes with 'rule state' or 'agent link' configuration item found",
   "noDatapointsAttributes": "No attributes with 'store data points' or 'agent link' configuration item found",
   "noAttributesToShow": "No attributes found",
@@ -825,5 +826,7 @@
     "assignedToMe": "Assigned to me",
     "noData": "No alarms found.",
     "source": "Source"
-  }
+  },
+  "expandAll": "Expand all",
+  "collapseAll": "Collapse all"
 }

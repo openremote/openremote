@@ -22,9 +22,6 @@ package org.openremote.model.rules.json;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import java.util.List;
-import java.util.function.Function;
-
 @JsonSubTypes({
         @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
         @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),

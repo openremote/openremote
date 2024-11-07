@@ -20,22 +20,29 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.Event;
+import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TextUtil;
+
+import java.util.function.Consumer;
 
 /**
  * A client sends this event to the server to refresh the value of the specified attribute, expecting the server to
  * answer "soon" with an {@link AttributeEvent}. If the server decides that the client doesn't have the right
  * permissions, or if anything else is not in order (e.g. the asset doesn't exist), the server might not react at all.
  */
-public class ReadAttributeEvent extends SharedEvent implements HasAssetQuery {
+public class ReadAttributeEvent extends SharedEvent implements HasAssetQuery, RespondableEvent {
 
     protected AttributeRef ref;
     protected AssetQuery assetQuery;
+    @JsonIgnore
+    protected Consumer<Event> responseConsumer;
 
     @JsonCreator
     public ReadAttributeEvent(@JsonProperty("ref") AttributeRef attributeRef) {
@@ -57,6 +64,16 @@ public class ReadAttributeEvent extends SharedEvent implements HasAssetQuery {
             }
         }
         return assetQuery;
+    }
+
+    @Override
+    public Consumer<Event> getResponseConsumer() {
+        return responseConsumer;
+    }
+
+    @Override
+    public void setResponseConsumer(Consumer<Event> responseConsumer) {
+        this.responseConsumer = responseConsumer;
     }
 
     @Override
