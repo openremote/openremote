@@ -328,9 +328,20 @@ export class OrRuleActionNotification extends LitElement {
 
         // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
         const onModalCancel = (ev: OrRulesNotificationModalCancelEvent) => {
-            if(this._initialAction) {
-                console.debug("Rolling back the notification to former state...");
-                this.action = structuredClone(this._initialAction);
+            if(this._initialAction && this.action.notification) {
+                const newAction = structuredClone(this._initialAction);
+
+                // Check if anything in the message has changed
+                if(JSON.stringify(this.action.notification.message) !== JSON.stringify(newAction.notification?.message)) {
+                    console.debug("Rolling back the notification to former state...");
+                    this.action.notification.message = newAction.notification?.message;
+                    this.requestUpdate('action');
+                } else {
+                    console.debug("Rolling back was not necessary, as no changes have been done.");
+                }
+
+            } else {
+                console.warn("Could not rollback notification form.");
             }
         };
 
@@ -342,7 +353,9 @@ export class OrRuleActionNotification extends LitElement {
         if (message) {
             if (messageType === "push") {
                 modalTemplate = html`
-                    <or-rule-notification-modal title="push-notification" .action="${this.action}">
+                    <or-rule-notification-modal title="push-notification" .action="${this.action}"
+                                                @or-rules-notification-modal-cancel="${onModalCancel}"
+                                                @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-push-notification .message="${message as PushNotificationMessage}"></or-rule-form-push-notification>
                     </or-rule-notification-modal>
                 `;
@@ -350,7 +363,9 @@ export class OrRuleActionNotification extends LitElement {
             
             else if (messageType === "email") {
                 modalTemplate = html`
-                    <or-rule-notification-modal title="email" .action="${this.action}">
+                    <or-rule-notification-modal title="email" .action="${this.action}"
+                                                @or-rules-notification-modal-cancel="${onModalCancel}"
+                                                @or-rules-notification-modal-ok="${onModalOk}">
                         <or-rule-form-email-message .message="${message as EmailNotificationMessage}"></or-rule-form-email-message>
                     </or-rule-notification-modal>
                 `;

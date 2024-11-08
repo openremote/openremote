@@ -212,7 +212,6 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * By looping through the languages, checking the amount of keys in the JS object, we delete languages that can be cleared.
      */
     protected _cleanNotificationMessage() {
-        console.debug("Cleaning the notification message:", JSON.stringify(this.message));
 
         if(this.message?.languages) {
             const languageEntries = Object.entries(this.message.languages).filter(([lang, msg]) => {
@@ -240,7 +239,6 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                 return true;
             });
             this.message.languages = Object.fromEntries(languageEntries) as {[p: string]: AbstractNotificationMessageUnion};
-            console.debug("After cleanup, the message is now:", JSON.stringify(this.message));
         }
     }
 }
