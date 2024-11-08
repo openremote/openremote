@@ -1,4 +1,4 @@
-import {css, html, LitElement, TemplateResult} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {until} from "lit/directives/until.js";
 import {ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
@@ -71,6 +71,18 @@ export class OrRuleActionNotification extends LitElement {
         console.log("Setting initial action!");
         this._initialAction = structuredClone(this.action);
         return super.connectedCallback();
+    }
+
+    willUpdate(changedProps: PropertyValues) {
+
+        // If the rule property changes, we assume it is a "new rule".
+        // For example when the SAVE button is pressed in the JSON editor (which triggers an update of this 'rule' property),
+        // we want to reset the _initialAction cache variable.
+        if(changedProps.has("rule") && changedProps.get("rule") !== undefined) {
+            this._initialAction = structuredClone(this.action);
+        }
+
+        return super.willUpdate(changedProps);
     }
 
     disconnectedCallback() {
