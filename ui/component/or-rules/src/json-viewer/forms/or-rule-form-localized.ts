@@ -219,6 +219,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                 const userDefinedFields = Object.entries(msg).filter(entry => {
                     if(entry[0] === "type") return false;
                     if(entry[1] == null) return false; // key has no value
+                    if(typeof entry[1] === "string" && entry[1].length === 0) return false;
                     if(Array.isArray(entry[1])) {
                         // Check if any object in the array has at least one key-value pair with a truthy value
                         const arrayHasValue = entry[1].some(obj =>

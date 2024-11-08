@@ -566,7 +566,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 message: {
                     type: "push",
                     title: "%RULESET_NAME%",
-                    body: "%TRIGGER_ASSETS%"
+                    body: "%TRIGGER_ASSETS%",
+                    action: {
+                        openInBrowser: false
+                    }
                 } as PushNotificationMessage
             };
         } else if (value === ActionType.EMAIL_LOCALIZED || value === ActionType.PUSH_LOCALIZED) {
@@ -584,7 +587,10 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 languages[locale] = {
                     type: "push",
                     title: "%RULESET_NAME%",
-                    body: "%TRIGGER_ASSETS%"
+                    body: "%TRIGGER_ASSETS%",
+                    action: {
+                        openInBrowser: false
+                    }
                 } as PushNotificationMessage;
             }
             action.notification = {
