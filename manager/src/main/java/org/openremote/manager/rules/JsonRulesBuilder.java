@@ -885,7 +885,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
 
                         if(isLocalized) {
-                            LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) notification.getMessage());
+                            LocalizedNotificationMessage localizedMsg = ((LocalizedNotificationMessage) customNotification.getMessage());
                             localizedMsg.getMessages().forEach((lang, msg) -> {
                                 String newBody = insertTriggeredAssetInfo(localizedBodies.get(lang), assetStates, localizedIsHtml.get(lang), false);
                                 localizedMsg.setMessage(lang, insertBodyInMessage(msg, localizedIsHtml.get(lang), newBody));
@@ -893,7 +893,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                         } else {
                             String newBody = insertTriggeredAssetInfo(finalBody, assetStates, isHtml, false);
-                            notification.setMessage(insertBodyInMessage(notification.getMessage(), isHtml, newBody));
+                            customNotification.setMessage(insertBodyInMessage(customNotification.getMessage(), isHtml, newBody));
                         }
 
                         customNotification.setTargets(new Notification.Target(Notification.TargetType.USER, userId));

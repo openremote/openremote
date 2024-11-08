@@ -381,15 +381,25 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                     && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
         }
 
-        and: "an localized email notification should have been sent to test2@openremote.io with the triggered asset in the body but only containing the triggered asset states"
+        and: "an localized email notification should have been sent with the triggered asset in the body but only containing the triggered asset states"
         String expectedHtml = "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
         conditions.eventually {
-            assert localizedMessages.size() == 3
+            assert localizedMessages.size() == 5
             assert localizedMessages.stream().allMatch {
                 it.getMessages().values().stream().allMatch(m -> {
                     m.type == EmailNotificationMessage.TYPE && ((EmailNotificationMessage) m).getHtml() == expectedHtml
                 })
             }
+            assert localizedMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Demo Apartment - All Lights Off"
+                }
+            }.count() == 3
+            assert localizedMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Linked user localized user test"
+                }
+            }.count() == 2
         }
 
         and: "after a few seconds the rule should not have fired again"
