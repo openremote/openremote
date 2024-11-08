@@ -1,5 +1,5 @@
 import {i18next, translate} from "@openremote/or-translate";
-import {LitElement, TemplateResult, css, html} from "lit";
+import {LitElement, PropertyValues, TemplateResult, css, html} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {AbstractNotificationMessageUnion, LocalizedNotificationMessage} from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
@@ -7,6 +7,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
+import {guard} from "lit/directives/guard.js";
 import "./or-rule-form-email-message";
 import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
@@ -63,8 +64,10 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
         return html`
             <div>
                 ${when(this.wrongLanguage, () => until(this._getWrongLanguageTemplate()))}
-                ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
-                ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
+                ${guard([this.message, this._selectedLanguage, this.languages, this.type], () => html`
+                    ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
+                    ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
+                `)}
                 ${when(this.languages?.length && this._validLanguages && (this._validLanguages.length < this.languages.length), 
                         () => until(this._getLanguageErrorTemplate(this.languages!, this._validLanguages!))
                 )}
