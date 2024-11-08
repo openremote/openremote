@@ -45,7 +45,7 @@ public class StatusResourceImpl implements StatusResource {
         String authServerUrl = "";
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
-        if (identityService != null) {
+        if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
             authServerUrl = identityService.getIdentityProvider().getFrontendURI();
         }
 
