@@ -97,6 +97,10 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         this(attributeState.getRef(), attributeState.getValue().orElse(null));
     }
 
+    public AttributeEvent(AttributeStateWithTimestamp attributeState) {
+        this(attributeState.getRef(), attributeState.getValue().orElse(null), attributeState.timestamp);
+    }
+
     public AttributeEvent(AttributeState attributeState, Long timestamp) {
         this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
     }

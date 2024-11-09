@@ -415,14 +415,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
+        return writeAttributeValue(requestParams, assetId, attributeName, 0L, value);
+    }
 
+    @Override
+    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Long timestamp, Object value) {
+        LOG.info(String.format("writeAttributeValue called with parameters: requestParams=%s, assetId=%s, attributeName=%s, value=%s, timestamp=%d", requestParams, assetId, attributeName, value, timestamp));
         Response.Status status = Response.Status.OK;
 
         if (value instanceof NullNode) {
             value = null;
         }
 
-        AttributeEvent event = new AttributeEvent(assetId, attributeName, value);
+        AttributeEvent event = new AttributeEvent(assetId, attributeName, value, timestamp);
 
         // Check authorisation
         if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
@@ -446,7 +451,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
+        return writeAttributeValues(requestParams,
+                Arrays.stream(attributeStates)
+                        .map(AttributeStateWithTimestamp::new)
+                        .toArray(AttributeStateWithTimestamp[]::new)
+        );
+    }
 
+    @Override
+    public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeStateWithTimestamp[] attributeStates) {
         // Process asynchronously but block for a little while waiting for the result
         return Arrays.stream(attributeStates).map(attributeState -> {
             AttributeEvent event = new AttributeEvent(attributeState);
