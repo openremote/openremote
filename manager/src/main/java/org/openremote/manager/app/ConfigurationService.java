@@ -107,7 +107,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         if(!Files.isRegularFile(mapSettingsPath)) {
             if(!Files.isRegularFile(persistencePath)){
                 persistencePath.getParent().toFile().mkdirs();
-                LOG.warning("Copying defaults to and using " + persistencePath.toString() + " for mapsettings.json");
+                LOG.warning("Copying defaults to and using " + persistencePath + " for mapsettings.json");
                 Files.copy(defaultMapSettingsPath, persistencePath);
                 mapSettingsPath = persistencePath;
             }
@@ -116,9 +116,9 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             mapSettingsPath = persistencePath;
         }
         LOG.info("Configuration Service Used files:");
-        LOG.info("\t- manager_config.json: " + getManagerConfigPath().toAbsolutePath().toString());
-        LOG.info("\t- mapsettings.json: " + mapSettingsPath.toAbsolutePath().toString());
-        LOG.info("\t- mapdata.mbtiles: " + mapTilesPath.toAbsolutePath().toString());
+        LOG.info("\t- manager_config.json: " + getManagerConfigPath().toAbsolutePath());
+        LOG.info("\t- mapsettings.json: " + mapSettingsPath.toAbsolutePath());
+        LOG.info("\t- mapdata.mbtiles: " + mapTilesPath.toAbsolutePath());
     }
 
     @Override
@@ -128,11 +128,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     @Override
     public void stop(Container container) throws Exception {
         /* code not overridden yet */
-    }
-
-    @SuppressWarnings("unchecked")
-    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
-        return (ConcurrentMap<String, ObjectNode>) getMapConfig().get("settings");
     }
 
     protected Optional<File> getManagerConfigFile(){
@@ -268,7 +263,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             try {
                 //Check if the file retrieved is somewhere within the storageDir/manager directory.
                 //If it is, return an Optional.empty file to denote Not Found
-                Boolean isValid = file.getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
+                boolean isValid = file.getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
                 if (!isValid) return Optional.empty();
                 } catch (IOException e) {
                     return Optional.empty();
@@ -280,7 +275,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     protected ObjectNode checkAndFixImageReferences(ObjectNode managerConfig) throws Exception{
 
-        Boolean configChanged = false;
+        boolean configChanged = false;
 
         List<String> imageTypes = List.of("logo", "logoMobile", "favicon");
 
