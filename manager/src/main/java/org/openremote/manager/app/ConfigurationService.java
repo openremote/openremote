@@ -38,8 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -86,17 +84,32 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         identityService, this)
         );
 
-        Predicate<Path> checkFilePred = (path) -> Files.isRegularFile(path.toAbsolutePath());
+        // Retrieve default configuration files; Try to find all possible default locations of each file, and then
+        // return the first one. Since the stream maintains ordering, we use the first available one, since they're placed
+        // below in order of most importance. Throw an Exception if no default file could be found.
 
         Path defaultMapSettingsPath = Stream.of("/opt/map/mapsettings.json", "manager/src/map/mapsettings.json")
                 .map(Path::of)
-                .filter(checkFilePred)
-                .toList().get(0);
+                .map(Path::toAbsolutePath)
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new Exception("Could not find any default value for mapsettings.json"));
 
         Path defaultMapTilesPath = Stream.of("/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", "manager/src/map/mapdata.mbtiles")
                 .map(Path::of)
-                .filter(checkFilePred)
-                .toList().get(0);
+                .map(Path::toAbsolutePath)
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new Exception("Could not find any default value for mapdata.mbtiles"));
+
+        Path defaultManagerConfigPath = Stream.of(
+                pathPublicRoot.resolve("manager").resolve("manager_config.json"),
+                persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json"))
+                .map(Path::toAbsolutePath)
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new Exception("Could not find any default value for mapdata.mbtiles"));
+
 
         mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, defaultMapTilesPath.toAbsolutePath().toString()));
         mapTilesPath = Files.isRegularFile(mapTilesPath) ? mapTilesPath : defaultMapTilesPath;
@@ -203,7 +216,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
 
     public void saveManagerConfigFile(ObjectNode managerConfiguration) throws Exception {
-        LOG.log(Level.INFO, "Saving manager_config.json...");
+        LOG.log(Level.INFO, "Saving manager_config.json to "+getManagerConfigPath().toFile()+"...");
 
         // When saving the manager_config, automatically save it to the storageDir, as any other case would mean
         // that it's stored in OR_CUSTOM_APP_DOCROOT

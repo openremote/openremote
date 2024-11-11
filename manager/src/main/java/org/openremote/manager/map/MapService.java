@@ -32,11 +32,13 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.core.UriBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
 import java.util.HashMap;
@@ -79,6 +81,25 @@ public class MapService implements ContainerService {
         return this.mapConfig;
     }
 
+    public void deleteRealm(Realm realm) throws IOException {
+
+        LOG.info("Removing realm \""+realm.getDisplayName()+"\" from the mapsettings.json file...");
+
+        JsonNode newFile = this.mapConfig.deepCopy();
+
+        for (JsonNode jsonVal : newFile){
+            if(jsonVal instanceof ObjectNode){
+                ObjectNode obj = (ObjectNode) jsonVal;
+                if(jsonVal.has(realm.getName())) {
+                    obj.remove(realm.getName());
+                    saveMapConfig(getMapConfigRealms((ObjectNode) newFile.get("options")));
+                    this.mapConfig = loadMapSettingsJson();
+                    return;
+                }
+            }
+        }
+    }
+
     protected static Metadata getMetadata(Connection connection) {
 
         PreparedStatement query = null;
@@ -117,6 +138,11 @@ public class MapService implements ContainerService {
         }
 
         return metadata;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static ConcurrentMap<String, MapRealmConfig> getMapConfigRealms(ObjectNode mapRealms){
+        return (ConcurrentMap<String, MapRealmConfig>) ValueUtil.JSON.convertValue(mapRealms, ConcurrentMap.class);
     }
 
     protected static ObjectNode loadMapSettingsJson() {
