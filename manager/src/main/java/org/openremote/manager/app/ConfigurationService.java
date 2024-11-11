@@ -22,6 +22,7 @@ package org.openremote.manager.app;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.NotFoundException;
+import org.apache.activemq.artemis.core.remoting.CertificateUtil;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
@@ -31,6 +32,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.rules.flow.Option;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
@@ -88,40 +90,41 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         // return the first one. Since the stream maintains ordering, we use the first available one, since they're placed
         // below in order of most importance. Throw an Exception if no default file could be found.
 
-        Path defaultMapSettingsPath = Stream.of("/opt/map/mapsettings.json", "manager/src/map/mapsettings.json")
+        Optional<Path> defaultMapSettingsPath = Stream.of("/opt/map/mapsettings.json", "manager/src/map/mapsettings.json")
                 .map(Path::of)
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst()
-                .orElseThrow(() -> new Exception("Could not find any default value for mapsettings.json"));
+                .findFirst();
 
-        Path defaultMapTilesPath = Stream.of("/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", "manager/src/map/mapdata.mbtiles")
+        Optional<Path> defaultMapTilesPath = Stream.of("/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", "manager/src/map/mapdata.mbtiles")
                 .map(Path::of)
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst()
-                .orElseThrow(() -> new Exception("Could not find any default value for mapdata.mbtiles"));
+                .findFirst();
 
-        Path defaultManagerConfigPath = Stream.of(
+        Optional<Path> defaultManagerConfigPath = Stream.of(
                 pathPublicRoot.resolve("manager").resolve("manager_config.json"),
                 persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json"))
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst()
-                .orElseThrow(() -> new Exception("Could not find any default value for mapdata.mbtiles"));
+                .findFirst();
 
+        if(defaultMapTilesPath.isEmpty() || defaultMapSettingsPath.isEmpty()){
+            LOG.warning("Could not find map settings or map tiles");
+            return;
+        }
 
-        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, defaultMapTilesPath.toAbsolutePath().toString()));
-        mapTilesPath = Files.isRegularFile(mapTilesPath) ? mapTilesPath : defaultMapTilesPath;
+        mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, defaultMapTilesPath.get().toAbsolutePath().toString()));
+        mapTilesPath = Files.isRegularFile(mapTilesPath) ? mapTilesPath : defaultMapTilesPath.get();
 
-        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, defaultMapSettingsPath.toAbsolutePath().toString()));
+        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, defaultMapSettingsPath.get().toAbsolutePath().toString()));
         Path persistencePath = persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toAbsolutePath();
 
         if(!Files.isRegularFile(mapSettingsPath)) {
             if(!Files.isRegularFile(persistencePath)){
                 persistencePath.getParent().toFile().mkdirs();
                 LOG.warning("Copying defaults to and using " + persistencePath + " for mapsettings.json");
-                Files.copy(defaultMapSettingsPath, persistencePath);
+                Files.copy(defaultMapSettingsPath.get(), persistencePath);
                 mapSettingsPath = persistencePath;
             }
         }
