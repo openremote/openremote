@@ -20,6 +20,12 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
@@ -68,5 +74,25 @@ public class MapResourceImpl extends WebResource implements MapResource {
         } else {
             throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
+    }
+
+    @Override
+    public Response uploadMap(@Context HttpServletRequest request) {
+        try (InputStream stream = request.getInputStream()) {
+            boolean isSaved = mapService.saveUploadedFile(stream, "mapdata-custom.mbtiles");
+            if (isSaved) {
+                return Response.ok("File uploaded successfully").build();
+            } else {
+                return Response.serverError().entity("File upload failed").build();
+            }
+        } catch (IOException error) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public Response removeMap(@Context HttpServletRequest request) {
+        mapService.removeUploadedFile("mapdata-custom.mbtiles");
+        return Response.noContent().build();
     }
 }
