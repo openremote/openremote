@@ -32,6 +32,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationAction;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
@@ -537,6 +538,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public static final String PLACEHOLDER_RULESET_ID = "%RULESET_ID%";
     public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
     public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
+    public static final String PLACEHOLDER_ASSET_ID = "%ASSET_ID%";
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
@@ -787,6 +789,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
+            PushNotificationAction action;
             boolean linkedUsersTarget = ruleAction.target != null && Boolean.TRUE.equals(ruleAction.target.linkedUsers);
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
@@ -801,8 +804,32 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (isPush) {
                     PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
                     body = pushNotificationMessage.getBody();
+                    action = pushNotificationMessage.getAction();
+
+                    boolean urlContainsAssetId = action != null && 
+                                                action.getUrl() != null && 
+                                                action.getUrl().contains(PLACEHOLDER_ASSET_ID);
+
+                    if (urlContainsAssetId) {
+                        String assetId = null;
+                        Set<String> matchedIds = useUnmatched ? 
+                                                ruleState.otherwiseMatchedAssetIds :
+                                                ruleState.thenMatchedAssetIds;
+                        
+                        if (matchedIds != null && !matchedIds.isEmpty()) {
+                            assetId = matchedIds.iterator().next();
+                        }
+                        if (assetId != null) {
+                            String url = action.getUrl().replace(PLACEHOLDER_ASSET_ID, assetId);
+                            action.setUrl(url);
+                            log(Level.FINEST, "Replaced asset ID notification URL:" + url);
+                        } else {
+                            log(Level.WARNING, "Asset ID placeholder used but no matched assets found for notification URL");
+                        }
+                    }
                 } else {
                     body = null;
+                    action = null;
                 }
             }
 
