@@ -22,6 +22,9 @@ package org.openremote.model.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 
@@ -68,4 +71,23 @@ public interface MapResource {
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+    /**
+     * Saves mbtiles file
+     */
+    @POST
+    @Path("upload")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces("text/plain")
+    @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
+    Response uploadMap(@Context HttpServletRequest request);
+
+    /**
+     * Removes mbtiles file
+     */
+    @POST
+    @Path("upload")
+    @Produces("text/plain")
+    @Operation(operationId = "removeMap", summary = "Removes mbtiles file")
+    Response removeMap(@Context HttpServletRequest request);
 }
