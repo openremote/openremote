@@ -34,7 +34,6 @@ import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultAppConfig} from "../index";
 
@@ -184,6 +183,10 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             .input or-mwc-input:not([icon]) {
                 width: 80%;
             }
+
+            .d-inline-flex {
+                display: inline-flex;
+            }
         `;
     }
 
@@ -211,6 +214,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
+
+    protected tilesForUpload: File;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -335,7 +340,24 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                     </div>
 
                                     <div class="custom-tile-group">
-                                        <!-- TODO: Add file input -->
+                                        <div class="subheader">${i18next.t("configuration.global.mapTiles")}</div>
+                                        <span>${i18next.t("configuration.global.uploadMapTiles")}</span>
+                                        <div class="input d-inline-flex">
+                                            <or-file-uploader 
+                                                .label=${i18next.t("configuration.global.uploadMapTiles")}"
+                                                .accept="application/vnd.sqlite3"
+                                                @change="${(e: CustomEvent) => {
+                                                    const file = e.detail.value[0] as File;
+                                                    this.tilesForUpload = file;
+                                                    this.requestUpdate()
+                                                    this.mapConfigChanged = true;;
+                                                }}"></or-file-uploader>
+                                            <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
+                                                @or-mwc-input-changed="${async () => {
+                                                    await manager.rest.api.MapResource.removeMap()
+                                                }}" 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
@@ -386,13 +408,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
-        const imagePromises = [];
+        const filePromises = [];
         if(this.realmConfigPanel !== undefined) {
             const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
             elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
                 Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(
+                    filePromises.push(
                         manager.rest.api.ConfigurationResource.fileUpload(y, {path: (y as any).path}).then(file =>{
                             config.realms[elem.name][x] = file.data;
                         })
@@ -413,11 +435,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
+        filePromises.push(manager.rest.api.MapResource.uploadMap({
+            data: this.tilesForUpload,
+            headers: {'Content-Type': 'application/octet-stream'}
+        }));
 
-        // We first wait for the imagePromises to finish, so that
+        // We first wait for the filePromises to finish, so that
         // we can use the path returned from the backend to store to the
         // manager_config.
-        Promise.all(imagePromises).then((arr:string[]) => {
+        Promise.all(filePromises).then((arr:string[]) => {
             // Wait for all requests to complete, then finish loading.
             const promises = [
                 this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,

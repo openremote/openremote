@@ -40,7 +40,7 @@ export class OrConfPanel extends LitElement {
     }
 
     protected isMapConfig(object: unknown): object is MapConfig {
-        if (typeof object == 'object' && 'options' in object) {
+        if (typeof object === 'object' && 'options' in object) {
             const keys = Object.keys(object.options);
             // Instead of looking for the exact same entries, ensure that at least one of them can be mapped.
             // This also shows realm configs that don't have parent realms, but are still existing in the mapsettings.json
