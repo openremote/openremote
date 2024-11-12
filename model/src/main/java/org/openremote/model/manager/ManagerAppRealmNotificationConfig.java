@@ -19,13 +19,7 @@
  */
 package org.openremote.model.manager;
 
-public class ManagerAppRealmConfig {
-    protected String appTitle;
-    protected String styles;
-    protected String logo;
-    protected String logoMobile;
-    protected String favicon;
-    protected String language;
-    protected String[] headers;
-    protected ManagerAppRealmNotificationConfig notifications;
+public class ManagerAppRealmNotificationConfig {
+    protected String[] languages;
+    protected String defaultLanguage;
 }
