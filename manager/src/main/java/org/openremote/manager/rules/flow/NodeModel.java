@@ -7,6 +7,7 @@ import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueHolder;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -129,6 +130,16 @@ public enum NodeModel {
                 Number a = (Number) info.getValueFromInput(0);
                 Number b = (Number) info.getValueFromInput(1);
                 return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
+            }),
+    SUM_PROCESSOR(new Node(NodeType.PROCESSOR, "Σ", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER_ARRAY),
+            new MultiInputNodeSocket("a", NodeDataType.NUMBER)
+    }, new NodeSocket[]{
+            new NodeSocket("b", NodeDataType.NUMBER),
+    }),
+            info -> {
+                Number[] a = (Number[]) info.getValueFromInput(0);
+                return a != null ? Arrays.stream(a).mapToDouble(Number::doubleValue).sum() : null;
             }),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{

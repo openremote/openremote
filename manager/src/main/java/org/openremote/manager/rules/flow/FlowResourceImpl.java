@@ -4,9 +4,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.rules.flow.FlowResource;
-import org.openremote.model.rules.flow.Node;
-import org.openremote.model.rules.flow.NodeType;
+import org.openremote.model.rules.flow.*;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -35,5 +33,10 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
     @Override
     public Node getNodeDefinition(RequestParams requestParams, String name) {
         return NodeModel.getDefinitionFor(name);
+    }
+
+    @Override
+    public boolean getDoesMatch(RequestParams requestParams, NodeDataType fromType, NodeDataType toType) {
+        return SocketTypeMatcher.match(fromType, toType);
     }
 }

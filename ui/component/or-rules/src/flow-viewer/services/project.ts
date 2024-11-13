@@ -1,8 +1,9 @@
 import { Node, NodeConnection, NodeSocket, NodeCollection, RulesetUnion } from "@openremote/model";
 import { EventEmitter } from "events";
-import { SocketTypeMatcher, NodeUtilities } from "../node-structure";
 import { EditorWorkspace } from "../components/editor-workspace";
 import { input } from "../components/flow-editor";
+import manager from "@openremote/core";
+import {NodeUtilities} from "../node-structure";
 
 export class Project extends EventEmitter {
     public nodes: Node[] = [];
@@ -191,7 +192,7 @@ export class Project extends EventEmitter {
             return false;
         }
 
-        if (!SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
+        if (!manager.rest.api.FlowResource.getDoesMatch(fromSocket.type!, toSocket.type!) ||
             fromSocket.id === toSocket.id ||
             fromSocket.nodeId === toSocket.nodeId) {
             return false;
