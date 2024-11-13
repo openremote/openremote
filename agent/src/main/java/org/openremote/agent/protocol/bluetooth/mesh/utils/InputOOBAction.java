@@ -72,7 +72,7 @@ public enum InputOOBAction {
      * Returns the Input OOB Action description
      *
      * @param type Input OOB type
-     * @return Input OOB type descrption
+     * @return Input OOB type description
      */
     public static String getInputOOBActionDescription(final InputOOBAction type) {
         switch (type) {

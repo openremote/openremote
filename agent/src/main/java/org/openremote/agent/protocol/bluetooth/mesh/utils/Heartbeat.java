@@ -133,7 +133,7 @@ public abstract class Heartbeat {
     }
 
     /**
-     * Converts the perio to time
+     * Converts the period to time
      *
      * @param seconds PeriodLog
      */

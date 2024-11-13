@@ -19,8 +19,6 @@
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.BluetoothPeripheral;
-
 import java.util.List;
 
 public interface BluetoothMeshProxyScannerCallback {

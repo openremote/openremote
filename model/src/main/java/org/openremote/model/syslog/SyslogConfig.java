@@ -19,8 +19,6 @@
  */
 package org.openremote.model.syslog;
 
-import org.hibernate.validator.constraints.Range;
-
 import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
 

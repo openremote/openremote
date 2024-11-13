@@ -97,6 +97,27 @@
         {
           "action": "notification",
           "target": {
+            "linkedUsers": true,
+            "users": {
+              "realmRoles": [
+                {
+                  "predicateType": "string",
+                  "value": "test-realm-role-3"
+                }
+              ]
+            }
+          },
+          "notification": {
+            "name": "linkedPushTest",
+            "message": {
+              "type": "push",
+              "title": "Linked user test 3"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
             "linkedUsers": true
           },
           "notification": {
