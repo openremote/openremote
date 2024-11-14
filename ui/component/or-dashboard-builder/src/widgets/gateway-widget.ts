@@ -10,6 +10,7 @@ import manager from "@openremote/core";
 import {when} from "lit/directives/when.js";
 import {i18next} from "@openremote/or-translate";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import moment from "moment";
 
 const styling = css`
     #gateway-widget-wrapper {
@@ -132,7 +133,7 @@ export class GatewayWidget extends OrWidget {
                     `, () => {
                         if (this._activeTunnel) {
                             return html`
-
+                                <div>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
                                 ></or-mwc-input>
@@ -146,7 +147,10 @@ export class GatewayWidget extends OrWidget {
                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onTunnelNavigateClick(ev)}"
                                     ></or-mwc-input>
                                 `)}
-                                
+                                </div>
+                                ${when(this._activeTunnel?.autoCloseTime, () => html`
+                                    <div>${i18next.t("gatewayTunnels.closesAt")}: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
+                                `)}
                             `;
                         } else {
                             return html`

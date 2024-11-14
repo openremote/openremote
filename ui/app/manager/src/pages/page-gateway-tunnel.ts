@@ -13,6 +13,7 @@ import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table"
 import {getAssetsRoute} from "../routes";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import moment from "moment";
 
 export function pageGatewayTunnelProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -147,6 +148,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
             {title: i18next.t("gatewayTunnels.target"), isSortable: true, hideMobile: true},
             {title: i18next.t("gatewayTunnels.targetPort"), isSortable: true, hideMobile: true},
             {title: i18next.t("gatewayTunnels.assignedPort"), isSortable: true, hideMobile: true},
+            {title: i18next.t("gatewayTunnels.closesAt"), isSortable: true, hideMobile: true},
             {title: ""}
         ];
         const rows: TableRow[] = tunnels?.map(tunnel => ({
@@ -157,6 +159,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                 tunnel.target,
                 tunnel.targetPort + "",
                 !tunnel.assignedPort ? "" : tunnel.assignedPort + "",
+                tunnel.autoCloseTime ? moment(tunnel.autoCloseTime).format('lll') : "",
                 until(this._getTunnelActionsTemplate(tunnel), html`${i18next.t("loading")}`)
             ],
             clickable: false,
