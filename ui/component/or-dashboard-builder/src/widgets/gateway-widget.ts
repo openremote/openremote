@@ -149,7 +149,7 @@ export class GatewayWidget extends OrWidget {
                                 `)}
                                 </div>
                                 ${when(this._activeTunnel?.autoCloseTime, () => html`
-                                    <div>${i18next.t("gatewayTunnels.closesAt")}: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
+                                    <div><or-translate value="gatewayTunnels.closesAt"></or-translate>: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
                                 `)}
                             `;
                         } else {
