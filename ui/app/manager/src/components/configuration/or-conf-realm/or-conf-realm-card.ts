@@ -398,7 +398,7 @@ export class OrConfRealmCard extends LitElement {
                                         const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
                                         app.realm.notifications = {
                                             languages: newLanguages,
-                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : undefined
+                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
                                         }
                                         app.notifyConfigChange(app.realm);
                                         this.requestUpdate(); // force render

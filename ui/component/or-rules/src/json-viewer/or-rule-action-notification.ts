@@ -68,7 +68,6 @@ export class OrRuleActionNotification extends LitElement {
 
     connectedCallback() {
         this.addEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
-        console.log("Setting initial action!");
         this._initialAction = structuredClone(this.action);
         return super.connectedCallback();
     }
