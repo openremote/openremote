@@ -165,11 +165,6 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the colour of the light to a predefined hexadecimal colour within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
-     * Available colours:<br>
-     * <ul>
-     *     <li>RGB: {@link org.openremote.agent.protocol.tradfri.util.ColourHex}</li>
-     *     <li>Colour temperatures: {@link org.openremote.agent.protocol.tradfri.util.ColourTemperatureHex}</li>
-     * </ul>
      * @param colourHex The new colour for the light
      */
     public void setColourHex(String colourHex) {

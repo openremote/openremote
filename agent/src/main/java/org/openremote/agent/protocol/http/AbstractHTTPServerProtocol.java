@@ -221,7 +221,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
     /**
      * Deployment path will always be prefixed with {@link #getDeploymentPathPrefix()}; default implementation combines
-     * the prefix with the value of {@link AbstractHTTPServerAgent# META_PROTOCOL_DEPLOYMENT_PATH}, for example:
+     * the prefix with the value of {@link AbstractHTTPServerAgent#DEPLOYMENT_PATH}, for example:
      * <ul>
      * <li>getDeploymentPathPrefix() = {@value #DEFAULT_DEPLOYMENT_PATH_PREFIX}</li>
      * <li>{@link AbstractHTTPServerAgent#DEPLOYMENT_PATH} = "complaints"</li>
