@@ -93,13 +93,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
     }
 
     protected _onJsonRuleChanged() {
-        const valid = this.checkForm();
-        this._orMwcDialog?.setActions(this._orMwcDialog?.actions?.map(action => {
-            if(action.actionName === "ok") {
-                action.disabled = !valid;
-            }
-            return action;
-        }));
+        this.validateForm();
     }
 
     initDialog() {
@@ -128,6 +122,20 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         if(changedProperties.has("action")){
             this.renderDialogHTML(this.action);
         }
+        // Possibly, a render is triggered by renderDialogHTML(), so we await the pending update. (if there is any)
+        this.getUpdateComplete().finally(() => {
+            this.validateForm();
+        });
+    }
+
+    validateForm() {
+        const valid = this.checkForm();
+        this._orMwcDialog?.setActions(this._orMwcDialog?.actions?.map(action => {
+            if(action.actionName === "ok") {
+                action.disabled = !valid;
+            }
+            return action;
+        }));
     }
 
     checkForm() {

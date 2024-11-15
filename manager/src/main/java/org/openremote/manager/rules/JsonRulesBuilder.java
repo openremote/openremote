@@ -1218,6 +1218,27 @@ public class JsonRulesBuilder extends RulesBuilder {
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
+    protected String replaceAssetIdPlaceholder(String text, RuleState ruleState, boolean useUnmatched, String context, boolean firstOnly) {
+        if (TextUtil.isNullOrEmpty(text) || !text.contains(PLACEHOLDER_ASSET_ID)) {
+            return text;
+        }
+        
+        Set<String> matchedIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+
+        if (matchedIds != null && !matchedIds.isEmpty()) {
+            String replacement = firstOnly ? matchedIds.iterator().next() : String.join(",", matchedIds);
+            
+
+            String result = text.replace(PLACEHOLDER_ASSET_ID, replacement);
+            log(Level.FINEST, "Replaced asset ID(s) in " + context + ": " + result);
+            return result; 
+        } else {
+            log(Level.WARNING, "Asset ID placeholder used but no matched assets found for " + context);
+            return text;
+        }
+    }
+    
+    
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {
 
         StringBuilder sb = new StringBuilder();
@@ -1258,26 +1279,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
-    protected String replaceAssetIdPlaceholder(String text, RuleState ruleState, boolean useUnmatched, String context, boolean firstOnly) {
-        if (TextUtil.isNullOrEmpty(text) || !text.contains(PLACEHOLDER_ASSET_ID)) {
-            return text;
-        }
-        
-        Set<String> matchedIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
-
-        if (matchedIds != null && !matchedIds.isEmpty()) {
-            String replacement = firstOnly ? matchedIds.iterator().next() : String.join(",", matchedIds);
-            
-
-            String result = text.replace(PLACEHOLDER_ASSET_ID, replacement);
-            log(Level.FINEST, "Replaced asset ID(s) in " + context + ": " + result);
-            return result; 
-        } else {
-            log(Level.WARNING, "Asset ID placeholder used but no matched assets found for " + context);
-            return text;
-        }
-    }
-    
     protected AbstractNotificationMessage insertBodyInMessage(AbstractNotificationMessage sourceMessage, boolean isHtml, String body) {
         if(sourceMessage instanceof EmailNotificationMessage emailMsg) {
             if (isHtml) {

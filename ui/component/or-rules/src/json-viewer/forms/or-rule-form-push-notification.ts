@@ -68,7 +68,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then(msg => this._onActionUrlChange(ev, msg))}"
                               .label="${i18next.t("openWebsiteUrl")}"
                               type="${InputType.TEXT}"
-                              required
                               placeholder=" "></or-mwc-input>
 
                 <!-- Open in browser switch -->
@@ -86,7 +85,6 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
                                   .label="${i18next.t("buttonTextConfirm")}"
                                   type="${InputType.TEXT}"
                                   class="input-small"
-                                  required
                                   placeholder=" "></or-mwc-input>
                     <or-mwc-input .value="${message.buttons?.[1]?.title}"
                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onchange(ev, message).then(msg => this._onButtonTitleChange(ev, 1, msg))}"

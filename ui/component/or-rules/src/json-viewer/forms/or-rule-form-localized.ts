@@ -193,7 +193,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                     case "email":
                         return msg.subject && msg.html;
                     case "push":
-                        return msg.title && msg.body && msg.action?.url && msg.buttons?.find(b => b.title);
+                        return msg.title && msg.body;
                     case "localized":
                         return false;
                     default:

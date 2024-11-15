@@ -354,7 +354,8 @@
     "protocol": "Protocol",
     "createNew": "Maak een nieuwe Gateway tunnel",
     "selectAsset": "Selecteer gateway asset",
-    "closeSuccessful": "Tunnel gesloten"
+    "closeSuccessful": "Tunnel gesloten",
+    "closesAt": "Sluit op"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
