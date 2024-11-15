@@ -355,7 +355,8 @@
     "protocol": "Protocol",
     "createNew": "Add new Gateway tunnel",
     "selectAsset": "Select gateway asset",
-    "closeSuccessful": "Closed tunnel successfully"
+    "closeSuccessful": "Closed tunnel successfully",
+    "closesAt": "Closes at"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
