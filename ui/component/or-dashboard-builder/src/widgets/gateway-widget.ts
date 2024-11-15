@@ -60,6 +60,8 @@ export class GatewayWidget extends OrWidget {
 
     protected _startedByUser = false;
 
+    protected _refreshTimer?: number = undefined;
+
     static getManifest(): WidgetManifest {
         return {
             displayName: "Gateway",
@@ -96,6 +98,11 @@ export class GatewayWidget extends OrWidget {
                 console.warn("Keeping the active tunnel open, as it is not started through the widget.")
             }
         }
+
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
         super.disconnectedCallback();
     }
 
@@ -217,6 +224,26 @@ export class GatewayWidget extends OrWidget {
      */
     protected _setActiveTunnel(tunnelInfo?: GatewayTunnelInfo, silent = false) {
         this._activeTunnel = tunnelInfo;
+
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
+        if (tunnelInfo?.autoCloseTime) {
+            const timeout = tunnelInfo?.autoCloseTime - Date.now();
+            if (timeout > 0) {
+                this._refreshTimer = window.setTimeout(() => {
+                    this._getActiveTunnel(this._getTunnelInfoByConfig(this.widgetConfig)).then(info => {
+                        if (info) {
+                            this._setActiveTunnel(info, true)
+                        } else {
+                            this._setActiveTunnel(undefined);
+                        }
+                    });
+                }, timeout);
+            }
+        }
+
         if(tunnelInfo && !silent) {
             this._navigateToTunnel(tunnelInfo);
         }

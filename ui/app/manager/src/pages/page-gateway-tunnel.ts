@@ -98,8 +98,17 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
     @state()
     protected _loading = false;
 
+    protected _refreshTimer?: number = undefined;
+
     static get styles() {
         return [styling];
+    }
+
+    disconnectedCallback() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+        super.disconnectedCallback();
     }
 
     get name(): string {
@@ -410,12 +419,31 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         }
 
         if (response.data.length > 0) {
+            this._updateRefreshTimer(response.data);
             return response.data;
         } else {
             console.warn("No tunnels were received from the manager.")
         }
     }
 
+    /**
+     * Sets a timeout to refresh the tunnels whenever the next tunnel is automatically closed.
+     */
+    protected _updateRefreshTimer(tunnels?: GatewayTunnelInfo[]) {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+
+        if (tunnels && tunnels.length > 0) {
+            const nextCloseTime = tunnels.map(t => t.autoCloseTime).filter(t => t).sort()[0];
+            if (nextCloseTime) {
+                const timeout = nextCloseTime - Date.now();
+                if (timeout > 0) {
+                    this._refreshTimer = window.setTimeout(() => this._fetchTunnelsTask.run(), timeout);
+                }
+            }
+        }
+    }
 
     /* ------------------------------ */
 
