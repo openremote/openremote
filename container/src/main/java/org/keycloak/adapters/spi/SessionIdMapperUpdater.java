@@ -81,7 +81,7 @@ public interface SessionIdMapperUpdater {
      * Refreshes the mapping in the {@code idMapper} from the internal source of this mapped updater
      * and maps it via {@link SessionIdMapper#map} method.
      * @param idMapper Mapper
-     * @param session HTTP session ID.
+     * @param httpSessionId HTTP session ID.
      * @return {@code true} if the mapping existed in the internal source of this mapped updater
      * and has been refreshed, {@code false} otherwise
      */
