@@ -47,8 +47,6 @@ public interface Constants {
     String WRITE_ALARMS_ROLE = "write:alarms";
     String RESTRICTED_USER_REALM_ROLE = "restricted_user";
     String AUTH_CONTEXT = "AUTH_CONTEXT";
-    String SESSION_TERMINATOR = "connection.sessionTerminator";
-    String SESSION_KEY = "connection.sessionKey";
     String SESSION_OPEN = "connection.sessionOpen";
     String SESSION_CLOSE = "connection.sessionClose";
     String SESSION_CLOSE_ERROR = "connection.sessionCloseError";

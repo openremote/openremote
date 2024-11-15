@@ -22,7 +22,6 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
 /**

@@ -78,7 +78,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             .append(ISO_LOCAL_TIME)
             .toFormatter();
 
-    protected ScheduledExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -110,7 +110,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         gatewayService = container.getService(GatewayService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        scheduledExecutorService = container.getScheduledExecutor();
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
@@ -152,9 +152,9 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         }
 
         // Start forecast solar thread
-        executorService.scheduleAtFixedRate(this::processSolarData, 1, 1, TimeUnit.MINUTES);
+        scheduledExecutorService.scheduleAtFixedRate(this::processSolarData, 1, 1, TimeUnit.MINUTES);
 
-        clientEventService.addInternalSubscription(
+        clientEventService.addSubscription(
                 AttributeEvent.class,
                 new AssetFilter<AttributeEvent>().setAssetClasses(Collections.singletonList(ElectricityProducerSolarAsset.class)),
                 this::processElectricityProducerSolarAssetAttributeEvent);
@@ -162,13 +162,12 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     @Override
     public void stop(Container container) throws Exception {
-        executorService.shutdown();
     }
 
     protected static void initClient() {
         synchronized (resteasyClient) {
             if (resteasyClient.get() == null) {
-                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR_SERVICE));
+                resteasyClient.set(createClient(org.openremote.container.Container.EXECUTOR));
             }
         }
     }

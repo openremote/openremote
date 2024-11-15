@@ -519,10 +519,8 @@ export class OrAttributeCard extends LitElement {
                     } else {
                         // fully load the asset
                         const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
-                            event: {
-                                eventType: "read-asset",
-                                assetId: selectedNode.asset!.id
-                            }
+                            eventType: "read-asset",
+                            assetId: selectedNode.asset!.id
                         });
                         this.asset = assetEvent.asset;
                     }
@@ -728,14 +726,12 @@ export class OrAttributeCard extends LitElement {
         const attributeName = this.assetAttributes[0][1].name!;
 
         const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
-            event: {
-                eventType: "read-asset-attribute",
-                ref: {
-                    id: assetId,
-                    name: attributeName
-                }
-            } as ReadAttributeEvent
-        });
+            eventType: "read-asset-attribute",
+            ref: {
+                id: assetId,
+                name: attributeName
+            }
+        } as ReadAttributeEvent);
 
         this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);

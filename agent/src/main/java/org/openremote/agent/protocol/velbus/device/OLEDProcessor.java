@@ -33,7 +33,7 @@ import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 /**
  * Covers OLED specific features:
- * <p>
+ *
  * <ul>
  * <li> Memo Text
  * </ul>

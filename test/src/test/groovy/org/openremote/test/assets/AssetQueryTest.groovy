@@ -26,10 +26,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import static org.openremote.model.query.AssetQuery.*
 import static org.openremote.model.query.AssetQuery.Access.PRIVATE
 import static org.openremote.model.query.AssetQuery.Access.PROTECTED
@@ -922,12 +923,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "the lobby has an opening date and the date falls is between the filtering date"
         def lobby = assetStorageService.find(managerTestSetup.lobbyId, true)
         lobby.addAttributes(
-                new Attribute<>("openingDate", TIMESTAMP_ISO8601, ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).format(ISO_ZONED_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
+                new Attribute<>("openingDate", TIMESTAMP_ISO8601, Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).format(ISO_OFFSET_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
         )
         lobby = assetStorageService.merge(lobby)
 
-        def rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
-        def rangeEnd = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
+        def rangeStart = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
+        def rangeEnd = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
 
         def assets = assetStorageService.findAll(
                 new AssetQuery()
@@ -935,7 +936,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(rangeStart.format(ISO_ZONED_DATE_TIME), rangeEnd.format(ISO_ZONED_DATE_TIME))
+                        new DateTimePredicate(rangeStart.format(ISO_OFFSET_DATE_TIME), rangeEnd.format(ISO_OFFSET_DATE_TIME))
                             .operator(Operator.BETWEEN))
         )
 
@@ -951,7 +952,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_ZONED_DATE_TIME)))
+                        new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_OFFSET_DATE_TIME)))
         )
 
 
@@ -966,7 +967,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
-                    new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_ZONED_DATE_TIME)))
+                    new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_OFFSET_DATE_TIME)))
         )
 
 
@@ -975,7 +976,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == lobby.id
 
         when: "the lobby has an opening date and the date is equal to the filtering date"
-        rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC) // 28/01/2018 @ 2:00pm (UTC)
+        rangeStart = Instant.ofEpochMilli(1517151600000).atZone(ZoneId.systemDefault()) // 28/01/2018 @ 2:00pm (UTC)
 
         assets = assetStorageService.findAll(
                 new AssetQuery()
@@ -983,7 +984,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .realm(new RealmPredicate(keycloakTestSetup.realmMaster.name))
                     .attributeValue(
                     "openingDate",
-                    new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_ZONED_DATE_TIME)))
+                    new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_OFFSET_DATE_TIME)))
         )
 
 

@@ -76,7 +76,7 @@ class GroupSummationRuleTest extends Specification implements ManagerContainerTr
             engine = rulesService.realmEngines.get(Constants.MASTER_REALM)
             assert engine != null
             assert engine.isRunning()
-            assert engine.assetStates.count { it.id == parentAsset.id } == 3
+            assert engine.facts.assetStates.count { it.id == parentAsset.id } == 3
             assert engine.lastFireTimestamp > ruleset.createdOn.getTime()
             assert engine.deployments.get(ruleset.id) != null
         }

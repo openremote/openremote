@@ -52,7 +52,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
@@ -235,13 +234,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     def yearMonthDay = doDynamicTimeReplace('%TIME:yyyy-MM-dd%', getInstantTimeOf(container))
                     def epochMillis = getInstantTimeOf(container).plus(1, ChronoUnit.HOURS).toEpochMilli()
                     def epochSeconds = getInstantTimeOf(container).minus(50, ChronoUnit.DAYS).getEpochSecond()
-                    def localInstant = LocalDateTime.ofInstant(getInstantTimeOf(container), ZoneId.systemDefault())
+                    def localDateTime = getInstantTimeOf(container).atZone(ZoneId.systemDefault()).toLocalDateTime()
 
                     if (yearMonthDay.substring(4,5) != '-'
                         || yearMonthDay.substring(7,8) != '-'
-                        || yearMonthDay.substring(0,4) != Integer.toString(localInstant.get(ChronoField.YEAR))
-                        || !yearMonthDay.substring(5,7).contains(Integer.toString(localInstant.get(ChronoField.MONTH_OF_YEAR)))
-                        || !yearMonthDay.substring(8,10).contains(Integer.toString(localInstant.get(ChronoField.DAY_OF_MONTH)))
+                        || yearMonthDay.substring(0,4) != Integer.toString(localDateTime.get(ChronoField.YEAR))
+                        || !yearMonthDay.substring(5,7).contains(Integer.toString(localDateTime.get(ChronoField.MONTH_OF_YEAR)))
+                        || !yearMonthDay.substring(8,10).contains(Integer.toString(localDateTime.get(ChronoField.DAY_OF_MONTH)))
                     ) {
                         requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST).build())
                         return
