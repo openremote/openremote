@@ -34,67 +34,43 @@ import {
     OrMwcTableRowSelectEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
 
-class LocalNotificationManager {
-    private static readonly STORAGE_KEY = 'local_notifications';
+export class NotificationService {
+    async getNotifications(realm: string): Promise<SentNotification[]> {
+        try {
+            const response = await manager.rest.api.NotificationResource.getNotifications({
+                realmId: realm
+            });
 
-    static getNotifications(): SentNotification[] {
-        //get item from local storage
-        // if stored return parsed version of the stored notiff
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            return JSON.parse(stored);
-        }
-        return [];
-    }
-
-    static saveNotifications(notifications: SentNotification[]) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(notifications));
-    }
-
-    static addNotification(notification: SentNotification) {
-        const notifications = this.getNotifications();
-
-        const SentNotification: SentNotification = {
-            id: Date.now(), // use timestamp as id for now
-            name: notification.name, 
-            type: notification.message.type,
-            message: notification.message,
-            sentOn: Date.now(), 
-            target: notification.target || NotificationTargetType.USER,
-            targetId: notification.targetId || "",
-            source: NotificationSource.CLIENT,
-            sourceId: "local", 
-            acknowledgedOn: undefined,
-            deliveredOn: undefined
-        };
-
-        notifications.unshift(SentNotification);
-        this.saveNotifications(notifications);
-
-        return SentNotification;
-
-    }
-
-    static deleteNotification(id: number) {
-        const notifications = this.getNotifications().filter(n => n.id !== id);
-        this.saveNotifications(notifications);
-    }
-
-    static markAsDelivered (id: number) {
-        const notifications = this.getNotifications().map(n => {
-            if (n.id == id) {
-                return {...n, deliveredOn: Date.now()}; //TODO: come back for the delivered logic
+            if (response.status !== 200) {
+                throw new Error("Failed to load notifications");
             }
 
-            return n;
-        });
-
-        this.saveNotifications(notifications);
+            //Filter to only show push notifications
+            return response.data.filter(notification => notification.message.type === "push");
+        } catch (error) {
+            console.error('Failed to load notifications: ', error);
+            if (isAxiosError(error)) {
+                console.error('Error details:', error.response?.data);
+            }
+            throw error;
+        }
     }
 
-    static clearAll() {
-        //not sure if this is needed atm 
+    async sendNotification(notification: Notification): Promise<boolean> {
+        try {
+            const response = await manager.rest.api.NotificationResource.sendNotification(notification);
+            return response.status === 200;
+        } catch (error) {
+            console.error('Failed to send notification: ', error);
+            if (isAxiosError(error)) {
+                console.error('Request payload:', error.config?.data);
+                console.error('Response status:', error.response?.status);
+                console.error('Response data:', error.response?.data);
+            }
+            throw error;
+        }
     }
+
 }
 
 export interface PageNotificationsConfig {
@@ -342,13 +318,164 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     @state()
     protected _data?: SentNotification[];
+
     @state()
-    protected _isLocal: boolean = true; 
+    protected _users?: User[];
+
+    @state()
+    protected _assets?: Asset<any>[];
+
+    @state()
+    protected _realms?: string[];
+    protected _targetTypeInput?: OrMwcInput;
+    protected _targetInput?: OrMwcInput;
 
     protected _loading: boolean = false;
+    protected notificationService: NotificationService; 
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
+        this.notificationService = new NotificationService();
+    }
+
+    protected async _onTargetTypeChanged(e: OrInputChangedEvent) {
+        const targetType = e.detail.value;
+        if (!this._targetInput) {
+            return;
+        }
+        // clear current target
+        this._targetInput.value = undefined;
+
+        //load options based on target type
+        switch (targetType) {
+            case "USER":
+                if (!this._users) {
+                    this._users = await this._loadUsers();
+                }
+                this._targetInput.type = InputType.SELECT;
+                this._targetInput.options = this._users.map(user => ({
+                    label: user.username,
+                    value: user.id
+                }));
+                break;
+            
+            case "ASSET":
+                if (!this._assets) {
+                    this._assets = await this._loadAssets();
+                }
+                this._targetInput.type = InputType.SELECT;
+                this._targetInput.options = this._assets.map(asset => ({
+                    label: asset.name,
+                    value: asset.id
+                }));
+                break;
+
+            case "REALM":
+                if (!this._realms) {
+                    this._realms = await this._loadRealms();
+                }
+                this._targetInput.type = InputType.SELECT;
+                this._targetInput.options = this._realms.map(realm => ({
+                    label: realm,
+                    value: realm
+                }));
+                break;
+        }
+    }
+
+    public stateChanged(state: AppStateKeyed): void {
+        if (state.app.page == "notifications") {
+            if (this.realm === undefined || this.realm !== state.app.realm) {
+                this.realm = state.app.realm;
+                this._loadData();
+            }
+        }
+    }
+
+    protected async _loadData() {
+        if (this._loading || !this.realm) {
+            return;
+        }
+
+        this._loading = true;
+
+        try {
+            this._data = await this.notificationService.getNotifications(this.realm);
+            this.requestUpdate();
+        } catch (error) {
+            showSnackbar(undefined, i18next.t("Notification load failed."));
+        } finally {
+            this._loading = false;
+        }
+    }
+
+    protected _getFormData(dialog: OrMwcDialog) {
+        const inputs = {
+            name: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationName"),
+            title: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationTitle"),
+            body: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationBody"),
+            priority: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationPriority"),
+            targetType: dialog.shadowRoot?.querySelector<OrMwcInput>("#targetType"),
+            target: dialog.shadowRoot?.querySelector<OrMwcInput>("#target")
+        };
+
+        if (!inputs.name?.value || !inputs.title?.value || !inputs.body?.value) {
+            return null;
+        
+        }
+
+        return {
+            name: inputs.name.value,
+            title: inputs.title.value,
+            body: inputs.body.value, 
+            priority: inputs.priority?.value,
+            targetType: inputs.targetType?.value,
+            target: inputs.target?.value
+        };
+}
+
+    protected async _handleCreateNotification(dialog: OrMwcDialog) {
+        const formData = this._getFormData(dialog);
+        if (!formData) {
+            showSnackbar(undefined, i18next.t("Notification validation failed."));
+            return;
+        }
+
+        try {
+            const notification = this._createNotificationFromFormData(formData);
+            await this.notificationService.sendNotification(notification);
+
+            showSnackbar(undefined, i18next.t("Creating notification success."));
+            dialog.close();
+            await this._loadData();
+        } catch (error) {
+            showSnackbar(undefined, i18next.t("Creating notification failure."));
+        }
+    }
+
+    protected _createNotificationFromFormData(formData: any): Notification {
+        //todo create push notification messsage
+        const message: PushNotificationMessage = {
+            type: "push",
+            title: formData.title,
+            body: formData.body, 
+            priority: formData.priority || PushNotificationMessageMessagePriority.NORMAL,
+            targetType: formData.targetType as PushNotificationMessageTargetType,
+            target: formData.target,
+            data: {},
+            buttons: []
+        };
+        
+        return {
+            name: formData.name,
+            message: message,
+            targets: [{
+                type: NotificationTargetType.USER,
+                id: manager.username,
+                data: {}
+            }],
+            repeatFrequency: RepeatFrequency.ONCE 
+        };
     }
 
     // dont remove this
@@ -356,26 +483,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return "notification.notification_plural"
     }
 
-    public stateChanged(state: AppStateKeyed): void {
-        if (state.app.page == "notifications") {
-            if (this.realm === undefined || this.realm == state.app.realm) {
-                this.reset();
-            } else {
-                this.realm = state.app.realm;
-                this.requestUpdate('realm');
-            }
-        }
-    }
-
     protected reset(): void {
         this._data = undefined;
-        this._loadLocal();
         // TODO: add proper refresh logic
-
-        // if (this._refresh) {
-        //     window.clearTimeout(this._refresh);
-        // }
-
         this.requestUpdate();
     }
 
@@ -387,167 +497,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     public connectedCallback(): void {
         super.connectedCallback();
         this.realm = this.getState().app.realm;
-        this._loadLocal();
-    }
-
-    //TODO add pagination
-    //OG loadData method
-    private async _loadData() {
-        if (this._loading) {
-            return;
-        }
-
-        // if (this._loading || (!manager.hasRole("read:admin") && !manager.hasRole("write:admin"))) {
-        //     return;
-        // }
-
-        this._loading = true;
-
-        try {
-
-            
-            const response = await manager.rest.api.NotificationResource.getNotifications({
-                realmId: manager.displayRealm
-            });
-            console.log("in _loadData method");
-            console.log("Get notifications response:", response);
-            console.log("Response status:", response.status);
-            console.log("Response data:", response.data);
-
-            if (response.status === 200) {
-                this._data = response.data;
-
-                // Only show push notifications
-                this._data = this._data.filter((notification) => 
-                    notification.message.type === "push"
-                );
-                console.log("Filtered notifications:", this._data);
-            }
-        } catch (error) {
-            console.error("Failed to load notifications:", error);
-            if (isAxiosError(error)) {
-                console.error("Error details:", error.response?.data)
-            }
-            showSnackbar(undefined, i18next.t("notification.loadFailed"), i18next.t("dismiss"));
-        } finally {
-            this._loading = false;
-        }
-    }
-
-    private async _loadLocal() {
-        if (this._loading) {
-            return; 
-        }
-
-        this._loading = true;
-
-        try {
-            this._data = LocalNotificationManager.getNotifications();
-
-            // could add filtering for push notifications here
-
-            console.log("Loaded local notifications:", this._data);
-        } catch (error) {
-            console.error("Failed to load notifications:", error);
-            showSnackbar(undefined, i18next.t("Loading for notifications failed"), i18next.t("Dismiss"));
-        } finally {
-            this._loading = false; 
-        }
-    }
-    
-    private async _sendTestNotification() {
-        const message: PushNotificationMessage = {
-            type: "push",
-            title: "Test Notification",
-            body: "This is a test notification", 
-            priority: PushNotificationMessageMessagePriority.HIGH,
-            // additional fields to check if any of these below are causing an issue
-            targetType: PushNotificationMessageTargetType.TOPIC,
-            data: {}, 
-            buttons: []
-        }
-
-        const notification: Notification = {
-            name: "Test notification", 
-            message: message, 
-            targets: [{
-                type: NotificationTargetType.USER, 
-                id: manager.username,
-                data: {}
-            }],
-            repeatFrequency: RepeatFrequency.ONCE
-        }
-
-        try {
-            console.log("Sending notification:", JSON.stringify(notification, null, 2));
-            const response = await manager.rest.api.NotificationResource.sendNotification(notification);
-            console.log("Notification response:", response);
-            showSnackbar(undefined, i18next.t("Notification successfully created!"));
-        } catch (error) {
-            console.error("Failed to send notification", error);
-            if (isAxiosError(error)) {
-                console.error("Request payload:", error.config?.data);
-                console.error("Response status:", error.response?.status);
-                console.error("Response data:", error.response?.data)
-            }
-            showSnackbar(undefined, i18next.t("Notification creation failed."))
-        }
-    }
-
-    private async _sendTestEmailNotification() {
-        const message: EmailNotificationMessage = {
-            type: "email",
-            subject: "Test Notification",
-            text: "This is a test notification", 
-            html: "<p>This is a test notification</p>",
-            to: [{
-                name: "Test User",
-                address: manager.username
-            }]
-        }
-
-        const notification: Notification = {
-            name: "Test notification", 
-            message: message, 
-            targets: [{
-                type: NotificationTargetType.USER, 
-                id: manager.username,
-                data: {}
-            }],
-            repeatFrequency: RepeatFrequency.ONCE
-        }
-
-        try {
-            const headers = {
-                "org.openremote.model.notification.Notification.SOURCE": NotificationSource.CLIENT,
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
-
-            const requestParams = {
-                headers: headers,
-                debug: true, // Add debug flag
-                realm: manager.displayRealm // Explicitly include realm
-            };
-
-            console.log("Current user:", manager.username);
-            console.log("Current realm:", manager.displayRealm);
-            console.log("Headers being sent:", headers);
-            console.log("Full notification payload:", JSON.stringify(notification, null, 2));
-            console.log("Request params:", requestParams);
-
-            const response = await manager.rest.api.NotificationResource.sendNotification(notification);
-            console.log("Notification response:", response);
-            showSnackbar(undefined, i18next.t("Notification successfully created!"));
-        } catch (error) {
-            console.error("Failed to send notification", error);
-            if (isAxiosError(error)) {
-                console.error("Request payload:", error.config?.data);
-                console.error("Response status:", error.response?.status);
-                console.error("Response data:", error.response?.data)
-            }
-            showSnackbar(undefined, i18next.t("Notification creation failed."))
-        }
     }
 
     protected _getDialogHTML() {
@@ -590,68 +539,46 @@ export class PageNotifications extends Page<AppStateKeyed> {
             <or-mwc-input 
                 label="${i18next.t("Target type")}"
                 type="${InputType.SELECT}"
-                .options="${["DEVICE", "TOPIC", "CONDITION"]}"
+                .options="${["USER", "ASSET", "REALM", "CUSTOM"]}"
                 required
                 style="width: 100%;"
-                id="targetType">
+                id="targetType"
+                ${ref(this._targetTypeInput)}
+                @or-mawc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
             </or-mwc-input>
+
+            ${when(this._targetTypeInput?.value === "ASSET", () => html`
+                <or-asset-tree
+                    id="target"
+                    .realm="${this.realm}"
+                    .assets="${this._assets}"
+                    @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => {
+                        // Handle asset selection
+                        const assetId = ev.detail.asset.id;
+                        this._targetInput!.value = assetId;
+                    }}">
+                </or-asset-tree>
+            `, () => html`
+                <or-mwc-input 
+                    label="${i18next.t("Target")}"
+                    type="${InputType.SELECT}"
+                    style="width: 100%;"
+                    required
+                    id="target"
+                    ${ref(this._targetInput)}>
+                </or-mwc-input>
+            `)}
 
             <or-mwc-input 
                 label="${i18next.t("Target")}"
                 type="${InputType.TEXT}"
                 style="width: 100%;"
                 required
-                id="target">
+                id="target"
+                ${ref(this._targetInput)}>
             </or-mwc-input>
         </div>
     `
-    }
-
-    protected async _handleCreateNotification(dialog: OrMwcDialog) {
-        const nameInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationName");
-        const titleInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationTitle");
-        const bodyInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationBody");
-        const priorityInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationPriority");
-        const targetTypeInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#targetType");
-        const targetInput = dialog.shadowRoot?.querySelector<OrMwcInput>("#target");
-
-        // sanity check
-        if (!nameInput?.value || !titleInput?.value || !bodyInput?.value) {
-            showSnackbar(undefined, i18next.t("Please fill in all required fields"));
-            return;
-        }
-
-        const message: PushNotificationMessage = {
-            type: "push",
-            title: titleInput.value,
-            body: bodyInput.value,
-            priority: priorityInput.value as PushNotificationMessageMessagePriority,
-            targetType: targetTypeInput.value as PushNotificationMessageTargetType,
-            target: targetInput.value,
-            data: {},
-            buttons: []
-        }
-
-        const notification: Notification = {
-            name: nameInput.value,
-            message: message,
-            targets: [{
-                type: NotificationTargetType.USER,
-                id: manager.username,
-                data: {}
-            }],
-            repeatFrequency: RepeatFrequency.ONCE
-        };
-
-        try {
-            const SentNotification = LocalNotificationManager.addNotification(notification);
-            showSnackbar(undefined, i18next.t("Notification successfully created!"));
-            dialog.close();
-            await this._loadLocal();
-        } catch (error) {
-            console.error("Failed to create notification:", error);
-            showSnackbar(undefined, i18next.t("Notification creation failed."));
-        }
     }
 
     protected async _showCreateDialog() {
