@@ -24,7 +24,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE),
-        @JsonSubTypes.Type(value = EmailNotificationMessage.class, name = EmailNotificationMessage.TYPE)
+        @JsonSubTypes.Type(value = EmailNotificationMessage.class, name = EmailNotificationMessage.TYPE),
+        @JsonSubTypes.Type(value = LocalizedNotificationMessage.class, name = LocalizedNotificationMessage.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
