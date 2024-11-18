@@ -19,8 +19,6 @@
 # OR_EMAIL_ADMIN
 # OR_IDENTITY_PROVIDER
 #
-version: '2.4'
-
 volumes:
 #  postgresql-data: # Needed if you want to persist postgres data outside of container
   manager-data: # A storage volume for file persistence in the manager (can be used by services and protocols)
