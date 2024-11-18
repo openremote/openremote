@@ -24,16 +24,14 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import jakarta.persistence.EntityManager;
+import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
-import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayV2Service;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
@@ -43,7 +41,6 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayV2Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.mqtt.MQTTErrorResponse;
@@ -56,13 +53,10 @@ import org.openremote.model.util.ValueUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.apache.camel.support.builder.PredicateBuilder.and;
 import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
-import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
 import static org.openremote.model.Constants.*;
@@ -116,13 +110,23 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int ATTRIBUTES_METHOD_TOKEN_INDEX = 7;
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
-    protected AssetProcessingService assetProcessingService;
-    protected TimerService timerService;
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected GatewayV2Service gatewayV2Service;
+    protected AssetProcessingService assetProcessingService;
     protected boolean isKeycloak;
+
+
+    @Override
+    public void init(Container container, Configuration serverConfiguration) throws Exception {
+        super.init(container, serverConfiguration);
+        this.assetStorageService = container.getService(AssetStorageService.class);
+        this.gatewayV2Service = container.getService(GatewayV2Service.class);
+        this.assetProcessingService = container.getService(AssetProcessingService.class);
+        this.assetStorageService = container.getService(AssetStorageService.class);
+        this.subscriptionManager = new GatewayMQTTSubscriptionManager(this);
+    }
 
 
     // Temporarily holds events that require gateway acknowledgement

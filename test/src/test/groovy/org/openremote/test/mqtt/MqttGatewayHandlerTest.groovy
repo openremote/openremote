@@ -68,8 +68,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert client.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id).size() == 1
-            def connection = mqttBrokerService.getUserConnections(keycloakTestSetup.serviceUser.id)[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
 
         when: "a mqtt client publishes an asset create operation and subscribes to the response"
@@ -685,8 +683,6 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         conditions.eventually {
             assert gatewayClient.getConnectionStatus() == ConnectionStatus.CONNECTED
             assert mqttBrokerService.getUserConnections(gatewayUser.getId()).size() == 1
-            def connection = mqttBrokerService.getUserConnections(gatewayUser.getId())[0]
-            assert clientEventService.sessionKeyInfoMap.containsKey(getConnectionIDString(connection))
         }
 
 

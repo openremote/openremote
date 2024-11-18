@@ -3,10 +3,12 @@ package org.openremote.manager.mqtt;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.Event;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -19,11 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.openremote.manager.mqtt.GatewayMQTTHandler.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
+import static org.openremote.manager.mqtt.MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD;
+import static org.openremote.manager.mqtt.MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD;
 import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
@@ -37,41 +42,41 @@ import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 public class GatewayMQTTSubscriptionManager {
 
     private static final Logger LOG = Logger.getLogger(GatewayMQTTSubscriptionManager.class.getName());
-    private final ConcurrentMap<String, GatewayEventSubscriberInfo> subscriberInfoMap = new ConcurrentHashMap<>();
-    private final MessageBrokerService messageBrokerService;
-    private final MQTTBrokerService mqttBrokerService;
-    private final GatewayMQTTHandler gatewayMQTTHandler;
-    public GatewayMQTTSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService, GatewayMQTTHandler gatewayMQTTHandler) {
-        this.messageBrokerService = messageBrokerService;
-        this.mqttBrokerService = mqttBrokerService;
+    final protected Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
+    protected GatewayMQTTHandler gatewayMQTTHandler;
+    public GatewayMQTTSubscriptionManager(GatewayMQTTHandler gatewayMQTTHandler) {
         this.gatewayMQTTHandler = gatewayMQTTHandler;
     }
 
-    public ConcurrentMap<String, GatewayEventSubscriberInfo> getSubscriberInfoMap() {
-        return subscriberInfoMap;
-    }
-
+  
     /**
      * Adds a subscription for the specified topic, the subscription will be added to the broker and the subscriber info map
      * @param relativeToAsset the asset to build the filter relative to, can be null
      */
     public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass, Asset<?> relativeToAsset) {
-
         if (subscriptionClass != AssetEvent.class && subscriptionClass != AttributeEvent.class) {
             LOG.warning("Invalid subscription class " + subscriptionClass);
             return;
         }
-        String subscriptionId = topic.toString();
-        AssetFilter assetFilter = buildAssetFilter(topic, relativeToAsset);
 
+        AssetFilter assetFilter = buildAssetFilter(topic, relativeToAsset);
         if (assetFilter == null) {
             LOG.warning("Invalid asset filter for topic " + topic);
             return;
         }
 
-        EventSubscription subscription = new EventSubscription(subscriptionClass, assetFilter, subscriptionId);
-        Consumer<SharedEvent> subscriptionConsumer = buildEventSubscriptionConsumer(topic);
-        addSubscriberInfo(connection, topic, subscriptionConsumer);
+        EventSubscription subscription = new EventSubscription(subscriptionClass, assetFilter, topic.toString());
+        Consumer<SharedEvent> consumer = buildEventSubscriptionConsumer(topic);
+     
+
+        synchronized (sessionSubscriptionConsumers) {
+            // Create subscription consumer and track it for future removal requests
+            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(getSessionKey(connection), (s) -> new HashMap<>());
+            subscriptionConsumers.put(topic.getString(), consumer);
+            gatewayMQTTHandler.clientEventService.addSubscription(subscription, consumer);
+  
+        }
+    
     }
 
     /**
@@ -79,16 +84,18 @@ public class GatewayMQTTSubscriptionManager {
      */
     public void removeSubscription(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
-        boolean isAssetTopic = subscriberInfoMap.get(getConnectionIDString(connection))
-                .topicSubscriptionMap.get(topic.getString()) instanceof AssetEvent;
+        String sessionKey = getSessionKey(connection);
 
-
-        synchronized (subscriberInfoMap) {
-            subscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
-                if (subscriberInfo.remove(topic.getString()) == 0) {
+        synchronized (sessionSubscriptionConsumers) {
+            sessionSubscriptionConsumers.computeIfPresent(sessionKey, (connectionID, subscriptionConsumers) -> {
+                Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionId);
+                if (consumer != null) {
+                    gatewayMQTTHandler.clientEventService.removeSubscription(consumer);
+                }
+                if (subscriptionConsumers.isEmpty()) {
                     return null;
                 }
-                return subscriberInfo;
+                return subscriptionConsumers;
             });
         }
     }
@@ -97,8 +104,8 @@ public class GatewayMQTTSubscriptionManager {
      * Removes all subscriptions for the specified connection
      */
     public void removeAllSubscriptions(RemotingConnection connection) {
-        synchronized (subscriberInfoMap) {
-            subscriberInfoMap.remove(getConnectionIDString(connection));
+        synchronized (sessionSubscriptionConsumers) {
+            sessionSubscriptionConsumers.remove(getSessionKey(connection));
         }
     }
 
@@ -219,18 +226,7 @@ public class GatewayMQTTSubscriptionManager {
         return assetFilter;
     }
 
-    protected void addSubscriberInfo(RemotingConnection connection, Topic topic, Consumer<SharedEvent> subscriptionConsumer) {
-        synchronized (subscriberInfoMap) {
-            subscriberInfoMap.compute(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
-                if (subscriberInfo == null) {
-                    return new GatewayEventSubscriberInfo(topic.getString(), subscriptionConsumer);
-                } else {
-                    subscriberInfo.add(topic.getString(), subscriptionConsumer);
-                    return subscriberInfo;
-                }
-            });
-        }
-    }
+  
 
     /**
      * Builds a consumer that publishes the event to the specified topic
@@ -299,23 +295,11 @@ public class GatewayMQTTSubscriptionManager {
         }
     }
 
-    public static class GatewayEventSubscriberInfo {
-        public Map<String, Consumer<SharedEvent>> topicSubscriptionMap;
-
-        public GatewayEventSubscriberInfo(String topic, Consumer<SharedEvent> subscriptionConsumer) {
-            this.topicSubscriptionMap = new HashMap<>();
-            this.topicSubscriptionMap.put(topic, subscriptionConsumer);
-        }
-
-        protected void add(String topic, Consumer<SharedEvent> subscriptionConsumer) {
-            topicSubscriptionMap.put(topic, subscriptionConsumer);
-        }
-
-        protected int remove(String topic) {
-            topicSubscriptionMap.remove(topic);
-            return topicSubscriptionMap.size();
-        }
+    protected static String getSessionKey(RemotingConnection connection) {
+        return getConnectionIDString(connection);
     }
+
+
 
 
 }
