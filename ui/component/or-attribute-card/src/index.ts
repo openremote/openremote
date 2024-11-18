@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, state, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {
     Asset,
@@ -217,16 +217,19 @@ export class OrAttributeCard extends LitElement {
     @property()
     public showControls: boolean = true;
     @property()
+    public hideAttributePicker: boolean = false;
+    @property()
     public showTitle: boolean = true;
     @property()
     protected _loading: boolean = false;
-
-    protected _error?: string;
 
     @property()
     private period: moment.unitOfTime.Base = "day";
     private asset?: Asset;
     private formattedMainValue?: {value: number|undefined, unit: string};
+
+    @state()
+    protected _error?: string;
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
@@ -350,6 +353,9 @@ export class OrAttributeCard extends LitElement {
         }
     }
 
+    shouldHideAttributePicker(): boolean {
+        return (this.hideAttributePicker && this.hideAttributePicker.toString() == "true");
+    }
     shouldShowControls(): boolean { // Checking for string input as well since that was not working
         return (this.showControls && this.showControls.toString() == "true");
     }
@@ -359,12 +365,12 @@ export class OrAttributeCard extends LitElement {
 
     protected render() {
 
-        if (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0) {
+        if (!this._error && (!this.assets || !this.assetAttributes || this.assetAttributes.length === 0)) {
             return html`
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            ${this.shouldShowControls() ? html`
+                            ${!this.shouldHideAttributePicker() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
                                 <span>${i18next.t('noAttributeConnected')}</span>
