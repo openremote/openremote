@@ -61,6 +61,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.apache.camel.support.builder.PredicateBuilder.and;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
 import static org.openremote.manager.event.ClientEventService.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.manager.mqtt.UserAssetProvisioningMQTTHandler.UNIQUE_ID_PLACEHOLDER;
@@ -149,39 +150,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
-    @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
-        timerService = container.getService(TimerService.class);
-        assetProcessingService = container.getService(AssetProcessingService.class);
-        assetStorageService = container.getService(AssetStorageService.class);
-        gatewayV2Service = container.getService(GatewayV2Service.class);
-        subscriptionManager = new GatewayMQTTSubscriptionManager(messageBrokerService, mqttBrokerService);
-        assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
-
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() {
-                from(CLIENT_OUTBOUND_QUEUE)
-                        .routeId("ClientOutbound-GatewayMQTTHandler")
-                        .filter(and(
-                                header(HEADER_CONNECTION_TYPE).isEqualTo(HEADER_CONNECTION_TYPE_MQTT),
-                                body().isInstanceOf(TriggeredEventSubscription.class)
-                        ))
-                        .process(exchange -> {
-                            String connectionID = exchange.getIn().getHeader(SESSION_KEY, String.class);
-                            GatewayMQTTSubscriptionManager.GatewayEventSubscriberInfo eventSubscriberInfo = subscriptionManager.getSubscriberInfoMap().get(connectionID);
-                            if (eventSubscriberInfo != null) {
-                                TriggeredEventSubscription<?> event = exchange.getIn().getBody(TriggeredEventSubscription.class);
-                                Consumer<SharedEvent> eventConsumer = eventSubscriberInfo.topicSubscriptionMap.get(event.getSubscriptionId());
-                                if (eventConsumer != null) {
-                                    eventConsumer.accept(event.getEvents().get(0));
-                                }
-                            }
-                        });
-            }
-        });
-    }
+    
 
     // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
@@ -470,6 +439,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     @Override
     public void onConnect(RemotingConnection connection) {
+        super.onConnect(connection);
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         if (gatewayAsset != null) {
             if (gatewayAsset.getDisabled().orElse(false)) {
@@ -480,34 +450,16 @@ public class GatewayMQTTHandler extends MQTTHandler {
             updateGatewayStatus(gatewayAsset, ConnectionStatus.CONNECTED);
         }
 
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_OPEN, true);
-        Runnable closeRunnable = () -> {
-            if (mqttBrokerService != null) {
-                LOG.fine("Calling client session closed force disconnect runnable: " + MQTTBrokerService.connectionToString(connection));
-                mqttBrokerService.doForceDisconnect(connection);
-            }
-        };
-        headers.put(SESSION_TERMINATOR, closeRunnable);
-        messageBrokerService.getFluentProducerTemplate().
-                withHeaders(headers).
-                to(CLIENT_INBOUND_QUEUE).
-                asyncSend();
+
     }
 
     // Handle disconnect - connection lost event
     protected void handleDisconnect(RemotingConnection connection) {
+        
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         if (gatewayAsset != null) {
             updateGatewayStatus(gatewayAsset, ConnectionStatus.DISCONNECTED);
         }
-
-        Map<String, Object> headers = prepareHeaders(null, connection);
-        headers.put(SESSION_CLOSE, true);
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
 
         subscriptionManager.removeAllSubscriptions(connection);
         authorizationCache.invalidate(getConnectionIDString(connection));
@@ -886,11 +838,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error, String message) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error, message), MqttQoS.AT_MOST_ONCE);
+        publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
     protected void publishResponse(Topic topic, Object response) {
-        mqttBrokerService.publishMessage(getResponseTopic(topic), response, MqttQoS.AT_MOST_ONCE);
+        publishMessage(getResponseTopic(topic), response, MqttQoS.AT_MOST_ONCE);
     }
 
     protected void publishPendingGatewayEvent(AttributeEvent event, GatewayV2Asset gateway) {
@@ -898,7 +850,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         MQTTGatewayEventMessage gatewayEvent = new MQTTGatewayEventMessage(eventId, event);
 
         String topic = String.join("/", gateway.getRealm(), gateway.getClientId().get(), GATEWAY_TOPIC, GATEWAY_EVENTS_TOPIC, GATEWAY_PENDING_TOPIC);
-        mqttBrokerService.publishMessage(topic, gatewayEvent, MqttQoS.AT_LEAST_ONCE);
+        publishMessage(topic, gatewayEvent, MqttQoS.AT_LEAST_ONCE);
 
         synchronized (eventsPendingGatewayAcknowledgement) {
             eventsPendingGatewayAcknowledgement.put(eventId, event);
@@ -906,11 +858,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected void sendAttributeEvent(AttributeEvent event) {
-        Map<String, Object> headers = prepareHeaders(event.getRealm(), null);
         messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
                 .withBody(event)
-                .to(CLIENT_INBOUND_QUEUE)
+                .to(ATTRIBUTE_EVENT_PROCESSOR)
                 .asyncRequest();
     }
 
@@ -1018,12 +968,6 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
 
-    protected static Map<String, Object> prepareHeaders(String requestRealm, RemotingConnection connection) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(SESSION_KEY, getConnectionIDString(connection));
-        headers.put(HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(REALM_PARAM_NAME, requestRealm);
-        return headers;
-    }
+
 
 }

@@ -22,7 +22,6 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.openremote.manager.event.ClientEventService.CLIENT_INBOUND_QUEUE;
 import static org.openremote.manager.mqtt.GatewayMQTTHandler.*;
 import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDString;
 import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
@@ -41,10 +40,11 @@ public class GatewayMQTTSubscriptionManager {
     private final ConcurrentMap<String, GatewayEventSubscriberInfo> subscriberInfoMap = new ConcurrentHashMap<>();
     private final MessageBrokerService messageBrokerService;
     private final MQTTBrokerService mqttBrokerService;
-
-    public GatewayMQTTSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService) {
+    private final GatewayMQTTHandler gatewayMQTTHandler;
+    public GatewayMQTTSubscriptionManager(MessageBrokerService messageBrokerService, MQTTBrokerService mqttBrokerService, GatewayMQTTHandler gatewayMQTTHandler) {
         this.messageBrokerService = messageBrokerService;
         this.mqttBrokerService = mqttBrokerService;
+        this.gatewayMQTTHandler = gatewayMQTTHandler;
     }
 
     public ConcurrentMap<String, GatewayEventSubscriberInfo> getSubscriberInfoMap() {
@@ -70,8 +70,6 @@ public class GatewayMQTTSubscriptionManager {
         }
 
         EventSubscription subscription = new EventSubscription(subscriptionClass, assetFilter, subscriptionId);
-        Map<String, Object> headers = prepareHeaders(topicRealm(topic), connection);
-        sendSubscriptionToBroker(subscription, headers);
         Consumer<SharedEvent> subscriptionConsumer = buildEventSubscriptionConsumer(topic);
         addSubscriberInfo(connection, topic, subscriptionConsumer);
     }
@@ -84,13 +82,6 @@ public class GatewayMQTTSubscriptionManager {
         boolean isAssetTopic = subscriberInfoMap.get(getConnectionIDString(connection))
                 .topicSubscriptionMap.get(topic.getString()) instanceof AssetEvent;
 
-        Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
-        CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(prepareHeaders(topicRealm(topic), connection))
-                .withBody(cancelEventSubscription)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
 
         synchronized (subscriberInfoMap) {
             subscriberInfoMap.computeIfPresent(getConnectionIDString(connection), (connectionID, subscriberInfo) -> {
@@ -111,17 +102,6 @@ public class GatewayMQTTSubscriptionManager {
         }
     }
 
-    /**
-     * Sends the EventSubscription to the internal broker
-     */
-    protected void sendSubscriptionToBroker(EventSubscription subscription, Map<String, Object> headers) {
-        messageBrokerService.getFluentProducerTemplate()
-                .withHeaders(headers)
-                .withBody(subscription)
-                .to(CLIENT_INBOUND_QUEUE)
-                .asyncSend();
-
-    }
 
 
     /***
@@ -296,11 +276,11 @@ public class GatewayMQTTSubscriptionManager {
             LOG.info("Publishing event to topic: " + topicExpander.apply(ev));
             if (isAssetsTopic(topic)) {
                 if (ev instanceof AssetEvent) {
-                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    gatewayMQTTHandler.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
                 if (ev instanceof AttributeEvent attributeEvent) {
-                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    gatewayMQTTHandler.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             }
         };

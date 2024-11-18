@@ -39,7 +39,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,7 +62,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
     protected boolean active;
 
     public static String getGatewayClientId(String gatewayAssetId) {
@@ -84,7 +84,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("Gateway connections disabled: Not supported when not using Keycloak identity provider");
