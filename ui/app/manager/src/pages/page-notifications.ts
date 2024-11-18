@@ -4,12 +4,8 @@ import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {
     Notification,
-    NotificationSendResult,
     SentNotification,
-    EmailNotificationMessage,
     PushNotificationMessage,
-    AbstractNotificationMessage,
-    NotificationSource,
     Asset,
     User,
     PushNotificationMessageMessagePriority,
@@ -23,8 +19,7 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {getNotificationsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
-import {guard} from "lit/directives/guard.js";
+import {ref} from "lit/directives/ref.js"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -33,6 +28,8 @@ import {
     OrMwcTableRowClickEvent,
     OrMwcTableRowSelectEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
+import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
+
 
 export class NotificationService {
     async getNotifications(realm: string): Promise<SentNotification[]> {
@@ -89,19 +86,6 @@ export function pageNotificationsProvider(store: Store<AppStateKeyed>, config?: 
         }
     };
 }
-
-/*
-- Interface to add UI-specific state management
-- Used to prevent (?) duplicate loading requests
-- Track asset associations/modifying asset links
-- Current PoC doesn't include modifying notifications
-*/
-// interface AlarmModel extends SentAlarm {
-//     loaded?: boolean;
-//     loading?: boolean;
-//     alarmAssetLinks?: AlarmAssetLink[];
-//     previousAssetLinks?: AlarmAssetLink[];
-// }
 
 @customElement("page-notifications")
 export class PageNotifications extends Page<AppStateKeyed> {
@@ -323,11 +307,20 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _users?: User[];
 
     @state()
-    protected _assets?: Asset<any>[];
+    protected _assets?: Asset[];
 
     @state()
     protected _realms?: string[];
+
+    @state()
+    protected _selectedTargetType?: string;
+
+    @state()
+    protected _targetOptions: {text: string, value: string}[] = [];
+
     protected _targetTypeInput?: OrMwcInput;
+
+    @state()
     protected _targetInput?: OrMwcInput;
 
     protected _loading: boolean = false;
@@ -338,49 +331,102 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this.notificationService = new NotificationService();
     }
 
-    protected async _onTargetTypeChanged(e: OrInputChangedEvent) {
-        const targetType = e.detail.value;
-        if (!this._targetInput) {
-            return;
+    protected async _loadUsers(): Promise<User[]> {
+        try {
+            const response = await manager.rest.api.UserResource.query({
+                realmPredicate: {name: manager.displayRealm}
+            });
+            return response.data.filter(user => user.enabled && !user.serviceAccount);
+        } catch (error) {
+            console.error("Failed to load users:", error);
+            showSnackbar(undefined, i18next.t("Loading users failed"));
+            return [];
         }
-        // clear current target
-        this._targetInput.value = undefined;
+    }
 
-        //load options based on target type
-        switch (targetType) {
-            case "USER":
-                if (!this._users) {
-                    this._users = await this._loadUsers();
+    protected async _loadAssets(): Promise<Asset[]> {
+        try {
+            const response = await manager.rest.api.AssetResource.queryAssets({
+                realm: {
+                    name: manager.displayRealm
                 }
-                this._targetInput.type = InputType.SELECT;
-                this._targetInput.options = this._users.map(user => ({
-                    label: user.username,
-                    value: user.id
-                }));
-                break;
+            });
+            console.log("Loaded assets:", response.data);
+            return response.data;
+        } catch (error) {
+            console.error("Failed to load assets:", error);
+            showSnackbar(undefined, i18next.t("Loading assets failed"));
+            return [];
+        }
+    }
+
+    protected async _loadRealms(): Promise<string[]> {
+        try {
+            const response = await manager.rest.api.RealmResource.getAccessible();
+            return response.data.map(realm => realm.name);
+        } catch (error) {
+            console.error("Failed to load realms:", error);
+            showSnackbar(undefined, i18next.t("Loading realms failed"));
+            return [];
+        }
+    }
+
+    private async _loadTargetsForType(type: string) {
+        try {    
+            if (!this._targetInput) {
+                return;
+            }
             
-            case "ASSET":
-                if (!this._assets) {
-                    this._assets = await this._loadAssets();
-                }
-                this._targetInput.type = InputType.SELECT;
-                this._targetInput.options = this._assets.map(asset => ({
-                    label: asset.name,
-                    value: asset.id
-                }));
-                break;
-
-            case "REALM":
-                if (!this._realms) {
-                    this._realms = await this._loadRealms();
-                }
-                this._targetInput.type = InputType.SELECT;
-                this._targetInput.options = this._realms.map(realm => ({
-                    label: realm,
-                    value: realm
-                }));
-                break;
+            switch (type) {
+                case "USER":
+                    if (!this._users) {
+                        this._users = await this._loadUsers();
+                    }
+                    this._selectedTargetType = InputType.SELECT;
+                    this._targetOptions = this._users.map(user => ({
+                        text: user.username,
+                        value: user.id
+                    }));
+                    break;
+                
+                case "ASSET":
+                    if (!this._assets) {
+                        this._assets = await this._loadAssets();
+                    }
+                    this._selectedTargetType = InputType.SELECT;
+                    this._targetOptions = this._assets.map(asset => ({
+                        text: asset.name, // Note: using label not text
+                        value: asset.id
+                    }));
+                    break;
+        
+                case "REALM":
+                    if (!this._realms) {
+                        this._realms = await this._loadRealms();
+                    }
+                    this._selectedTargetType = InputType.SELECT;
+                    this._targetOptions = this._realms.map(realm => ({
+                        text: realm,
+                        value: realm
+                    }));
+                    break;
+            }
+            await this.requestUpdate();
+        } catch (error) {
+            console.error('Error loading targets: ', error);
+            showSnackbar(undefined, i18next.t("Loading targets failed"));
         }
+    }
+
+    protected async _onTargetTypeChanged(e: OrInputChangedEvent) {
+        console.log("Target type changed to:", e.detail.value);
+        if (!e.detail.value) return;
+        
+        this._selectedTargetType = e.detail.value;
+        this._targetOptions = [];
+        await this.requestUpdate();
+    
+        await this._loadTargetsForType(e.detail.value);
     }
 
     public stateChanged(state: AppStateKeyed): void {
@@ -454,7 +500,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected _createNotificationFromFormData(formData: any): Notification {
-        //todo create push notification messsage
         const message: PushNotificationMessage = {
             type: "push",
             title: formData.title,
@@ -470,9 +515,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             name: formData.name,
             message: message,
             targets: [{
-                type: NotificationTargetType.USER,
-                id: manager.username,
-                data: {}
+                type: formData.targetType as NotificationTargetType,
+                id: formData.target
             }],
             repeatFrequency: RepeatFrequency.ONCE 
         };
@@ -499,9 +543,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this.realm = this.getState().app.realm;
     }
 
-    protected _getDialogHTML() {
+    private _getNameTitleBody() {
         return html`
-        <div class="dialog-content">
             <or-mwc-input 
                 label="${i18next.t("Name")}"
                 type="${InputType.TEXT}"
@@ -526,59 +569,56 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 required
                 id="notificationBody">
             </or-mwc-input>
+            `;
+    }
 
-            <or-mwc-input 
-                label="${i18next.t("Priority")}"
-                type="${InputType.SELECT}"
-                .options="${["NORMAL", "HIGH"]}"
-                required
-                style="width: 100%;"
-                id="notificationPriority">
-            </or-mwc-input>
+    private renderTargetInput() {
+        return html`
+        <or-mwc-input 
+            label="${i18next.t("Target")}"
+            type="${InputType.SELECT}"
+            style="width: 100%;"
+            required
+            id="target"
+            .options="${this._targetOptions.map(o => [o.value, o.text])}"
+            ${ref((el: OrMwcInput) => {
+                this._targetInput = el;
+                if (el && this._selectedTargetType) {
+                    this._loadTargetsForType(this._selectedTargetType);
+                }
+            })}>
+        </or-mwc-input>
+        `;
+    }
 
-            <or-mwc-input 
-                label="${i18next.t("Target type")}"
-                type="${InputType.SELECT}"
-                .options="${["USER", "ASSET", "REALM", "CUSTOM"]}"
-                required
-                style="width: 100%;"
-                id="targetType"
-                ${ref(this._targetTypeInput)}
-                @or-mawc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
-            </or-mwc-input>
-
-            ${when(this._targetTypeInput?.value === "ASSET", () => html`
-                <or-asset-tree
-                    id="target"
-                    .realm="${this.realm}"
-                    .assets="${this._assets}"
-                    @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => {
-                        // Handle asset selection
-                        const assetId = ev.detail.asset.id;
-                        this._targetInput!.value = assetId;
-                    }}">
-                </or-asset-tree>
-            `, () => html`
+    protected _getDialogHTML() {
+        return html`
+             <div class="dialog-content">
+             ${this._getNameTitleBody()}
+    
                 <or-mwc-input 
-                    label="${i18next.t("Target")}"
+                    label="${i18next.t("Priority")}"
                     type="${InputType.SELECT}"
-                    style="width: 100%;"
+                    .options="${["NORMAL", "HIGH"]}"
                     required
-                    id="target"
-                    ${ref(this._targetInput)}>
+                    style="width: 100%;"
+                    id="notificationPriority">
                 </or-mwc-input>
-            `)}
-
-            <or-mwc-input 
-                label="${i18next.t("Target")}"
-                type="${InputType.TEXT}"
-                style="width: 100%;"
-                required
-                id="target"
-                ${ref(this._targetInput)}>
-            </or-mwc-input>
-        </div>
-    `
+    
+                <or-mwc-input 
+                    label="${i18next.t("Target type")}"
+                    type="${InputType.SELECT}"
+                    .options="${["USER", "ASSET", "REALM"]}"
+                    required
+                    style="width: 100%;"
+                    id="targetType"
+                    ${ref((el: OrMwcInput) => this._targetTypeInput = el)}
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
+                </or-mwc-input>
+    
+                ${this.renderTargetInput()}
+            </div>
+        `;
     }
 
     protected async _showCreateDialog() {
