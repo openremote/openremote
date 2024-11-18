@@ -51,7 +51,7 @@ public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
     protected String pollingAttribute;
     @JsonPropertyDescription("Indicates that the HTTP response is binary and should be converted to binary string representation")
     protected boolean messageConvertBinary;
-    @JsonPropertyDescription("Indicates that the HTTP response is binary and should be converted to hexidecimal string representation")
+    @JsonPropertyDescription("Indicates that the HTTP response is binary and should be converted to hexadecimal string representation")
     protected boolean messageConvertHex;
 
     // For Hydrators

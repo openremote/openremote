@@ -43,7 +43,7 @@ import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
  * <p>
  * This is naturally quite messy, our goal is to disable all the other default exception
  * handling and do it here in a "simple" way.
- * <p/>
+ * <p>
  * In production we want to be INFOrmed of exceptions but only log a stacktrace if FINE
  * debug logging is enabled. We never want to send a stacktrace or some crappy HTML to a
  * client in production.

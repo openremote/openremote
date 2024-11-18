@@ -4,8 +4,8 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
+volumes:
+  postgresql-data:
 services:
 
   keycloak:
@@ -32,6 +32,7 @@ services:
       service: postgresql
     volumes:
       - ../tmp:/storage
+      - postgresql-data:/var/lib/postgresql/data
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

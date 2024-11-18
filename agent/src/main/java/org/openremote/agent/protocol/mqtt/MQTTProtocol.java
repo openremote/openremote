@@ -20,6 +20,8 @@
 package org.openremote.agent.protocol.mqtt;
 
 import org.apache.http.client.utils.URIBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.security.KeyStoreService;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -27,10 +29,9 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
+import javax.net.ssl.*;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -41,6 +42,8 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, MQTTProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "MQTT Client";
     protected final Map<AttributeRef, Consumer<MQTTMessage<String>>> protocolMessageConsumers = new HashMap<>();
+
+    protected KeyStoreService keyStoreService;
 
     protected MQTTProtocol(MQTTAgent agent) {
         super(agent);
@@ -55,6 +58,13 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             client.addMessageConsumer(topic, messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
+    }
+
+    @Override
+    protected void doStart(Container container) throws Exception {
+        keyStoreService = container.getService(KeyStoreService.class);
+        if (keyStoreService == null) throw new Exception("Couldn't load KeyStoreService");
+        super.doStart(container);
     }
 
     @Override
@@ -107,7 +117,15 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             lastWill = new MQTTLastWill(topic, payload, retain);
         }
 
-        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill);
+        //It's fine if they're null, they're not going to be used when creating the client
+        TrustManagerFactory trustManagerFactory = null;
+        KeyManagerFactory keyManagerFactory = null;
+        if(agent.isSecureMode().orElse(false) && agent.getCertificateAlias().isPresent()){
+            trustManagerFactory = keyStoreService.getTrustManagerFactory();
+            keyManagerFactory = keyStoreService.getKeyManagerFactory(agent.getRealm()+"."+agent.getCertificateAlias().orElseThrow());
+        }
+
+        return new MQTT_IOClient(agent.getClientId().orElseGet(UniqueIdentifierGenerator::generateId), host, port, agent.isSecureMode().orElse(false), !agent.isResumeSession().orElse(false), agent.getUsernamePassword().orElse(null), websocketURI, lastWill, keyManagerFactory, trustManagerFactory);
     }
 
     @Override

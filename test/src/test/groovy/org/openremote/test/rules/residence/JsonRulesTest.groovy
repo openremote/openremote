@@ -10,6 +10,9 @@ import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
+import org.openremote.manager.notification.LocalizedNotificationHandler
+import org.openremote.model.notification.EmailNotificationMessage
+import org.openremote.model.notification.LocalizedNotificationMessage
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -111,6 +114,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = []
         List<jakarta.mail.Message> emailMessages = []
         List<Notification.Target> emailTargets = []
+        List<LocalizedNotificationMessage> localizedMessages = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
         Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
@@ -121,6 +125,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def localizedNotificationHandler = container.getService(LocalizedNotificationHandler.class)
         def notificationService = container.getService(NotificationService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
@@ -162,6 +167,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
+        // Register localized handler
+        LocalizedNotificationHandler mockLocalizedNotificationHandler = Spy(localizedNotificationHandler)
+        mockLocalizedNotificationHandler.isValid() >> true
+        mockLocalizedNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                localizedMessages << message
+        }
+        mockLocalizedNotificationHandler.notificationHandlerMap = notificationService.notificationHandlerMap
+        notificationService.notificationHandlerMap.put(localizedNotificationHandler.getTypeName(), mockLocalizedNotificationHandler)
+
         and: "some rules"
         Ruleset ruleset = new RealmRuleset(
                 keycloakTestSetup.realmBuilding.name,
@@ -175,7 +190,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp > 0
             assert !realmBuildingEngine.trackLocationPredicates
         }
@@ -308,7 +323,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the console location asset state should be in the rule engine"
         conditions.eventually {
-            def assetState = realmBuildingEngine.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
+            def assetState = realmBuildingEngine.facts.assetStates.find {it.id == consoleRegistration.id && it.name == Asset.LOCATION.name}
             assert assetState != null
             assert assetState.getValue().isPresent()
             assert assetState.getValue(GeoJSONPoint.class).map{it.x == ManagerTestSetup.SMART_BUILDING_LOCATION.x}.orElse(false)
@@ -346,6 +361,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 2" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 1
         }
 
+        and: "no push notification should have been sent for the test-realm-role-3 notification action"
+        conditions.eventually {
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 3" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration.id} == 0
+            assert pushTargetsAndMessages.count {it.v2.title == "Linked user test 3" && it.v1.type == Notification.TargetType.ASSET && it.v1.id == consoleRegistration2.id} == 0
+        }
+
         and: "an email notification should have been sent to test@openremote.io with the triggered asset in the body but only containing the triggered asset states"
         conditions.eventually {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
@@ -358,6 +379,27 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
                     && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
                     && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+        }
+
+        and: "an localized email notification should have been sent with the triggered asset in the body but only containing the triggered asset states"
+        String expectedHtml = "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+        conditions.eventually {
+            assert localizedMessages.size() == 5
+            assert localizedMessages.stream().allMatch {
+                it.getMessages().values().stream().allMatch(m -> {
+                    m.type == EmailNotificationMessage.TYPE && ((EmailNotificationMessage) m).getHtml() == expectedHtml
+                })
+            }
+            assert localizedMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Demo Apartment - All Lights Off"
+                }
+            }.count() == 3
+            assert localizedMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Linked user localized user test"
+                }
+            }.count() == 2
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -629,7 +671,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
             assert sunsetCalculator != null
@@ -758,7 +800,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
@@ -813,7 +855,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
@@ -903,7 +945,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.deployments.size() == 1
             assert realmBuildingEngine.deployments.values().iterator().next().name == "Webhook Rule"
             assert realmBuildingEngine.deployments.values().iterator().next().status == DEPLOYED
-            assert realmBuildingEngine.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
+            assert realmBuildingEngine.facts.assetStates.size() == (DEMO_RULE_STATES_SMART_BUILDING + 1)
             assert realmBuildingEngine.lastFireTimestamp > 0
         }
 

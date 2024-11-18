@@ -20,6 +20,9 @@
 package org.openremote.test.protocol.websocket
 
 import io.netty.channel.ChannelHandler
+import io.netty.handler.codec.string.StringDecoder
+import io.netty.handler.codec.string.StringEncoder
+import io.netty.util.CharsetUtil
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.websocket.WebsocketIOClient
@@ -43,6 +46,8 @@ import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+
+import java.util.concurrent.CopyOnWriteArrayList
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -99,7 +104,11 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         "testuser3",
                         "testuser3"))
         client.setEncoderDecoderProvider({
-            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
+            [
+                new StringEncoder(CharsetUtil.UTF_8),
+                new StringDecoder(CharsetUtil.UTF_8),
+                new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
+            ].toArray(new ChannelHandler[0])
         })
 
         and: "another Websocket client with another restricted user"
@@ -113,14 +122,18 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                         "building",
                         "building"))
         client2.setEncoderDecoderProvider({
-            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client2)].toArray(new ChannelHandler[0])
+            [
+                    new StringEncoder(CharsetUtil.UTF_8),
+                    new StringDecoder(CharsetUtil.UTF_8),
+                    new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client2)
+            ].toArray(new ChannelHandler[0])
         })
 
         and: "we add callback consumers to the clients"
         def connectionStatus = client.getConnectionStatus()
         def connectionStatus2 = client2.getConnectionStatus()
-        List<Object> receivedMessages = []
-        List<Object> receivedMessages2 = []
+        List<Object> receivedMessages = new CopyOnWriteArrayList<>()
+        List<Object> receivedMessages2 = new CopyOnWriteArrayList<>()
         client.addMessageConsumer({
             message -> receivedMessages.add(messageFromString(message))
         })
@@ -149,37 +162,29 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             assert connectionStatus2 == ConnectionStatus.CONNECTED
         }
 
-        // TODO: Remove this once client supports some better connection logic
-        and: "some time passes to allow the connection to be fully initialised"
-        sleep(3000)
-
         when: "we subscribe to attribute events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AttributeEvent.class,
                         null,
-                        "attributes",
-                        null)))
+                        "attributes")))
         client2.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AttributeEvent.class,
                         null,
-                        "attributes2",
-                        null)))
+                        "attributes2")))
 
         and: "we subscribe to asset events produced by the server"
         client.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AssetEvent.class,
                         null,
-                        "assets",
-                        null)))
+                        "assets")))
         client2.sendMessage(messageToString(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX,
                 new EventSubscription(
                         AssetEvent.class,
                         null,
-                        "assets2",
-                        null)))
+                        "assets2")))
 
         then: "the server should confirm the subscriptions"
         conditions.eventually {
@@ -292,7 +297,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()
-        List<String> receivedMessages = []
+        List<String> receivedMessages = new CopyOnWriteArrayList<>()
         client.addMessageConsumer(
             message -> receivedMessages.add(messageFromString(message))
         )
@@ -321,8 +326,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
             new EventSubscription(
                 AttributeEvent.class,
                 new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
-                "1",
-                null)))
+                "1")))
 
         then: "the server should return a subscribed event"
         conditions.eventually {

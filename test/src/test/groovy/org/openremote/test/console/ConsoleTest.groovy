@@ -110,7 +110,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             def realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.getAssetStates().size() == DEMO_RULE_STATES_SMART_BUILDING
         }
 
         and: "an authenticated user"

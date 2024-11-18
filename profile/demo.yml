@@ -12,8 +12,6 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:
@@ -92,7 +90,7 @@ services:
       # Set this variable `demo` to auto provision demo assets etc.
       OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
-      OR_LOGGING_CONFIG_FILE: ${OR_LOGGING_CONFIG_FILE:-}
+      OR_LOGGING_CONFIG_FILE:
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
@@ -102,7 +100,8 @@ services:
       OR_EMAIL_ADMIN:
       OR_SSL_PORT: ${OR_SSL_PORT:--1}
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
-      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_ADDITIONAL_HOSTNAMES:
+      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:

@@ -20,7 +20,7 @@ import {
     LogicGroup,
     LogicGroupOperator,
     SharedEvent,
-    StringPredicate
+    StringPredicate, WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -446,6 +446,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected render() {
+
+        const canAdd = this._canAdd();
+
         return html`
             <div id="header">
                 <div id="title-container">
@@ -454,9 +457,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                 <div id="header-btns">
                     <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1 || !canAdd}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this._gatewayDescendantIsSelected()}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
                             html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
@@ -1470,6 +1473,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         );
     }
 
+    protected _gatewayDescendantIsSelected(): boolean {
+        return this._selectedNodes.some((n) => {
+            let parentNode = n?.parent;
+            while (parentNode) {
+                if (parentNode.asset?.type === WellknownAssets.GATEWAYASSET) {
+                    return true;
+                }
+                parentNode = parentNode.parent;
+            }
+            return false;
+        });
+    }
+
     protected _onDeleteClicked() {
         if (this._selectedNodes.length > 0) {
             Util.dispatchCancellableEvent(this, new OrAssetTreeRequestDeleteEvent(this._selectedNodes))
@@ -1491,10 +1507,34 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
-        // Get all unique descendant IDs of selected nodes
-        let uniqueAssets = new Set<Asset>();
-        OrAssetTree._forEachNodeRecursive(this._selectedNodes, (node) => {
-            uniqueAssets.add(node.asset!);
+        const uniqueAssets = new Set<Asset>();
+
+        // Add gateway nodes first
+        const nodes = this._selectedNodes.filter((node) => {
+            if (node.asset?.type === WellknownAssets.GATEWAYASSET) {
+                // Add gateway straight to the unique list and don't recursively select children
+                uniqueAssets.add(node.asset!);
+                return false;
+            }
+            return true;
+        })
+
+        // Iterate through descendants of selected nodes that aren't gateways
+        // and add to delete list (don't recurse descendant gateway nodes)
+        OrAssetTree._forEachNodeRecursive(nodes, (node) => {
+            // Check no ancestor is of type gateway
+            let ancestor = node.parent;
+            let okToAdd = true;
+            while (ancestor && okToAdd) {
+                const ancestorType = ancestor?.asset?.type;
+                if (ancestorType === WellknownAssets.GATEWAYASSET) {
+                    okToAdd = false;
+                }
+                ancestor = ancestor.parent;
+            }
+            if (okToAdd) {
+                uniqueAssets.add(node.asset!);
+            }
         });
         const assetIds: string[] = Array.from(uniqueAssets).map(asset => asset.id!);
         const assetNames: string[] = Array.from(uniqueAssets).map(asset => asset.name!);
@@ -1535,6 +1575,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return false;
         }
         const selectedNode = this._selectedNodes ? this._selectedNodes[0] : undefined;
+
+        if (selectedNode?.asset?.type === WellknownAssets.GATEWAYASSET) {
+            // Cannot add to a gateway asset
+            return false;
+        }
+
+        if (this._gatewayDescendantIsSelected()) {
+            // Cannot add to a descendant of a gateway asset
+            return false;
+        }
         return this._getAllowedChildTypes(selectedNode).length > 0;
     }
 
@@ -1628,10 +1678,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     query.recursive = true;
                 }
                 this._sendEventWithReply({
-                    event: {
-                        eventType: "read-assets",
-                        assetQuery: query
-                    }
+                    eventType: "read-assets",
+                    assetQuery: query
                 }).then((ev) => {
                     this._loading = false;
                     this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)

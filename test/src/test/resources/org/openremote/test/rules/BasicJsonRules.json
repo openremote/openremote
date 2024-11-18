@@ -97,6 +97,27 @@
         {
           "action": "notification",
           "target": {
+            "linkedUsers": true,
+            "users": {
+              "realmRoles": [
+                {
+                  "predicateType": "string",
+                  "value": "test-realm-role-3"
+                }
+              ]
+            }
+          },
+          "notification": {
+            "name": "linkedPushTest",
+            "message": {
+              "type": "push",
+              "title": "Linked user test 3"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
             "linkedUsers": true
           },
           "notification": {
@@ -122,6 +143,47 @@
                   "name": "OR Test"
                 }
               ]
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "email",
+                  "subject": "%RULESET_NAME%",
+                  "html": "%TRIGGER_ASSETS%",
+                  "to": [
+                    {
+                      "address": "test2@openremote.io",
+                      "name": "OR localized test"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "email",
+                  "subject": "Linked user localized user test",
+                  "html": "%TRIGGER_ASSETS%"
+                }
+              }
             }
           }
         },

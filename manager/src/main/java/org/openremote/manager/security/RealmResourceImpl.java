@@ -24,7 +24,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Container;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.RealmResource;
 

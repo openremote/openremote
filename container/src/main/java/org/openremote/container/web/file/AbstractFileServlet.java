@@ -54,7 +54,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * download, and by download accelerators to be able to request smaller parts simultaneously. This servlet is ideal when
  * you have large files like media files placed outside the web application and you can't use the default servlet.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <p>
  * Just extend this class and override the {@link #getFile(HttpServletRequest)} method to return the desired file. If
  * you want to trigger a HTTP 400 "Bad Request" error, simply throw {@link IllegalArgumentException}. If you want to
@@ -112,6 +112,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author Bauke Scholtz
  * @since 2.2
  */
+// TODO: Replace this with a standard file servlet
 public abstract class AbstractFileServlet extends HttpServlet {
 
 	// Constants ------------------------------------------------------------------------------------------------------

@@ -20,10 +20,8 @@
 
 package org.openremote.manager.gateway;
 
-import io.netty.channel.ChannelFuture;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.gateway.GatewayCapabilitiesRequestEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -31,6 +29,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -55,9 +54,17 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
     }
 
     @Override
-    protected CompletableFuture<Void> createConnectedFuture(ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = super.createConnectedFuture(channelStartFuture);
-        return connectedFuture.thenCompose(__ ->
+    protected Future<Void> startChannel() {
+        CompletableFuture<Void> connectedFuture;
+        try {
+            connectedFuture = toCompletableFuture(super.startChannel());
+        } catch (Exception e) {
+            connectedFuture = CompletableFuture.failedFuture(e);
+        }
+
+        return connectedFuture
+            .orTimeout(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS)
+            .thenCompose(__ ->
             getFuture()
                 .orTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
                 .handle((result, ex) -> {
@@ -72,6 +79,12 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
         );
     }
 
+    @Override
+    protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
+        // Might need a better solution than this as we don't know how long the sync will take
+        return connectFuture.get(getConnectTimeoutMillis()+60000L, TimeUnit.MILLISECONDS);
+    }
+
     protected CompletableFuture<Void> getFuture() {
         syncFuture = new CompletableFuture<>();
         return syncFuture;
@@ -79,7 +92,7 @@ public class GatewayIOClient extends WebsocketIOClient<String> {
 
     @Override
     protected void onMessageReceived(String message) {
-        if (syncFuture != null && message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX) && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
+        if (syncFuture != null && message.contains(GatewayCapabilitiesRequestEvent.TYPE)) {
             LOG.finest("Gateway connection is now ready");
             syncFuture.complete(null);
         }

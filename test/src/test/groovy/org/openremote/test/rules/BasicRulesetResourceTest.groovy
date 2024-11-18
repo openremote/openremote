@@ -106,7 +106,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment != null
             assert deployment.ruleset.version == globalRuleset.version
         }
@@ -127,7 +127,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment != null
             assert deployment.ruleset.version == globalRuleset.version
         }
@@ -142,8 +142,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
-            assert rulesService.globalEngine != null
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            assert rulesService.globalEngine.get() != null
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment == null
         }
 

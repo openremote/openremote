@@ -26,7 +26,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 public class SendMultiDataSegmentCommand implements SendDataCommand {
@@ -41,14 +41,14 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
     private final BluetoothGattCharacteristic dataInCharacteristic;
     private final BluetoothMeshProxySendDataCallback callback;
     private final byte[] data;
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
     private final List<SendSingleDataSegmentCommand> commands;
 
     private volatile SendSingleDataSegmentCommand currentCommand;
 
     // Constructors ---------------------------------------------------------------------------
 
-    public SendMultiDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, int mtuSize, ScheduledExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    public SendMultiDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, int mtuSize, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
         this.meshProxy = proxy;
         this.commandSerializer = commandSerializer;
         this.dataInCharacteristic = characteristic;
@@ -92,7 +92,7 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
 
     // Private Instance Methods ---------------------------------------------------------------
 
-    private List<SendSingleDataSegmentCommand> createCommands(int mtuSize, ScheduledExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    private List<SendSingleDataSegmentCommand> createCommands(int mtuSize, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
         int numOfSegments = (data.length / mtuSize) + ((data.length % mtuSize) > 0 ? 1 : 0);
         List<SendSingleDataSegmentCommand> commandList = new ArrayList<>(numOfSegments);
 

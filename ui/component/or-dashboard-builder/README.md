@@ -74,7 +74,7 @@ and your custom config should extend on `WidgetConfig`<br />
 ### Example of a custom Widget
 
 Here is a code example of how to create custom widgets.<br />
-Feel free to copy, put it in seperate files, and adjust it to your needs.<br />
+Feel free to copy, put it in separate files, and adjust it to your needs.<br />
 Looking into our existing widgets also helps understanding the codebase.
 
 ```typescript

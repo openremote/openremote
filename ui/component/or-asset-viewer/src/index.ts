@@ -28,6 +28,7 @@ import {
     AttributeEvent,
     ClientRole,
     FileInfo,
+    SentAlarm,
     SharedEvent,
     UserAssetLink,
     WellknownAssets,
@@ -47,7 +48,7 @@ import { progressCircular } from "@openremote/or-mwc-components/style";
 import { OrAssetTree } from "@openremote/or-asset-tree";
 
 export interface PanelConfig {
-    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
+    type: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers" | "alarm.linkedAlarms";
     title?: string;
     hide?: boolean;
     column?: number;
@@ -134,6 +135,7 @@ interface UserAssetLinkInfo {
 interface AssetInfo {
     asset: Asset;
     userAssetLinks?: UserAssetLinkInfo[];
+    alarmAssetLinks?: SentAlarm[];
     childAssets?: Asset[];
     viewerConfig: AssetViewerConfig;
     modified: boolean;
@@ -268,6 +270,19 @@ export class OrAssetViewerLoadUserEvent extends CustomEvent<string> {
     }
 }
 
+export class OrAssetViewerLoadAlarmEvent extends CustomEvent<number> {
+
+    public static readonly NAME = "or-asset-viewer-load-alarm-event";
+
+    constructor(alarmId: number) {
+        super(OrAssetViewerLoadAlarmEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: alarmId
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetViewerComputeGridEvent.NAME]: OrAssetViewerComputeGridEvent;
@@ -277,6 +292,7 @@ declare global {
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
         [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
         [OrAssetViewerLoadUserEvent.NAME]: OrAssetViewerLoadUserEvent;
+        [OrAssetViewerLoadAlarmEvent.NAME]: OrAssetViewerLoadAlarmEvent;
     }
 }
 
@@ -807,6 +823,34 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                                   }}">
                     </or-mwc-table>`;
     }
+
+    if (panelConfig.type === "alarm.linkedAlarms") {
+
+        const hasReadAlarmsRole = manager.hasRole(ClientRole.READ_ALARMS);
+        const linkedAlarms = assetInfo.alarmAssetLinks
+
+        if (!hasReadAlarmsRole) {
+            return;
+        }
+
+        if (!linkedAlarms || linkedAlarms.length === 0) {
+            return;
+        }
+
+        const cols = [i18next.t("alarm.title"), i18next.t("alarm.severity"), i18next.t("status")];
+        const rows = linkedAlarms.sort().map(linkedAlarm => {
+            return [
+                linkedAlarm.title,
+                linkedAlarm.severity,
+                linkedAlarm.status
+            ];
+        });
+        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
+                                  @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => {
+            hostElement.dispatchEvent(new OrAssetViewerLoadAlarmEvent(linkedAlarms[ev.detail.index].id!));
+        }}">
+                    </or-mwc-table>`;
+    }
 }
 
 export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig): TemplateResult {
@@ -981,6 +1025,21 @@ async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
     }
 }
 
+async function getLinkedAlarms(asset: Asset): Promise<SentAlarm[]> {
+    try {
+        return await manager.rest.api.AlarmResource.getAlarms(
+            {realm: manager.displayRealm, assetId: asset.id}
+        ).then((response) => {
+            const alarmAssetLinks = response.data;
+            return Promise.all(alarmAssetLinks);
+        });
+
+    } catch (e) {
+        console.log("Failed to get child assets: " + e);
+        return [];
+    }
+}
+
 export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
     const isUpdate = !!asset.id && asset.version !== undefined;
@@ -1081,6 +1140,11 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
         {
             type: "linkedUsers",
             column: 1
+        },
+        {
+            type: "alarm.linkedAlarms",
+            column: 1,
+            hideOnMobile: true
         }
     ]
 };
@@ -1224,6 +1288,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         const links = await getLinkedUsers(asset);
+        const alarms = await getLinkedAlarms(asset);
 
         // Check this asset is still the correct one
         if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
@@ -1247,6 +1312,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             viewerConfig: viewerConfig,
             childAssets: childAssets,
             userAssetLinks: links,
+            alarmAssetLinks: alarms,
             attributeTemplateMap: {}
         };
     }

@@ -723,6 +723,9 @@ export class OrMwcInput extends LitElement {
     @property({type: Object})
     public searchProvider?: (search?: string) => Promise<[any, string][]>
 
+    @property({type: String})
+    public searchLabel = "search"
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -1122,7 +1125,9 @@ export class OrMwcInput extends LitElement {
                                 <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed ${this.searchProvider != undefined ? 'mdc-menu__searchable' : undefined}" @MDCMenuSurface:closed="${menuCloseHandler}">
                                     ${when(this.searchProvider != undefined, () => html`
                                         <label id="select-searchable" class="mdc-text-field mdc-text-field--filled">
-                                            <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">${i18next.t('search')}</span>
+                                            <span class="mdc-floating-label" style="color: rgba(0, 0, 0, 0.6); text-transform: capitalize; visibility: ${this.searchableValue ? 'hidden' : 'visible'}" id="my-label-id">
+                                                <or-translate .value="${this.searchLabel}"></or-translate>
+                                            </span>
                                             <input class="mdc-text-field__input" type="text"
                                                    @keyup="${(e: KeyboardEvent) => this.searchableValue = (e.target as HTMLInputElement).value}"
                                             />
@@ -1167,13 +1172,15 @@ export class OrMwcInput extends LitElement {
                             ev.stopPropagation();
                         }
 
-                        isMomentary ? this.dispatchEvent(new OrInputChangedEvent(false, true)) : this.dispatchEvent(new OrInputChangedEvent(true, null))
+                        if (isMomentary) this.dispatchEvent(new OrInputChangedEvent(false, true))
                     };
                     const onClick = (ev: MouseEvent) => {
                         if (this.disabled) {
                             ev.stopPropagation();
                         }
-                    }
+
+                        if (!isMomentary) this.dispatchEvent(new OrInputChangedEvent(true, null))
+                    };
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;

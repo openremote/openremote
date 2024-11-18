@@ -30,12 +30,6 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         super();
     }
 
-    public static styles = css`
-        :host {
-            margin-left: 20px;
-        }
-    `;
-
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
 

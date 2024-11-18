@@ -28,9 +28,14 @@ on:
           - m6g.xlarge
         required: true
       DISK_SIZE:
-        description: 'Override EC2 root EBS volume size to provision (GB)'
+        description: 'Override EC2 root EBS volume size (GB)'
         type: string
         default: '16'
+        required: false
+      ENABLE_METRICS:
+        description: 'Enable metrics'
+        type: boolean
+        default: true
         required: false
       ELASTIC_IP:
         description: 'Create elastic public IP'
@@ -61,13 +66,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Provision Host
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: |
           chmod +x .ci_cd/aws/*
-          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$DISK_SIZE" "$ELASTIC_IP" "$PROVISION_S3_BUCKET"
+          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$DISK_SIZE" "$ELASTIC_IP" "$PROVISION_S3_BUCKET" "$ENABLE_METRICS"
         env:
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
           HOST: ${{ github.event.inputs.HOST }}
@@ -78,3 +83,4 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
           AWS_ROLE_NAME: ${{ secrets._TEMP_AWS_ROLE_NAME }}
+          ENABLE_METRICS: ${{ github.event.inputs.ENABLE_METRICS }}

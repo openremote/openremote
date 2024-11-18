@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.event.Event;
 import org.openremote.model.syslog.SyslogEvent;
 
 /**
@@ -44,13 +45,12 @@ import org.openremote.model.syslog.SyslogEvent;
     setterVisibility= JsonAutoDetect.Visibility.NONE,
     isGetterVisibility= JsonAutoDetect.Visibility.NONE
 )
-public abstract class EventFilter<E extends SharedEvent> {
-
-    public abstract String getFilterType();
-
+// TODO: Provide authorisation method on this interface
+@FunctionalInterface
+public interface EventFilter<E extends Event> {
     /**
      *
      * @return the event or a filtered copy of it if the filter matches; do not modify the supplied event.
      */
-    public abstract E apply(E event);
+    E apply(E event);
 }

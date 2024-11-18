@@ -387,7 +387,7 @@ export class OrAttributeCard extends LitElement {
 
         this.updateComplete.then(() => {
             this.resizeObserver = new ResizeObserver(debounce((entries: ResizeObserverEntry[]) => {
-                const elemSize = entries[0].devicePixelContentBoxSize[0].blockSize;
+                const elemSize = entries[0].devicePixelContentBoxSize[0].inlineSize;
                 this.setLabelSizeByWidth(elemSize);
             }, 200))
             this.resizeObserver.observe(this.shadowRoot!.querySelector(".graph-wrapper")!);
@@ -519,10 +519,8 @@ export class OrAttributeCard extends LitElement {
                     } else {
                         // fully load the asset
                         const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
-                            event: {
-                                eventType: "read-asset",
-                                assetId: selectedNode.asset!.id
-                            }
+                            eventType: "read-asset",
+                            assetId: selectedNode.asset!.id
                         });
                         this.asset = assetEvent.asset;
                     }
@@ -728,14 +726,12 @@ export class OrAttributeCard extends LitElement {
         const attributeName = this.assetAttributes[0][1].name!;
 
         const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
-            event: {
-                eventType: "read-asset-attribute",
-                ref: {
-                    id: assetId,
-                    name: attributeName
-                }
-            } as ReadAttributeEvent
-        });
+            eventType: "read-asset-attribute",
+            ref: {
+                id: assetId,
+                name: attributeName
+            }
+        } as ReadAttributeEvent);
 
         this.mainValue = currentValue.value;
         this.formattedMainValue = this.getFormattedValue(this.mainValue!);
@@ -842,10 +838,10 @@ export class OrAttributeCard extends LitElement {
         if (value.length < 5) { this.mainValueSize = "xl" }
     }
 
-    protected setLabelSizeByWidth(blockSize: number) {
-        if(blockSize < 60) { this.mainValueSize = "s"; }
-        else if(blockSize < 100) { this.mainValueSize = "m"; }
-        else if(blockSize < 200) { this.mainValueSize = "l"; }
+    protected setLabelSizeByWidth(inlineSize: number) {
+        if(inlineSize < 60) { this.mainValueSize = "s"; }
+        else if(inlineSize < 100) { this.mainValueSize = "m"; }
+        else if(inlineSize < 200) { this.mainValueSize = "l"; }
         else { this.mainValueSize = "xl"; }
     }
 

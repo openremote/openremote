@@ -103,7 +103,7 @@ jobs:
     steps:
 
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
 
@@ -163,10 +163,16 @@ jobs:
 
       - name: Public IP
         id: ip-address
-        uses: haythem/public-ip@v1.3
+        shell: bash
+        run: |
+          set -e
+          PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
+          PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
+          echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
+          echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT 
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
@@ -177,7 +183,7 @@ jobs:
       - name: Backend files changed
         id: backend-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v45
         with:
           files_ignore: |
             .ci_cd/**
@@ -193,7 +199,7 @@ jobs:
       - name: UI files changed
         id: ui-files-changed
         if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v45
         with:
           files: |
             ui/app/manager/**
@@ -229,25 +235,25 @@ jobs:
           
       - name: Check deployment build.gradle
         id: check_deployment_gradle
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: "deployment/build.gradle"
           
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: "deployment/Dockerfile"
 
       - name: Check custom project
         id: check_custom_project
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: "openremote,.gitmodules"
 
       - name: Check ci_cd existence
         id: check_cicd_json
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: ".ci_cd/ci_cd.json"
 
@@ -298,7 +304,7 @@ jobs:
 
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: manager-tag-cache
         with:
           path: |
@@ -372,9 +378,7 @@ jobs:
                 if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
                   dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release" and refName in eventConfig:
-
-              eventConfig = eventConfig[refName]
+            elif eventName == "release":
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
                 if 'distribute' in eventConfig:
@@ -550,21 +554,21 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
           password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: linux/amd64,linux/aarch64
 
       - name: install buildx
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
         with:
           version: latest
           install: true
@@ -572,7 +576,7 @@ jobs:
       - name: Set up JDK 17 and gradle cache
         id: java
         if: ${{ steps.install-command.outputs.value != '' || steps.test-backend-command.outputs.value != '' }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -583,7 +587,7 @@ jobs:
         run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
 
       - name: Yarn cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -635,13 +639,13 @@ jobs:
           fi
 
           # Pull the images
-          docker-compose -f $composeProfile pull
+          docker compose -f $composeProfile pull
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
 
       # Use docker layer caching to speed up image building
-      - uses: satackey/action-docker-layer-caching@v0.0.11
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
@@ -661,11 +665,11 @@ jobs:
           chmod 777 tmp
 
           # Define cleanup command
-          echo "cleanup=docker-compose -f $composeProfile down" >> $GITHUB_OUTPUT
+          echo "cleanup=docker compose -f $composeProfile down" >> $GITHUB_OUTPUT
 
           # Start the stack
-          echo "docker-compose -f ${composeProfile} up -d --no-build"
-          docker-compose -f ${composeProfile} up -d --no-build
+          echo "docker compose -f ${composeProfile} up -d --no-build"
+          docker compose -f ${composeProfile} up -d --no-build
 
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
@@ -676,7 +680,7 @@ jobs:
 
       - name: Archive backend test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-test-results
           path: test/build/reports/tests
@@ -743,7 +747,7 @@ jobs:
           fi
 
           # Start the stack          
-          MANAGER_VERSION=$MANAGER_TAG docker-compose -f $composeProfile up -d --no-build
+          MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}

@@ -24,7 +24,7 @@ import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -37,9 +37,9 @@ public abstract class ShadowMeshModel {
     protected final BluetoothMeshNetwork meshNetwork;
     protected int appKeyIndex;
     private final List<Consumer<Object>> sensorValueConsumers = new ArrayList<>();
-    protected final ScheduledExecutorService executorService;
+    protected final ExecutorService executorService;
 
-    public ShadowMeshModel(ScheduledExecutorService executorService, BluetoothMeshNetwork network, ShadowMeshElement element, int appKeyIndex) {
+    public ShadowMeshModel(ExecutorService executorService, BluetoothMeshNetwork network, ShadowMeshElement element, int appKeyIndex) {
         this.executorService = executorService;
         this.meshNetwork = network;
         this.element = element;

@@ -65,7 +65,7 @@ abstract public class BaseMeshNetwork {
     List<ProvisionedMeshNode> nodes = new ArrayList<>();
     List<Group> groups = new ArrayList<>();
     List<Scene> scenes = new ArrayList<>();
-    protected Map<Integer, ArrayList<Integer>> networkExclusions = new HashMap<>();
+    protected Map<Integer, List<Integer>> networkExclusions = new HashMap<>();
     //Library related attributes
     int unicastAddress = 0x0001;
     boolean lastSelected;
@@ -896,7 +896,7 @@ abstract public class BaseMeshNetwork {
     /**
      * Returns the map of network exclusions
      */
-    public synchronized Map<Integer, ArrayList<Integer>> getNetworkExclusions() {
+    public synchronized Map<Integer, List<Integer>> getNetworkExclusions() {
         return Collections.unmodifiableMap(networkExclusions);
     }
 
@@ -913,7 +913,6 @@ abstract public class BaseMeshNetwork {
      * <p>
      * Please note that this is not persisted within the node since the filter is reinitialized to a whitelist filter upon connecting to a proxy node.
      * Therefore after setting a proxy filter and disconnecting users will have to manually
-     * <p/>
      */
     public synchronized void setProxyFilter(final ProxyFilter proxyFilter) {
         this.proxyFilter = proxyFilter;
@@ -971,7 +970,7 @@ abstract public class BaseMeshNetwork {
         //Exclude node
         node.setExcluded(true);
         notifyNodeUpdated(node);
-        ArrayList<Integer> addresses = networkExclusions.get(ivIndex.getIvIndex());
+        List<Integer> addresses = networkExclusions.get(ivIndex.getIvIndex());
         if (addresses == null) {
             addresses = new ArrayList<>();
         }

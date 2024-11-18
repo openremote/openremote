@@ -27,7 +27,7 @@ import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;
@@ -36,7 +36,7 @@ public class ShadowGenericOnOffModel extends ShadowMeshModel {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowGenericOnOffModel.class.getName());
 
-    public ShadowGenericOnOffModel(ScheduledExecutorService executorService, BluetoothMeshNetwork network, ShadowMeshElement element, int appKeyIndex) {
+    public ShadowGenericOnOffModel(ExecutorService executorService, BluetoothMeshNetwork network, ShadowMeshElement element, int appKeyIndex) {
         super(executorService, network, element, appKeyIndex);
     }
 

@@ -211,7 +211,7 @@ public class MeshNetwork extends BaseMeshNetwork{
         }
 
         // Populate all addresses that are currently in use
-        final ArrayList<Integer> usedAddresses = new ArrayList<>();
+        final List<Integer> usedAddresses = new ArrayList<>();
         for (ProvisionedMeshNode node : nodes) {
             usedAddresses.addAll(node.getElements().keySet());
         }
