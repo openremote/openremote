@@ -2413,6 +2413,7 @@ __metadata:
   dependencies:
     "@openremote/or-app": "npm:^1.1.0"
     "@openremote/util": "workspace:*"
+    iso-639-1: "npm:^3.1.3"
   languageName: unknown
   linkType: soft
 
@@ -2757,6 +2758,7 @@ __metadata:
     "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
     ace-builds: "npm:^1.4.13"
+    iso-639-1: "npm:^3.1.3"
     linqts: "npm:^1.12.6"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
@@ -6690,6 +6692,13 @@ __metadata:
   version: 3.1.1
   resolution: "isexe@npm:3.1.1"
   checksum: 10c0/9ec257654093443eb0a528a9c8cbba9c0ca7616ccb40abd6dde7202734d96bb86e4ac0d764f0f8cd965856aacbff2f4ce23e730dc19dfb41e3b0d865ca6fdcc7
+  languageName: node
+  linkType: hard
+
+"iso-639-1@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "iso-639-1@npm:3.1.3"
+  checksum: 10c0/416112e3df8b00efd4dabda33b581d3323e77c217a05b4c262dffacff89ee17b73debff2673a1ea0c7a36bd7dfb4f6d234249b1addacf36aa7bb70481a462cc0
   languageName: node
   linkType: hard
 

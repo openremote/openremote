@@ -56,6 +56,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.MetaItemType;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,6 +95,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     public static final String OR_GATEWAY_TUNNEL_SSH_PORT = "OR_GATEWAY_TUNNEL_SSH_PORT";
     public static final String OR_GATEWAY_TUNNEL_TCP_START = "OR_GATEWAY_TUNNEL_TCP_START";
     public static final String OR_GATEWAY_TUNNEL_HOSTNAME = "OR_GATEWAY_TUNNEL_HOSTNAME";
+    public static final String OR_GATEWAY_TUNNEL_AUTO_CLOSE_MINUTES = "OR_GATEWAY_TUNNEL_AUTO_CLOSE_MINUTES";
     public static final int OR_GATEWAY_TUNNEL_TCP_START_DEFAULT = 9000;
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
@@ -109,6 +111,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
     protected String tunnelHostname;
     protected int tunnelSSHPort;
     protected int tunnelTCPStart;
+    protected int tunnelAutoCloseMinutes;
 
     /**
      * Maps gateway asset IDs to connections; note that gateway asset IDs are stored lower case so that they can be
@@ -232,6 +235,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         tunnelSSHPort = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_SSH_PORT, 0);
         tunnelTCPStart = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_TCP_START, OR_GATEWAY_TUNNEL_TCP_START_DEFAULT);
         tunnelHostname = getString(container.getConfig(), OR_GATEWAY_TUNNEL_HOSTNAME, null);
+        tunnelAutoCloseMinutes = getInteger(container.getConfig(), OR_GATEWAY_TUNNEL_AUTO_CLOSE_MINUTES, 0);
     }
 
     @Override
@@ -538,11 +542,20 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         if (!TextUtil.isNullOrEmpty(tunnelHostname)) {
             tunnelInfo.setHostname(tunnelHostname);
         }
+        if (tunnelAutoCloseMinutes > 0) {
+            tunnelInfo.setAutoCloseTime(timerService.getNow().plus(Duration.ofMinutes(tunnelAutoCloseMinutes)));
+        }
+
         CompletableFuture<Void> startFuture = connector.startTunnel(tunnelInfo);
         try {
             pendingTunnelCounter.incrementAndGet();
             startFuture.get();
             tunnelInfos.put(tunnelInfo.getId(), tunnelInfo);
+            if (tunnelInfo.getAutoCloseTime() != null) {
+                Duration delay = Duration.between(timerService.getNow(), tunnelInfo.getAutoCloseTime());
+                scheduledExecutorService.schedule(() -> autoCloseTunnel(tunnelInfo.getId()), delay.toMillis(), TimeUnit.MILLISECONDS);
+                LOG.fine("Scheduled job to automatically close tunnel '" + tunnelInfo.getId() + "' at " + tunnelInfo.getAutoCloseTime());
+            }
             return tunnelInfo;
         } catch (ExecutionException e) {
             if (e.getCause() instanceof TimeoutException) {
@@ -600,11 +613,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         try {
             stopFuture.get(20, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
-            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
             LOG.log(Level.WARNING, msg, e.getCause());
             throw new RuntimeException(msg, e.getCause());
         } catch (InterruptedException | TimeoutException e) {
-            String msg = "Failed to start tunnel: An error occurred whilst waiting for the tunnel to be started: id=" + gatewayId;
+            String msg = "Failed to stop tunnel: An error occurred whilst waiting for the tunnel to be stopped: id=" + gatewayId;
             LOG.warning(msg);
             throw new RuntimeException(msg);
         } finally {
@@ -819,7 +832,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 LOG.log(Level.SEVERE, "Failed to merge registered gateway: " + gateway.getId(), e);
             }
         } catch (Exception e) {
-            LOG.warning("Failed to create client for gateway '" + gateway.getId());
+            LOG.warning("Failed to create client for gateway: " + gateway.getId());
         }
     }
 
@@ -846,6 +859,21 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
     public int getTunnelTCPStart() {
         return tunnelTCPStart;
+    }
+
+    protected void autoCloseTunnel(String tunnelId) {
+        GatewayTunnelInfo tunnelInfo = tunnelInfos.get(tunnelId);
+        if (tunnelInfo == null) {
+            LOG.fine("Tunnel '" + tunnelId + "' not found so it cannot be automatically closed");
+            return;
+        }
+
+        try {
+            LOG.info("Automatically closing tunnel: " + tunnelId);
+            stopTunnel(tunnelInfo);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            LOG.log(Level.WARNING, "Failed to automatically close tunnel: " + tunnelId, e);
+        }
     }
 
     @Override
