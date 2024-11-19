@@ -20,7 +20,6 @@
 package org.openremote.manager.rules;
 
 import jakarta.ws.rs.core.MediaType;
-import net.sf.saxon.event.Event.Text;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -788,37 +787,55 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             Notification notification = ValueUtil.clone(notificationAction.notification);
             String body;
-            PushNotificationAction action;
             boolean linkedUsersTarget = ruleAction.target != null && Boolean.TRUE.equals(ruleAction.target.linkedUsers);
             boolean isLocalized = Objects.equals(notification.getMessage().getType(), LocalizedNotificationMessage.TYPE);
             boolean isEmail = Objects.equals(notification.getMessage().getType(), EmailNotificationMessage.TYPE);
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
             boolean isHtml;
 
-            if (isEmail) {
+            if (isLocalized) {
+                LocalizedNotificationMessage localizedMsg = (LocalizedNotificationMessage) notification.getMessage();
+                isHtml = false;
+                localizedMsg.getMessages().forEach((lang, msg) -> {
+                    if (msg instanceof PushNotificationMessage pushMsg) {
+                        PushNotificationAction action = pushMsg.getAction();
+                        if (action != null && action.getUrl() != null) {
+                            String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
+                            action.setUrl(newUrl);
+                            pushMsg.setAction(action);
+                        }
+                        
+                        if (pushMsg.getBody() != null) {
+                            String newBody = replaceAssetIdPlaceholder(pushMsg.getBody(), ruleState, useUnmatched, "notification body", false);
+                            pushMsg.setBody(newBody);
+                        }
+                    }
+                });
+                body = null;
+            } else if (isEmail) {
                 EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
                 isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
                 body = isHtml ? email.getHtml() : email.getText();
             } else {
                 isHtml = false;
                 if (isPush) {
-                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                    body = pushNotificationMessage.getBody();
-                    action = pushNotificationMessage.getAction();
+                    PushNotificationMessage pushMsg = (PushNotificationMessage) notification.getMessage();
+                    PushNotificationAction action;
+                    body = pushMsg.getBody();
+                    action = pushMsg.getAction();
 
                     if (action != null && action.getUrl() != null) {
                         String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
                         action.setUrl(newUrl);
+                        pushMsg.setAction(action);
                     }
 
                     if (body!= null) {
                         String newBody = replaceAssetIdPlaceholder(body, ruleState, useUnmatched, "notification body", false);
-                        pushNotificationMessage.setBody(newBody);
+                        pushMsg.setBody(newBody);
                     }
-                    
                 } else {
                     body = null;
-                    action = null;
                 }
             }
 
