@@ -186,7 +186,7 @@ export class ChartWidget extends OrAssetWidget {
                 <or-loading-indicator></or-loading-indicator>
                 
             `, () => when(this._error, () => html`
-                <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
                     <span><or-translate .value="${this._error}"></or-translate></span>
                 </div>
                 

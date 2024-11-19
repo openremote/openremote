@@ -373,7 +373,7 @@ export class OrAttributeCard extends LitElement {
                             ${!this.shouldHideAttributePicker() ? html`
                                 <or-mwc-input class="button" .type="${InputType.BUTTON}" label="selectAttribute" icon="plus" @or-mwc-input-changed="${() => this._openDialog("editAttribute")}"></or-mwc-input>
                             ` : html`
-                                <span>${i18next.t('noAttributeConnected')}</span>
+                                <span style="text-align: center;">${i18next.t('noAttributeConnected')}</span>
                             `}
                         </div>
                     </div>

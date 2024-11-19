@@ -35,8 +35,9 @@ const styling = css`
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
   }
-`
+`;
 
 @customElement("gauge-widget")
 export class GaugeWidget extends OrAssetWidget {
@@ -131,7 +132,7 @@ export class GaugeWidget extends OrAssetWidget {
                 `;
             }, () => {
                 return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+                    <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
                         <span><or-translate value="noAttributeConnected"></or-translate></span>
                     </div>
                 `;

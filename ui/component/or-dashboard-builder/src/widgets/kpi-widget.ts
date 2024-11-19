@@ -102,7 +102,7 @@ export class KpiWidget extends OrAssetWidget {
                 ${when(this._loading || this._error, () => {
                     // Have to use `position: absolute` with white background due to rendering inconsistencies in or-attribute-card
                     return html`
-                        <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1; display: flex; justify-content: center; align-items: center;">
+                        <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1; display: flex; justify-content: center; align-items: center; text-align: center;">
                             ${when(this._loading, () => html`
                                 <or-loading-indicator></or-loading-indicator>
                             `, () => html`
