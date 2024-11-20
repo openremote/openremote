@@ -11,7 +11,8 @@ import {
     PushNotificationMessageMessagePriority,
     PushNotificationMessageTargetType,
     NotificationTargetType,
-    RepeatFrequency
+    RepeatFrequency,
+    AbstractNotificationMessage
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import i18next from "i18next";
@@ -19,10 +20,14 @@ import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
 import {getNotificationsRoute} from "../routes";
 import {when} from "lit/directives/when.js";
+import {live} from "lit/directives/live.js";
 import {ref} from "lit/directives/ref.js"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
+import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
+import "../components/notifications/notification-form";
+// will remove/revise later
 import {
     OrMwcTable,
     OrMwcTableRowClickEvent,
@@ -55,14 +60,26 @@ export class NotificationService {
 
     async sendNotification(notification: Notification): Promise<boolean> {
         try {
-            const response = await manager.rest.api.NotificationResource.sendNotification(notification);
+            console.log("About to send notification:", notification);
+    
+            const response = await manager.rest.api.NotificationResource.sendNotification(
+                notification,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+            
+            console.log("Response received:", response);
             return response.status === 200;
         } catch (error) {
             console.error('Failed to send notification: ', error);
             if (isAxiosError(error)) {
-                console.error('Request payload:', error.config?.data);
-                console.error('Response status:', error.response?.status);
-                console.error('Response data:', error.response?.data);
+                console.error('Full error object:', {
+                    config: error.config,
+                    response: error.response
+                });
             }
             throw error;
         }
@@ -371,62 +388,27 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
     }
 
-    private async _loadTargetsForType(type: string) {
+    private async _loadAssetsforType(type: string) {
         try {    
-            if (!this._targetInput) {
-                return;
+            // Load assets regardless of type
+            if (!this._assets) {
+                const response = await manager.rest.api.AssetResource.queryAssets({
+                    realm: {
+                        name: manager.displayRealm
+                    }
+                });
+                this._assets = response.data;
             }
-            
-            switch (type) {
-                case "USER":
-                    if (!this._users) {
-                        this._users = await this._loadUsers();
-                    }
-                    this._selectedTargetType = InputType.SELECT;
-                    this._targetOptions = this._users.map(user => ({
-                        text: user.username,
-                        value: user.id
-                    }));
-                    break;
-                
-                case "ASSET":
-                    if (!this._assets) {
-                        this._assets = await this._loadAssets();
-                    }
-                    this._selectedTargetType = InputType.SELECT;
-                    this._targetOptions = this._assets.map(asset => ({
-                        text: asset.name, // Note: using label not text
-                        value: asset.id
-                    }));
-                    break;
-        
-                case "REALM":
-                    if (!this._realms) {
-                        this._realms = await this._loadRealms();
-                    }
-                    this._selectedTargetType = InputType.SELECT;
-                    this._targetOptions = this._realms.map(realm => ({
-                        text: realm,
-                        value: realm
-                    }));
-                    break;
-            }
+            this._targetOptions = this._assets.map(asset => ({
+                text: asset.name,
+                value: asset.id
+            }));
             await this.requestUpdate();
+            
         } catch (error) {
             console.error('Error loading targets: ', error);
             showSnackbar(undefined, i18next.t("Loading targets failed"));
         }
-    }
-
-    protected async _onTargetTypeChanged(e: OrInputChangedEvent) {
-        console.log("Target type changed to:", e.detail.value);
-        if (!e.detail.value) return;
-        
-        this._selectedTargetType = e.detail.value;
-        this._targetOptions = [];
-        await this.requestUpdate();
-    
-        await this._loadTargetsForType(e.detail.value);
     }
 
     public stateChanged(state: AppStateKeyed): void {
@@ -455,71 +437,125 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
     }
 
-    protected _getFormData(dialog: OrMwcDialog) {
-        const inputs = {
-            name: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationName"),
-            title: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationTitle"),
-            body: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationBody"),
-            priority: dialog.shadowRoot?.querySelector<OrMwcInput>("#notificationPriority"),
-            targetType: dialog.shadowRoot?.querySelector<OrMwcInput>("#targetType"),
-            target: dialog.shadowRoot?.querySelector<OrMwcInput>("#target")
-        };
-
-        if (!inputs.name?.value || !inputs.title?.value || !inputs.body?.value) {
+    protected _getFormData(dialog: OrMwcDialog): NotificationFormData | null {
+        const form = dialog.shadowRoot?.querySelector<NotificationForm>("notification-form");
+        if (!form) {
+            console.error("Form not found in dialog");
             return null;
-        
         }
-
-        return {
-            name: inputs.name.value,
-            title: inputs.title.value,
-            body: inputs.body.value, 
-            priority: inputs.priority?.value,
-            targetType: inputs.targetType?.value,
-            target: inputs.target?.value
-        };
-}
+    
+        const formData = form.getFormData();
+        
+        // validate required fields per schema
+        if (!formData?.name || !formData?.targetType || !formData?.target) {
+            console.error("Missing required fields:", {
+                hasName: !!formData?.name,
+                hasTargetType: !!formData?.targetType,
+                hasTarget: !!formData?.target
+            });
+            return null;
+        }
+    
+        console.log("Form data validation passed:", formData);
+        return formData;
+    }
 
     protected async _handleCreateNotification(dialog: OrMwcDialog) {
         const formData = this._getFormData(dialog);
         if (!formData) {
-            showSnackbar(undefined, i18next.t("Notification validation failed."));
             return;
         }
 
+        console.log("Raw form data:", formData);
+
         try {
-            const notification = this._createNotificationFromFormData(formData);
-            await this.notificationService.sendNotification(notification);
+            // create a basic notification first
+            const message: PushNotificationMessage = {
+                type: "push" as const,
+                title: formData.title,
+                body: formData.body,
+                data: {}  // keep it simple first
+            };
+
+            const notification: Notification = {
+                name: formData.name,
+                message: message,
+                targets: [{
+                    type: formData.targetType as NotificationTargetType,
+                    id: formData.target
+                }]
+            };
+
+            console.log("Sending simplified notification:", notification);
+
+            const response = await this.notificationService.sendNotification(notification);
+            console.log("Server response:", response);
 
             showSnackbar(undefined, i18next.t("Creating notification success."));
             dialog.close();
             await this._loadData();
         } catch (error) {
+            console.error("Error creating notification:", error);
+            if (error.response) {
+                console.error("Error response:", {
+                    status: error.response.status,
+                    data: error.response.data,
+                    headers: error.response.headers
+                });
+            }
             showSnackbar(undefined, i18next.t("Creating notification failure."));
         }
     }
 
+    protected isValidTargetType(type: string): boolean {
+        return type === NotificationTargetType.REALM ||
+            type === NotificationTargetType.USER ||
+            type === NotificationTargetType.ASSET ||
+            type === NotificationTargetType.CUSTOM;
+    }
+
     protected _createNotificationFromFormData(formData: any): Notification {
-        const message: PushNotificationMessage = {
+        // validate if target type is one of the allowed values 
+        if (!this.isValidTargetType(formData.targetType)) {
+            throw new Error(`Invalid target type: ${formData.targetType}`)
+        }
+
+        // extend it with PushNotification specific fields
+        const pushMessage: PushNotificationMessage = {
             type: "push",
             title: formData.title,
             body: formData.body, 
-            priority: formData.priority || PushNotificationMessageMessagePriority.NORMAL,
-            targetType: formData.targetType as PushNotificationMessageTargetType,
+            priority: PushNotificationMessageMessagePriority.NORMAL,
+            targetType: PushNotificationMessageTargetType.DEVICE,
             target: formData.target,
-            data: {},
-            buttons: []
+            data: {}
+        };
+
+        // create the target that matches the API schema
+        const target = {
+            type: formData.targetType as NotificationTargetType,
+            id: formData.target,
+            data: {} 
         };
         
-        return {
+
+        // create notification matching the schema
+        const notification: Notification = {
             name: formData.name,
-            message: message,
-            targets: [{
-                type: formData.targetType as NotificationTargetType,
-                id: formData.target
-            }],
-            repeatFrequency: RepeatFrequency.ONCE 
+            message: pushMessage,
+            targets: [target],
+            repeatFrequency: RepeatFrequency.ONCE
+            // repeatInterval is optional according to schema
         };
+    
+        // add validation logging
+        console.log("Sending notification with types:", {
+            messageTargetType: pushMessage.targetType,
+            notificationTargetType: target.type,
+            fullPayload: notification
+        });
+    
+        return notification;
     }
 
     // dont remove this
@@ -534,6 +570,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     public shouldUpdate(changedProperties: PropertyValues): boolean {
+        console.log(changedProperties);
+
         // if changed props has realm this._loadData()
         return super.shouldUpdate(changedProperties);
     }
@@ -572,56 +610,20 @@ export class PageNotifications extends Page<AppStateKeyed> {
             `;
     }
 
-    private renderTargetInput() {
-        return html`
-        <or-mwc-input 
-            label="${i18next.t("Target")}"
-            type="${InputType.SELECT}"
-            style="width: 100%;"
-            required
-            id="target"
-            .options="${this._targetOptions.map(o => [o.value, o.text])}"
-            ${ref((el: OrMwcInput) => {
-                this._targetInput = el;
-                if (el && this._selectedTargetType) {
-                    this._loadTargetsForType(this._selectedTargetType);
-                }
-            })}>
-        </or-mwc-input>
-        `;
-    }
-
     protected _getDialogHTML() {
         return html`
-             <div class="dialog-content">
-             ${this._getNameTitleBody()}
-    
-                <or-mwc-input 
-                    label="${i18next.t("Priority")}"
-                    type="${InputType.SELECT}"
-                    .options="${["NORMAL", "HIGH"]}"
-                    required
-                    style="width: 100%;"
-                    id="notificationPriority">
-                </or-mwc-input>
-    
-                <or-mwc-input 
-                    label="${i18next.t("Target type")}"
-                    type="${InputType.SELECT}"
-                    .options="${["USER", "ASSET", "REALM"]}"
-                    required
-                    style="width: 100%;"
-                    id="targetType"
-                    ${ref((el: OrMwcInput) => this._targetTypeInput = el)}
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onTargetTypeChanged(e)}">
-                </or-mwc-input>
-    
-                ${this.renderTargetInput()}
-            </div>
+        <div class="dialog-content">
+            <notification-form
+                id="notificationForm"
+                ?disabled="${false}">
+            </notification-form>
+        </div>
         `;
     }
 
     protected async _showCreateDialog() {
+        await customElements.whenDefined('notification-form');
+
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Create notification"))
