@@ -212,22 +212,6 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
     }
 }
 
-export class OrAssetViewerChangeParentEvent extends CustomEvent<{ parentId: string | undefined, assetsIds: string[] }> {
-
-    public static readonly NAME = "or-asset-viewer-change-parent";
-
-    constructor(parent: string | undefined, assetsIds: string[]) {
-        super(OrAssetViewerChangeParentEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                parentId: parent,
-                assetsIds: assetsIds
-            }
-        });
-    }
-}
-
 export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.RequestEventDetail<boolean>> {
 
     public static readonly NAME = "or-asset-viewer-request-edit-toggle";
@@ -290,7 +274,6 @@ declare global {
         [OrAssetViewerSaveEvent.NAME]: OrAssetViewerSaveEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
-        [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
         [OrAssetViewerLoadUserEvent.NAME]: OrAssetViewerLoadUserEvent;
         [OrAssetViewerLoadAlarmEvent.NAME]: OrAssetViewerLoadAlarmEvent;
     }
@@ -1164,8 +1147,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: Object, reflect: false})
     public asset?: Asset;
 
-    @property({type: Array})
-    public ids: string[] | undefined;
+    @property({type: String})
+    public assetId: string | undefined;
 
     @property({type: Object})
     public config?: ViewerConfig;
@@ -1200,8 +1183,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#view-container")
     protected containerElem!: HTMLDivElement;
 
-    protected _saveResult?: SaveResult;
-
     constructor() {
         super();
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
@@ -1228,13 +1209,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             this.editMode = false;
         }
 
-        if (changedProperties.has("ids")) {
+        if (changedProperties.has("assetId")) {
             this._assetInfo = undefined;
             this.asset = undefined;
 
             // Set asset ID on mixin which will go and load the asset
-            if (this.ids && this.ids.length === 1) {
-                super.assetIds = [this.ids[0]];
+            if (this.assetId) {
+                super.assetIds = [this.assetId];
             } else {
                 super.assetIds = undefined;
             }
@@ -1242,7 +1223,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (changedProperties.has("asset")) {
             this._assetInfo = undefined;
-            this.ids = undefined;
+            this.assetId = undefined;
             super.assetIds = undefined;
 
             if (this.asset) {
@@ -1291,7 +1272,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const alarms = await getLinkedAlarms(asset);
 
         // Check this asset is still the correct one
-        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+        if (!this.assetId || this.assetId !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1302,7 +1283,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         // Check this asset is still the correct one
-        if (!this.ids || this.ids.length != 1 || this.ids[0] !== asset.id) {
+        if (!this.assetId || this.assetId !== asset.id) {
             throw new Error("Asset has changed");
         }
 
@@ -1323,96 +1304,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
-    protected _onParentChangeClick() {
-        let dialog: OrMwcDialog;
-
-        const blockEvent = (ev: Event) => {
-            ev.stopPropagation();
-        };
-
-        const dialogContent = html`
-            <or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}"
-                           @or-asset-tree-request-select="${blockEvent}"
-                           @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
-
-        const setParent = () => {
-            const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
-            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
-
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.ids || []));
-        };
-
-        const clearParent = () => {
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.ids || []));
-        };
-
-        const dialogActions: DialogAction[] = [
-            {
-                actionName: "clear",
-                content: "none",
-                action: clearParent
-            },
-            {
-                actionName: "ok",
-                content: "ok",
-                action: setParent
-            },
-            {
-                default: true,
-                actionName: "cancel",
-                content: "cancel"
-            }
-        ];
-
-        dialog = showDialog(new OrMwcDialog()
-            .setContent(dialogContent)
-            .setActions(dialogActions)
-            .setStyles(html`
-                <style>
-                    .mdc-dialog__surface {
-                        width: 400px;
-                        height: 800px;
-                        display: flex;
-                        overflow: visible;
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                    }
-
-                    #dialog-content {
-                        flex: 1;
-                        overflow: visible;
-                        min-height: 0;
-                        padding: 0;
-                    }
-
-                    footer.mdc-dialog__actions {
-                        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
-                    }
-
-                    or-asset-tree {
-                        height: 100%;
-                    }
-                </style>
-            `)
-            .setHeading(i18next.t("setParent"))
-            .setDismissAction(null));
-    }
-
     protected render(): TemplateResult | void {
 
-        const noSelection = !this.asset && (!this.ids || this.ids.length === 0);
-        const multiSelection = !this.asset && (this.ids && this.ids.length > 1);
-
-        if (multiSelection) {
-            return html `
-                <div class="msg">
-                    <div class="multipleAssetsView">
-                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
-                    </div>
-                </div>
-            `;
-        }
+        const noSelection = !this.asset && !this.assetId;
 
         if (noSelection) {
             return html`
@@ -1568,23 +1462,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.saveBtnElem.disabled = true;
         this.wrapperElem.classList.add("saving");
 
-        this._saveResult = await saveAsset(asset);
+        const saveResult = await saveAsset(asset);
 
-        this.wrapperElem.classList.remove("saving");
-        this.saveBtnElem.disabled = false;
-
-        if (!this._assetInfo || this._assetInfo.asset !== asset) {
-            // Asset has changed during save so ignore save result
-            return;
+        this.wrapperElem?.classList.remove("saving");
+        if (this.saveBtnElem) {
+            this.saveBtnElem.disabled = false;
         }
 
-        if (this._saveResult.success) {
-            this._assetInfo.modified = false;
+        if (saveResult.success) {
             this.asset = undefined;
-            this.ids = [this._saveResult.assetId];
+            this.assetId = saveResult.assetId;
         }
 
-        this.dispatchEvent(new OrAssetViewerSaveEvent(this._saveResult));
+        this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 
     protected _onAssetModified(validationResults: ValidatorResult[]) {
@@ -1595,8 +1485,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     _onEvent(event: SharedEvent) {
-        const assetId = this.ids && this.ids.length > 0 ? this.ids[0] : undefined;
-        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == assetId);
+        const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === this.assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == this.assetId);
 
         if (!processEvent) {
             return;
@@ -1615,15 +1504,24 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 return;
             }
 
-            if (asset.id !== assetId) {
+            if (asset.id !== this.assetId) {
                 return;
             }
 
             if (this.editMode) {
+
+                let externalModification = true;
+
+                // If we're currently saving then this is likely the response
+                if (this.saveBtnElem && this.saveBtnElem.disabled) {
+                    const oldVersion = this._assetInfo.asset.version ?? 0;
+                    const newVersion = asset.version ?? 0;
+                    externalModification = newVersion !== oldVersion+1;
+                }
+
                 // Asset hasn't been modified yet so just re-render with new version of asset
-                if (!this._assetInfo.modified || (this._saveResult?.assetId === assetId)) {
+                if (!externalModification || (externalModification && !this._assetInfo.modified)) {
                     this._assetInfo = undefined;
-                    this._saveResult = undefined;
                     this.loadAssetInfo(asset)
                         .then(assetInfo => this._assetInfo = assetInfo)
                         .catch(reason => {

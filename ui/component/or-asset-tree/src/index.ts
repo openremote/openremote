@@ -86,6 +86,11 @@ export interface NodeSelectEventDetail {
     newNodes: UiAssetTreeNode[];
 }
 
+export interface ChangeParentEventDetail {
+    parentId: string | undefined;
+    assetIds: string[];
+}
+
 export {style};
 
 export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEventDetail<NodeSelectEventDetail>> {
@@ -117,7 +122,7 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
     }
 }
 
-export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
+export class OrAssetTreeChangeParentEvent extends CustomEvent<ChangeParentEventDetail> {
 
     public static readonly NAME = "or-asset-tree-change-parent";
 
@@ -127,7 +132,7 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
             composed: true,
             detail: {
                 parentId: parent,
-                assetsIds: assetsIds
+                assetIds: assetsIds
             }
         });
     }

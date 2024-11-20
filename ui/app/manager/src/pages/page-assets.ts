@@ -3,7 +3,6 @@ import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
-    OrAssetViewerChangeParentEvent,
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
@@ -13,7 +12,7 @@ import {
     ViewerConfig, OrAssetViewerLoadAlarmEvent
 } from "@openremote/or-asset-viewer";
 import {
-    AssetTreeConfig,
+    AssetTreeConfig, ChangeParentEventDetail,
     OrAssetTree,
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
@@ -22,15 +21,16 @@ import {
     OrAssetTreeSelectionEvent,
     OrAssetTreeToggleExpandEvent,
 } from "@openremote/or-asset-tree";
-import manager, {DefaultBoxShadow, Util} from "@openremote/core";
+import manager, {DefaultBoxShadow, DefaultColor5, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {createSlice, Store, createSelector, PayloadAction} from "@reduxjs/toolkit";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -123,6 +123,24 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 z-index: 0;
             }
 
+            .multipleAssetsView {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                height: 100%;
+                width: 100%;
+            }
+
+            .multipleAssetsView > div {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .multipleAssetsView > div > *:first-child {
+                margin: 30px;                
+            }
+
             @media only screen and (min-width: 768px){
                 or-asset-tree {
                     width: 300px;
@@ -159,7 +177,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     protected _tree!: OrAssetTree;
 
     @query("#viewer")
-    protected _viewer!: OrAssetViewer;
+    protected _viewer?: OrAssetViewer;
 
     protected _addedAssetId?: string;
     protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
@@ -172,7 +190,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         [this._realmSelector],
         async (realm: string) => {
             this._assetIds = undefined;
-            if (this._viewer && this._viewer.ids) this._viewer.ids = undefined;
+            if (this._viewer) {
+                this._viewer.assetId = undefined;
+            }
             if (this._tree) this._tree.refresh();
             this._updateRoute(true);
         }
@@ -181,13 +201,12 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     constructor(store: Store<AssetsStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
-        this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onAssetSelectionChanged);
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (ev) => this._onAssetSelectionChanged(ev.detail.newNodes.map((node) => node.asset.id!)));
         this.addEventListener(OrAssetViewerRequestEditToggleEvent.NAME, this._onEditToggleRequested);
         this.addEventListener(OrAssetViewerEditToggleEvent.NAME, this._onEditToggle);
         this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
         this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
-        this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
         this.addEventListener(OrAssetViewerLoadUserEvent.NAME, this._onLoadUserEvent);
@@ -201,16 +220,37 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
 
     protected render(): TemplateResult | void {
+
+        let viewerHTML: TemplateResult;
+        const multiSelection = this._assetIds && this._assetIds.length > 1;
+
+        if (multiSelection) {
+            viewerHTML = html`
+                <div class="multipleAssetsView hideMobile">
+                    <div>
+                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this._assetIds.length } }"></or-translate>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
+                    </div>
+                </div>
+            `;
+        } else {
+            const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
+            viewerHTML = html`
+                <or-asset-viewer id="viewer" .assetId="${assetId}"
+                                 .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
+                                 class="${!assetId ? "hideMobile" : ""}"
+                                 .editMode="${this._editMode}"
+                ></or-asset-viewer>
+            `;
+        }
+
         return html`
             <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
                            class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
                            .selectedIds="${this._assetIds}"
                            .expandedIds="${this._expandedIds}"
             ></or-asset-tree>
-            <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
-                             class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}"
-                             .editMode="${this._editMode}"
-            ></or-asset-viewer>
+            ${viewerHTML}
         `;
     }
 
@@ -224,8 +264,82 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
     }
 
+    protected _onParentChangeClick() {
+        let dialog: OrMwcDialog;
+
+        const blockEvent = (ev: Event) => {
+            ev.stopPropagation();
+        };
+
+        const dialogContent = html`
+            <or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}"
+                           @or-asset-tree-request-select="${blockEvent}"
+                           @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
+
+        const setParent = () => {
+            const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
+            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
+            this._onAssetParentChange({parentId: idd, assetIds: this._assetIds});
+        };
+
+        const clearParent = () => {
+            this._onAssetParentChange({parentId: undefined, assetIds: this._assetIds});
+        };
+
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "clear",
+                content: "none",
+                action: clearParent
+            },
+            {
+                actionName: "ok",
+                content: "ok",
+                action: setParent
+            },
+            {
+                default: true,
+                actionName: "cancel",
+                content: "cancel"
+            }
+        ];
+
+        dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContent)
+            .setActions(dialogActions)
+            .setStyles(html`
+                <style>
+                    .mdc-dialog__surface {
+                        width: 400px;
+                        height: 800px;
+                        display: flex;
+                        overflow: visible;
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+
+                    #dialog-content {
+                        flex: 1;
+                        overflow: visible;
+                        min-height: 0;
+                        padding: 0;
+                    }
+
+                    footer.mdc-dialog__actions {
+                        border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+                    }
+
+                    or-asset-tree {
+                        height: 100%;
+                    }
+                </style>
+            `)
+            .setHeading(i18next.t("setParent"))
+            .setDismissAction(null));
+    }
+
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
-        const isModified = this._viewer.isModified();
+        const isModified = this._viewer && this._viewer.isModified();
 
         if (!isModified) {
             return;
@@ -235,24 +349,31 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         event.detail.allow = false;
 
         this._confirmContinue(() => {
-            const nodes = event.detail.detail.newNodes;
-
-            if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
-                // User has clicked the same node so let's force reload it
-                this._viewer.ids = undefined;
-                this._viewer.ids = nodes.map((node) => node.asset.id!);
-            } else {
-                this._assetIds = nodes.map((node) => node.asset.id!);
-                this._viewer.ids = this._assetIds;
-                this._updateRoute(true);
-            }
+            this._onAssetSelectionChanged(event.detail.detail.newNodes.map((node) => node.asset.id!));
         });
     }
 
-    protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
-        this._viewer.ids = this._assetIds;
-        this._updateRoute(true);
+    protected _onAssetSelectionChanged(assetIds: string[] | undefined) {
+        if (Util.objectsEqual(this._assetIds, assetIds)) {
+            // User has clicked the same node(s)
+            if (assetIds.length === 1) {
+                // force refresh the selected asset
+                if (this._viewer) {
+                    this._viewer.assetId = undefined;
+                    setTimeout(() => {
+                        if (this._viewer) {
+                            this._viewer.assetId = assetIds[0];
+                        }
+                    }, 0);
+                }
+            }
+        } else {
+            if (this._viewer) {
+                this._viewer.assetId = undefined;
+            }
+            this._assetIds = assetIds;
+            this._updateRoute(true);
+        }
     }
 
     protected _onEditToggleRequested(event: OrAssetViewerRequestEditToggleEvent) {
@@ -312,9 +433,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
     }
 
-    protected async _onAssetParentChange(newParentId: any) {
-        let parentId: string | undefined = newParentId.parentId;
-        let assetsIds: string[] = newParentId.assetsIds;
+    protected async _onAssetParentChange(parentChange: ChangeParentEventDetail) {
+        let parentId: string | undefined = parentChange.parentId;
+        let assetsIds: string[] = parentChange.assetIds;
 
         try {
             if (parentId) {
@@ -338,7 +459,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             if (this._addedAssetId === ev.detail.asset.id) {
                 this._assetIds = [ev.detail.asset.id];
                 this._addedAssetId = undefined;
-                this._viewer.ids = this._assetIds;
+                this._viewer.assetId = ev.detail.asset.id;
                 this._updateRoute(true);
             }
         }
