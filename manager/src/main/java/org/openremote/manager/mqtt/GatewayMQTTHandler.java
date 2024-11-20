@@ -128,9 +128,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         this.subscriptionManager = new GatewayMQTTSubscriptionManager(this);
 
         assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
-
     }
-
 
     // Temporarily holds events that require gateway acknowledgement
     protected final Cache<String, AttributeEvent> eventsPendingGatewayAcknowledgement = CacheBuilder.newBuilder()
@@ -157,9 +155,15 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
-    
 
-    // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
+    /**
+     * Intercepts gateway asset descendant attribute events and publishes them to the pending gateway events topic.
+     *
+     * @param em the entity manager
+     * @param event the attribute event to intercept
+     * @return true if the event was intercepted and published, false otherwise
+     * @throws AssetProcessingException if an error occurs during processing
+     */
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
         if (event.getSource() != null && event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
             LOG.finest("Intercepted attribute event from self: " + event.getId());
@@ -462,7 +466,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     }
 
-    // Handle disconnect - connection lost event
+    /**
+     * Handles the disconnection of a client, updating the gateway status and removing subscriptions.
+     *
+     * @param connection the connection that was lost
+     */
     protected void handleDisconnect(RemotingConnection connection) {
         
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
@@ -475,7 +483,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Authorize a published asset operation (CRUD) based on the topic structure
+     * Authorizes a published asset operation (CRUD) based on the topic structure.
+     *
+     * @param topic the topic associated with the request
+     * @param authContext the authentication context of the user
+     * @param gatewayAsset the gateway asset for authorization context
+     * @return true if the operation is authorized, false otherwise
      */
     protected boolean authorizeAssetOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
         List<String> topicTokens = topic.getTokens();
@@ -523,7 +536,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
 
     /**
-     * Authorize a published attribute operation based on the topic structure.
+     * Authorizes a published attribute operation based on the topic structure.
+     *
+     * @param topic the topic associated with the request
+     * @param authContext the authentication context of the user
+     * @param gatewayAsset the gateway asset for authorization context
+     * @return true if the operation is authorized, false otherwise
      */
     protected boolean authorizeAttributeOperation(Topic topic, AuthContext authContext, GatewayV2Asset gatewayAsset) {
         List<String> topicTokens = topic.getTokens();

@@ -44,6 +44,7 @@ public class GatewayMQTTSubscriptionManager {
     private static final Logger LOG = Logger.getLogger(GatewayMQTTSubscriptionManager.class.getName());
     final protected Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
     protected GatewayMQTTHandler gatewayMQTTHandler;
+    
     public GatewayMQTTSubscriptionManager(GatewayMQTTHandler gatewayMQTTHandler) {
         this.gatewayMQTTHandler = gatewayMQTTHandler;
     }
@@ -250,7 +251,6 @@ public class GatewayMQTTSubscriptionManager {
      * @return a Consumer that handles SharedEvent instances
      */
     protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
-        // Always publish asset/attribute messages with QoS 0
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
         Function<SharedEvent, String> topicExpander;
         List<String> topicTokens = topic.getTokens();
