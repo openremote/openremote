@@ -126,6 +126,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         this.assetProcessingService = container.getService(AssetProcessingService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.subscriptionManager = new GatewayMQTTSubscriptionManager(this);
+
+        assetProcessingService.addEventInterceptor(this::onAttributeEventIntercepted);
+
     }
 
 
@@ -159,6 +162,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
     // Intercept gateway asset descendant attribute events and publish to the pending gateway events topic
     public boolean onAttributeEventIntercepted(EntityManager em, AttributeEvent event) throws AssetProcessingException {
         if (event.getSource() != null && event.getSource().equals(GatewayMQTTHandler.class.getSimpleName())) {
+            LOG.finest("Intercepted attribute event from self: " + event.getId());
             return false;
         }
 
@@ -172,6 +176,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 return true;
             }
         }
+        LOG.finest("Intercepted attribute event from non-gateway asset descendant: " + event.getId());
         return false;
     }
 
@@ -562,7 +567,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Create asset request topic handler
+     * Handles the creation of an asset based on the provided topic and message body.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
+     * @param body the message body containing the asset data
      */
     protected void handleCreateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String payloadContent = body.toString(StandardCharsets.UTF_8);
@@ -623,7 +632,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Update asset request topic handler
+     * Handles the update of an asset based on the provided topic and message body.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
+     * @param body the message body containing the updated asset data
      */
     protected void handleUpdateAsset(RemotingConnection connection, Topic topic, ByteBuf body) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -670,7 +683,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Get asset request topic handler
+     * Handles the retrieval of an asset based on the provided topic.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
      */
     protected void handleGetAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -686,7 +702,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Delete asset request topic handler
+     * Handles the deletion of an asset based on the provided topic.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
      */
     protected void handleDeleteAsset(RemotingConnection connection, Topic topic) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -725,7 +744,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Update attribute request topic handler
+     * Handles the update of an attribute based on the provided topic and message body.
+     *
+     * @param topic the topic associated with the request
+     * @param body the message body containing the updated attribute data
      */
     protected void handleUpdateAttribute(Topic topic, ByteBuf body) {
         AttributeEvent event = buildAttributeEvent(topic.getTokens(), body.toString(StandardCharsets.UTF_8));
@@ -734,8 +756,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * handle multi attribute operations, includes authorization for each provided attribute
-     * we need to run authorization checks on the payload here rather than topic structure
+     * Handles the update of multiple attributes, including authorization checks for each attribute.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
+     * @param body the message body containing the attributes data
      */
     @SuppressWarnings({"unchecked"})
     protected void handleUpdateMultiAttribute(RemotingConnection connection, Topic topic, ByteBuf body) {
@@ -792,7 +817,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Get attribute request topic handler
+     * Handles the retrieval of an attribute based on the provided topic.
+     *
+     * @param connection the connection from which the request originated
+     * @param topic the topic associated with the request
+     * @param publishValueOnly if true, only the attribute value is published
      */
     protected void handleGetAttribute(RemotingConnection connection, Topic topic, boolean publishValueOnly) {
         String assetId = topicTokenIndexToString(topic, ASSET_ID_TOKEN_INDEX);
@@ -813,7 +842,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     /**
-     * Handle gateway events acknowledgement, publishes the event to the inbound que when acknowledged
+     * Handles the acknowledgement of gateway events, publishing the event to the inbound queue when acknowledged.
+     *
+     * @param connection the connection from which the acknowledgement originated
+     * @param body the message body containing the acknowledgement ID
      */
     protected void handleGatewayEventAcknowledgement(RemotingConnection connection, ByteBuf body) {
         // Acknowledgement id is the body of the message
@@ -837,18 +869,43 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     }
 
+    /**
+     * Updates the status of a gateway asset.
+     *
+     * @param gatewayAsset the gateway asset to update
+     * @param status the new connection status
+     */
     protected void updateGatewayStatus(GatewayV2Asset gatewayAsset, ConnectionStatus status) {
         sendAttributeEvent(new AttributeEvent(gatewayAsset.getId(), GatewayV2Asset.STATUS, status));
     }
 
+    /**
+     * Publishes an error response to the specified topic.
+     *
+     * @param topic the topic to publish the error response to
+     * @param error the error type
+     * @param message the error message
+     */
     protected void publishErrorResponse(Topic topic, MQTTErrorResponse.Error error, String message) {
         publishMessage(getResponseTopic(topic), new MQTTErrorResponse(error, message), MqttQoS.AT_MOST_ONCE);
     }
 
+    /**
+     * Publishes a response to the specified topic.
+     *
+     * @param topic the topic to publish the response to
+     * @param response the response object
+     */
     protected void publishResponse(Topic topic, Object response) {
         publishMessage(getResponseTopic(topic), response, MqttQoS.AT_MOST_ONCE);
     }
 
+    /**
+     * Publishes a pending gateway event to the specified gateway.
+     *
+     * @param event the attribute event to publish
+     * @param gateway the gateway asset to publish the event to
+     */
     protected void publishPendingGatewayEvent(AttributeEvent event, GatewayV2Asset gateway) {
         String eventId = UniqueIdentifierGenerator.generateId();
         MQTTGatewayEventMessage gatewayEvent = new MQTTGatewayEventMessage(eventId, event);
@@ -861,6 +918,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
     }
 
+    /**
+     * Sends an attribute event to the message broker.
+     *
+     * @param event the attribute event to send
+     */
     protected void sendAttributeEvent(AttributeEvent event) {
         messageBrokerService.getFluentProducerTemplate()
                 .withBody(event)
@@ -868,18 +930,38 @@ public class GatewayMQTTHandler extends MQTTHandler {
                 .asyncRequest();
     }
 
+    /**
+     * Builds an attribute event based on the topic tokens and value.
+     *
+     * @param topicTokens the tokens from the topic
+     * @param value the value for the attribute event
+     * @return the constructed AttributeEvent
+     */
     protected AttributeEvent buildAttributeEvent(List<String> topicTokens, Object value) {
         String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         return new AttributeEvent(assetId, attributeName, value).setSource(GatewayMQTTHandler.class.getSimpleName());
     }
 
+    /**
+     * Builds a read attribute event based on the topic tokens.
+     *
+     * @param topicTokens the tokens from the topic
+     * @return the constructed ReadAttributeEvent
+     */
     protected ReadAttributeEvent buildReadAttributeEvent(List<String> topicTokens) {
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         String attributeName = topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX);
         return new ReadAttributeEvent(assetId, attributeName);
     }
 
+    /**
+     * Builds an asset event based on the topic tokens and cause.
+     *
+     * @param topicTokens the tokens from the topic
+     * @param cause the cause of the asset event
+     * @return the constructed AssetEvent, or null if invalid
+     */
     protected AssetEvent buildAssetEvent(List<String> topicTokens, AssetEvent.Cause cause) {
         if (cause == AssetEvent.Cause.CREATE) {
             return new AssetEvent(cause, null, null);
@@ -899,12 +981,25 @@ public class GatewayMQTTHandler extends MQTTHandler {
         return new AssetEvent(cause, asset, null);
     }
 
+    /**
+     * Builds a read asset event based on the topic tokens.
+     *
+     * @param topicTokens the tokens from the topic
+     * @return the constructed ReadAssetEvent
+     */
     protected ReadAssetEvent buildReadAssetEvent(List<String> topicTokens) {
         String assetId = topicTokens.get(ASSET_ID_TOKEN_INDEX);
         return new ReadAssetEvent(assetId);
     }
 
 
+    /**
+     * Authorizes the parent ID for an asset, ensuring it is valid based on the gateway asset.
+     *
+     * @param asset the asset to check
+     * @param gatewayAsset the gateway asset for authorization context
+     * @return true if the parent ID is authorized, false otherwise
+     */
     protected boolean authorizeParentId(Asset<?> asset, GatewayV2Asset gatewayAsset) {
         if (gatewayAsset != null) {
             // Prevent assets from being moved to a parent that is not a descendant of the gateway or the gateway itself

@@ -50,7 +50,12 @@ public class GatewayMQTTSubscriptionManager {
 
   
     /**
-     * Adds a subscription for the specified topic, the subscription will be added to the broker and the subscriber info map
+     * Adds a subscription for the specified topic. Validates the subscription class and asset filter,
+     * then registers the subscription with the broker and tracks it for the session.
+     * 
+     * @param connection the connection associated with the subscription
+     * @param topic the topic to subscribe to
+     * @param subscriptionClass the class of the subscription (must be AssetEvent or AttributeEvent)
      * @param relativeToAsset the asset to build the filter relative to, can be null
      */
     public void addSubscription(RemotingConnection connection, Topic topic, Class subscriptionClass, Asset<?> relativeToAsset) {
@@ -80,7 +85,11 @@ public class GatewayMQTTSubscriptionManager {
     }
 
     /**
-     * Removes a subscription for the specified topic, the subscription will be removed from the broker and the subscriber info map
+     * Removes a subscription for the specified topic. Unregisters the subscription from the broker
+     * and removes it from the session's tracking map.
+     * 
+     * @param connection the connection associated with the subscription
+     * @param topic the topic to unsubscribe from
      */
     public void removeSubscription(RemotingConnection connection, Topic topic) {
         String subscriptionId = topic.toString();
@@ -101,7 +110,9 @@ public class GatewayMQTTSubscriptionManager {
     }
 
     /**
-     * Removes all subscriptions for the specified connection
+     * Removes all subscriptions associated with the specified connection.
+     * 
+     * @param connection the connection whose subscriptions are to be removed
      */
     public void removeAllSubscriptions(RemotingConnection connection) {
         synchronized (sessionSubscriptionConsumers) {
@@ -111,9 +122,13 @@ public class GatewayMQTTSubscriptionManager {
 
 
 
-    /***
-     * Builds an asset filter based on the topic, the filter is used to filter asset events based on the topic filter pattern
+    /**
+     * Builds an asset filter based on the topic. The filter is used to determine which asset events
+     * match the topic's pattern.
+     * 
+     * @param topic the topic to build the filter for
      * @param relativeToAsset the asset to build the filter relative to, can be null
+     * @return the constructed AssetFilter, or null if the topic is unsupported
      */
     protected static AssetFilter<?> buildAssetFilter(Topic topic, Asset<?> relativeToAsset) {
         List<String> topicTokens = topic.getTokens();
@@ -229,7 +244,10 @@ public class GatewayMQTTSubscriptionManager {
   
 
     /**
-     * Builds a consumer that publishes the event to the specified topic
+     * Builds a consumer that processes and publishes events to the specified topic.
+     * 
+     * @param topic the topic to publish events to
+     * @return a Consumer that handles SharedEvent instances
      */
     protected Consumer<SharedEvent> buildEventSubscriptionConsumer(Topic topic) {
         // Always publish asset/attribute messages with QoS 0
@@ -282,8 +300,12 @@ public class GatewayMQTTSubscriptionManager {
         };
     }
 
-    /*
-      * Determines the token to replace in the topic string, the token is the last token in the topic string
+    /**
+     * Determines the token to replace in the topic string. This is typically the last token
+     * in the topic string if it is a wildcard.
+     * 
+     * @param topicStr the topic string to analyze
+     * @return the token to replace, or null if no replacement is needed
      */
     protected String determineReplaceToken(String topicStr) {
         if (topicStr.endsWith(TOKEN_MULTI_LEVEL_WILDCARD)) {
@@ -295,6 +317,13 @@ public class GatewayMQTTSubscriptionManager {
         }
     }
 
+    /**
+     * Retrieves the session key for a given connection. This key is used to track subscriptions
+     * for the connection.
+     * 
+     * @param connection the connection to get the session key for
+     * @return the session key as a String
+     */
     protected static String getSessionKey(RemotingConnection connection) {
         return getConnectionIDString(connection);
     }

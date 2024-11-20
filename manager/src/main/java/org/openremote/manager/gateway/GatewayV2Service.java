@@ -39,7 +39,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,9 +61,15 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
-    protected ExecutorService executorService;
     protected boolean active;
 
+    /**
+     * Generates a client ID for a gateway asset by appending the asset ID to a prefix.
+     * Ensures the client ID does not exceed 255 characters.
+     *
+     * @param gatewayAssetId the ID of the gateway asset
+     * @return the generated client ID
+     */
     public static String getGatewayClientId(String gatewayAssetId) {
         String clientId = GATEWAY_CLIENT_ID_PREFIX + gatewayAssetId.toLowerCase(Locale.ROOT);
         if (clientId.length() > 255) {
@@ -84,7 +89,6 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getExecutor();
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("Gateway connections disabled: Not supported when not using Keycloak identity provider");
@@ -128,6 +132,13 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         gatewayAssetsMap.clear();
     }
 
+    /**
+     * Processes changes to a gateway asset, handling creation and deletion events.
+     * Updates the gateway's enabled status and manages service user creation or removal.
+     *
+     * @param gateway the gateway asset being processed
+     * @param persistenceEvent the persistence event triggering the change
+     */
     protected void processGatewayChange(GatewayV2Asset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
         if (Objects.requireNonNull(persistenceEvent.getCause()) == PersistenceEvent.Cause.CREATE) {
             gateway.setDisabled(false); // Ensure gateway is enabled when created
@@ -144,6 +155,14 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         }
     }
 
+    /**
+     * Processes changes to child assets of a gateway, handling creation and deletion events.
+     * Updates the list of child asset IDs associated with the gateway.
+     *
+     * @param gatewayId the ID of the gateway asset
+     * @param childAsset the child asset being processed
+     * @param persistenceEvent the persistence event triggering the change
+     */
     protected void processGatewayChildAssetChange(String gatewayId, Asset<?> childAsset, PersistenceEvent<Asset<?>> persistenceEvent) {
 
         switch (persistenceEvent.getCause()) {
@@ -168,6 +187,12 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         }
     }
 
+    /**
+     * Creates or updates a service user for a gateway asset in Keycloak.
+     * Ensures the user is enabled and has the correct roles and credentials.
+     *
+     * @param gateway the gateway asset for which the service user is created or updated
+     */
     protected void createUpdateGatewayServiceUser(GatewayV2Asset gateway) {
         LOG.info("Creating/updating gateway service user for gateway id: " + gateway.getId());
         String clientId = getGatewayClientId(gateway.getId());
@@ -206,6 +231,11 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         }
     }
 
+    /**
+     * Removes the service user associated with a gateway asset from Keycloak.
+     *
+     * @param gateway the gateway asset for which the service user is removed
+     */
     protected void removeGatewayServiceUser(GatewayV2Asset gateway) {
         String id = gateway.getClientId().orElse(null);
         if (TextUtil.isNullOrEmpty(id)) {
@@ -222,6 +252,13 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 '}';
     }
 
+    /**
+     * Retrieves the registered gateway ID for a given asset ID, checking both direct and descendant relationships.
+     *
+     * @param assetId the ID of the asset
+     * @param parentId the ID of the parent asset, can be null
+     * @return the ID of the registered gateway, or null if not found
+     */
     public String getRegisteredGatewayId(String assetId, String parentId) {
         String gatewayId = null;
         // check whether the assetId can be found in the gateway child assets
@@ -254,25 +291,55 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return null;
     }
 
+    /**
+     * Checks if an asset is a registered gateway.
+     *
+     * @param assetId the ID of the asset to check
+     * @return true if the asset is a registered gateway, false otherwise
+     */
     public boolean isRegisteredGateway(String assetId) {
         return gatewayAssetsMap.keySet().stream().anyMatch(gateway -> gateway.getId().equals(assetId));
     }
 
+    /**
+     * Checks if an asset is a descendant of any registered gateway.
+     *
+     * @param assetId the ID of the asset to check
+     * @return true if the asset is a descendant of a gateway, false otherwise
+     */
     public boolean isGatewayDescendant(String assetId) {
         return gatewayAssetsMap.values().stream().anyMatch(list -> list.contains(assetId));
     }
 
+    /**
+     * Checks if an asset is either a registered gateway or a descendant of one.
+     *
+     * @param assetId the ID of the asset to check
+     * @return true if the asset is a gateway or a descendant, false otherwise
+     */
     public boolean isGatewayOrDescendant(String assetId) {
         return isRegisteredGateway(assetId) || isGatewayDescendant(assetId);
     }
 
-    // Check whether the asset is a descendant of a specified gatewayId
+    /**
+     * Checks if an asset is a descendant of a specified gateway.
+     *
+     * @param assetId the ID of the asset to check
+     * @param gatewayId the ID of the gateway
+     * @return true if the asset is a descendant of the specified gateway, false otherwise
+     */
     public boolean isGatewayDescendant(String assetId, String gatewayId) {
         return gatewayAssetsMap.entrySet().stream()
                 .filter(entry -> entry.getKey().getId().equals(gatewayId))
                 .anyMatch(entry -> entry.getValue().contains(assetId));
     }
 
+    /**
+     * Retrieves the gateway asset associated with an MQTT connection, if it is a gateway connection.
+     *
+     * @param connection the MQTT connection
+     * @return the associated GatewayV2Asset, or null if not a gateway connection
+     */
     public GatewayV2Asset getGatewayFromMQTTConnection(RemotingConnection connection) {
         if (isGatewayConnection(connection)) {
             return (GatewayV2Asset) assetStorageService.find(new AssetQuery().types(GatewayV2Asset.class)
@@ -281,6 +348,12 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
         return null;
     }
 
+    /**
+     * Determines if a connection is a gateway connection based on its client ID.
+     *
+     * @param connection the MQTT connection
+     * @return true if the connection is a gateway connection, false otherwise
+     */
     protected static boolean isGatewayConnection(RemotingConnection connection) {
         return connection.getClientID().startsWith(GATEWAY_CLIENT_ID_PREFIX);
     }
