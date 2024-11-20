@@ -864,8 +864,12 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                      if(this._registrationEmailAsUsername) {
+                                          user.username = e.detail.value;
+                                      }
                                       user.email = e.detail.value;
-                                      this.onUserChanged(suffix)
+                                      this.onUserChanged(suffix);
+                                      this.requestUpdate(); // in case of username update, we trigger a state change
                                   }}"></or-mwc-input>
                     <or-mwc-input ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
