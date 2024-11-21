@@ -11,34 +11,29 @@ import {
     PushNotificationMessageMessagePriority,
     PushNotificationMessageTargetType,
     NotificationTargetType,
-    RepeatFrequency,
-    AbstractNotificationMessage
+    RepeatFrequency
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import i18next from "i18next";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
-import {getNotificationsRoute} from "../routes";
-import {when} from "lit/directives/when.js";
-import {live} from "lit/directives/live.js";
-import {ref} from "lit/directives/ref.js"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
 // will remove/revise later
-import {
-    OrMwcTable,
-    OrMwcTableRowClickEvent,
-    OrMwcTableRowSelectEvent
-} from "@openremote/or-mwc-components/or-mwc-table";
-import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
+// import {
+//     OrMwcTable,
+//     OrMwcTableRowClickEvent,
+//     OrMwcTableRowSelectEvent
+// } from "@openremote/or-mwc-components/or-mwc-table";
+// import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
 
 
 export class NotificationService {
     async getNotifications(realm: string): Promise<SentNotification[]> {
         try {
+            console.log("Making API request for realm:", realm);
             const response = await manager.rest.api.NotificationResource.getNotifications({
                 realmId: realm
             });
@@ -47,8 +42,10 @@ export class NotificationService {
                 throw new Error("Failed to load notifications");
             }
 
-            //Filter to only show push notifications
-            return response.data.filter(notification => notification.message.type === "push");
+            console.log("All notifications:", response.data);
+            const filtered = response.data.filter(notification => notification.message.type === "push");
+            console.log("Filtered notifications:", filtered);
+            return filtered; 
         } catch (error) {
             console.error('Failed to load notifications: ', error);
             if (isAxiosError(error)) {
@@ -353,24 +350,36 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     protected async _loadData() {
+        console.log("_loadData called with realm:", this.realm);
         if (this._loading || !this.realm) {
             return;
         }
 
         this._loading = true;
+        console.log("Starting notification load with:", {
+            realm: this.realm,
+            authenticated: manager.authenticated,
+            hasReadAdminRole: manager.hasRole("read:admin"),
+            baseUrl: manager.rest.api.NotificationResource.getNotifications()
+        });
 
         try {
             this._data = await this.notificationService.getNotifications(this.realm);
             this.requestUpdate();
         } catch (error) {
+            console.error("Notification load failed with error:", error);
+        if (error.response) {
+            console.error("Error response:", {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data,
+                headers: error.response.headers
+            });
+            }
             showSnackbar(undefined, i18next.t("Notification load failed."));
         } finally {
             this._loading = false;
         }
-    }
-
-    protected async _getNotifications() {
-        
     }
 
     protected _getFormData(dialog: OrMwcDialog): NotificationFormData | null {
@@ -410,7 +419,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 type: "push" as const,
                 title: formData.title,
                 body: formData.body,
-                data: {}  // keep it simple first
+                data: {}  // keep it simple
             };
 
             const notification: Notification = {
@@ -429,7 +438,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             showSnackbar(undefined, i18next.t("Creating notification success."));
             dialog.close();
-            await this._loadData();
         } catch (error) {
             console.error("Error creating notification:", error);
             if (error.response) {
@@ -440,6 +448,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 });
             }
             showSnackbar(undefined, i18next.t("Creating notification failure."));
+        } finally {
+            await this._loadData();
         }
     }
 
@@ -539,12 +549,16 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     {
                         actionName: "cancel",
                         content: i18next.t("cancel"),
-                        action: () => dialog.close()
+                        action: () => {
+                            dialog.close();
+                            this._loadData(); // reload after cancel
+                        }
                     },
                     {
                         actionName: "create",
                         content: i18next.t("create"),
                         action: async () => this._handleCreateNotification(dialog)
+                        // note! _loadData is already called in _handleCreateNotification
                     }
                 ])
         )
