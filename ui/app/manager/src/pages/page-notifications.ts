@@ -63,12 +63,7 @@ export class NotificationService {
             console.log("About to send notification:", notification);
     
             const response = await manager.rest.api.NotificationResource.sendNotification(
-                notification,
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                }
+                notification
             );
             
             console.log("Response received:", response);
@@ -348,69 +343,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this.notificationService = new NotificationService();
     }
 
-    protected async _loadUsers(): Promise<User[]> {
-        try {
-            const response = await manager.rest.api.UserResource.query({
-                realmPredicate: {name: manager.displayRealm}
-            });
-            return response.data.filter(user => user.enabled && !user.serviceAccount);
-        } catch (error) {
-            console.error("Failed to load users:", error);
-            showSnackbar(undefined, i18next.t("Loading users failed"));
-            return [];
-        }
-    }
-
-    protected async _loadAssets(): Promise<Asset[]> {
-        try {
-            const response = await manager.rest.api.AssetResource.queryAssets({
-                realm: {
-                    name: manager.displayRealm
-                }
-            });
-            console.log("Loaded assets:", response.data);
-            return response.data;
-        } catch (error) {
-            console.error("Failed to load assets:", error);
-            showSnackbar(undefined, i18next.t("Loading assets failed"));
-            return [];
-        }
-    }
-
-    protected async _loadRealms(): Promise<string[]> {
-        try {
-            const response = await manager.rest.api.RealmResource.getAccessible();
-            return response.data.map(realm => realm.name);
-        } catch (error) {
-            console.error("Failed to load realms:", error);
-            showSnackbar(undefined, i18next.t("Loading realms failed"));
-            return [];
-        }
-    }
-
-    private async _loadAssetsforType(type: string) {
-        try {    
-            // Load assets regardless of type
-            if (!this._assets) {
-                const response = await manager.rest.api.AssetResource.queryAssets({
-                    realm: {
-                        name: manager.displayRealm
-                    }
-                });
-                this._assets = response.data;
-            }
-            this._targetOptions = this._assets.map(asset => ({
-                text: asset.name,
-                value: asset.id
-            }));
-            await this.requestUpdate();
-            
-        } catch (error) {
-            console.error('Error loading targets: ', error);
-            showSnackbar(undefined, i18next.t("Loading targets failed"));
-        }
-    }
-
     public stateChanged(state: AppStateKeyed): void {
         if (state.app.page == "notifications") {
             if (this.realm === undefined || this.realm !== state.app.realm) {
@@ -435,6 +367,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
         } finally {
             this._loading = false;
         }
+    }
+
+    protected async _getNotifications() {
+        
     }
 
     protected _getFormData(dialog: OrMwcDialog): NotificationFormData | null {
@@ -579,35 +515,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
     public connectedCallback(): void {
         super.connectedCallback();
         this.realm = this.getState().app.realm;
-    }
-
-    private _getNameTitleBody() {
-        return html`
-            <or-mwc-input 
-                label="${i18next.t("Name")}"
-                type="${InputType.TEXT}"
-                style="width: 100%;"
-                required
-                id="notificationName">
-            </or-mwc-input>
-            
-            <or-mwc-input 
-                label="${i18next.t("Title")}"
-                type="${InputType.TEXT}"
-                style="width: 100%;"
-                required
-                id="notificationTitle">
-            </or-mwc-input>
-            
-            <or-mwc-input 
-                label="${i18next.t("Body")}"
-                type="${InputType.TEXTAREA}"
-                rows="4"
-                style="width: 100%;"
-                required
-                id="notificationBody">
-            </or-mwc-input>
-            `;
     }
 
     protected _getDialogHTML() {
