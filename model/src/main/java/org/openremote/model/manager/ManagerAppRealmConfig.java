@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,11 +20,12 @@
 package org.openremote.model.manager;
 
 public class ManagerAppRealmConfig {
-    protected String appTitle = null;
-    protected String styles = null;
-    protected String logo = null;
-    protected String logoMobile = null;
-    protected String favicon = null;
-    protected String language = null;
-    protected String[] headers = null;
+    protected String appTitle;
+    protected String styles;
+    protected String logo;
+    protected String logoMobile;
+    protected String favicon;
+    protected String language;
+    protected String[] headers;
+    protected ManagerAppRealmNotificationConfig notifications;
 }

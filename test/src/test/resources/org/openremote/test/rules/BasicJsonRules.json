@@ -147,6 +147,124 @@
           }
         },
         {
+          "action": "notification",
+          "notification": {
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "email",
+                  "subject": "%RULESET_NAME%",
+                  "html": "%TRIGGER_ASSETS%",
+                  "to": [
+                    {
+                      "address": "test2@openremote.io",
+                      "name": "OR localized test"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "email",
+                  "subject": "Linked user localized user test",
+                  "html": "%TRIGGER_ASSETS%"
+                }
+              }
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "localizedAssetIdTest",
+            "message": {
+              "type": "localized",
+              "defaultLanguage": "en",
+              "languages": {
+                "en": {
+                  "type": "push",
+                  "title": "Asset Location Change",
+                  "body": "English: Asset %ASSET_ID% has moved"
+                },
+                "nl": {
+                  "type": "push",
+                  "title": "Asset Locatie Verandering",
+                  "body": "Nederlands: Asset %ASSET_ID% is verplaatst"
+                }
+              }
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "assetIdTest",
+            "message": {
+              "type": "push",
+              "title": "Asset ID Test",
+              "body": "Your asset ID is: %ASSET_ID%"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true,
+            "users": {
+              "realmRoles": [
+                {
+                  "predicateType": "string",
+                  "match": "BEGIN",
+                  "value": "test-realm-role"
+                }
+              ]
+            }
+          },
+          "notification": {
+            "name": "linkedAssetIdTest",
+            "message": {
+              "type": "push",
+              "title": "Linked Asset ID Test",
+              "body": "This notification is about asset: %ASSET_ID%"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "notification": {
+            "name": "urlAssetIdTest",
+            "message": {
+              "type": "push",
+              "title": "URL Asset ID Test",
+              "body": "Click here",
+              "action": {
+                "url": "/assets/%ASSET_ID%/details",
+                "httpMethod": "GET"
+              }
+            }
+          }
+        },
+        {
           "action": "write-attribute",
           "target": {
             "assets": {
