@@ -1,10 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const webpack = require("webpack");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const ForkTsCheckerNotifierWebpackPlugin = require("fork-ts-checker-notifier-webpack-plugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const rspack = require('@rspack/core');
 
 function getStandardModuleRules() {
     return {
@@ -89,7 +89,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
 
     config.plugins = [
         // Conditional compilation variables
-        new webpack.DefinePlugin({
+        new rspack.DefinePlugin({
             PRODUCTION: JSON.stringify(production),
             MANAGER_URL: JSON.stringify(managerUrl),
             KEYCLOAK_URL: JSON.stringify(keycloakUrl),
@@ -123,11 +123,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
                 include: function(modulePath) {
                     return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-element|lit-html|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
                 },
-                use: [
-                    {
-                        loader: 'babel-loader'
-                    }
-                ]
+                loader: 'builtin:swc-loader',
             },
         );
     } else {
@@ -208,7 +204,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port)
 
     // Copy unprocessed files
     config.plugins.push(
-        new CopyWebpackPlugin({
+        new rspack.CopyRspackPlugin({
             patterns: patterns
         })
     );

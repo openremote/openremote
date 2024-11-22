@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx webpack"
+    "prepublishOnly": "npx rspack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
