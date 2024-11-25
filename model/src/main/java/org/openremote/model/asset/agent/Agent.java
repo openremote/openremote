@@ -20,6 +20,7 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
@@ -45,7 +46,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled", ValueType.BOOLEAN);
 
     public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("agentStatus", ValueType.CONNECTION_STATUS,
-        new MetaItem<>(MetaItemType.READ_ONLY)
+            new MetaItem<>(MetaItemType.READ_ONLY)
     );
 
     /**
@@ -272,16 +273,15 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * {@link Agent#STATUS}. Agent's can override this behaviour as required.
      */
     public boolean isConfigurationAttribute(String attributeName) {
-
         // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
-            && ValueUtil.getAssetInfo(getType())
-            .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
-            .orElse(false)
-            // Exclude attributes that have a descriptor from the base Asset class
-            && ValueUtil.getAssetInfo(Asset.class)
-            .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
-            .orElse(false);
+                && ValueUtil.getAssetInfo(getType())
+                .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
+                .orElse(false)
+                // Exclude attributes that have a descriptor from the base Asset class
+                && ValueUtil.getAssetInfo(ThingAsset.class)
+                .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
+                .orElse(false);
     }
 }
