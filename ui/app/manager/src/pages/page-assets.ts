@@ -1,4 +1,4 @@
-import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {css, html, TemplateResult, unsafeCSS, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
@@ -170,9 +170,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     @property() // selected asset ids
     protected _assetIds?: string[];
 
-    @state()
-    protected _expandedIds?: string[];
-
     @query("#tree")
     protected _tree!: OrAssetTree;
 
@@ -180,7 +177,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     protected _viewer?: OrAssetViewer;
 
     protected _addedAssetId?: string;
-    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AssetsStateKeyed) => state.app.realm || manager.displayRealm;
 
     get name(): string {
         return "assets";
@@ -213,12 +210,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME,(ev) =>  this._onLoadAlarmEvent(ev));
     }
 
-    public connectedCallback() {
-        super.connectedCallback();
-        this._expandedIds = this._store.getState().assets.expandedParents.find(x => x.realm == manager.displayRealm)?.ids;
-    }
-
-
     protected render(): TemplateResult | void {
 
         let viewerHTML: TemplateResult;
@@ -236,7 +227,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         } else {
             const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
             viewerHTML = html`
-                <or-asset-viewer id="viewer" .assetId="${assetId}"
+                <or-asset-viewer id="viewer"
                                  .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
                                  class="${!assetId ? "hideMobile" : ""}"
                                  .editMode="${this._editMode}"
@@ -248,7 +239,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
                            class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
                            .selectedIds="${this._assetIds}"
-                           .expandedIds="${this._expandedIds}"
             ></or-asset-tree>
             ${viewerHTML}
         `;
@@ -256,10 +246,10 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
     // State is only utilised for initial loading, and for changes within the store.
     // On the assets page, we shouldn't change editMode nor assetIds if the URL/state hasn't changed.
-    stateChanged(state: AppStateKeyed) {
+    stateChanged(state: AssetsStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        if(!this._assetIds || this._assetIds.length === 0) {
+        if (!this._assetIds || this._assetIds.length === 0) {
             this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
         }
     }
@@ -368,9 +358,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 }
             }
         } else {
-            if (this._viewer) {
-                this._viewer.assetId = undefined;
-            }
             this._assetIds = assetIds;
             this._updateRoute(true);
         }
@@ -464,11 +451,6 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             }
         }
     }
-
-    protected _onAssetExpandToggle(event: OrAssetTreeToggleExpandEvent) {
-        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
-    }
-
 
     protected _updateRoute(silent: boolean = true) {
         const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
