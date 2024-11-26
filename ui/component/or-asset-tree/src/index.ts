@@ -1706,7 +1706,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
-        if (event.eventType === "asset" && this._nodes && this._nodes.length > 0) {
+        if (event.eventType === "asset") {
 
             const assetEvent = event as AssetEvent;
             if (assetEvent.cause === AssetEventCause.READ) {
@@ -1723,15 +1723,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             if (assetEvent.cause !== AssetEventCause.DELETE) {
                 assets.push(assetEvent.asset!);
             }
-            OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
-                if (node.asset!.id !== assetEvent.asset!.id) {
-                    assets.push(node.asset!);
-                }
-            });
+            if (this._nodes) {
+                OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
+                    if (node.asset!.id !== assetEvent.asset!.id) {
+                        assets.push(node.asset!);
+                    }
+                });
+            }
 
             // In case of filter already active, do not override the actual state of assetTree
-            if ( !this._filterInput.value ) {
-                this._buildTreeNodes(assets, this._getSortFunction());
+            this._buildTreeNodes(assets, this._getSortFunction());
+            if (this._filterInput.value) {
+                this._doFiltering();
             }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
