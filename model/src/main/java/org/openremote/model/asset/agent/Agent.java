@@ -276,12 +276,12 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
         // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
-                && ValueUtil.getAssetInfo(getType())
-                .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
-                .orElse(false)
-                // Exclude attributes that have a descriptor from the base Asset class
-                && ValueUtil.getAssetInfo(ThingAsset.class)
-                .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
-                .orElse(false);
+            && ValueUtil.getAssetInfo(getType())
+            .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
+            .orElse(false)
+            // Exclude attributes that have a descriptor from the base Asset class
+            && ValueUtil.getAssetInfo(ThingAsset.class)
+            .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
+            .orElse(false);
     }
 }
