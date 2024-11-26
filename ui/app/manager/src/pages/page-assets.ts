@@ -1,4 +1,4 @@
-import {css, html, TemplateResult, unsafeCSS, PropertyValues} from "lit";
+import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
