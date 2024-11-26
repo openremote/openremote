@@ -46,7 +46,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled", ValueType.BOOLEAN);
 
     public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("agentStatus", ValueType.CONNECTION_STATUS,
-            new MetaItem<>(MetaItemType.READ_ONLY)
+        new MetaItem<>(MetaItemType.READ_ONLY)
     );
 
     /**
