@@ -37,35 +37,38 @@ export interface PageAssetsConfig {
     tree?: AssetTreeConfig;
 }
 export interface AssetsState {
-    expandedParents: {realm: string, ids: string[]}[]
+    expandedAssetIds: string[]
 }
 export interface AssetsStateKeyed extends AppStateKeyed {
     assets: AssetsState;
 }
 const INITIAL_STATE: AssetsState = {
-    expandedParents: []
+    expandedAssetIds: []
 };
 const pageAssetsSlice = createSlice({
     name: "pageAssets",
     initialState: INITIAL_STATE,
     reducers: {
         updateExpandedParents(state, action: PayloadAction<[string, boolean]>) {
-            const expandedParents = JSON.parse(JSON.stringify(state.expandedParents)); // copy state to prevent issues inserting it back
-            const expanded = expandedParents.find(x => x.realm == manager.displayRealm);
-            if(!expanded) {
-                expandedParents.push({ realm: manager.displayRealm, ids: []});
+            const expandedAssetIds = [...state.expandedAssetIds]; // copy state to prevent issues inserting it back
+            const nodeAssetId = action.payload[0];
+            const nodeExpanded = action.payload[1];
+            if (nodeExpanded) {
+                expandedAssetIds.push(nodeAssetId);
+            } else {
+                const currentIndex = expandedAssetIds.findIndex(id => id === nodeAssetId);
+                if (currentIndex >= 0) {
+                    expandedAssetIds.splice(currentIndex, 1);
+                }
             }
-            const expandedId = expandedParents.findIndex(x => x.realm == manager.displayRealm);
-            if(!action.payload[1] && expanded && expanded.ids && expanded.ids.includes(action.payload[0])) {
-                expandedParents[expandedId].ids = expanded.ids.filter((parent) => parent != action.payload[0]); // filter out collapsed ones
-            } else if(!expanded || (action.payload[1] && expanded && expanded.ids && !expanded.ids.includes(action.payload[0]))) {
-                expandedParents[expandedId].ids.push(action.payload[0]); // add new extended ones
-            }
-            return { ...state, expandedParents: expandedParents }
+            return { ...state, expandedAssetIds: expandedAssetIds }
+        },
+        clearExpandedNodes(state, action: PayloadAction<void>) {
+            return {...state, expandedAssetIds: []}
         }
     }
 })
-const {updateExpandedParents} = pageAssetsSlice.actions;
+const {clearExpandedNodes, updateExpandedParents} = pageAssetsSlice.actions;
 export const pageAssetsReducer = pageAssetsSlice.reducer;
 
 export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
@@ -170,6 +173,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     @property() // selected asset ids
     protected _assetIds?: string[];
 
+    @state()
+    protected _expandedIds?: string[];
+
     @query("#tree")
     protected _tree!: OrAssetTree;
 
@@ -186,11 +192,18 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     protected getRealmState = createSelector(
         [this._realmSelector],
         async (realm: string) => {
+            // Prevent execution on initial load
+            if (this.isUpdatePending) {
+                return;
+            }
             this._assetIds = undefined;
+            this._expandedIds = undefined;
             if (this._viewer) {
                 this._viewer.assetId = undefined;
             }
-            if (this._tree) this._tree.refresh();
+            if (this._tree) {
+                this._tree.refresh();
+            }
             this._updateRoute(true);
         }
     )
@@ -208,6 +221,11 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
         this.addEventListener(OrAssetViewerLoadUserEvent.NAME, this._onLoadUserEvent);
         this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME,(ev) =>  this._onLoadAlarmEvent(ev));
+    }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        this._expandedIds = this.getState().assets.expandedAssetIds;
     }
 
     protected render(): TemplateResult | void {
@@ -239,6 +257,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
                            class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
                            .selectedIds="${this._assetIds}"
+                           .expandedIds="${this._expandedIds}"
             ></or-asset-tree>
             ${viewerHTML}
         `;
@@ -343,6 +362,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         });
     }
 
+    // This is where we set the asset loaded in the asset viewer
     protected _onAssetSelectionChanged(assetIds: string[] | undefined) {
         if (Util.objectsEqual(this._assetIds, assetIds)) {
             // User has clicked the same node(s)
@@ -359,6 +379,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             }
         } else {
             this._assetIds = assetIds;
+            if (this._viewer) {
+                this._viewer.assetId = assetIds && assetIds.length === 1 ? assetIds[0] : undefined;
+            }
             this._updateRoute(true);
         }
     }
@@ -450,6 +473,10 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                 this._updateRoute(true);
             }
         }
+    }
+
+    protected _onAssetExpandToggle(event: OrAssetTreeToggleExpandEvent) {
+        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
     }
 
     protected _updateRoute(silent: boolean = true) {
