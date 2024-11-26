@@ -23,7 +23,7 @@ import "@openremote/or-components/or-ace-editor";
 import { DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { createRef, Ref, ref } from "lit/directives/ref.js";
-import { OrAceEditor } from "@openremote/or-components/or-ace-editor";
+import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 import { ManagerAppConfig } from "@openremote/model";
 
 @customElement("or-conf-json")
@@ -47,7 +47,8 @@ export class OrConfJson extends LitElement {
     }
 
     protected _showManagerConfigDialog(){
-        const _saveConfig = ()=>{
+        let dialog: OrMwcDialog;
+        const _saveConfig = () => {
             const config = this.beforeSave()
             if (config) {
                 this.managerConfig = config as ManagerAppConfig
@@ -60,6 +61,7 @@ export class OrConfJson extends LitElement {
             }
             return false
         }
+
         const dialogActions: DialogAction[] = [
             {
                 actionName: "cancel",
@@ -68,14 +70,26 @@ export class OrConfJson extends LitElement {
             {
                 actionName: "ok",
                 content: "update",
-                action: _saveConfig
-            },
-
+                action: _saveConfig,
+            }
         ];
-        showDialog(new OrMwcDialog()
+
+        dialog = new OrMwcDialog()
             .setActions(dialogActions)
             .setHeading("manager_config.json")
-            .setContent(html `<or-ace-editor ${ref(this._aceEditor)} .value="${this.managerConfig}" ></or-ace-editor>`)
+            .setContent(html`
+                <or-ace-editor 
+                    ${ref(this._aceEditor)} 
+                    .value="${this.managerConfig}"
+                    @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
+                        const okButton = dialog.actions?.find(action => action.actionName === "ok");
+                        if (okButton) {
+                            okButton.disabled = !ev.detail.valid;
+                            dialog.requestUpdate();
+                        }
+                    }}"
+                ></or-ace-editor>
+            `)
             .setStyles(html`
                 <style>
                     .mdc-dialog__surface {
@@ -94,8 +108,9 @@ export class OrConfJson extends LitElement {
                     }
                 </style>
             `)
-            .setDismissAction(null));
+            .setDismissAction(null);
 
+        showDialog(dialog);
     }
 
     render() {
