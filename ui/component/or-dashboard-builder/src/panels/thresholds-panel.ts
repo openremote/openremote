@@ -180,8 +180,8 @@ export class ThresholdsPanel extends LitElement {
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                           console.log("In threshold bool colors true", this.boolColors);    
                                           this.boolColors = {...this.boolColors, true: event.detail.value};
-                                              this.requestUpdate('boolColors');
-                                              }}"
+                                          this.requestUpdate('boolColors');
+                                          }}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
@@ -194,7 +194,7 @@ export class ThresholdsPanel extends LitElement {
                                             console.log("In threshold bool colors false", this.boolColors);
                                               this.boolColors = {...this.boolColors, false: event.detail.value};
                                               this.requestUpdate('boolColors');
-                                          }}"
+                                              }}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'False'}" .readonly="${true}"
