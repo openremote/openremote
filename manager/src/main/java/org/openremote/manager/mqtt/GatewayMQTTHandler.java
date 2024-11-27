@@ -111,11 +111,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
     protected AssetStorageService assetStorageService;
-    protected ManagerKeycloakIdentityProvider identityProvider;
+
     protected GatewayMQTTSubscriptionManager subscriptionManager;
     protected GatewayV2Service gatewayV2Service;
     protected AssetProcessingService assetProcessingService;
-    protected boolean isKeycloak;
 
 
     @Override
@@ -245,11 +244,9 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        if (gatewayAsset != null) {
-            if (gatewayAsset.getDisabled().orElse(false)) {
-                LOG.finer("Subscription not allowed, gateway is disabled " + getConnectionIDString(connection));
-                return false;
-            }
+        if (gatewayAsset != null && gatewayAsset.getDisabled().orElse(false)) {
+            LOG.finer("Subscription not allowed, gateway is disabled " + getConnectionIDString(connection));
+            return false;
         }
 
         List<String> topicTokens = topic.getTokens();
@@ -344,19 +341,19 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
-        if (gatewayAsset != null) { // check if we have a gateway asset and it is disabled
-            if (gatewayAsset.getDisabled().orElse(false)) {
-                LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
-                return false;
-            }
+        if (gatewayAsset != null && gatewayAsset.getDisabled().orElse(false)) { // check if we have a gateway asset and it is disabled
+            LOG.finer("Gateway is disabled " + getConnectionIDString(connection));
+            return false;
         }
 
         String connectionID = getConnectionIDString(connection);
+
         // Check if user has been authorized for the topic before (cache, 30s expiration)
-        if (authorizationCache.getIfPresent(connectionID) != null) {
-            if (Objects.requireNonNull(authorizationCache.getIfPresent(connectionID)).contains(topic.getString())) {
-                return true;
-            }
+        boolean connectionIdIsPresent = authorizationCache.getIfPresent(connectionID) != null;
+        boolean topicIsAuthorized = connectionIdIsPresent && authorizationCache.getIfPresent(connectionID).contains(topic.getString());
+
+        if (connectionIdIsPresent && topicIsAuthorized) {
+            return true;
         }
 
         List<String> topicTokens = topic.getTokens();
@@ -560,21 +557,19 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return false;
         }
 
-        if (event instanceof AttributeEvent attributeEvent) {
-            // if we have a gateway asset then the attribute related asset must be a descendant of the gateway asset
-            if (gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(attributeEvent.getId(), gatewayAsset.getId())) {
+        if (event instanceof AttributeEvent attributeEvent && gatewayAsset != null 
+            && !gatewayV2Service.isGatewayDescendant(attributeEvent.getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " attribute request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
             }
-        }
+        
 
-        if (event instanceof ReadAttributeEvent readAttributeEvent) {
-            // if we have a gateway asset then the attribute related asset must be a descendant of the gateway asset
-            if (gatewayAsset != null && !gatewayV2Service.isGatewayDescendant(readAttributeEvent.getAttributeRef().getId(), gatewayAsset.getId())) {
+        if (event instanceof ReadAttributeEvent readAttributeEvent && gatewayAsset != null 
+            && !gatewayV2Service.isGatewayDescendant(readAttributeEvent.getAttributeRef().getId(), gatewayAsset.getId())) {
                 LOG.fine(method + " attribute request was not authorised for this gateway user and topic: topic=" + topic);
                 return false;
             }
-        }
+        
 
         if (!clientEventService.authorizeEventWrite(topicRealm(topic), authContext, event)) {
             LOG.fine(method + " attribute request was not authorised for this user and topic: topic=" + topic);
@@ -621,13 +616,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
 
         // Check if the provided parent is allowed for the asset
-        if (asset.getParentId() != null)
+        if (asset.getParentId() != null && !authorizeParentId(asset, gatewayAsset))
         {
-            if (!authorizeParentId(asset, gatewayAsset)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be created with the provided parent ID");
-                LOG.info("The asset cannot be created with the provided parent ID " + getConnectionIDString(connection));
-                return;
-            }
+            publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be created with the provided parent ID");
+            LOG.info("The asset cannot be created with the provided parent ID " + getConnectionIDString(connection));
+            return;
         }
 
         try {
@@ -675,13 +668,12 @@ public class GatewayMQTTHandler extends MQTTHandler {
         storageAsset.setParentId(asset.get().getParentId());
 
 
-        if (parentIdChanged)
+        if (parentIdChanged && !authorizeParentId(storageAsset, gatewayAsset))
         {
-            if (!authorizeParentId(storageAsset, gatewayAsset)) {
-                publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be updated with the provided parent ID");
-                LOG.info("Asset cannot be updated with the provided parent ID " + getConnectionIDString(connection));
-                return;
-            }
+            publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be updated with the provided parent ID");
+            LOG.info("Asset cannot be updated with the provided parent ID " + getConnectionIDString(connection));
+
+            return;
         }
 
         try {
@@ -826,7 +818,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
         for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
             String attributeName = entry.getKey();
             Object attributeValue = entry.getValue();
-            AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue).setSource(GatewayMQTTHandler.class.getSimpleName());
+
+            AttributeEvent event = new AttributeEvent(assetId, attributeName, attributeValue)
+                .setSource(GatewayMQTTHandler.class.getSimpleName());
+
             sendAttributeEvent(event);
             events.add(event);
         }
@@ -1021,7 +1016,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected boolean authorizeParentId(Asset<?> asset, GatewayV2Asset gatewayAsset) {
         if (gatewayAsset != null) {
             // Prevent assets from being moved to a parent that is not a descendant of the gateway or the gateway itself
-            boolean parentIsDescendantOfGateway = asset.getParentId() != null && gatewayV2Service.isGatewayDescendant(asset.getParentId(), gatewayAsset.getId());
+            boolean parentIsDescendantOfGateway = asset.getParentId() != null 
+                && gatewayV2Service.isGatewayDescendant(asset.getParentId(), gatewayAsset.getId());
             boolean parentIsGateway = asset.getParentId() != null && gatewayAsset.getId().equals(asset.getParentId());
 
             return parentIsDescendantOfGateway || parentIsGateway;
@@ -1078,12 +1074,14 @@ public class GatewayMQTTHandler extends MQTTHandler {
     }
 
     protected static boolean isGatewayEventsTopic(Topic topic) {
-        return Objects.equals(topicTokenIndexToString(topic, GATEWAY_TOKEN_INDEX), GATEWAY_TOPIC) && Objects.equals(topicTokenIndexToString(topic, GATEWAY_EVENTS_TOKEN_INDEX), GATEWAY_EVENTS_TOPIC);
+        return Objects.equals(topicTokenIndexToString(topic, GATEWAY_TOKEN_INDEX), GATEWAY_TOPIC) 
+            && Objects.equals(topicTokenIndexToString(topic, GATEWAY_EVENTS_TOKEN_INDEX), GATEWAY_EVENTS_TOPIC);
     }
 
     public static String getResponseTopic(Topic topic) {
         return topic.toString() + "/" + RESPONSE_TOPIC;
     }
+
 
 
 

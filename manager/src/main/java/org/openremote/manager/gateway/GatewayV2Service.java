@@ -39,7 +39,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
@@ -183,6 +182,7 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 }
             }
             default -> {
+                // Ignore
             }
         }
     }
@@ -221,11 +221,8 @@ public class GatewayV2Service extends RouteBuilder implements ContainerService {
                 assetStorageService.merge(gateway);
             }
 
-            try {
-                LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Failed to merge registered gateway: " + gateway.getId(), e);
-            }
+            LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
+
         } catch (Exception e) {
             LOG.warning("Failed to create client for gateway '" + gateway.getId());
         }

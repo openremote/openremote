@@ -42,7 +42,7 @@ import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 public class GatewayMQTTSubscriptionManager {
 
     private static final Logger LOG = Logger.getLogger(GatewayMQTTSubscriptionManager.class.getName());
-    final protected Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
+    protected final Map<String, Map<String, Consumer<? extends Event>>> sessionSubscriptionConsumers = new HashMap<>();
     protected GatewayMQTTHandler gatewayMQTTHandler;
     
     public GatewayMQTTSubscriptionManager(GatewayMQTTHandler gatewayMQTTHandler) {
@@ -77,7 +77,7 @@ public class GatewayMQTTSubscriptionManager {
 
         synchronized (sessionSubscriptionConsumers) {
             // Create subscription consumer and track it for future removal requests
-            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(getSessionKey(connection), (s) -> new HashMap<>());
+            Map<String, Consumer<? extends Event>> subscriptionConsumers = sessionSubscriptionConsumers.computeIfAbsent(getSessionKey(connection), s -> new HashMap<>());
             subscriptionConsumers.put(topic.getString(), consumer);
             gatewayMQTTHandler.clientEventService.addSubscription(subscription, consumer);
   
@@ -147,6 +147,7 @@ public class GatewayMQTTSubscriptionManager {
             String path = topicTokens.size() > ASSET_ID_TOKEN_INDEX + 1 ? topicTokens.get(ASSET_ID_TOKEN_INDEX + 1) : "";
 
             if (assetId.equals("#")) {
+                // no filter needed
             }
             else if (assetId.equals("+")) {
                 parentIds.add(null);
@@ -168,7 +169,8 @@ public class GatewayMQTTSubscriptionManager {
         } else if (isAttributesTopic) {
             String assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
             String attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
-            boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") && !attributeName.equals("#") && !attributeName.isEmpty();
+            boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") 
+                && !attributeName.equals("#") && !attributeName.isEmpty();
             boolean assetIdIsNotWildcardOrEmpty = !assetId.equals("+") && !assetId.equals("#") && !assetId.isEmpty();
 
             String path = topicTokens.size() > ATTRIBUTE_NAME_TOKEN_INDEX + 1 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX + 1) : "";
@@ -266,7 +268,8 @@ public class GatewayMQTTSubscriptionManager {
                 topicTokens.set(ASSET_ID_TOKEN_INDEX, "$assetId");
             }
 
-            if (topicTokens.size() > 6 && (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD))) {
+            if (topicTokens.size() > 6 && (topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_SINGLE_LEVEL_WILDCARD) 
+                || topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX).equals(TOKEN_MULTI_LEVEL_WILDCARD))) {
                 topicTokens.set(ATTRIBUTE_NAME_TOKEN_INDEX, "$attributeName");
             }
 
