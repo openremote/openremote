@@ -173,14 +173,15 @@ export class ThresholdsPanel extends LitElement {
                 ` : null}
 
                 <!-- Thresholds by boolean -->
-                ${(this.valueType === 'boolean') ? html`
+                ${(this.valueType === 'boolean' && this.boolColors) ? html`
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.true}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.boolColors.true = event.detail.value;
+                                          console.log("In threshold bool colors true", this.boolColors);    
+                                          this.boolColors = {...this.boolColors, true: event.detail.value};
                                               this.requestUpdate('boolColors');
-                                          }}"
+                                              }}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
@@ -190,7 +191,8 @@ export class ThresholdsPanel extends LitElement {
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.false}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.boolColors.false = event.detail.value;
+                                            console.log("In threshold bool colors false", this.boolColors);
+                                              this.boolColors = {...this.boolColors, false: event.detail.value};
                                               this.requestUpdate('boolColors');
                                           }}"
                             ></or-mwc-input>
