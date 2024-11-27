@@ -24,6 +24,8 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import jakarta.persistence.EntityManager;
+import jakarta.validation.ConstraintViolationException;
+
 import org.apache.activemq.artemis.core.config.Configuration;
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.utils.collections.ConcurrentHashSet;
@@ -632,6 +634,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
             } else {
                 assetStorageService.merge(asset);
             }
+        } catch (ConstraintViolationException e) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset validation failed: " + e.getMessage());
+            LOG.warning("Asset validation failed: " + e.getMessage() + " " + getConnectionIDString(connection));
+            return;
         } catch (Exception e) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to process asset");
             LOG.warning("Failed to merge asset " + asset + " " + getConnectionIDString(connection));
@@ -660,7 +666,8 @@ public class GatewayMQTTHandler extends MQTTHandler {
             return;
         }
 
-        boolean parentIdChanged = !Objects.equals(storageAsset.getParentId(), asset.get().getParentId());
+        boolean hasParentId = asset.get().getParentId() != null;
+        boolean parentIdChanged = hasParentId && !Objects.equals(storageAsset.getParentId(), asset.get().getParentId());
 
         GatewayV2Asset gatewayAsset = gatewayV2Service.getGatewayFromMQTTConnection(connection);
         storageAsset.setName(asset.get().getName());
@@ -668,11 +675,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
         storageAsset.setParentId(asset.get().getParentId());
 
 
+        // check whether the parent ID is allowed for the asset
         if (parentIdChanged && !authorizeParentId(storageAsset, gatewayAsset))
         {
             publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Bad request, the asset cannot be updated with the provided parent ID");
             LOG.info("Asset cannot be updated with the provided parent ID " + getConnectionIDString(connection));
-
             return;
         }
 
@@ -682,6 +689,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
             } else {
                 assetStorageService.merge(storageAsset);
             }
+        } catch (ConstraintViolationException e) {
+            publishErrorResponse(topic, MQTTErrorResponse.Error.BAD_REQUEST, "Asset validation failed: " + e.getMessage());
+            LOG.warning("Asset validation failed: " + e.getMessage() + " " + getConnectionIDString(connection));
+            return;
         } catch (Exception e) {
             publishErrorResponse(topic, MQTTErrorResponse.Error.INTERNAL_SERVER_ERROR, "Failed to process asset");
             LOG.warning("Failed to update asset " + asset + " " + getConnectionIDString(connection));
