@@ -279,7 +279,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
             && ValueUtil.getAssetInfo(getType())
             .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false)
-            // Exclude attributes that have a descriptor from the base Asset class
+            // Exclude attributes that have a descriptor from the base ThingAsset class
             && ValueUtil.getAssetInfo(ThingAsset.class)
             .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
             .orElse(false);
