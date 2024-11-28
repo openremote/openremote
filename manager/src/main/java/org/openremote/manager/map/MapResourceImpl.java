@@ -31,6 +31,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
+import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -79,20 +80,35 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public Response uploadMap(@Context HttpServletRequest request) {
         try (InputStream stream = request.getInputStream()) {
-            boolean isSaved = mapService.saveUploadedFile(stream, "mapdata-custom.mbtiles");
+            boolean isSaved = mapService.saveUploadedFile(stream);
+            ObjectNode response = ValueUtil.JSON
+                .createObjectNode()
+                .put("map-custom", isSaved);
+
             if (isSaved) {
                 return Response.ok("File uploaded successfully").build();
-            } else {
-                return Response.serverError().entity("File upload failed").build();
             }
+            return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
         } catch (IOException error) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException("{\"map-custom\": false}", Response.Status.BAD_REQUEST);
         }
     }
 
     @Override
-    public Response removeMap(@Context HttpServletRequest request) {
-        mapService.removeUploadedFile("mapdata-custom.mbtiles");
-        return Response.noContent().build();
+    public Response isMapCustom() {
+        ObjectNode response = ValueUtil.JSON
+            .createObjectNode()
+            .put("map-custom", mapService.isCustomUploadedFile());
+
+        return Response.ok().entity(response).build();
+    }
+
+    @Override
+    public Response deleteMap(@Context HttpServletRequest request) {
+        boolean deleted = mapService.deleteUploadedFile();
+        if (deleted) {
+            return Response.noContent().build();
+        }
+        return Response.status(400).build();
     }
 }
