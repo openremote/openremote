@@ -49,9 +49,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -416,9 +413,9 @@ public class MapService implements ContainerService {
         }
     }
 
-    public boolean saveUploadedFile(InputStream fileInputStream, String filename) {
+    public boolean saveUploadedFile(InputStream fileInputStream) {
         // TODO: Specify target directory for uploaded file
-        Path destinationPath = Paths.get("manager/src/map/", filename);
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
 
         try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
             byte[] buffer = new byte[4096];
@@ -427,16 +424,29 @@ public class MapService implements ContainerService {
                 outputStream.write(buffer, 0, bytesRead);
             }
             LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
+            this.setData();
             return true;
-        } catch (IOException e) {
+        } catch (IOException | SQLException | ClassNotFoundException e) {
             LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
             return false;
         }
     }
 
-    public boolean removeUploadedFile(String filename) {
-        // TODO: Specify target directory for deleted file
-        return new File("manager/src/map/", filename).delete();
+    public boolean isCustomUploadedFile() {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+
+        return Files.exists(destinationPath);
+    }
+
+    public boolean deleteUploadedFile() {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        boolean deleted = destinationPath.toFile().delete();
+        if (deleted) {
+            LOG.info("File deleted successfully");
+        } else {
+            LOG.severe("Failed to delete file");
+        }
+        return deleted;
     }
 
     protected static final class Metadata {
