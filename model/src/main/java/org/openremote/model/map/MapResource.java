@@ -78,16 +78,19 @@ public interface MapResource {
     @POST
     @Path("upload")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-    @Produces("text/plain")
     @Operation(operationId = "uploadMap", summary = "Saves mbtiles file")
     Response uploadMap(@Context HttpServletRequest request);
+
+    @GET
+    @Path("isMapCustom")
+    Response isMapCustom();
 
     /**
      * Removes mbtiles file
      */
     @POST
-    @Path("upload")
+    @Path("deleteMap")
     @Produces("text/plain")
-    @Operation(operationId = "removeMap", summary = "Removes mbtiles file")
-    Response removeMap(@Context HttpServletRequest request);
+    @Operation(operationId = "deleteMap", summary = "Removes mbtiles file")
+    Response deleteMap(@Context HttpServletRequest request);
 }
