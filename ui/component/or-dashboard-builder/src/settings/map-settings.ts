@@ -39,6 +39,11 @@ export class MapSettings extends AssetWidgetSettings {
                 valueTypes: allowedValueTypes
             }
         } as AssetTypesFilterConfig;
+
+        console.log("in map-settings render");
+        console.log("this.widgetConfig.valueType: ", this.widgetConfig.valueType);
+        console.log("this.widgetConfig.thresholds: ", this.widgetConfig.thresholds);
+
         return html`
             <div>
 
@@ -97,7 +102,7 @@ export class MapSettings extends AssetWidgetSettings {
                 <!-- List of customizable thresholds -->
                 ${when(this.widgetConfig.assetIds.length > 0, () => html`
                     <settings-panel displayName="thresholds" expanded="${true}">
-                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
+                        <thresholds-panel .thresholds="${this.widgetConfig.thresholds}" .boolColors="${this.widgetConfig.boolColors}" .valueType="${this.widgetConfig.valueType}" style="padding-bottom: 12px;"
                                           .min="${this.widgetConfig.min}" .max="${this.widgetConfig.max}"
                                           @threshold-change="${(ev: ThresholdChangeEvent) => this.onThresholdsChange(ev)}">
                         </thresholds-panel>
@@ -159,6 +164,7 @@ export class MapSettings extends AssetWidgetSettings {
         }).then(response => {
             this.widgetConfig.assetIds = response.data.map((a) => a.id!);
             this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
+            console.log("Value type set to:", this.widgetConfig.valueType);
         }).catch((reason) => {
             console.error(reason);
             showSnackbar(undefined, "errorOccurred");
