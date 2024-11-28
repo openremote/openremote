@@ -426,15 +426,17 @@ public class MapService implements ContainerService {
             LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
             this.setData();
             return true;
-        } catch (IOException | SQLException | ClassNotFoundException e) {
+        } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
+            return false;
+        } catch (SQLException | ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Failed to load uploaded file", e);
             return false;
         }
     }
 
     public boolean isCustomUploadedFile() {
         Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
-
         return Files.exists(destinationPath);
     }
 
@@ -445,6 +447,11 @@ public class MapService implements ContainerService {
             LOG.info("File deleted successfully");
         } else {
             LOG.severe("Failed to delete file");
+        }
+        try {
+            this.setData();
+        } catch (SQLException | ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Failed to load default file", e);
         }
         return deleted;
     }
