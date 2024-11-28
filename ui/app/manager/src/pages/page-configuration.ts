@@ -212,6 +212,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfigChanged = false;
 
+    @state()
+    protected isMapCustom: boolean = false;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
 
@@ -223,6 +226,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------------------------ */
 
     public stateChanged(state: AppStateKeyed) {
+    }
+
+    public async firstUpdated() {
+        const response = await manager.rest.api.MapResource.isMapCustom();
+        this.isMapCustom = response.data["map-custom"]
     }
 
     // On every update..
@@ -346,17 +354,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                             <or-file-uploader 
                                                 .label=${i18next.t("configuration.global.uploadMapTiles")}"
                                                 .accept="application/vnd.sqlite3"
-                                                @change="${(e: CustomEvent) => {
-                                                    const file = e.detail.value[0] as File;
-                                                    this.tilesForUpload = file;
-                                                    this.requestUpdate()
-                                                    this.mapConfigChanged = true;;
-                                                }}"></or-file-uploader>
-                                            <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
-                                                @or-mwc-input-changed="${async () => {
-                                                    await manager.rest.api.MapResource.removeMap()
-                                                }}" 
-                                            />
+                                                @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
+                                            ${when(this.isMapCustom, () => html`
+                                                    <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
+                                                        @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
+                                                    />
+                                            `)}
                                         </div>
                                     </div>
                                 </div>
@@ -386,6 +389,24 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ---------------- */
 
     // FETCH METHODS
+
+    protected async uploadCustomMap(e: CustomEvent) {
+        const file = e.detail.value[0] as File;
+        this.tilesForUpload = file;
+        this.requestUpdate()
+        this.mapConfigChanged = true;
+    }
+
+    protected async deleteCustomMap() {
+        const response = await manager.rest.api.MapResource.deleteMap();
+
+        if (response.status !== 204) {
+            console.error("Map delete failed")
+            return
+        }
+
+        window.location.reload();
+    }
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
