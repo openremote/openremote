@@ -33,6 +33,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Handler;
@@ -163,6 +164,7 @@ public class Container implements org.openremote.model.Container {
     }
 
     public synchronized void start() throws Exception {
+        test();
         if (isRunning())
             return;
         LOG.log(INFO, ">>> Starting runtime container...");
@@ -172,7 +174,7 @@ public class Container implements org.openremote.model.Container {
                 service.init(Container.this);
             }
 
-            // Initialise the asset model
+            // Initialise the asset model   
             ValueUtil.initialise(this);
 
             if (this.devMode) {
@@ -188,6 +190,26 @@ public class Container implements org.openremote.model.Container {
             throw ex;
         }
         LOG.log(INFO, ">>> Runtime container startup complete");
+    }
+
+    private void test(){
+        ContainerService[] services1 = getServices();
+        services1 = Arrays.stream(services1).sorted(Comparator.comparingInt(ContainerService::getPriority)).toArray(ContainerService[]::new);
+        for (int i = 0; i < services1.length; i++) {
+            List<ContainerService> initServices = Arrays.stream(services1).limit(i).toList();
+            Class<?> clazz = services1[i].getClass();
+            LOG.log(INFO, "Class implementing ContainerService: " + clazz.getName());
+            for (Field field : clazz.getDeclaredFields()) {
+                if (ContainerService.class.isAssignableFrom(field.getType())) {
+                    LOG.log(INFO, "\t\tField: " + field.getName() + " Type: " + field.getType().getName());
+                    if(initServices.stream().noneMatch(initedService -> {
+                        return initedService.getClass().isAssignableFrom(field.getType());
+                    })){
+                        LOG.log(INFO, "\t\t\t\tWARNING!: This service has not been initialized yet!");
+                    }
+                }
+            }
+        }
     }
 
     public synchronized void stop() {
