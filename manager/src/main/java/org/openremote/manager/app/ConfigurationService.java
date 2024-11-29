@@ -132,7 +132,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             mapSettingsPath = persistencePath;
         }
         LOG.info("Configuration Service Used files:");
-        LOG.info("\t- manager_config.json: " + getManagerConfigPath().toAbsolutePath());
+        LOG.info("\t- manager_config.json: " + getManagerConfigFile());
         LOG.info("\t- mapsettings.json: " + mapSettingsPath.toAbsolutePath());
         LOG.info("\t- mapdata.mbtiles: " + mapTilesPath.toAbsolutePath());
     }
@@ -166,7 +166,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         try {
             return (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
         } catch (Exception e) {
-            LOG.severe("Could not read manager_config.json from "+ getManagerConfigPath().toFile());
+            LOG.severe("Could not read manager_config.json from "+ getManagerConfigFile());
             return null;
         }
     }

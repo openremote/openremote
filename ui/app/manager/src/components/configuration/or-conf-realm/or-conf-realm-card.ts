@@ -290,7 +290,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
-        const managerUrl = (typeof MANAGER_URL !== 'undefined' ? MANAGER_URL : "");
+        const managerUrl = (MANAGER_URL || "");
 
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)

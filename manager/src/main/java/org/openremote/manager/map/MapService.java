@@ -115,7 +115,7 @@ public class MapService implements ContainerService {
                 resultMap.put(result.getString(1), result.getString(2));
             }
 
-            if (resultMap.size() == 0) {
+            if (resultMap.isEmpty()) {
                 return new Metadata();
             }
 
@@ -165,11 +165,6 @@ public class MapService implements ContainerService {
         } catch (Exception ex) {
             LOG.warning("Error closing query/result: " + ex);
         }
-    }
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
     }
 
     @Override
