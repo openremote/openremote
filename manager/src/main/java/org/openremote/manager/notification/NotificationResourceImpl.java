@@ -61,18 +61,37 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         this.managerIdentityService = managerIdentityService;
     }
 
+    // @Override
+    // public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    //     try {
+    //         return notificationService.getNotifications(
+    //             id != null ? Collections.singletonList(id) : null,
+    //             type != null ? Collections.singletonList(type) : null,
+    //             fromTimestamp,
+    //             toTimestamp,
+    //             realmId != null ? Collections.singletonList(realmId) : null,
+    //             userId != null ? Collections.singletonList(userId) : null,
+    //             assetId != null ? Collections.singletonList(assetId) : null
+    //         ).toArray(new SentNotification[0]);
+    //     } catch (IllegalArgumentException e) {
+    //         throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
+    //     }
+    // }
+
     @Override
     public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
         try {
-            return notificationService.getNotifications(
-                id != null ? Collections.singletonList(id) : null,
-                type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
-                realmId != null ? Collections.singletonList(realmId) : null,
-                userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null
-            ).toArray(new SentNotification[0]);
+            NotificationQuery query = new NotificationQuery.Builder()
+                .id(id)
+                .type(type)
+                .fromTimestamp(fromTimestamp)
+                .toTimestamp(toTimestamp)
+                .realmId(realmId)
+                .userId(userId)
+                .assetId(assetId)
+                .build();
+            
+            return notificationService.getNotifications(query)
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
