@@ -327,6 +327,7 @@ public interface AssetResource {
     @Path("{parentAssetId}/child")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     @Operation(operationId = "updateAssetParent", summary = "Update the parent of assets")
     void updateParent(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") @NotNull(message = "Parent reference required") String parentId, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 
@@ -336,6 +337,7 @@ public interface AssetResource {
     @DELETE
     @Path("/parent")
     @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     @Operation(operationId = "deleteAssetsParent", summary = "Delete the parent of assets")
     void updateNoneParent(@BeanParam RequestParams requestParams, @QueryParam("assetIds") @Size(min = 1, message = "At least one child to update parent reference") List<String> assetIds);
 }
