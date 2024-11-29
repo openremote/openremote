@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.security;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
@@ -32,11 +33,10 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 
 import jakarta.ws.rs.*;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -334,6 +334,22 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         } catch (Exception ex) {
             throw new NotFoundException(ex);
         }
+    }
+
+    @Override
+    public void updateCurrentUserLocale(RequestParams requestParams, String locale) {
+        String parsed = locale.replaceAll("\"", "");
+        if(TextUtil.isNullOrEmpty(parsed)) {
+            throw new BadRequestException("Locale cannot be empty");
+        }
+
+        User user = getCurrent(requestParams);
+        if(user == null) {
+            throw new NotFoundException("User not found");
+        }
+
+        user.setAttribute(User.LOCALE_ATTRIBUTE, parsed);
+        update(requestParams, getRequestRealmName(), user);
     }
 
     @Override

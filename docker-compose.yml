@@ -5,8 +5,6 @@
 #
 # It is configured to use the AWS logging driver.
 #
-version: '2.4'
-
 volumes:
   proxy-data:
   manager-data:

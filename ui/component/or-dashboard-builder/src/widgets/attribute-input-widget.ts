@@ -33,6 +33,14 @@ const styling = css`
     align-items: center;
     overflow: hidden;
   }
+    
+  #error-txt {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
 
   .attr-input {
     width: 100%;
@@ -93,7 +101,9 @@ export class AttributeInputWidget extends OrAssetWidget {
         // If widgetConfig, and the attributeRefs of them have changed...
         if(changedProps.has("widgetConfig") && this.widgetConfig) {
             const attributeRefs = this.widgetConfig.attributeRefs;
-            if(attributeRefs.length > 0 && !this.isAttributeRefLoaded(attributeRefs[0])) {
+            if(attributeRefs.length === 0) {
+                this._error = "noAttributesConnected";
+            } else if(attributeRefs.length > 0 && !this.isAttributeRefLoaded(attributeRefs[0])) {
                 this.loadAssets(attributeRefs);
             }
         }
@@ -113,9 +123,16 @@ export class AttributeInputWidget extends OrAssetWidget {
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
         this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
+        }).catch(e => {
+            this._error = e.message;
         }).finally(() => {
             this._loading = false;
         });
@@ -126,10 +143,13 @@ export class AttributeInputWidget extends OrAssetWidget {
         const attribute = (config.attributeRefs.length > 0 && this.loadedAssets[0]?.attributes) ? this.loadedAssets[0].attributes[config.attributeRefs[0].name!] : undefined;
         const readOnlyMetaItem = Util.getMetaValue(WellknownMetaItems.READONLY, attribute);
         return html`
-            ${when(this._loading, () => {
-                return html`
-                    <or-loading-indicator></or-loading-indicator>
-                `;
+            
+            ${when(this._loading || this._error, () => {
+                if(this._loading) {
+                    return html`<or-loading-indicator></or-loading-indicator>`;
+                } else {
+                    return html`<or-translate id="error-txt" .value="${this._error}"></or-translate>`;
+                }
             }, () => when(config.attributeRefs.length > 0 && attribute && this.loadedAssets && this.loadedAssets.length > 0, () => {
                 return html`
                     <div id="widget-wrapper">
@@ -141,12 +161,6 @@ export class AttributeInputWidget extends OrAssetWidget {
                                             .readonly="${config.readonly || readOnlyMetaItem || this.getEditMode!()}"
                                             .hasHelperText="${config.showHelperText}"
                         ></or-attribute-input>
-                    </div>
-                `;
-            }, () => {
-                return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span><or-translate value="noAttributesConnected"></or-translate></span>
                     </div>
                 `;
             }))}

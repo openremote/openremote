@@ -143,6 +143,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         }
     }
 
+    disconnectedCallback() {
+        this.removeEventListener(OrRulesJsonRuleChangedEvent.NAME, this._onJsonRuleChanged);
+        return super.disconnectedCallback();
+    }
+
     public set ruleset(ruleset: RulesetUnion) {
         if (this._ruleset === ruleset) {
             return;
