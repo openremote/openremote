@@ -253,13 +253,14 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "writeAttributeValue", summary = "Write to a single attribute with a timestamp", responses = {
-            @ApiResponse(description = "The result of the write operation",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AttributeWriteResult.class)))})
+            @ApiResponse(
+                    description = "The result of the write operation",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AttributeWriteResult.class))
+            )})
     Response writeAttributeValue(@BeanParam RequestParams requestParams,
                                  @PathParam("assetId") String assetId,
                                  @PathParam("attributeName") String attributeName,
-                                 @PathParam("timestamp") @DefaultValue("0") Long timestamp,
+                                 @PathParam("timestamp") Long timestamp,
                                  Object value);
 
 

@@ -3,7 +3,7 @@ package org.openremote.model.attribute;
 public class AttributeStateWithTimestamp extends AttributeState {
     protected Long timestamp;
 
-    public AttributeStateWithTimestamp(){}
+    AttributeStateWithTimestamp(){}
 
     public AttributeStateWithTimestamp(AttributeState attributeState) {
         this.ref = attributeState.ref;
