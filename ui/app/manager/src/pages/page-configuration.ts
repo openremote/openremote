@@ -39,6 +39,7 @@ import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultAppConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
+declare const MANAGER_URL: string | undefined;
 
 export function pageConfigurationProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -359,6 +360,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.loading = false;
                 this.managerConfigurationChanged = false;
                 this.mapConfigChanged = false;
+                const configURL =  (MANAGER_URL || "" ? MANAGER_URL : "") + "/api/master/configuration/manager";
+                fetch(configURL, {cache: "reload"})
+                window.location.reload();
             })
         })
 
