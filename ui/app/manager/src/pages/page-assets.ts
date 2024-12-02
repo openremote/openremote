@@ -211,7 +211,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     constructor(store: Store<AssetsStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
-        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (ev) => this._onAssetSelectionChanged(ev.detail.newNodes.map((node) => node.asset.id!)));
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (ev) => this._onAssetSelectionChanged(false, ev.detail.newNodes.map((node) => node.asset.id!)));
         this.addEventListener(OrAssetViewerRequestEditToggleEvent.NAME, this._onEditToggleRequested);
         this.addEventListener(OrAssetViewerEditToggleEvent.NAME, this._onEditToggle);
         this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
@@ -247,7 +247,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             viewerHTML = html`
                 <or-asset-viewer id="viewer"
                                  .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
-                                 class="${!assetId ? "hideMobile" : ""}"
+                                 class="${!assetId ? "hideMobile" : ""}" .assetId="${assetId}"
                                  .editMode="${this._editMode}"
                 ></or-asset-viewer>
             `;
@@ -358,13 +358,17 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         event.detail.allow = false;
 
         this._confirmContinue(() => {
-            this._onAssetSelectionChanged(event.detail.detail.newNodes.map((node) => node.asset.id!));
+            this._onAssetSelectionChanged(true, event.detail.detail.newNodes.map((node) => node.asset.id!));
         });
     }
 
     // This is where we set the asset loaded in the asset viewer
-    protected _onAssetSelectionChanged(assetIds: string[] | undefined) {
+    protected _onAssetSelectionChanged(userInitiated: boolean, assetIds: string[] | undefined) {
         if (Util.objectsEqual(this._assetIds, assetIds)) {
+            if (!userInitiated) {
+                // Asset name or parent has changed and we don't need to react to it here
+                return;
+            }
             // User has clicked the same node(s)
             if (assetIds.length === 1) {
                 // force refresh the selected asset
@@ -439,7 +443,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
 
         if (result.isNew) {
-            this._addedAssetId = result.assetId!;
+            this._addedAssetId = result.asset?.id;
         }
     }
 
