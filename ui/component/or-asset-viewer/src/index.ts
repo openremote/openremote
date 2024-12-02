@@ -890,10 +890,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             if (ancestors.length > 0) {
                 getAssetNames(ancestors).then(
                     (names) => {
-                        if (hostElement && hostElement.shadowRoot) {
-                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
-                            if (pathField) {
-                                pathField.value = names.join(" > ");
+                        if (names) {
+                            if (hostElement && hostElement.shadowRoot) {
+                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
+                                if (pathField) {
+                                    pathField.value = names.join(" > ");
+                                }
                             }
                         }
                     }
@@ -924,19 +926,24 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
         `;
 }
 
-async function getAssetNames(ids: string[]): Promise<string[]> {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            attributes: []
-        },
-        ids: ids
-    });
+async function getAssetNames(ids: string[]): Promise<string[] | undefined> {
+    try {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            select: {
+                attributes: []
+            },
+            ids: ids
+        });
 
-    if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
-        return ids;
+        if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
+            return ids;
+        }
+
+        return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
+    } catch (e) {
+        console.error("Failed to fetch parent asset names", e);
+        return undefined;
     }
-
-    return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
 }
 
 async function getAssetChildren(parentId: string, childAssetType: string): Promise<Asset[]> {
@@ -1027,7 +1034,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
     const isUpdate = !!asset.id && asset.version !== undefined;
     let success: boolean;
-    let id: string = "";
+    let id = "";
 
     try {
         if (isUpdate) {
