@@ -306,7 +306,8 @@ export const style = css`
         cursor: pointer;
     }
     
-    .draggable:active {
+    .draggable:active[draggable="true"] {
         cursor: grabbing;
     }
+
 `;
