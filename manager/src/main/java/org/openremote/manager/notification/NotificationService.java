@@ -321,45 +321,45 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    // public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
-    //     StringBuilder builder = new StringBuilder();
-    //     builder.append("select n from SentNotification n where 1=1");
-    //     List<Object> parameters = new ArrayList<>();
-    //     processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
-    //     builder.append(" order by n.sentOn asc");
-    //     return persistenceService.doReturningTransaction(entityManager -> {
-    //         TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-    //         IntStream.rangeClosed(1, parameters.size())
-    //                 .forEach(i -> query.setParameter(i, parameters.get(i-1)));
-    //         return query.getResultList();
-
-    //     });
-    // }
-
-    public List<SentNotification> getNotifications(NotificationQuery query) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
-        List<Object> parameters = new ArrayList<>();
-
         builder.append("select n from SentNotification n where 1=1");
-
-        if (query.getIds() != null && !query.getIds().isEmpty()) {
-            builder.append("AND n.id IN ?").append(parameters.size() + 1);
-            parameters.add(query.getIds());
-        }
-
-        // other conditions
-
-        builder.append(" order by n.SentOn asc");
-
+        List<Object> parameters = new ArrayList<>();
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
+        builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
-            TypedQuery<SentNotification> dbQuery = entityManager.createQuery(builder.toString(), SentNotification.class);
+            TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
             IntStream.rangeClosed(1, parameters.size())
-                .forEach(i -> dbQuery.setParameter(i, parameters.get(i-1)));
-            
-            return dbQuery.getResultList();
+                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
+            return query.getResultList();
 
         });
     }
+
+    // public List<SentNotification> getNotifications(NotificationQuery query) throws IllegalArgumentException {
+    //     StringBuilder builder = new StringBuilder();
+    //     List<Object> parameters = new ArrayList<>();
+
+    //     builder.append("select n from SentNotification n where 1=1");
+
+    //     if (query.getIds() != null && !query.getIds().isEmpty()) {
+    //         builder.append("AND n.id IN ?").append(parameters.size() + 1);
+    //         parameters.add(query.getIds());
+    //     }
+
+    //     // other conditions
+
+    //     builder.append(" order by n.SentOn asc");
+
+    //     return persistenceService.doReturningTransaction(entityManager -> {
+    //         TypedQuery<SentNotification> dbQuery = entityManager.createQuery(builder.toString(), SentNotification.class);
+    //         IntStream.rangeClosed(1, parameters.size())
+    //             .forEach(i -> dbQuery.setParameter(i, parameters.get(i-1)));
+            
+    //         return dbQuery.getResultList();
+
+    //     });
+    // }
 
     public void removeNotification(Long id) {
         persistenceService.doTransaction(entityManager -> entityManager
