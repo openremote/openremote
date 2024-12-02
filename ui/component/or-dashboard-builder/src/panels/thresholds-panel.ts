@@ -121,6 +121,10 @@ export class ThresholdsPanel extends LitElement {
         }
     }
 
+    private get colorValue() {
+        return (color?: string) => color ? '#' + color : "#000000";
+    }
+
     protected render(): TemplateResult {
         return html`
             <div id="thresholds-list" class="expanded-panel">
@@ -176,7 +180,7 @@ export class ThresholdsPanel extends LitElement {
                 ${(this.valueType === 'boolean' && this.boolColors) ? html`
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.true}"
+                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.true)}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {   
                                           this.onBoolColorChange(true, event.detail.value)}}"
                             ></or-mwc-input>
@@ -186,7 +190,7 @@ export class ThresholdsPanel extends LitElement {
                     </div>
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
-                            <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.false}"
+                            <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.false)}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
                                             this.onBoolColorChange(false, event.detail.value)}}"
                             ></or-mwc-input>
@@ -243,12 +247,10 @@ export class ThresholdsPanel extends LitElement {
 
     protected onBoolColorChange(isTrue: boolean, newColor: string) {
         const newBoolColors = {
-            type: 'boolean',
-            true: isTrue ? newColor : this.boolColors.true,
-            false: !isTrue ? newColor : this.boolColors.false
-        };
+            ...this.boolColors,
+            [isTrue ? 'true' : 'false']: newColor};
 
-        this.dispatchEvent(new BoolColorsChangeEvent(newBoolColors));
+        this.boolColors = newBoolColors;
     }
 
     protected removeThreshold(threshold: [any, string]) {
@@ -256,7 +258,7 @@ export class ThresholdsPanel extends LitElement {
             case "number":
                 this.thresholds = (this.thresholds as [number, string][]).filter((x) => x !== threshold);
                 break;
-            default:
+            default: 
                 this.textColors = (this.textColors as [string, string][]).filter((x) => x !== threshold);
                 break;
         }
