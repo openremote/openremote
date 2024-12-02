@@ -33,10 +33,23 @@ import "../components/notifications/notification-form";
 export class NotificationService {
     async getNotifications(realm: string): Promise<SentNotification[]> {
         try {
+            
+            // get todays start (midnight) and end (23:59)
+            const today = new Date();
+            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,599).getTime();
+
             console.log("Making API request for realm:", realm);
             const response = await manager.rest.api.NotificationResource.getNotifications({
-                realmId: realm
+                realmId: realm,
+                from: startOfDay,
+                to: endOfDay
             });
+
+            // Log the raw response
+            console.log("Raw API response:", response);
+            console.log("Response data length:", response.data?.length || 0);
+
 
             if (response.status !== 200) {
                 throw new Error("Failed to load notifications");
