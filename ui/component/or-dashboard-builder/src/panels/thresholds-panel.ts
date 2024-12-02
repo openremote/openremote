@@ -117,6 +117,7 @@ export class ThresholdsPanel extends LitElement {
             this.dispatchEvent(new TextColorsChangeEvent(this.textColors));
         }
         if (changedProps.has('boolColors') && this.boolColors) {
+            console.log('boolColors changed:', this.boolColors);
             this.dispatchEvent(new BoolColorsChangeEvent(this.boolColors));
         }
     }
@@ -178,9 +179,7 @@ export class ThresholdsPanel extends LitElement {
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.true}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {   
-                                          this.boolColors = {...this.boolColors, true: event.detail.value};
-                                          this.requestUpdate('boolColors');
-                                          }}"
+                                          this.onBoolColorChange(true, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
@@ -190,9 +189,7 @@ export class ThresholdsPanel extends LitElement {
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.boolColors.false}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.boolColors = {...this.boolColors, false: event.detail.value};
-                                              this.requestUpdate('boolColors');
-                                              }}"
+                                            this.onBoolColorChange(false, event.detail.value)}}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'False'}" .readonly="${true}"
@@ -243,6 +240,16 @@ export class ThresholdsPanel extends LitElement {
                 ` : null}
             </div>
         `
+    }
+
+    protected onBoolColorChange(isTrue: boolean, newColor: string) {
+        const newBoolColors = {
+            type: 'boolean',
+            true: isTrue ? newColor : this.boolColors.true,
+            false: !isTrue ? newColor : this.boolColors.false
+        };
+
+        this.dispatchEvent(new BoolColorsChangeEvent(newBoolColors));
     }
 
     protected removeThreshold(threshold: [any, string]) {
