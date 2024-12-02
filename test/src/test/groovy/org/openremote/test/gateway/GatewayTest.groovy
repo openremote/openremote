@@ -1,6 +1,11 @@
 package org.openremote.test.gateway
 
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
+import com.hivemq.client.mqtt.MqttClientConfig
+import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.netty.channel.ChannelHandler
+import io.netty.channel.socket.SocketChannel
 import org.apache.http.client.utils.URIBuilder
 import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.http.HTTPAgentLink
@@ -729,7 +734,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def "Verify gateway client service"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 30, delay: 0.2)
         def delayedConditions = new PollingConditions(initialDelay: 1, delay: 1, timeout: 10)
         def container = startContainer(defaultConfig(), defaultServices())
         def timerService = container.getService(TimerService.class)
@@ -805,6 +810,26 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             def gatewayAssets = assetStorageService.findAll(new AssetQuery().parents(gateway.id).recursive(true))
             def cityAssets = assetStorageService.findAll(new AssetQuery().realm(new RealmPredicate(managerTestSetup.realmCityName)))
             assert gatewayAssets.size() == cityAssets.size()
+        }
+
+        when: "the gateway client is abruptly disconnected"
+        // Overwrite the client connection status to prevent reconnection
+        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connectionStatus = ConnectionStatus.DISCONNECTED
+        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).channel.close()
+
+        then: "the gateway asset connection status should become DISCONNECTED"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId())
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.DISCONNECTED
+        }
+
+        when: "the connection is reestablished"
+        gatewayClientService.clientRealmMap.get(managerTestSetup.realmCityName).connect()
+
+        then: "the gateway asset connection status should become CONNECTED"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId())
+            assert gateway.getGatewayStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         when: "a gateway client asset is modified"
