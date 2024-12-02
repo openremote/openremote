@@ -117,7 +117,6 @@ export class ThresholdsPanel extends LitElement {
             this.dispatchEvent(new TextColorsChangeEvent(this.textColors));
         }
         if (changedProps.has('boolColors') && this.boolColors) {
-            console.log('boolColors changed:', this.boolColors);
             this.dispatchEvent(new BoolColorsChangeEvent(this.boolColors));
         }
     }
