@@ -122,7 +122,10 @@ export class ThresholdsPanel extends LitElement {
     }
 
     private get colorValue() {
-        return (color?: string) => color ? '#' + color : "#000000";
+        return (color?: string) => {
+            if (!color) return "#000000";
+            return color.startsWith('#') ? color : '#' + color;
+        }
     }
 
     protected render(): TemplateResult {
@@ -246,11 +249,21 @@ export class ThresholdsPanel extends LitElement {
     }
 
     protected onBoolColorChange(isTrue: boolean, newColor: string) {
-        const newBoolColors = {
-            ...this.boolColors,
-            [isTrue ? 'true' : 'false']: newColor};
+         // in case newColor already has '#' prefix
+        const color = newColor.startsWith('#') ? newColor.substring(1) : newColor;
+        
+        if (!this.boolColors) {
+            this.boolColors = {
+                type: 'boolean',
+                true: '4caf50',
+                false: 'ef5350'
+            };
+        }
 
-        this.boolColors = newBoolColors;
+        this.boolColors = {
+            ...this.boolColors,
+            [isTrue ? 'true' : 'false']: color
+        };
     }
 
     protected removeThreshold(threshold: [any, string]) {
