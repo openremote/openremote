@@ -309,5 +309,4 @@ export const style = css`
     .draggable:active[draggable="true"] {
         cursor: grabbing;
     }
-
 `;
