@@ -1474,9 +1474,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const saveResult = await saveAsset(asset);
 
         if (saveResult.success) {
-            this._assetInfo = undefined;
             try {
-                const assetInfo = await this.loadAssetInfo(asset);
+                const assetInfo = await this.loadAssetInfo(saveResult.asset!);
                 this._assetInfo = assetInfo;
                 this.assetId = saveResult.asset?.id;
             } catch (e) {
