@@ -146,17 +146,26 @@ export class ChartWidget extends OrAssetWidget {
             this.datapointQuery = this.widgetConfig.datapointQuery;
 
             const attributeRefs = this.widgetConfig.attributeRefs;
-            const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
-            if (missingAssets.length > 0) {
-                this.loadAssets(attributeRefs);
+            if(attributeRefs.length === 0) {
+                this._error = "noAttributesConnected";
+            } else {
+                const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
+                if (missingAssets.length > 0) {
+                    this.loadAssets(attributeRefs);
+                }
             }
         }
 
         return super.willUpdate(changedProps);
     }
 
-    protected loadAssets(attributeRefs: AttributeRef[]) {
+    protected loadAssets(attributeRefs: AttributeRef[]): void {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
+        }
         this._loading = true;
+        this._error = undefined;
         this.fetchAssets(attributeRefs).then((assets) => {
             this.loadedAssets = assets;
             this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
@@ -164,6 +173,8 @@ export class ChartWidget extends OrAssetWidget {
                 const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                 return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
             }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
         }).finally(() => {
             this._loading = false;
         });
@@ -173,7 +184,13 @@ export class ChartWidget extends OrAssetWidget {
         return html`
             ${when(this._loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
-            `, () => when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
+                
+            `, () => when(this._error, () => html`
+                <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
+                    <span><or-translate .value="${this._error}"></or-translate></span>
+                </div>
+                
+            `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
@@ -182,12 +199,6 @@ export class ChartWidget extends OrAssetWidget {
                               .datapointQuery="${this.datapointQuery}" .chartOptions="${this.widgetConfig?.chartOptions}"
                               style="height: 100%"
                     ></or-chart>
-                `;
-            }, () => {
-                return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span><or-translate value="noAttributesConnected"></or-translate></span>
-                    </div>
                 `;
             }))}
         `;

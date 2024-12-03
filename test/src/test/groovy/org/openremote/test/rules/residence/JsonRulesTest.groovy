@@ -10,6 +10,9 @@ import jakarta.ws.rs.core.Response
 import net.fortuna.ical4j.model.Recur
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.MailUtil
+import org.openremote.manager.notification.LocalizedNotificationHandler
+import org.openremote.model.notification.EmailNotificationMessage
+import org.openremote.model.notification.LocalizedNotificationMessage
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -111,6 +114,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         List<Tuple2<Notification.Target, PushNotificationMessage>> pushTargetsAndMessages = []
         List<jakarta.mail.Message> emailMessages = []
         List<Notification.Target> emailTargets = []
+        List<LocalizedNotificationMessage> localizedMessages = []
 
         given: "the geofence notifier debounce is set to a small value for testing"
         Integer originalDebounceMillis = ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS
@@ -121,6 +125,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def container = startContainer(defaultConfig(), defaultServices())
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
+        def localizedNotificationHandler = container.getService(LocalizedNotificationHandler.class)
         def notificationService = container.getService(NotificationService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
@@ -161,6 +166,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 return NotificationSendResult.success()
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
+
+        // Register localized handler
+        LocalizedNotificationHandler mockLocalizedNotificationHandler = Spy(localizedNotificationHandler)
+        mockLocalizedNotificationHandler.isValid() >> true
+        mockLocalizedNotificationHandler.sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.Target, _ as AbstractNotificationMessage) >> {
+            id, source, sourceId, target, message ->
+                localizedMessages << message
+        }
+        mockLocalizedNotificationHandler.notificationHandlerMap = notificationService.notificationHandlerMap
+        notificationService.notificationHandlerMap.put(localizedNotificationHandler.getTypeName(), mockLocalizedNotificationHandler)
 
         and: "some rules"
         Ruleset ruleset = new RealmRuleset(
@@ -364,6 +379,99 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert emailMessages.any {it.getRecipients(jakarta.mail.Message.RecipientType.TO).length == 1
                     && (it.getRecipients(jakarta.mail.Message.RecipientType.TO)[0] as InternetAddress).address == "testuser2@openremote.local"
                     && MailUtil.toMailMessage(it, true).content == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"}
+        }
+
+        and: "an localized email notification should have been sent with the triggered asset in the body but only containing the triggered asset states"
+        String expectedHtml = "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+        conditions.eventually {
+            assert localizedMessages.size() == 7
+             // Get only email messages
+            emailMessages = localizedMessages.findAll { localizedMsg ->
+                localizedMsg.getMessages().values().stream().allMatch { message ->
+                    message.type == EmailNotificationMessage.TYPE
+                }
+            }
+            
+            // Verify email content
+            assert emailMessages.stream().allMatch {
+                it.getMessages().values().stream().allMatch(m -> {
+                    ((EmailNotificationMessage) m).getHtml() == expectedHtml
+                })
+            }
+            
+            assert emailMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Demo Apartment - All Lights Off"
+                }
+            }.count() == 3
+            
+            assert emailMessages.stream().filter {
+                it.getMessages().values().stream().allMatch {
+                    ((EmailNotificationMessage) it).getSubject() == "Linked user localized user test"
+                }
+            }.count() == 2
+            
+            // Get push messages
+            def pushMessages = localizedMessages.findAll { localizedMsg ->
+                localizedMsg.getMessages().values().stream().allMatch { message ->
+                    message.type == PushNotificationMessage.TYPE
+                }
+            }
+            
+            // Verify push notifications
+            def assetIdPushNotification = pushMessages.find { localizedMsg ->
+                localizedMsg.getMessages().get("en") instanceof PushNotificationMessage &&
+                ((PushNotificationMessage) localizedMsg.getMessages().get("en")).getBody()?.contains(consoleRegistration.id)
+            }
+
+            assert assetIdPushNotification != null
+            assert ((PushNotificationMessage) assetIdPushNotification.getMessages().get("en")).getBody() == "English: Asset ${consoleRegistration.id} has moved"
+            assert ((PushNotificationMessage) assetIdPushNotification.getMessages().get("nl")).getBody() == "Nederlands: Asset ${consoleRegistration.id} is verplaatst"
+
+            // Verify no unprocessed placeholders remain
+            assert pushMessages.every { localizedMsg ->
+                localizedMsg.getMessages().values().every { msg ->
+                    !((PushNotificationMessage) msg).getBody()?.contains("%ASSET_ID%")
+                }
+            }
+        }
+
+        and: "a push notification with asset ID should have been sent to both linked users"
+        conditions.eventually {
+            // Count notifications for users with test-realm-role
+            def linkedNotifications = pushTargetsAndMessages.findAll {
+                it.v2.title == "Linked Asset ID Test" && 
+                it.v2.body == "This notification is about asset: ${consoleRegistration.id}"
+            }
+            assert linkedNotifications.size() == 2 // should be sent to both linked users
+        }
+
+        and: "the action URL should contain the corect asset ID"
+        conditions.eventually {
+            // First find the relevant message
+            def targetMessage = pushTargetsAndMessages.find { it.v2.title == "URL Asset ID Test" }
+            assert targetMessage != null
+            
+            // Then verify URL
+            assert targetMessage.v2.action?.url == "/assets/${consoleRegistration.id}/details"
+        }
+
+        and: "notifications should still contain asset ID even for user without access"
+        conditions.eventually {
+        assetStorageService.storeUserAssetLinks([
+            new UserAssetLink(keycloakTestSetup.realmBuilding.getName(), keycloakTestSetup.testuser3Id, consoleRegistration.id)
+            ])
+             // Print debug info
+            println "Available notifications:"
+            pushTargetsAndMessages.each { target, msg ->
+                println "Target: ${target}, Message: title='${msg.title}', body='${msg.body}'"
+            }
+            
+            assert pushTargetsAndMessages.any {
+                it.v1.type == Notification.TargetType.ASSET &&
+                it.v2.title == "Asset ID Test" &&
+                it.v2.body == "Your asset ID is: ${consoleRegistration.id}"
+            }
         }
 
         and: "after a few seconds the rule should not have fired again"

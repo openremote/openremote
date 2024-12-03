@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -22,6 +23,7 @@ public class GatewayTunnelInfo {
     protected Integer assignedPort = null;
     protected String hostname;
     protected Type type = Type.HTTPS;
+    protected Instant autoCloseTime;
 
     @JsonCreator
     public GatewayTunnelInfo(String realm, String gatewayId) {
@@ -97,6 +99,15 @@ public class GatewayTunnelInfo {
 
     public GatewayTunnelInfo setHostname(String hostname) {
         this.hostname = hostname;
+        return this;
+    }
+
+    public Instant getAutoCloseTime() {
+        return autoCloseTime;
+    }
+
+    public GatewayTunnelInfo setAutoCloseTime(Instant autoCloseTime) {
+        this.autoCloseTime = autoCloseTime;
         return this;
     }
 

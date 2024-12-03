@@ -19,6 +19,7 @@
  */
 package org.openremote.model.security;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
@@ -181,6 +182,12 @@ public interface UserResource {
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Operation(operationId = "updateUserRealmRoles", summary = "Update realm roles for a user in a realm")
     void updateUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
+
+    @PUT
+    @Path("locale")
+    @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "updateCurrentUserLocale", summary = "Update locale for the current user in a realm")
+    void updateCurrentUserLocale(@BeanParam RequestParams requestParams, String locale);
 
     @GET
     @Path("{realm}/userSessions/{userId}")
