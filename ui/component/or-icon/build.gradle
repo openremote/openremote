@@ -6,11 +6,9 @@ tasks.register('copyMdiFont', Exec) {
     commandLine npmCommand("npm"), "run", "copyMdiFont"
 }
 
-tasks.register('clean') {
-    doLast {
-        delete "dist"
-        delete "lib"
-    }
+clean.doLast {
+    delete "dist"
+    delete "lib"
 }
 
 tasks.register('npmAnalyze', Exec) {

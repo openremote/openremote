@@ -424,30 +424,35 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     }
 }
 
-pluginManager.withPlugin('java') {
-    plugins.apply('com.diffplug.spotless')
+plugins.apply('com.diffplug.spotless')
 
-    spotless {
-        java {
-            target '**/*.java'
-            targetExclude(
-                    '**/org/keycloak/adapters/spi/*',
-                    '**/org/keycloak/adapters/undertow/*',
-                    '**/org/openremote/container/security/basic/PasswordStorage.java',
-                    '**/org/openremote/container/security/keycloak/SimpleKeycloakServletExtension.java',
-                    '**/org/openremote/container/web/file/*',
-                    '**/org/openremote/model/util/TimeUtil.java',
-                    '**/org/openremote/model/util/ValueUtil.java'
-            )
+spotless {
+    java {
+        target '**/*.java'
+        targetExclude(
+                '**/org/keycloak/adapters/spi/*',
+                '**/org/keycloak/adapters/undertow/*',
+                '**/org/openremote/container/security/basic/PasswordStorage.java',
+                '**/org/openremote/container/security/keycloak/SimpleKeycloakServletExtension.java',
+                '**/org/openremote/container/web/file/*',
+                '**/org/openremote/model/util/TimeUtil.java',
+                '**/org/openremote/model/util/ValueUtil.java'
+        )
 
-            eclipse().configFile(rootProject.file('tools/spotless/codestyle.xml'))
-            licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
-            importOrder('java', 'javax', 'com', 'org')
-            removeUnusedImports()
-            formatAnnotations()
-            trimTrailingWhitespace()
-            endWithNewline()
-        }
+        eclipse().configFile(rootProject.file('tools/spotless/codestyle.xml'))
+        licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
+        importOrder('java', 'javax', 'com', 'org')
+        removeUnusedImports()
+        formatAnnotations()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    typescript {
+        target 'src/**/*.ts'
+
+        eslint().configFile(rootProject.file('ui/.eslintrc.json')).tsconfigFile(rootProject.file('ui/tsconfig.json'))
+        licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt'), '(import|const|declare|export|var) '
     }
 }
 
