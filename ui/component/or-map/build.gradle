@@ -1,7 +1,5 @@
-task clean() {
-    doLast {
-        delete "dist"
-    }
+clean.doLast {
+    delete "dist"
 }
 
 task prepareUi() {
