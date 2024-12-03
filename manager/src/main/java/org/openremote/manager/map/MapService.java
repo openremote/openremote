@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -32,14 +33,11 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.manager.MapRealmConfig;
-import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.ws.rs.core.UriBuilder;
-
-import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,33 +69,18 @@ public class MapService implements ContainerService {
     protected Connection connection;
     protected Metadata metadata;
     protected ObjectNode mapConfig;
+    protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
-        this.mapConfig.set("options", ValueUtil.JSON.valueToTree(mapConfiguration));
-        configurationService.saveMapConfigFile(this.mapConfig);
-        this.mapConfig = loadMapSettingsJson();
-        return this.mapConfig;
-    }
-
-    public void deleteRealm(Realm realm) throws IOException {
-
-        LOG.info("Removing realm \""+realm.getDisplayName()+"\" from the mapsettings.json file...");
-
-        JsonNode newFile = this.mapConfig.deepCopy();
-
-        for (JsonNode jsonVal : newFile){
-            if(jsonVal instanceof ObjectNode){
-                ObjectNode obj = (ObjectNode) jsonVal;
-                if(jsonVal.has(realm.getName())) {
-                    obj.remove(realm.getName());
-                    saveMapConfig(getMapConfigRealms((ObjectNode) newFile.get("options")));
-                    this.mapConfig = loadMapSettingsJson();
-                    return;
-                }
-            }
+        if (mapConfig == null) {
+            mapConfig = ValueUtil.JSON.createObjectNode();
         }
+        mapConfig.putPOJO("options", mapConfiguration);
+        configurationService.saveMapConfigFile(mapConfig);
+        mapSettings.clear();
+        return mapConfig;
     }
 
     protected static Metadata getMetadata(Connection connection) {
@@ -138,20 +121,6 @@ public class MapService implements ContainerService {
         }
 
         return metadata;
-    }
-
-    @SuppressWarnings("unchecked")
-    protected static ConcurrentMap<String, MapRealmConfig> getMapConfigRealms(ObjectNode mapRealms){
-        return (ConcurrentMap<String, MapRealmConfig>) ValueUtil.JSON.convertValue(mapRealms, ConcurrentMap.class);
-    }
-
-    protected static ObjectNode loadMapSettingsJson() {
-        return configurationService.getMapConfig();
-    }
-
-    @SuppressWarnings("unchecked")
-    protected ConcurrentMap<String, ObjectNode> getMapSettings(){
-        return (ConcurrentMap<String, ObjectNode>) ValueUtil.JSON.convertValue(this.mapConfig, ConcurrentMap.class);
     }
 
     protected static void closeQuietly(PreparedStatement query, ResultSet result) {
@@ -211,20 +180,21 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        this.mapConfig = configurationService.getMapConfig();
-        this.setData();
+        setData();
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
+        Path mapTilesPath = configurationService.getMapTilesPath().toAbsolutePath();
+        if (!mapTilesPath.toFile().exists()) {
+            return;
+        }
         Class.forName(org.sqlite.JDBC.class.getName());
-        connection = DriverManager.getConnection("jdbc:sqlite:" + configurationService.getMapTilesPath().toAbsolutePath());
+        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
 
         metadata = getMetadata(connection);
         if (metadata.isValid()) {
+            mapConfig = configurationService.getMapConfig();
             if (mapConfig == null) {
-                LOG.warning("Map config could not be loaded from '" +
-                        configurationService.getMapTilesPath().toAbsolutePath() +
-                        "', map functionality will not work");
                 return;
             }
         } else {
@@ -272,15 +242,15 @@ public class MapService implements ContainerService {
      */
     public ObjectNode getMapSettings(String realm, URI host) {
         String realmUriKey = realm + host.toString();
-        if (getMapSettings().containsKey(realmUriKey)) {
-            return getMapSettings().get(realmUriKey);
+        if (mapSettings.containsKey(realmUriKey)) {
+            return mapSettings.get(realmUriKey);
         }
 
         if (mapConfig == null) {
             return null;
         }
 
-        final ObjectNode settings = getMapSettings().computeIfAbsent(realmUriKey, r -> {
+        final ObjectNode settings = mapSettings.computeIfAbsent(realmUriKey, r -> {
             if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
                 return mapConfig.deepCopy();
@@ -397,13 +367,6 @@ public class MapService implements ContainerService {
         } finally {
             closeQuietly(query, result);
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "mapTilesPath=" + configurationService.getMapTilesPath() +
-                '}';
     }
 
     protected static final class Metadata {

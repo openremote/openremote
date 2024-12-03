@@ -22,8 +22,6 @@ package org.openremote.manager.app;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.ws.rs.NotFoundException;
-import org.apache.activemq.artemis.core.remoting.CertificateUtil;
-import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.CodecUtil;
@@ -32,7 +30,6 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
-import org.openremote.model.rules.flow.Option;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.*;
@@ -48,7 +45,7 @@ import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT
 import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 import static org.openremote.container.util.MapAccess.getString;
 
-public class ConfigurationService extends RouteBuilder implements ContainerService {
+public class ConfigurationService implements ContainerService {
 
     public static final String OR_MAP_SETTINGS_PATH = "OR_MAP_SETTINGS_PATH";
     public static final String OR_MAP_SETTINGS_PATH_DEFAULT = "manager/src/map/mapsettings.json";
@@ -64,16 +61,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
 
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
-
-    @Override
-    public void configure() throws Exception {
-        /* code not overridden yet */
-    }
+    protected Path managerConfigPath;
 
     @Override
     public void init(Container container) throws Exception {
@@ -90,27 +78,25 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         // return the first one. Since the stream maintains ordering, we use the first available one, since they're placed
         // below in order of most importance. Throw an Exception if no default file could be found.
 
-        Optional<Path> defaultMapSettingsPath = Stream.of("/opt/map/mapsettings.json", "manager/src/map/mapsettings.json")
+        mapSettingsPath = Stream.of(getPersistedMapConfigPath().toString(), getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT), "/opt/map/mapsettings.json", OR_MAP_SETTINGS_PATH_DEFAULT)
                 .map(Path::of)
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst();
+                .findFirst().orElse(null);
 
-        Optional<Path> defaultMapTilesPath = Stream.of("/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", "manager/src/map/mapdata.mbtiles")
+        mapTilesPath = Stream.of(getMapTilesPath().toString(), getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT), "/deployment/map/mapdata.mbtiles", "/opt/map/mapdata.mbtiles", OR_MAP_TILES_PATH_DEFAULT)
                 .map(Path::of)
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst();
+                .findFirst().orElse(null);
 
-        Optional<Path> defaultManagerConfigPath = Stream.of(
-                pathPublicRoot.resolve("manager").resolve("manager_config.json"),
-                persistenceService.getStorageDir().resolve("manager").resolve("manager_config.json"))
+        managerConfigPath = Stream.of(getPersistedManagerConfigPath(), pathPublicRoot.resolve("manager").resolve("manager_config.json"))
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
-                .findFirst();
+                .findFirst().orElse(null);
 
-        if(defaultMapTilesPath.isEmpty() || defaultMapSettingsPath.isEmpty()){
-            LOG.warning("Could not find map settings or map tiles");
+        if (mapSettingsPath == null) {
+            LOG.warning("Could not find map settings");
             return;
         }
 
@@ -146,35 +132,29 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         /* code not overridden yet */
     }
 
-    protected Optional<File> getManagerConfigFile(){
-        File file = getManagerConfigPath().toFile();
+    protected Optional<File> getManagerConfigFile() {
+        File file = getPersistedManagerConfigPath().toFile();
 
-        if(file.exists() && !file.isDirectory()){
+        if (file.exists() && !file.isDirectory()) {
             return Optional.of(file);
-        }else{
+        } else {
             file = pathPublicRoot
-                    .resolve("manager_config.json")
-                    .toFile();
-            if (file.exists() && !file.isDirectory()){
+                .resolve("manager_config.json")
+                .toFile();
+            if (file.exists() && !file.isDirectory()) {
                 return Optional.of(file);
             }
         }
         return Optional.empty();
     }
 
-    public ObjectNode getManagerConfig(){
+    public ObjectNode getManagerConfig() {
         try {
             return (ObjectNode) ValueUtil.JSON.readTree(getManagerConfigFile().orElseThrow());
         } catch (Exception e) {
-            LOG.severe("Could not read manager_config.json from "+ getManagerConfigFile());
+            LOG.severe("Could not read manager_config.json from " + getManagerConfigFile());
             return null;
         }
-    }
-
-    protected Path getManagerConfigPath(){
-        return persistenceService.getStorageDir()
-                .resolve("manager")
-                .resolve("manager_config.json");
     }
 
     @Override
@@ -182,7 +162,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         return "ConfigurationService{" +
                 "mapTilesPath=" + mapTilesPath +
                 ", mapSettingsPath=" + mapSettingsPath +
-                ", managerConfigPath=" + getManagerConfigPath() +
+                ", managerConfigPath=" + getPersistedManagerConfigPath() +
                 '}';
     }
 
@@ -196,11 +176,17 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         return null;
     }
 
-    protected File getMapConfigFile(){
-        return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json").toFile();
+    protected Path getPersistedManagerConfigPath() {
+        return persistenceService.getStorageDir()
+            .resolve("manager")
+            .resolve("manager_config.json");
     }
 
-    public Path getManagerConfigImagePath(){
+    protected Path getPersistedMapConfigPath() {
+        return persistenceService.getStorageDir().resolve("manager").resolve("mapsettings.json");
+    }
+
+    protected Path getPersistedManagerConfigImagePath() {
         return this.persistenceService.resolvePath("manager").resolve("images");
     }
 
@@ -213,17 +199,16 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         }
     }
 
-    public Path getMapTilesPath(){
-        return mapTilesPath.toAbsolutePath();
+    public Path getMapTilesPath() {
+        return mapTilesPath;
     }
 
-
     public void saveManagerConfigFile(ObjectNode managerConfiguration) throws Exception {
-        LOG.log(Level.INFO, "Saving manager_config.json to "+getManagerConfigPath().toFile()+"...");
+        LOG.log(Level.INFO, "Saving manager_config.json to "+ getPersistedManagerConfigPath().toFile()+"...");
 
         // When saving the manager_config, automatically save it to the storageDir, as any other case would mean
         // that it's stored in OR_CUSTOM_APP_DOCROOT
-        try (OutputStream out = new FileOutputStream(getManagerConfigPath().toFile())) {
+        try (OutputStream out = new FileOutputStream(getPersistedManagerConfigPath().toFile())) {
             // Check references to images
             ObjectNode changedConfig = this.checkAndFixImageReferences(managerConfiguration);
 
@@ -243,11 +228,11 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         path = path.contains("/images/") ? path.replace("/images/", "") : path;
 
         Path resolvedPath = Path.of(path.charAt(0) == '/' ? path.substring(1) : path);
-        resolvedPath = getManagerConfigImagePath().resolve(resolvedPath);
-        boolean isValid = resolvedPath.toFile().getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
+        resolvedPath = getPersistedManagerConfigImagePath().resolve(resolvedPath);
+        boolean isValid = resolvedPath.toFile().getCanonicalPath().contains(getPersistedManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
         if(!isValid) throw new Exception("Reference to location outside the permitted directory");
 
-        File file = getManagerConfigImagePath().
+        File file = getPersistedManagerConfigImagePath().
                 resolve(path)
                 .toAbsolutePath().toFile();
         try {
@@ -270,7 +255,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     }
 
     public Optional<File> getManagerConfigImage(String filename) {
-        File file = getManagerConfigImagePath().resolve(filename).toFile();
+        File file = getPersistedManagerConfigImagePath().resolve(filename).toFile();
 
         if(!file.isFile()){
             // fallback to OR_CUSTOM_APP_DOCROOT
@@ -279,7 +264,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
             try {
                 //Check if the file retrieved is somewhere within the storageDir/manager directory.
                 //If it is, return an Optional.empty file to denote Not Found
-                boolean isValid = file.getCanonicalPath().contains(getManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
+                boolean isValid = file.getCanonicalPath().contains(getPersistedManagerConfigImagePath().toFile().getCanonicalPath() + File.separator);
                 if (!isValid) return Optional.empty();
                 } catch (IOException e) {
                     return Optional.empty();
@@ -315,7 +300,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
                         // Remove the `/images/` part to avoid having an images/images folder in storageDir
                         String strippedImage = image.replace("images/", "");
 
-                        File persistenceImageFile = getManagerConfigImagePath().resolve(Path.of(strippedImage)).toAbsolutePath().toFile();
+                        File persistenceImageFile = getPersistedManagerConfigImagePath().resolve(Path.of(strippedImage)).toAbsolutePath().toFile();
 
                         File deploymentImageFile = path.toAbsolutePath().toFile();
 

@@ -980,14 +980,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // Delete Assets
             List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
             assetStorageService.delete(assetIds);
-
-            // Delete related configuration
-            try {
-                mapService.deleteRealm(realm);
-            } catch (Exception e) {
-                LOG.info("Couldn't remove realm from mapsettings.json: "+e.getMessage());
-            }
-
         });
 
         LOG.fine("Deleting realm: " + realmName);
