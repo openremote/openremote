@@ -37,11 +37,30 @@ import static org.openremote.model.value.ValueType.TEXT
 
 class MqttGatewayHandlerTest extends Specification implements ManagerContainerTrait {
 
+    // mqtt topic abbreviations
+    def assetsTopic = GatewayMQTTHandler.ASSETS_TOPIC
+    def attributesTopic = GatewayMQTTHandler.ATTRIBUTES_TOPIC
+    def attributesValueTopic = GatewayMQTTHandler.ATTRIBUTES_VALUE_TOPIC
+    def createTopic = GatewayMQTTHandler.CREATE_TOPIC
+    def updateTopic = GatewayMQTTHandler.UPDATE_TOPIC
+    def deleteTopic = GatewayMQTTHandler.DELETE_TOPIC
+    def getValueTopic = GatewayMQTTHandler.GET_VALUE_TOPIC
+    def getTopic = GatewayMQTTHandler.GET_TOPIC
+    def responseTopic = GatewayMQTTHandler.RESPONSE_TOPIC
+    def eventsTopic = GatewayMQTTHandler.EVENTS_TOPIC
+    def operationsTopic = GatewayMQTTHandler.OPERATIONS_TOPIC
+    def gatewayTopic = GatewayMQTTHandler.GATEWAY_TOPIC
+    def gatewayEventsTopic = GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC
+    def pendingTopic = GatewayMQTTHandler.GATEWAY_PENDING_TOPIC
+    def acknowledgeTopic = GatewayMQTTHandler.GATEWAY_ACK_TOPIC
+
+
     @SuppressWarnings("GroovyAccessibility")
     def "Mqtt gateway handler test"() {
         given: "the container environment is started"
         List<Object> receivedResponses = [] // request responses
         List<Object> receivedEvents = [] // events from subscriptions
+        List<Object> receivedValues = [] // values from attribute value subscriptions
         List<MQTTGatewayEventMessage> receivedPendingGatewayEvents = []
         MQTT_IOClient client = null
         MQTT_IOClient gatewayClient = null
@@ -72,7 +91,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         when: "a mqtt client publishes an asset create operation and subscribes to the response"
         def responseIdentifier = UniqueIdentifierGenerator.generateId()
-        def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
+        def topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/$responseIdentifier/$createTopic".toString()
         def responseTopic = topic + "/response"
         def testAsset = new ThingAsset("gatewayHandlerTestAsset")
         def payload = ValueUtil.asJSON(testAsset).get()
@@ -102,7 +121,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes an asset create operation and the asset already exists"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/$GatewayMQTTHandler.CREATE_TOPIC".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/$responseIdentifier/$createTopic".toString()
         responseTopic = topic + "/response"
         testAsset = assetStorageService.find(new AssetQuery().names(testAsset.getName()))
         payload = ValueUtil.asJSON(testAsset).get()
@@ -126,7 +145,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         when: "a mqtt client publishes an asset update operation and subscribes to the response"
         def testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId()
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/update".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${testAssetId}/${updateTopic}".toString()
         responseTopic = topic + "/response"
         testAsset.setName(testAsset.getName() + "Updated")
         payload = ValueUtil.asJSON(testAsset).get()
@@ -158,7 +177,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         when: "a mqtt client publishes an asset delete operation and subscribes to the response"
         testAssetId = assetStorageService.find(new AssetQuery().names(testAsset.getName())).getId()
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAssetId}/delete".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${testAssetId}/${deleteTopic}".toString()
         responseTopic = topic + "/response"
         payload = ""
 
@@ -187,7 +206,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes a asset get operation and subscribes to the response topic"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$managerTestSetup.smartBuildingId/get".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/$managerTestSetup.smartBuildingId/$getTopic".toString()
         responseTopic = topic + "/response"
         payload = ""
 
@@ -209,7 +228,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes an attribute update operation and subscribes to the response"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/update".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}/${attributesTopic}/motionSensor/${updateTopic}".toString()
         responseTopic = topic + "/response"
         payload = "70"
 
@@ -236,7 +255,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes an attribute get value operation and subscribes to the response"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/motionSensor/get-value".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}/${attributesTopic}/motionSensor/${getValueTopic}".toString()
         responseTopic = topic + "/response"
         payload = ""
 
@@ -256,7 +275,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client publishes a multiple attribute update operation"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}/${attributesTopic}/${updateTopic}"
         payload = "{\"motionSensor\": 80, \"presenceDetected\": \"true\"}"
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
@@ -267,7 +286,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a mqtt client subscribes to all asset events"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -288,7 +307,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a mqtt client subscribes to all asset events of the realm and an asset event is triggered"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -313,7 +332,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a mqtt client subscribes to all asset events of the realm's direct children and a child is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -348,7 +367,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all asset events of a asset and the asset is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -382,7 +401,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all asset events of an asset's descendants and a descendant asset is created"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.apartment1Id}/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -416,7 +435,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all asset events of an asset's direct children and a direct child asset is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.apartment1Id}/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AssetEvent.class).orElse(null))
         }
@@ -448,8 +467,9 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
         client.removeAllMessageConsumers()
 
+
         when: "a mqtt client subscribes to all attribute events of the realm"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesTopic}/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -469,7 +489,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a mqtt client subscribes to all attribute events of the realm's direct children"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesTopic}/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -497,7 +517,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a mqtt client subscribes to all attribute events with a specific attribute name and an attribute is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/motionSensor/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesTopic}/motionSensor/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -526,7 +546,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all attribute events with a specific name of the realm's direct children and an attribute is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/+/attributes/notes/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesTopic}/notes/+".toString()
 
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
@@ -562,7 +582,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all attribute events of a specific asset and an attribute is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/attributes".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}/${attributesTopic}".toString()
 
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
@@ -592,7 +612,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a mqtt client subscribes to all attribute events of an asset's descendants with a specific attribute name and the attribute is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/motionSensor/#".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.smartBuildingId}/${attributesTopic}/motionSensor/#".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -620,7 +640,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         client.removeAllMessageConsumers()
 
         when: "a mqtt client subscribes to all attribute events of an asset's direct children with a specific attribute name and an attribute is updated"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.EVENTS_TOPIC/assets/${managerTestSetup.apartment1Id}/attributes/motionSensor/+".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/${managerTestSetup.apartment1Id}/${attributesTopic}/motionSensor/+".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedEvents.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
         }
@@ -644,6 +664,72 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         then: "then the attribute event should not be received"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             assert receivedEvents.size() == 0
+        }
+        client.removeAllMessageConsumers()
+
+        when: "a mqtt client subscribes to all attribute events of the realm with the value only prefix"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesValueTopic}/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedValues.add(ValueUtil.parse(msg.payload, Object.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true"))
+
+        then: "then only the value of the attribute event should be received"
+        conditions.eventually {
+            assert receivedValues.size() == 1
+            assert receivedValues.get(0) == true
+        }
+        receivedValues.clear()
+        client.removeAllMessageConsumers()
+
+        when: "a mqtt client subscribes to all attribute events of the realm's direct children with the value only prefix"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesValueTopic}/+".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedValues.add(ValueUtil.parse(msg.payload, Object.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.smartBuildingId, "notes", "hello world"))
+
+        then: "then the value of the attribute event should be received"
+        conditions.eventually {
+            assert receivedValues.size() == 1
+            assert receivedValues.get(0) == "hello world"
+        }
+        receivedValues.clear()
+        client.removeAllMessageConsumers()
+
+        when: "an attribute is updated of an asset that is not a direct descendant with the value only prefix"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "notes", "hello world"))
+
+        then: "then the value of the attribute event should not be received"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert receivedValues.size() == 0
+        }
+        client.removeAllMessageConsumers()
+
+        when: "a mqtt client subscribes to all attribute events with a specific attribute name and an attribute is updated with the value only prefix"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$eventsTopic/$assetsTopic/+/${attributesValueTopic}/motionSensor/#".toString()
+        messageConsumer = { MQTTMessage<String> msg ->
+            receivedValues.add(ValueUtil.parse(msg.payload, Object.class).orElse(null))
+        }
+        client.addMessageConsumer(topic, messageConsumer)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", "80"))
+
+        then: "then the value of the attribute event should be received"
+        conditions.eventually {
+            assert receivedValues.size() == 1
+            assert receivedValues.get(0) == 80
+        }
+        receivedValues.clear()
+        client.removeAllMessageConsumers()
+
+        when: "an attribute with a different name is updated with the value only prefix"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.apartment1HallwayId, "presenceDetected", "true"))
+
+        then: "then the value of the attribute event should not be received"
+        new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
+            assert receivedValues.size() == 0
         }
         client.removeAllMessageConsumers()
 
@@ -688,7 +774,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         when: "a gateway service user publishes a create asset message with a parent that is not its descendant or itself"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/$responseIdentifier/${createTopic}"
         testAsset = new ThingAsset("mqttGatewayHandlerTestAsset")
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
         testAsset.setId(UniqueIdentifierGenerator.generateId())
@@ -705,7 +791,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
         when: "a gateway service user publishes a create asset message without a parentId"
         responseIdentifier = UniqueIdentifierGenerator.generateId()
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/$responseIdentifier/create"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/$responseIdentifier/${createTopic}"
         testAsset = new ThingAsset("mqttGatewayHandlerTestAsset")
         testAsset.setRealm(keycloakTestSetup.realmBuilding.name)
         testAsset.setId(UniqueIdentifierGenerator.generateId())
@@ -728,7 +814,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a gateway service user subscribes to pending gateway attribute events"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/pending".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$gatewayTopic/$gatewayEventsTopic/${pendingTopic}".toString()
         messageConsumer = { MQTTMessage<String> msg ->
             receivedPendingGatewayEvents.add(ValueUtil.parse(msg.payload, MQTTGatewayEventMessage.class).orElse(null))
         }
@@ -760,7 +846,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a pending attribute event is acknowledged with the incorrect ackId"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$gatewayTopic/$gatewayEventsTopic/${acknowledgeTopic}".toString()
         def ackId = UniqueIdentifierGenerator.generateId()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, ackId))
 
@@ -771,7 +857,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a pending attribute event is acknowledged"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.GATEWAY_TOPIC/$GatewayMQTTHandler.GATEWAY_EVENTS_TOPIC/acknowledge".toString()
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$gatewayTopic/$gatewayEventsTopic/${acknowledgeTopic}".toString()
         ackId = receivedPendingGatewayEvents.get(0).getAckId()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, ackId))
 
@@ -783,7 +869,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         receivedPendingGatewayEvents.clear()
 
         when: "a gateway service publishes an attribute update operation"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/attributes/notes/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${attributesTopic}/notes/${updateTopic}"
         payload = "hello gateway updated"
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
 
@@ -800,7 +886,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         gatewayClient.removeAllMessageConsumers()
 
         when: "a gateway service user publishes a update attribute operation for an asset that is not a descendant"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${managerTestSetup.smartBuildingId}/${attributesTopic}/notes/${updateTopic}"
         payload = "hello gateway"
         messageConsumer = { MQTTMessage<String> msg ->
             receivedResponses.add(ValueUtil.parse(msg.payload, AttributeEvent.class).orElse(null))
@@ -815,7 +901,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a gateway service user publishes a get attribute operation for an asset that is not a descendant and subscribes to the response"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.smartBuildingId}/attributes/notes/get-value"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${managerTestSetup.smartBuildingId}/${attributesTopic}/notes/${getValueTopic}"
         payload = ""
         messageConsumer = { MQTTMessage<String> msg ->
             receivedResponses.add(ValueUtil.parse(msg.payload, String.class).orElse(null))
@@ -832,7 +918,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a non-gateway service user publishes an asset update operation for a gateways descendant asset"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${updateTopic}"
         def originalName = testAsset.getName()
         testAsset.setName(testAsset.getName() + "Updated")
         payload = ValueUtil.asJSON(testAsset).get()
@@ -850,7 +936,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         testAsset.setName(originalName) // reset the name
 
         when: "a non-gateway service user publishes an asset update that changes the parentId of a non-gateway descendant to a gateway asset"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${updateTopic}"
         asset1 = assetStorageService.find(managerTestSetup.smartBuildingId)
         asset1.setParentId(gatewayAsset.getId())
         payload = ValueUtil.asJSON(testAsset).get()
@@ -863,7 +949,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a non-gateway service user publishes an asset delete operation for a gateways descendant asset"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$mqttClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${deleteTopic}"
         payload = ""
 
         client.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -876,7 +962,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a gateway service user publishes a update asset operation"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${updateTopic}"
         testAsset.setName(testAsset.getName() + "Updated")
         payload = ValueUtil.asJSON(testAsset).get()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -888,7 +974,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a gateway service user publishes an asset update asset that moves the asset out of the gateway's hierarchy"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${updateTopic}"
         testAsset.setParentId(managerTestSetup.apartment1HallwayId)
         payload = ValueUtil.asJSON(testAsset).get()
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))
@@ -901,7 +987,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
         }
 
         when: "a gateway service user publishes an asset update that moves a non-gateway asset to the gateways hierarchy"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${managerTestSetup.apartment1HallwayId}/update"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${managerTestSetup.apartment1HallwayId}/${updateTopic}"
         asset1 = assetStorageService.find(managerTestSetup.apartment1HallwayId)
         asset1.setParentId(gatewayAsset.getId())
         payload = ValueUtil.asJSON(asset1).get()
@@ -915,7 +1001,7 @@ class MqttGatewayHandlerTest extends Specification implements ManagerContainerTr
 
 
         when: "a gateway service user publishes a delete asset operation"
-        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$GatewayMQTTHandler.OPERATIONS_TOPIC/assets/${testAsset.getId()}/delete"
+        topic = "${keycloakTestSetup.realmBuilding.name}/$gatewayClientId/$operationsTopic/$assetsTopic/${testAsset.getId()}/${deleteTopic}"
         payload = ""
 
         gatewayClient.sendMessage(new MQTTMessage<String>(topic, payload))

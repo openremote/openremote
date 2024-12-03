@@ -30,6 +30,7 @@ import static org.openremote.manager.mqtt.MQTTBrokerService.getConnectionIDStrin
 import static org.openremote.manager.mqtt.MQTTHandler.TOKEN_MULTI_LEVEL_WILDCARD;
 import static org.openremote.manager.mqtt.MQTTHandler.TOKEN_SINGLE_LEVEL_WILDCARD;
 import static org.openremote.manager.mqtt.MQTTHandler.topicRealm;
+import static org.openremote.manager.mqtt.MQTTHandler.topicTokenIndexToString;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 
 
@@ -166,7 +167,7 @@ public class GatewayMQTTSubscriptionManager {
             } else {
                 return null;
             }
-        } else if (isAttributesTopic) {
+        } else {
             String assetId = topicTokens.size() > 4 ? topicTokens.get(ASSET_ID_TOKEN_INDEX) : "";
             String attributeName = topicTokens.size() > 6 ? topicTokens.get(ATTRIBUTE_NAME_TOKEN_INDEX) : "";
             boolean attributeNameIsNotWildcardOrEmpty = !attributeName.equals("+") 
@@ -256,6 +257,7 @@ public class GatewayMQTTSubscriptionManager {
         MqttQoS mqttQoS = MqttQoS.AT_MOST_ONCE;
         Function<SharedEvent, String> topicExpander;
         List<String> topicTokens = topic.getTokens();
+        boolean isAttributesValueTopic = ATTRIBUTES_VALUE_TOPIC.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX));
 
         if (isAssetsTopic(topic)) {
             String topicStr = topic.toString();
@@ -297,7 +299,11 @@ public class GatewayMQTTSubscriptionManager {
                 }
             } else {
                 if (ev instanceof AttributeEvent attributeEvent) {
-                    gatewayMQTTHandler.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    if (isAttributesValueTopic) {
+                        gatewayMQTTHandler.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
+                    } else {
+                        gatewayMQTTHandler.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
+                    }
                 }
             }
         };

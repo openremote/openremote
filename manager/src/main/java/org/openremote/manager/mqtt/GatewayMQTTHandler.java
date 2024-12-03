@@ -75,12 +75,13 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 public class GatewayMQTTHandler extends MQTTHandler {
 
     // main topics
-    public static final String EVENTS_TOPIC = "events"; // subscriptions
-    public static final String OPERATIONS_TOPIC = "operations"; // publish
-    public static final String RESPONSE_TOPIC = "response"; // response suffix for operations topics
+    public static final String EVENTS_TOPIC = "events"; 
+    public static final String OPERATIONS_TOPIC = "operations"; 
+    public static final String RESPONSE_TOPIC = "response"; 
 
     // hierarchy topics
     public static final String ATTRIBUTES_TOPIC = "attributes";
+    public static final String ATTRIBUTES_VALUE_TOPIC = "attributes-value"; 
     public static final String ASSETS_TOPIC = "assets";
 
     // method topics
@@ -110,6 +111,10 @@ public class GatewayMQTTHandler extends MQTTHandler {
     public static final int ATTRIBUTES_TOKEN_INDEX = 5;
     public static final int ATTRIBUTE_NAME_TOKEN_INDEX = 6;
     public static final int ATTRIBUTES_METHOD_TOKEN_INDEX = 7;
+
+    // topic length
+    public static final int MIN_LENGTH_ATTRIBUTES_EVENTS_TOPIC = 6;
+    public static final int MIN_LENGTH_ASSETS_EVENTS_TOPIC = 4;
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, GatewayMQTTHandler.class);
     protected AssetStorageService assetStorageService;
@@ -255,12 +260,13 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
         if (isEventsTopic(topic)) {
             // topics above 4 tokens require the assets token to be present
-            if (topicTokens.size() > 4 && !topicTokens.get(ASSETS_TOKEN_INDEX).equals(ASSETS_TOPIC)) {
+            if (topicTokens.size() > MIN_LENGTH_ASSETS_EVENTS_TOPIC && !topicTokens.get(ASSETS_TOKEN_INDEX).equals(ASSETS_TOPIC)) {
                 LOG.finest("Invalid topic " + topic + " for subscribing, the assets token is missing");
                 return false;
             }
             // topics above 6 tokens require the attributes token to be present
-            if (topicTokens.size() > 6 && !topicTokens.get(ATTRIBUTES_TOKEN_INDEX).equals(ATTRIBUTES_TOPIC)) {
+            if (topicTokens.size() > MIN_LENGTH_ATTRIBUTES_EVENTS_TOPIC 
+                && (!topicTokens.get(ATTRIBUTES_TOKEN_INDEX).equals(ATTRIBUTES_TOPIC) && !topicTokens.get(ATTRIBUTES_TOKEN_INDEX).equals(ATTRIBUTES_VALUE_TOPIC))) {
                 LOG.finest("Invalid topic " + topic + " for subscribing, the attributes token is missing");
                 return false;
             }
@@ -389,6 +395,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
         }
 
         ConcurrentHashSet<String> set;
+        // Note: is the synchronization necessary? Guave indicates that its get, put and invalidate are atomic
         synchronized (authorizationCache) {
             ConcurrentHashSet<String> act = authorizationCache.getIfPresent(connectionID);
             if (act != null) {
@@ -1043,7 +1050,7 @@ public class GatewayMQTTHandler extends MQTTHandler {
 
     public static boolean isAssetsTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC)
-                && !isAttributesTopic(topic); // it is considered an asset topic as long it does not contain attributes
+                && !isAttributesTopic(topic) && !isAttributesValueTopic(topic); 
     }
 
     protected static boolean isAssetsMethodTopic(Topic topic) {
@@ -1070,6 +1077,11 @@ public class GatewayMQTTHandler extends MQTTHandler {
     protected static boolean isAttributesTopic(Topic topic) {
         return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC) &&
                 Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX), ATTRIBUTES_TOPIC);
+    }
+
+    protected static boolean isAttributesValueTopic(Topic topic) {
+        return Objects.equals(topicTokenIndexToString(topic, ASSETS_TOKEN_INDEX), ASSETS_TOPIC) &&
+                Objects.equals(topicTokenIndexToString(topic, ATTRIBUTES_TOKEN_INDEX), ATTRIBUTES_VALUE_TOPIC);
     }
 
     protected static boolean isOperationsTopic(Topic topic) {
