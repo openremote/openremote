@@ -132,15 +132,17 @@ public enum NodeModel {
                 return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
             }),
     SUM_PROCESSOR(new Node(NodeType.PROCESSOR, "Σ", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY),
-            new MultiInputNodeSocket("a", NodeDataType.NUMBER)
+            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> {
-                Number[] a = (Number[]) info.getValueFromInput(0);
-                return a != null ? Arrays.stream(a).mapToDouble(Number::doubleValue).sum() : null;
-            }),
+    info -> {
+            Number[] a = (Number[]) info.getValueFromInput(0);
+			System.out.println("EXECUTING");
+			System.out.println(Arrays.toString(Arrays.stream(a).toArray()));
+            return a != null ? Arrays.stream(a).mapToDouble(Number::doubleValue).sum() : null;
+        }
+	),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),

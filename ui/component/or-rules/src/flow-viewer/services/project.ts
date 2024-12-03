@@ -1,4 +1,4 @@
-import { Node, NodeConnection, NodeSocket, NodeCollection, RulesetUnion } from "@openremote/model";
+import {Node, NodeConnection, NodeSocket, NodeCollection, RulesetUnion, NodeDataType} from "@openremote/model";
 import { EventEmitter } from "events";
 import { EditorWorkspace } from "../components/editor-workspace";
 import { input } from "../components/flow-editor";
@@ -208,8 +208,13 @@ export class Project extends EventEmitter {
 
         if (!this.isValidConnection(connection)) { return false; }
 
-        for (const c of this.connections.filter((j) => j.to === toSocket)) {
-            this.removeConnection(c);
+
+
+        if(!((NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type) === NodeDataType.NUMBER_ARRAY)){
+            for (const c of this.connections.filter((j) => j.to === toSocket)) {
+                // TODO: this.connections should contain the types of the other nodes, so that we only remove
+                this.removeConnection(c);
+            }
         }
 
         this.connections.push(connection);
@@ -218,8 +223,15 @@ export class Project extends EventEmitter {
     }
 
     public removeInvalidConnections() {
-        for (const c of this.connections.filter((j) => !this.isValidConnection(j))) {
+        for (const c of this.connections.map(c => this.enrichConnection(c)).filter((j) => !this.isValidConnection(j))) {
             this.removeConnection(c);
+        }
+    }
+
+    private enrichConnection(c: NodeConnection): NodeConnection {
+        return {
+            from: NodeUtilities.getSocketFromID(c.from, this.nodes),
+            to: NodeUtilities.getSocketFromID(c.to, this.nodes)
         }
     }
 }
