@@ -440,6 +440,7 @@ pluginManager.withPlugin('java') {
                     '**/org/openremote/model/util/ValueUtil.java'
             )
 
+            eclipse().configFile(rootProject.file('tools/spotless/codestyle.xml'))
             licenseHeaderFile rootProject.file('tools/spotless/openremote-license-header.txt')
             importOrder('java', 'javax', 'com', 'org')
             removeUnusedImports()
