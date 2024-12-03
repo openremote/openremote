@@ -1,8 +1,6 @@
-tasks.register('clean') {
-    doLast {
-        delete "dist"
-        delete "lib"
-    }
+clean.doLast {
+    delete "dist"
+    delete "lib"
 }
 
 tasks.register('npmAnalyze', Exec) {
