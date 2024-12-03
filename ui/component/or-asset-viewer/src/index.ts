@@ -11,7 +11,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -179,8 +179,7 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 export type SaveResult = {
     success: boolean,
     asset: Asset | undefined,
-    isNew?: boolean,
-    isCopy?: boolean
+    isNew?: boolean
 };
 
 export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {
@@ -1231,8 +1230,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (changedProperties.has("asset")) {
             this._assetInfo = undefined;
-            this.assetId = undefined;
-            super.assetIds = undefined;
 
             if (this.asset) {
                 this.loadAssetInfo(this.asset)
@@ -1456,12 +1453,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         Util.dispatchCancellableEvent(this, new OrAssetViewerRequestSaveEvent(this._assetInfo.asset))
             .then((detail) => {
                 if (detail.allow) {
-                    this._doSave();
+                    this.save();
                 }
             });
     }
 
-    protected async _doSave() {
+    async save() {
         if (!this._assetInfo) {
             return;
         }
