@@ -33,7 +33,7 @@ import java.util.Map;
  * <p>
  * Google Chrome on Windows 10 64-bit used to view the manager and customerA applications would generate the following
  * registration:
- * <blockquote><pre>{@code
+ * <blockquote><pre>
  * {
  *    "name": "Chrome",
  *    "version": "71.0.3578.98",
@@ -54,11 +54,11 @@ import java.util.Map;
  *        "manager"
  *        "customerA"
  *    ]
- * }</pre></blockquote>
+ * </pre></blockquote>
  * <p>
  * An Android console app called "Smart City" on a Samsung Galaxy S9 running Android 8.0 would generate the following
  * registration:
- * <blockquote><pre>{@code
+ * <blockquote><pre>
  * {
  *    "name": "Smart City",
  *    "version": "1.0.0",
@@ -84,7 +84,7 @@ import java.util.Map;
  *    "apps": [
  *        "smartcity"
  *    ]
- * }</pre></blockquote>
+ * </pre></blockquote>
  */
 public class ConsoleRegistration {
     protected String id;
