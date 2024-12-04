@@ -22,6 +22,8 @@ package org.openremote.model.rules.json;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.SunPositionTrigger;
 
+import java.util.Map;
+
 /**
  * Consists of one of the following triggers in order of precedence:
  * <ol>

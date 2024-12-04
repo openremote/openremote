@@ -72,13 +72,12 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
-        LOG.log(Level.INFO, "Saving mapsettings.json..");
+    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
         mapConfig.putPOJO("options", mapConfiguration);
-        configurationService.saveMapConfigFile(mapConfig);
+        configurationService.saveMapConfig(mapConfig);
         mapSettings.clear();
         return mapConfig;
     }
@@ -184,14 +183,18 @@ public class MapService implements ContainerService {
     }
 
     public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
-        Path mapTilesPath = configurationService.getMapTilesPath().toAbsolutePath();
+        Path mapTilesPath = configurationService.getMapTilesPath();
+        if (mapTilesPath == null) {
+            return;
+        }
+        mapTilesPath = mapTilesPath.toAbsolutePath();
         if (!mapTilesPath.toFile().exists()) {
             return;
         }
         Class.forName(org.sqlite.JDBC.class.getName());
         connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
-
         metadata = getMetadata(connection);
+
         if (metadata.isValid()) {
             mapConfig = configurationService.getMapConfig();
             if (mapConfig == null) {

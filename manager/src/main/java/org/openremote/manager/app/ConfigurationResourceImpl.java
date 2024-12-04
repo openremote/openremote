@@ -49,7 +49,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     @Override
     public Object update(RequestParams requestParams, ObjectNode managerConfiguration) {
         try {
-            this.configurationService.saveManagerConfigFile(managerConfiguration);
+            this.configurationService.saveManagerConfig(managerConfiguration);
         } catch (Exception e) {
             LOG.warning("Couldn't store manager_config.json:" +e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error updating manager_config.json").build();
@@ -60,7 +60,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     @Override
     public Object fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         try {
-            this.configurationService.saveConfigImageFile(path, fileInfo);
+            this.configurationService.saveManagerConfigImage(path, fileInfo);
         } catch (Exception e) {
             LOG.warning("Save image failed '" + path + "': " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
