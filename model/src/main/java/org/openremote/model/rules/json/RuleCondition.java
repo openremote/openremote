@@ -22,6 +22,8 @@ package org.openremote.model.rules.json;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.SunPositionTrigger;
 
+import java.util.Map;
+
 /**
  * Consists of one of the following triggers in order of precedence:
  * <ol>
@@ -40,9 +42,9 @@ import org.openremote.model.rules.SunPositionTrigger;
 public class RuleCondition {
 
     /**
-     * ISO8601 duration expression (e.g. PT1H)
+     * Map of attribute and ISO8601 duration expression (e.g. PT1H)
      */
-    public String duration;
+    public Map<String, String> duration;
 
     /**
      * CRON expression in UTC (e.g. *&#47;5 * * * *)

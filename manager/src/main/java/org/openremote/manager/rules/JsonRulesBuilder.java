@@ -209,10 +209,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                                     if (startTime == null) {
                                         conditionTrueStartTimes.put(assetId, currentTime);
                                         return true; 
-                                    } else if (currentTime - startTime >= TimeUtil.parseTimeDuration(ruleCondition.duration)) {
-                                        return false;
-                                    }
-                                    return true; 
+                                    } else return currentTime - startTime < TimeUtil.parseTimeDuration(ruleCondition.duration);
                                 });
                             }
                             return matches;
