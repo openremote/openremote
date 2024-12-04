@@ -20,6 +20,7 @@
 package org.openremote.manager.rules;
 
 import jakarta.ws.rs.core.MediaType;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.PersistenceEvent;
@@ -535,6 +536,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     public static final String PLACEHOLDER_RULESET_ID = "%RULESET_ID%";
     public static final String PLACEHOLDER_RULESET_NAME = "%RULESET_NAME%";
     public static final String PLACEHOLDER_TRIGGER_ASSETS = "%TRIGGER_ASSETS%";
+    public static final String PLACEHOLDER_ASSET_ID = "%ASSET_ID%";
     final static String TIMER_TEMPORAL_FACT_NAME_PREFIX = "TimerTemporalFact-";
     final static String LOG_PREFIX = "JSON Rule '";
     final protected AssetStorageService assetStorageService;
@@ -791,15 +793,47 @@ public class JsonRulesBuilder extends RulesBuilder {
             boolean isPush = Objects.equals(notification.getMessage().getType(), PushNotificationMessage.TYPE);
             boolean isHtml;
 
-            if (isEmail) {
+            if (isLocalized) {
+                LocalizedNotificationMessage localizedMsg = (LocalizedNotificationMessage) notification.getMessage();
+                isHtml = false;
+                localizedMsg.getMessages().forEach((lang, msg) -> {
+                    if (msg instanceof PushNotificationMessage pushMsg) {
+                        PushNotificationAction action = pushMsg.getAction();
+                        if (action != null && action.getUrl() != null) {
+                            String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
+                            action.setUrl(newUrl);
+                            pushMsg.setAction(action);
+                        }
+                        
+                        if (pushMsg.getBody() != null) {
+                            String newBody = replaceAssetIdPlaceholder(pushMsg.getBody(), ruleState, useUnmatched, "notification body", false);
+                            pushMsg.setBody(newBody);
+                        }
+                    }
+                });
+                body = null;
+            } else if (isEmail) {
                 EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
                 isHtml = !TextUtil.isNullOrEmpty(email.getHtml());
                 body = isHtml ? email.getHtml() : email.getText();
             } else {
                 isHtml = false;
                 if (isPush) {
-                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                    body = pushNotificationMessage.getBody();
+                    PushNotificationMessage pushMsg = (PushNotificationMessage) notification.getMessage();
+                    PushNotificationAction action;
+                    body = pushMsg.getBody();
+                    action = pushMsg.getAction();
+
+                    if (action != null && action.getUrl() != null) {
+                        String newUrl = replaceAssetIdPlaceholder(action.getUrl(), ruleState, useUnmatched, "notification URL", true);
+                        action.setUrl(newUrl);
+                        pushMsg.setAction(action);
+                    }
+
+                    if (body!= null) {
+                        String newBody = replaceAssetIdPlaceholder(body, ruleState, useUnmatched, "notification body", false);
+                        pushMsg.setBody(newBody);
+                    }
                 } else {
                     body = null;
                 }
@@ -1201,6 +1235,27 @@ public class JsonRulesBuilder extends RulesBuilder {
         return sourceText.replace(PLACEHOLDER_TRIGGER_ASSETS, sb.toString());
     }
 
+    protected String replaceAssetIdPlaceholder(String text, RuleState ruleState, boolean useUnmatched, String context, boolean firstOnly) {
+        if (TextUtil.isNullOrEmpty(text) || !text.contains(PLACEHOLDER_ASSET_ID)) {
+            return text;
+        }
+        
+        Set<String> matchedIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
+
+        if (matchedIds != null && !matchedIds.isEmpty()) {
+            String replacement = firstOnly ? matchedIds.iterator().next() : String.join(",", matchedIds);
+            
+
+            String result = text.replace(PLACEHOLDER_ASSET_ID, replacement);
+            log(Level.FINEST, "Replaced asset ID(s) in " + context + ": " + result);
+            return result; 
+        } else {
+            log(Level.WARNING, "Asset ID placeholder used but no matched assets found for " + context);
+            return text;
+        }
+    }
+    
+    
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {
 
         StringBuilder sb = new StringBuilder();
