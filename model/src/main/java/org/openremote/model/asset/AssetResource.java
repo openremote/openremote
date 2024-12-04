@@ -30,9 +30,9 @@ import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.AttributeStateWithTimestamp;
 import org.openremote.model.attribute.AttributeWriteResult;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
@@ -276,7 +276,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @Path("attributes/timestamp")
     @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
-    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeStateWithTimestamp[] attributeStates);
+    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeEvent[] attributeStates);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,

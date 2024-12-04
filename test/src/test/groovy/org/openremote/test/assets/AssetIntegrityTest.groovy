@@ -11,7 +11,7 @@ import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeState
-import org.openremote.model.attribute.AttributeStateWithTimestamp
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -283,11 +283,11 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         timestamp = timerService.getCurrentTimeMillis();
 
 
-        List<AttributeStateWithTimestamp> states = new ArrayList<>();
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 123456), timestamp-3000));
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 123456), timestamp-3000));
+        List<AttributeEvent> states = new ArrayList<>();
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 123456), timestamp-3000));
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 123456), timestamp-3000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeStateWithTimestamp[])
+        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
@@ -303,10 +303,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         timestamp = timerService.getCurrentTimeMillis();
 
         states = new ArrayList<>();
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 1234567), timestamp-2000));
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 1234567), timestamp-2000));
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 1234567), timestamp-2000));
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 1234567), timestamp-2000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeStateWithTimestamp[])
+        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
@@ -320,10 +320,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "Multiple attribute values are updated with past timestamps"
         states = new ArrayList<>();
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 12345678), timestamp-4000));
-        states.add(new AttributeStateWithTimestamp(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 12345678), timestamp-4000));
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 12345678), timestamp-4000));
+        states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 12345678), timestamp-4000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeStateWithTimestamp[])
+        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
