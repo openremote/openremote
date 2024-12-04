@@ -110,24 +110,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
-                try {
-                    final long duration = TimeUtil.parseTimeDuration(ruleCondition.duration);
-                    AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
-
-                    timePredicate = (time) -> {
-                        long nextExecute = nextExecuteMillis.get();
-                        if (time >= nextExecute) {
-                            nextExecuteMillis.set(nextExecute + duration);
-                            return true;
-                        }
-                        return false;
-                    };
-                } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
-                    throw e;
-                }
-            } else if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
+             if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
                 try {
                     CronExpression timerExpression = new CronExpression(ruleCondition.cron);
                     timerExpression.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -198,23 +181,23 @@ public class JsonRulesBuilder extends RulesBuilder {
                     assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
                     
                     // If a duration is provided then wrap the assetPredicate with a duration check
-                    if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
-                        assetPredicate = states -> {
-                            Set<AttributeInfo> matches = assetPredicate.apply(states);
-                            if (matches != null) {
-                                long currentTime = timerService.getCurrentTimeMillis();
-                                matches.removeIf(match -> {
-                                    String assetId = match.getId();
-                                    Long startTime = conditionTrueStartTimes.get(assetId);
-                                    if (startTime == null) {
-                                        conditionTrueStartTimes.put(assetId, currentTime);
-                                        return true; 
-                                    } else return currentTime - startTime < TimeUtil.parseTimeDuration(ruleCondition.duration);
-                                });
-                            }
-                            return matches;
-                        };
-                    }
+                    // if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
+                    //     assetPredicate = states -> {
+                    //         Set<AttributeInfo> matches = assetPredicate.apply(states);
+                    //         if (matches != null) {
+                    //             long currentTime = timerService.getCurrentTimeMillis();
+                    //             matches.removeIf(match -> {
+                    //                 String assetId = match.getId();
+                    //                 Long startTime = conditionTrueStartTimes.get(assetId);
+                    //                 if (startTime == null) {
+                    //                     conditionTrueStartTimes.put(assetId, currentTime);
+                    //                     return true; 
+                    //                 } else return currentTime - startTime < TimeUtil.parseTimeDuration(ruleCondition.duration);
+                    //             });
+                    //         }
+                    //         return matches;
+                    //     };
+                    // }
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
