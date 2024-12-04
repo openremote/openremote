@@ -282,7 +282,6 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "Multiple attribute values are updated with current timestamps"
         timestamp = timerService.getCurrentTimeMillis();
 
-
         List<AttributeEvent> states = new ArrayList<>();
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 123456), timestamp-3000));
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 123456), timestamp-3000));
