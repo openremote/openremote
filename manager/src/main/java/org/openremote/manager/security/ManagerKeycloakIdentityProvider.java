@@ -41,7 +41,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.map.MapService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
@@ -97,7 +96,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
-    protected MapService mapService;
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
@@ -112,7 +110,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void init(Container container) {
         super.init(container);
         this.container = container;
-        this.mapService = container.getService(MapService.class);
 
         String keycloakPublicUri = getString(container.getConfig(), OR_KEYCLOAK_PUBLIC_URI, OR_KEYCLOAK_PUBLIC_URI_DEFAULT);
         try {
