@@ -98,6 +98,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
+        private Map<String, Long> conditionTrueStartTimes = new HashMap<>();
 
         @SuppressWarnings("ConstantConditions")
         public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) throws Exception {
@@ -195,6 +196,28 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // don't support it here either)
                     attributePredicates.groups = null;
                     assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    
+                    // If a duration is provided then wrap the assetPredicate with a duration check
+                    if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
+                        assetPredicate = states -> {
+                            Set<AttributeInfo> matches = assetPredicate.apply(states);
+                            if (matches != null) {
+                                long currentTime = timerService.getCurrentTimeMillis();
+                                matches.removeIf(match -> {
+                                    String assetId = match.getId();
+                                    Long startTime = conditionTrueStartTimes.get(assetId);
+                                    if (startTime == null) {
+                                        conditionTrueStartTimes.put(assetId, currentTime);
+                                        return true; 
+                                    } else if (currentTime - startTime >= TimeUtil.parseTimeDuration(ruleCondition.duration)) {
+                                        return false;
+                                    }
+                                    return true; 
+                                });
+                            }
+                            return matches;
+                        };
+                    }
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
