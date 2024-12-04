@@ -20,6 +20,7 @@
 package org.openremote.manager.app;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.core.Response;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
@@ -58,12 +59,12 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public Object fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
+    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
         try {
             this.configurationService.saveManagerConfigImage(path, fileInfo);
         } catch (Exception e) {
             LOG.warning("Save image failed '" + path + "': " + e.getMessage());
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error storing image").build();
+            throw new InternalServerErrorException("Error storing image");
         }
         Path managerConfigPath = Path.of("/api")
                 .resolve("master")

@@ -49,7 +49,7 @@ public interface ConfigurationResource {
     @Path("manager/file")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "fileUpload", summary = "Upload a file")
-    Object fileUpload(
+    String fileUpload(
             @BeanParam RequestParams requestParams,
             @QueryParam("path")
             String path,
