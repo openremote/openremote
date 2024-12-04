@@ -19,9 +19,8 @@
  */
 package org.openremote.model.manager;
 
-import java.util.Map;
-
-public class MapConfig {
-    public Map<String, MapRealmConfig> options;
-    public Map<String, MapSourceConfig> sources;
+public class MapSourceConfig {
+	protected String type;
+	protected String url;
+	protected String secret;
 }

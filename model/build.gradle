@@ -15,7 +15,9 @@ dependencies {
 
     api "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsVersion"
     api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxrsSpecVersion"
-
+    api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
+        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+    }
     api "org.keycloak:keycloak-core:$keycloakVersion"
 
     api "org.geotools:gt-main:$geotoolsVersion"
