@@ -11,7 +11,7 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -178,9 +178,8 @@ export class OrAssetViewerComputeGridEvent extends CustomEvent<void> {
 
 export type SaveResult = {
     success: boolean,
-    assetId: string,
-    isNew?: boolean,
-    isCopy?: boolean
+    asset: Asset | undefined,
+    isNew?: boolean
 };
 
 export class OrAssetViewerRequestSaveEvent extends CustomEvent<Util.RequestEventDetail<Asset>> {
@@ -890,10 +889,12 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             if (ancestors.length > 0) {
                 getAssetNames(ancestors).then(
                     (names) => {
-                        if (hostElement && hostElement.shadowRoot) {
-                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
-                            if (pathField) {
-                                pathField.value = names.join(" > ");
+                        if (names) {
+                            if (hostElement && hostElement.shadowRoot) {
+                                const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
+                                if (pathField) {
+                                    pathField.value = names.join(" > ");
+                                }
                             }
                         }
                     }
@@ -924,19 +925,24 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
         `;
 }
 
-async function getAssetNames(ids: string[]): Promise<string[]> {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            attributes: []
-        },
-        ids: ids
-    });
+async function getAssetNames(ids: string[]): Promise<string[] | undefined> {
+    try {
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            select: {
+                attributes: []
+            },
+            ids: ids
+        });
 
-    if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
-        return ids;
+        if (response.status !== 200 || !response.data || response.data.length !== ids.length) {
+            return ids;
+        }
+
+        return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
+    } catch (e) {
+        console.error("Failed to fetch parent asset names", e);
+        return undefined;
     }
-
-    return ids.map((id) => response.data.find((asset) => asset.id === id)!.name!);
 }
 
 async function getAssetChildren(parentId: string, childAssetType: string): Promise<Asset[]> {
@@ -1027,8 +1033,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
     const isUpdate = !!asset.id && asset.version !== undefined;
     let success: boolean;
-    let id: string = "";
-
+    let savedAsset: Asset | undefined;
     try {
         if (isUpdate) {
             if (!asset.id) {
@@ -1036,12 +1041,12 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
             }
             const response = await manager.rest.api.AssetResource.update(asset.id!, asset);
             success = response.status === 200;
-            id = asset.id!;
+            savedAsset = response.data;
         } else {
             const response = await manager.rest.api.AssetResource.create(asset);
             success = response.status === 200;
             if (success) {
-                id = response.data.id!;
+                savedAsset = response.data;
             }
         }
     } catch (e) {
@@ -1051,7 +1056,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
     }
 
     return {
-        assetId: id,
+        asset: savedAsset,
         success: success,
         isNew: !isUpdate
     };
@@ -1183,6 +1188,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#view-container")
     protected containerElem!: HTMLDivElement;
 
+    protected _saveInProgress = false;
+
     constructor() {
         super();
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
@@ -1223,8 +1230,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (changedProperties.has("asset")) {
             this._assetInfo = undefined;
-            this.assetId = undefined;
-            super.assetIds = undefined;
 
             if (this.asset) {
                 this.loadAssetInfo(this.asset)
@@ -1448,32 +1453,37 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         Util.dispatchCancellableEvent(this, new OrAssetViewerRequestSaveEvent(this._assetInfo.asset))
             .then((detail) => {
                 if (detail.allow) {
-                    this._doSave();
+                    this.save();
                 }
             });
     }
 
-    protected async _doSave() {
+    async save() {
         if (!this._assetInfo) {
             return;
         }
 
         const asset = this._assetInfo.asset;
         this.saveBtnElem.disabled = true;
+        this._saveInProgress = true;
         this.wrapperElem.classList.add("saving");
 
         const saveResult = await saveAsset(asset);
 
-        this.wrapperElem?.classList.remove("saving");
-        if (this.saveBtnElem) {
-            this.saveBtnElem.disabled = false;
-        }
-
         if (saveResult.success) {
-            this.asset = undefined;
-            this.assetId = saveResult.assetId;
+            try {
+                const assetInfo = await this.loadAssetInfo(saveResult.asset!);
+                this._assetInfo = assetInfo;
+                this.assetId = saveResult.asset?.id;
+            } catch (e) {
+                // We can ignore this as it should indicate that the asset has changed
+            }
+            this.wrapperElem?.classList.remove("saving");
+            if (this.saveBtnElem) {
+                this.saveBtnElem.disabled = false;
+            }
         }
-
+        this._saveInProgress = false;
         this.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
     }
 
@@ -1484,7 +1494,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
-    _onEvent(event: SharedEvent) {
+    async _onEvent(event: SharedEvent) {
         const processEvent = (event.eventType === "asset" && (event as AssetEvent).asset!.id === this.assetId) || (event.eventType === "attribute" && (event as AttributeEvent).ref!.id == this.assetId);
 
         if (!processEvent) {
@@ -1495,58 +1505,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             const asset = (event as AssetEvent).asset!;
 
-            if (!this._assetInfo) {
-                this.loadAssetInfo(asset)
-                    .then(assetInfo => this._assetInfo = assetInfo)
-                    .catch(reason => {
-                        // We can ignore this as it should indicate that the asset has changed
-                    });
-                return;
-            }
-
-            if (asset.id !== this.assetId) {
-                return;
-            }
-
-            if (this.editMode) {
-
-                let externalModification = true;
-
-                // If we're currently saving then this is likely the response
-                if (this.saveBtnElem && this.saveBtnElem.disabled) {
-                    const oldVersion = this._assetInfo.asset.version ?? 0;
-                    const newVersion = asset.version ?? 0;
-                    externalModification = newVersion !== oldVersion+1;
-                }
-
-                // Asset hasn't been modified yet so just re-render with new version of asset
-                if (!externalModification || (externalModification && !this._assetInfo.modified)) {
-                    this._assetInfo = undefined;
-                    this.loadAssetInfo(asset)
-                        .then(assetInfo => this._assetInfo = assetInfo)
-                        .catch(reason => {
-                            // We can ignore this as it should indicate that the asset has changed
-                        });
-                    return;
-                }
-
+            // Reload the asset if...
+            const reloadAsset = !this.editMode // Only in view mode
+                || !this._assetInfo // Nothing currently loaded
+                || (asset.version !== this._assetInfo.asset?.version // Version is different from what is loaded
+                    && !this._saveInProgress) // And save isn't in progress
+            if (reloadAsset && this.editMode && this._assetInfo?.modified) {
                 // Asset has changed whilst we're editing it so inform the user and reload
-                showOkDialog("assetModified", i18next.t("assetModifiedMustRefresh")).then(() => {
-                    this._assetInfo = undefined;
-                    this.loadAssetInfo(asset)
-                        .then(assetInfo => this._assetInfo = assetInfo)
-                        .catch(reason => {
-                            // We can ignore this as it should indicate that the asset has changed
-                        });
-                });
-            } else {
-                // Just reload the whole view
+                await showOkDialog("assetModified", i18next.t("assetModifiedMustRefresh"));
+            }
+
+            if (reloadAsset) {
                 this._assetInfo = undefined;
-                this.loadAssetInfo(asset)
-                    .then(assetInfo => this._assetInfo = assetInfo)
-                    .catch(reason => {
-                        // We can ignore this as it should indicate that the asset has changed
-                    });
+                try {
+                    this._assetInfo = await this.loadAssetInfo(asset);
+                } catch (e) {
+                    // We can ignore this as it should indicate that the asset has changed
+                }
             }
         }
 

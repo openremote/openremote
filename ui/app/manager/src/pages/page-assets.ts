@@ -9,14 +9,14 @@ import {
     OrAssetViewerLoadUserEvent,
     saveAsset,
     SaveResult,
-    ViewerConfig, OrAssetViewerLoadAlarmEvent
+    ViewerConfig, OrAssetViewerLoadAlarmEvent, OrAssetViewerRequestSaveEvent
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig, ChangeParentEventDetail,
     OrAssetTree,
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
-    OrAssetTreeChangeParentEvent,
+    OrAssetTreeChangeParentEvent, OrAssetTreeRequestAddEvent,
     OrAssetTreeRequestSelectionEvent,
     OrAssetTreeSelectionEvent,
     OrAssetTreeToggleExpandEvent,
@@ -26,7 +26,7 @@ import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {createSlice, Store, createSelector, PayloadAction} from "@reduxjs/toolkit";
 import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
-import {AssetEventCause, WellknownAssets} from "@openremote/model";
+import {Asset, AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -182,7 +182,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     @query("#viewer")
     protected _viewer?: OrAssetViewer;
 
-    protected _addedAssetId?: string;
+    protected _addCallback?: (asset: Asset) => void;
     protected _realmSelector = (state: AssetsStateKeyed) => state.app.realm || manager.displayRealm;
 
     get name(): string {
@@ -211,11 +211,12 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     constructor(store: Store<AssetsStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
-        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (ev) => this._onAssetSelectionChanged(ev.detail.newNodes.map((node) => node.asset.id!)));
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (ev) => this._onAssetSelectionChanged(false, ev.detail.newNodes.map((node) => node.asset.id!)));
         this.addEventListener(OrAssetViewerRequestEditToggleEvent.NAME, this._onEditToggleRequested);
         this.addEventListener(OrAssetViewerEditToggleEvent.NAME, this._onEditToggle);
-        this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
-        this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
+        this.addEventListener(OrAssetTreeRequestAddEvent.NAME, this._onAssetAddRequested);
+        this.addEventListener(OrAssetTreeAddEvent.NAME, (ev) => this._onAssetAdd(ev.detail.asset));
+        this.addEventListener(OrAssetViewerRequestSaveEvent.NAME, this._onAssetViewerSaveRequested);
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
@@ -247,7 +248,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             viewerHTML = html`
                 <or-asset-viewer id="viewer"
                                  .config="${this.config && this.config.viewer ? this.config.viewer : undefined}"
-                                 class="${!assetId ? "hideMobile" : ""}"
+                                 class="${!assetId ? "hideMobile" : ""}" .assetId="${assetId}"
                                  .editMode="${this._editMode}"
                 ></or-asset-viewer>
             `;
@@ -358,13 +359,17 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         event.detail.allow = false;
 
         this._confirmContinue(() => {
-            this._onAssetSelectionChanged(event.detail.detail.newNodes.map((node) => node.asset.id!));
+            this._onAssetSelectionChanged(true, event.detail.detail.newNodes.map((node) => node.asset.id!));
         });
     }
 
     // This is where we set the asset loaded in the asset viewer
-    protected _onAssetSelectionChanged(assetIds: string[] | undefined) {
+    protected _onAssetSelectionChanged(userInitiated: boolean, assetIds: string[] | undefined) {
         if (Util.objectsEqual(this._assetIds, assetIds)) {
+            if (!userInitiated) {
+                // Asset name or parent has changed and we don't need to react to it here
+                return;
+            }
             // User has clicked the same node(s)
             if (assetIds.length === 1) {
                 // force refresh the selected asset
@@ -398,6 +403,18 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
         this._confirmContinue(() => {
             this._editMode = event.detail.detail;
+            this._updateRoute(false);
+            if (this._assetIds?.length === 1) {
+                // force refresh the selected asset
+                if (this._viewer) {
+                    this._viewer.assetId = undefined;
+                    setTimeout(() => {
+                        if (this._viewer) {
+                            this._viewer.assetId = this._assetIds[0];
+                        }
+                    }, 0);
+                }
+            }
         });
     }
 
@@ -419,27 +436,74 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
     }
 
-    protected async _onAssetAdd(ev: OrAssetTreeAddEvent) {
-        if (this._editMode) {
-            // Just load the asset into the viewer
-            this._viewer.asset = ev.detail.asset;
-        } else {
-            // Auto save and load
-            const result = await saveAsset(ev.detail.asset);
-            result.isCopy = true;
-            this.dispatchEvent(new OrAssetViewerSaveEvent(result));
-            this._onAssetSave(result);
-        }
-    }
+    protected _onAssetAddRequested(ev: OrAssetTreeRequestAddEvent) {
+        const isModified = this._viewer && this._viewer.isModified();
 
-    protected _onAssetSave(result: SaveResult) {
-
-        if (!result.success) {
+        if (!isModified) {
             return;
         }
 
-        if (result.isNew) {
-            this._addedAssetId = result.assetId!;
+        // Prevent the request and check if user wants to lose changes
+        ev.detail.allow = false;
+
+        this._confirmContinue(() => {
+            this._onAssetAdd(ev.detail.detail.asset);
+        });
+    }
+
+    protected async _onAssetAdd(asset: Asset) {
+        if (this._editMode) {
+            // Just load the asset into the viewer
+            this._viewer.asset = asset;
+        } else {
+            // Save and load
+            this._doSaveAndLoad(asset);
+        }
+    }
+
+    protected _onAssetViewerSaveRequested(ev: OrAssetViewerRequestSaveEvent) {
+        const isModified = this._viewer && this._viewer.isModified();
+
+        if (!isModified) {
+            return;
+        }
+
+        if (this._viewer?.asset && !this._viewer.asset.id) {
+            // Prevent the request and handle at this level to allow selection within the tree
+            ev.detail.allow = false;
+        }
+
+        this._doSaveAndLoad(this._viewer.asset);
+    }
+
+    protected async _doSaveAndLoad(asset: Asset) {
+        let saveResult: SaveResult;
+        const assetTreeAssets: Asset[] = [];
+
+        this._addCallback = (assetTreeCreatedAsset) => {
+            if (saveResult) {
+                // Save has completed before asset tree node created
+                completedCallback();
+            } else {
+                // Store as it might be asset we are trying to save
+                assetTreeAssets.push(assetTreeCreatedAsset);
+            }
+        };
+
+        const completedCallback = () => {
+            this._onAssetSelectionChanged(true, saveResult.asset?.id ? [saveResult.asset.id] : undefined);
+            this._viewer.dispatchEvent(new OrAssetViewerSaveEvent(saveResult));
+        };
+
+        saveResult = await saveAsset(asset);
+        if (saveResult.success) {
+            const assetTreeCreatedNode = assetTreeAssets.find(a => a.id === saveResult.asset.id);
+            if (assetTreeCreatedNode) {
+                // Asset tree node creation completed before save callback executed
+                completedCallback();
+            }
+        } else {
+            this._addCallback = undefined;
         }
     }
 
@@ -464,14 +528,9 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     }
 
     protected _onAssetTreeAssetEvent(ev: OrAssetTreeAssetEvent) {
-        // Check if the new asset just saved has been created in the asset tree and if so select it
-        if (ev.detail.cause === AssetEventCause.CREATE && this._addedAssetId) {
-            if (this._addedAssetId === ev.detail.asset.id) {
-                this._assetIds = [ev.detail.asset.id];
-                this._addedAssetId = undefined;
-                this._viewer.assetId = ev.detail.asset.id;
-                this._updateRoute(true);
-            }
+        // If new asset created and add callback defined then we pass to there for handling
+        if (ev.detail.cause === AssetEventCause.CREATE && this._addCallback) {
+            this._addCallback(ev.detail.asset);
         }
     }
 
