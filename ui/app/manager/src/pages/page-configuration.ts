@@ -360,7 +360,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 this.loading = false;
                 this.managerConfigurationChanged = false;
                 this.mapConfigChanged = false;
-                const configURL =  (MANAGER_URL || "" ? MANAGER_URL : "") + "/api/master/configuration/manager";
+                const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
                 fetch(configURL, {cache: "reload"})
                 window.location.reload();
             })
