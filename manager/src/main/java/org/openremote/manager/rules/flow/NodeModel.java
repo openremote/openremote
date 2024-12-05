@@ -2,6 +2,7 @@ package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesBuilder;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
@@ -24,6 +25,7 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
+				System.out.println(new AttributeRef(assetId, attributeName));
                 Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
                 return readValue.flatMap(ValueHolder::getValue).orElse(null);
             },
@@ -137,10 +139,10 @@ public enum NodeModel {
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
     info -> {
-            Number[] a = (Number[]) info.getValueFromInput(0);
+	        Object[] a = info.getValuesFromInput(info.getInputs());
 			System.out.println("EXECUTING");
 			System.out.println(Arrays.toString(Arrays.stream(a).toArray()));
-            return a != null ? Arrays.stream(a).mapToDouble(Number::doubleValue).sum() : null;
+            return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
         }
 	),
 

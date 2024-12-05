@@ -52,7 +52,10 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
     }
 
     public get socketTypeString() {
-        return this.socket.type!.toString().toLowerCase();
+        const socketType: string = this.socket.type!.toString().toLowerCase();
+        // If the socket type is NUMBER_ARRAY, remove the array part, since we only allow the input of NUMBER into that
+        // socket, just multiple ones. Also helps with displaying the correct color.
+        return socketType.replace("_array", "")
     }
     @property({ type: Object }) public socket!: NodeSocket;
     @property({ type: String }) public side!: "input" | "output";

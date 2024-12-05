@@ -1,7 +1,7 @@
-import {Node, NodeConnection, NodeSocket, NodeCollection, RulesetUnion, NodeDataType} from "@openremote/model";
-import { EventEmitter } from "events";
-import { EditorWorkspace } from "../components/editor-workspace";
-import { input } from "../components/flow-editor";
+import {Node, NodeCollection, NodeConnection, NodeSocket} from "@openremote/model";
+import {EventEmitter} from "events";
+import {EditorWorkspace} from "../components/editor-workspace";
+import {input} from "../components/flow-editor";
 import manager from "@openremote/core";
 import {NodeUtilities} from "../node-structure";
 
@@ -184,7 +184,7 @@ export class Project extends EventEmitter {
         });
     }
 
-    public isValidConnection(connection: NodeConnection) {
+    public async isValidConnection(connection: NodeConnection) {
         const fromSocket = NodeUtilities.getSocketFromID(connection.from!, this.nodes);
         const toSocket = NodeUtilities.getSocketFromID(connection.to!, this.nodes);
         if (!fromSocket ||
@@ -192,25 +192,27 @@ export class Project extends EventEmitter {
             return false;
         }
 
-        if (!manager.rest.api.FlowResource.getDoesMatch(fromSocket.type!, toSocket.type!) ||
-            fromSocket.id === toSocket.id ||
-            fromSocket.nodeId === toSocket.nodeId) {
-            return false;
-        }
-        return true;
+        const doesMatch = manager.rest.api.FlowResource.getDoesMatch(fromSocket.type!, toSocket.type!);
+
+        return await doesMatch.then((matches) => {
+            if (!matches.data || fromSocket.id === toSocket.id || fromSocket.nodeId === toSocket.nodeId) {
+                return false;
+            }
+            return true;
+        });
     }
 
-    public createConnection(fromSocket: string, toSocket: string): boolean {
+    public async createConnection(fromSocket: string, toSocket: string): Promise<boolean> {
         const connection = {
             from: fromSocket,
             to: toSocket
         };
 
-        if (!this.isValidConnection(connection)) { return false; }
+        if (!(await this.isValidConnection(connection))) { return false; }
 
 
-
-        if(!((NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type) === NodeDataType.NUMBER_ARRAY)){
+        // If the type contains _ARRAY, then assume that we allow multiple nodes to connect to that socket.
+        if(!((NodeUtilities.getSocketFromID(connection.to, this.nodes)!.type)!.includes("_ARRAY"))){
             for (const c of this.connections.filter((j) => j.to === toSocket)) {
                 // TODO: this.connections should contain the types of the other nodes, so that we only remove
                 this.removeConnection(c);
@@ -222,8 +224,8 @@ export class Project extends EventEmitter {
         return true;
     }
 
-    public removeInvalidConnections() {
-        for (const c of this.connections.map(c => this.enrichConnection(c)).filter((j) => !this.isValidConnection(j))) {
+    public async removeInvalidConnections() {
+        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(async (j) => !(await this.isValidConnection(j)))) {
             this.removeConnection(c);
         }
     }

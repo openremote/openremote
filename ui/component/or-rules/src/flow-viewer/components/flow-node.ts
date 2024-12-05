@@ -92,7 +92,7 @@ export class FlowNode extends SelectableElement {
             html`<internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")}" @picked="${async () => {
                 this.forceUpdate();
                 await this.updateComplete;
-                project.removeInvalidConnections();
+                await project.removeInvalidConnections();
             }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>`)}</div>`}
         ${this.node.outputs!.length > 0 ? outputSide : spacer}
         ${(this.frozen ? html`<or-icon class="lock-icon ${this.node.type!.toLowerCase()}" icon="lock"></or-icon>` : ``)}
