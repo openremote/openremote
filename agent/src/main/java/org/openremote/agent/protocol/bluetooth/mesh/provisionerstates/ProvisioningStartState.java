@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -28,8 +29,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.StaticOOBType;
-
-import java.util.logging.Logger;
 
 public class ProvisioningStartState extends ProvisioningState {
 
@@ -50,8 +49,8 @@ public class ProvisioningStartState extends ProvisioningState {
     private short inputActionType;
 
     public ProvisioningStartState(final UnprovisionedMeshNode node,
-                                  final InternalTransportCallbacks internalTransportCallbacks,
-                                  final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
+            final InternalTransportCallbacks internalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
         super();
         this.mNode = node;
         this.mInternalTransportCallbacks = internalTransportCallbacks;
@@ -83,9 +82,10 @@ public class ProvisioningStartState extends ProvisioningState {
     @Override
     public void executeSend() {
         final byte[] provisioningStartPDU = createProvisioningStartPDU();
-        //We store the provisioning start pdu to be used when generating confirmation inputs
+        // We store the provisioning start pdu to be used when generating confirmation inputs
         mNode.setProvisioningStartPdu(provisioningStartPDU);
-        mMeshProvisioningStatusCallbacks.onProvisioningStateChanged(mNode, States.PROVISIONING_START, provisioningStartPDU);
+        mMeshProvisioningStatusCallbacks.onProvisioningStateChanged(mNode, States.PROVISIONING_START,
+                provisioningStartPDU);
         mInternalTransportCallbacks.sendProvisioningPdu(mNode, provisioningStartPDU);
     }
 
@@ -117,7 +117,8 @@ public class ProvisioningStartState extends ProvisioningState {
             case INPUT_OOB_AUTHENTICATION:
                 provisioningPDU[5] = (byte) InputOOBAction.getInputOOBActionValue(this.inputActionType);
                 provisioningPDU[6] = (byte) inputOOBSize;
-                mNode.setInputAuthentication(InputOOBAction.getInputOOOBAuthenticationValue(inputActionType, (byte) inputOOBSize));
+                mNode.setInputAuthentication(
+                        InputOOBAction.getInputOOOBAuthenticationValue(inputActionType, (byte) inputOOBSize));
                 break;
 
         }
@@ -126,14 +127,9 @@ public class ProvisioningStartState extends ProvisioningState {
         return provisioningPDU;
     }
 
-    public void setProvisioningCapabilities(final int numberOfElements,
-                                            final int algorithm,
-                                            final int publicKeyType,
-                                            final int staticOOBType,
-                                            final int outputOOBSize,
-                                            final int outputOOBAction,
-                                            final int inputOOBSize,
-                                            final int inputOOBAction) {
+    public void setProvisioningCapabilities(final int numberOfElements, final int algorithm, final int publicKeyType,
+            final int staticOOBType, final int outputOOBSize, final int outputOOBAction, final int inputOOBSize,
+            final int inputOOBAction) {
         this.numberOfElements = numberOfElements;
         this.algorithm = algorithm;
         this.publicKeyType = publicKeyType;
@@ -144,4 +140,3 @@ public class ProvisioningStartState extends ProvisioningState {
         this.inputOOBAction = inputOOBAction;
     }
 }
-

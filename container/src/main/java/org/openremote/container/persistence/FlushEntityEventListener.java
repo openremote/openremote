@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.persistence;
 
@@ -37,11 +36,11 @@ public class FlushEntityEventListener extends DefaultFlushEntityEventListener {
     @Override
     protected boolean handleInterception(FlushEntityEvent event) {
         SessionImplementor session = event.getSession();
-        final boolean intercepted = invokeInterceptor( session, event );
+        final boolean intercepted = invokeInterceptor(session, event);
 
-        //now we might need to recalculate the dirtyProperties array
-        if ( intercepted && event.isDirtyCheckPossible() ) {
-            dirtyCheck( event );
+        // now we might need to recalculate the dirtyProperties array
+        if (intercepted && event.isDirtyCheckPossible()) {
+            dirtyCheck(event);
         }
 
         return intercepted;
@@ -73,8 +72,7 @@ public class FlushEntityEventListener extends DefaultFlushEntityEventListener {
             loadedPropertiesValues[i] = entry.getLoadedState()[dirtyPropertyIndex];
         }
 
-        return session
-            .getInterceptor()
-            .onFlushDirty(entity, entry.getId(), dirtyPropertiesValues, loadedPropertiesValues, dirtyPropertiesNames, dirtyPropertiesTypes);
+        return session.getInterceptor().onFlushDirty(entity, entry.getId(), dirtyPropertiesValues,
+                loadedPropertiesValues, dirtyPropertiesNames, dirtyPropertiesTypes);
     }
 }

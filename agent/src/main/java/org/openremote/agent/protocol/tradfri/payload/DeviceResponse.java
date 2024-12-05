@@ -1,7 +1,26 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.payload;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.agent.protocol.tradfri.device.DeviceInfo;
 import org.openremote.agent.protocol.tradfri.device.LightProperties;
 import org.openremote.agent.protocol.tradfri.device.PlugProperties;
@@ -52,11 +71,12 @@ public class DeviceResponse {
     /**
      * Construct the DeviceResponse class
      */
-    public DeviceResponse(){
+    public DeviceResponse() {
     }
 
     /**
      * Get the name of the device
+     *
      * @return The name of the device
      */
     public String getName() {
@@ -65,6 +85,7 @@ public class DeviceResponse {
 
     /**
      * Get the creation date of the device
+     *
      * @return The creation date of the device
      */
     public Long getCreationDate() {
@@ -73,6 +94,7 @@ public class DeviceResponse {
 
     /**
      * Get the instance id of the device
+     *
      * @return The instance id of the device
      */
     public Integer getInstanceId() {
@@ -81,6 +103,7 @@ public class DeviceResponse {
 
     /**
      * Get the information of the device
+     *
      * @return The instance id of the device
      */
     public DeviceInfo getDeviceInfo() {
@@ -89,6 +112,7 @@ public class DeviceResponse {
 
     /**
      * Get the properties of the light (if the device is a light)
+     *
      * @return The properties of the light
      */
     public LightProperties[] getLightProperties() {
@@ -97,6 +121,7 @@ public class DeviceResponse {
 
     /**
      * Get the properties of the plug (if the device is a plug)
+     *
      * @return The properties of the plug
      */
     public PlugProperties[] getPlugProperties() {
@@ -105,6 +130,7 @@ public class DeviceResponse {
 
     /**
      * Set the name of the device
+     *
      * @param name The name of the device
      */
     public void setName(String name) {
@@ -113,6 +139,7 @@ public class DeviceResponse {
 
     /**
      * Set the creation date of the device
+     *
      * @param creationDate The creation date of the device
      */
     public void setCreationDate(Long creationDate) {
@@ -121,6 +148,7 @@ public class DeviceResponse {
 
     /**
      * Set the instance id of the device
+     *
      * @param instanceId The instance id of the device
      */
     public void setInstanceId(Integer instanceId) {
@@ -129,6 +157,7 @@ public class DeviceResponse {
 
     /**
      * Set the information of the device
+     *
      * @param deviceInfo The information of the device
      */
     public void setDeviceInfo(DeviceInfo deviceInfo) {
@@ -137,6 +166,7 @@ public class DeviceResponse {
 
     /**
      * Set the properties of the light (if the device is a light)
+     *
      * @param lightProperties The new properties of the light
      */
     public void setLightProperties(LightProperties[] lightProperties) {
@@ -145,6 +175,7 @@ public class DeviceResponse {
 
     /**
      * Set the properties of the plug (if the device is a plug)
+     *
      * @param plugProperties The new properties of the plug
      */
     public void setPlugProperties(PlugProperties[] plugProperties) {

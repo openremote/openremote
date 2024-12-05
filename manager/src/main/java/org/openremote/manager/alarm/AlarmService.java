@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,36 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.alarm;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
-import org.apache.camel.builder.RouteBuilder;
-import org.hibernate.Session;
-import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.security.ManagerIdentityProvider;
-import org.openremote.model.Constants;
-import org.openremote.model.PersistenceEvent;
-import org.openremote.model.alarm.*;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.manager.event.ClientEventService;
-
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.RealmFilter;
-import org.openremote.model.notification.*;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.RealmPredicate;
-import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.security.User;
-import org.openremote.model.util.TextUtil;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.OR_HOSTNAME;
+import static org.openremote.model.alarm.Alarm.Source.*;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -55,12 +30,37 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.OR_HOSTNAME;
-import static org.openremote.model.alarm.Alarm.Source.*;
+import org.apache.camel.builder.RouteBuilder;
+import org.hibernate.Session;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.security.ManagerIdentityProvider;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.model.alarm.*;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.notification.*;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.security.User;
+import org.openremote.model.util.TextUtil;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.TypedQuery;
 
 /**
- * A service for managing {@link SentAlarm}s. It also provides functionality for managing links between {@link SentAlarm}s
+ * A service for managing {@link SentAlarm}s. It also provides functionality for managing links between
+ * {@link SentAlarm}s
  * and {@link org.openremote.model.asset.Asset}s using {@link AlarmAssetLink}s.
  */
 public class AlarmService extends RouteBuilder implements ContainerService {
@@ -88,9 +88,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         this.persistenceService = container.getService(PersistenceService.class);
         this.timerService = container.getService(TimerService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new AlarmResourceImpl(timerService, identityService, this)
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new AlarmResourceImpl(timerService, identityService, this));
         clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
             if (!eventSubscription.isEventType(AlarmEvent.class) || authContext == null) {
                 return false;
@@ -109,17 +108,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     @Override
     public void configure() throws Exception {
-
     }
 
     /**
@@ -162,7 +158,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Validates if the {@code alarms} are non-null, match the alarmIds length and the user has access to all alarm realms.
+     * Validates if the {@code alarms} are non-null, match the alarmIds length and the user has access to all alarm
+     * realms.
      */
     protected void validateAlarmsExistAndAccessible(List<Long> alarmIds, List<SentAlarm> alarms, String userId) {
         if (alarms == null || alarmIds.size() != alarms.size()) {
@@ -205,8 +202,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             throw new IllegalStateException("User does not exist");
         }
 
-        if (!identityProvider.isMasterRealmAdmin(userId) &&
-                (realms.size() > 1 || !identityProvider.isUserInRealm(userId, realms.stream().findFirst().orElse(null)))) {
+        if (!identityProvider.isMasterRealmAdmin(userId) && (realms.size() > 1
+                || !identityProvider.isUserInRealm(userId, realms.stream().findFirst().orElse(null)))) {
             throw new SecurityException("Realm is not active or inaccessible");
         }
     }
@@ -225,17 +222,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         validateRealmAccessibleToUser(userId, alarm.getRealm());
 
         Date timestamp = new Date(timerService.getCurrentTimeMillis());
-        SentAlarm sentAlarm = persistenceService.doReturningTransaction(entityManager -> entityManager.merge(new SentAlarm()
-                .setAssigneeId(alarm.getAssigneeId())
-                .setRealm(alarm.getRealm())
-                .setTitle(alarm.getTitle())
-                .setContent(alarm.getContent())
-                .setSeverity(alarm.getSeverity())
-                .setStatus(alarm.getStatus())
-                .setSource(alarm.getSource())
-                .setSourceId(alarm.getSourceId())
-                .setCreatedOn(timestamp)
-                .setLastModified(timestamp)));
+        SentAlarm sentAlarm = persistenceService.doReturningTransaction(
+                entityManager -> entityManager.merge(new SentAlarm().setAssigneeId(alarm.getAssigneeId())
+                        .setRealm(alarm.getRealm()).setTitle(alarm.getTitle()).setContent(alarm.getContent())
+                        .setSeverity(alarm.getSeverity()).setStatus(alarm.getStatus()).setSource(alarm.getSource())
+                        .setSourceId(alarm.getSourceId()).setCreatedOn(timestamp).setLastModified(timestamp)));
 
         if (assetIds != null && !assetIds.isEmpty()) {
             linkAssets(assetIds, sentAlarm.getRealm(), sentAlarm.getId());
@@ -251,10 +242,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     /**
-     * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not set all users having
+     * Sends e-mail and push notifications for an alarm to the alarm assignee. If an assignee is not set all users
+     * having
      * the {@link Constants#READ_ADMIN_ROLE} or {@link Constants#WRITE_ALARMS_ROLE} are notified.
      *
-     * @param alarm          the alarm to send e-mail and push notifications for
+     * @param alarm the alarm to send e-mail and push notifications for
      * @param excludeUserIds users matching these user IDs will are excluded from the notifications
      */
     protected void sendAssigneeNotification(SentAlarm alarm, Set<String> excludeUserIds) {
@@ -271,24 +263,18 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         String url = getAlarmNotificationUrl(alarm);
         Map<String, String> content = getAlarmNotificationContent(alarm, url);
 
-        Notification email = new Notification()
-                .setName("New Alarm")
-                .setMessage(new EmailNotificationMessage()
-                        .setHtml(getAlarmNotificationHtml(content))
-                        .setSubject(title)
-                        .setTo(users.stream()
-                                .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
-                                .map(user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail())).toList()));
+        Notification email = new Notification().setName("New Alarm")
+                .setMessage(new EmailNotificationMessage().setHtml(getAlarmNotificationHtml(content)).setSubject(title)
+                        .setTo(users.stream().filter(user -> user.getEmail() != null && !user.getEmail().isBlank()).map(
+                                user -> new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()))
+                                .toList()));
 
         Notification push = new Notification();
         push.setName("New Alarm")
-                .setMessage(
-                        new PushNotificationMessage()
-                                .setTitle(title)
-                                .setBody(getAlarmNotificationText(content))
-                                .setAction(url == null ? null : new PushNotificationAction(url))
-                )
-                .setTargets(users.stream().map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
+                .setMessage(new PushNotificationMessage().setTitle(title).setBody(getAlarmNotificationText(content))
+                        .setAction(url == null ? null : new PushNotificationAction(url)))
+                .setTargets(users.stream()
+                        .map(user -> new Notification.Target(Notification.TargetType.USER, user.getId())).toList());
 
         notificationService.sendNotificationAsync(push, Notification.Source.INTERNAL, "alarms");
         notificationService.sendNotificationAsync(email, Notification.Source.INTERNAL, "alarms");
@@ -298,11 +284,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
         List<User> users = new ArrayList<>();
         if (alarm.getAssigneeId() == null) {
-            UserQuery userQuery = new UserQuery()
-                    .realm(new RealmPredicate(alarm.getRealm()))
+            UserQuery userQuery = new UserQuery().realm(new RealmPredicate(alarm.getRealm()))
                     .clientRoles(new StringPredicate(Constants.WRITE_ALARMS_ROLE))
-                    .realmRoles(new StringPredicate(Constants.REALM_ADMIN_ROLE))
-                    .serviceUsers(false);
+                    .realmRoles(new StringPredicate(Constants.REALM_ADMIN_ROLE)).serviceUsers(false);
             users.addAll(Arrays.asList(identityProvider.queryUsers(userQuery)));
         } else {
             users.add(identityProvider.getUser(alarm.getAssigneeId()));
@@ -312,7 +296,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
 
     private String getAlarmNotificationUrl(SentAlarm alarm) {
         String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
-        return defaultHostname == null ? null : String.format("https://%s/manager/#/alarms/%s?realm=%s", defaultHostname, alarm.getId(), alarm.getRealm());
+        return defaultHostname == null ? null
+                : String.format("https://%s/manager/#/alarms/%s?realm=%s", defaultHostname, alarm.getId(),
+                        alarm.getRealm());
     }
 
     private Map<String, String> getAlarmNotificationContent(SentAlarm alarm, String url) {
@@ -324,10 +310,12 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         result.put("Severity", alarm.getSeverity().name());
         result.put("Status", alarm.getStatus().name());
 
-        List<String> assetLinks = getAssetLinks(alarm.getId(), null, alarm.getRealm()).stream().map(AlarmAssetLink::getAssetName).toList();
+        List<String> assetLinks = getAssetLinks(alarm.getId(), null, alarm.getRealm()).stream()
+                .map(AlarmAssetLink::getAssetName).toList();
         result.put("Linked assets", assetLinks.isEmpty() ? "None" : String.join(", ", assetLinks));
 
-        result.put("Assignee", TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername());
+        result.put("Assignee",
+                TextUtil.isNullOrEmpty(alarm.getAssigneeUsername()) ? "None" : alarm.getAssigneeUsername());
 
         if (url != null) {
             result.put("URL", url);
@@ -337,8 +325,10 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     }
 
     private String getAlarmNotificationHtml(Map<String, String> content) {
-        StringBuilder sb = new StringBuilder("<html><head><style>td {vertical-align: top;}</style></head><body><table>");
-        content.forEach((key, value) -> sb.append(String.format("<tr><td><b>%s</b></td><td>%s</td></tr>", key, value.replaceAll("\n", "<br>"))));
+        StringBuilder sb = new StringBuilder(
+                "<html><head><style>td {vertical-align: top;}</style></head><body><table>");
+        content.forEach((key, value) -> sb
+                .append(String.format("<tr><td><b>%s</b></td><td>%s</td></tr>", key, value.replaceAll("\n", "<br>"))));
         sb.append("</table><body></html>");
         return sb.toString();
     }
@@ -361,23 +351,23 @@ public class AlarmService extends RouteBuilder implements ContainerService {
             validateRealmAccessibleToUser(newAssigneeId, alarm.getRealm());
         }
 
-        persistenceService.doTransaction(entityManager -> entityManager.createQuery("""
-                        update SentAlarm set title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified, assigneeId=:assigneeId
-                        where id =:id
-                        """)
-                .setParameter("id", alarmId)
-                .setParameter("title", alarm.getTitle())
-                .setParameter("content", alarm.getContent())
-                .setParameter("severity", alarm.getSeverity())
+        persistenceService.doTransaction(entityManager -> entityManager
+                .createQuery(
+                        """
+                                update SentAlarm set title=:title, content=:content, severity=:severity, status=:status, lastModified=:lastModified, assigneeId=:assigneeId
+                                where id =:id
+                                """)
+                .setParameter("id", alarmId).setParameter("title", alarm.getTitle())
+                .setParameter("content", alarm.getContent()).setParameter("severity", alarm.getSeverity())
                 .setParameter("status", alarm.getStatus())
                 .setParameter("lastModified", new Timestamp(timerService.getCurrentTimeMillis()))
-                .setParameter("assigneeId", newAssigneeId)
-                .executeUpdate());
+                .setParameter("assigneeId", newAssigneeId).executeUpdate());
 
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.UPDATE));
 
         if (alarm.getSeverity() == Alarm.Severity.HIGH) {
-            Set<String> excludeUserIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<String> excludeUserIds = Stream.of(userId, oldAssigneeId).filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
             sendAssigneeNotification(getAlarm(alarmId, userId), excludeUserIds);
         }
     }
@@ -434,18 +424,15 @@ public class AlarmService extends RouteBuilder implements ContainerService {
     /**
      * Returns the assets linked to an alarm if the given user has access to the alarm realm.
      */
-    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String userId, String realm) throws IllegalArgumentException {
+    public List<AlarmAssetLink> getAssetLinks(Long alarmId, String userId, String realm)
+            throws IllegalArgumentException {
         getAlarm(alarmId, userId);
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery("""
-                                select aal from AlarmAssetLink aal
-                                where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
-                                order by aal.createdOn desc
-                                """, AlarmAssetLink.class)
-                        .setParameter("realm", realm)
-                        .setParameter("alarmId", alarmId)
-                        .getResultList()
-        );
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("""
+                select aal from AlarmAssetLink aal
+                where aal.id.realm = :realm and aal.id.sentalarmId = :alarmId
+                order by aal.createdOn desc
+                """, AlarmAssetLink.class).setParameter("realm", realm).setParameter("alarmId", alarmId)
+                .getResultList());
     }
 
     /**
@@ -455,9 +442,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         validateAlarmId(alarmId);
         SentAlarm alarm;
         try {
-            alarm = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery("select sa from SentAlarm sa where sa.id = :id", SentAlarm.class)
-                    .setParameter("id", alarmId)
-                    .getSingleResult());
+            alarm = persistenceService.doReturningTransaction(entityManager -> entityManager
+                    .createQuery("select sa from SentAlarm sa where sa.id = :id", SentAlarm.class)
+                    .setParameter("id", alarmId).getSingleResult());
         } catch (PersistenceException e) {
             alarm = null;
         }
@@ -472,11 +459,9 @@ public class AlarmService extends RouteBuilder implements ContainerService {
         validateAlarmIds(alarmIds);
         List<SentAlarm> alarms;
         try {
-            alarms = persistenceService.doReturningTransaction(entityManager ->
-                    entityManager.createQuery("select sa from SentAlarm sa where sa.id in :ids", SentAlarm.class)
-                            .setParameter("ids", alarmIds)
-                            .getResultList()
-            );
+            alarms = persistenceService.doReturningTransaction(entityManager -> entityManager
+                    .createQuery("select sa from SentAlarm sa where sa.id in :ids", SentAlarm.class)
+                    .setParameter("ids", alarmIds).getResultList());
         } catch (PersistenceException e) {
             alarms = null;
         }
@@ -488,12 +473,14 @@ public class AlarmService extends RouteBuilder implements ContainerService {
      * Retrieves all existing alarms in a realm. The {@code status}, {@code assetId} and {@code assigneeId} parameters
      * are optional and if non-null are used for filtering the alarms.
      */
-    public List<SentAlarm> getAlarms(String realm, Alarm.Status status, String assetId, String assigneeId) throws IllegalArgumentException {
+    public List<SentAlarm> getAlarms(String realm, Alarm.Status status, String assetId, String assigneeId)
+            throws IllegalArgumentException {
         Map<String, Object> parameters = new HashMap<>();
         StringBuilder sb = new StringBuilder("select sa from SentAlarm sa ");
 
         if (assetId != null) {
-            sb.append("join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId ");
+            sb.append(
+                    "join AlarmAssetLink aal on sa.id = aal.id.sentalarmId where sa.realm = :realm and aal.id.assetId = :assetId ");
             parameters.put("assetId", assetId);
         } else {
             sb.append("where sa.realm = :realm ");
@@ -522,11 +509,8 @@ public class AlarmService extends RouteBuilder implements ContainerService {
      */
     public void removeAlarm(Long alarmId, String userId) {
         SentAlarm alarm = getAlarm(alarmId, userId);
-        persistenceService.doTransaction(entityManager -> entityManager
-                .createQuery("delete SentAlarm where id = :id")
-                .setParameter("id", alarmId)
-                .executeUpdate()
-        );
+        persistenceService.doTransaction(entityManager -> entityManager.createQuery("delete SentAlarm where id = :id")
+                .setParameter("id", alarmId).executeUpdate());
         clientEventService.publishEvent(new AlarmEvent(alarm.getRealm(), PersistenceEvent.Cause.DELETE));
     }
 
@@ -535,12 +519,11 @@ public class AlarmService extends RouteBuilder implements ContainerService {
      */
     public void removeAlarms(List<Long> alarmIds, String userId) throws IllegalArgumentException {
         List<SentAlarm> alarms = getAlarms(alarmIds, userId);
-        persistenceService.doTransaction(entityManager ->
-                entityManager.createQuery("delete from SentAlarm sa where sa.id in :ids")
-                        .setParameter("ids", alarmIds)
-                        .executeUpdate()
-        );
+        persistenceService.doTransaction(
+                entityManager -> entityManager.createQuery("delete from SentAlarm sa where sa.id in :ids")
+                        .setParameter("ids", alarmIds).executeUpdate());
 
-        getAlarmRealms(alarms).forEach(realm -> clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE)));
+        getAlarmRealms(alarms).forEach(
+                realm -> clientEventService.publishEvent(new AlarmEvent(realm, PersistenceEvent.Cause.DELETE)));
     }
 }

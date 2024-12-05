@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
@@ -41,9 +40,16 @@ public abstract class ProvisioningState {
     public abstract boolean parseData(final byte[] data);
 
     public enum State {
-        PROVISIONING_INVITE(0), PROVISIONING_CAPABILITIES(1), PROVISIONING_START(2), PROVISIONING_PUBLIC_KEY(3),
-        PROVISIONING_INPUT_COMPLETE(4), PROVISIONING_CONFIRMATION(5), PROVISIONING_RANDOM(6),
-        PROVISIONING_DATA(7), PROVISIONING_COMPLETE(8), PROVISIONING_FAILED(9);
+        PROVISIONING_INVITE(0),
+        PROVISIONING_CAPABILITIES(1),
+        PROVISIONING_START(2),
+        PROVISIONING_PUBLIC_KEY(3),
+        PROVISIONING_INPUT_COMPLETE(4),
+        PROVISIONING_CONFIRMATION(5),
+        PROVISIONING_RANDOM(6),
+        PROVISIONING_DATA(7),
+        PROVISIONING_COMPLETE(8),
+        PROVISIONING_FAILED(9);
 
         private int state;
 
@@ -54,7 +60,6 @@ public abstract class ProvisioningState {
         public int getState() {
             return state;
         }
-
     }
 
     public enum States {

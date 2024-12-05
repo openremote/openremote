@@ -1,12 +1,30 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {classMap} from "lit/directives/class-map.js";
-import {until} from 'lit/directives/until.js';
-import {MDCDataTable} from "@material/data-table";
-import {when} from 'lit/directives/when.js';
-import {DefaultColor3, DefaultColor2, DefaultColor1} from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "./or-mwc-input";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { classMap } from "lit/directives/class-map.js";
+import { until } from 'lit/directives/until.js';
+import { MDCDataTable } from "@material/data-table";
+import { when } from 'lit/directives/when.js';
+import { DefaultColor3, DefaultColor2, DefaultColor1 } from "@openremote/core";
+import { i18next } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent } from "./or-mwc-input";
 import { styleMap } from "lit/directives/style-map.js";
 import moment from "moment";
 
@@ -235,19 +253,19 @@ export class OrMwcTable extends LitElement {
         ];
     }
 
-    @property({type: Array})
+    @property({ type: Array })
     public columns?: TableColumn[] | string[];
 
-    @property({type: Object}) // to manually control HTML
+    @property({ type: Object }) // to manually control HTML
     protected columnsTemplate?: TemplateResult;
 
-    @property({type: Array})
+    @property({ type: Array })
     public rows?: TableRow[] | string[][];
 
-    @property({type: Object}) // to manually control HTML (requires td and tr elements)
+    @property({ type: Object }) // to manually control HTML (requires td and tr elements)
     protected rowsTemplate?: TemplateResult;
 
-    @property({type: Array})
+    @property({ type: Array })
     protected config: TableConfig = {
         columnFilter: [],
         stickyFirstColumn: true,
@@ -257,10 +275,10 @@ export class OrMwcTable extends LitElement {
         }
     };
 
-    @property({type: Number})
+    @property({ type: Number })
     protected paginationIndex: number = 0;
 
-    @property({type: Number})
+    @property({ type: Number })
     public paginationSize: number = 10;
 
     @state()
@@ -269,10 +287,10 @@ export class OrMwcTable extends LitElement {
     @property({ type: String })
     protected sortDirection: 'ASC' | 'DESC' = 'ASC';
 
-    @property({type: Number})
+    @property({ type: Number })
     protected sortIndex?: number = -1;
 
-    @property({type: Array})
+    @property({ type: Array })
     public selectedRows?: TableRow[] | string[][] | any[] = [];
 
 
@@ -315,18 +333,18 @@ export class OrMwcTable extends LitElement {
                     <table class="mdc-data-table__table">
                         <!-- Header row that normally includes entries like 'id' and 'name'. You can use either a template or a list of columns -->
                         ${when(this.columnsTemplate, () => this.columnsTemplate, () => {
-                            return this.columns ? html`
+            return this.columns ? html`
                                 <thead>
                                 <tr class="mdc-data-table__header-row">
                                     ${this.columns.map((column: TableColumn | string, index: number) => {
-                                        const styles = {
-                                            width: this.getColumnWidth(index, this.columns, tableWidth),
-                                            maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
-                                        } as any;
-                                        if(index === 0 && this.config.multiSelect){
-                                            const allSelected = this.rows && this.rows.length > 0 && this.selectedRows?.length === this.rows?.length;
-                                            const indeterminate = !allSelected && this.selectedRows && this.selectedRows.length > 0;
-                                            return html`
+                const styles = {
+                    width: this.getColumnWidth(index, this.columns, tableWidth),
+                    maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
+                } as any;
+                if (index === 0 && this.config.multiSelect) {
+                    const allSelected = this.rows && this.rows.length > 0 && this.selectedRows?.length === this.rows?.length;
+                    const indeterminate = !allSelected && this.selectedRows && this.selectedRows.length > 0;
+                    return html`
                                                 <th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
                                                     role="columnheader" scope="col">
                                                     <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox"
@@ -342,76 +360,76 @@ export class OrMwcTable extends LitElement {
                                                     </th>
                                                 ` : html`
                                                     <th class="mdc-data-table__header-cell ${classMap({
-                                                        'mdc-data-table__cell--numeric': !!column.isNumeric,
-                                                        'hide-mobile': !!column.hideMobile,
-                                                        'mdc-data-table__header-cell--with-sort': !!column.isSortable,
-                                                    })}"
+                        'mdc-data-table__cell--numeric': !!column.isNumeric,
+                        'hide-mobile': !!column.hideMobile,
+                        'mdc-data-table__header-cell--with-sort': !!column.isSortable,
+                    })}"
                                                         role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
                                                         @click="${(ev: MouseEvent) => column.isSortable! ? this.onColumnSort(ev, index, this.sortDirection!) : ''}">
                                                         ${(!column.isSortable ? column.title : until(this.getSortHeader(index, column.title!, this.sortDirection!), html`${i18next.t('loading')}`))}
                                                     </th>
                                                 `
-                                                }`
-                                        }
-                                        return (typeof column == "string") ? html`
-                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
+                        }`
+                }
+                return (typeof column == "string") ? html`
+                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index + 1}" role="columnheader" scope="col"
                                                 title="${column}">
                                                 ${column}
                                             </th>
                                         ` : html`
                                             <th class="mdc-data-table__header-cell ${classMap({
-                                                'mdc-data-table__cell--numeric': !!column.isNumeric,
-                                                'hide-mobile': !!column.hideMobile,
-                                                'mdc-data-table__header-cell--with-sort': !!column.isSortable,
-                                            })}"
+                    'mdc-data-table__cell--numeric': !!column.isNumeric,
+                    'hide-mobile': !!column.hideMobile,
+                    'mdc-data-table__header-cell--with-sort': !!column.isSortable,
+                })}"
                                                 style="${styleMap(styles)}"
                                                 role="columnheader" scope="col" title="${column.title}" data-column-id="${column.title}"
                                                 @click="${(ev: MouseEvent) => column.isSortable! ? this.onColumnSort(ev, index, this.sortDirection ? this.sortDirection : 'ASC') : ''}">
-                                                ${(!column.isSortable ? column.title :  until(this.getSortHeader(index, column.title!, this.sortDirection!, !!column.isNumeric), html`${i18next.t('loading')}`))}
+                                                ${(!column.isSortable ? column.title : until(this.getSortHeader(index, column.title!, this.sortDirection!, !!column.isNumeric), html`${i18next.t('loading')}`))}
                                             </th>
                                         `
-                                    })}
+            })}
                                 </tr>
                                 </thead>
                             ` : undefined;
-                        })}
+        })}
                         <!-- Table content, where either the template or an array of rows is displayed -->
                         <tbody class="mdc-data-table__content">
                         ${when(this.rowsTemplate, () => {
-                            if (this.config.pagination?.enable) { // if paginated, filter out the rows by index by manually collecting a list of <tr> elements.
-                                this.updateComplete.then(async () => {
-                                    const elem = await this.getTableElem(false);
-                                    const rows = elem?.querySelectorAll('tr');
-                                    rows?.forEach((row, index) => {
-                                        const hidden = (index <= (this.paginationIndex * this.paginationSize) || index > (this.paginationIndex * this.paginationSize) + this.paginationSize) && !row.classList.contains('mdc-data-table__header-row');
-                                        row.style.display = (hidden ? 'none' : 'table-row');
-                                    });
-                                });
-                            }
-                            return html`${this.rowsTemplate}`;
-                        }, () => {
-                            return this.rows ? (this.rows as any[])
-                                            .filter((row, index) => !this.config.pagination?.enable || (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
-                                            .map((item: TableRow | string[]) => {
-                                                const content: TableContent[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
-                                                return html`
+            if (this.config.pagination?.enable) { // if paginated, filter out the rows by index by manually collecting a list of <tr> elements.
+                this.updateComplete.then(async () => {
+                    const elem = await this.getTableElem(false);
+                    const rows = elem?.querySelectorAll('tr');
+                    rows?.forEach((row, index) => {
+                        const hidden = (index <= (this.paginationIndex * this.paginationSize) || index > (this.paginationIndex * this.paginationSize) + this.paginationSize) && !row.classList.contains('mdc-data-table__header-row');
+                        row.style.display = (hidden ? 'none' : 'table-row');
+                    });
+                });
+            }
+            return html`${this.rowsTemplate}`;
+        }, () => {
+            return this.rows ? (this.rows as any[])
+                .filter((row, index) => !this.config.pagination?.enable || (index >= (this.paginationIndex * this.paginationSize)) && (index < (this.paginationIndex * this.paginationSize + this.paginationSize)))
+                .map((item: TableRow | string[]) => {
+                    const content: TableContent[] | undefined = (Array.isArray(item) ? item : (item as TableRow).content);
+                    return html`
                                                     <tr class="mdc-data-table__row" @click="${(ev: MouseEvent) => this.onRowClick(ev, item)}">
                                                         ${content?.map((cell: TableContent, index: number) => {
-                                                            const classes = {
-                                                                "mdc-data-table__cell": true,
-                                                                "mdc-data-table__cell--numeric": typeof cell === "number",
-                                                                "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
-                                                                "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
-                                                            }
-                                                            const styles = {
-                                                                maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
-                                                            } as any;
-                                                            return html`
+                        const classes = {
+                            "mdc-data-table__cell": true,
+                            "mdc-data-table__cell--numeric": typeof cell === "number",
+                            "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
+                            "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
+                        }
+                        const styles = {
+                            maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
+                        } as any;
+                        return html`
                                                                 ${when(index === 0 && this.config.multiSelect, () => html`
                                                                     <td class="mdc-data-table__cell mdc-data-table__cell--checkbox" >
                                                                         <div class="">
                                                                             <or-mwc-input type="${InputType.CHECKBOX}" id="checkbox-${index}"
-                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev,ev.detail.value,"single",item)}"
+                                                                                          @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onCheckChanged(ev, ev.detail.value, "single", item)}"
                                                                                           .value="${this.selectedRows?.includes(item)}"
                                                                             ></or-mwc-input>
                                                                         </div>
@@ -421,19 +439,19 @@ export class OrMwcTable extends LitElement {
                                                                     ${until(this.getTableContent(cell))}
                                                                 </td>
                                                             `;
-                                                        })}
+                    })}
                                                     </tr>
                                                 `
-                                            })
-                                    : undefined;
-                        })}
+                })
+                : undefined;
+        })}
                         </tbody>
                     </table>
                 </div>
                 <!-- Pagination HTML, shown on the bottom right. Same as Material Design spec -->
                 ${when(showPagination, () => {
-                    const options = this.config.pagination?.options || [10, 25, 100];
-                    return html`
+            const options = this.config.pagination?.options || [10, 25, 100];
+            return html`
                         <div class="mdc-data-table__pagination">
                             <div class="mdc-data-table__pagination-trailing">
                                 <div class="mdc-data-table__pagination-rows-per-page">
@@ -444,16 +462,16 @@ export class OrMwcTable extends LitElement {
                                                   .type="${InputType.SELECT}" compact comfortable outlined .readonly="${options.length === 1}"
                                                   .value="${this.paginationSize}" .options="${options}"
                                                   @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                                      this.paginationSize = ev.detail.value;
-                                                      this.paginationIndex = 0;
-                                                  }}"
+                    this.paginationSize = ev.detail.value;
+                    this.paginationIndex = 0;
+                }}"
                                     ></or-mwc-input>
                                 </div>
                                 ${until(this.getPaginationControls(), html`${i18next.t('loading')}`)}
                             </div>
                         </div>
                     `
-                })}
+        })}
             </div>
         `;
     }
@@ -476,9 +494,9 @@ export class OrMwcTable extends LitElement {
      * "When user clicks on a row", it dispatches an {@link OrMwcTableRowClickEvent} to the parent component / listeners.
      */
     protected onRowClick(ev: MouseEvent, item: TableRow | string[]) {
-        if(this.config.multiSelect) {
+        if (this.config.multiSelect) {
             const elem = ev.target as HTMLElement;
-            if(elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
+            if (elem.nodeName === "OR-MWC-INPUT" && elem.id.includes('checkbox')) {
                 return; // if checkbox is clicked, the regular "click on row" should not trigger.
             }
         }
@@ -564,9 +582,9 @@ export class OrMwcTable extends LitElement {
         } else {
             if (typeof cellA === 'string' && typeof cellB === 'string') {
                 if (sortDirection === 'DESC') {
-                    return (cellB as string).localeCompare(cellA as string, 'en', {numeric: true});
+                    return (cellB as string).localeCompare(cellA as string, 'en', { numeric: true });
                 } else {
-                    return (cellA as string).localeCompare(cellB as string, 'en', {numeric: true});
+                    return (cellA as string).localeCompare(cellB as string, 'en', { numeric: true });
                 }
             } else if (typeof cellA === 'number' && typeof cellB === 'number') {
                 if (sortDirection === 'DESC') {
@@ -672,10 +690,10 @@ export class OrMwcTable extends LitElement {
                               data-last-page="true" icon="page-last"
                               .disabled="${this.paginationIndex * this.paginationSize + this.paginationSize >= max}"
                               @or-mwc-input-changed="${async () => {
-                                  let pages: number = max / this.paginationSize;
-                                  pages = pages.toString().includes('.') ? Math.floor(pages) : (pages - 1);
-                                  this.paginationIndex = pages;
-                              }}"
+                let pages: number = max / this.paginationSize;
+                pages = pages.toString().includes('.') ? Math.floor(pages) : (pages - 1);
+                this.paginationIndex = pages;
+            }}"
                 ></or-mwc-input>
             </div>
         `;

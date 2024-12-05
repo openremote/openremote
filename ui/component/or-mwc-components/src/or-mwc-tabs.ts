@@ -1,8 +1,26 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { MDCTabBar } from "@material/tab-bar";
-import {css, CSSResult, html, LitElement, TemplateResult, unsafeCSS } from "lit";
+import { css, CSSResult, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {DefaultColor4, DefaultColor8} from "@openremote/core";
-import {unsafeHTML} from 'lit/directives/unsafe-html.js';
+import { DefaultColor4, DefaultColor8 } from "@openremote/core";
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 // Material Styling import
 const tabStyle = require("@material/tab/dist/mdc.tab.css");
@@ -54,22 +72,22 @@ export class OrMwcTabs extends LitElement {
         return [unsafeCSS(tabStyle), unsafeCSS(tabBarStyle), unsafeCSS(tabIndicatorStyle), unsafeCSS(tabScrollerStyle), tabStyling];
     }
 
-    @property({type: Number}) // Selected tab index from the items array
+    @property({ type: Number }) // Selected tab index from the items array
     protected index?: number;
 
-    @property({type: Array})
+    @property({ type: Array })
     protected items?: OrMwcTabItem[];
 
-    @property({type: String})
+    @property({ type: String })
     protected iconPosition?: "left" | "top";
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     protected noScroll?: boolean;
 
-    @property({type: String})
+    @property({ type: String })
     protected bgColor?: string;
 
-    @property({type: String})
+    @property({ type: String })
     protected color?: string;
 
     @property() // Custom styling that gets injected in render()
@@ -90,31 +108,31 @@ export class OrMwcTabs extends LitElement {
 
         this.updateComplete.then(() => {
             const tabBarElement = this.shadowRoot?.querySelector('.mdc-tab-bar');
-            if(tabBarElement != null) {
+            if (tabBarElement != null) {
                 this.mdcTabBar = new MDCTabBar(tabBarElement); // init of material component
                 this.mdcTabBar.listen("MDCTabBar:activated", (event: CustomEvent) => {
                     this.index = event.detail.index;
                 });
             }
 
-            if(tabBarElement != null) {
+            if (tabBarElement != null) {
 
                 // Adding classes for Icon top position or not.
-                if(this.iconPosition === "top") {
-                    if(this.items?.find((item) => { return (item.name != null && item.icon != null); }) != undefined) {
+                if (this.iconPosition === "top") {
+                    if (this.items?.find((item) => { return (item.name != null && item.icon != null); }) != undefined) {
                         tabBarElement.querySelectorAll('.mdc-tab').forEach((value: Element) => { value.classList.add('mdc-tab-vertical'); });
-                        tabBarElement.querySelectorAll('.mdc-tab__content').forEach((value: Element) => { value.classList.add('mdc-tab-vertical__content')});
-                        tabBarElement.querySelectorAll('.mdc-tab__text-label').forEach((value: Element) => { value.classList.add('mdc-tab-vertical__text-label')});
+                        tabBarElement.querySelectorAll('.mdc-tab__content').forEach((value: Element) => { value.classList.add('mdc-tab-vertical__content') });
+                        tabBarElement.querySelectorAll('.mdc-tab__text-label').forEach((value: Element) => { value.classList.add('mdc-tab-vertical__text-label') });
                     }
                 }
 
                 // Apply colors if set differently
-                if(this.bgColor != null) {
+                if (this.bgColor != null) {
                     tabBarElement.querySelectorAll('.mdc-tab').forEach((value: Element) => {
                         (value as HTMLElement).style.background = this.bgColor as string;
                     });
                 }
-                if(this.color != null) {
+                if (this.color != null) {
                     tabBarElement.querySelectorAll('.mdc-tab__text-label').forEach((value: Element) => { (value as HTMLElement).style.color = this.color as string; });
                     tabBarElement.querySelectorAll('.mdc-tab__icon').forEach((value: Element) => { (value as HTMLElement).style.color = this.color as string; })
                     tabBarElement.querySelectorAll('.mdc-tab-indicator__content--underline').forEach((value: Element) => { (value as HTMLElement).style.borderColor = this.color as string; });
@@ -126,10 +144,10 @@ export class OrMwcTabs extends LitElement {
 
     // If an update happens on either the Index or mdcTabBar object.
     protected updated(changedProperties: Map<string, any>) {
-        if(changedProperties.has('index') || changedProperties.has('mdcTabBar')) {
-            if(this.mdcTabBar != null && this.index != null) {
+        if (changedProperties.has('index') || changedProperties.has('mdcTabBar')) {
+            if (this.mdcTabBar != null && this.index != null) {
                 this.mdcTabBar.activateTab(this.index);
-                this.dispatchEvent(new CustomEvent("activated", { detail: { index: this.index }}))
+                this.dispatchEvent(new CustomEvent("activated", { detail: { index: this.index } }))
             }
         }
     }
@@ -137,17 +155,18 @@ export class OrMwcTabs extends LitElement {
 
     protected render() {
         let selectedItem: OrMwcTabItem | undefined;
-        if(this.items != null && this.index != null) {
+        if (this.items != null && this.index != null) {
             selectedItem = this.items[this.index];
         }
         return html`
-            ${typeof(this.styles) === "string" ? html`<style>${this.styles}</style>` : this.styles || ``}
+            ${typeof (this.styles) === "string" ? html`<style>${this.styles}</style>` : this.styles || ``}
             <div>
                 <div class="mdc-tab-bar" role="tablist" id="tab-bar">
                     <div class="mdc-tab-scroller">
                         <div class="mdc-tab-scroller__scroll-area" style="overflow-x: ${this.noScroll ? 'hidden' : undefined}">
                             <div class="mdc-tab-scroller__scroll-content">
-                                ${this.items?.map((menuItem => { return html`
+                                ${this.items?.map((menuItem => {
+            return html`
                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="${this.items?.indexOf(menuItem)}">
                                     <span class="mdc-tab__content">
                                         ${menuItem.icon != null ? html`<or-icon icon="${menuItem.icon}" class="mdc-tab__icon"></or-icon>` : null}

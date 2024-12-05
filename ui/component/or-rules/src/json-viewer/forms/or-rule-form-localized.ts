@@ -1,25 +1,43 @@
-import {i18next, translate} from "@openremote/or-translate";
-import {LitElement, PropertyValues, TemplateResult, css, html} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {AbstractNotificationMessageUnion, LocalizedNotificationMessage} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
-import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
-import {guard} from "lit/directives/guard.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { i18next, translate } from "@openremote/or-translate";
+import { LitElement, PropertyValues, TemplateResult, css, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { AbstractNotificationMessageUnion, LocalizedNotificationMessage } from "@openremote/model";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
+import { when } from "lit/directives/when.js";
+import { until } from "lit/directives/until.js";
+import { guard } from "lit/directives/guard.js";
 import "./or-rule-form-email-message";
 import "./or-rule-form-push-notification";
 import ISO6391 from "iso-639-1";
-import {DefaultColor6} from "@openremote/core";
+import { DefaultColor6 } from "@openremote/core";
 
 @customElement("or-rule-form-localized")
 export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
 
-    @property({type: Object})
+    @property({ type: Object })
     public message?: LocalizedNotificationMessage;
 
-    @property({type: String})
+    @property({ type: String })
     public type: "push" | "email" = "push";
 
     @property()
@@ -54,7 +72,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
 
     connectedCallback() {
         super.connectedCallback();
-        if(!this.defaultLang || !this.languages.includes(this.defaultLang)) {
+        if (!this.defaultLang || !this.languages.includes(this.defaultLang)) {
             this.defaultLang = this.languages[0];
         }
         this._selectedLanguage = this.defaultLang;
@@ -68,9 +86,9 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                     ${until(this._getLanguageSelectForm(this._selectedLanguage, this.languages), html`Loading...`)}
                     ${until(this._getNotificationForm(this.message, this._selectedLanguage), html`Loading...`)}
                 `)}
-                ${when(this.languages?.length && this._validLanguages && (this._validLanguages.length < this.languages.length), 
-                        () => until(this._getLanguageErrorTemplate(this.languages!, this._validLanguages!))
-                )}
+                ${when(this.languages?.length && this._validLanguages && (this._validLanguages.length < this.languages.length),
+            () => until(this._getLanguageErrorTemplate(this.languages!, this._validLanguages!))
+        )}
             </div>
         `;
     }
@@ -94,7 +112,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * The {@link wrongLanguage} property will be updated to 'false'.
      */
     protected _fixDefaultLanguage(): void {
-        if(this.message) {
+        if (this.message) {
             console.debug("Updating default language from " + this.message.defaultLanguage + " to " + this.defaultLang);
             this.message.defaultLanguage = this.defaultLang;
             this.wrongLanguage = false;
@@ -134,21 +152,21 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * Based on {@link lang}, it uses the Notification configured for that language.
      */
     protected async _getNotificationForm(message = this.message, lang = this._selectedLanguage): Promise<TemplateResult> {
-        if(!message?.languages) {
+        if (!message?.languages) {
             return html`<or-translate .value="${"errorOccurred"}"></or-translate>`;
         }
-        if(!message.languages[lang]) {
+        if (!message.languages[lang]) {
             message.languages[lang] = {
                 type: this.type
             };
         }
         const msg = message.languages[lang];
 
-        if(msg.type === "push") {
+        if (msg.type === "push") {
             return html`
                 <or-rule-form-push-notification .message="${msg}"></or-rule-form-push-notification>
             `;
-        } else if(msg.type === "email") {
+        } else if (msg.type === "email") {
             return html`
                 <or-rule-form-email-message .message="${msg}"></or-rule-form-email-message>
             `;
@@ -179,17 +197,17 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      * Returns true, or false if ANY language is not valid.
      */
     public isValid(): boolean {
-        if(this.message?.languages && this.languages?.length) {
+        if (this.message?.languages && this.languages?.length) {
 
             // First, cleanup the message
             this._cleanNotificationMessage();
 
             const validLanguages = this.languages?.filter(lang => {
-                if(!this.message?.languages?.[lang]) {
+                if (!this.message?.languages?.[lang]) {
                     return true;
                 }
                 const msg = this.message.languages[lang];
-                switch(msg.type) {
+                switch (msg.type) {
                     case "email":
                         return msg.subject && msg.html;
                     case "push":
@@ -201,7 +219,7 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
                 }
             });
             // Update cached list of valid languages
-            if(JSON.stringify(this._validLanguages) !== JSON.stringify(validLanguages)) {
+            if (JSON.stringify(this._validLanguages) !== JSON.stringify(validLanguages)) {
                 this._validLanguages = validLanguages;
             }
 
@@ -216,33 +234,33 @@ export class OrRuleFormLocalized extends translate(i18next)(LitElement) {
      */
     protected _cleanNotificationMessage() {
 
-        if(this.message?.languages) {
+        if (this.message?.languages) {
             const languageEntries = Object.entries(this.message.languages).filter(([lang, msg]) => {
 
                 const userDefinedFields = Object.entries(msg).filter(entry => {
-                    if(entry[0] === "type") return false;
-                    if(entry[1] == null) return false; // key has no value
-                    if(typeof entry[1] === "string" && entry[1].length === 0) return false;
-                    if(Array.isArray(entry[1])) {
+                    if (entry[0] === "type") return false;
+                    if (entry[1] == null) return false; // key has no value
+                    if (typeof entry[1] === "string" && entry[1].length === 0) return false;
+                    if (Array.isArray(entry[1])) {
                         // Check if any object in the array has at least one key-value pair with a truthy value
                         const arrayHasValue = entry[1].some(obj =>
                             Object.keys(obj).length > 0 && Object.values(obj).some(value => value)
                         );
-                        if(!arrayHasValue) return false;
+                        if (!arrayHasValue) return false;
 
-                    } else if(typeof entry[1] === "object") {
-                        if(Object.keys(entry[1]).length === 0 || Object.values(entry[1]).filter(value => value).length === 0) return false;
+                    } else if (typeof entry[1] === "object") {
+                        if (Object.keys(entry[1]).length === 0 || Object.values(entry[1]).filter(value => value).length === 0) return false;
                     }
                     return true;
                 });
 
-                if(userDefinedFields.length === 0) {
+                if (userDefinedFields.length === 0) {
                     console.debug(`Removing fields of notification language '${lang}', as they were all empty.`);
                     return false;
                 }
                 return true;
             });
-            this.message.languages = Object.fromEntries(languageEntries) as {[p: string]: AbstractNotificationMessageUnion};
+            this.message.languages = Object.fromEntries(languageEntries) as { [p: string]: AbstractNotificationMessageUnion };
         }
     }
 }

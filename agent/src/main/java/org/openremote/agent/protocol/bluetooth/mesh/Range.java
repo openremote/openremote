@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -65,15 +64,13 @@ public abstract class Range {
             return true;
         }
         // Is the range's lower address lower than the other range's low address
-        else if (rLow <= oLow &&
-            rHigh >= oLow && rHigh <= oHigh) {
+        else if (rLow <= oLow && rHigh >= oLow && rHigh <= oHigh) {
             return true;
         }
         // Is the range's higher address greater than the other range's high address
-        else return rHigh >= oHigh &&
-                rLow >= oLow && rLow <= oHigh;
+        else
+            return rHigh >= oHigh && rLow >= oLow && rLow <= oHigh;
     }
-
 
     /**
      * Returns a list of merged unicast ranges
@@ -89,7 +86,7 @@ public abstract class Range {
             }
 
             // Is the range already in accumulator's range?
-            //noinspection StatementWithEmptyBody
+            // noinspection StatementWithEmptyBody
             if (accumulator.getHighAddress() >= range.getHighAddress()) {
                 // Do nothing.
             }
@@ -128,7 +125,7 @@ public abstract class Range {
             }
 
             // Is the range already in accumulator's range?
-            //noinspection StatementWithEmptyBody
+            // noinspection StatementWithEmptyBody
             if (accumulator.getHighAddress() >= range.getHighAddress()) {
                 // Do nothing.
             }
@@ -167,7 +164,7 @@ public abstract class Range {
             }
 
             // Is the range already in accumulator's range?
-            //noinspection StatementWithEmptyBody
+            // noinspection StatementWithEmptyBody
             if (accumulator.getLastScene() >= range.getLastScene()) {
                 // Do nothing.
             }

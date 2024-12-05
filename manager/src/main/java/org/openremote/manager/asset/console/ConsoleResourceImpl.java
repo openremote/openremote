@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset.console;
 
-import jakarta.ws.rs.BadRequestException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -42,10 +45,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.Realm;
 import org.openremote.model.util.TextUtil;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import jakarta.ws.rs.BadRequestException;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
 
@@ -53,15 +53,13 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     protected Map<String, String> realmConsoleParentMap = new ConcurrentHashMap<>();
     protected AssetStorageService assetStorageService;
 
-    public ConsoleResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetStorageService assetStorageService, ClientEventService clientEventService) {
+    public ConsoleResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            AssetStorageService assetStorageService, ClientEventService clientEventService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
 
         // Subscribe for asset events
-        clientEventService.addSubscription(
-            AssetEvent.class,
-            null,
-            this::onAssetChange);
+        clientEventService.addSubscription(AssetEvent.class, null, this::onAssetChange);
     }
 
     protected void onAssetChange(AssetEvent event) {
@@ -84,7 +82,8 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         if (!TextUtil.isNullOrEmpty(consoleRegistration.getId())) {
             Asset<?> existingAsset = assetStorageService.find(consoleRegistration.getId(), true);
             if (existingAsset != null && !(existingAsset instanceof ConsoleAsset)) {
-                throw new BadRequestException("Console registration ID is not for a Console asset: " + consoleRegistration.getId());
+                throw new BadRequestException(
+                        "Console registration ID is not for a Console asset: " + consoleRegistration.getId());
             }
             consoleAsset = (ConsoleAsset) existingAsset;
         }
@@ -103,24 +102,28 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             }
         }
 
-        if (mergeConsole || !Objects.equals(consoleAsset.getConsoleName().orElse(null), consoleRegistration.getName())) {
+        if (mergeConsole
+                || !Objects.equals(consoleAsset.getConsoleName().orElse(null), consoleRegistration.getName())) {
             mergeConsole = true;
             consoleAsset.setConsoleName(consoleRegistration.getName());
         }
 
-        boolean providersChanged = mergeConsole || !consoleAsset.getConsoleProviders().map(providers ->
-            providers.equals(consoleRegistration.getProviders())).orElseGet(() -> consoleRegistration.getProviders() != null);
+        boolean providersChanged = mergeConsole || !consoleAsset.getConsoleProviders()
+                .map(providers -> providers.equals(consoleRegistration.getProviders()))
+                .orElseGet(() -> consoleRegistration.getProviders() != null);
         if (providersChanged) {
             mergeConsole = true;
             consoleAsset.setConsoleProviders(new ConsoleProviders(consoleRegistration.getProviders()));
         }
 
-        if (mergeConsole || !Objects.equals(consoleAsset.getConsoleVersion().orElse(null), consoleRegistration.getVersion())) {
+        if (mergeConsole
+                || !Objects.equals(consoleAsset.getConsoleVersion().orElse(null), consoleRegistration.getVersion())) {
             mergeConsole = true;
             consoleAsset.setConsoleVersion(consoleRegistration.getVersion());
         }
 
-        if (mergeConsole || !Objects.equals(consoleAsset.getConsolePlatform().orElse(null), consoleRegistration.getPlatform())) {
+        if (mergeConsole
+                || !Objects.equals(consoleAsset.getConsolePlatform().orElse(null), consoleRegistration.getPlatform())) {
             mergeConsole = true;
             consoleAsset.setConsolePlatform(consoleRegistration.getPlatform());
         }
@@ -132,12 +135,15 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
         // If authenticated link the console to this user only
         if (isAuthenticated()) {
-            List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(getAuthenticatedRealmName(), null, consoleAsset.getId());
-            List<UserAssetLink> otherUserAssetLinks = userAssetLinks.stream().filter(link -> !getUserId().equals(link.getId().getUserId())).toList();
+            List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(getAuthenticatedRealmName(),
+                    null, consoleAsset.getId());
+            List<UserAssetLink> otherUserAssetLinks = userAssetLinks.stream()
+                    .filter(link -> !getUserId().equals(link.getId().getUserId())).toList();
             if (!otherUserAssetLinks.isEmpty()) {
                 assetStorageService.deleteUserAssetLinks(otherUserAssetLinks);
             }
-            assetStorageService.storeUserAssetLinks(List.of(new UserAssetLink(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId())));
+            assetStorageService.storeUserAssetLinks(
+                    List.of(new UserAssetLink(getAuthenticatedRealmName(), getUserId(), consoleAsset.getId())));
         }
 
         return consoleRegistration;
@@ -166,15 +172,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     public static Asset<?> getConsoleParentAsset(AssetStorageService assetStorageService, Realm realm) {
 
         // Look for a group asset with a child type of console in the realm root
-        GroupAsset consoleParent = (GroupAsset) assetStorageService.find(
-            new AssetQuery()
-                .select(new AssetQuery.Select().excludeAttributes())
-                .names(CONSOLE_PARENT_ASSET_NAME)
-                .parents(new ParentPredicate(null))
-                .types(GroupAsset.class)
-                .realm(new RealmPredicate(realm.getName()))
-                .attributes(new AttributePredicate("childAssetType", new StringPredicate(ConsoleAsset.DESCRIPTOR.getName())))
-        );
+        GroupAsset consoleParent = (GroupAsset) assetStorageService
+                .find(new AssetQuery().select(new AssetQuery.Select().excludeAttributes())
+                        .names(CONSOLE_PARENT_ASSET_NAME).parents(new ParentPredicate(null)).types(GroupAsset.class)
+                        .realm(new RealmPredicate(realm.getName())).attributes(new AttributePredicate("childAssetType",
+                                new StringPredicate(ConsoleAsset.DESCRIPTOR.getName()))));
 
         if (consoleParent == null) {
             consoleParent = new GroupAsset(CONSOLE_PARENT_ASSET_NAME, ConsoleAsset.class);

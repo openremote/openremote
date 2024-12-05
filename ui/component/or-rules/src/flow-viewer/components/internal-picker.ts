@@ -1,5 +1,23 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { LitElement, html, css, TemplateResult } from "lit";
-import {customElement, property} from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef, AssetModelUtil } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -13,7 +31,7 @@ import { PickerStyle } from "../styles/picker-styles";
 import { Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -42,7 +60,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 --or-app-color4: var(--or-mwc-input-color);
             }`,
             PickerStyle,
-            css`.attribute-label-white {
+        css`.attribute-label-white {
                 background: #ffffff;
             }
             .selected-asset-container {
@@ -92,8 +110,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     protected render() {
         switch (this.internal.picker!.type) {
             case PickerType.ASSET_ATTRIBUTE:
-                if (this.internal.value && !this.selectedAsset)
-                {
+                if (this.internal.value && !this.selectedAsset) {
                     this.setSelectedAssetFromInternalValue();
                 }
                 return this.assetAttributeInput;
@@ -141,7 +158,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         }
     }
 
-    private async setSelectedAssetFromInternalValue(){
+    private async setSelectedAssetFromInternalValue() {
         const response = await rest.api.AssetResource.queryAssets({
             ids: [this.internal.value.assetId]
         });
@@ -156,11 +173,11 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     private get assetAttributeInput(): TemplateResult {
 
         const openDialog = () => {
-            let _selectedAttributes : AttributeRef[] = [];
+            let _selectedAttributes: AttributeRef[] = [];
             let _selectedAssets: string[] = [];
             let val = this.node.internals![this.internalIndex].value;
 
-            if (val){
+            if (val) {
                 _selectedAttributes = [{
                     id: val.assetId,
                     name: val.attributeName
@@ -168,7 +185,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             }
 
             if (this.selectedAsset && this.selectedAsset.id) {
-                _selectedAssets = [ this.selectedAsset.id ];
+                _selectedAssets = [this.selectedAsset.id];
             }
 
             const dialog = showDialog(new OrAttributePicker()
@@ -190,8 +207,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         };
 
         let selectedAttrLabel = '?';
-        if (this.selectedAsset && this.selectedAsset.attributes && this.internal?.value?.attributeName)
-        {
+        if (this.selectedAsset && this.selectedAsset.attributes && this.internal?.value?.attributeName) {
             const attrName = this.internal?.value?.attributeName;
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, this.selectedAsset.type!);
             let attr = this.selectedAsset.attributes[attrName];
@@ -204,15 +220,15 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         const myIcon = getAssetDescriptorIconTemplate(descriptor);
 
         return html`<div>
-            ${(this.selectedAsset ? 
-                    html`<div class="attribute-label attribute-label-white selected-asset-container" @click="${() => openDialog()}">
+            ${(this.selectedAsset ?
+                html`<div class="attribute-label attribute-label-white selected-asset-container" @click="${() => openDialog()}">
                         <div class="selected-asset-icon">${myIcon}</div>
                         <div class="selected-asset-label">
                             <div class="asset">${this.selectedAsset.name}</div>
                             <div class="asset-attribute">${selectedAttrLabel}</div>
                         </div>
-                    </div>` : 
-                    html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="attribute" icon="plus" @or-mwc-input-changed="${() => openDialog()}"></or-mwc-input>`
+                    </div>` :
+                html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="attribute" icon="plus" @or-mwc-input-changed="${() => openDialog()}"></or-mwc-input>`
             )}
         </div>`;
     }

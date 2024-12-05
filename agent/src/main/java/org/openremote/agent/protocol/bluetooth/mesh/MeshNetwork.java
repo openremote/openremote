@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import org.openremote.agent.protocol.bluetooth.mesh.transport.Element;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class MeshNetwork extends BaseMeshNetwork{
+import org.openremote.agent.protocol.bluetooth.mesh.transport.Element;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshModel;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+
+public class MeshNetwork extends BaseMeshNetwork {
 
     public MeshNetwork(final String meshUUID) {
         super(meshUUID);
@@ -176,7 +175,8 @@ public class MeshNetwork extends BaseMeshNetwork{
                     if (model != null) {
                         if (model.getPublicationSettings() != null) {
                             if (model.getPublicationSettings().getLabelUUID() != null) {
-                                if (address == MeshAddress.generateVirtualAddress(model.getPublicationSettings().getLabelUUID())) {
+                                if (address == MeshAddress
+                                        .generateVirtualAddress(model.getPublicationSettings().getLabelUUID())) {
                                     return model.getPublicationSettings().getLabelUUID();
                                 }
                             }
@@ -201,11 +201,12 @@ public class MeshNetwork extends BaseMeshNetwork{
      * with a different address.
      *
      * @param elementCount Element count
-     * @param provisioner  provisioner
+     * @param provisioner provisioner
      * @return Allocated unicast address or -1 if none
      * @throws IllegalArgumentException if there is no allocated unicast range to the provisioner
      */
-    public synchronized int nextAvailableUnicastAddress(final int elementCount, final Provisioner provisioner) throws IllegalArgumentException {
+    public synchronized int nextAvailableUnicastAddress(final int elementCount, final Provisioner provisioner)
+            throws IllegalArgumentException {
         if (provisioner.getAllocatedUnicastRanges().isEmpty()) {
             throw new IllegalArgumentException("Please allocate a unicast address range to the provisioner");
         }
@@ -228,7 +229,8 @@ public class MeshNetwork extends BaseMeshNetwork{
             // Start from the beginning of the current range.
             int address = range.getLowAddress();
 
-            // Iterate through nodes that weren't checked yet in essence the used addresses which include the excluded adresses
+            // Iterate through nodes that weren't checked yet in essence the used addresses which include the excluded
+            // adresses
             for (int usedAddress : usedAddresses) {
 
                 // Skip nodes with addresses below the range.

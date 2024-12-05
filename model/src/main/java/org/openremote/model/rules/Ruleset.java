@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,40 +13,39 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.openremote.model.calendar.CalendarEvent;
+import org.openremote.model.util.ValueUtil;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Rules can be defined in three scopes: global, for a realm, for an asset sub-tree.
  */
 @MappedSuperclass
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type"
-)
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = AssetRuleset.class, name = AssetRuleset.TYPE),
-    @JsonSubTypes.Type(value = RealmRuleset.class, name = RealmRuleset.TYPE),
-    @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE)
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({ @JsonSubTypes.Type(value = AssetRuleset.class, name = AssetRuleset.TYPE),
+        @JsonSubTypes.Type(value = RealmRuleset.class, name = RealmRuleset.TYPE),
+        @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE) })
 public abstract class Ruleset {
 
     public static final String SHOW_ON_LIST = "showOnList";
@@ -75,17 +71,16 @@ public abstract class Ruleset {
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.UpdateTimestamp
     protected Date lastModified;
 
-    @NotNull(message = "{Ruleset.name.NotNull}")
-    @Column(name = "NAME", nullable = false)
+    @NotNull(message = "{Ruleset.name.NotNull}") @Column(name = "NAME", nullable = false)
     @Size(min = 3, max = 255, message = "{Ruleset.name.Size}")
     protected String name;
 
@@ -95,8 +90,7 @@ public abstract class Ruleset {
     @Column(name = "RULES", nullable = false)
     protected String rules;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
+    @NotNull @Enumerated(EnumType.STRING)
     @Column(name = "RULES_LANG", nullable = false)
     protected Lang lang = Lang.GROOVY;
 
@@ -244,7 +238,8 @@ public abstract class Ruleset {
 
     @JsonIgnore
     public CalendarEvent getValidity() {
-        return Optional.ofNullable(getMeta().get(VALIDITY)).map(calEvent -> ValueUtil.convert(calEvent, CalendarEvent.class)).orElse(null);
+        return Optional.ofNullable(getMeta().get(VALIDITY))
+                .map(calEvent -> ValueUtil.convert(calEvent, CalendarEvent.class)).orElse(null);
     }
 
     @JsonIgnore
@@ -255,7 +250,8 @@ public abstract class Ruleset {
 
     // TODO: Unify triggers for rulesets
     public boolean isTriggerOnPredictedData() {
-        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).flatMap(ValueUtil::getBoolean).orElse(false);
+        return Optional.ofNullable(getMeta().get(TRIGGER_ON_PREDICTED_DATA)).flatMap(ValueUtil::getBoolean)
+                .orElse(false);
     }
 
     public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
@@ -274,17 +270,8 @@ public abstract class Ruleset {
 
     @Override
     public String toString() {
-        return Ruleset.class.getSimpleName() + "{" +
-            "id=" + id +
-            ", version=" + version +
-            ", createdOn=" + createdOn +
-            ", lastModified=" + lastModified +
-            ", name='" + name + '\'' +
-            ", enabled=" + enabled +
-            ", rules='" + rules + '\'' +
-            ", lang=" + lang +
-            ", status=" + status +
-            ", error='" + error + '\'' +
-            '}';
+        return Ruleset.class.getSimpleName() + "{" + "id=" + id + ", version=" + version + ", createdOn=" + createdOn
+                + ", lastModified=" + lastModified + ", name='" + name + '\'' + ", enabled=" + enabled + ", rules='"
+                + rules + '\'' + ", lang=" + lang + ", status=" + status + ", error='" + error + '\'' + '}';
     }
 }

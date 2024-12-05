@@ -1,8 +1,25 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 declare function require(name: string): any;
 
-import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+import { html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
@@ -11,14 +28,14 @@ import "@openremote/or-chart";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
-import {DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { DialogAction, OrMwcDialog, showDialog, showOkCancelDialog, showOkDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {subscribe, Util, DefaultColor5} from "@openremote/core";
-import {OrMwcTable, OrMwcTableRowClickEvent} from "@openremote/or-mwc-components/or-mwc-table";
-import {OrChartConfig} from "@openremote/or-chart";
-import {HistoryConfig, OrAttributeHistory} from "@openremote/or-attribute-history";
+import { translate } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import manager, { subscribe, Util, DefaultColor5 } from "@openremote/core";
+import { OrMwcTable, OrMwcTableRowClickEvent } from "@openremote/or-mwc-components/or-mwc-table";
+import { OrChartConfig } from "@openremote/or-chart";
+import { HistoryConfig, OrAttributeHistory } from "@openremote/or-attribute-history";
 import {
     AgentDescriptor,
     Asset,
@@ -35,15 +52,15 @@ import {
     WellknownAttributes,
     WellknownMetaItems,
 } from "@openremote/model";
-import {panelStyles, style} from "./style";
-import i18next, {InitOptions, TOptions} from "i18next";
-import {styleMap} from "lit/directives/style-map.js";
-import {classMap} from "lit/directives/class-map.js";
-import {GenericAxiosResponse} from "axios";
+import { panelStyles, style } from "./style";
+import i18next, { InitOptions, TOptions } from "i18next";
+import { styleMap } from "lit/directives/style-map.js";
+import { classMap } from "lit/directives/class-map.js";
+import { GenericAxiosResponse } from "axios";
 import "./or-edit-asset-panel";
-import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
+import { OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult } from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { progressCircular } from "@openremote/or-mwc-components/style";
 import { OrAssetTree } from "@openremote/or-asset-tree";
 
@@ -139,7 +156,7 @@ interface AssetInfo {
     childAssets?: Asset[];
     viewerConfig: AssetViewerConfig;
     modified: boolean;
-    attributeTemplateMap: {[attrName: string]: TemplateResult};
+    attributeTemplateMap: { [attrName: string]: TemplateResult };
 }
 
 export type PanelViewProvider = (asset: Asset, attributes: { [index: string]: Attribute<any> }, panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
@@ -148,7 +165,7 @@ export type AttributeViewProvider = (asset: Asset, attribute: Attribute<any>, ho
 
 export function getIncludedProperties(config?: InfoPanelConfig): string[] {
     const includedProperties = config && config.properties && config.properties.include ? config.properties.include : DEFAULT_ASSET_PROPERTIES;
-    const excludedProperties =  config && config.properties && config.properties.exclude ? config.properties.exclude : [];
+    const excludedProperties = config && config.properties && config.properties.exclude ? config.properties.exclude : [];
 
     return includedProperties.filter((prop) => !excludedProperties || excludedProperties.indexOf(prop) < 0);
 }
@@ -303,7 +320,7 @@ export function getPanel(id: string, panelConfig: PanelConfig, content: Template
     }
 
     return html`
-        <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}" id="${id}-panel">
+        <div class=${classMap({ panel: true, mobileHidden: panelConfig.hideOnMobile === true })} style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}" id="${id}-panel">
             <div class="panel-content-wrapper">
                 <div class="panel-title">
                     <or-translate value="${panelConfig.title || panelConfig.type}"></or-translate>
@@ -341,7 +358,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             return undefined;
         }
 
-        const items: {item: string | Attribute<any>, itemConfig: InfoPanelItemConfig}[] = [];
+        const items: { item: string | Attribute<any>, itemConfig: InfoPanelItemConfig }[] = [];
 
         includedProperties.forEach((prop) => {
             const itemConfig = infoConfig.properties && infoConfig.properties.itemConfig ? infoConfig.properties.itemConfig[prop] : {};
@@ -369,7 +386,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             });
         });
 
-        const labelSort = Util.sortByString((item: {item: string | Attribute<any>, itemConfig: InfoPanelItemConfig}) => item.itemConfig.label!.toUpperCase());
+        const labelSort = Util.sortByString((item: { item: string | Attribute<any>, itemConfig: InfoPanelItemConfig }) => item.itemConfig.label!.toUpperCase());
 
         items.sort((a, b) => {
             const priorityA = a.itemConfig.priority!;
@@ -383,25 +400,25 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 return -1;
             }
 
-            return labelSort(a,b);
+            return labelSort(a, b);
         });
 
         return html`
             ${items.map((item) => {
-                if (typeof item.item === "string") {
-                    // This is a property                    
-                    return getField(item.item, item.itemConfig, getPropertyTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig));
-                } else {
-                    // This is an attribute look for a cached template
-                    if (assetInfo.attributeTemplateMap[item.item.name!]) {
-                        return getField(item.item.name!, item.itemConfig, assetInfo.attributeTemplateMap[item.item.name!]);
-                    }
-                    
-                    const template = getAttributeTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig);
-                    assetInfo.attributeTemplateMap[item.item.name!] = template;
-                    
-                    return getField(item.item.name!, item.itemConfig, template);
+            if (typeof item.item === "string") {
+                // This is a property                    
+                return getField(item.item, item.itemConfig, getPropertyTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig));
+            } else {
+                // This is an attribute look for a cached template
+                if (assetInfo.attributeTemplateMap[item.item.name!]) {
+                    return getField(item.item.name!, item.itemConfig, assetInfo.attributeTemplateMap[item.item.name!]);
                 }
+
+                const template = getAttributeTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig);
+                assetInfo.attributeTemplateMap[item.item.name!] = template;
+
+                return getField(item.item.name!, item.itemConfig, template);
+            }
         })}`;
     }
 
@@ -451,7 +468,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     if (response.status !== 200) {
                         showSnackbar(undefined, "somethingWentWrong", "dismiss");
                     } else {
-                        showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", "dismiss");
+                        showSnackbar(undefined, "Import successful! Added " + response.data.length + " assets!", "dismiss");
                         console.info(response.data, response) //todo: do something with this response
                     }
                 })
@@ -512,12 +529,12 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                             binary: true
                         } as FileInfo
 
-                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo, undefined, {timeout: 30000})
+                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo, undefined, { timeout: 30000 })
                             .then(response => {
                                 if (response.status !== 200) {
                                     showSnackbar(undefined, "somethingWentWrong", "dismiss");
                                 } else {
-                                    showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", "dismiss");
+                                    showSnackbar(undefined, "Import successful! Added " + response.data.length + " assets!", "dismiss");
                                     console.info(response.data, response)
                                 }
                             })
@@ -605,7 +622,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
-            }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
+        }).sort(Util.sortByString((item) => item[1] === undefined ? item[0]! : item[1]));
 
         let attrTemplate = html`
                 <div id="attribute-picker">
@@ -690,7 +707,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
             manager.console.storeData("OrAssetConfig", config);
         };
 
-        let config: {views: {[assetId: string]: string[]}};
+        let config: { views: { [assetId: string]: string[] } };
 
         manager.console.retrieveData("OrAssetConfig")
             .then(conf => {
@@ -762,8 +779,8 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                         ${availableAttributes.sort().map((attribute) => html`
                             <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" style="display: inline-flex;"
                                           .value="${!!selectedAttributes.find((selected) => selected === attribute)}" 
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => 
-                                                  evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>
+                        evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"
                             ></or-mwc-input>
                         `)}
                     </div>
@@ -792,7 +809,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                     }
                 </style>
                 <or-mwc-input .type="${InputType.BUTTON}" class="asset-group-add-remove-button" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-mwc-input>
-                <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{stickyFirstColumn: true}}"></or-mwc-table>
+                <or-mwc-table .columns="${headersAndRows[0]}" .rows="${headersAndRows[1]}" .id="${id}-attribute-table" .config="${{ stickyFirstColumn: true }}"></or-mwc-table>
             `;
     }
 
@@ -817,10 +834,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
             ];
         });
-        return html`<or-mwc-table id="linked-users-table" .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
-                                  @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => { 
-                                      hostElement.dispatchEvent(new OrAssetViewerLoadUserEvent(assetLinkInfos[ev.detail.index].userId));
-                                  }}">
+        return html`<or-mwc-table id="linked-users-table" .rows="${rows}" .config="${{ stickyFirstColumn: false }}" .columns="${cols}"
+                                  @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => {
+                hostElement.dispatchEvent(new OrAssetViewerLoadUserEvent(assetLinkInfos[ev.detail.index].userId));
+            }}">
                     </or-mwc-table>`;
     }
 
@@ -845,10 +862,10 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                 linkedAlarm.status
             ];
         });
-        return html`<or-mwc-table .rows="${rows}" .config="${{stickyFirstColumn:false}}" .columns="${cols}"
+        return html`<or-mwc-table .rows="${rows}" .config="${{ stickyFirstColumn: false }}" .columns="${cols}"
                                   @or-mwc-table-row-click="${(ev: OrMwcTableRowClickEvent) => {
-            hostElement.dispatchEvent(new OrAssetViewerLoadAlarmEvent(linkedAlarms[ev.detail.index].id!));
-        }}">
+                hostElement.dispatchEvent(new OrAssetViewerLoadAlarmEvent(linkedAlarms[ev.detail.index].id!));
+            }}">
                     </or-mwc-table>`;
     }
 }
@@ -935,7 +952,7 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
     }
 
     return html`
-            <div id="field-${name}" style="${itemConfig && itemConfig.styles ? styleMap(itemConfig.styles) : ""}" class=${classMap({field: true, mobileHidden: !!itemConfig && !!itemConfig.hideOnMobile})}>
+            <div id="field-${name}" style="${itemConfig && itemConfig.styles ? styleMap(itemConfig.styles) : ""}" class=${classMap({ field: true, mobileHidden: !!itemConfig && !!itemConfig.hideOnMobile })}>
                 ${content}
             </div>
         `;
@@ -1009,7 +1026,7 @@ async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
 
     try {
         return await manager.rest.api.AssetResource.getUserAssetLinks(
-            {realm: manager.displayRealm, assetId: asset.id}
+            { realm: manager.displayRealm, assetId: asset.id }
         ).then((response) => {
             const userAssetLinks = response.data;
             const infoPromises = userAssetLinks.map(userAssetLink => {
@@ -1028,7 +1045,7 @@ async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
 async function getLinkedAlarms(asset: Asset): Promise<SentAlarm[]> {
     try {
         return await manager.rest.api.AlarmResource.getAlarms(
-            {realm: manager.displayRealm, assetId: asset.id}
+            { realm: manager.displayRealm, assetId: asset.id }
         ).then((response) => {
             const alarmAssetLinks = response.data;
             return Promise.all(alarmAssetLinks);
@@ -1096,7 +1113,7 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
             type: "info",
             hideOnMobile: true,
             properties: {
-                include:[]
+                include: []
             },
             attributes: {
                 include: ["notes", "manufacturer", "model"]
@@ -1106,7 +1123,7 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
             title: "attributes",
             type: "info",
             properties: {
-                include:[]
+                include: []
             },
             attributes: {
                 exclude: ["location", "notes", "manufacturer", "model"]
@@ -1121,7 +1138,7 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
             type: "info",
             column: 1,
             properties: {
-                include:[]
+                include: []
             },
             attributes: {
                 include: ["location"],
@@ -1161,19 +1178,19 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         ];
     }
 
-    @property({type: Object, reflect: false})
+    @property({ type: Object, reflect: false })
     public asset?: Asset;
 
-    @property({type: Array})
+    @property({ type: Array })
     public ids: string[] | undefined;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: ViewerConfig;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public editMode?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly?: boolean;
 
     @state()
@@ -1216,7 +1233,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
      * so can be rendered differently according to the selected language.
      */
     langChangedCallback = () => {
-        if(this._assetInfo) {
+        if (this._assetInfo) {
             this._assetInfo.attributeTemplateMap = {};
             this.requestUpdate("_assetInfo");
         }
@@ -1404,10 +1421,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         const multiSelection = !this.asset && (this.ids && this.ids.length > 1);
 
         if (multiSelection) {
-            return html `
+            return html`
                 <div class="msg">
                     <div class="multipleAssetsView">
-                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length } }"></or-translate>
+                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.ids!.length }}"></or-translate>
                         <or-mwc-input .type="${InputType.BUTTON}" label="changeParent" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
                     </div>
                 </div>
@@ -1450,11 +1467,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 .flatMap((validationResult) => {
                     const errors: string[] = [];
                     if (!validationResult.valid) {
-                        errors.push(i18next.t("validation.invalidAttributeValue", {attrName: validationResult.name}));
+                        errors.push(i18next.t("validation.invalidAttributeValue", { attrName: validationResult.name }));
                     }
                     if (validationResult.metaResults) {
                         validationResult.metaResults.filter((result) => !result.valid).forEach((metaResult) => {
-                            errors.push(i18next.t("validation.invalidMetaItemValue", {attrName: validationResult.name, metaName: metaResult.name}));
+                            errors.push(i18next.t("validation.invalidMetaItemValue", { attrName: validationResult.name, metaName: metaResult.name }));
                         });
                     }
                     return errors;
@@ -1469,7 +1486,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
                 viewerConfig.panels.forEach((panelConfig, index) => {
                     if (!panelConfig.hide) {
-                        const id = index+"";
+                        const id = index + "";
                         const column = panelConfig.column || 0;
                         const template = getPanel(id, panelConfig, getPanelContent(id, this._assetInfo!, this, viewerConfig, panelConfig)) || ``;
 
@@ -1480,7 +1497,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                                 rightColumn.push(template);
                             }
                         }
-                    }});
+                    }
+                });
 
                 content = html`                
                     <div id="view-container" style="${viewerConfig.viewerStyles ? styleMap(viewerConfig.viewerStyles) : ""}" @scroll="${this._toggleHeaderShadow}">
@@ -1502,11 +1520,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
-                        ${editMode 
-                                ? html`
-                                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {asset!.name = e.detail.value; this._assetInfo!.modified = true; this._doValidation();}}"></or-mwc-input>
+                        ${editMode
+                ? html`
+                                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { asset!.name = e.detail.value; this._assetInfo!.modified = true; this._doValidation(); }}"></or-mwc-input>
                                 `
-                                : html`<span>${asset.name}</span>`}
+                : html`<span>${asset.name}</span>`}
                     </div>
                     <div id="right-wrapper" class="mobileHidden">
                         ${validationErrors.length === 0 ? (asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``) : html`<span id="error-wrapper" .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate class="tabletHidden" value="validation.invalidAsset"></or-translate></span>`}
@@ -1670,7 +1688,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 delete this._assetInfo.attributeTemplateMap[attrName];
 
                 // Update attribute within the asset
-                const attr = {...asset.attributes[attrName]};
+                const attr = { ...asset.attributes[attrName] };
                 attr.value = attributeEvent.value;
                 attr.timestamp = attributeEvent.timestamp;
                 asset.attributes[attrName] = attr;
@@ -1690,11 +1708,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
-        const config = {...DEFAULT_VIEWER_CONFIG};
+        const config = { ...DEFAULT_VIEWER_CONFIG };
 
         if (this.config) {
 
-            config.viewerStyles = {...config.viewerStyles};
+            config.viewerStyles = { ...config.viewerStyles };
             config.panels = config.panels ? [...config.panels] : [];
             const assetConfig = this.config.assetTypes && this.config.assetTypes.hasOwnProperty(asset.type!) ? this.config.assetTypes[asset.type!] : this.config.default;
 

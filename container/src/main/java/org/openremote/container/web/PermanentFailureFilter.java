@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.logging.Logger;
 
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -26,11 +31,6 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A filter that once a HTTP status code is received that matches any in the {@link #failureResponses} will result
@@ -62,7 +62,9 @@ public class PermanentFailureFilter implements ClientRequestFilter, ClientRespon
         }
 
         if (failureResponses.contains(responseContext.getStatus())) {
-            LOG.warning("Server returned a response code that is set as permanent failure so future requests will be blocked: " + responseContext.getStatus());
+            LOG.warning(
+                    "Server returned a response code that is set as permanent failure so future requests will be blocked: "
+                            + responseContext.getStatus());
             failed = true;
         }
     }

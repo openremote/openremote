@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -32,11 +31,11 @@ public final class NetworkKey extends MeshKey {
     public static final int NORMAL_OPERATION = 0;
     public static final int KEY_DISTRIBUTION = 1;
     public static final int USING_NEW_KEYS = 2;
-    //public static final int REVOKING_OLD_KEYS   = 3; This phase is instantaneous.
+    // public static final int REVOKING_OLD_KEYS = 3; This phase is instantaneous.
 
     // Transitions
-    public static final int USE_NEW_KEYS = 2; //Normal operation
-    public static final int REVOKE_OLD_KEYS = 3; //Key Distribution
+    public static final int USE_NEW_KEYS = 2; // Normal operation
+    public static final int REVOKE_OLD_KEYS = 3; // Key Distribution
 
     private int phase = NORMAL_OPERATION;
 
@@ -56,7 +55,7 @@ public final class NetworkKey extends MeshKey {
      * Constructs a NetworkKey object with a given key index and network key
      *
      * @param keyIndex 12-bit network key index
-     * @param key      16-byte network key
+     * @param key 16-byte network key
      */
     public NetworkKey(final int keyIndex, @NotNull final byte[] key) {
         super(keyIndex, key);
@@ -133,7 +132,7 @@ public final class NetworkKey extends MeshKey {
     }
 
     /**
-     * Sets  the minimum security.
+     * Sets the minimum security.
      *
      * @param minSecurity true if minimum security or false if insecure.
      */
@@ -193,12 +192,12 @@ public final class NetworkKey extends MeshKey {
     }
 
     /**
-     * Updates the currently used {@link #key} with the newKey  and sets the currently used key as the {@link #oldKey}
+     * Updates the currently used {@link #key} with the newKey and sets the currently used key as the {@link #oldKey}
      *
      * @param newKey New NetworkKey value
      * @return true if successful or false otherwise
      * @throws IllegalArgumentException if a NetworkKey distribution is attempted twice with different key
-     *                                  values during a single Key refresh procedure
+     *             values during a single Key refresh procedure
      */
     protected boolean distributeKey(@NotNull final byte[] newKey) throws IllegalArgumentException {
         if (valid(newKey)) {
@@ -207,7 +206,8 @@ public final class NetworkKey extends MeshKey {
                 timestamp = System.currentTimeMillis();
                 return super.distributeKey(newKey);
             } else {
-                throw new IllegalArgumentException("A NetworkKey can only be updated once during a Key Refresh Procedure.");
+                throw new IllegalArgumentException(
+                        "A NetworkKey can only be updated once during a Key Refresh Procedure.");
             }
         }
         return false;
@@ -249,7 +249,6 @@ public final class NetworkKey extends MeshKey {
         return SecureUtils.calculateK3(oldKey);
     }
 
-
     /**
      * Returns the derivatives from the network key
      *
@@ -268,4 +267,3 @@ public final class NetworkKey extends MeshKey {
         return oldDerivatives;
     }
 }
-

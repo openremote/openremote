@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 /**
  * To be used as a wrapper class when creating a GenericOnOffSetUnacknowledged message.
@@ -48,33 +47,29 @@ public class GenericOnOffSetUnacknowledged extends GenericMessage {
      * Constructs GenericOnOffSet message.
      *
      * @param appKey {@link ApplicationKey} key for this message
-     * @param state  Boolean state of the GenericOnOffModel
-     * @param tId    transaction id
+     * @param state Boolean state of the GenericOnOffModel
+     * @param tId transaction id
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
-    public GenericOnOffSetUnacknowledged(final ApplicationKey appKey,
-                                         final boolean state,
-                                         final int tId) throws IllegalArgumentException {
+    public GenericOnOffSetUnacknowledged(final ApplicationKey appKey, final boolean state, final int tId)
+            throws IllegalArgumentException {
         this(appKey, state, tId, null, null, null);
     }
 
     /**
      * Constructs GenericOnOffSet message.
      *
-     * @param appKey               {@link ApplicationKey} key for this message
-     * @param state                Boolean state of the GenericOnOffModel
-     * @param tId                  transaction id
-     * @param transitionSteps      Transition steps for the level
+     * @param appKey {@link ApplicationKey} key for this message
+     * @param state Boolean state of the GenericOnOffModel
+     * @param tId transaction id
+     * @param transitionSteps Transition steps for the level
      * @param transitionResolution Transition resolution for the level
-     * @param delay                Delay for this message to be executed 0 - 1275 milliseconds
+     * @param delay Delay for this message to be executed 0 - 1275 milliseconds
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
-    public GenericOnOffSetUnacknowledged(final ApplicationKey appKey,
-                                         final boolean state,
-                                         final int tId,
-                                         /* @Nullable */ final Integer transitionSteps,
-                                         /* @Nullable */ final Integer transitionResolution,
-                                         /* @Nullable */ final Integer delay) {
+    public GenericOnOffSetUnacknowledged(final ApplicationKey appKey, final boolean state, final int tId,
+            /* @Nullable */ final Integer transitionSteps, /* @Nullable */ final Integer transitionResolution,
+            /* @Nullable */ final Integer delay) {
         super(appKey);
         this.mTransitionSteps = transitionSteps;
         this.mTransitionResolution = transitionResolution;
@@ -101,7 +96,8 @@ public class GenericOnOffSetUnacknowledged extends GenericMessage {
         } else {
             LOG.info("Transition steps: " + mTransitionSteps);
             LOG.info("Transition step resolution: " + mTransitionResolution);
-            paramsBuffer = ByteBuffer.allocate(GENERIC_ON_OFF_SET_TRANSITION_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
+            paramsBuffer = ByteBuffer.allocate(GENERIC_ON_OFF_SET_TRANSITION_PARAMS_LENGTH)
+                    .order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.put((byte) (mState ? 0x01 : 0x00));
             paramsBuffer.put((byte) this.tId);
             paramsBuffer.put((byte) (mTransitionResolution << 6 | mTransitionSteps));
@@ -109,7 +105,5 @@ public class GenericOnOffSetUnacknowledged extends GenericMessage {
             paramsBuffer.put((byte) delay);
         }
         mParameters = paramsBuffer.array();
-
     }
 }
-

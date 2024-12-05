@@ -1,11 +1,29 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, GlobalRuleset} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, GlobalRuleset } from "@openremote/model";
 import "@openremote/or-translate";
-import manager, {Util} from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { style as OrAssetTreeStyle } from "@openremote/or-asset-tree";
 import {
     OrRules,
     OrRulesAddEvent,
@@ -17,12 +35,12 @@ import {
     RulesetNode, RuleViewInfoMap
 } from "./index";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {translate} from "@openremote/or-translate";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
+import { translate } from "@openremote/or-translate";
 import i18next from "i18next";
-import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {GenericAxiosResponse} from "@openremote/rest";
+import { showErrorDialog, showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { GenericAxiosResponse } from "@openremote/rest";
 
 // language=CSS
 const style = css`
@@ -92,34 +110,34 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     public static DEFAULT_ALLOWED_LANGUAGES = [RulesetLang.JSON, RulesetLang.GROOVY, RulesetLang.JAVASCRIPT, RulesetLang.FLOW];
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disabled: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public multiSelect: boolean = true;
 
-    @property({type: Array})
+    @property({ type: Array })
     public selectedIds?: number[];
 
-    @property({type: String})
+    @property({ type: String })
     public sortBy?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public language?: RulesetLang;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _nodes?: RulesetNode[];
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _showLoading: boolean = true;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     protected _globalRulesets: boolean = false;
 
     protected _selectedNodes: RulesetNode[] = [];
@@ -142,13 +160,13 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         const languages = this.config && this.config.controls && this.config.controls.allowedLanguages ? [...this.config.controls.allowedLanguages] : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
         const groovyIndex = languages.indexOf(RulesetLang.GROOVY);
         const flowIndex = languages.indexOf(RulesetLang.FLOW);
-        if(!manager.isSuperUser()) {
-            if(groovyIndex > 0) languages.splice(groovyIndex,1);
+        if (!manager.isSuperUser()) {
+            if (groovyIndex > 0) languages.splice(groovyIndex, 1);
         } else if (groovyIndex < 0) {
             languages.push(RulesetLang.GROOVY);
         }
-        if(this._globalRulesets) {
-            if(flowIndex > 0) languages.splice(flowIndex, 1);
+        if (this._globalRulesets) {
+            if (flowIndex > 0) languages.splice(flowIndex, 1);
         }
         return languages;
     }
@@ -186,10 +204,10 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         if (_changedProperties.has("_globalRulesets")) {
-            this._updateLanguage(); 
+            this._updateLanguage();
             this.refresh();
         }
-        
+
         if (manager.ready) {
             if (!this._nodes) {
                 this._loadRulesets();
@@ -223,7 +241,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         const allowedLanguages = this._allowedLanguages;
         const sortOptions = ["name", "createdOn", "status"]
         if (allowedLanguages && allowedLanguages.length > 1) sortOptions.push("lang")
-        
+
         let addTemplate: TemplateResult | string = ``;
 
         if (!this._isReadonly()) {
@@ -231,7 +249,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = getContentWithMenuTemplate(
                     html`<or-mwc-input type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                     allowedLanguages.map((l) => {
-                        return {value: l, text: i18next.t("rulesLanguages." + l)} as ListItem;
+                        return { value: l, text: i18next.t("rulesLanguages." + l) } as ListItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
@@ -301,7 +319,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         let statusClass: string = "iconfill-gray";
         let nodeIcon: string = "mdi-state-machine";
         let nodeTitle: string = "Unknown language";
-        switch (node.ruleset.status){
+        switch (node.ruleset.status) {
             case "DEPLOYED":
                 statusIcon = "";
                 statusClass = "iconfill-gray";
@@ -440,7 +458,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         const index = this._selectedNodes.indexOf(node);
         let select = true;
         let deselectOthers = true;
-        const multiSelect = !this._isReadonly() && this.multiSelect  && (!this.config || !this.config.controls || !this.config.controls.multiSelect);
+        const multiSelect = !this._isReadonly() && this.multiSelect && (!this.config || !this.config.controls || !this.config.controls.multiSelect);
 
         if (multiSelect && (evt.ctrlKey || evt.metaKey)) {
             deselectOthers = false;
@@ -493,14 +511,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             ruleset: ruleset,
             sourceRuleset: node.ruleset
         })).then((detail) => {
-                if (detail.allow) {
-                    this.dispatchEvent(new OrRulesAddEvent(detail.detail));
-                }
-            });
+            if (detail.allow) {
+                this.dispatchEvent(new OrRulesAddEvent(detail.detail));
+            }
+        });
     }
 
     protected _onAddClicked(lang: RulesetLang) {
-        const type = this._globalRulesets ? "global": "realm";
+        const type = this._globalRulesets ? "global" : "realm";
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
             id: 0,
@@ -562,7 +580,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         const doDelete = async () => {
             this.disabled = true;
             let fail = false;
-            
+
             for (const ruleset of rulesetsToDelete) {
 
                 if (this.config && this.config.rulesetDeleteHandler && !this.config.rulesetDeleteHandler(ruleset)) {
@@ -583,7 +601,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                             response = await manager.rest.api.RulesResource.deleteGlobalRuleset(ruleset.id!);
                             break;
                     }
-                    
+
                     if (response.status !== 204) {
                         console.error("Delete ruleset returned unexpected status '" + response.status + "': " + JSON.stringify(ruleset, null, 2));
                         fail = true;
@@ -593,7 +611,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     fail = true;
                 }
             }
-            
+
             if (fail) {
                 showErrorDialog(i18next.t("deleteAssetsFailed"));
             }
@@ -603,7 +621,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: rulesetNamesToDelete}), i18next.t("delete"))
+        showOkCancelDialog(i18next.t("deleteRulesets"), i18next.t("deleteRulesetsConfirm", { ruleNames: rulesetNamesToDelete }), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();
@@ -646,7 +664,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (this._globalRulesets) {
             if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has("global")) {
                 this._rulesetPromises.set("global", new Promise<GlobalRuleset[]>(async (resolve) => {
-                    const response = await manager.rest.api.RulesResource.getGlobalRulesets({fullyPopulate: true});
+                    const response = await manager.rest.api.RulesResource.getGlobalRulesets({ fullyPopulate: true });
                     resolve(response.data);
                 }));
             }
@@ -659,7 +677,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             const ruleRealm: string = this._getRealm() || manager.displayRealm;
             if (this._rulesetPromises.size == 0 && !this._rulesetPromises.has(ruleRealm)) {
                 this._rulesetPromises.set(ruleRealm, new Promise<RealmRuleset[]>(async (resolve) => {
-                    const params = {fullyPopulate: true, language: this._allowedLanguages}
+                    const params = { fullyPopulate: true, language: this._allowedLanguages }
                     const response = await manager.rest.api.RulesResource.getRealmRulesets(ruleRealm, params);
                     resolve(response.data);
                 }));
@@ -684,7 +702,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     ruleset: ruleset
                 } as RulesetNode;
             });
-            
+
             nodes.sort(sortFunction);
             this._nodes = nodes;
         }

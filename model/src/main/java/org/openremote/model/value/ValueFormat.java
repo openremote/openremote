@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.openremote.model.attribute.Attribute;
-
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.openremote.model.attribute.Attribute;
+
 /**
- * Represents formatting rules to apply to date and number values when converting to {@link String} representation; based on
- * HTML Intl API, see: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl">here</a>.
+ * Represents formatting rules to apply to date and number values when converting to {@link String} representation;
+ * based on
+ * HTML Intl API, see:
+ * <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl">here</a>.
  * {@link ValueFormat}s should be merged for UI consumption in the following priority order:
  * <ol>
  * <li>{@link Attribute} {@link MetaItemType#FORMAT}</li>
@@ -57,25 +59,81 @@ public class ValueFormat implements Serializable {
         }
     }
 
-    public static ValueFormat NUMBER_0_DP() { return new ValueFormat().setMaximumFractionDigits(0); }
-    public static ValueFormat NUMBER_1_DP() { return new ValueFormat().setMinimumFractionDigits(1).setMaximumFractionDigits(1); }
-    public static ValueFormat NUMBER_2_DP() { return new ValueFormat().setMinimumFractionDigits(2).setMaximumFractionDigits(2); }
-    public static ValueFormat NUMBER_3_DP() { return new ValueFormat().setMinimumFractionDigits(3).setMaximumFractionDigits(3); }
-    public static ValueFormat NUMBER_1_DP_MAX() { return new ValueFormat().setMaximumFractionDigits(1); }
-    public static ValueFormat NUMBER_2_DP_MAX() { return new ValueFormat().setMaximumFractionDigits(2); }
-    public static ValueFormat NUMBER_3_DP_MAX() { return new ValueFormat().setMaximumFractionDigits(3); }
-    public static ValueFormat DATE_DAY_MONTH_YEAR() { return new ValueFormat(); }
-    public static ValueFormat DATE_WEEK_NUMBER() { return new ValueFormat().setWeek(StyleRepresentation.NUMERIC); }
-    public static ValueFormat DATE_DAY_MONTH_YEAR_TIME_WITHOUT_SECOND() { return new ValueFormat(); }
-    public static ValueFormat DATE_DAY_MONTH_YEAR_TIME_WITH_SECONDS() { return new ValueFormat(); }
-    public static ValueFormat DATE_DATE_TIME_WITHOUT_SECONDS() { return new ValueFormat(); }
-    public static ValueFormat DATE_DATE_TIME_WITH_SECONDS() { return new ValueFormat(); }
-    public static ValueFormat DATE_DATE_ISO8601() { return new ValueFormat().setIso8601(true); }
-    public static ValueFormat BOOLEAN_ON_OFF() { return new ValueFormat().setAsOnOff(true); }
-    public static ValueFormat BOOLEAN_AS_0_1() { return new ValueFormat().setAsNumber(true); }
-    public static ValueFormat BOOLEAN_AS_OPEN_CLOSED() { return new ValueFormat().setAsOpenClosed(true); }
-    public static ValueFormat BOOLEAN_AS_PRESSED_RELEASED() { return new ValueFormat().setAsPressedReleased(true); }
-    public static ValueFormat TEXT_MULTILINE() { return new ValueFormat().setMultiline(true); }
+    public static ValueFormat NUMBER_0_DP() {
+        return new ValueFormat().setMaximumFractionDigits(0);
+    }
+
+    public static ValueFormat NUMBER_1_DP() {
+        return new ValueFormat().setMinimumFractionDigits(1).setMaximumFractionDigits(1);
+    }
+
+    public static ValueFormat NUMBER_2_DP() {
+        return new ValueFormat().setMinimumFractionDigits(2).setMaximumFractionDigits(2);
+    }
+
+    public static ValueFormat NUMBER_3_DP() {
+        return new ValueFormat().setMinimumFractionDigits(3).setMaximumFractionDigits(3);
+    }
+
+    public static ValueFormat NUMBER_1_DP_MAX() {
+        return new ValueFormat().setMaximumFractionDigits(1);
+    }
+
+    public static ValueFormat NUMBER_2_DP_MAX() {
+        return new ValueFormat().setMaximumFractionDigits(2);
+    }
+
+    public static ValueFormat NUMBER_3_DP_MAX() {
+        return new ValueFormat().setMaximumFractionDigits(3);
+    }
+
+    public static ValueFormat DATE_DAY_MONTH_YEAR() {
+        return new ValueFormat();
+    }
+
+    public static ValueFormat DATE_WEEK_NUMBER() {
+        return new ValueFormat().setWeek(StyleRepresentation.NUMERIC);
+    }
+
+    public static ValueFormat DATE_DAY_MONTH_YEAR_TIME_WITHOUT_SECOND() {
+        return new ValueFormat();
+    }
+
+    public static ValueFormat DATE_DAY_MONTH_YEAR_TIME_WITH_SECONDS() {
+        return new ValueFormat();
+    }
+
+    public static ValueFormat DATE_DATE_TIME_WITHOUT_SECONDS() {
+        return new ValueFormat();
+    }
+
+    public static ValueFormat DATE_DATE_TIME_WITH_SECONDS() {
+        return new ValueFormat();
+    }
+
+    public static ValueFormat DATE_DATE_ISO8601() {
+        return new ValueFormat().setIso8601(true);
+    }
+
+    public static ValueFormat BOOLEAN_ON_OFF() {
+        return new ValueFormat().setAsOnOff(true);
+    }
+
+    public static ValueFormat BOOLEAN_AS_0_1() {
+        return new ValueFormat().setAsNumber(true);
+    }
+
+    public static ValueFormat BOOLEAN_AS_OPEN_CLOSED() {
+        return new ValueFormat().setAsOpenClosed(true);
+    }
+
+    public static ValueFormat BOOLEAN_AS_PRESSED_RELEASED() {
+        return new ValueFormat().setAsPressedReleased(true);
+    }
+
+    public static ValueFormat TEXT_MULTILINE() {
+        return new ValueFormat().setMultiline(true);
+    }
 
     /* NUMBER FORMATS */
     protected Boolean useGrouping;

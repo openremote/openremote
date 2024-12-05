@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.agent;
+
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ThingAsset;
@@ -31,10 +34,6 @@ import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
-import java.util.Optional;
-
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
-
 /**
  * An agent is a special sub type of {@link Asset} that is associated with a {@link Protocol} and is responsible for
  * providing an instance of the associated {@link Protocol} when requested via {@link #getProtocolInstance}.
@@ -43,98 +42,114 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 @TsIgnoreTypeParams
 public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V extends AgentLink<?>> extends Asset<T> {
 
-    public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled",
+            ValueType.BOOLEAN);
 
-    public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("agentStatus", ValueType.CONNECTION_STATUS,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
+    public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("agentStatus",
+            ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
 
     /**
      * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
      * HEX string representation (e.g. 34FD87)
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_HEX = new AttributeDescriptor<>("messageConvertHex", ValueType.BOOLEAN).withOptional(true);
+    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_HEX = new AttributeDescriptor<>(
+            "messageConvertHex", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * Can be used by protocols that support it to indicate that string values should be converted to/from bytes from/to
      * binary string representation (e.g. 1001010111)
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_BINARY = new AttributeDescriptor<>("messageConvertBinary", ValueType.BOOLEAN).withOptional(true);
+    public static final AttributeDescriptor<Boolean> MESSAGE_CONVERT_BINARY = new AttributeDescriptor<>(
+            "messageConvertBinary", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * Charset to use when converting byte[] to a string (should default to UTF8 if not specified); values must be
      * string that matches a charset as defined in {@link java.nio.charset.Charset}
      */
-    public static final AttributeDescriptor<String> MESSAGE_CHARSET = new AttributeDescriptor<>("messageCharset", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> MESSAGE_CHARSET = new AttributeDescriptor<>("messageCharset",
+            ValueType.TEXT).withOptional(true);
 
     /**
      * Max length of messages received by a {@link Protocol}; what this actually means will be protocol specific i.e.
      * for {@link String} protocols it could be the number of characters but for {@link Byte} protocols it could be the
      * number of bytes. This is typically used for I/O based {@link Protocol}s.
      */
-    public static final AttributeDescriptor<Integer> MESSAGE_MAX_LENGTH = new AttributeDescriptor<>("messageMaxLength", ValueType.POSITIVE_INTEGER).withOptional(true);
+    public static final AttributeDescriptor<Integer> MESSAGE_MAX_LENGTH = new AttributeDescriptor<>("messageMaxLength",
+            ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Defines a set of delimiters for messages received by a {@link Protocol}; the first matched delimiter should be
      * used to generate the shortest possible match(This is typically used for I/O based {@link Protocol}s.
      */
-    public static final AttributeDescriptor<String[]> MESSAGE_DELIMITERS = new AttributeDescriptor<>("messageDelimiters", ValueType.TEXT.asArray()).withOptional(true);
+    public static final AttributeDescriptor<String[]> MESSAGE_DELIMITERS = new AttributeDescriptor<>(
+            "messageDelimiters", ValueType.TEXT.asArray()).withOptional(true);
 
     /**
      * For protocols that use {@link #MESSAGE_DELIMITERS}, this indicates whether or not the matched delimiter should be
      * stripped from the message.
      */
-    public static final AttributeDescriptor<Boolean> MESSAGE_STRIP_DELIMITER = new AttributeDescriptor<>("messageStripDelimiter", ValueType.BOOLEAN).withOptional(true);
+    public static final AttributeDescriptor<Boolean> MESSAGE_STRIP_DELIMITER = new AttributeDescriptor<>(
+            "messageStripDelimiter", ValueType.BOOLEAN).withOptional(true);
 
     /**
      * {@link OAuthGrant} for connecting to services that require OAuth authentication
      */
-    public static final AttributeDescriptor<OAuthGrant> OAUTH_GRANT = new AttributeDescriptor<>("oAuthGrant", ValueType.OAUTH_GRANT).withOptional(true);
+    public static final AttributeDescriptor<OAuthGrant> OAUTH_GRANT = new AttributeDescriptor<>("oAuthGrant",
+            ValueType.OAUTH_GRANT).withOptional(true);
 
     /**
      * Basic authentication username and password
      */
-    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new AttributeDescriptor<>("usernamePassword", ValueType.USERNAME_AND_PASSWORD).withOptional(true);
+    public static final AttributeDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new AttributeDescriptor<>(
+            "usernamePassword", ValueType.USERNAME_AND_PASSWORD).withOptional(true);
 
     /**
      * TCP/IP network host name/IP address
      */
-    public static final AttributeDescriptor<String> HOST = new AttributeDescriptor<>("host", ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
+    public static final AttributeDescriptor<String> HOST = new AttributeDescriptor<>("host",
+            ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
 
     /**
      * TCP/IP network port number
      */
-    public static final AttributeDescriptor<Integer> PORT = new AttributeDescriptor<>("port", ValueType.PORT).withOptional(true);
+    public static final AttributeDescriptor<Integer> PORT = new AttributeDescriptor<>("port", ValueType.PORT)
+            .withOptional(true);
 
     /**
      * Local TCP/IP network port number to bind to
      */
-    public static final AttributeDescriptor<Integer> BIND_PORT = new AttributeDescriptor<>("bindPort", ValueType.PORT).withOptional(true);
+    public static final AttributeDescriptor<Integer> BIND_PORT = new AttributeDescriptor<>("bindPort", ValueType.PORT)
+            .withOptional(true);
 
     /**
      * Local TCP/IP network host name/IP address to bind to
      */
-    public static final AttributeDescriptor<String> BIND_HOST = new AttributeDescriptor<>("bindHost", ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
+    public static final AttributeDescriptor<String> BIND_HOST = new AttributeDescriptor<>("bindHost",
+            ValueType.HOSTNAME_OR_IP_ADDRESS).withOptional(true);
 
     /**
      * Serial port name/address
      */
-    public static final AttributeDescriptor<String> SERIAL_PORT = new AttributeDescriptor<>("serialPort", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> SERIAL_PORT = new AttributeDescriptor<>("serialPort",
+            ValueType.TEXT).withOptional(true);
 
     /**
      * Serial baudrate to use for connection
      */
-    public static final AttributeDescriptor<Integer> SERIAL_BAUDRATE = new AttributeDescriptor<>("serialBaudrate", ValueType.POSITIVE_INTEGER).withOptional(true);
+    public static final AttributeDescriptor<Integer> SERIAL_BAUDRATE = new AttributeDescriptor<>("serialBaudrate",
+            ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Default polling frequency (milliseconds)
      */
-    public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis", ValueType.POSITIVE_INTEGER).withOptional(true);
+    public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis",
+            ValueType.POSITIVE_INTEGER).withOptional(true);
 
     /**
      * Don't expect a response from the protocol just update the attribute immediately on write
      */
-    public static final AttributeDescriptor<Boolean> UPDATE_ON_WRITE = new AttributeDescriptor<>("updateOnWrite", ValueType.BOOLEAN).withOptional(true);
+    public static final AttributeDescriptor<Boolean> UPDATE_ON_WRITE = new AttributeDescriptor<>("updateOnWrite",
+            ValueType.BOOLEAN).withOptional(true);
 
     protected Agent() {
     }
@@ -153,7 +168,8 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      */
     @SuppressWarnings("unchecked")
     public <T extends MetaHolder> V getAgentLink(T attribute) {
-        AgentLink<?> agentLink = attribute.getMetaValue(AGENT_LINK).orElseThrow(() -> new IllegalStateException("Failed to getAgentLink<?>despite attribute being linked to an agent"));
+        AgentLink<?> agentLink = attribute.getMetaValue(AGENT_LINK).orElseThrow(
+                () -> new IllegalStateException("Failed to getAgentLink<?>despite attribute being linked to an agent"));
         return (V) agentLink;
     }
 
@@ -273,15 +289,13 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      * {@link Agent#STATUS}. Agent's can override this behaviour as required.
      */
     public boolean isConfigurationAttribute(String attributeName) {
-        // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
+        // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent
+        // class
         // and it's not the status attribute (or we'll end up in a loop)
-        return !attributeName.equals(Agent.STATUS.getName())
-            && ValueUtil.getAssetInfo(getType())
-            .map(info -> info.getAttributeDescriptors().containsKey(attributeName))
-            .orElse(false)
-            // Exclude attributes that have a descriptor from the base ThingAsset class
-            && ValueUtil.getAssetInfo(ThingAsset.class)
-            .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName))
-            .orElse(false);
+        return !attributeName.equals(Agent.STATUS.getName()) && ValueUtil.getAssetInfo(getType())
+                .map(info -> info.getAttributeDescriptors().containsKey(attributeName)).orElse(false)
+        // Exclude attributes that have a descriptor from the base ThingAsset class
+                && ValueUtil.getAssetInfo(ThingAsset.class)
+                        .map(typeInfo -> !typeInfo.getAttributeDescriptors().containsKey(attributeName)).orElse(false);
     }
 }

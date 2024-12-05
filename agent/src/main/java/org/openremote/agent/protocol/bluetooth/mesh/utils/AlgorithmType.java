@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
@@ -24,7 +23,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public enum AlgorithmType {
-
 
     /**
      * Static OOB Type
@@ -45,7 +43,6 @@ public enum AlgorithmType {
     public short getAlgorithmType() {
         return algorithmType;
     }
-
 
     /**
      * Returns the oob method used for authentication
@@ -69,7 +66,7 @@ public enum AlgorithmType {
      * @return selected output action type
      */
     public static List<AlgorithmType> getAlgorithmTypeFromBitMask(final short algorithmTypeValue) {
-        final AlgorithmType[] algorithmTypes = {FIPS_P_256_ELLIPTIC_CURVE};
+        final AlgorithmType[] algorithmTypes = { FIPS_P_256_ELLIPTIC_CURVE };
         final List<AlgorithmType> supportedAlgorithms = new ArrayList<>();
         for (AlgorithmType algorithmType : algorithmTypes) {
             if ((algorithmTypeValue & algorithmType.ordinal()) == algorithmType.ordinal()) {

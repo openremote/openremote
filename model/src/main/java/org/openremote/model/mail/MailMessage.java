@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.mail;
 
@@ -34,8 +33,10 @@ public class MailMessage {
     protected Date sentDate;
     protected String[] from;
 
-    public MailMessage(String content, String contentType, Map<String, List<String>> headers, String subject, Date sentDate, String[] from) {
-        this.content = content == null ? "" : content.endsWith("\r\n") ? content.substring(0,content.length() - 2) : content;
+    public MailMessage(String content, String contentType, Map<String, List<String>> headers, String subject,
+            Date sentDate, String[] from) {
+        this.content = content == null ? ""
+                : content.endsWith("\r\n") ? content.substring(0, content.length() - 2) : content;
         this.contentType = contentType.toLowerCase(Locale.ROOT);
         this.headers = headers;
         this.subject = subject;
@@ -81,11 +82,7 @@ public class MailMessage {
 
     @Override
     public String toString() {
-        return "MailMessage{" +
-            "contentType='" + contentType + '\'' +
-            ", subject='" + subject + '\'' +
-            ", sentDate=" + sentDate +
-            ", from=" + Arrays.toString(from) +
-            '}';
+        return "MailMessage{" + "contentType='" + contentType + '\'' + ", subject='" + subject + '\'' + ", sentDate="
+                + sentDate + ", from=" + Arrays.toString(from) + '}';
     }
 }

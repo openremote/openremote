@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
@@ -29,33 +28,31 @@ import java.util.UUID;
 public class MeshAddress {
     private static final byte[] VTAD = "vtad".getBytes(Charset.forName("US-ASCII"));
 
-    //Unassigned addresses
+    // Unassigned addresses
     public static final int UNASSIGNED_ADDRESS = 0x0000;
 
-    //Unicast addresses
+    // Unicast addresses
     public static final int START_UNICAST_ADDRESS = 0x0001;
     public static final int END_UNICAST_ADDRESS = 0x7FFF;
 
-    //Group address start and end defines the address range that can be used to create groups
+    // Group address start and end defines the address range that can be used to create groups
     public static final int START_GROUP_ADDRESS = 0xC000;
     public static final int END_GROUP_ADDRESS = 0xFEFF;
 
-    //Fixed group addresses
+    // Fixed group addresses
     public static final int ALL_PROXIES_ADDRESS = 0xFFFC;
     public static final int ALL_FRIENDS_ADDRESS = 0xFFFD;
     public static final int ALL_RELAYS_ADDRESS = 0xFFFE;
     public static final int ALL_NODES_ADDRESS = 0xFFFF;
 
-    //Virtual addresses
+    // Virtual addresses
     private static final byte B1_VIRTUAL_ADDRESS = (byte) 0x80;
     public static final int START_VIRTUAL_ADDRESS = 0x8000;
     public static final int END_VIRTUAL_ADDRESS = 0xBFFF;
     public static final int UUID_HASH_BIT_MASK = 0x3FFF;
 
     public static String formatAddress(final int address, final boolean add0x) {
-        return add0x ?
-            "0x" + String.format(Locale.US, "%04X", address) :
-            String.format(Locale.US, "%04X", address);
+        return add0x ? "0x" + String.format(Locale.US, "%04X", address) : String.format(Locale.US, "%04X", address);
     }
 
     public static boolean isAddressInRange(final byte[] address) {
@@ -172,7 +169,8 @@ public class MeshAddress {
     }
 
     /**
-     * Returns true if the its a valid fixed group address. Fixed group addresses include all proxies, all friends, all relays and all nodes address.
+     * Returns true if the its a valid fixed group address. Fixed group addresses include all proxies, all friends, all
+     * relays and all nodes address.
      *
      * @param address 16-bit address
      * @return true if the address is valid and false otherwise
@@ -198,9 +196,11 @@ public class MeshAddress {
      */
     public static boolean isValidSubscriptionAddress(final int address) {
 
-        if (isValidUnassignedAddress(address) || isValidUnicastAddress(address) || isValidVirtualAddress(address) || address == 0xFFFF) {
-            throw new IllegalArgumentException("The value of the Address field shall not be an unassigned address, unicast address, " +
-                "all-nodes address or virtual address.");
+        if (isValidUnassignedAddress(address) || isValidUnicastAddress(address) || isValidVirtualAddress(address)
+                || address == 0xFFFF) {
+            throw new IllegalArgumentException(
+                    "The value of the Address field shall not be an unassigned address, unicast address, "
+                            + "all-nodes address or virtual address.");
         }
 
         final int b0 = address >> 8 & 0xFF;
@@ -292,7 +292,7 @@ public class MeshAddress {
         final byte[] salt = SecureUtils.calculateSalt(VTAD);
         final byte[] encryptedUuid = SecureUtils.calculateCMAC(MeshParserUtils.uuidToBytes(uuid), salt);
         ByteBuffer buffer = ByteBuffer.wrap(encryptedUuid);
-        buffer.position(12); //Move the position to 12
+        buffer.position(12); // Move the position to 12
         return START_VIRTUAL_ADDRESS | (buffer.getInt() & UUID_HASH_BIT_MASK);
     }
 
@@ -305,10 +305,10 @@ public class MeshAddress {
         if (MeshAddress.isValidVirtualAddress(address)) {
             for (UUID uuid : uuids) {
                 final byte[] salt = SecureUtils.calculateSalt(VTAD);
-                //Encrypt the label uuid with the salt as the key
+                // Encrypt the label uuid with the salt as the key
                 final byte[] encryptedUuid = SecureUtils.calculateCMAC(MeshParserUtils.uuidToBytes(uuid), salt);
                 ByteBuffer buffer = ByteBuffer.wrap(encryptedUuid);
-                buffer.position(12); //Move the position to 12
+                buffer.position(12); // Move the position to 12
                 final int hash = buffer.getInt() & UUID_HASH_BIT_MASK;
                 if (hash == getHash(address)) {
                     return uuid;
@@ -341,7 +341,7 @@ public class MeshAddress {
      * @return unicast address
      */
     public static byte[] addressIntToBytes(final int unicastAddress) {
-        return new byte[]{(byte) ((unicastAddress >> 8) & 0xFF), (byte) (unicastAddress & 0xFF)};
+        return new byte[] { (byte) ((unicastAddress >> 8) & 0xFF), (byte) (unicastAddress & 0xFF) };
     }
 
     /**
@@ -363,10 +363,8 @@ public class MeshAddress {
      * @return true if valid or false otherwise.
      */
     public static boolean isValidHeartbeatPublicationDestination(final int address) {
-        return isValidUnassignedAddress(address) ||
-            isValidUnicastAddress(address) ||
-            isValidGroupAddress(address) ||
-            isValidFixedGroupAddress(address);
+        return isValidUnassignedAddress(address) || isValidUnicastAddress(address) || isValidGroupAddress(address)
+                || isValidFixedGroupAddress(address);
     }
 
     /**
@@ -394,12 +392,10 @@ public class MeshAddress {
      * @return true if valid or false otherwise.
      */
     public static boolean isValidHeartbeatSubscriptionDestination(final int address) {
-        if (isValidUnassignedAddress(address) ||
-            isValidUnicastAddress(address) ||
-            isValidGroupAddress(address))
+        if (isValidUnassignedAddress(address) || isValidUnicastAddress(address) || isValidGroupAddress(address))
             return true;
         else
-            throw new IllegalArgumentException("Destination address must be an unassigned address, " +
-                "a primary unicast address, or a group address!");
+            throw new IllegalArgumentException("Destination address must be an unassigned address, "
+                    + "a primary unicast address, or a group address!");
     }
 }

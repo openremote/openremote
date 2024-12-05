@@ -1,12 +1,30 @@
-import {customElement, property, state} from "lit/decorators.js";
-import {AttributePicker, AttributePickerPickedEvent} from "./attribute-picker";
-import {Asset, Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
-import manager, {DefaultColor5, Util} from "@openremote/core";
-import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {html, unsafeCSS} from "lit";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { customElement, property, state } from "lit/decorators.js";
+import { AttributePicker, AttributePickerPickedEvent } from "./attribute-picker";
+import { Asset, Attribute, AttributeRef, WellknownMetaItems } from "@openremote/model";
+import manager, { DefaultColor5, Util } from "@openremote/core";
+import { OrAssetTree, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
+import { html, unsafeCSS } from "lit";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { when } from "lit/directives/when.js";
+import { until } from "lit/directives/until.js";
 
 /**
  * Custom Event that is dispatched upon closing the dialog.
@@ -64,7 +82,7 @@ export class OrAssetAttributePicker extends AttributePicker {
 
     public setSelectedAttributes(selectedAttributes: AttributeRef[]): this {
         this.selectedAttributes = selectedAttributes;
-        if(this.addBtn) {
+        if (this.addBtn) {
             this.addBtn.disabled = this.selectedAttributes.length === 0;
         }
         return this;
@@ -116,8 +134,8 @@ export class OrAssetAttributePicker extends AttributePicker {
                                 <or-translate value="${
             (this._assetAttributes && this._assetAttributes.length === 0) ?
                 ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
-                        this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
-                            this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
+                    this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
+                        this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
                 ) : "selectAssetOnTheLeft"}">
                                 </or-translate>
                             </span>
@@ -154,7 +172,7 @@ export class OrAssetAttributePicker extends AttributePicker {
 
             if (selectedAsset) {
                 this._assetAttributes = Object.values(selectedAsset.attributes!)
-                    .map(attr => ({...attr, id: selectedAsset!.id!}))
+                    .map(attr => ({ ...attr, id: selectedAsset!.id! }))
                     .sort(Util.sortByString((attribute) => attribute.name!));
 
                 if (this.attributeFilter) {
@@ -188,7 +206,7 @@ export class OrAssetAttributePicker extends AttributePicker {
     protected _onAttributesSelect(attrNames: string[]) {
         this.setSelectedAttributes([
             ...this.selectedAttributes.filter(attributeRef => attributeRef.id !== this._asset!.id),
-            ...attrNames.map(a => ({id: this._asset?.id, name: a}))
+            ...attrNames.map(a => ({ id: this._asset?.id, name: a }))
         ]);
     }
 }

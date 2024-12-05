@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus.device;
-
-import org.openremote.model.util.Pair;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.openremote.model.util.Pair;
 
 /**
  * Abstract processor for channel related operations
@@ -32,7 +31,8 @@ public abstract class ChannelProcessor extends FeatureProcessor {
 
     protected static final Pattern CHANNEL_REGEX = Pattern.compile("^CH(\\d+)(.*$|$)");
 
-    protected ChannelProcessor() {}
+    protected ChannelProcessor() {
+    }
 
     protected static int getMaxChannelNumber(VelbusDeviceType velbusDeviceType) {
         if (velbusDeviceType == VelbusDeviceType.VMBGPOD || velbusDeviceType == VelbusDeviceType.VMBGPO) {
@@ -43,16 +43,13 @@ public abstract class ChannelProcessor extends FeatureProcessor {
             return 7;
         }
 
-        if (velbusDeviceType == VelbusDeviceType.VMB4RYNO
-            || velbusDeviceType == VelbusDeviceType.VMB4RYLD) {
+        if (velbusDeviceType == VelbusDeviceType.VMB4RYNO || velbusDeviceType == VelbusDeviceType.VMB4RYLD) {
             return 5;
         }
 
-        if (velbusDeviceType == VelbusDeviceType.VMB1RY
-            || velbusDeviceType == VelbusDeviceType.VMBDME
-            || velbusDeviceType == VelbusDeviceType.VMBDMI
-            || velbusDeviceType == VelbusDeviceType.VMBDMIR
-            || velbusDeviceType == VelbusDeviceType.VMB1BL) {
+        if (velbusDeviceType == VelbusDeviceType.VMB1RY || velbusDeviceType == VelbusDeviceType.VMBDME
+                || velbusDeviceType == VelbusDeviceType.VMBDMI || velbusDeviceType == VelbusDeviceType.VMBDMIR
+                || velbusDeviceType == VelbusDeviceType.VMB1BL) {
             return 1;
         }
 
@@ -72,7 +69,7 @@ public abstract class ChannelProcessor extends FeatureProcessor {
             return 0;
         }
 
-        int addressIndex = Math.max(0, Math.min(3, (int)Math.floor((double)(channelNumber - 1) / 8)));
+        int addressIndex = Math.max(0, Math.min(3, (int) Math.floor((double) (channelNumber - 1) / 8)));
         return device.getAddress(addressIndex);
     }
 
@@ -85,7 +82,8 @@ public abstract class ChannelProcessor extends FeatureProcessor {
         return (velbusDevice.getAddressIndex(address) * 8) + 1;
     }
 
-    protected Optional<Pair<Integer, String>> getChannelNumberAndPropertySuffix(VelbusDevice device, Pattern channelRegex, String property) {
+    protected Optional<Pair<Integer, String>> getChannelNumberAndPropertySuffix(VelbusDevice device,
+            Pattern channelRegex, String property) {
         Matcher matcher = channelRegex.matcher(property);
 
         if (!matcher.matches()) {

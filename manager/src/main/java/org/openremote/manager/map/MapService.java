@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import org.openremote.container.web.WebService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
-import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
@@ -49,10 +37,23 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.API_PATH;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.container.web.WebService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class MapService implements ContainerService {
 
@@ -84,10 +85,10 @@ public class MapService implements ContainerService {
         this.mapConfig.putNull("options");
         this.mapSettings.clear();
         ObjectNode mapSettingsJson = loadMapSettingsJson(mapSettingsPath);
-        if(mapSettingsJson == null) {
+        if (mapSettingsJson == null) {
             mapSettingsJson = ValueUtil.JSON.createObjectNode();
         }
-        try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
+        try (OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))) {
             mapSettingsJson.putPOJO("options", mapConfiguration);
             out.write(ValueUtil.JSON.writeValueAsString(mapSettingsJson).getBytes());
             this.setData();
@@ -120,9 +121,15 @@ public class MapService implements ContainerService {
             int maxZoom = Integer.parseInt(resultMap.get("maxzoom"));
             int minZoom = Integer.parseInt(resultMap.get("minzoom"));
 
-            ArrayNode vectorLayer = resultMap.containsKey("json") ? (ArrayNode) ValueUtil.JSON.readTree(resultMap.get("json")).get("vector_layers") : null;
-            ArrayNode center = resultMap.containsKey("center") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("center") + "]") : null;
-            ArrayNode bounds = resultMap.containsKey("bounds") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("bounds") + "]") : null;
+            ArrayNode vectorLayer = resultMap.containsKey("json")
+                    ? (ArrayNode) ValueUtil.JSON.readTree(resultMap.get("json")).get("vector_layers")
+                    : null;
+            ArrayNode center = resultMap.containsKey("center")
+                    ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("center") + "]")
+                    : null;
+            ArrayNode bounds = resultMap.containsKey("bounds")
+                    ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("bounds") + "]")
+                    : null;
 
             if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
                 metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
@@ -171,19 +178,22 @@ public class MapService implements ContainerService {
 
         mapTilesPath = Paths.get(getString(container.getConfig(), OR_MAP_TILES_PATH, OR_MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
-            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath() + "', falling back to built in map");
+            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath()
+                    + "', falling back to built in map");
             mapTilesPath = null;
         }
 
-        mapSettingsPath = Paths.get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT));
+        mapSettingsPath = Paths
+                .get(getString(container.getConfig(), OR_MAP_SETTINGS_PATH, OR_MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
-            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
+            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath()
+                    + "', falling back to built in map settings");
             mapSettingsPath = null;
         }
 
-//        if (mapTilesPath == null || mapSettingsPath == null) {
-//            return;
-//        }
+        // if (mapTilesPath == null || mapSettingsPath == null) {
+        // return;
+        // }
 
         if (mapTilesPath == null) {
             if (Files.isRegularFile(Paths.get("/deployment/map/mapdata.mbtiles"))) {
@@ -203,28 +213,26 @@ public class MapService implements ContainerService {
             }
         }
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new MapResourceImpl(this, container.getService(ManagerIdentityService.class)));
 
-        String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
+        String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST,
+                OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
 
             WebService webService = container.getService(WebService.class);
 
-            UriBuilder tileServerUri = UriBuilder.fromPath("/")
-                    .scheme("http")
-                    .host(tileServerHost)
+            UriBuilder tileServerUri = UriBuilder.fromPath("/").scheme("http").host(tileServerHost)
                     .port(tileServerPort);
 
             @SuppressWarnings("deprecation")
             ProxyHandler proxyHandler = new ProxyHandler(
                     new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
-                    getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
-                    ResponseCodeHandler.HANDLE_404
-            ).setReuseXForwarded(true);
+                    getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT,
+                            OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
+                    ResponseCodeHandler.HANDLE_404).setReuseXForwarded(true);
 
             HttpHandler proxyWrapper = exchange -> {
                 // Change request path to match what the tile server expects
@@ -236,7 +244,8 @@ public class MapService implements ContainerService {
                 proxyHandler.handleRequest(exchange);
             };
 
-            webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
+            webService.getRequestHandlers().add(0,
+                    pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
         }
     }
 
@@ -258,7 +267,8 @@ public class MapService implements ContainerService {
         if (metadata.isValid()) {
             mapConfig = loadMapSettingsJson(mapSettingsPath);
             if (mapConfig == null) {
-                LOG.warning("Map config could not be loaded from '" + mapSettingsPath.toAbsolutePath() + "', map functionality will not work");
+                LOG.warning("Map config could not be loaded from '" + mapSettingsPath.toAbsolutePath()
+                        + "', map functionality will not work");
                 return;
             }
         } else {
@@ -266,8 +276,9 @@ public class MapService implements ContainerService {
             return;
         }
 
-        ObjectNode options = Optional.ofNullable((ObjectNode)mapConfig.get("options")).orElse(mapConfig.objectNode());
-        ObjectNode defaultOptions = Optional.ofNullable((ObjectNode)options.get("default")).orElse(mapConfig.objectNode());
+        ObjectNode options = Optional.ofNullable((ObjectNode) mapConfig.get("options")).orElse(mapConfig.objectNode());
+        ObjectNode defaultOptions = Optional.ofNullable((ObjectNode) options.get("default"))
+                .orElse(mapConfig.objectNode());
         options.replace("default", defaultOptions);
         mapConfig.replace("options", options);
 
@@ -327,11 +338,9 @@ public class MapService implements ContainerService {
         }
 
         // Set vector_tiles URL to MapResource getSource endpoint
-        Optional.ofNullable(settings.get("sources"))
-                .map(s -> s.get("vector_tiles"))
-                .filter(JsonNode::isObject)
+        Optional.ofNullable(settings.get("sources")).map(s -> s.get("vector_tiles")).filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
-                    ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
+                    ObjectNode vectorTilesObj = (ObjectNode) vectorTilesNode;
                     vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
@@ -339,46 +348,47 @@ public class MapService implements ContainerService {
                     vectorTilesObj.put("minzoom", metadata.minZoom);
                     vectorTilesObj.replace("vector_layers", metadata.vectorLayers);
 
-                    Optional.ofNullable(mapConfig.get("center")).ifPresent(center ->
-                            Optional.ofNullable(mapConfig.has("zoom") && mapConfig.get("zoom").isInt() ? mapConfig.get("zoom") : null).ifPresent(zoom -> {
+                    Optional.ofNullable(mapConfig.get("center")).ifPresent(center -> Optional.ofNullable(
+                            mapConfig.has("zoom") && mapConfig.get("zoom").isInt() ? mapConfig.get("zoom") : null)
+                            .ifPresent(zoom -> {
                                 ArrayNode centerArray = center.deepCopy();
                                 centerArray.add(zoom);
                                 vectorTilesObj.replace("center", centerArray);
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build()
+                            .toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
 
-//                    vectorTilesObj.put(
-//                            "url",
-//                            baseUriBuilder.clone()
-//                                    .replacePath(API_PATH)
-//                                    .path(realm)
-//                                    .path("map/source")
-//                                    .build()
-//                                    .toString());
+                    // vectorTilesObj.put(
+                    // "url",
+                    // baseUriBuilder.clone()
+                    // .replacePath(API_PATH)
+                    // .path(realm)
+                    // .path("map/source")
+                    // .build()
+                    // .toString());
                 });
 
         // Set sprite URL to shared folder
-        Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
-            String spriteUri =
-                    UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
-                            .path(sprite)
+        Optional.ofNullable(
+                settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null)
+                .ifPresent(sprite -> {
+                    String spriteUri = UriBuilder.fromUri(host).replacePath(MAP_SHARED_DATA_BASE_URI).path(sprite)
                             .build().toString();
-            settings.put("sprite", spriteUri);
-        });
+                    settings.put("sprite", spriteUri);
+                });
 
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
-        Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
-            String glyphsUri =
-                    UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
-                            .build().toString() + "/fonts/" + glyphs;
-            settings.put("glyphs", glyphsUri);
-        });
+        Optional.ofNullable(
+                settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null)
+                .ifPresent(glyphs -> {
+                    String glyphsUri = UriBuilder.fromUri(host).replacePath(MAP_SHARED_DATA_BASE_URI).build().toString()
+                            + "/fonts/" + glyphs;
+                    settings.put("glyphs", glyphsUri);
+                });
 
         return settings;
     }
@@ -399,10 +409,13 @@ public class MapService implements ContainerService {
         }
 
         ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
+        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString()
+                + "/{z}/{x}/{y}.png";
         tilesArray.insert(0, tileUrl);
 
-        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
+        settings.replace("options",
+                mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode) mapConfig.get("options")
+                        : null);
 
         settings.put("attribution", metadata.attribution);
         settings.put("format", "png");
@@ -420,8 +433,7 @@ public class MapService implements ContainerService {
         ResultSet result = null;
         try {
             query = connection.prepareStatement(
-                "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
-            );
+                    "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?");
 
             int index = 0;
             query.setInt(++index, zoom);
@@ -444,10 +456,8 @@ public class MapService implements ContainerService {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "mapTilesPath=" + mapTilesPath +
-                ", mapSettingsPath=" + mapSettingsPath +
-                '}';
+        return getClass().getSimpleName() + "{" + "mapTilesPath=" + mapTilesPath + ", mapSettingsPath="
+                + mapSettingsPath + '}';
     }
 
     protected static final class Metadata {
@@ -459,7 +469,8 @@ public class MapService implements ContainerService {
         protected ArrayNode center;
         protected boolean valid;
 
-        public Metadata(String attribution, ArrayNode vectorLayers, ArrayNode bounds, ArrayNode center, int maxZoom, int minZoom) {
+        public Metadata(String attribution, ArrayNode vectorLayers, ArrayNode bounds, ArrayNode center, int maxZoom,
+                int minZoom) {
             this.attribution = attribution;
             this.vectorLayers = vectorLayers;
             this.bounds = bounds;

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules;
 
-import io.micrometer.core.instrument.Timer;
+import static org.openremote.model.rules.RulesetStatus.*;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
@@ -45,12 +50,7 @@ import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.rules.RulesetStatus.*;
+import io.micrometer.core.instrument.Timer;
 
 public class RulesEngine<T extends Ruleset> {
 
@@ -129,22 +129,13 @@ public class RulesEngine<T extends Ruleset> {
     protected String deploymentInfo;
     protected Timer rulesFiringTimer;
 
-    public RulesEngine(TimerService timerService,
-                       RulesService rulesService,
-                       ManagerIdentityService identityService,
-                       ExecutorService executorService,
-                       ScheduledExecutorService scheduledExecutorService,
-                       AssetStorageService assetStorageService,
-                       AssetProcessingService assetProcessingService,
-                       NotificationService notificationService,
-                       WebhookService webhookService,
-                       AlarmService alarmService,
-                       ClientEventService clientEventService,
-                       AssetDatapointService assetDatapointService,
-                       AssetPredictedDatapointService assetPredictedDatapointService,
-                       RulesEngineId<T> id,
-                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer,
-                       Timer rulesFiringTimer) {
+    public RulesEngine(TimerService timerService, RulesService rulesService, ManagerIdentityService identityService,
+            ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
+            AssetStorageService assetStorageService, AssetProcessingService assetProcessingService,
+            NotificationService notificationService, WebhookService webhookService, AlarmService alarmService,
+            ClientEventService clientEventService, AssetDatapointService assetDatapointService,
+            AssetPredictedDatapointService assetPredictedDatapointService, RulesEngineId<T> id,
+            AssetLocationPredicateProcessor assetLocationPredicatesConsumer, Timer rulesFiringTimer) {
         this.timerService = timerService;
         this.rulesService = rulesService;
         this.previouslyFired = rulesService.startDone;
@@ -176,9 +167,8 @@ public class RulesEngine<T extends Ruleset> {
 
         this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, LOG);
         engine = new DefaultRulesEngine(
-            // Skip any other rules after the first failed rule (exception thrown in condition or action)
-            new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
-        );
+                // Skip any other rules after the first failed rule (exception thrown in condition or action)
+                new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD));
         engine.registerRuleListener(facts);
 
         // Add listener to rethrow runtime exceptions which are otherwise swallowed by the DefaultRulesEngine
@@ -225,11 +215,14 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public int getExecutionErrorDeploymentCount() {
-        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR || deployment.getStatus() == LOOP_ERROR).count();
+        return (int) deployments.values().stream()
+                .filter(deployment -> deployment.getStatus() == EXECUTION_ERROR || deployment.getStatus() == LOOP_ERROR)
+                .count();
     }
 
     public int getCompilationErrorDeploymentCount() {
-        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == COMPILATION_ERROR).count();
+        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == COMPILATION_ERROR)
+                .count();
     }
 
     public RuntimeException getError() {
@@ -237,12 +230,8 @@ public class RulesEngine<T extends Ruleset> {
         long compilationErrorCount = getCompilationErrorDeploymentCount();
 
         if (executionErrorCount > 0 || compilationErrorCount > 0) {
-            return new RuntimeException(
-                "Ruleset deployments have errors, failed compilation: "
-                    + compilationErrorCount
-                    + ", failed execution: "
-                    + executionErrorCount + " - on: " + this
-            );
+            return new RuntimeException("Ruleset deployments have errors, failed compilation: " + compilationErrorCount
+                    + ", failed execution: " + executionErrorCount + " - on: " + this);
         }
         return null;
     }
@@ -259,7 +248,9 @@ public class RulesEngine<T extends Ruleset> {
             removeRuleset(deployment.ruleset);
         }
 
-        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService, scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade, historicFacade, predictedFacade);
+        deployment = new RulesetDeployment(ruleset, this, timerService, assetStorageService, executorService,
+                scheduledExecutorService, assetsFacade, usersFacade, notificationFacade, webhooksFacade, alarmsFacade,
+                historicFacade, predictedFacade);
         deployment.init();
         deployments.put(ruleset.getId(), deployment);
         publishRulesetStatus(deployment);
@@ -324,9 +315,11 @@ public class RulesEngine<T extends Ruleset> {
         // Start a background stats printer if INFO level logging is enabled
         if (STATS_LOG.isLoggable(Level.FINE) || STATS_LOG.isLoggable(Level.FINEST)) {
             if (STATS_LOG.isLoggable(Level.FINEST)) {
-                LOG.info("Enabling periodic statistics output at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic statistics output at FINEST level every 30 seconds on category: "
+                        + STATS_LOG.getName());
             } else {
-                LOG.info("Enabling periodic full memory dump at FINE level every 30 seconds on category: " + STATS_LOG.getName());
+                LOG.info("Enabling periodic full memory dump at FINE level every 30 seconds on category: "
+                        + STATS_LOG.getName());
             }
             statsTimer = scheduledExecutorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
@@ -422,19 +415,15 @@ public class RulesEngine<T extends Ruleset> {
         long fireTimeMillis = quickFire ? rulesService.quickFireMillis : rulesService.tempFactExpirationMillis;
 
         LOG.finest("Scheduling rules firing in " + fireTimeMillis + "ms");
-        fireTimer = scheduledExecutorService.schedule(
-            () -> {
-                fireTimer = null;
-                if (!running) {
-                    return;
-                }
-                // Process rules for all deployments
-                fireAllDeployments();
-                scheduleFire(false);
-            },
-            fireTimeMillis,
-            TimeUnit.MILLISECONDS
-        );
+        fireTimer = scheduledExecutorService.schedule(() -> {
+            fireTimer = null;
+            if (!running) {
+                return;
+            }
+            // Process rules for all deployments
+            fireAllDeployments();
+            scheduleFire(false);
+        }, fireTimeMillis, TimeUnit.MILLISECONDS);
     }
 
     protected void fireAllDeployments() {
@@ -447,15 +436,19 @@ public class RulesEngine<T extends Ruleset> {
 
             retractInfos.forEach(attributeInfo -> {
                 facts.removeAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+                // Make sure location predicate tracking is activated before notifying the deployments otherwise they
+                // won't report location predicates
+                trackLocationPredicates(
+                        trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
                 notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, attributeInfo));
             });
 
             insertInfos.forEach(attributeInfo -> {
                 facts.putAssetState(attributeInfo);
-                // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-                trackLocationPredicates(trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
+                // Make sure location predicate tracking is activated before notifying the deployments otherwise they
+                // won't report location predicates
+                trackLocationPredicates(
+                        trackLocationPredicates || attributeInfo.getName().equals(Asset.LOCATION.getName()));
                 notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.CREATE, attributeInfo));
             });
 
@@ -591,11 +584,8 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void updateDeploymentInfo() {
-        deploymentInfo = Arrays.toString(
-            deployments.values().stream()
-                .map(RulesetDeployment::toString)
-                .toArray(String[]::new)
-        );
+        deploymentInfo = Arrays
+                .toString(deployments.values().stream().map(RulesetDeployment::toString).toArray(String[]::new));
     }
 
     protected synchronized void printSessionStats() {
@@ -604,11 +594,9 @@ public class RulesEngine<T extends Ruleset> {
         Collection<Object> anonFacts = facts.getAnonymousFacts();
         long temporaryFactsCount = facts.getTemporaryFacts().count();
         long total = assetStateFacts.size() + namedFacts.size() + anonFacts.size();
-        STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total
-            + ", AssetState: " + assetStateFacts.size()
-            + ", Named: " + namedFacts.size()
-            + ", Anonymous: " + anonFacts.size()
-            + ", Temporary: " + temporaryFactsCount);
+        STATS_LOG.fine("Engine stats for '" + this + "', in memory facts are Total: " + total + ", AssetState: "
+                + assetStateFacts.size() + ", Named: " + namedFacts.size() + ", Anonymous: " + anonFacts.size()
+                + ", Temporary: " + temporaryFactsCount);
 
         // Additional details if FINEST is enabled
         facts.logFacts(STATS_LOG, Level.FINEST);
@@ -632,23 +620,18 @@ public class RulesEngine<T extends Ruleset> {
             return RulesEngineStatus.RUNNING;
         }
 
-        return deployments.values().stream().anyMatch(RulesetDeployment::isError) ? RulesEngineStatus.ERROR : RulesEngineStatus.STOPPED;
+        return deployments.values().stream().anyMatch(RulesetDeployment::isError) ? RulesEngineStatus.ERROR
+                : RulesEngineStatus.STOPPED;
     }
 
     protected void publishRulesEngineStatus() {
         String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
         int compilationErrors = getCompilationErrorDeploymentCount();
         int executionErrors = getExecutionErrorDeploymentCount();
-        RulesEngineInfo engineInfo = new RulesEngineInfo(
-            getStatus(),
-            compilationErrors,
-            executionErrors);
+        RulesEngineInfo engineInfo = new RulesEngineInfo(getStatus(), compilationErrors, executionErrors);
 
-        RulesEngineStatusEvent event = new RulesEngineStatusEvent(
-            timerService.getCurrentTimeMillis(),
-            engineId,
-            engineInfo
-        );
+        RulesEngineStatusEvent event = new RulesEngineStatusEvent(timerService.getCurrentTimeMillis(), engineId,
+                engineInfo);
 
         LOG.finest("Publishing rules engine status event: " + event);
 
@@ -671,11 +654,7 @@ public class RulesEngine<T extends Ruleset> {
             ruleset.setStatus(deployment.getStatus());
             ruleset.setError(deployment.getErrorMessage());
 
-            RulesetChangedEvent event = new RulesetChangedEvent(
-                timerService.getCurrentTimeMillis(),
-                engineId,
-                ruleset
-            );
+            RulesetChangedEvent event = new RulesetChangedEvent(timerService.getCurrentTimeMillis(), engineId, ruleset);
 
             LOG.finest("Ruleset '" + deployment.getName() + "': status=" + currentStatus);
 
@@ -686,10 +665,7 @@ public class RulesEngine<T extends Ruleset> {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", running='" + isRunning() + '\'' +
-            ", deployments='" + deploymentInfo + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", running='" + isRunning() + '\''
+                + ", deployments='" + deploymentInfo + '\'' + '}';
     }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
-import jakarta.validation.constraints.NotNull;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.SimpleDateFormat;
@@ -37,7 +37,7 @@ import org.openremote.agent.protocol.bluetooth.mesh.NodeKey;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import jakarta.validation.constraints.NotNull;
 
 public class MeshParserUtils {
 
@@ -61,11 +61,13 @@ public class MeshParserUtils {
     private static final int IV_ADDRESS_MIN = 0;
     private static final int IV_ADDRESS_MAX = 4096;
     private static final int UNICAST_ADDRESS_MIN = 0;
-    private static final char[] HEX_ARRAY = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-    private static final byte[] ALPHANUMERIC = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-        'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+    private static final char[] HEX_ARRAY = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+            'F' };
+    private static final byte[] ALPHANUMERIC = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
+            'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
+            'Z' };
 
-    private static final int[] M_NUMERIC_MAX = {0, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
+    private static final int[] M_NUMERIC_MAX = { 0, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000 };
 
     public static final int RESOLUTION_100_MS = 0b00;
     public static final int RESOLUTION_1_S = 0b01;
@@ -101,7 +103,7 @@ public class MeshParserUtils {
         byte[] bytes = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             bytes[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
-                + Character.digit(hexString.charAt(i + 1), 16));
+                    + Character.digit(hexString.charAt(i + 1), 16));
         }
         return bytes;
     }
@@ -159,7 +161,8 @@ public class MeshParserUtils {
      *
      * @param networkKey Network Key input
      * @return true if the Network Key is a valid value
-     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the
+     *             error
      */
     public static boolean validateNetworkKeyInput(@NotNull final String networkKey) throws IllegalArgumentException {
 
@@ -175,9 +178,10 @@ public class MeshParserUtils {
     /**
      * Validates the Key Index input
      *
-     * @param input   Key Index input
+     * @param input Key Index input
      * @return true if the Key Index is a valid value
-     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the
+     *             error
      */
     public static boolean validateKeyIndexInput(final String input) throws IllegalArgumentException {
 
@@ -202,9 +206,10 @@ public class MeshParserUtils {
     /**
      * Validates the IV Index input
      *
-     * @param input   IV Index input
+     * @param input IV Index input
      * @return true if the the value is valid
-     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the
+     *             error
      */
     public static boolean validateIvIndexInput(final String input) throws IllegalArgumentException {
 
@@ -231,7 +236,8 @@ public class MeshParserUtils {
      *
      * @param ivIndex IV Index input
      * @return true if the the value is valid
-     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the
+     *             error
      */
     public static boolean validateIvIndexInput(final Integer ivIndex) throws IllegalArgumentException {
         if (ivIndex == null) {
@@ -250,7 +256,8 @@ public class MeshParserUtils {
      *
      * @param key key
      * @return true if the Key is a valid value
-     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the error
+     * @throws IllegalArgumentException in case of an invalid was entered as an input and the message containing the
+     *             error
      */
     public static boolean validateKeyInput(@NotNull final String key) throws IllegalArgumentException {
         if (TextUtil.isNullOrEmpty(key)) {
@@ -274,7 +281,8 @@ public class MeshParserUtils {
 
     public static byte[] getSequenceNumberBytes(int sequenceNumber) {
         if (MeshParserUtils.isValidSequenceNumber(sequenceNumber)) {
-            return new byte[]{(byte) ((sequenceNumber >> 16) & 0xFF), (byte) ((sequenceNumber >> 8) & 0xFF), (byte) (sequenceNumber & 0xFF)};
+            return new byte[] { (byte) ((sequenceNumber >> 16) & 0xFF), (byte) ((sequenceNumber >> 8) & 0xFF),
+                    (byte) (sequenceNumber & 0xFF) };
         }
         return null;
     }
@@ -287,7 +295,7 @@ public class MeshParserUtils {
     }
 
     public static int getSequenceNumberFromPDU(final byte[] pdu) {
-        return convert24BitsToInt(new byte[]{pdu[3], pdu[4], pdu[5]}); // get sequence number array from pdu
+        return convert24BitsToInt(new byte[] { pdu[3], pdu[4], pdu[5] }); // get sequence number array from pdu
     }
 
     public static int calculateSeqZero(final byte[] sequenceNumber) {
@@ -303,14 +311,14 @@ public class MeshParserUtils {
     }
 
     /*
-    private static int getSegmentedMessageLength(final SparseArray<byte[]> segmentedMessageMap) {
-        int length = 0;
-        for (int i = 0; i < segmentedMessageMap.size(); i++) {
-            length += segmentedMessageMap.get(i).length;
-        }
-        return length;
-    }
-    */
+     * private static int getSegmentedMessageLength(final SparseArray<byte[]> segmentedMessageMap) {
+     * int length = 0;
+     * for (int i = 0; i < segmentedMessageMap.size(); i++) {
+     * length += segmentedMessageMap.get(i).length;
+     * }
+     * return length;
+     * }
+     */
     private static int getSegmentedMessageLength(final Map<Integer, byte[]> segmentedMessages) {
         int length = 0;
         for (byte[] curSegment : segmentedMessages.values()) {
@@ -320,24 +328,24 @@ public class MeshParserUtils {
     }
 
     /*
-    public static byte[] concatenateSegmentedMessages(final SparseArray<byte[]> segmentedMessages) {
-        final int length = getSegmentedMessageLength(segmentedMessages);
-        final ByteBuffer completeBuffer = ByteBuffer.allocate(length);
-        completeBuffer.order(ByteOrder.BIG_ENDIAN);
-        for (int i = 0; i < segmentedMessages.size(); i++) {
-            completeBuffer.put(segmentedMessages.get(i));
-        }
-        return completeBuffer.array();
-    }
-    */
+     * public static byte[] concatenateSegmentedMessages(final SparseArray<byte[]> segmentedMessages) {
+     * final int length = getSegmentedMessageLength(segmentedMessages);
+     * final ByteBuffer completeBuffer = ByteBuffer.allocate(length);
+     * completeBuffer.order(ByteOrder.BIG_ENDIAN);
+     * for (int i = 0; i < segmentedMessages.size(); i++) {
+     * completeBuffer.put(segmentedMessages.get(i));
+     * }
+     * return completeBuffer.array();
+     * }
+     */
 
     public static byte[] concatenateSegmentedMessages(final Map<Integer, byte[]> segmentedMessages) {
         final int length = getSegmentedMessageLength(segmentedMessages);
         final ByteBuffer completeBuffer = ByteBuffer.allocate(length);
         completeBuffer.order(ByteOrder.BIG_ENDIAN);
-        //for (int i = 0; i < segmentedMessages.size(); i++) {
-        //    completeBuffer.put(segmentedMessages.get(i));
-        //}
+        // for (int i = 0; i < segmentedMessages.size(); i++) {
+        // completeBuffer.put(segmentedMessages.get(i));
+        // }
         TreeMap<Integer, byte[]> sortedMap = new TreeMap<>(segmentedMessages);
         for (Integer index : sortedMap.keySet()) {
             completeBuffer.put(sortedMap.get(index));
@@ -358,9 +366,8 @@ public class MeshParserUtils {
             case 2:
                 return unsignedBytesToInt(accessPayload[1], accessPayload[0]);
             default:
-                return unsignedByteToInt(accessPayload[1]) << 8
-                    | unsignedByteToInt(accessPayload[0]) << 16
-                    | unsignedByteToInt(accessPayload[2]);
+                return unsignedByteToInt(accessPayload[1]) << 8 | unsignedByteToInt(accessPayload[0]) << 16
+                        | unsignedByteToInt(accessPayload[2]);
         }
     }
 
@@ -374,13 +381,12 @@ public class MeshParserUtils {
      */
     public static byte[] getOpCode(final int opCode) {
         if (opCode < 0x80) {
-            return new byte[]{(byte) (opCode & 0xFF)};
+            return new byte[] { (byte) (opCode & 0xFF) };
         } else if (opCode < 0x4000 || (opCode & 0xFFFC00) == 0x8000) {
-            return new byte[]{(byte) (0x80 | ((opCode >> 8) & 0x3F)), (byte) (opCode & 0xFF)};
+            return new byte[] { (byte) (0x80 | ((opCode >> 8) & 0x3F)), (byte) (opCode & 0xFF) };
         } else {
-            return new byte[]{(byte) (0xC0 | ((opCode >> 16) & 0x3F)),
-                (byte) ((opCode >> 8) & 0xFF),
-                (byte) (opCode & 0xFF)};
+            return new byte[] { (byte) (0xC0 | ((opCode >> 16) & 0x3F)), (byte) ((opCode >> 8) & 0xFF),
+                    (byte) (opCode & 0xFF) };
         }
     }
 
@@ -396,7 +402,7 @@ public class MeshParserUtils {
     public static int getOpCodeLength(final int mostSignificantOpcodeByte) {
         if (mostSignificantOpcodeByte < 0x80) {
             return 1;
-        } else if (/*mostSignificantOpcodeByte >= 0x80 &&*/ mostSignificantOpcodeByte <= 0xBF) {
+        } else if (/* mostSignificantOpcodeByte >= 0x80 && */ mostSignificantOpcodeByte <= 0xBF) {
             return 2;
         } else {
             return 3;
@@ -548,7 +554,7 @@ public class MeshParserUtils {
      * Returns the remaining time in milliseconds
      *
      * @param resolution time resolution
-     * @param steps      number of steps
+     * @param steps number of steps
      * @return time in milliseconds
      */
     public static int getRemainingTime(final int resolution, final int steps) {
@@ -587,7 +593,8 @@ public class MeshParserUtils {
 
     public static int bytesToInt(@NotNull byte[] b) {
         Objects.requireNonNull(b);
-        return b.length == 4 ? ByteBuffer.wrap(b).order(ByteOrder.BIG_ENDIAN).getInt() : ByteBuffer.wrap(b).order(ByteOrder.BIG_ENDIAN).getShort();
+        return b.length == 4 ? ByteBuffer.wrap(b).order(ByteOrder.BIG_ENDIAN).getInt()
+                : ByteBuffer.wrap(b).order(ByteOrder.BIG_ENDIAN).getShort();
     }
 
     public static int hexToInt(String hex) {
@@ -640,7 +647,7 @@ public class MeshParserUtils {
         final int bound = (int) Math.pow(10, oobSize) - 1;
         final byte randomByte = (byte) (random.nextInt(bound) + 1);
         LOG.info("Random OOB count: " + randomByte);
-        return new byte[]{randomByte};
+        return new byte[] { randomByte };
     }
 
     /**
@@ -718,13 +725,8 @@ public class MeshParserUtils {
     public static String formatUuid(@NotNull final String uuidHex) {
         Objects.requireNonNull(uuidHex);
         if (isUuidPattern(uuidHex)) {
-            return new StringBuffer(uuidHex)
-                .insert(8, "-")
-                .insert(13, "-")
-                .insert(18, "-")
-                .insert(23, "-")
-                .toString()
-                .toUpperCase(Locale.US);
+            return new StringBuffer(uuidHex).insert(8, "-").insert(13, "-").insert(18, "-").insert(23, "-").toString()
+                    .toUpperCase(Locale.US);
         }
         return uuidHex;
     }
@@ -742,12 +744,8 @@ public class MeshParserUtils {
     public static UUID getUuid(@NotNull final String uuidHex) {
         Objects.requireNonNull(uuidHex);
         if (uuidHex.matches(PATTERN_UUID_HEX))
-            return UUID.fromString(new StringBuffer(uuidHex)
-                .insert(8, "-")
-                .insert(4, "-")
-                .insert(4, "-")
-                .insert(4, "-")
-                .toString());
+            return UUID.fromString(
+                    new StringBuffer(uuidHex).insert(8, "-").insert(4, "-").insert(4, "-").insert(4, "-").toString());
 
         return null;
     }
@@ -803,5 +801,4 @@ public class MeshParserUtils {
     public static boolean isValidHeartbeatPublicationTtl(final int ttl) {
         return ttl <= 0x7F;
     }
-
 }

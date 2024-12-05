@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,17 +29,21 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class ConsoleAsset extends Asset<ConsoleAsset> {
 
-    public static final AttributeDescriptor<String> CONSOLE_NAME = new AttributeDescriptor<>("consoleName", ValueType.TEXT);
-    public static final AttributeDescriptor<String> CONSOLE_VERSION = new AttributeDescriptor<>("consoleVersion", ValueType.TEXT);
-    public static final AttributeDescriptor<String> CONSOLE_PLATFORM = new AttributeDescriptor<>("consolePlatform", ValueType.TEXT);
-    public static final AttributeDescriptor<ConsoleProviders> CONSOLE_PROVIDERS = new AttributeDescriptor<>("consoleProviders", ValueType.CONSOLE_PROVIDERS);
+    public static final AttributeDescriptor<String> CONSOLE_NAME = new AttributeDescriptor<>("consoleName",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONSOLE_VERSION = new AttributeDescriptor<>("consoleVersion",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONSOLE_PLATFORM = new AttributeDescriptor<>("consolePlatform",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<ConsoleProviders> CONSOLE_PROVIDERS = new AttributeDescriptor<>(
+            "consoleProviders", ValueType.CONSOLE_PROVIDERS);
 
-    public static final AssetDescriptor<ConsoleAsset> DESCRIPTOR = new AssetDescriptor<>("monitor-cellphone", null, ConsoleAsset.class);
+    public static final AssetDescriptor<ConsoleAsset> DESCRIPTOR = new AssetDescriptor<>("monitor-cellphone", null,
+            ConsoleAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -97,81 +102,89 @@ public class ConsoleAsset extends Asset<ConsoleAsset> {
     }
 
     // TODO: Replace with standard validation
-//    public static boolean validateConsoleConfiguration(Asset<?> asset, List<ValidationFailure> validationFailures) {
-//        boolean valid = isConsole(asset);
-//
-//        if (!valid) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH));
-//            }
-//            return false;
-//        }
-//
-//        if (!getConsoleName(asset).isPresent()) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        if (!getConsoleVersion(asset).isPresent()) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.VERSION_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        if (!getConsolePlatform(asset).isPresent()) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        Value providerValue = asset.getAttribute(Asset.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
-//
-//        if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PROVIDERS_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        return valid;
-//    }
+    // public static boolean validateConsoleConfiguration(Asset<?> asset, List<ValidationFailure> validationFailures) {
+    // boolean valid = isConsole(asset);
+    //
+    // if (!valid) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH));
+    // }
+    // return false;
+    // }
+    //
+    // if (!getConsoleName(asset).isPresent()) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // if (!getConsoleVersion(asset).isPresent()) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.VERSION_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // if (!getConsolePlatform(asset).isPresent()) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // Value providerValue =
+    // asset.getAttribute(Asset.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
+    //
+    // if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PROVIDERS_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // return valid;
+    // }
 
     // TODO: Replace with standard validation
-//    public static boolean validateConsoleRegistration(ConsoleRegistration consoleRegistration, List<ValidationFailure> validationFailures) {
-//        boolean valid = true;
-//
-//        if (consoleRegistration == null) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
-//            }
-//            return false;
-//        }
-//
-//        if (TextUtil.isNullOrEmpty(consoleRegistration.getName())) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        if (TextUtil.isNullOrEmpty(consoleRegistration.getVersion())) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.VERSION_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        if (TextUtil.isNullOrEmpty(consoleRegistration.getPlatform())) {
-//            if (validationFailures != null) {
-//                validationFailures.add(new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
-//            }
-//            valid = false;
-//        }
-//
-//        return valid;
-//    }
+    // public static boolean validateConsoleRegistration(ConsoleRegistration consoleRegistration,
+    // List<ValidationFailure> validationFailures) {
+    // boolean valid = true;
+    //
+    // if (consoleRegistration == null) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
+    // }
+    // return false;
+    // }
+    //
+    // if (TextUtil.isNullOrEmpty(consoleRegistration.getName())) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // if (TextUtil.isNullOrEmpty(consoleRegistration.getVersion())) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.VERSION_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // if (TextUtil.isNullOrEmpty(consoleRegistration.getPlatform())) {
+    // if (validationFailures != null) {
+    // validationFailures.add(new
+    // ValidationFailure(ConsoleConfiguration.ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
+    // }
+    // valid = false;
+    // }
+    //
+    // return valid;
+    // }
 }

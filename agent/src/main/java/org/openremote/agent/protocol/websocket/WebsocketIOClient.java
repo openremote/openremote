@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.websocket;
+
+import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
+import javax.net.ssl.SSLException;
+
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.container.web.OAuthFilter;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -31,28 +54,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.container.web.OAuthFilter;
-import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
-
-import javax.net.ssl.SSLException;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is an {@link IOClient} implementation based on {@link AbstractNettyIOClient}.
@@ -104,11 +105,11 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         }
 
         // Our own manager uses HTTP(S) and upgrades to WS(S) so this is not appropriate
-//        if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
-//            LOG.warning("Only WS(S) is supported: " + getSocketAddressString());
-//            setPermanentError("Only WS(S) is supported");
-//            return;
-//        }
+        // if (!"ws".equalsIgnoreCase(scheme) && !"wss".equalsIgnoreCase(scheme)) {
+        // LOG.warning("Only WS(S) is supported: " + getSocketAddressString());
+        // setPermanentError("Only WS(S) is supported");
+        // return;
+        // }
 
         useSsl = "wss".equalsIgnoreCase(scheme);
     }
@@ -144,10 +145,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         } catch (Exception e) {
             channelFuture = CompletableFuture.failedFuture(e);
         }
-        return CompletableFuture.allOf(
-            channelFuture,
-            handshakeFuture
-        );
+        return CompletableFuture.allOf(channelFuture, handshakeFuture);
     }
 
     @Override
@@ -164,8 +162,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         }
 
         handler = new WebSocketClientProtocolHandler(
-            WebSocketClientHandshakerFactory.newHandshaker(
-                uri, WebSocketVersion.V13, null, true, hdrs)) {
+                WebSocketClientHandshakerFactory.newHandshaker(uri, WebSocketVersion.V13, null, true, hdrs)) {
 
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -195,11 +192,8 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             });
         }
 
-        channel.pipeline().addLast(
-            new HttpClientCodec(),
-            new HttpObjectAggregator(8192),
-            WebSocketClientCompressionHandler.INSTANCE,
-            handler);
+        channel.pipeline().addLast(new HttpClientCodec(), new HttpObjectAggregator(8192),
+                WebSocketClientCompressionHandler.INSTANCE, handler);
 
         channel.pipeline().addLast(new io.netty.handler.codec.MessageToMessageDecoder<WebSocketFrame>() {
             @Override
@@ -243,10 +237,8 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
 
     protected synchronized SslContext getSSLContext() throws SSLException {
         if (sslCtx == null) {
-            sslCtx = SslContextBuilder.forClient()
-                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                    .sessionTimeout(getConnectTimeoutMillis())
-                    .build();
+            sslCtx = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .sessionTimeout(getConnectTimeoutMillis()).build();
         }
         return sslCtx;
     }
@@ -280,7 +272,7 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         String authHeaderValue = null;
 
         if (oAuthGrant != null) {
-            LOG.finest("Retrieving OAuth access token: "  + getClientUri());
+            LOG.finest("Retrieving OAuth access token: " + getClientUri());
 
             try {
                 OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
@@ -290,7 +282,8 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
                 }
                 LOG.finest("Retrieved access token via OAuth: " + getClientUri());
             } catch (Exception e) {
-                throw new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
+                throw new Exception(
+                        "Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
             }
         }
 

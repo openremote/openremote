@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,25 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus;
+
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
+
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.io.IOClient;
@@ -38,22 +52,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-import static org.openremote.model.value.MetaItemType.AGENT_LINK;
-
-public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,T>, T extends VelbusAgent<T, S>> extends AbstractProtocol<T, VelbusAgentLink> implements
-    ProtocolAssetImport {
+public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S, T>, T extends VelbusAgent<T, S>>
+        extends AbstractProtocol<T, VelbusAgentLink> implements ProtocolAssetImport {
 
     public static final int DEFAULT_TIME_INJECTION_INTERVAL_SECONDS = 3600 * 6;
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractVelbusProtocol.class);
@@ -108,10 +108,10 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
         String property = getOrThrowAgentLinkProperty(agentLink.getDeviceValueLink(), "device value");
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-        LOG.fine("Linking attribute to device '" + deviceAddress + "' and property '" + property + "': " + attributeRef);
+        LOG.fine(
+                "Linking attribute to device '" + deviceAddress + "' and property '" + property + "': " + attributeRef);
 
-        Consumer<Object> propertyValueConsumer = propertyValue ->
-            updateLinkedAttribute(attributeRef, propertyValue);
+        Consumer<Object> propertyValueConsumer = propertyValue -> updateLinkedAttribute(attributeRef, propertyValue);
 
         attributePropertyValueConsumers.put(attributeRef, propertyValueConsumer);
         network.addPropertyValueConsumer(deviceAddress, property, propertyValueConsumer);
@@ -159,10 +159,8 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
                 String xmlStr = new String(fileData, StandardCharsets.UTF_8);
                 LOG.info("Parsing VELBUS project file");
 
-                xmlDoc = DocumentBuilderFactory
-                    .newInstance()
-                    .newDocumentBuilder()
-                    .parse(new InputSource(new StringReader(xmlStr)));
+                xmlDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                        .parse(new InputSource(new StringReader(xmlStr)));
             } catch (Exception e) {
                 LOG.log(Level.WARNING, "Failed to convert VELBUS project file into XML", e);
                 return;
@@ -179,7 +177,8 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
                 Element module = (Element) modules.item(i);
 
                 // TODO: Process memory map and add
-                Optional<VelbusDeviceType> deviceType = EnumUtil.enumFromString(VelbusDeviceType.class, module.getAttribute("type").replaceAll("-", ""));
+                Optional<VelbusDeviceType> deviceType = EnumUtil.enumFromString(VelbusDeviceType.class,
+                        module.getAttribute("type").replaceAll("-", ""));
 
                 if (!deviceType.isPresent()) {
                     LOG.info("Module device type '" + module.getAttribute("type") + "' is not supported so ignoring");
@@ -196,42 +195,30 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
                 // TODO: Use device specific asset types
                 Asset<?> device = new ThingAsset(name);
 
-                device.addAttributes(
-                    new Attribute<>("build", ValueType.TEXT, build)
-                        .addMeta(
-                            new MetaItem<>(MetaItemType.LABEL, "Build"),
-                            new MetaItem<>(MetaItemType.READ_ONLY, true)
-                        ),
-                    new Attribute<>("serialNumber", ValueType.TEXT, serial)
-                        .addMeta(
-                            new MetaItem<>(MetaItemType.LABEL, "Serial No"),
-                            new MetaItem<>(MetaItemType.READ_ONLY, true)
-                        )
-                );
+                device.addAttributes(new Attribute<>("build", ValueType.TEXT, build).addMeta(
+                        new MetaItem<>(MetaItemType.LABEL, "Build"), new MetaItem<>(MetaItemType.READ_ONLY, true)),
+                        new Attribute<>("serialNumber", ValueType.TEXT, serial).addMeta(
+                                new MetaItem<>(MetaItemType.LABEL, "Serial No"),
+                                new MetaItem<>(MetaItemType.READ_ONLY, true)));
 
-                device.addAttributes(
-                    deviceType.flatMap(type -> Optional.ofNullable(type.getFeatureProcessors())
-                        .map(processors ->
-                            Arrays.stream(processors).flatMap(processor ->
-                                processor.getPropertyDescriptors(type).stream().map(descriptor -> {
+                device.addAttributes(deviceType.flatMap(type -> Optional.ofNullable(type.getFeatureProcessors())
+                        .map(processors -> Arrays.stream(processors).flatMap(
+                                processor -> processor.getPropertyDescriptors(type).stream().map(descriptor -> {
 
-                                    VelbusAgentLink agentLink = new VelbusAgentLink(agent.getId(), baseAddress, descriptor.getLinkName());
+                                    VelbusAgentLink agentLink = new VelbusAgentLink(agent.getId(), baseAddress,
+                                            descriptor.getLinkName());
 
-                                    Attribute<?> attribute = new Attribute<>(descriptor.getName(), descriptor.getAttributeValueDescriptor())
-                                        .addMeta(
-                                            new MetaItem<>(AGENT_LINK, agentLink),
-                                            new MetaItem<>(MetaItemType.LABEL, descriptor.getDisplayName())
-                                        );
+                                    Attribute<?> attribute = new Attribute<>(descriptor.getName(),
+                                            descriptor.getAttributeValueDescriptor())
+                                            .addMeta(new MetaItem<>(AGENT_LINK, agentLink),
+                                                    new MetaItem<>(MetaItemType.LABEL, descriptor.getDisplayName()));
 
                                     if (descriptor.isReadOnly()) {
                                         attribute.addMeta(new MetaItem<>(MetaItemType.READ_ONLY, true));
                                     }
                                     return attribute;
-                                })
-                            ).toArray(Attribute<?>[]::new)
-                        ))
-                        .orElse(new Attribute<?>[0])
-                );
+                                })).toArray(Attribute<?>[]::new)))
+                        .orElse(new Attribute<?>[0]));
 
                 devices.add(device);
             }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.gateway;
+
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+
+import java.util.Collections;
+import java.util.List;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -26,23 +31,16 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.gateway.GatewayClientResource;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.http.RequestParams;
-
-import jakarta.ws.rs.WebApplicationException;
 import org.openremote.model.query.filter.RealmPredicate;
 
-import java.util.Collections;
-import java.util.List;
-
-import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
-import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import jakarta.ws.rs.WebApplicationException;
 
 public class GatewayClientResourceImpl extends ManagerWebResource implements GatewayClientResource {
 
     protected GatewayClientService gatewayClientService;
 
-    public GatewayClientResourceImpl(TimerService timerService,
-                                     ManagerIdentityService identityService,
-                                     GatewayClientService gatewayClientService) {
+    public GatewayClientResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            GatewayClientService gatewayClientService) {
         super(timerService, identityService);
         this.gatewayClientService = gatewayClientService;
     }
@@ -54,7 +52,8 @@ public class GatewayClientResourceImpl extends ManagerWebResource implements Gat
         }
 
         try {
-            return gatewayClientService.getConnections().stream().filter(c -> realm.equals(c.getLocalRealm())).findFirst().orElse(null);
+            return gatewayClientService.getConnections().stream().filter(c -> realm.equals(c.getLocalRealm()))
+                    .findFirst().orElse(null);
         } catch (Exception e) {
             throw new WebApplicationException(e, BAD_REQUEST);
         }

@@ -1,21 +1,39 @@
-import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, state } from "lit/decorators.js";
 import i18next from "i18next";
-import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
-import {createRef, Ref, ref} from "lit/directives/ref.js";
+import { when } from "lit/directives/when.js";
+import { until } from "lit/directives/until.js";
+import { createRef, Ref, ref } from "lit/directives/ref.js";
 import "@openremote/or-components/or-panel";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator} from "@openremote/model";
-import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
-import {OrAssetTypeAttributePicker, OrAssetTypeAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator } from "@openremote/model";
+import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
+import { Store } from "@reduxjs/toolkit";
+import { OrAssetTypeAttributePicker, OrAssetTypeAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import "@openremote/or-components/or-ace-editor";
 import moment from "moment";
-import {OrAceEditor} from "@openremote/or-components/or-ace-editor";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { OrAceEditor } from "@openremote/or-components/or-ace-editor";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export function pageGatewayProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -383,9 +401,9 @@ export class PageGateway extends Page<AppStateKeyed>  {
      */
     protected _onLimitAttributesCheck(ev: OrInputChangedEvent) {
         const attrFilters = this._connection.attributeFilters;
-        if(attrFilters?.length > 0) {
+        if (attrFilters?.length > 0) {
             attrFilters?.forEach(filter => {
-                if(ev.detail.value) {
+                if (ev.detail.value) {
                     filter.matcher = {};
                 } else {
                     delete filter.matcher;
@@ -415,7 +433,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                     types: [entry[0]] as string[],
                     attributes: {
                         items: entry[1]?.map((attr: AttributeDescriptor) => ({
-                            name: {predicateType: "string", value: attr.name}
+                            name: { predicateType: "string", value: attr.name }
                         })),
                         operator: LogicGroupOperator.OR
                     }
@@ -438,13 +456,13 @@ export class PageGateway extends Page<AppStateKeyed>  {
         this._intervalMin = value;
         const duration = this._intervalMin ? moment.duration(this._intervalMin, "minutes") : undefined;
         const attributeFilters = this._connection.attributeFilters || [];
-        if(attributeFilters.length > 0) {
+        if (attributeFilters.length > 0) {
 
             // Update all existing filters to the new duration
             attributeFilters?.forEach(filter => {
-                if(duration) {
+                if (duration) {
                     const isSkipAlwaysItem = Object.keys(filter).length === 1 && filter.skipAlways;
-                    if(!isSkipAlwaysItem) {
+                    if (!isSkipAlwaysItem) {
                         filter.duration = duration?.toISOString();
                     }
                 } else {
@@ -452,7 +470,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 }
             });
 
-        } else if(duration) {
+        } else if (duration) {
             attributeFilters.push({
                 duration: duration.toISOString()
             });
@@ -466,7 +484,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
      */
     protected _getAttrDescriptorMapFromFilters(attrFilters?: GatewayAttributeFilter[]): Map<string, AttributeDescriptor[]> {
         const map = new Map<string, AttributeDescriptor[]>();
-        if(!attrFilters) {
+        if (!attrFilters) {
             return map;
         }
         attrFilters.forEach(filter => {
@@ -474,7 +492,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
             const values = (filter.matcher?.attributes?.items as any)?.map((attr: AttributePredicate) => ({
                 name: attr.name.value
             }));
-            if(key && values) {
+            if (key && values) {
                 map.set(key, values);
             }
         });
@@ -483,7 +501,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
     protected async _loadData() {
         this._loading = true;
-        this._connection = {secured: true};
+        this._connection = { secured: true };
         this._connectionStatus = null;
         const connectionResponse = await manager.rest.api.GatewayClientResource.getConnection(this.realm);
         const statusResponse = await manager.rest.api.GatewayClientResource.getConnectionStatus(this.realm);
@@ -509,7 +527,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected async _save() {
         this._loading = true;
         return manager.rest.api.GatewayClientResource.setConnection(this.realm, this._connection).then(response => {
-            if(response.status === 204) {
+            if (response.status === 204) {
                 this._loadData();
             } else {
                 showSnackbar(undefined, i18next.t("errorOccurred"));
@@ -522,7 +540,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
     }
 
     protected _setConnection(connection: GatewayConnection) {
-        this._connection = connection || {secured: true};
+        this._connection = connection || { secured: true };
         this._dirty = false;
     }
 
@@ -537,13 +555,13 @@ export class PageGateway extends Page<AppStateKeyed>  {
      * (by checking the amount of object keys, and whether it is valid at all)
      */
     protected _isDataSharingCustom(connection?: GatewayConnection): boolean {
-        if(!connection?.attributeFilters) {
+        if (!connection?.attributeFilters) {
             return false;
         }
-        if(!Array.isArray(connection.attributeFilters)) {
+        if (!Array.isArray(connection.attributeFilters)) {
             return true;
         }
-        if(connection.attributeFilters.length === 0) {
+        if (connection.attributeFilters.length === 0) {
             return false;
         }
         const excludedKeys = ['duration', 'matcher', 'durationParsedMillis', 'skipAlways'];
@@ -556,19 +574,19 @@ export class PageGateway extends Page<AppStateKeyed>  {
     }
 
     protected _isValid(): boolean {
-        if(!this._connection.host) {
+        if (!this._connection.host) {
             console.warn("Interconnect form can't be submitted: Host is not valid.");
             return false;
         }
-        if(!this._connection.realm) {
+        if (!this._connection.realm) {
             console.warn("Interconnect form can't be submitted: Realm name must be set.")
             return false;
         }
-        if(!this._connection.clientId) {
+        if (!this._connection.clientId) {
             console.warn("Interconnect form can't be submitted: Client ID must be set.")
             return false;
         }
-        if(!this._connection.clientSecret) {
+        if (!this._connection.clientSecret) {
             console.warn("Interconnect form can't be submitted: Client secret must be set.")
             return false;
         }
@@ -587,34 +605,36 @@ export class PageGateway extends Page<AppStateKeyed>  {
                 <or-ace-editor ${ref(editorRef)} .value="${connection?.attributeFilters}" style="height: 60vh; width: 1024px;"></or-ace-editor>
             `)
             .setActions([
-                { actionName: "cancel", content: "cancel"},
-                { actionName: "save", content: "save", action: () => {
-                    const editor = editorRef.value;
-                    if(!editor.validate()) {
-                        console.warn("JSON was not valid");
-                        showSnackbar(undefined, i18next.t('errorOccurred'));
-                        return;
-                    }
-                    try {
-                        let parsed: GatewayAttributeFilter[] | undefined;
-                        if(editor.getValue().length > 0) {
-
-                            parsed = JSON.parse(editor.getValue());
-
-                            // Verify if the JSON is an array. If so; simply accept the format.
-                            if(!Array.isArray(parsed)) {
-                                console.warn("Could not parse JSON to GatewayAttributeFilter[], as it was not an array.");
-                                showSnackbar(undefined, i18next.t("errorOccurred"));
-                                return;
-                            }
+                { actionName: "cancel", content: "cancel" },
+                {
+                    actionName: "save", content: "save", action: () => {
+                        const editor = editorRef.value;
+                        if (!editor.validate()) {
+                            console.warn("JSON was not valid");
+                            showSnackbar(undefined, i18next.t('errorOccurred'));
+                            return;
                         }
-                        this._updateAttributeFilters(parsed);
+                        try {
+                            let parsed: GatewayAttributeFilter[] | undefined;
+                            if (editor.getValue().length > 0) {
 
-                    } catch (e) {
-                        console.error(e);
-                        showSnackbar(undefined, i18next.t("errorOccurred"));
+                                parsed = JSON.parse(editor.getValue());
+
+                                // Verify if the JSON is an array. If so; simply accept the format.
+                                if (!Array.isArray(parsed)) {
+                                    console.warn("Could not parse JSON to GatewayAttributeFilter[], as it was not an array.");
+                                    showSnackbar(undefined, i18next.t("errorOccurred"));
+                                    return;
+                                }
+                            }
+                            this._updateAttributeFilters(parsed);
+
+                        } catch (e) {
+                            console.error(e);
+                            showSnackbar(undefined, i18next.t("errorOccurred"));
+                        }
                     }
-                }}
+                }
             ])
         );
     }

@@ -1,5 +1,23 @@
-import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
@@ -22,22 +40,22 @@ import {
     OrAssetTreeSelectionEvent,
     OrAssetTreeToggleExpandEvent,
 } from "@openremote/or-asset-tree";
-import manager, {DefaultBoxShadow, Util} from "@openremote/core";
-import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {createSlice, Store, createSelector, PayloadAction} from "@reduxjs/toolkit";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import manager, { DefaultBoxShadow, Util } from "@openremote/core";
+import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
+import { createSlice, Store, createSelector, PayloadAction } from "@reduxjs/toolkit";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
-import {AssetEventCause, WellknownAssets} from "@openremote/model";
+import { AssetEventCause, WellknownAssets } from "@openremote/model";
 import "@openremote/or-json-forms";
-import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { getAlarmsRoute, getAssetsRoute, getUsersRoute } from "../routes";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
     tree?: AssetTreeConfig;
 }
 export interface AssetsState {
-    expandedParents: {realm: string, ids: string[]}[]
+    expandedParents: { realm: string, ids: string[] }[]
 }
 export interface AssetsStateKeyed extends AppStateKeyed {
     assets: AssetsState;
@@ -52,20 +70,20 @@ const pageAssetsSlice = createSlice({
         updateExpandedParents(state, action: PayloadAction<[string, boolean]>) {
             const expandedParents = JSON.parse(JSON.stringify(state.expandedParents)); // copy state to prevent issues inserting it back
             const expanded = expandedParents.find(x => x.realm == manager.displayRealm);
-            if(!expanded) {
-                expandedParents.push({ realm: manager.displayRealm, ids: []});
+            if (!expanded) {
+                expandedParents.push({ realm: manager.displayRealm, ids: [] });
             }
             const expandedId = expandedParents.findIndex(x => x.realm == manager.displayRealm);
-            if(!action.payload[1] && expanded && expanded.ids && expanded.ids.includes(action.payload[0])) {
+            if (!action.payload[1] && expanded && expanded.ids && expanded.ids.includes(action.payload[0])) {
                 expandedParents[expandedId].ids = expanded.ids.filter((parent) => parent != action.payload[0]); // filter out collapsed ones
-            } else if(!expanded || (action.payload[1] && expanded && expanded.ids && !expanded.ids.includes(action.payload[0]))) {
+            } else if (!expanded || (action.payload[1] && expanded && expanded.ids && !expanded.ids.includes(action.payload[0]))) {
                 expandedParents[expandedId].ids.push(action.payload[0]); // add new extended ones
             }
             return { ...state, expandedParents: expandedParents }
         }
     }
 })
-const {updateExpandedParents} = pageAssetsSlice.actions;
+const { updateExpandedParents } = pageAssetsSlice.actions;
 export const pageAssetsReducer = pageAssetsSlice.reducer;
 
 export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
@@ -191,7 +209,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
         this.addEventListener(OrAssetTreeToggleExpandEvent.NAME, this._onAssetExpandToggle);
         this.addEventListener(OrAssetViewerLoadUserEvent.NAME, this._onLoadUserEvent);
-        this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME,(ev) =>  this._onLoadAlarmEvent(ev));
+        this.addEventListener(OrAssetViewerLoadAlarmEvent.NAME, (ev) => this._onLoadAlarmEvent(ev));
     }
 
     public connectedCallback() {
@@ -219,7 +237,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        if(!this._assetIds || this._assetIds.length === 0) {
+        if (!this._assetIds || this._assetIds.length === 0) {
             this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
         }
     }
@@ -318,14 +336,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
         try {
             if (parentId) {
-                if ( !assetsIds.includes(parentId) ) {
-                    await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
+                if (!assetsIds.includes(parentId)) {
+                    await manager.rest.api.AssetResource.updateParent(parentId, { assetIds: assetsIds });
                 } else {
                     showSnackbar(undefined, "moveAssetFailed", "dismiss");
                 }
             } else {
                 //So need to remove parent from all the selected assets
-                await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
+                await manager.rest.api.AssetResource.updateNoneParent({ assetIds: assetsIds });
             }
         } catch (e) {
             showSnackbar(undefined, "moveAssetFailed", "dismiss");
@@ -345,7 +363,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     }
 
     protected _onAssetExpandToggle(event: OrAssetTreeToggleExpandEvent) {
-        this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
+        this._store.dispatch(updateExpandedParents([event.detail.node.asset.id, event.detail.node.expanded]));
     }
 
 

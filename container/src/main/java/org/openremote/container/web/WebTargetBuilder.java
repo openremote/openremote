@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
@@ -38,13 +38,13 @@ import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.model.auth.OAuthGrant;
 
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 /**
  * This is a factory for creating JAX-RS {@link WebTarget} instances. The instances share a common
@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * </ul>
  */
 // TODO: This should probably be amalgamated with WebClient somehow to provide a unified JAX-RS Client API and a default
-//  client should be made available on the Container
+// client should be made available on the Container
 public class WebTargetBuilder {
 
     public static final int CONNECTION_POOL_SIZE = 10;
@@ -107,31 +107,24 @@ public class WebTargetBuilder {
      * <p>
      * <b>NOTE: Any response in 200 range will always be treated as successful.</b>
      */
-    public WebTargetBuilder addPermanentFailureResponse(Response.Status...responseStatus) {
-        Collections.addAll(
-            failureResponses,
-            Arrays.stream(responseStatus)
-                .map(Response.Status::getStatusCode)
-                .toArray(Integer[]::new)
-        );
+    public WebTargetBuilder addPermanentFailureResponse(Response.Status... responseStatus) {
+        Collections.addAll(failureResponses,
+                Arrays.stream(responseStatus).map(Response.Status::getStatusCode).toArray(Integer[]::new));
         return this;
     }
 
-    public WebTargetBuilder addPermanentFailureResponse(Integer...responseStatus) {
+    public WebTargetBuilder addPermanentFailureResponse(Integer... responseStatus) {
         Collections.addAll(failureResponses, responseStatus);
         return this;
     }
 
-    public WebTargetBuilder removePermanentFailureResponse(Response.Status...responseStatus) {
+    public WebTargetBuilder removePermanentFailureResponse(Response.Status... responseStatus) {
         failureResponses.removeAll(
-            Arrays.stream(responseStatus)
-                .map(Response.Status::getStatusCode)
-                .collect(Collectors.toList())
-        );
+                Arrays.stream(responseStatus).map(Response.Status::getStatusCode).collect(Collectors.toList()));
         return this;
     }
 
-    public WebTargetBuilder removePermanentFailureResponse(Integer...responseStatus) {
+    public WebTargetBuilder removePermanentFailureResponse(Integer... responseStatus) {
         failureResponses.removeAll(Arrays.asList(responseStatus));
         return this;
     }
@@ -173,27 +166,22 @@ public class WebTargetBuilder {
         return createClient(executorService, CONNECTION_POOL_SIZE, CONNECTION_TIMEOUT_MILLISECONDS, null);
     }
 
-    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
+    public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize,
+            long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilderImpl> builderConfigurator) {
 
-        //Create all of this config code in order to deal with expires cookies in responses
-        RequestConfig requestConfig = RequestConfig.custom()
-            .setCookieSpec(CookieSpecs.STANDARD)
-            .setConnectionRequestTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setConnectTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
-            .setSocketTimeout(Long.valueOf(overrideSocketTimeout).intValue())
-            .build();
-        HttpClient apacheClient = HttpClientBuilder.create()
-            .setDefaultRequestConfig(requestConfig)
-            .build();
+        // Create all of this config code in order to deal with expires cookies in responses
+        RequestConfig requestConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD)
+                .setConnectionRequestTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
+                .setConnectTimeout(Long.valueOf(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS).intValue())
+                .setSocketTimeout(Long.valueOf(overrideSocketTimeout).intValue()).build();
+        HttpClient apacheClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build();
         ApacheHttpClient43Engine engine = new ApacheHttpClient43Engine(apacheClient);
 
-        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl()
-            .httpEngine(engine)
-            .connectionPoolSize(connectionPoolSize)
-            .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
-            .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .register(new JacksonConfig());
+        ResteasyClientBuilderImpl clientBuilder = new ResteasyClientBuilderImpl().httpEngine(engine)
+                .connectionPoolSize(connectionPoolSize)
+                .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+                .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
+                .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS).register(new JacksonConfig());
 
         if (executorService != null) {
             clientBuilder.executorService(executorService);
@@ -215,7 +203,8 @@ public class WebTargetBuilder {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends WebTarget, V> T addQueryParams(@NotNull T webTarget, @NotNull Map<String, List<V>> multivaluedMap) {
+    public static <T extends WebTarget, V> T addQueryParams(@NotNull T webTarget,
+            @NotNull Map<String, List<V>> multivaluedMap) {
         AtomicReference<T> result = new AtomicReference<>(webTarget);
         multivaluedMap.forEach((name, values) -> {
             result.set((T) result.get().queryParam(name, values.toArray()));
@@ -223,7 +212,8 @@ public class WebTargetBuilder {
         return result.get();
     }
 
-    public static <V> Invocation.Builder addHeaders(@NotNull Invocation.Builder requestBuilder, @NotNull Map<String, List<V>> multiivaluedMap) {
+    public static <V> Invocation.Builder addHeaders(@NotNull Invocation.Builder requestBuilder,
+            @NotNull Map<String, List<V>> multiivaluedMap) {
         AtomicReference<Invocation.Builder> result = new AtomicReference<>(requestBuilder);
         multiivaluedMap.forEach((name, values) -> values.forEach(v -> {
             result.set(result.get().header(name, v));

@@ -1,15 +1,33 @@
-import {customElement, state} from "lit/decorators.js";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
-import {css, html, PropertyValues, TemplateResult} from "lit";
-import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
-import {GatewaySettings} from "../settings/gateway-settings";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { customElement, state } from "lit/decorators.js";
+import { OrWidget, WidgetManifest } from "../util/or-widget";
+import { css, html, PropertyValues, TemplateResult } from "lit";
+import { WidgetSettings } from "../util/widget-settings";
+import { WidgetConfig } from "../util/widget-config";
+import { GatewaySettings } from "../settings/gateway-settings";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { GatewayTunnelInfo, GatewayTunnelInfoType } from "@openremote/model";
 import manager from "@openremote/core";
-import {when} from "lit/directives/when.js";
-import {i18next} from "@openremote/or-translate";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { when } from "lit/directives/when.js";
+import { i18next } from "@openremote/or-translate";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import moment from "moment";
 
 const styling = css`
@@ -89,8 +107,8 @@ export class GatewayWidget extends OrWidget {
     }
 
     disconnectedCallback() {
-        if(this._activeTunnel) {
-            if(this._startedByUser) {
+        if (this._activeTunnel) {
+            if (this._startedByUser) {
                 this._stopTunnel(this._activeTunnel).then(() => {
                     console.warn("Stopped the active tunnel, as it was created through the widget.")
                 });
@@ -107,7 +125,7 @@ export class GatewayWidget extends OrWidget {
     }
 
     protected firstUpdated(changedProps: PropertyValues) {
-        if(this.widgetConfig) {
+        if (this.widgetConfig) {
 
             // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
             setTimeout(() => {
@@ -115,7 +133,7 @@ export class GatewayWidget extends OrWidget {
                 // Check if the tunnel is already active upon widget initialization
                 const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
                 this._getActiveTunnel(tunnelInfo).then(info => {
-                    if(info) {
+                    if (info) {
                         console.log("Existing tunnel found!", info);
                         this._setActiveTunnel(info, true)
                     }
@@ -138,8 +156,8 @@ export class GatewayWidget extends OrWidget {
                     ${when(this._loading, () => html`
                         <or-loading-indicator></or-loading-indicator>
                     `, () => {
-                        if (this._activeTunnel) {
-                            return html`
+            if (this._activeTunnel) {
+                return html`
                                 <div>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="stop" label="${i18next.t('gatewayTunnels.stop')}" .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStopTunnelClick(ev)}"
@@ -159,14 +177,14 @@ export class GatewayWidget extends OrWidget {
                                     <div><or-translate value="gatewayTunnels.closesAt"></or-translate>: ${moment(this._activeTunnel?.autoCloseTime).format("lll")}</div>
                                 `)}
                             `;
-                        } else {
-                            return html`
+            } else {
+                return html`
                                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
                             `;
-                        }
-                    })}
+            }
+        })}
                 </div>
             </div>
         `;
@@ -179,7 +197,7 @@ export class GatewayWidget extends OrWidget {
         if (this._isConfigComplete(this.widgetConfig)) {
             const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
             const address = this._getTunnelAddress(tunnelInfo);
-            if(address) {
+            if (address) {
                 navigator.clipboard.writeText(address).finally(() => {
                     showSnackbar(undefined, i18next.t('gatewayTunnels.copySuccess'));
                 });
@@ -244,7 +262,7 @@ export class GatewayWidget extends OrWidget {
             }
         }
 
-        if(tunnelInfo && !silent) {
+        if (tunnelInfo && !silent) {
             this._navigateToTunnel(tunnelInfo);
         }
     }
@@ -312,7 +330,7 @@ export class GatewayWidget extends OrWidget {
             throw new Error("Could not get active tunnel, as some provided information was not set.")
         }
         const response = await manager.rest.api.GatewayServiceResource.getActiveTunnelInfo(info.realm, info.gatewayId, info.target, info.targetPort);
-        if(response.status === 204) {
+        if (response.status === 204) {
             return undefined;
         } else {
             return response.data;

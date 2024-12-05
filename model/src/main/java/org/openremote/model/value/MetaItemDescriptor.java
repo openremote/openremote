@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.databind.util.StdConverter;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
@@ -49,13 +49,15 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
         }
     }
 
-    MetaItemDescriptor() {}
+    MetaItemDescriptor() {
+    }
 
-    public MetaItemDescriptor(String name, ValueDescriptor<T> valueDescriptor, ValueConstraint...constraints) {
+    public MetaItemDescriptor(String name, ValueDescriptor<T> valueDescriptor, ValueConstraint... constraints) {
         super(name, valueDescriptor, constraints);
     }
 
-    public MetaItemDescriptor(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format, String[] units) {
+    public MetaItemDescriptor(String name, ValueDescriptor<T> type, ValueConstraint[] constraints, ValueFormat format,
+            String[] units) {
         super(name, type, constraints, format, units);
     }
 
@@ -64,20 +66,18 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
         return this;
     }
 
-    public MetaItemDescriptor<T> setConstraints(ValueConstraint...constraints) {
+    public MetaItemDescriptor<T> setConstraints(ValueConstraint... constraints) {
         this.constraints = constraints;
         return this;
     }
 
-    public MetaItemDescriptor<T> setUnits(String...units) {
+    public MetaItemDescriptor<T> setUnits(String... units) {
         this.units = units;
         return this;
     }
 
     @Override
     public String toString() {
-        return MetaItemDescriptor.class.getSimpleName() + "{" +
-            super.toString() +
-            '}';
+        return MetaItemDescriptor.class.getSimpleName() + "{" + super.toString() + '}';
     }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.console;
+
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.util.Map;
 
 /**
  * Encapsulates data about a console instance that is used to generate an {@link org.openremote.model.asset.Asset} of
@@ -33,7 +33,9 @@ import java.util.Map;
  * <p>
  * Google Chrome on Windows 10 64-bit used to view the manager and customerA applications would generate the following
  * registration:
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>
  * {
  *    "name": "Chrome",
  *    "version": "71.0.3578.98",
@@ -54,11 +56,15 @@ import java.util.Map;
  *        "manager"
  *        "customerA"
  *    ]
- * }</pre></blockquote>
+ * </pre>
+ *
+ * </blockquote>
  * <p>
  * An Android console app called "Smart City" on a Samsung Galaxy S9 running Android 8.0 would generate the following
  * registration:
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>
  * {
  *    "name": "Smart City",
  *    "version": "1.0.0",
@@ -84,7 +90,9 @@ import java.util.Map;
  *    "apps": [
  *        "smartcity"
  *    ]
- * }</pre></blockquote>
+ * </pre>
+ *
+ * </blockquote>
  */
 public class ConsoleRegistration {
     protected String id;
@@ -95,18 +103,14 @@ public class ConsoleRegistration {
     @NotBlank
     protected String platform;
     protected String model;
-    @NotNull
-    protected Map<String, ConsoleProvider> providers;
+    @NotNull protected Map<String, ConsoleProvider> providers;
     protected String[] apps;
 
     @JsonCreator
-    public ConsoleRegistration(@JsonProperty("id") String id,
-                               @JsonProperty("name") String name,
-                               @JsonProperty("version") String version,
-                               @JsonProperty("platform") String platform,
-                               @JsonProperty("providers") Map<String, ConsoleProvider> providers,
-                               @JsonProperty("model") String model,
-                               @JsonProperty("apps") String[] apps) {
+    public ConsoleRegistration(@JsonProperty("id") String id, @JsonProperty("name") String name,
+            @JsonProperty("version") String version, @JsonProperty("platform") String platform,
+            @JsonProperty("providers") Map<String, ConsoleProvider> providers, @JsonProperty("model") String model,
+            @JsonProperty("apps") String[] apps) {
         this.id = id;
         this.name = name;
         this.version = version;

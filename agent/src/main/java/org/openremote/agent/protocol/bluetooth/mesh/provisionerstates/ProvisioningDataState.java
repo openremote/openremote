@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.nio.ByteBuffer;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalProvisioningCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
@@ -26,9 +28,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallba
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.util.logging.Logger;
 
 public class ProvisioningDataState extends ProvisioningState {
 
@@ -39,9 +38,9 @@ public class ProvisioningDataState extends ProvisioningState {
     private final InternalTransportCallbacks mInternalTransportCallbacks;
 
     public ProvisioningDataState(final InternalProvisioningCallbacks callbacks,
-                                 final UnprovisionedMeshNode unprovisionedMeshNode,
-                                 final InternalTransportCallbacks mInternalTransportCallbacks,
-                                 final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
+            final UnprovisionedMeshNode unprovisionedMeshNode,
+            final InternalTransportCallbacks mInternalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
         super();
         this.provisioningCallbacks = callbacks;
         this.mUnprovisionedMeshNode = unprovisionedMeshNode;
@@ -66,7 +65,8 @@ public class ProvisioningDataState extends ProvisioningState {
 
     private void sendProvisioningData() {
         final byte[] provisioningDataPDU = createProvisioningDataPDU();
-        mStatusCallbacks.onProvisioningStateChanged(mUnprovisionedMeshNode, States.PROVISIONING_DATA_SENT, provisioningDataPDU);
+        mStatusCallbacks.onProvisioningStateChanged(mUnprovisionedMeshNode, States.PROVISIONING_DATA_SENT,
+                provisioningDataPDU);
         mInternalTransportCallbacks.sendProvisioningPdu(mUnprovisionedMeshNode, provisioningDataPDU);
     }
 
@@ -95,7 +95,7 @@ public class ProvisioningDataState extends ProvisioningState {
         final byte[] networkKey = mUnprovisionedMeshNode.getNetworkKey();
         LOG.info("Network key: " + MeshParserUtils.bytesToHex(networkKey, false));
 
-        /* Generate random 2 byte Key index*/
+        /* Generate random 2 byte Key index */
         final byte[] keyIndex = MeshParserUtils.addKeyIndexPadding(mUnprovisionedMeshNode.getKeyIndex());
         LOG.info("Key index: " + MeshParserUtils.bytesToHex(keyIndex, false));
 
@@ -107,11 +107,12 @@ public class ProvisioningDataState extends ProvisioningState {
         final byte[] ivIndex = mUnprovisionedMeshNode.getIvIndex();
         LOG.info("IV index: " + MeshParserUtils.bytesToHex(ivIndex, false));
 
-        /* Generate random 2 byte unicast address*/
+        /* Generate random 2 byte unicast address */
         final byte[] unicastAddress = MeshAddress.addressIntToBytes(mUnprovisionedMeshNode.getUnicastAddress());
 
         LOG.info("Unicast address: " + MeshParserUtils.bytesToHex(unicastAddress, false));
-        ByteBuffer buffer = ByteBuffer.allocate(networkKey.length + keyIndex.length + flags.length + ivIndex.length + unicastAddress.length);
+        ByteBuffer buffer = ByteBuffer
+                .allocate(networkKey.length + keyIndex.length + flags.length + ivIndex.length + unicastAddress.length);
         buffer.put(networkKey);
         buffer.put(keyIndex);
         buffer.put(flags);
@@ -136,17 +137,21 @@ public class ProvisioningDataState extends ProvisioningState {
 
     /**
      * Generate the provisioning salt.
-     * This is done by calculating the salt containing array created by appending the confirmationSalt, provisionerRandom and the provisioneeRandom.
+     * This is done by calculating the salt containing array created by appending the confirmationSalt,
+     * provisionerRandom and the provisioneeRandom.
      *
      * @return a byte array
      */
     private byte[] generateProvisioningSalt() {
 
-        final byte[] confirmationSalt = SecureUtils.calculateSalt(provisioningCallbacks.generateConfirmationInputs(mUnprovisionedMeshNode.getProvisionerPublicKeyXY(), mUnprovisionedMeshNode.getProvisioneePublicKeyXY()));
+        final byte[] confirmationSalt = SecureUtils.calculateSalt(
+                provisioningCallbacks.generateConfirmationInputs(mUnprovisionedMeshNode.getProvisionerPublicKeyXY(),
+                        mUnprovisionedMeshNode.getProvisioneePublicKeyXY()));
         final byte[] provisionerRandom = mUnprovisionedMeshNode.getProvisionerRandom();
         final byte[] provisioneeRandom = mUnprovisionedMeshNode.getProvisioneeRandom();
 
-        final ByteBuffer buffer = ByteBuffer.allocate(confirmationSalt.length + provisionerRandom.length + provisioneeRandom.length);
+        final ByteBuffer buffer = ByteBuffer
+                .allocate(confirmationSalt.length + provisionerRandom.length + provisioneeRandom.length);
         buffer.put(confirmationSalt);
         buffer.put(provisionerRandom);
         buffer.put(provisioneeRandom);
@@ -158,7 +163,7 @@ public class ProvisioningDataState extends ProvisioningState {
     /**
      * Calculate the Session nonce
      *
-     * @param ecdh             shared ECDH secret
+     * @param ecdh shared ECDH secret
      * @param provisioningSalt provisioning salt
      * @return sessionNonce
      */
@@ -169,4 +174,3 @@ public class ProvisioningDataState extends ProvisioningState {
         return buffer.array();
     }
 }
-

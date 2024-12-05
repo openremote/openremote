@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.xml;
 
-import org.w3c.dom.*;
-import org.xml.sax.*;
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.NamespaceContext;
@@ -41,13 +45,9 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-import java.io.*;
-import java.net.URI;
-import java.net.URL;
-import java.util.Map;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import org.w3c.dom.*;
+import org.xml.sax.*;
 
 /**
  * Condensed API for parsing of XML into DOM with (optional) XML schema validation.
@@ -73,11 +73,13 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
 
         if (schema == null) {
             // Lazy initialization
-            // TODO: http://stackoverflow.com/questions/3129934/schemafactory-doesnt-support-w3c-xml-schema-in-platform-level-8
+            // TODO:
+            // http://stackoverflow.com/questions/3129934/schemafactory-doesnt-support-w3c-xml-schema-in-platform-level-8
             try {
                 SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
 
-                schemaFactory.setResourceResolver(new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
+                schemaFactory.setResourceResolver(
+                        new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
 
                 if (schemaSources != null) {
                     schema = schemaFactory.newSchema(schemaSources);
@@ -259,13 +261,15 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
     // =================================================================================================
 
     public void validate(URL url) throws ParserException {
-        if (url == null) throw new IllegalArgumentException("Can't validate null URL");
+        if (url == null)
+            throw new IllegalArgumentException("Can't validate null URL");
         LOG.fine("Validating XML of URL: " + url);
         validate(new StreamSource(url.toString()));
     }
 
     public void validate(String string) throws ParserException {
-        if (string == null) throw new IllegalArgumentException("Can't validate null string");
+        if (string == null)
+            throw new IllegalArgumentException("Can't validate null string");
         LOG.fine("Validating XML string characters: " + string.length());
         validate(new SAXSource(new InputSource(new StringReader(string))));
     }
@@ -310,7 +314,7 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
         return getXPathResult(dom.getW3CDocument(), xpath, expr, result);
     }
 
-    public Object getXPathResult(DOMElement<?,?> element, XPath xpath, String expr, QName result) {
+    public Object getXPathResult(DOMElement<?, ?> element, XPath xpath, String expr, QName result) {
         return getXPathResult(element.getW3CElement(), xpath, expr, result);
     }
 
@@ -406,7 +410,8 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
             String meta = "\\s*<META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">";
             output = output.replaceFirst(meta, "");
 
-            // Rip out the even dumber xmlns attribute that magically got added (seems to be a difference between JDK 1.4 and 5)
+            // Rip out the even dumber xmlns attribute that magically got added (seems to be a difference between JDK
+            // 1.4 and 5)
             String xmlns = "<html xmlns=\"http://www.w3.org/1999/xhtml\">";
             output = output.replaceFirst(xmlns, "<html>");
 
@@ -433,8 +438,7 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
 
     public boolean isIgnorableWSNode(Node node) {
         // TODO: What about XML space="preserve"?
-        return node.getNodeType() == Node.TEXT_NODE &&
-            node.getTextContent().matches("[\\t\\n\\x0B\\f\\r\\s]+");
+        return node.getNodeType() == Node.TEXT_NODE && node.getTextContent().matches("[\\t\\n\\x0B\\f\\r\\s]+");
     }
 
     // =================================================================================================
@@ -473,7 +477,6 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
         is.setPublicId(publicId);
         is.setSystemId(systemId);
         return is;
-
     }
 
     // ======================================= Utility Methods =============================================
@@ -483,7 +486,8 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
     }
 
     public static String escape(String string, boolean convertNewlines, boolean convertSpaces) {
-        if (string == null) return null;
+        if (string == null)
+            return null;
         StringBuilder sb = new StringBuilder();
         String entity;
         char c;
@@ -533,20 +537,24 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
     }
 
     public static String stripElements(String xml) {
-        if (xml == null) return null;
+        if (xml == null)
+            return null;
         return xml.replaceAll("<([a-zA-Z]|/).*?>", "");
     }
 
     public static void accept(Node node, NodeVisitor visitor) {
-        if (node == null) return;
-        if (visitor.isHalted()) return;
+        if (node == null)
+            return;
+        if (visitor.isHalted())
+            return;
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
             boolean cont = true;
             if (child.getNodeType() == visitor.nodeType) {
                 visitor.visit(child);
-                if (visitor.isHalted()) break;
+                if (visitor.isHalted())
+                    break;
             }
             accept(child, visitor);
         }
@@ -582,5 +590,4 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
         wrapper.append("</").append(wrapperName).append(">");
         return wrapper.toString();
     }
-
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, TemplateResult, PropertyValues, unsafeCSS} from "lit";
-import {customElement, state, query} from "lit/decorators.js";
-import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
+import { css, html, TemplateResult, PropertyValues, unsafeCSS } from "lit";
+import { customElement, state, query } from "lit/decorators.js";
+import manager, { DefaultColor1, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
-import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {when} from "lit/directives/when.js"
+import { Store } from "@reduxjs/toolkit";
+import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
+import { when } from "lit/directives/when.js"
 import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
 import "../components/configuration/or-conf-panel";
-import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
+import { ManagerAppConfig, MapRealmConfig, Realm } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
-import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
-import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
+import { OrConfRealmCard } from "../components/configuration/or-conf-realm/or-conf-realm-card";
+import { OrConfPanel } from "../components/configuration/or-conf-panel";
+import { Input } from "@openremote/or-rules/lib/flow-viewer/services/input";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -153,7 +152,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     public managerConfiguration?: ManagerAppConfig;
 
     @state()
-    public mapConfig?: {[id: string]: any};
+    public mapConfig?: { [id: string]: any };
 
     @state()
     protected realms?: Realm[];
@@ -181,9 +180,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     // On every update..
     willUpdate(changedProps: PropertyValues<this>) {
 
-        if(!this.loading) {
+        if (!this.loading) {
             let managerConfigPromise;
-            if(this.managerConfiguration === undefined) {
+            if (this.managerConfiguration === undefined) {
                 managerConfigPromise = this.getManagerConfig().then((value) => {
                     this.managerConfiguration = value;
                 }).catch(() => {
@@ -191,7 +190,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
             }
             let mapConfigPromise;
-            if(this.mapConfig === undefined) {
+            if (this.mapConfig === undefined) {
                 mapConfigPromise = this.getMapConfig().then((value) => {
                     this.mapConfig = value;
                 }).catch(() => {
@@ -199,7 +198,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
             }
             let realmsPromise;
-            if(this.realms === undefined) {
+            if (this.realms === undefined) {
                 realmsPromise = this.getAccessibleRealms().then((value) => {
                     this.realms = value;
                 }).catch(() => {
@@ -208,7 +207,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             }
 
             // Wait for both promises to complete, to only update UI once.
-            if(managerConfigPromise || mapConfigPromise || realmsPromise) {
+            if (managerConfigPromise || mapConfigPromise || realmsPromise) {
                 this.loading = true;
                 Promise.all([managerConfigPromise, mapConfigPromise, realmsPromise]).finally(() => {
                     this.loading = false;
@@ -228,20 +227,20 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             ${when(this.loading, () => html`
                 <or-loading-indicator></or-loading-indicator>
             `, () => {
-                const realmHeading = html`
+            const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
                         <span style="margin: 0;">${i18next.t("configuration.realmStyling").toUpperCase()}</span>
                         <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
                                       @saveLocalManagerConfig="${(ev: CustomEvent) => {
-                                          this.managerConfiguration = ev.detail.value as ManagerAppConfig;
-                                          this.managerConfigurationChanged = true;
-                                      }}"
+                    this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                    this.managerConfigurationChanged = true;
+                }}"
                         ></or-conf-json>
                     </div>
                 `;
-                const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
-                realmOptions.push({name: 'default', displayName: 'Default', canDelete: false});
-                return html`
+            const realmOptions = this.realms?.map((r) => ({ name: r.name, displayName: r.displayName, canDelete: true }));
+            realmOptions.push({ name: 'default', displayName: 'Default', canDelete: false });
+            return html`
                     <div id="wrapper">
                         <div id="header-wrapper">
                             <div id="header-title">
@@ -264,8 +263,8 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                     <span>${i18next.t('configuration.managerConfigNotFound')}</span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
-                                                      this.managerConfiguration = val;
-                                                  }).catch(e => console.error(e))}"
+                this.managerConfiguration = val;
+            }).catch(e => console.error(e))}"
                                     ></or-mwc-input>
                                 </div>
                             `)}
@@ -280,15 +279,15 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                     <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
-                                                      this.mapConfig = val;
-                                                  }).catch(e => console.error(e))}"
+                this.mapConfig = val;
+            }).catch(e => console.error(e))}"
                                     ></or-mwc-input>
                                 </div>
                             `)}
                         </or-panel>
                     </div>
                 `
-            })}
+        })}
         `;
     }
 
@@ -302,28 +301,28 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         return await response.json() as ManagerAppConfig;
     }
 
-    protected async getMapConfig(): Promise<{[id: string]: any}> {
+    protected async getMapConfig(): Promise<{ [id: string]: any }> {
         const response = await manager.rest.api.MapResource.getSettings();
-        return (response.data.options as {[id: string]: any});
+        return (response.data.options as { [id: string]: any });
     }
 
     protected async getAccessibleRealms(): Promise<Realm[]> {
         return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
-    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
+    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: { [p: string]: MapRealmConfig }) {
         this.loading = true;
         let managerPromise;
 
         // POST manager config if changed...
         if (this.managerConfigurationChanged) {
             managerPromise = manager.rest.api.ConfigurationResource.update(config).then(() => {
-                fetch(this.urlPrefix + "/manager_config.json", {cache: "reload"});
+                fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
                 this.managerConfiguration = config;
                 Object.entries(this.managerConfiguration.realms).forEach(([name, settings]) => {
-                    fetch(this.urlPrefix + settings?.favicon, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logo, {cache: "reload"});
-                    fetch(this.urlPrefix + settings?.logoMobile, {cache: "reload"});
+                    fetch(this.urlPrefix + settings?.favicon, { cache: "reload" });
+                    fetch(this.urlPrefix + settings?.logo, { cache: "reload" });
+                    fetch(this.urlPrefix + settings?.logoMobile, { cache: "reload" });
                 });
             }).catch((reason) => {
                 console.error(reason);
@@ -332,7 +331,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
         // POST map config if changed...
         let mapPromise;
-        if(this.mapConfigChanged) {
+        if (this.mapConfigChanged) {
             mapPromise = manager.rest.api.MapResource.saveSettings(mapConfig)
                 .then(() => {
                     this.mapConfig = mapConfig;
@@ -344,12 +343,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
         const imagePromises = [];
-        if(this.realmConfigPanel !== undefined) {
+        if (this.realmConfigPanel !== undefined) {
             const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
             elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
                 Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, {path: x}));
+                    imagePromises.push(manager.rest.api.ConfigurationResource.fileUpload(y, { path: x }));
                 });
             })
         }

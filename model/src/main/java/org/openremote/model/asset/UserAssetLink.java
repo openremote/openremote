@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Objects;
 
 import org.hibernate.annotations.Formula;
 import org.openremote.model.value.MetaItemType;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
-import java.util.Date;
-import java.util.Objects;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
@@ -44,13 +44,16 @@ import java.util.Objects;
  * When a restricted client updates existing assets, new attributes can be added, but
  * only attributes with {@link MetaItemType#ACCESS_RESTRICTED_WRITE} can be updated or deleted; note Access meta items
  * cannot be modified. Any new attributes are automatically set with {@link MetaItemType#ACCESS_RESTRICTED_READ} and
- * {@link MetaItemType#ACCESS_RESTRICTED_WRITE}, thus ensuring that a restricted client can fully access its own attributes.
+ * {@link MetaItemType#ACCESS_RESTRICTED_WRITE}, thus ensuring that a restricted client can fully access its own
+ * attributes.
  * </li>
  * <li>
  * A restricted client can not create or delete assets. A restricted client can not change the name, parent, or
- * realm of an asset. A restricted user can not make an asset public. A restricted user can change the location of an asset.
+ * realm of an asset. A restricted user can not make an asset public. A restricted user can change the location of an
+ * asset.
  * </li>
- * </ul>.
+ * </ul>
+ * .
  */
 @Entity
 @Table(name = "USER_ASSET_LINK")
@@ -89,13 +92,17 @@ public class UserAssetLink {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             Id id = (Id) o;
 
-            if (!realm.equals(id.realm)) return false;
-            if (!userId.equals(id.userId)) return false;
+            if (!realm.equals(id.realm))
+                return false;
+            if (!userId.equals(id.userId))
+                return false;
             return assetId.equals(id.assetId);
         }
 
@@ -109,11 +116,8 @@ public class UserAssetLink {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "realm='" + realm + '\'' +
-                ", userId='" + userId + '\'' +
-                ", assetId='" + assetId + '\'' +
-                '}';
+            return getClass().getSimpleName() + "{" + "realm='" + realm + '\'' + ", userId='" + userId + '\''
+                    + ", assetId='" + assetId + '\'' + '}';
         }
     }
 
@@ -170,8 +174,10 @@ public class UserAssetLink {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         UserAssetLink that = (UserAssetLink) o;
         return id.equals(that.id);
     }
@@ -183,12 +189,8 @@ public class UserAssetLink {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id=" + id +
-            ", createdOn=" + createdOn +
-            ", assetName='" + assetName + '\'' +
-            ", parentAssetName='" + parentAssetName + '\'' +
-            ", userFullName='" + userFullName + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id=" + id + ", createdOn=" + createdOn + ", assetName='" + assetName
+                + '\'' + ", parentAssetName='" + parentAssetName + '\'' + ", userFullName='" + userFullName + '\''
+                + '}';
     }
 }

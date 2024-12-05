@@ -1,13 +1,31 @@
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {Asset, AssetQuery} from "@openremote/model";
-import {surveyLayoutStyle, surveySectionStyle} from "./style";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { Asset, AssetQuery } from "@openremote/model";
+import { surveyLayoutStyle, surveySectionStyle } from "./style";
 import set from "lodash-es/set";
 import get from "lodash-es/get";
 import orderBy from "lodash-es/orderBy";
 
 import * as momentImported from 'moment';
-import manager, {EventCallback} from "@openremote/core";
+import manager, { EventCallback } from "@openremote/core";
 import filter from "lodash-es/filter";
 import "@openremote/or-translate";
 
@@ -39,25 +57,25 @@ export interface SurveyAnswers {
 @customElement("or-survey")
 class OrSurvey extends LitElement {
 
-    @property({type: Object})
+    @property({ type: Object })
     public survey?: Asset;
 
-    @property({type: String})
+    @property({ type: String })
     public surveyId?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public isAddingQuestion?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public hasIntroQuestion?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public question?: Asset;
 
-    @property({type: Object})
+    @property({ type: Object })
     public surveyAnswers?: SurveyAnswers;
 
-    @property({type: Array})
+    @property({ type: Array })
     public questions?: Asset[];
 
     public readonly?: boolean;
@@ -67,19 +85,19 @@ class OrSurvey extends LitElement {
 
     public nextButtonLabel?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public saveanswers?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public completed?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public hasSubmission?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public previousButton?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public nextButton?: boolean;
 
     public questionAnimation?: string;
@@ -99,17 +117,17 @@ class OrSurvey extends LitElement {
             return html``;
         }
 
-        const orderedQuestions = orderBy(this.questions, ['attributes.order.value'],['asc']);
+        const orderedQuestions = orderBy(this.questions, ['attributes.order.value'], ['asc']);
         const status = this.checkAssetPeriode(this.survey);
-        let currentAnswer:string | string[];
+        let currentAnswer: string | string[];
 
-        if(this.questions && this.questionIndex && this.questions[this.questionIndex]) {
+        if (this.questions && this.questionIndex && this.questions[this.questionIndex]) {
             const currentQuestion = this.questions[this.questionIndex];
-            if(currentQuestion && currentQuestion.id && this.surveyAnswers) {
+            if (currentQuestion && currentQuestion.id && this.surveyAnswers) {
                 currentAnswer = this.surveyAnswers[currentQuestion.id];
             }
         }
-        
+
         return html`
                 ${surveySectionStyle}
                 ${surveyLayoutStyle}
@@ -132,7 +150,7 @@ class OrSurvey extends LitElement {
                             ` : ``}
                             
                             ${status === 'live' || (status === 'not_published' && !this.saveanswers) ? html`
-                                         ${orderedQuestions.map((question: Asset, index:number) => {
+                                         ${orderedQuestions.map((question: Asset, index: number) => {
 
             return html`
                                                     ${get(question, 'attributes.active.value') && index === this.questionIndex ? html`
@@ -144,7 +162,7 @@ class OrSurvey extends LitElement {
                                                                    ${this.getType(question.type) === 'text' ? html`
                                                                         <textarea rows="4" class="text-input" type="${this.getInputType(question.type)}" id="${question.id}" name="${question.id}_${index}">${currentAnswer}</textarea>
                                                                    ` : html`
-                                                                        ${question.attributes && question.attributes.answerOptions.value.map((answer:AnswerOption, index:number) => {
+                                                                        ${question.attributes && question.attributes.answerOptions.value.map((answer: AnswerOption, index: number) => {
                 return html`
                                                                                 <div class="answer-card ${this.getType(question.type)}">
                                                                                     
@@ -165,7 +183,7 @@ class OrSurvey extends LitElement {
                                                                                                            autofocus />
                                                                                        `}
                                                                                    `}
-                                                                                    <label class="flex-grow" @click="${(e:Event) => this.onAnswer(e, answer)}" for="${question.id}_${index}">
+                                                                                    <label class="flex-grow" @click="${(e: Event) => this.onAnswer(e, answer)}" for="${question.id}_${index}">
                                                                                         ${answer.value}
                                                                                     </label>
                                                                                 </div>
@@ -207,21 +225,21 @@ class OrSurvey extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
-        if(_changedProperties.has('survey') || _changedProperties.has('surveyId')) {
+        if (_changedProperties.has('survey') || _changedProperties.has('surveyId')) {
             this.resetSurvey();
         }
 
         this.dispatchEvent(new OrComputeGridEvent())
     }
 
-    checkAssetPeriode(asset:Asset) {
+    checkAssetPeriode(asset: Asset) {
         const today = moment();
         const startDate = get(asset, 'attributes.validity.value.start');
         const endDate = get(asset, 'attributes.validity.value.end');
         // not published
-        if(get(asset, 'attributes.published.value') === false) {
+        if (get(asset, 'attributes.published.value') === false) {
             return 'not_published';
-        } else if(today.diff(startDate) > 0 && today.diff(endDate) < 0) {
+        } else if (today.diff(startDate) > 0 && today.diff(endDate) < 0) {
             // between dates
             return 'live';
         } else if (today.diff(startDate) < 0) {
@@ -235,7 +253,7 @@ class OrSurvey extends LitElement {
         }
     }
 
-    getInputType(type:string|undefined) {
+    getInputType(type: string | undefined) {
         if (type) {
             if (type.includes('singleSelect') || type.includes('rating')) {
                 return "radio";
@@ -249,7 +267,7 @@ class OrSurvey extends LitElement {
         }
     }
 
-    getType(type:string|undefined) {
+    getType(type: string | undefined) {
         if (type) {
             const parts = type.split(':');
             const label = parts[parts.length - 1];
@@ -258,21 +276,21 @@ class OrSurvey extends LitElement {
     }
 
     checkButtons() {
-        if(!this.survey || !this.questions || typeof this.questionIndex === "undefined") {
+        if (!this.survey || !this.questions || typeof this.questionIndex === "undefined") {
             return;
         }
 
         this.questions.sort((a, b) => a.attributes && b.attributes ? a.attributes.order.value - b.attributes.order.value : 0);
         this.questions = [...this.questions];
-        
+
         if (this.questionIndex > 0) {
             this.previousButton = true;
             this.nextButton = true;
         } else {
-            if(this.questions[0]) {
-                if(this.questions[0].attributes && !this.questions[0].attributes.categorizeInResult.value) {
+            if (this.questions[0]) {
+                if (this.questions[0].attributes && !this.questions[0].attributes.categorizeInResult.value) {
                     this.nextButton = true;
-                }else{
+                } else {
                     this.nextButton = false;
                 }
             }
@@ -280,18 +298,18 @@ class OrSurvey extends LitElement {
         }
 
         if (this.questionIndex + 1 === this.questions.length) {
-            this.nextButtonLabel= 'Send';
+            this.nextButtonLabel = 'Send';
         } else {
-            this.nextButtonLabel= 'Next';
+            this.nextButtonLabel = 'Next';
         }
 
-        if(this.questionIndex === this.questions.length && this.questions.length !== 0) {
+        if (this.questionIndex === this.questions.length && this.questions.length !== 0) {
             this.completed = true;
             if (this.survey.attributes && this.survey.attributes.published.value && this.saveanswers) {
-                localStorage.setItem('survey'+this.survey.id, "set");
+                localStorage.setItem('survey' + this.survey.id, "set");
 
                 const xhttp = new XMLHttpRequest();
-                const url = manager.config.managerUrl ? manager.config.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
+                const url = manager.config.managerUrl ? manager.config.managerUrl + "/rest/survey/" : window.location.origin + "/rest/survey/";
                 xhttp.open("POST", url + this.survey.id, true);
                 xhttp.setRequestHeader("Content-type", "application/json");
                 xhttp.send(JSON.stringify(this.surveyAnswers));
@@ -302,7 +320,7 @@ class OrSurvey extends LitElement {
     }
 
     nextQuestion() {
-        if(typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined' ) {
+        if (typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined') {
             return;
         }
 
@@ -322,7 +340,7 @@ class OrSurvey extends LitElement {
     }
 
     previousQuestion() {
-        if(typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined' ) {
+        if (typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined') {
             return;
         }
 
@@ -332,8 +350,8 @@ class OrSurvey extends LitElement {
         this.checkButtons();
     }
 
-    onAnswer(e: Event, answer:AnswerOption) {
-        if(!this.questions || typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined' ) {
+    onAnswer(e: Event, answer: AnswerOption) {
+        if (!this.questions || typeof this.questionIndex === 'undefined' || typeof this.questionIndexLabel === 'undefined') {
             return;
         }
         const target = e.currentTarget;
@@ -346,7 +364,7 @@ class OrSurvey extends LitElement {
             if (target && target.dataset.autoforward === "true") {
                 this.nextQuestion();
             } else {
-                if(currQuestion && currQuestion.id && surveyAnswers){
+                if (currQuestion && currQuestion.id && surveyAnswers) {
                     surveyAnswers[currQuestion.id] = answer.value;
                     this.surveyAnswers = surveyAnswers;
                     this.nextQuestion();
@@ -356,7 +374,7 @@ class OrSurvey extends LitElement {
         }
         else if (this.getType(currQuestion.type) === "text") {
             const id = this.questions[this.questionIndex].id;
-            if(this.shadowRoot && id) {
+            if (this.shadowRoot && id) {
                 const element = this.shadowRoot.getElementById(id) as HTMLInputElement;
                 if (element && currQuestion && currQuestion.id && surveyAnswers) {
                     const value = element.value;
@@ -373,12 +391,12 @@ class OrSurvey extends LitElement {
             if (target.dataset.autoforward === "true") {
                 this.nextQuestion();
             } else {
-                if(currQuestion && currQuestion.id && surveyAnswers && target instanceof HTMLLabelElement) {
+                if (currQuestion && currQuestion.id && surveyAnswers && target instanceof HTMLLabelElement) {
                     if (!surveyAnswers[currQuestion.id]) {
                         surveyAnswers[currQuestion.id] = [];
                     }
                     const array = surveyAnswers[currQuestion.id];
-                    if(this.shadowRoot && Array.isArray(array)) {
+                    if (this.shadowRoot && Array.isArray(array)) {
                         const input = this.shadowRoot.getElementById(target.htmlFor) as HTMLInputElement;
                         if (!input.checked) {
                             array.push(answer.value);
@@ -398,11 +416,11 @@ class OrSurvey extends LitElement {
         let surveyId: string;
         if (location.hash.indexOf('survey') !== -1) {
             surveyId = location.hash.split('/')[1];
-            if(!surveyId) {
+            if (!surveyId) {
                 this.checkButtons();
                 return;
             }
-        } else if(this.surveyId){
+        } else if (this.surveyId) {
             surveyId = this.surveyId;
         } else {
             this.checkButtons();
@@ -422,7 +440,7 @@ class OrSurvey extends LitElement {
             console.error("Error: " + reason);
         });
 
-        if(localStorage.getItem('survey'+surveyId) && this.saveanswers){
+        if (localStorage.getItem('survey' + surveyId) && this.saveanswers) {
             this.hasSubmission = true;
             return;
         }
@@ -437,10 +455,10 @@ class OrSurvey extends LitElement {
                 questions.sort((a, b) => a.attributes && b.attributes ? a.attributes.order.value - b.attributes.order.value : 0);
                 this.questions = [...questions];
 
-                if(this.survey){
+                if (this.survey) {
                     this.questions = filter(this.questions, ['parentId', this.survey.id]);
                 }
-                    
+
                 this.checkButtons();
                 this.requestUpdate();
 

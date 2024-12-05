@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
 
+import java.util.*;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.*;
 
 public class Notification {
 
@@ -57,6 +56,7 @@ public class Notification {
 
         /**
          * Manual constructor for the Target class
+         *
          * @param locale ISO 639-1 code; for example "nl" or "en"
          */
         public Target(TargetType type, String id, String locale) {
@@ -115,10 +115,7 @@ public class Notification {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName()+ "{" +
-                "type=" + type +
-                ", id=" + id +
-                '}';
+            return getClass().getSimpleName() + "{" + "type=" + type + ", id=" + id + '}';
         }
     }
 
@@ -135,7 +132,10 @@ public class Notification {
     }
 
     @JsonCreator
-    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") List<Target> targets, @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency, @JsonProperty("repeatInterval") String repeatInterval) {
+    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message,
+            @JsonProperty("targets") List<Target> targets,
+            @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency,
+            @JsonProperty("repeatInterval") String repeatInterval) {
         this.name = name;
         this.message = message;
         this.targets = targets;
@@ -165,7 +165,7 @@ public class Notification {
         return targets;
     }
 
-    public void setTargets(Target...targets) {
+    public void setTargets(Target... targets) {
         if (targets == null || targets.length == 0) {
             this.targets = null;
         } else {
@@ -207,12 +207,7 @@ public class Notification {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName()+ "{" +
-            "name='" + name + '\'' +
-            ", message=" + message +
-            ", repeatFrequency=" + repeatFrequency +
-            ", repeatInterval='" + repeatInterval + '\'' +
-            ", targets=" + targets +
-            '}';
+        return getClass().getSimpleName() + "{" + "name='" + name + '\'' + ", message=" + message + ", repeatFrequency="
+                + repeatFrequency + ", repeatInterval='" + repeatInterval + '\'' + ", targets=" + targets + '}';
     }
 }

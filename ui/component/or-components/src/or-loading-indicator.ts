@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
@@ -23,11 +22,11 @@ import { customElement, property } from "lit/decorators.js";
 @customElement("or-loading-indicator")
 export class OrLoadingIndicator extends LitElement {
 
-  @property({ attribute: true })
-  public overlay: boolean = false;
+    @property({ attribute: true })
+    public overlay: boolean = false;
 
-  static get styles() {
-    return css`
+    static get styles() {
+        return css`
       .loader-container {
         position: absolute;
         top: 0;
@@ -86,11 +85,11 @@ export class OrLoadingIndicator extends LitElement {
         -webkit-animation: rotate-right 5s linear 0s infinite;
       }
     `;
-  }
+    }
 
 
-  render() {
-    const loader = html`
+    render() {
+        const loader = html`
       <div class="loader">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 110 110"
              xml:space="preserve">
@@ -104,12 +103,12 @@ export class OrLoadingIndicator extends LitElement {
       </div>`;
 
 
-    if (this.overlay) {
-      return html`
+        if (this.overlay) {
+            return html`
         <div class="loader-container">
           ${loader}
         </div>`;
+        }
+        return loader;
     }
-    return loader;
-  }
 }

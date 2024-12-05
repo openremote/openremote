@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.alarm;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.Formula;
-import org.openremote.model.asset.Asset;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+import org.hibernate.annotations.Formula;
+import org.openremote.model.asset.Asset;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "ALARM")
@@ -38,8 +38,7 @@ public class SentAlarm {
     @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
     protected Long id;
 
-    @NotNull
-    @Column(name = "REALM", nullable = false, updatable = false)
+    @NotNull @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
     @Column(name = "TITLE", nullable = false)
@@ -48,18 +47,15 @@ public class SentAlarm {
     @Column(name = "CONTENT", length = 4096)
     protected String content;
 
-    @NotNull
-    @Column(name = "SEVERITY", nullable = false, length = 15)
+    @NotNull @Column(name = "SEVERITY", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Severity severity;
 
-    @NotNull
-    @Column(name = "STATUS", nullable = false, length = 15)
+    @NotNull @Column(name = "STATUS", nullable = false, length = 15)
     @Enumerated(EnumType.STRING)
     protected Alarm.Status status;
 
-    @NotNull()
-    @Column(name = "SOURCE", nullable = false, length = 50)
+    @NotNull() @Column(name = "SOURCE", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     protected Alarm.Source source;
 
@@ -209,18 +205,10 @@ public class SentAlarm {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", severity=" + severity + '\'' +
-                ", status='" + status + '\'' +
-                ", source=" + source +
-                ", sourceId='" + sourceId + '\'' +
-                ", createdOn=" + createdOn + '\'' +
-                ", acknowledgedOn=" + acknowledgedOn + '\'' +
-                ", lastModified=" + lastModified + '\'' +
-                ", assigneeId=" + assigneeId + '\'' +
-                '}';
+        return getClass().getSimpleName() + "{" + "id=" + id + ", title='" + title + '\'' + ", content='" + content
+                + '\'' + ", severity=" + severity + '\'' + ", status='" + status + '\'' + ", source=" + source
+                + ", sourceId='" + sourceId + '\'' + ", createdOn=" + createdOn + '\'' + ", acknowledgedOn="
+                + acknowledgedOn + '\'' + ", lastModified=" + lastModified + '\'' + ", assigneeId=" + assigneeId + '\''
+                + '}';
     }
 }

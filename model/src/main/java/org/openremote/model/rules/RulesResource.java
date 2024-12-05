@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
-import org.openremote.model.http.RequestParams;
-import org.openremote.model.rules.geofence.GeofenceDefinition;
-import jakarta.annotation.security.RolesAllowed;
-import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.util.List;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import org.openremote.model.Constants;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.rules.geofence.GeofenceDefinition;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 
 @Tag(name = "Rule", description = "Operations on rules")
 @Path("rules")
@@ -42,7 +42,7 @@ public interface RulesResource {
     @GET
     @Produces(APPLICATION_JSON)
     @Path("info/global")
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getGlobalEngineInfo", summary = "Retrieve information about the global rules engine")
     RulesEngineInfo getGlobalEngineInfo(@BeanParam RequestParams requestParams);
 
@@ -52,7 +52,7 @@ public interface RulesResource {
     @GET
     @Produces(APPLICATION_JSON)
     @Path("info/realm/{realm}")
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getRealmEngineInfo", summary = "Retrieve information about a realm rules engine")
     RulesEngineInfo getRealmEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
@@ -62,7 +62,7 @@ public interface RulesResource {
     @GET
     @Produces(APPLICATION_JSON)
     @Path("info/asset/{assetId}")
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getAssetEngineInfo", summary = "Retrieve information about an asset rules engine")
     RulesEngineInfo getAssetEngineInfo(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
@@ -72,9 +72,10 @@ public interface RulesResource {
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getGlobalRulesets", summary = " Retrieve the global rules")
-    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams,
+            @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of a realm. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
@@ -85,7 +86,8 @@ public interface RulesResource {
     @Path("realm/for/{realm}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getRealmRulesets", summary = "Retrieve the rules of a realm")
-    RealmRuleset[] getRealmRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    RealmRuleset[] getRealmRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm,
+            @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
@@ -96,7 +98,8 @@ public interface RulesResource {
     @Path("asset/for/{assetId}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getAssetRulesets", summary = "Retrieve the rules of an asset")
-    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
+    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId,
+            @QueryParam("language") List<Ruleset.Lang> languages, @QueryParam("fullyPopulate") boolean fullyPopulate);
 
     /* ################################################################################################# */
 
@@ -107,7 +110,7 @@ public interface RulesResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "createGlobalRuleset", summary = "Create a global ruleset")
     long createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
@@ -118,7 +121,7 @@ public interface RulesResource {
     @GET
     @Path("{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getGlobalRuleset", summary = "Retrieve a global ruleset")
     GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -129,9 +132,10 @@ public interface RulesResource {
     @PUT
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "updateGlobalRuleset", summary = "Update a global ruleset")
-    void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRuleset ruleset);
+    void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id,
+            @Valid GlobalRuleset ruleset);
 
     /**
      * Deletes a global ruleset. Only the superuser can perform this operation, a 403 status is returned if a regular
@@ -140,7 +144,7 @@ public interface RulesResource {
     @DELETE
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "deleteGlobalRuleset", summary = "Delete a global ruleset")
     void deleteGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -153,7 +157,7 @@ public interface RulesResource {
     @POST
     @Path("realm")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "createRealmRuleset", summary = "Create a realm ruleset")
     long createRealmRuleset(@BeanParam RequestParams requestParams, @Valid RealmRuleset ruleset);
 
@@ -164,7 +168,7 @@ public interface RulesResource {
     @GET
     @Path("realm/{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_RULES_ROLE})
+    @RolesAllowed({ Constants.READ_RULES_ROLE })
     @Operation(operationId = "getRealmRuleset", summary = "Retrieve a realm ruleset")
     RealmRuleset getRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -175,9 +179,10 @@ public interface RulesResource {
     @PUT
     @Path("realm/{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "updateRealmRuleset", summary = "Update a realm ruleset")
-    void updateRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid RealmRuleset ruleset);
+    void updateRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id,
+            @Valid RealmRuleset ruleset);
 
     /**
      * Delete a realm ruleset. The superuser can delete rules of all realms, a 403 status is returned if a regular user
@@ -186,7 +191,7 @@ public interface RulesResource {
     @DELETE
     @Path("realm/{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "deleteRealmRuleset", summary = "Delete a realm ruleset")
     void deleteRealmRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -201,7 +206,7 @@ public interface RulesResource {
     @Path("asset")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "createAssetRuleset", summary = "Create an asset ruleset")
     long createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
@@ -213,7 +218,7 @@ public interface RulesResource {
     @GET
     @Path("asset/{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "getAssetRuleset", summary = "Retrieve an asset ruleset")
     AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -225,9 +230,10 @@ public interface RulesResource {
     @PUT
     @Path("asset/{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "updateAssetRuleset", summary = "Update an asset ruleset")
-    void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRuleset ruleset);
+    void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id,
+            @Valid AssetRuleset ruleset);
 
     /**
      * Delete an asset ruleset. The superuser can delete rules of all assets, a 403 status is returned if a regular user
@@ -237,7 +243,7 @@ public interface RulesResource {
     @DELETE
     @Path("asset/{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_RULES_ROLE})
+    @RolesAllowed({ Constants.WRITE_RULES_ROLE })
     @Operation(operationId = "deleteAssetRuleset", summary = "Delete an asset ruleset")
     void deleteAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
@@ -250,5 +256,6 @@ public interface RulesResource {
     @Path("geofences/{assetId}")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getAssetGeofences", summary = "Get the geofences of an asset")
-    GeofenceDefinition[] getAssetGeofences(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    GeofenceDefinition[] getAssetGeofences(@BeanParam RequestParams requestParams,
+            @PathParam("assetId") String assetId);
 }

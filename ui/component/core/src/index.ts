@@ -1,9 +1,27 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import "url-search-params-polyfill";
-import {Console} from "./console";
+import { Console } from "./console";
 import rest from "@openremote/rest";
-import {AxiosRequestConfig} from "axios";
-import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
-import i18next, {InitOptions} from "i18next";
+import { AxiosRequestConfig } from "axios";
+import { EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider } from "./event";
+import i18next, { InitOptions } from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
 import {
@@ -18,11 +36,11 @@ import {
     UsernamePassword
 } from "@openremote/model";
 import * as Util from "./util";
-import {createMdiIconSet, createSvgIconSet, IconSets, OrIconSet} from "@openremote/or-icon";
+import { createMdiIconSet, createSvgIconSet, IconSets, OrIconSet } from "@openremote/or-icon";
 import Keycloak from 'keycloak-js';
 
 // Re-exports
-export {Util};
+export { Util };
 export * from "./asset-mixin";
 export * from "./console";
 export * from "./event";
@@ -398,7 +416,7 @@ export class Manager implements EventProviderFactory {
 
         // Don't let console registration error prevent loading
         const consoleSuccess = await this.doConsoleInit();
-        if(consoleSuccess) {
+        if (consoleSuccess) {
             // Send the console a message to clear the web history, so no pages outside the app can be accessed.
             // For example, this prevents navigating back to an authentication screen.
             this._clearWebHistory();
@@ -605,7 +623,7 @@ export class Manager implements EventProviderFactory {
 
     // Function that connects the EventProvider.
     protected _connectEvents() {
-        if(this.events?.status === EventProviderStatus.DISCONNECTED) {
+        if (this.events?.status === EventProviderStatus.DISCONNECTED) {
             this.events!.connect().catch((e) => {
                 console.error(`Failed to connect EventProvider.`);
                 console.error(e);
@@ -675,13 +693,13 @@ export class Manager implements EventProviderFactory {
      */
     public async getUserPreferredLanguage(keycloak = this._keycloak): Promise<string | undefined> {
 
-        if(keycloak) {
+        if (keycloak) {
             const profile: Keycloak.KeycloakProfile | undefined = keycloak?.profile || await keycloak?.loadUserProfile();
-            if(profile?.attributes) {
+            if (profile?.attributes) {
                 const attributes = new Map(Object.entries(profile.attributes));
-                if(attributes.has("locale")) {
+                if (attributes.has("locale")) {
                     const attr = attributes.get("locale") as any[];
-                    if(typeof attr[0] === "string") {
+                    if (typeof attr[0] === "string") {
                         return attr[0];
                     }
                 }
@@ -693,10 +711,10 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async updateKeycloakUserLanguage(lang: string, keycloak = this._keycloak, rest = this.rest): Promise<void> {
-        if(!keycloak) {
+        if (!keycloak) {
             return;
         }
-        if(!rest) {
+        if (!rest) {
             console.warn("Tried updating user language in keycloak, but the REST API is not initialized yet.");
             return;
         }
@@ -717,7 +735,7 @@ export class Manager implements EventProviderFactory {
                 window.clearTimeout(this._keycloakUpdateTokenInterval);
                 this._keycloakUpdateTokenInterval = undefined;
             }
-            this._keycloak.logout(redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : undefined);
+            this._keycloak.logout(redirectUrl && redirectUrl !== "" ? { redirectUri: redirectUrl } : undefined);
         } else if (this._basicIdentity) {
             this._basicIdentity = undefined;
             if (redirectUrl) {
@@ -742,7 +760,7 @@ export class Manager implements EventProviderFactory {
                     if (options && options.redirectUrl && options.redirectUrl !== "") {
                         keycloakOptions.redirectUri = options.redirectUrl;
                     }
-                    if(options?.action && options.action !== "") {
+                    if (options?.action && options.action !== "") {
                         keycloakOptions.action = options.action;
                     }
                     if (this.isMobile()) {
@@ -1056,7 +1074,7 @@ export class Manager implements EventProviderFactory {
         if (!this._disconnected) {
             return;
         }
-        
+
         if (this._reconnectTimer) {
             window.clearTimeout(this._reconnectTimer);
             this._reconnectTimer = undefined;
@@ -1071,7 +1089,7 @@ export class Manager implements EventProviderFactory {
                 return false;
             }
             console.debug("Keycloak is reachable");
-            
+
             // Check if access token can be refreshed
             console.debug("Checking keycloak access token");
             try {
@@ -1129,7 +1147,7 @@ export class Manager implements EventProviderFactory {
             // but this is handled by the catch block
             // @ts-ignore
             const tokenUrl = this._keycloak.endpoints.token();
-            const result = await fetch(tokenUrl, {method: 'OPTIONS', signal: controller.signal});
+            const result = await fetch(tokenUrl, { method: 'OPTIONS', signal: controller.signal });
             return result.status === 200;
         } catch (e) {
             return false;

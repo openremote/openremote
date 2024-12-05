@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query.filter;
+
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,12 +28,9 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.ValueUtil;
-
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as
@@ -50,11 +50,9 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
     }
 
     @JsonCreator
-    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
-                                        @JsonProperty("lngMin") double lngMin,
-                                        @JsonProperty("latMax") double latMax,
-                                        @JsonProperty("lngMax") double lngMax,
-                                        @JsonProperty("negated") boolean negated) {
+    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin, @JsonProperty("lngMin") double lngMin,
+            @JsonProperty("latMax") double latMax, @JsonProperty("lngMax") double lngMax,
+            @JsonProperty("negated") boolean negated) {
         this.latMin = latMin;
         this.lngMin = lngMin;
         this.latMax = latMax;
@@ -62,10 +60,8 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
         this.negated = negated;
     }
 
-    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
-                                        @JsonProperty("lngMin") double lngMin,
-                                        @JsonProperty("latMax") double latMax,
-                                        @JsonProperty("lngMax") double lngMax) {
+    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin, @JsonProperty("lngMin") double lngMin,
+            @JsonProperty("latMax") double latMax, @JsonProperty("lngMax") double lngMax) {
         this(latMin, lngMin, latMax, lngMax, false);
     }
 
@@ -93,14 +89,14 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         RectangularGeofencePredicate that = (RectangularGeofencePredicate) o;
-        return negated == that.negated &&
-            Double.compare(that.latMin, latMin) == 0 &&
-            Double.compare(that.lngMin, lngMin) == 0 &&
-            Double.compare(that.latMax, latMax) == 0 &&
-            Double.compare(that.lngMax, lngMax) == 0;
+        return negated == that.negated && Double.compare(that.latMin, latMin) == 0
+                && Double.compare(that.lngMin, lngMin) == 0 && Double.compare(that.latMax, latMax) == 0
+                && Double.compare(that.lngMax, lngMax) == 0;
     }
 
     @Override
@@ -112,13 +108,14 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
     public double[] getCentrePoint() {
         double x = (lngMin + lngMax) / 2;
         double y = (latMin + latMax) / 2;
-        return new double[]{x, y};
+        return new double[] { x, y };
     }
 
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj -> {
-            if (obj == null) return false;
+            if (obj == null)
+                return false;
 
             Coordinate coordinate;
 
@@ -135,10 +132,7 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
             coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
             coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
 
-            Envelope envelope = new Envelope(lngMin,
-                lngMax,
-                latMin,
-                latMax);
+            Envelope envelope = new Envelope(lngMin, lngMax, latMin, latMax);
 
             if (negated) {
                 return !envelope.contains(coordinate);

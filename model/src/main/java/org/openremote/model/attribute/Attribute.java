@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -35,20 +40,16 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import jakarta.annotation.Nonnull;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Stores a named value with associated {@link MetaItem}s.
@@ -65,33 +66,39 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
         protected static final JavaType META_MAP_TYPE = TypeFactory.defaultInstance().constructType(MetaMap.class);
         protected static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
-        public static final System.Logger LOG = System.getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
+        public static final System.Logger LOG = System
+                .getLogger(AttributeDeserializer.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES);
         protected static JsonDeserializer<Object> metaDeserialiser = null;
 
         protected AttributeDeserializer() {
             super(Attribute.class);
         }
 
-        public static Object deserialiseValue(ValueDescriptor<?> valueDescriptor, JsonParser jp, DeserializationContext ctxt) throws IOException {
+        public static Object deserialiseValue(ValueDescriptor<?> valueDescriptor, JsonParser jp,
+                DeserializationContext ctxt) throws IOException {
             JsonDeserializer<Object> valueTypeDeserializer;
             if (valueDescriptor != null) {
-                valueTypeDeserializer = ctxt.findRootValueDeserializer(TypeFactory.defaultInstance().constructType(valueDescriptor.getType()));
+                valueTypeDeserializer = ctxt.findRootValueDeserializer(
+                        TypeFactory.defaultInstance().constructType(valueDescriptor.getType()));
             } else {
                 valueTypeDeserializer = ctxt.findRootValueDeserializer(OBJECT_TYPE);
             }
             return valueTypeDeserializer.deserialize(jp, ctxt);
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         @Override
         public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             if (!jp.isExpectedStartObjectToken()) {
                 throw new InvalidFormatException(jp, "Attribute must be an object", jp.nextValue(), Attribute.class);
             }
 
-            AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt.getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
+            AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt
+                    .getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
             String attributeName = jp.getCurrentName();
-            AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null ? assetTypeInfo.getAttributeDescriptors().get(attributeName) : null;
+            AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null
+                    ? assetTypeInfo.getAttributeDescriptors().get(attributeName)
+                    : null;
             Attribute<?> attribute;
 
             if (attributeDescriptor != null) {
@@ -114,7 +121,8 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                         if (attributeDescriptor == null) {
                             String valueType = jp.getValueAsString();
                             // Try and find matching value descriptor
-                            ValueUtil.getValueDescriptor(valueType).ifPresent(vd -> ((Attribute) attribute).setTypeInternal(vd));
+                            ValueUtil.getValueDescriptor(valueType)
+                                    .ifPresent(vd -> ((Attribute) attribute).setTypeInternal(vd));
                         }
                     }
                     case "meta" -> {
@@ -132,12 +140,12 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                     }
                     case "timestamp" -> attribute.timestamp = jp.getValueAsLong();
                     case "value" -> {
-//                        // Can only deserialise value once we know its' type
-//                        if (!typeFound) {
-//                            valueBuffer = new TokenBuffer(jp, ctxt);
-//                            valueBuffer.copyCurrentStructure(jp);
-//                            continue;
-//                        }
+                        // // Can only deserialise value once we know its' type
+                        // if (!typeFound) {
+                        // valueBuffer = new TokenBuffer(jp, ctxt);
+                        // valueBuffer.copyCurrentStructure(jp);
+                        // continue;
+                        // }
                         ValueDescriptor<?> valueDescriptor = attribute.getType();
                         if (valueDescriptor == null) {
                             // We don't know the type so store the value as a string and hydrate on demand when value
@@ -146,19 +154,20 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                         } else {
                             try {
                                 ((Attribute) attribute).value = deserialiseValue(valueDescriptor, jp, ctxt);
-                            } catch (Exception ignored) {}
+                            } catch (Exception ignored) {
+                            }
                         }
                     }
                 }
             }
 
-//            if (valueBuffer != null) {
-//                if (!typeFound) {
-//                    throw new JsonParseException("Asset type is missing");
-//                }
-//
-//                attribute.value = deserialiseValue(attribute.getType(), valueBuffer.asParser(), ctxt);
-//            }
+            // if (valueBuffer != null) {
+            // if (!typeFound) {
+            // throw new JsonParseException("Asset type is missing");
+            // }
+            //
+            // attribute.value = deserialiseValue(attribute.getType(), valueBuffer.asParser(), ctxt);
+            // }
             return attribute;
         }
     }
@@ -205,6 +214,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     Attribute() {
     }
+
     public Attribute(AttributeDescriptor<T> attributeDescriptor) {
         this(attributeDescriptor, null);
     }
@@ -246,7 +256,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
      * @return All attributes that exist only in the new list or are different than any attribute in the old list.
      */
     public static Stream<Attribute<?>> getAddedOrModifiedAttributes(Collection<Attribute<?>> oldAttributes,
-                                                                    Collection<Attribute<?>> newAttributes) {
+            Collection<Attribute<?>> newAttributes) {
         return getAddedOrModifiedAttributes(oldAttributes, newAttributes, null);
     }
 
@@ -254,42 +264,31 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
      * @return All attributes that exist only in the new list or are different than any attribute in the old list.
      */
     public static Stream<Attribute<?>> getAddedOrModifiedAttributes(Collection<Attribute<?>> oldAttributes,
-                                                                    Collection<Attribute<?>> newAttributes,
-                                                                    Predicate<String> ignoredAttributeNames) {
-        return getAddedOrModifiedAttributes(
-            oldAttributes,
-            newAttributes,
-            null,
-            ignoredAttributeNames);
+            Collection<Attribute<?>> newAttributes, Predicate<String> ignoredAttributeNames) {
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, null, ignoredAttributeNames);
     }
 
     /**
      * @return All attributes that exist only in the new list or are different than any attribute in the old list
      */
     public static Stream<Attribute<?>> getAddedOrModifiedAttributes(Collection<Attribute<?>> oldAttributes,
-                                                                    Collection<Attribute<?>> newAttributes,
-                                                                    Predicate<String> limitToAttributeNames,
-                                                                    Predicate<String> ignoredAttributeNames) {
-        return newAttributes.stream()
-            .filter(newAttribute -> {
-                    if (limitToAttributeNames != null && !limitToAttributeNames.test(newAttribute.getName())) {
-                        return false;
-                    }
+            Collection<Attribute<?>> newAttributes, Predicate<String> limitToAttributeNames,
+            Predicate<String> ignoredAttributeNames) {
+        return newAttributes.stream().filter(newAttribute -> {
+            if (limitToAttributeNames != null && !limitToAttributeNames.test(newAttribute.getName())) {
+                return false;
+            }
 
-                    if (ignoredAttributeNames != null && ignoredAttributeNames.test(newAttribute.getName())) {
-                        return false;
-                    }
+            if (ignoredAttributeNames != null && ignoredAttributeNames.test(newAttribute.getName())) {
+                return false;
+            }
 
-                    return oldAttributes.stream().filter(attribute ->
-                        attribute.getName().equals(newAttribute.getName()))
-                        .findFirst()
-                        .map(attribute -> {
-                            // Attribute may have been modified do basic equality check
-                            return !attribute.equals(newAttribute);
-                        })
-                        .orElse(true); // Attribute is new
-                }
-            );
+            return oldAttributes.stream().filter(attribute -> attribute.getName().equals(newAttribute.getName()))
+                    .findFirst().map(attribute -> {
+                        // Attribute may have been modified do basic equality check
+                        return !attribute.equals(newAttribute);
+                    }).orElse(true); // Attribute is new
+        });
     }
 
     // For JPA/Hydrators
@@ -343,7 +342,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     @Override
     public Optional<T> getValue() {
         if (valueStr != null) {
-            value = (T)ValueUtil.parse(valueStr, getTypeClass()).orElse(null);
+            value = (T) ValueUtil.parse(valueStr, getTypeClass()).orElse(null);
             valueStr = null;
         }
         return Optional.ofNullable(value);
@@ -393,22 +392,18 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
     public String toString() {
         String valStr = value != null ? value.toString() : null;
         valStr = valStr != null && valStr.length() > 100 ? valStr.substring(0, 100) : valStr;
-        return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
-            ", type='" + (type != null ? type.getName() : "null") + '\'' +
-            ", value='" + valStr + '\'' +
-            ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
-            "} ";
+        return getClass().getSimpleName() + "{" + "name='" + name + '\'' + ", type='"
+                + (type != null ? type.getName() : "null") + '\'' + ", value='" + valStr + '\'' + ", timestamp='"
+                + getTimestamp().orElse(0L) + '\'' + "} ";
     }
 
     public String toStringAll() {
-        return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
-            ", type='" + (type != null ? type.getName() : "null") + '\'' +
-            ", value='" + value + '\'' +
-            ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
-            ", meta='" + (meta == null ? "" : getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(","))) + '\'' +
-            "} ";
+        return getClass().getSimpleName() + "{" + "name='" + name + '\'' + ", type='"
+                + (type != null ? type.getName() : "null") + '\'' + ", value='" + value + '\'' + ", timestamp='"
+                + getTimestamp().orElse(0L) + '\'' + ", meta='"
+                + (meta == null ? ""
+                        : getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(",")))
+                + '\'' + "} ";
     }
 
     @Override
@@ -430,23 +425,25 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             return false;
         Attribute<?> that = (Attribute<?>) obj;
 
-        return Objects.equals(timestamp, that.timestamp)
-            && Objects.equals(name, that.name)
-            && Objects.equals(type, that.type);
+        return Objects.equals(timestamp, that.timestamp) && Objects.equals(name, that.name)
+                && Objects.equals(type, that.type);
     }
 
     public boolean deepEquals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Attribute<?> that = (Attribute<?>) o;
 
-        return Objects.equals(timestamp, that.timestamp)
-            && Objects.equals(name, that.name)
-            && Objects.equals(type, that.type)
-            // Use uninitialized json value if available
-            && (valueStr != null && that.valueStr != null ? Objects.equals(valueStr, that.valueStr) : ValueUtil.objectsEqualsWithJSONFallback(value, that.value))
-            // null or empty meta are considered equal
-            && ((meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta));
+        return Objects.equals(timestamp, that.timestamp) && Objects.equals(name, that.name)
+                && Objects.equals(type, that.type)
+                // Use uninitialized json value if available
+                && (valueStr != null && that.valueStr != null ? Objects.equals(valueStr, that.valueStr)
+                        : ValueUtil.objectsEqualsWithJSONFallback(value, that.value))
+                // null or empty meta are considered equal
+                && ((meta == null && that.meta != null && that.meta.isEmpty())
+                        || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta));
     }
 
     public boolean equals(Object obj, Comparator<Attribute<?>> comparator) {

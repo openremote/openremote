@@ -1,8 +1,26 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil } from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
+import { AssetTreeConfig, OrAssetTreeSelectionEvent } from "./index";
 import {
     createListGroup,
     ListGroupItem,
@@ -10,9 +28,9 @@ import {
     OrMwcList,
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
-import {i18next} from "@openremote/or-translate";
-import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { DefaultColor3, DefaultColor5, Util } from "@openremote/core";
+import { InputType, OrMwcInput, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -41,28 +59,28 @@ declare global {
 @customElement("or-add-asset-dialog")
 export class OrAddAssetDialog extends LitElement {
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public config!: AssetTreeConfig;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public agentTypes!: AgentDescriptor[];
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public assetTypes!: AssetDescriptor[];
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public parent?: Asset;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public selectedType?: AgentDescriptor | AssetDescriptor;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public selectedAttributes: AttributeDescriptor[] = [];
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected showParentAssetSelector: boolean = false;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     selectedChildAssetType: string = "";
 
     public name: string = "New Asset";
@@ -178,7 +196,7 @@ export class OrAddAssetDialog extends LitElement {
             }
         `;
     }
-    
+
     constructor() {
         super();
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, (event: OrAssetTreeSelectionEvent) => {
@@ -209,7 +227,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("agents"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => { if (evt.detail.length === 1) this.onTypeChanged(true, evt.detail[0] as ListItem); }}" .listItems="${agentItems}" id="agent-list"></or-mwc-list>`
                 }
             );
         }
@@ -217,7 +235,7 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("assets"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => { if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${assetItems}" id="asset-list"></or-mwc-list>`
                 }
             );
         }
@@ -231,14 +249,14 @@ export class OrAddAssetDialog extends LitElement {
                         ${createListGroup(lists)}
                     </div>
                     <div id="asset-type-option-container" class="col">
-                        ${!this.selectedType 
-                        ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
-                        : this.getTypeTemplate(this.selectedType, parentStr)}
+                        ${!this.selectedType
+                ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
+                : this.getTypeTemplate(this.selectedType, parentStr)}
                     </div>
                     ${!this.showParentAssetSelector
-                        ? html``
-                        : html`<or-asset-tree id="parent-selector" class="col" .showDeselectBtn="${false}" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
-                    }
+                ? html``
+                : html`<or-asset-tree id="parent-selector" class="col" .showDeselectBtn="${false}" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
+            }
                 </form>
             </div>
         `;
@@ -249,7 +267,7 @@ export class OrAddAssetDialog extends LitElement {
         if (!descriptor.name) {
             return false;
         }
-        
+
         const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
             attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
@@ -275,7 +293,7 @@ export class OrAddAssetDialog extends LitElement {
                         <div class="heading">${i18next.t("attribute_plural")}</div>
                         <div style="display: grid">
                             ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
-                                .map(attribute => html`
+                        .map(attribute => html`
                                     <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
                                                   .disabled="${true}" .value="${true}"></or-mwc-input>
                             `)}
@@ -289,7 +307,7 @@ export class OrAddAssetDialog extends LitElement {
                         <div class="heading">${i18next.t("optional_attributes")}</div>
                         <div style="display: grid">
                             ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
-                                .map(attribute => html`
+                        .map(attribute => html`
                                     <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
                                                   .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
                                                   @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
@@ -327,7 +345,7 @@ export class OrAddAssetDialog extends LitElement {
     }
 
     protected _onToggleParentAssetSelector(): void {
-        this.showParentAssetSelector = !this.showParentAssetSelector; 
+        this.showParentAssetSelector = !this.showParentAssetSelector;
     }
 
     protected _onDeselectClicked() {

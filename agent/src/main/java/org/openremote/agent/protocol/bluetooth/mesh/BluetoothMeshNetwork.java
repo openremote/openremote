@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import com.welie.blessed.*;
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModel;
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.*;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,17 +27,26 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implements MeshManagerCallbacks, MeshStatusCallbacks, BluetoothMeshProxyRxCallback{
+import com.welie.blessed.*;
+
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModel;
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.*;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
+
+public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback
+        implements MeshManagerCallbacks, MeshStatusCallbacks, BluetoothMeshProxyRxCallback {
 
     // Class Members ------------------------------------------------------------------------------
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshNetwork.class.getName());
-
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            BluetoothMeshNetwork.class.getName());
 
     // Constants ----------------------------------------------------------------------------------
 
     public static final int SCAN_DURATION = 10000;
-
 
     // Private Instance Fields --------------------------------------------------------------------
 
@@ -68,12 +68,13 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
     private final Integer mtu;
     private final Map<Integer, ShadowMeshElement> elementMap = new HashMap<>();
 
-
     // Constructors -------------------------------------------------------------------------------
 
-    public BluetoothMeshNetwork(BluetoothCentralManager bluetoothCentral, SequenceNumberPersistencyManager sequenceNumberManager, MainThreadManager mainThread,
-                                String proxyAddress, int unicastAddress, NetworkKey networkKey, Map<Integer, ApplicationKey> applicationKeyMap,
-                                int mtu, int sequenceNumber, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, Consumer<ConnectionStatus> statusConsumer) {
+    public BluetoothMeshNetwork(BluetoothCentralManager bluetoothCentral,
+            SequenceNumberPersistencyManager sequenceNumberManager, MainThreadManager mainThread, String proxyAddress,
+            int unicastAddress, NetworkKey networkKey, Map<Integer, ApplicationKey> applicationKeyMap, int mtu,
+            int sequenceNumber, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
+            Consumer<ConnectionStatus> statusConsumer) {
         this.bluetoothCentral = bluetoothCentral;
         this.sequenceNumberManager = sequenceNumberManager;
         this.mainThreadManager = mainThread;
@@ -100,7 +101,6 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         ProvisionedMeshNode provisionerNode = getMeshNetwork().getNode(provisionerAddress);
         provisionerNode.setSequenceNumber(sequenceNumber);
     }
-
 
     // Implements BluetoothCentralManagerCallback -------------------------------------------------
 
@@ -154,37 +154,30 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         }
     }
 
-
     // Implements MeshManagerCallbacks ------------------------------------------------------------
 
     @Override
     public void onNetworkLoaded(MeshNetwork meshNetwork) {
-
     }
 
     @Override
     public void onNetworkUpdated(MeshNetwork meshNetwork) {
-
     }
 
     @Override
     public void onNetworkLoadFailed(String error) {
-
     }
 
     @Override
     public void onNetworkImported(MeshNetwork meshNetwork) {
-
     }
 
     @Override
     public void onNetworkImportFailed(String error) {
-
     }
 
     @Override
     public void sendProvisioningPdu(UnprovisionedMeshNode meshNode, byte[] pdu) {
-
     }
 
     @Override
@@ -204,7 +197,8 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
                 ProvisionedMeshNode sourceNode = getMeshNetwork().getNode(sourceAddress);
                 if (sourceNode != null) {
                     final int newSequenceNumber = sourceNode.getSequenceNumber();
-                    executorService.execute(() -> sequenceNumberManager.save(networkKey, sourceUnicastAddress, newSequenceNumber));
+                    executorService.execute(
+                            () -> sequenceNumberManager.save(networkKey, sourceUnicastAddress, newSequenceNumber));
                 }
             }
         }
@@ -215,7 +209,6 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         return mtu;
     }
 
-
     // Implements BluetoothMeshProxyRxCallback ----------------------------------------------------
 
     @Override
@@ -225,53 +218,46 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         }
     }
 
-
     // Implements MeshStatusCallbacks -------------------------------------------------------------
 
     @Override
     public void onTransactionFailed(int dst, boolean hasIncompleteTimerExpired) {
-
     }
 
     @Override
     public void onUnknownPduReceived(int src, byte[] accessPayload) {
-
     }
 
     @Override
     public void onBlockAcknowledgementProcessed(int dst, ControlMessage message) {
-
     }
 
     @Override
     public void onBlockAcknowledgementReceived(int src, ControlMessage message) {
-
     }
 
     @Override
     public void onMeshMessageProcessed(int dst, MeshMessage meshMessage) {
-
     }
 
     @Override
     public synchronized void onMeshMessageReceived(int src, MeshMessage meshMessage) {
-        LOG.info("Received mesh message: address='" + String.format("0x%04X", src) + "', message='" + meshMessage.getClass().getName() + "'");
+        LOG.info("Received mesh message: address='" + String.format("0x%04X", src) + "', message='"
+                + meshMessage.getClass().getName() + "'");
         ShadowMeshElement element = elementMap.get(src);
         if (element != null) {
             element.onMeshMessageReceived(meshMessage);
         } else {
-            LOG.info(
-                "Could not find element to process the received mesh message: address='" + String.format("0x%04X", src) +
-                    "', message='" + meshMessage.getClass().getName() + "'"
-            );
+            LOG.info("Could not find element to process the received mesh message: address='"
+                    + String.format("0x%04X", src) + "', message='" + meshMessage.getClass().getName() + "'");
         }
     }
 
     @Override
     public void onMessageDecryptionFailed(String meshLayer, String errorMessage) {
-        LOG.warning("Failed to decrypt Bluetooth mesh message: [meshLayer: '" + meshLayer+ "', errorMessage: '" + errorMessage + "']");
+        LOG.warning("Failed to decrypt Bluetooth mesh message: [meshLayer: '" + meshLayer + "', errorMessage: '"
+                + errorMessage + "']");
     }
-
 
     // Public Instance Methods --------------------------------------------------------------------
 
@@ -369,7 +355,8 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
             if (getNode(address) == null) {
                 network.nodes.add(node);
                 network.sequenceNumbers.put(node.getUnicastAddress(), node.getSequenceNumber());
-                network.unicastAddress = network.nextAvailableUnicastAddress(node.getNumberOfElements(), network.getSelectedProvisioner());
+                network.unicastAddress = network.nextAvailableUnicastAddress(node.getNumberOfElements(),
+                        network.getSelectedProvisioner());
                 node.setMeshUuid(network.getMeshUUID());
                 network.loadSequenceNumbers();
             }
@@ -400,9 +387,8 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
                 SigModel sigModel = SigModelParser.getSigModel(modelId);
                 String modelName = sigModel != null ? sigModel.getModelName() : String.format("0x%04X", modelId);
                 LOG.warning(
-                    "Failed to send mesh command value '" + value + "' because couldn't find mesh model: address:'" +
-                        String.format("0x%04X", address) + "', model: '" + modelName + '"'
-                );
+                        "Failed to send mesh command value '" + value + "' because couldn't find mesh model: address:'"
+                                + String.format("0x%04X", address) + "', model: '" + modelName + '"');
             }
         }
     }
@@ -415,10 +401,8 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
             } else {
                 SigModel sigModel = SigModelParser.getSigModel(modelId);
                 String modelName = sigModel != null ? sigModel.getModelName() : String.format("0x%04X", modelId);
-                LOG.warning(
-                    "Failed to send mesh get status command because couldn't find mesh model: address:'" +
-                        String.format("0x%04X", address) + "', model: '" + modelName + '"'
-                );
+                LOG.warning("Failed to send mesh get status command because couldn't find mesh model: address:'"
+                        + String.format("0x%04X", address) + "', model: '" + modelName + '"');
             }
         }
     }
@@ -443,7 +427,6 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         }
     }
 
-
     // Private Instance Methods -------------------------------------------------------------------
 
     private synchronized void connect() {
@@ -452,34 +435,43 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
             proxyScanner.stop();
         }
         executorService.execute(() -> statusConsumer.accept(ConnectionStatus.CONNECTING));
-        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService, scheduledExecutorService);
+        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService,
+                scheduledExecutorService);
         proxyScanner.start(networkKey, proxyAddress, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
             @Override
             public void onMeshProxiesScanned(List<BluetoothMeshProxy> meshProxies, Integer errorCode) {
                 LOG.info("Finished scanning Bluetooth mesh proxies.");
                 if (errorCode == null) {
                     for (BluetoothMeshProxy curMeshProxy : meshProxies) {
-                        LOG.info("Scan found Bluetooth mesh proxy: [Name=" + curMeshProxy.getPeripheral().getName() + ", Address=" + curMeshProxy.getPeripheral().getAddress() + ", Rssi=" + curMeshProxy.getRssi() + "]");
+                        LOG.info("Scan found Bluetooth mesh proxy: [Name=" + curMeshProxy.getPeripheral().getName()
+                                + ", Address=" + curMeshProxy.getPeripheral().getAddress() + ", Rssi="
+                                + curMeshProxy.getRssi() + "]");
                     }
                     if (meshProxies.size() > 0) {
                         synchronized (BluetoothMeshNetwork.this) {
                             BluetoothMeshNetwork.this.bluetoothMeshProxy = meshProxies.get(0);
                             BluetoothMeshNetwork.this.bluetoothMeshProxy.setRxDataCallback(BluetoothMeshNetwork.this);
-                            BluetoothMeshNetwork.this.bluetoothMeshProxy.connect(statusConsumer, new BluetoothMeshProxyConnectCallback() {
-                                @Override
-                                public void onMeshProxyConnected(BluetoothPeripheral peripheral, boolean isSuccess, boolean isConnectionLoss) {
-                                    synchronized (BluetoothMeshNetwork.this) {
-                                        if (isSuccess) {
-                                            LOG.info("Successfully connected to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                                        } else {
-                                            LOG.warning("Failed to connect to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                                            BluetoothMeshNetwork.this.bluetoothMeshProxy = null;
-                                            // Try it again
-                                            executorService.execute(() -> connect());
+                            BluetoothMeshNetwork.this.bluetoothMeshProxy.connect(statusConsumer,
+                                    new BluetoothMeshProxyConnectCallback() {
+                                        @Override
+                                        public void onMeshProxyConnected(BluetoothPeripheral peripheral,
+                                                boolean isSuccess, boolean isConnectionLoss) {
+                                            synchronized (BluetoothMeshNetwork.this) {
+                                                if (isSuccess) {
+                                                    LOG.info("Successfully connected to Bluetooth mesh proxy: [Name="
+                                                            + peripheral.getName() + ", Address="
+                                                            + peripheral.getAddress() + "]");
+                                                } else {
+                                                    LOG.warning("Failed to connect to Bluetooth mesh proxy: [Name="
+                                                            + peripheral.getName() + ", Address="
+                                                            + peripheral.getAddress() + "]");
+                                                    BluetoothMeshNetwork.this.bluetoothMeshProxy = null;
+                                                    // Try it again
+                                                    executorService.execute(() -> connect());
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            });
+                                    });
                         }
                     } else {
                         LOG.info("No Bluetooth mesh proxy found!");
@@ -505,7 +497,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
 
     private void addShadowModel(int address, int modelId, int appKeyIndex) {
         if (!elementMap.containsKey(address)) {
-            elementMap.put(address, new ShadowMeshElement(executorService,this, address));
+            elementMap.put(address, new ShadowMeshElement(executorService, this, address));
         }
         ShadowMeshElement element = elementMap.get(address);
         element.addShadowModel(modelId, appKeyIndex);

@@ -1,20 +1,38 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.gateway;
 
+import java.util.function.Consumer;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.function.Consumer;
-
-public class GatewayTunnelStopRequestEvent extends SharedEvent  implements RespondableEvent {
+public class GatewayTunnelStopRequestEvent extends SharedEvent implements RespondableEvent {
 
     protected GatewayTunnelInfo info;
     @JsonIgnore
     protected Consumer<Event> responseConsumer;
 
     protected GatewayTunnelStopRequestEvent() {
-
     }
 
     public GatewayTunnelStopRequestEvent(GatewayTunnelInfo info) {

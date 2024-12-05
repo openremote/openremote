@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.mqtt;
+
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
+import static org.openremote.model.syslog.SyslogCategory.API;
+
+import java.util.Set;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.security.auth.Subject;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 
 import org.apache.activemq.artemis.core.config.impl.SecurityConfiguration;
 import org.apache.activemq.artemis.core.security.CheckType;
@@ -32,18 +44,6 @@ import org.openremote.manager.security.AuthorisationService;
 import org.openremote.manager.security.MultiTenantJaasCallbackHandler;
 import org.openremote.manager.security.RemotingConnectionPrincipal;
 import org.openremote.model.syslog.SyslogCategory;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.openremote.manager.mqtt.MQTTBrokerService.connectionToString;
-import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
  * A security manager that uses the {@link org.openremote.manager.security.MultiTenantJaasCallbackHandler} with a
@@ -65,7 +65,9 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     protected SecurityConfiguration certificateConfig;
     protected ActiveMQServer server;
 
-    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService, Function<String, KeycloakDeployment> deploymentResolver, String configurationName, SecurityConfiguration configuration) {
+    public ActiveMQORSecurityManager(AuthorisationService authorisationService, MQTTBrokerService brokerService,
+            Function<String, KeycloakDeployment> deploymentResolver, String configurationName,
+            SecurityConfiguration configuration) {
         super(configurationName, configuration);
         this.authorisationService = authorisationService;
         this.brokerService = brokerService;
@@ -75,18 +77,18 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
     }
 
     @Override
-    public Subject authenticate(String user, String password, RemotingConnection remotingConnection, String securityDomain) {
+    public Subject authenticate(String user, String password, RemotingConnection remotingConnection,
+            String securityDomain) {
         try {
-            return remotingConnection.getSubject() != null ? remotingConnection.getSubject() : getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
+            return remotingConnection.getSubject() != null ? remotingConnection.getSubject()
+                    : getAuthenticatedSubject(user, password, remotingConnection, securityDomain);
         } catch (LoginException e) {
             return null;
         }
     }
 
-    protected Subject getAuthenticatedSubject(String user,
-                                            String password,
-                                            final RemotingConnection remotingConnection,
-                                            final String securityDomain) throws LoginException {
+    protected Subject getAuthenticatedSubject(String user, String password, final RemotingConnection remotingConnection,
+            final String securityDomain) throws LoginException {
         LoginContext lc;
         String realm = null;
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
@@ -105,11 +107,15 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 Thread.currentThread().setContextClassLoader(thisLoader);
             }
             if (securityDomain != null) {
-                lc = new LoginContext(securityDomain, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), null);
-            } else if (certificateConfigName != null && certificateConfigName.length() > 0 && getCertsFromConnection(remotingConnection) != null) {
-                lc = new LoginContext(certificateConfigName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), certificateConfig);
+                lc = new LoginContext(securityDomain, null, new MultiTenantJaasCallbackHandler(deploymentResolver,
+                        realm, user, password, remotingConnection), null);
+            } else if (certificateConfigName != null && certificateConfigName.length() > 0
+                    && getCertsFromConnection(remotingConnection) != null) {
+                lc = new LoginContext(certificateConfigName, null, new MultiTenantJaasCallbackHandler(
+                        deploymentResolver, realm, user, password, remotingConnection), certificateConfig);
             } else {
-                lc = new LoginContext(configName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm, user, password, remotingConnection), config);
+                lc = new LoginContext(configName, null, new MultiTenantJaasCallbackHandler(deploymentResolver, realm,
+                        user, password, remotingConnection), config);
             }
             try {
                 lc.login();
@@ -119,7 +125,8 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
             Subject subject = lc.getSubject();
 
             if (subject != null) {
-                // Set subject here so any code that calls this method behaves like a normal ActiveMQ SecurityStoreImpl::authenticate call
+                // Set subject here so any code that calls this method behaves like a normal ActiveMQ
+                // SecurityStoreImpl::authenticate call
                 remotingConnection.setSubject(subject);
                 subject.getPrincipals().add(new RemotingConnectionPrincipal(remotingConnection));
             }
@@ -142,14 +149,16 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                 address = address.substring(0, index);
                 yield verifyRights(subject, address, false);
             }
-            case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE, DELETE_NON_DURABLE_QUEUE ->
-                // All MQTT clients must be able to create addresses and queues (every session and subscription will create a queue within the topic address)
+            case CREATE_ADDRESS, DELETE_ADDRESS, CREATE_DURABLE_QUEUE, DELETE_DURABLE_QUEUE, CREATE_NON_DURABLE_QUEUE,
+                    DELETE_NON_DURABLE_QUEUE ->
+                // All MQTT clients must be able to create addresses and queues (every session and subscription will
+                // create a queue within the topic address)
                 true;
             case MANAGE, BROWSE, VIEW, EDIT -> false;
         };
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     protected boolean verifyRights(Subject subject, String address, boolean isWrite) {
         Topic topic;
 
@@ -183,7 +192,8 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
         // See if a custom handler wants to handle authorisation for this topic pub/sub
         for (MQTTHandler handler : brokerService.getCustomHandlers()) {
             if (handler.handlesTopic(topic)) {
-                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler=" + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
+                LOG.finest("Passing topic to handler for " + (isWrite ? "pub" : "sub") + ": handler="
+                        + handler.getName() + ", topic=" + topic + ", " + connectionToString(connection));
                 boolean result;
 
                 if (isWrite) {
@@ -192,16 +202,18 @@ public class ActiveMQORSecurityManager extends ActiveMQJAASSecurityManager {
                     result = handler.checkCanSubscribe(connection, securityContext, topic);
                 }
                 if (result) {
-                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has authorised " + (isWrite ? "pub" : "sub")
+                            + ": topic=" + topic + ", " + connectionToString(connection));
                 } else {
-                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+                    LOG.finest("Handler '" + handler.getName() + "' has not authorised " + (isWrite ? "pub" : "sub")
+                            + ": topic=" + topic + ", " + connectionToString(connection));
                 }
                 return result;
             }
         }
 
-        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", " + connectionToString(connection));
+        LOG.info("Un-supported request " + (isWrite ? "pub" : "sub") + ": topic=" + topic + ", "
+                + connectionToString(connection));
         return false;
     }
-
 }

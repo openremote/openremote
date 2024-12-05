@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
-import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
-
-import javax.security.auth.Subject;
 import java.security.Principal;
 
+import javax.security.auth.Subject;
+
+import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
+
 /**
- * A {@link Principal} for associating an ActiveMQ {@link RemotingConnection} with the {@link javax.security.auth.Subject}
+ * A {@link Principal} for associating an ActiveMQ {@link RemotingConnection} with the
+ * {@link javax.security.auth.Subject}
  */
 // TODO: Remove this if/when ActiveMQ implements https://issues.apache.org/jira/browse/ARTEMIS-4059
 public class RemotingConnectionPrincipal implements Principal {
@@ -46,11 +47,9 @@ public class RemotingConnectionPrincipal implements Principal {
     }
 
     public static RemotingConnection getRemotingConnectionFromSubject(Subject subject) {
-        return subject != null ? subject.getPrincipals()
-            .stream()
-            .filter(p -> p instanceof RemotingConnectionPrincipal)
-            .findFirst()
-            .map(p -> ((RemotingConnectionPrincipal)p).getRemotingConnection())
-            .orElse(null) : null;
+        return subject != null
+                ? subject.getPrincipals().stream().filter(p -> p instanceof RemotingConnectionPrincipal).findFirst()
+                        .map(p -> ((RemotingConnectionPrincipal) p).getRemotingConnection()).orElse(null)
+                : null;
     }
 }

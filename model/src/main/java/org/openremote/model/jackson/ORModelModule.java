@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.jackson;
+
+import java.io.IOException;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.TextNode;
-
-import java.io.IOException;
-import java.util.function.Function;
 
 /**
  * Registers serializers/deserializers for OpenRemote model types that need special handling
@@ -56,22 +55,22 @@ public class ORModelModule extends SimpleModule {
     @SuppressWarnings("unchecked")
     public ORModelModule() {
         super("ORModelModule", new Version(1, 0, 0, "latest", null, null));
-//
-//        this.addDeserializer(AssetDescriptor.class, new DescriptorDeserializer<>(
-//            name -> AssetModelUtil.getAssetDescriptor(name).orElse(null),
-//            AssetDescriptorImpl.class
-//        ));
-//        this.addDeserializer(AttributeDescriptor.class, new DescriptorDeserializer<>(
-//            name -> AssetModelUtil.getAttributeDescriptor(name).orElse(null),
-//            AttributeDescriptorImpl.class
-//        ));
-//        this.addDeserializer(AttributeValueDescriptor.class, new DescriptorDeserializer<>(
-//            name -> AssetModelUtil.getAttributeValueDescriptor(name).orElse(null),
-//            AttributeValueDescriptorImpl.class
-//        ));
-//        this.addDeserializer(MetaItemDescriptor.class, new DescriptorDeserializer<>(
-//            urn -> AssetModelUtil.getMetaItemDescriptor(urn).orElse(null),
-//            MetaItemDescriptorImpl.class
-//        ));
+        //
+        // this.addDeserializer(AssetDescriptor.class, new DescriptorDeserializer<>(
+        // name -> AssetModelUtil.getAssetDescriptor(name).orElse(null),
+        // AssetDescriptorImpl.class
+        // ));
+        // this.addDeserializer(AttributeDescriptor.class, new DescriptorDeserializer<>(
+        // name -> AssetModelUtil.getAttributeDescriptor(name).orElse(null),
+        // AttributeDescriptorImpl.class
+        // ));
+        // this.addDeserializer(AttributeValueDescriptor.class, new DescriptorDeserializer<>(
+        // name -> AssetModelUtil.getAttributeValueDescriptor(name).orElse(null),
+        // AttributeValueDescriptorImpl.class
+        // ));
+        // this.addDeserializer(MetaItemDescriptor.class, new DescriptorDeserializer<>(
+        // urn -> AssetModelUtil.getMetaItemDescriptor(urn).orElse(null),
+        // MetaItemDescriptorImpl.class
+        // ));
     }
 }

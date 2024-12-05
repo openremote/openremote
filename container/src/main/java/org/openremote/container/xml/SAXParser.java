@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.xml;
 
-import org.xml.sax.*;
-import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.DefaultHandler;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Source;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import java.util.Map;
-import java.util.logging.Logger;
+
+import org.xml.sax.*;
+import org.xml.sax.helpers.AttributesImpl;
+import org.xml.sax.helpers.DefaultHandler;
 
 public class SAXParser {
 
@@ -71,7 +71,8 @@ public class SAXParser {
     protected Schema createSchema(Source[] schemaSources) {
         try {
             SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            schemaFactory.setResourceResolver(new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
+            schemaFactory.setResourceResolver(
+                    new CatalogResourceResolver(Map.of(DOM.XML_SCHEMA_NAMESPACE, DOM.XML_SCHEMA_RESOURCE)));
             return schemaFactory.newSchema(schemaSources);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -164,10 +165,11 @@ public class SAXParser {
         }
 
         @Override
-        public void startElement(String uri, String localName, String qName,
-                                 Attributes attributes) throws SAXException {
+        public void startElement(String uri, String localName, String qName, Attributes attributes)
+                throws SAXException {
             this.characters = new StringBuilder();
-            this.attributes = new AttributesImpl(attributes); // see http://docstore.mik.ua/orelly/xml/sax2/ch05_01.htm, section 5.1.1
+            this.attributes = new AttributesImpl(attributes); // see http://docstore.mik.ua/orelly/xml/sax2/ch05_01.htm,
+                                                              // section 5.1.1
             LOG.fine(getClass().getSimpleName() + " starting: " + localName);
         }
 
@@ -177,8 +179,7 @@ public class SAXParser {
         }
 
         @Override
-        public void endElement(String uri, String localName,
-                               String qName) throws SAXException {
+        public void endElement(String uri, String localName, String qName) throws SAXException {
 
             if (isLastElement(uri, localName, qName)) {
                 LOG.fine(getClass().getSimpleName() + ": last element, switching to parent: " + localName);
@@ -197,5 +198,4 @@ public class SAXParser {
             return attributes;
         }
     }
-
 }

@@ -1,9 +1,27 @@
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {DefaultColor5} from "@openremote/core";
-import {style} from "../style";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { DefaultColor5 } from "@openremote/core";
+import { style } from "../style";
 
 export class ThresholdChangeEvent extends CustomEvent<[number, string][]> {
 
@@ -134,28 +152,28 @@ export class ThresholdsPanel extends LitElement {
 
                 <!-- Thresholds by number -->
                 ${(this.valueType === 'number' || this.valueType === 'positiveInteger'
-                        || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
-                        || this.valueType === 'negativeNumber') ? html`
+                || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
+                || this.valueType === 'negativeNumber') ? html`
                     ${(this.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {
-                        return html`
+                    return html`
                             <div class="threshold-list-item">
                                 <div class="threshold-list-item-colour">
                                     <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                      this.thresholds[index][1] = event.detail.value;
-                                                      this.requestUpdate('thresholds');
-                                                  }}"
+                            this.thresholds[index][1] = event.detail.value;
+                            this.requestUpdate('thresholds');
+                        }}"
                                     ></or-mwc-input>
                                 </div>
                                 <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${threshold[0]}"
                                               ?disabled="${index === 0 && this.max}"
                                               .min="${ifDefined(this.min)}" .max="${ifDefined(this.max)}"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  if ((!this.min || event.detail.value >= this.min) && (!this.max || event.detail.value <= this.max)) {
-                                                      this.thresholds[index][0] = event.detail.value;
-                                                      this.requestUpdate('thresholds');
-                                                  }
-                                              }}"
+                            if ((!this.min || event.detail.value >= this.min) && (!this.max || event.detail.value <= this.max)) {
+                                this.thresholds[index][0] = event.detail.value;
+                                this.requestUpdate('thresholds');
+                            }
+                        }}"
                                 ></or-mwc-input>
                                 ${index === 0 ? html`
                                     <button class="button-clear"
@@ -166,14 +184,14 @@ export class ThresholdsPanel extends LitElement {
                                     <button class="button-clear"
                                             style="margin-left: 8px;"
                                             @click="${() => {
-                                                this.removeThreshold(threshold);
-                                            }}">
+                                    this.removeThreshold(threshold);
+                                }}">
                                         <or-icon icon="close-circle"></or-icon>
                                     </button>
                                 `}
                             </div>
                         `
-                    })}
+                })}
                     <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
                                   @or-mwc-input-changed="${() => this.addNewThreshold()}">
                     </or-mwc-input>
@@ -184,8 +202,9 @@ export class ThresholdsPanel extends LitElement {
                     <div class="threshold-list-item">
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.true)}"
-                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {   
-                                          this.onBoolColorChange(true, event.detail.value)}}"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
+                    this.onBoolColorChange(true, event.detail.value)
+                }}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'True'}" .readonly="${true}"
@@ -195,7 +214,8 @@ export class ThresholdsPanel extends LitElement {
                         <div class="threshold-list-item-colour">
                             <or-mwc-input type="${InputType.COLOUR}" value="${this.colorValue(this.boolColors?.false)}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                            this.onBoolColorChange(false, event.detail.value)}}"
+                    this.onBoolColorChange(false, event.detail.value)
+                }}"
                             ></or-mwc-input>
                         </div>
                         <or-mwc-input type="${InputType.TEXT}" comfortable .value="${'False'}" .readonly="${true}"
@@ -206,21 +226,21 @@ export class ThresholdsPanel extends LitElement {
                 <!-- Thresholds by string -->
                 ${(this.valueType === 'text' && this.textColors) ? html`
                     ${(this.textColors as [string, string][]).map((threshold, index) => {
-                        return html`
+                    return html`
                             <div class="threshold-list-item">
                                 <div class="threshold-list-item-colour">
                                     <or-mwc-input type="${InputType.COLOUR}" value="${threshold[1]}"
                                                   @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                      this.textColors[index][1] = event.detail.value;
-                                                      this.requestUpdate('textColors');
-                                                  }}"
+                            this.textColors[index][1] = event.detail.value;
+                            this.requestUpdate('textColors');
+                        }}"
                                     ></or-mwc-input>
                                 </div>
                                 <or-mwc-input type="${InputType.TEXT}" comfortable .value="${threshold[0]}"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.textColors[index][0] = event.detail.value;
-                                                  this.requestUpdate('textColors');
-                                              }}"
+                            this.textColors[index][0] = event.detail.value;
+                            this.requestUpdate('textColors');
+                        }}"
 
                                 ></or-mwc-input>
                                 ${index === 0 ? html`
@@ -232,14 +252,14 @@ export class ThresholdsPanel extends LitElement {
                                     <button class="button-clear"
                                             style="margin-left: 8px;"
                                             @click="${() => {
-                                                this.removeThreshold(threshold);
-                                            }}">
+                                    this.removeThreshold(threshold);
+                                }}">
                                         <or-icon icon="close-circle"></or-icon>
                                     </button>
                                 `}
                             </div>
                         `
-                    })}
+                })}
                     <or-mwc-input .type="${InputType.BUTTON}" label="threshold" icon="plus"
                                   @or-mwc-input-changed="${() => this.addNewThreshold()}">
                     </or-mwc-input>
@@ -249,9 +269,9 @@ export class ThresholdsPanel extends LitElement {
     }
 
     protected onBoolColorChange(isTrue: boolean, newColor: string) {
-         // in case newColor already has '#' prefix
+        // in case newColor already has '#' prefix
         const color = newColor.startsWith('#') ? newColor.substring(1) : newColor;
-        
+
         if (!this.boolColors) {
             this.boolColors = {
                 type: 'boolean',
@@ -271,7 +291,7 @@ export class ThresholdsPanel extends LitElement {
             case "number":
                 this.thresholds = (this.thresholds as [number, string][]).filter((x) => x !== threshold);
                 break;
-            default: 
+            default:
                 this.textColors = (this.textColors as [string, string][]).filter((x) => x !== threshold);
                 break;
         }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.console;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ConsoleProvider implements Serializable {
     protected String version;
@@ -37,12 +36,10 @@ public class ConsoleProvider implements Serializable {
 
     @JsonCreator
     public ConsoleProvider(@JsonProperty("version") String version,
-                           @JsonProperty("requiresPermission") boolean requiresPermission,
-                           @JsonProperty("hasPermission") boolean hasPermission,
-                           @JsonProperty("success") boolean success,
-                           @JsonProperty("enabled") boolean enabled,
-                           @JsonProperty("disabled") boolean disabled,
-                           @JsonProperty("data") Map<String, Object> data) {
+            @JsonProperty("requiresPermission") boolean requiresPermission,
+            @JsonProperty("hasPermission") boolean hasPermission, @JsonProperty("success") boolean success,
+            @JsonProperty("enabled") boolean enabled, @JsonProperty("disabled") boolean disabled,
+            @JsonProperty("data") Map<String, Object> data) {
         this.version = version;
         this.requiresPermission = requiresPermission;
         this.hasPermission = hasPermission;
@@ -82,10 +79,14 @@ public class ConsoleProvider implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ConsoleProvider that = (ConsoleProvider) o;
-        return requiresPermission == that.requiresPermission && hasPermission == that.hasPermission && success == that.success && enabled == that.enabled && disabled == that.disabled && Objects.equals(version, that.version) && Objects.equals(data, that.data);
+        return requiresPermission == that.requiresPermission && hasPermission == that.hasPermission
+                && success == that.success && enabled == that.enabled && disabled == that.disabled
+                && Objects.equals(version, that.version) && Objects.equals(data, that.data);
     }
 
     @Override

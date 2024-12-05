@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -32,28 +31,29 @@ public interface MeshProvisioningStatusCallbacks {
      * Invoked when the provisioning state changed.
      *
      * @param meshNode {@link UnprovisionedMeshNode} unprovisioned node.
-     * @param state    {@link ProvisioningState.State} each provisioning state.
-     * @param data     data that was sent or received during each provisioning state.
+     * @param state {@link ProvisioningState.State} each provisioning state.
+     * @param data data that was sent or received during each provisioning state.
      */
-    void onProvisioningStateChanged(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data);
+    void onProvisioningStateChanged(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state,
+            final byte[] data);
 
     /**
      * Invoked when the provisioning state changed.
      *
      * @param meshNode {@link UnprovisionedMeshNode} unprovisioned node.
-     * @param state    {@link ProvisioningState.State} each provisioning state.
-     * @param data     data that was sent or received during each provisioning state.
+     * @param state {@link ProvisioningState.State} each provisioning state.
+     * @param data data that was sent or received during each provisioning state.
      */
-    void onProvisioningFailed(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data);
+    void onProvisioningFailed(final UnprovisionedMeshNode meshNode, final ProvisioningState.States state,
+            final byte[] data);
 
     /**
      * Invoked when the provisioning state changed.
      *
      * @param meshNode {@link ProvisionedMeshNode} provisioned mesh node.
-     * @param state    {@link ProvisioningState.State} each provisioning state.
-     * @param data     data that was sent or received during each provisioning state.
+     * @param state {@link ProvisioningState.State} each provisioning state.
+     * @param data data that was sent or received during each provisioning state.
      */
-    void onProvisioningCompleted(final ProvisionedMeshNode meshNode, final ProvisioningState.States state, final byte[] data);
-
+    void onProvisioningCompleted(final ProvisionedMeshNode meshNode, final ProvisioningState.States state,
+            final byte[] data);
 }
-

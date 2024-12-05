@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 /**
  * To be used as a wrapper class when creating a SceneStore message.
@@ -46,35 +45,31 @@ public class SceneRecall extends GenericMessage {
     /**
      * Constructs SceneStore message.
      *
-     * @param appKey      {@link ApplicationKey} key for this message
+     * @param appKey {@link ApplicationKey} key for this message
      * @param sceneNumber SceneNumber
-     * @param tId         Transaction Id
+     * @param tId Transaction Id
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
-    public SceneRecall(final ApplicationKey appKey,
-                       final int sceneNumber,
-                       final int tId) throws IllegalArgumentException {
+    public SceneRecall(final ApplicationKey appKey, final int sceneNumber, final int tId)
+            throws IllegalArgumentException {
         this(appKey, null, null, null, sceneNumber, tId);
     }
 
     /**
      * Constructs SceneStore message.
      *
-     * @param appKey               {@link ApplicationKey} key for this message
-     * @param transitionSteps      Transition steps for the level
+     * @param appKey {@link ApplicationKey} key for this message
+     * @param transitionSteps Transition steps for the level
      * @param transitionResolution Transition resolution for the level
-     * @param delay                Delay for this message to be executed 0 - 1275 milliseconds
-     * @param sceneNumber          sceneNumber
-     * @param tId                  Transaction Id
+     * @param delay Delay for this message to be executed 0 - 1275 milliseconds
+     * @param sceneNumber sceneNumber
+     * @param tId Transaction Id
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
     @SuppressWarnings("WeakerAccess")
-    public SceneRecall(final ApplicationKey appKey,
-                       /* @Nullable */ final Integer transitionSteps,
-                       /* @Nullable */ final Integer transitionResolution,
-                       /* @Nullable */ final Integer delay,
-                       final int sceneNumber,
-                       final int tId) {
+    public SceneRecall(final ApplicationKey appKey, /* @Nullable */ final Integer transitionSteps,
+            /* @Nullable */ final Integer transitionResolution, /* @Nullable */ final Integer delay,
+            final int sceneNumber, final int tId) {
         super(appKey);
         this.mTransitionSteps = transitionSteps;
         this.mTransitionResolution = transitionResolution;
@@ -111,4 +106,3 @@ public class SceneRecall extends GenericMessage {
         mParameters = paramsBuffer.array();
     }
 }
-

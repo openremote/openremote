@@ -1,39 +1,57 @@
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
 import moment from "moment";
 
-import {icon} from "@fortawesome/fontawesome-svg-core";
-import {faClock} from "@fortawesome/free-regular-svg-icons";
-import {faTimes} from "@fortawesome/free-solid-svg-icons";
+import { icon } from "@fortawesome/fontawesome-svg-core";
+import { faClock } from "@fortawesome/free-regular-svg-icons";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
-import {AssetQuery, ClientRole} from "@openremote/model";
+import { AssetQuery, ClientRole } from "@openremote/model";
 import manager from "@openremote/core";
 
 @customElement("or-smart-notify")
 class OrSmartNotify extends LitElement {
     // default function on smartyNotify
-    @property({type: Function})
+    @property({ type: Function })
     private onChange: any;
 
     // if smart notify popup is visible
-    @property({type: Boolean})
+    @property({ type: Boolean })
     private isVisible: boolean = false;
 
     // If smart notify is active
-    @property({type: Boolean})
+    @property({ type: Boolean })
     private isActive: boolean = false;
 
     // If smart notify is active
-    @property({type: Boolean})
+    @property({ type: Boolean })
     private isDisabled: boolean = false;
 
     // If smart notify is active
-    @property({type: Object})
+    @property({ type: Object })
     private smartNotify: any = {};
 
     // default function on smartyNotify
-    @property({type: String})
+    @property({ type: String })
     private currentTime: string = "-";
 
     constructor() {
@@ -50,7 +68,7 @@ class OrSmartNotify extends LitElement {
         const self: any = this;
         return new Promise((resolve: any, reject: any) => {
             const smartNotifyQuery: AssetQuery = {
-                names: [{predicateType: "string", value: "SMART_NOTIFY_ASSET"}]
+                names: [{ predicateType: "string", value: "SMART_NOTIFY_ASSET" }]
             };
             manager.rest.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
                 console.log("Setting Smart Notify");
@@ -61,7 +79,7 @@ class OrSmartNotify extends LitElement {
                     resolve(response);
                 }
 
-            }).catch((reason: any) =>  {
+            }).catch((reason: any) => {
                 reject(Error("Error:" + reason));
                 console.log("Error:" + reason);
             });
@@ -314,7 +332,7 @@ class OrSmartNotify extends LitElement {
                 ${this.isActive ? html`
                     <div class="layout horizontal">
                         <div style="background-color: var(--app-lightgrey-color, #dedede);" class="flex padding-10">Starttijd</div>
-                        <div class="flex t-center">${this.isActive ? moment(this.smartNotify.attributes.SMART_NOTIFY_ENABLED.timestamp).format("HH:mm")  : "-"}</div>
+                        <div class="flex t-center">${this.isActive ? moment(this.smartNotify.attributes.SMART_NOTIFY_ENABLED.timestamp).format("HH:mm") : "-"}</div>
                     </div>
                 ` : ``}
             </div>

@@ -1,7 +1,25 @@
-import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { Page, PageProvider, AppStateKeyed } from "@openremote/or-app";
+import { Store } from "@reduxjs/toolkit";
 
 export interface SplashConfig {
     redirect: string;
@@ -17,7 +35,7 @@ export function pageMobileSplashProvider(store: Store<AppStateKeyed>, config?: S
         ],
         pageCreator: () => {
             const page = new PageMobileSplash(store);
-            if(config) page.config = config;
+            if (config) page.config = config;
             return page;
         }
     };
@@ -54,7 +72,7 @@ export class PageMobileSplash extends Page<AppStateKeyed> {
             }, this.config.interval ? this.config.interval : 3000);
         }
     }
-    
+
 
     public stateChanged(state: AppStateKeyed) {
     }

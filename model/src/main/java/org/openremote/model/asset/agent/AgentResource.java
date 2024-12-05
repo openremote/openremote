@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.agent;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
@@ -29,10 +28,10 @@ import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
-
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should
@@ -54,14 +53,11 @@ public interface AgentResource {
     @GET
     @Path("instanceDiscovery/{agentType}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    @RolesAllowed({ Constants.READ_ASSETS_ROLE })
     @Operation(operationId = "doProtocolInstanceDiscovery", summary = "Do protocol instance discovery")
-    Agent<?, ?, ?>[] doProtocolInstanceDiscovery(
-        @BeanParam RequestParams requestParams,
-        @QueryParam("parentId") String parentId,
-        @PathParam("agentType") String agentType,
-        @QueryParam("realm") String realm
-    );
+    Agent<?, ?, ?>[] doProtocolInstanceDiscovery(@BeanParam RequestParams requestParams,
+            @QueryParam("parentId") String parentId, @PathParam("agentType") String agentType,
+            @QueryParam("realm") String realm);
 
     /**
      * Do {@link Asset} discovery for the specified {@link Agent}; the associated {@link Protocol} must implement {@link
@@ -75,11 +71,8 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "doProtocolAssetDiscovery", summary = "Do protocol asset discovery")
-    AssetTreeNode[] doProtocolAssetDiscovery(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId,
-        @QueryParam("realm") String realm
-    );
+    AssetTreeNode[] doProtocolAssetDiscovery(@BeanParam RequestParams requestParams,
+            @PathParam("agentId") String agentId, @QueryParam("realm") String realm);
 
     /**
      * Do {@link Asset} import for the specified {@link Agent} using the supplied {@link FileInfo}; the associated
@@ -96,10 +89,6 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "doProtocolAssetImport", summary = "Do protocol asset import")
     // TODO: File upload should use standard multipart mechanism
-    AssetTreeNode[] doProtocolAssetImport(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId,
-        @QueryParam("realm") String realm,
-        FileInfo fileInfo
-    );
+    AssetTreeNode[] doProtocolAssetImport(@BeanParam RequestParams requestParams, @PathParam("agentId") String agentId,
+            @QueryParam("realm") String realm, FileInfo fileInfo);
 }

@@ -1,18 +1,36 @@
-import {html, LitElement, css, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, css, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {PushNotificationMessage, PushNotificationButton} from "@openremote/model";
-import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
-import {until} from "lit/directives/until.js";
-import {when} from "lit/directives/when.js";
+import { translate } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { PushNotificationMessage, PushNotificationButton } from "@openremote/model";
+import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
+import { until } from "lit/directives/until.js";
+import { when } from "lit/directives/when.js";
 
 @customElement("or-rule-form-push-notification")
 export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
 
-    @property({type: Object})
+    @property({ type: Object })
     public message?: PushNotificationMessage;
 
     static get styles() {
@@ -37,9 +55,9 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     protected render() {
         return html`
             ${when(this.message,
-                    () => until(this._getPushNotificationForm(this.message!), html`Loading...`),
-                    () => html`<or-translate value="errorOccurred"></or-translate>`
-            )}
+            () => until(this._getPushNotificationForm(this.message!), html`Loading...`),
+            () => html`<or-translate value="errorOccurred"></or-translate>`
+        )}
         `;
     }
 

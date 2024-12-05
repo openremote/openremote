@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.manager.gateway;
 
 import org.openremote.model.gateway.GatewayTunnelInfo;
@@ -33,7 +31,8 @@ public interface GatewayTunnelFactory {
      *
      * @return Tunnel instance counter (should be tracked by implementations as this will be used to stop the tunnel)
      * @throws jakarta.ws.rs.BadRequestException If {@link GatewayTunnelInfo} is invalid
-     * @throws jakarta.ws.rs.ServerErrorException If the {@link GatewayTunnelInfo} is valid but the tunnel could not be created
+     * @throws jakarta.ws.rs.ServerErrorException If the {@link GatewayTunnelInfo} is valid but the tunnel could not be
+     *             created
      */
     void startTunnel(GatewayTunnelStartRequestEvent startRequestEvent) throws Exception;
 

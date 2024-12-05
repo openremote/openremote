@@ -1,17 +1,35 @@
-import {RuleActionWebhook} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {i18next} from "@openremote/or-translate";
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { RuleActionWebhook } from "@openremote/model";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { i18next } from "@openremote/or-translate";
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
 @customElement("or-rule-webhook-modal")
 export class OrRuleWebhookModal extends LitElement {
 
-    @property({type: Object})
+    @property({ type: Object })
     protected action!: RuleActionWebhook;
 
-    @property({type: String})
+    @property({ type: String })
     public title: string = i18next.t('message');
 
     constructor() {
@@ -33,7 +51,7 @@ export class OrRuleWebhookModal extends LitElement {
         const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.webhook-form-slot');
         if (dialog && slot) {
             let container = document.createElement("div");
-            slot.assignedNodes({flatten: true}).forEach((child) => {
+            slot.assignedNodes({ flatten: true }).forEach((child) => {
                 if (child instanceof HTMLElement) {
                     container.appendChild(child);
                 }

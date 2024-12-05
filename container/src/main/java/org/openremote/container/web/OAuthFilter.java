@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.io.IOException;
+import java.net.SocketException;
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.logging.Logger;
 
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
@@ -30,13 +37,6 @@ import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.SocketException;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A filter to support OAuth access token (including refresh)
@@ -70,7 +70,8 @@ public class OAuthFilter implements ClientRequestFilter {
 
     public synchronized String getAccessToken() throws SocketException {
         LocalDateTime expiryDateTime = authServerResponse == null ? null : authServerResponse.getExpiryDateTime();
-        boolean updateRequired = expiryDateTime == null || expiryDateTime.minusSeconds(10).isBefore(LocalDateTime.now());
+        boolean updateRequired = expiryDateTime == null
+                || expiryDateTime.minusSeconds(10).isBefore(LocalDateTime.now());
 
         if (updateRequired) {
             updateToken();
@@ -103,7 +104,8 @@ public class OAuthFilter implements ClientRequestFilter {
 
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 authServerResponse = null;
-                LOG.fine("OAuth server response error '" + response.getStatus() + "': " + oAuthGrant.getTokenEndpointUri());
+                LOG.fine("OAuth server response error '" + response.getStatus() + "': "
+                        + oAuthGrant.getTokenEndpointUri());
                 throw new RuntimeException("OAuth server response error: " + response.getStatus());
             } else {
                 authServerResponse = response.readEntity(OAuthServerResponse.class);
@@ -117,27 +119,23 @@ public class OAuthFilter implements ClientRequestFilter {
     }
 
     protected Response requestTokenUsingRefresh() throws SocketException {
-        OAuthRefreshTokenGrant refreshGrant = new OAuthRefreshTokenGrant(
-            oAuthGrant.getTokenEndpointUri(),
-            oAuthGrant.getClientId(),
-            oAuthGrant.getClientSecret(),
-            oAuthGrant.getScope(),
-            authServerResponse.refreshToken
-        );
+        OAuthRefreshTokenGrant refreshGrant = new OAuthRefreshTokenGrant(oAuthGrant.getTokenEndpointUri(),
+                oAuthGrant.getClientId(), oAuthGrant.getClientSecret(), oAuthGrant.getScope(),
+                authServerResponse.refreshToken);
 
-        return authTarget
-            .request(MediaType.APPLICATION_JSON_TYPE)
-            .post(Entity.entity(new Form(refreshGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        return authTarget.request(MediaType.APPLICATION_JSON_TYPE).post(
+                Entity.entity(new Form(refreshGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
     protected Response requestToken() throws SocketException {
-        Invocation.Builder builder = authTarget
-            .request(MediaType.APPLICATION_JSON_TYPE);
+        Invocation.Builder builder = authTarget.request(MediaType.APPLICATION_JSON_TYPE);
 
         if (oAuthGrant.isBasicAuthHeader()) {
-            builder.header(HttpHeaders.AUTHORIZATION, BasicAuthHelper.createHeader(oAuthGrant.getClientId(), oAuthGrant.getClientSecret()));
+            builder.header(HttpHeaders.AUTHORIZATION,
+                    BasicAuthHelper.createHeader(oAuthGrant.getClientId(), oAuthGrant.getClientSecret()));
         }
-        return builder.post(Entity.entity(new Form(oAuthGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        return builder.post(
+                Entity.entity(new Form(oAuthGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
     public synchronized void updateGrant(OAuthGrant grant) {

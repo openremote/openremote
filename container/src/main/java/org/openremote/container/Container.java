@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,22 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container;
 
-import com.fasterxml.jackson.databind.SerializationFeature;
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.prometheus.client.CollectorRegistry;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
-import org.openremote.container.concurrent.ContainerThreadFactory;
-import org.openremote.container.util.LogUtil;
-import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static java.lang.System.Logger.Level.*;
+import static java.util.stream.StreamSupport.stream;
+import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getInteger;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,10 +29,21 @@ import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.lang.System.Logger.Level.*;
-import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
+import org.openremote.container.concurrent.ContainerThreadFactory;
+import org.openremote.container.util.LogUtil;
+import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import io.micrometer.prometheus.PrometheusConfig;
+import io.prometheus.client.CollectorRegistry;
 
 /**
  * A thread-safe registry of {@link ContainerService}s.
@@ -67,11 +68,12 @@ public class Container implements org.openremote.model.Container {
     public static ScheduledExecutorService SCHEDULED_EXECUTOR;
     public static ExecutorService EXECUTOR;
     public static final String OR_SCHEDULED_EXECUTOR_THREADS = "OR_SCHEDULED_EXECUTOR_THREADS";
-    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 4);
+    public static final int OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(),
+            4);
     public static final String OR_EXECUTOR_THREADS_MIN = "OR_EXECUTOR_THREADS_MIN";
     public static final String OR_EXECUTOR_THREADS_MAX = "OR_EXECUTOR_THREADS_MAX";
     public static final int OR_EXECUTOR_THREADS_MIN_DEFAULT = Math.min(Runtime.getRuntime().availableProcessors(), 8);
-    public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors()*10;
+    public static final int OR_EXECUTOR_THREADS_MAX_DEFAULT = Runtime.getRuntime().availableProcessors() * 10;
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
     protected MeterRegistry meterRegistry;
@@ -89,8 +91,7 @@ public class Container implements org.openremote.model.Container {
      */
     public Container() {
         this(stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
-                .sorted(Comparator.comparingInt(ContainerService::getPriority))
-                .collect(Collectors.toList()));
+                .sorted(Comparator.comparingInt(ContainerService::getPriority)).collect(Collectors.toList()));
     }
 
     public Container(ContainerService... services) {
@@ -115,22 +116,24 @@ public class Container implements org.openremote.model.Container {
 
         if (metricsEnabled) {
             // TODO: Add a meter registry provider SPI to make this pluggable
-            meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT, io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+            meterRegistry = new io.micrometer.prometheus.PrometheusMeterRegistry(PrometheusConfig.DEFAULT,
+                    io.prometheus.client.CollectorRegistry.defaultRegistry, Clock.SYSTEM);
         }
 
-        int scheduledExecutorThreads = getInteger(
-            getConfig(),
-            OR_SCHEDULED_EXECUTOR_THREADS,
-            OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
+        int scheduledExecutorThreads = getInteger(getConfig(), OR_SCHEDULED_EXECUTOR_THREADS,
+                OR_SCHEDULED_EXECUTOR_THREADS_DEFAULT);
 
         int executorThreadsMin = getInteger(getConfig(), OR_EXECUTOR_THREADS_MIN, OR_EXECUTOR_THREADS_MIN_DEFAULT);
         int executorThreadsMax = getInteger(getConfig(), OR_EXECUTOR_THREADS_MAX, OR_EXECUTOR_THREADS_MAX_DEFAULT);
 
         SCHEDULED_EXECUTOR = new ContainerScheduledExecutor("ContainerScheduledExecutor", scheduledExecutorThreads);
-        EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"), new ThreadPoolExecutor.CallerRunsPolicy());
+        EXECUTOR = new ThreadPoolExecutor(executorThreadsMin, executorThreadsMax, 60L, TimeUnit.SECONDS,
+                new SynchronousQueue<Runnable>(), new ContainerThreadFactory("ContainerExecutor"),
+                new ThreadPoolExecutor.CallerRunsPolicy());
 
         if (meterRegistry != null) {
-            SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR, "ContainerScheduledExecutor");
+            SCHEDULED_EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, SCHEDULED_EXECUTOR,
+                    "ContainerScheduledExecutor");
             EXECUTOR = ExecutorServiceMetrics.monitor(meterRegistry, EXECUTOR, "ContainerExecutor");
         }
 

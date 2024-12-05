@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -46,7 +45,7 @@ public class AllocatedSceneRange extends Range {
      * Constructs {@link AllocatedSceneRange} for provisioner
      *
      * @param firstScene high address of group range
-     * @param lastScene  low address of group range
+     * @param lastScene low address of group range
      */
     public AllocatedSceneRange(final int firstScene, final int lastScene) {
         lowerBound = 0x0001;
@@ -57,8 +56,10 @@ public class AllocatedSceneRange extends Range {
         if (lastScene < lowerBound || lastScene > upperBound)
             throw new IllegalArgumentException("lastScene value must range from 0x0000 to 0xFFFF");
 
-        /*if (firstScene > lastScene)
-            throw new IllegalArgumentException("firstScene value must be lower than the lastScene value");*/
+        /*
+         * if (firstScene > lastScene)
+         * throw new IllegalArgumentException("firstScene value must be lower than the lastScene value");
+         */
 
         this.firstScene = firstScene;
         this.lastScene = lastScene;
@@ -121,17 +122,20 @@ public class AllocatedSceneRange extends Range {
      * Subtracts a range from a list of ranges
      *
      * @param ranges ranges to be subtracted
-     * @param other  {@link AllocatedSceneRange} range
+     * @param other {@link AllocatedSceneRange} range
      * @return a resulting {@link AllocatedSceneRange} or null otherwise
      */
-    public static List<AllocatedSceneRange> minus(final List<AllocatedSceneRange> ranges, final AllocatedSceneRange other) {
+    public static List<AllocatedSceneRange> minus(final List<AllocatedSceneRange> ranges,
+            final AllocatedSceneRange other) {
         List<AllocatedSceneRange> results = new ArrayList<>();
         for (AllocatedSceneRange range : ranges) {
             results.addAll(range.minus(other));
             results = mergeSceneRanges(results);
         }
-        /*ranges.clear();
-        ranges.addAll(results);*/
+        /*
+         * ranges.clear();
+         * ranges.addAll(results);
+         */
         return results;
     }
 
@@ -143,23 +147,25 @@ public class AllocatedSceneRange extends Range {
      */
     private List<AllocatedSceneRange> minus(final AllocatedSceneRange other) {
         final List<AllocatedSceneRange> results = new ArrayList<>();
-        // Left:   |------------|                    |-----------|                 |---------|
-        //                  -                              -                            -
-        // Right:      |-----------------|   or                     |---|   or        |----|
-        //                  =                              =                            =
-        // Result: |---|                             |-----------|                 |--|
+        // Left: |------------| |-----------| |---------|
+        // - - -
+        // Right: |-----------------| or |---| or |----|
+        // = = =
+        // Result: |---| |-----------| |--|
         if (other.firstScene > firstScene) {
-            final AllocatedSceneRange leftSlice = new AllocatedSceneRange(firstScene, (Math.min(lastScene, other.firstScene - 1)));
+            final AllocatedSceneRange leftSlice = new AllocatedSceneRange(firstScene,
+                    (Math.min(lastScene, other.firstScene - 1)));
             results.add(leftSlice);
         }
 
-        // Left:                |----------|             |-----------|                     |--------|
-        //                         -                          -                             -
-        // Right:      |----------------|           or       |----|          or     |---|
-        //                         =                          =                             =
-        // Result:                      |--|                      |--|                     |--------|
+        // Left: |----------| |-----------| |--------|
+        // - - -
+        // Right: |----------------| or |----| or |---|
+        // = = =
+        // Result: |--| |--| |--------|
         if (other.lastScene < lastScene) {
-            final AllocatedSceneRange rightSlice = new AllocatedSceneRange(Math.max(other.lastScene + 1, firstScene), lastScene);
+            final AllocatedSceneRange rightSlice = new AllocatedSceneRange(Math.max(other.lastScene + 1, firstScene),
+                    lastScene);
             results.add(rightSlice);
         }
         return results;

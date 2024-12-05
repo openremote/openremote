@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.event;
 
-import io.undertow.websockets.core.WebSocketChannel;
-import io.undertow.websockets.spi.WebSocketHttpExchange;
+import static java.lang.System.Logger.Level.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
+import static org.openremote.model.Constants.*;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.undertow.UndertowComponent;
@@ -47,18 +57,8 @@ import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.Pair;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
-
-import static java.lang.System.Logger.Level.*;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_ROUTE_CONFIG_ID;
-import static org.openremote.model.Constants.*;
+import io.undertow.websockets.core.WebSocketChannel;
+import io.undertow.websockets.spi.WebSocketHttpExchange;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -68,43 +68,65 @@ import static org.openremote.model.Constants.*;
  * <p>
  * The following messages can be sent by a client:
  * <dl>
- * <dt><code>SUBSCRIBE:{...}</code><dt>
- * <dd><p>
+ * <dt><code>SUBSCRIBE:{...}</code>
+ * <dt>
+ * <dd>
+ * <p>
  * The payload is a serialized representation of {@link EventSubscription} with an optional
  * {@link org.openremote.model.event.shared.EventFilter}. Clients can subscribe to receive {@link SharedEvent}s
  * when they are published on the server. Subscriptions are handled by {@link SharedEvent#getEventType}.
- * </p></dd>
+ * </p>
+ * </dd>
  * <dt><code>UNSUBSCRIBE:{...}</code></dt>
- * <dd><p>
+ * <dd>
+ * <p>
  * The payload is a serialized representation of {@link CancelEventSubscription}. If a client
  * does not want to wait for expiration of its subscriptions, it can cancel a subscription.
- * </p></dd>
+ * </p>
+ * </dd>
  * <dt><code>EVENT:{...}</code></dt>
- * <dd><p>
+ * <dd>
+ * <p>
  * The payload is a serialized representation of a subtype of {@link SharedEvent}. If the server
  * does not recognize the event, it is silently ignored.
- * </p></dd>
+ * </p>
+ * </dd>
  * </dl>
  * <p>
  * The following messages can be published/returned by the server:
  * <dl>
  * <dt><code>UNAUTHORIZED:{...}</code></dt>
- * <dd><p>
+ * <dd>
+ * <p>
  * The payload is a serialized representation of {@link UnauthorizedEventSubscription}.
- * </p></dd>
+ * </p>
+ * </dd>
  * <dt><code>EVENT:{...}</code></dt>
- * <dd><p>
+ * <dd>
+ * <p>
  * The payload is a serialized representation of a subtype of {@link SharedEvent}.
- * </p></dd>
+ * </p>
+ * </dd>
  * <dt><code>EVENT:[...]</code></dt>
- * <dd><p>
+ * <dd>
+ * <p>
  * The payload is an array of {@link SharedEvent}s.
- * </p></dd>
+ * </p>
+ * </dd>
  * </dl>
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
+    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host
+                                                                                                                                             // is
+                                                                                                                                             // not
+                                                                                                                                             // used
+                                                                                                                                             // as
+                                                                                                                                             // existing
+                                                                                                                                             // undertow
+                                                                                                                                             // instance
+                                                                                                                                             // is
+                                                                                                                                             // utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
@@ -127,7 +149,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     public static String getClientId(Exchange exchange) {
         AuthContext authContext = exchange.getIn().getHeader(AUTH_CONTEXT, AuthContext.class);
-        if(authContext != null) {
+        if (authContext != null) {
             return authContext.getClientId();
         }
         return null;
@@ -154,220 +176,218 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         };
         messageBrokerService.getContext().addComponent("undertow", undertowWebsocketComponent);
 
-        messageBrokerService.getContext().getTypeConverterRegistry().addTypeConverters(
-            new EventTypeConverters()
-        );
+        messageBrokerService.getContext().getTypeConverterRegistry().addTypeConverters(new EventTypeConverters());
 
         messageBrokerService.getContext().addRoutes(this);
     }
 
     // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void configure() throws Exception {
 
         // Route for handling inbound websocket messages
-        from(WEBSOCKET_URI)
-            .routeId("ClientInbound-Websocket")
-            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-            .choice()
-            .when(header(UndertowConstants.EVENT_TYPE))
-            .process(exchange -> {
-                UndertowConstants.EventType eventType = exchange.getIn().getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
-                WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
+        from(WEBSOCKET_URI).routeId("ClientInbound-Websocket").routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+                .choice().when(header(UndertowConstants.EVENT_TYPE)).process(exchange -> {
+                    UndertowConstants.EventType eventType = exchange.getIn()
+                            .getHeader(UndertowConstants.EVENT_TYPE_ENUM, UndertowConstants.EventType.class);
+                    WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL,
+                            WebSocketChannel.class);
 
-                switch (eventType) {
-                    case ONOPEN -> {
-                        WebSocketHttpExchange httpExchange = exchange.getIn().getHeader(UndertowConstants.EXCHANGE, WebSocketHttpExchange.class);
-                        String realm = httpExchange.getRequestHeader(Constants.REALM_PARAM_NAME);
-                        Principal principal = httpExchange.getUserPrincipal();
-                        AuthContext authContext = null;
+                    switch (eventType) {
+                        case ONOPEN -> {
+                            WebSocketHttpExchange httpExchange = exchange.getIn().getHeader(UndertowConstants.EXCHANGE,
+                                    WebSocketHttpExchange.class);
+                            String realm = httpExchange.getRequestHeader(Constants.REALM_PARAM_NAME);
+                            Principal principal = httpExchange.getUserPrincipal();
+                            AuthContext authContext = null;
 
-                        if (principal instanceof KeycloakPrincipal<?> keycloakPrincipal) {
-                            authContext = new AccessTokenAuthContext(
-                                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                                keycloakPrincipal.getKeycloakSecurityContext().getToken()
-                            );
-                        } else if (principal instanceof BasicAuthContext) {
-                            authContext = (BasicAuthContext) principal;
-                        } else if (principal != null) {
-                            LOG.log(INFO, "Unsupported user principal type: " + principal);
-                        }
-
-                        // Push auth and realm into channel for future use
-                        webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
-                        webSocketChannel.setAttribute(Constants.REALM_PARAM_NAME, realm);
-
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-                        exchange.getIn().setHeader(SESSION_OPEN, true);
-                        sessionChannels.put(getSessionKey(exchange), webSocketChannel);
-                        LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
-                    }
-                    case ONCLOSE -> {
-                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-                        String realm = (String)webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
-                        String sessionKey = getSessionKey(exchange);
-
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-                        exchange.getIn().setHeader(SESSION_CLOSE, true);
-                        sessionChannels.remove(getSessionKey(exchange));
-                        LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
-                        LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
-                        synchronized (websocketSessionSubscriptionConsumers) {
-                            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-                                subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
-                                return null;
-                            });
-                        }
-                    }
-                    case ONERROR -> {
-                        AuthContext authContext = (AuthContext)webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-                        String realm = (String)webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
-                        String sessionKey = getSessionKey(exchange);
-
-                        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-                        exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
-                        LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
-                        try {
-                            webSocketChannel.close();
-                        } catch (Exception ignored) {}
-                        sessionChannels.remove(getSessionKey(exchange));
-                        LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
-                        synchronized (websocketSessionSubscriptionConsumers) {
-                            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-                                subscriptionConsumers.forEach((subscriptionKey, consumer) -> removeSubscription(consumer));
-                                return null;
-                            });
-                        }
-                    }
-                }
-
-                // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
-                }
-            })
-            .stop()
-            .endChoice()
-            .end()
-            .process(exchange -> {
-                WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL, WebSocketChannel.class);
-                AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
-                String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
-
-                exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
-                exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
-
-                // Do basic formatting of exchange
-                if (exchange.getIn().getBody() instanceof String bodyStr) {
-                    if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
-                        exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
-                    } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
-                        exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
-                    } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-                        exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
-                    }
-                }
-
-                if (exchange.getIn().getBody() instanceof RespondableEvent respondableEvent) {
-                    // Inject a response consumer
-                    respondableEvent.setResponseConsumer(ev -> sendToWebsocketSession(getSessionKey(exchange), ev));
-                }
-
-                // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
-                }
-            })
-            .process(exchange -> {
-                AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
-
-                if (exchange.getIn().getBody() instanceof EventSubscription<?> subscription) {
-                    String sessionKey = getSessionKey(exchange);
-                    LOG.log(TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
-
-                    if (!authorizeEventSubscription(realm, authContext, subscription)) {
-                        sendToWebsocketSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
-                        exchange.setRouteStop(true);
-                        return;
-                    }
-
-                    // Force subscription to filter only value changed attribute events
-                    if (subscription.getFilter() instanceof AssetFilter assetFilter) {
-                        subscription.setFilter(assetFilter.setValueChanged(true));
-                    }
-
-                    // Notify the client that the subscription has been created
-                    subscription.setSubscribed(true);
-                    sendToWebsocketSession(sessionKey, subscription);
-
-                    synchronized (websocketSessionSubscriptionConsumers) {
-                        // Create subscription consumer and track it for future removal requests
-                        Consumer<? extends SharedEvent> consumer = ev -> onWebsocketSubscriptionTriggered(sessionKey, subscription, ev);
-                        Map<String, Consumer<? extends Event>> subscriptionConsumers = websocketSessionSubscriptionConsumers.computeIfAbsent(sessionKey, (s) -> new HashMap<>());
-                        String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
-                        subscriptionConsumers.put(subscriptionKey, consumer);
-                        addSubscription(subscription, consumer);
-                    }
-                    exchange.setRouteStop(true);
-                } else if (exchange.getIn().getBody() instanceof CancelEventSubscription cancelEventSubscription) {
-                    String sessionKey = getSessionKey(exchange);
-                    LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': " + cancelEventSubscription);
-
-                    synchronized (websocketSessionSubscriptionConsumers) {
-                        websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey, (s, subscriptionConsumers) -> {
-                            String subscriptionKey = cancelEventSubscription.getEventType() + cancelEventSubscription.getSubscriptionId();
-                            Consumer<? extends Event> consumer = subscriptionConsumers.remove(subscriptionKey);
-                            if (consumer != null) {
-                                removeSubscription(consumer);
+                            if (principal instanceof KeycloakPrincipal<?> keycloakPrincipal) {
+                                authContext = new AccessTokenAuthContext(
+                                        keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
+                                        keycloakPrincipal.getKeycloakSecurityContext().getToken());
+                            } else if (principal instanceof BasicAuthContext) {
+                                authContext = (BasicAuthContext) principal;
+                            } else if (principal != null) {
+                                LOG.log(INFO, "Unsupported user principal type: " + principal);
                             }
-                            if (subscriptionConsumers.isEmpty()) {
-                                return null;
-                            }
-                            return subscriptionConsumers;
-                        });
-                    }
-                    exchange.setRouteStop(true);
-                } else if (exchange.getIn().getBody() instanceof SharedEvent event) {
-                    if (!authorizeEventWrite(realm, authContext, event)) {
-                        exchange.setRouteStop(true);
-                        return;
-                    }
 
-                    // Special handling for incoming attribute events
-                    if (event instanceof AttributeEvent attributeEvent) {
-                        // Set timestamp as early as possible if not set
-                        if (attributeEvent.getTimestamp() <= 0) {
-                            attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+                            // Push auth and realm into channel for future use
+                            webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
+                            webSocketChannel.setAttribute(Constants.REALM_PARAM_NAME, realm);
+
+                            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
+                            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                            exchange.getIn().setHeader(SESSION_OPEN, true);
+                            sessionChannels.put(getSessionKey(exchange), webSocketChannel);
+                            LOG.log(DEBUG, "Client connection created: " + webSocketChannel.getSourceAddress());
                         }
-                        attributeEvent.setSource("WebsocketClient");
+                        case ONCLOSE -> {
+                            AuthContext authContext = (AuthContext) webSocketChannel
+                                    .getAttribute(Constants.AUTH_CONTEXT);
+                            String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+                            String sessionKey = getSessionKey(exchange);
 
-                        messageBrokerService.getFluentProducerTemplate()
-                            .withBody(attributeEvent)
-                            .to(ATTRIBUTE_EVENT_PROCESSOR)
-                            .asyncSend();
-                        exchange.setRouteStop(true);
-                        return;
+                            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
+                            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                            exchange.getIn().setHeader(SESSION_CLOSE, true);
+                            sessionChannels.remove(getSessionKey(exchange));
+                            LOG.log(DEBUG, "Client connection closed: " + webSocketChannel.getSourceAddress());
+                            LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
+                            synchronized (websocketSessionSubscriptionConsumers) {
+                                websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey,
+                                        (s, subscriptionConsumers) -> {
+                                            subscriptionConsumers.forEach(
+                                                    (subscriptionKey, consumer) -> removeSubscription(consumer));
+                                            return null;
+                                        });
+                            }
+                        }
+                        case ONERROR -> {
+                            AuthContext authContext = (AuthContext) webSocketChannel
+                                    .getAttribute(Constants.AUTH_CONTEXT);
+                            String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+                            String sessionKey = getSessionKey(exchange);
+
+                            exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
+                            exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+                            exchange.getIn().setHeader(SESSION_CLOSE_ERROR, true);
+                            LOG.log(DEBUG, "Client connection error: " + webSocketChannel.getSourceAddress());
+                            try {
+                                webSocketChannel.close();
+                            } catch (Exception ignored) {
+                            }
+                            sessionChannels.remove(getSessionKey(exchange));
+                            LOG.log(TRACE, "Removing subscriptions for session: " + sessionKey);
+                            synchronized (websocketSessionSubscriptionConsumers) {
+                                websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey,
+                                        (s, subscriptionConsumers) -> {
+                                            subscriptionConsumers.forEach(
+                                                    (subscriptionKey, consumer) -> removeSubscription(consumer));
+                                            return null;
+                                        });
+                            }
+                        }
                     }
-                }
-            })
-            .to(PUBLISH_QUEUE)
-            .end();
+
+                    // Pass to gateway
+                    if (websocketInterceptor != null) {
+                        websocketInterceptor.accept(exchange);
+                    }
+                }).stop().endChoice().end().process(exchange -> {
+                    WebSocketChannel webSocketChannel = exchange.getIn().getHeader(UndertowConstants.CHANNEL,
+                            WebSocketChannel.class);
+                    AuthContext authContext = (AuthContext) webSocketChannel.getAttribute(Constants.AUTH_CONTEXT);
+                    String realm = (String) webSocketChannel.getAttribute(Constants.REALM_PARAM_NAME);
+
+                    exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
+                    exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, realm);
+
+                    // Do basic formatting of exchange
+                    if (exchange.getIn().getBody() instanceof String bodyStr) {
+                        if (bodyStr.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX)) {
+                            exchange.getIn().setBody(exchange.getIn().getBody(EventSubscription.class));
+                        } else if (bodyStr.startsWith(CancelEventSubscription.MESSAGE_PREFIX)) {
+                            exchange.getIn().setBody(exchange.getIn().getBody(CancelEventSubscription.class));
+                        } else if (bodyStr.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+                            exchange.getIn().setBody(exchange.getIn().getBody(SharedEvent.class));
+                        }
+                    }
+
+                    if (exchange.getIn().getBody() instanceof RespondableEvent respondableEvent) {
+                        // Inject a response consumer
+                        respondableEvent.setResponseConsumer(ev -> sendToWebsocketSession(getSessionKey(exchange), ev));
+                    }
+
+                    // Pass to gateway
+                    if (websocketInterceptor != null) {
+                        websocketInterceptor.accept(exchange);
+                    }
+                }).process(exchange -> {
+                    AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                    String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
+
+                    if (exchange.getIn().getBody() instanceof EventSubscription<?> subscription) {
+                        String sessionKey = getSessionKey(exchange);
+                        LOG.log(TRACE, () -> "Adding subscription for session '" + sessionKey + "': " + subscription);
+
+                        if (!authorizeEventSubscription(realm, authContext, subscription)) {
+                            sendToWebsocketSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
+                            exchange.setRouteStop(true);
+                            return;
+                        }
+
+                        // Force subscription to filter only value changed attribute events
+                        if (subscription.getFilter() instanceof AssetFilter assetFilter) {
+                            subscription.setFilter(assetFilter.setValueChanged(true));
+                        }
+
+                        // Notify the client that the subscription has been created
+                        subscription.setSubscribed(true);
+                        sendToWebsocketSession(sessionKey, subscription);
+
+                        synchronized (websocketSessionSubscriptionConsumers) {
+                            // Create subscription consumer and track it for future removal requests
+                            Consumer<? extends SharedEvent> consumer = ev -> onWebsocketSubscriptionTriggered(
+                                    sessionKey, subscription, ev);
+                            Map<String, Consumer<? extends Event>> subscriptionConsumers = websocketSessionSubscriptionConsumers
+                                    .computeIfAbsent(sessionKey, (s) -> new HashMap<>());
+                            String subscriptionKey = subscription.getEventType() + subscription.getSubscriptionId();
+                            subscriptionConsumers.put(subscriptionKey, consumer);
+                            addSubscription(subscription, consumer);
+                        }
+                        exchange.setRouteStop(true);
+                    } else if (exchange.getIn().getBody() instanceof CancelEventSubscription cancelEventSubscription) {
+                        String sessionKey = getSessionKey(exchange);
+                        LOG.log(TRACE, () -> "Cancelling subscription for session '" + sessionKey + "': "
+                                + cancelEventSubscription);
+
+                        synchronized (websocketSessionSubscriptionConsumers) {
+                            websocketSessionSubscriptionConsumers.computeIfPresent(sessionKey,
+                                    (s, subscriptionConsumers) -> {
+                                        String subscriptionKey = cancelEventSubscription.getEventType()
+                                                + cancelEventSubscription.getSubscriptionId();
+                                        Consumer<? extends Event> consumer = subscriptionConsumers
+                                                .remove(subscriptionKey);
+                                        if (consumer != null) {
+                                            removeSubscription(consumer);
+                                        }
+                                        if (subscriptionConsumers.isEmpty()) {
+                                            return null;
+                                        }
+                                        return subscriptionConsumers;
+                                    });
+                        }
+                        exchange.setRouteStop(true);
+                    } else if (exchange.getIn().getBody() instanceof SharedEvent event) {
+                        if (!authorizeEventWrite(realm, authContext, event)) {
+                            exchange.setRouteStop(true);
+                            return;
+                        }
+
+                        // Special handling for incoming attribute events
+                        if (event instanceof AttributeEvent attributeEvent) {
+                            // Set timestamp as early as possible if not set
+                            if (attributeEvent.getTimestamp() <= 0) {
+                                attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+                            }
+                            attributeEvent.setSource("WebsocketClient");
+
+                            messageBrokerService.getFluentProducerTemplate().withBody(attributeEvent)
+                                    .to(ATTRIBUTE_EVENT_PROCESSOR).asyncSend();
+                            exchange.setRouteStop(true);
+                            return;
+                        }
+                    }
+                }).to(PUBLISH_QUEUE).end();
 
         // Send event to each interested subscribers
-        from(PUBLISH_QUEUE)
-            .routeId("ClientPublishToSubscribers")
-            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-            .threads().executorService(executorService)
-            .filter(body().isInstanceOf(SharedEvent.class))
-            .process(exchange -> {
-                SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                sendToSubscribers(event);
-            });
+        from(PUBLISH_QUEUE).routeId("ClientPublishToSubscribers").routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
+                .threads().executorService(executorService).filter(body().isInstanceOf(SharedEvent.class))
+                .process(exchange -> {
+                    SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                    sendToSubscribers(event);
+                });
     }
 
     @SuppressWarnings("unchecked")
@@ -379,13 +399,14 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 return;
             }
 
-            T filteredEvent = subscription.getFilter() == null ? event : ((EventSubscription<T>) subscription).getFilter().apply(event);
+            T filteredEvent = subscription.getFilter() == null ? event
+                    : ((EventSubscription<T>) subscription).getFilter().apply(event);
 
             if (filteredEvent == null) {
                 return;
             }
 
-            Consumer<T> consumer = (Consumer<T>)eventSubscriptionConsumerPair.getValue();
+            Consumer<T> consumer = (Consumer<T>) eventSubscriptionConsumerPair.getValue();
             consumer.accept(filteredEvent);
         });
     }
@@ -393,13 +414,18 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     /**
      * Authorisation must be done before adding the subscription and is the responsibility of subscription creators.
      */
-    public void addSubscription(EventSubscription<? extends Event> eventSubscription, Consumer<? extends Event> consumer) throws IllegalStateException {
+    public void addSubscription(EventSubscription<? extends Event> eventSubscription,
+            Consumer<? extends Event> consumer) throws IllegalStateException {
         eventSubscriptions.add(new Pair<>(eventSubscription, consumer));
     }
-    public <T extends Event> void addSubscription(Class<T> eventClass, Consumer<T> consumer) throws IllegalStateException {
+
+    public <T extends Event> void addSubscription(Class<T> eventClass, Consumer<T> consumer)
+            throws IllegalStateException {
         addSubscription(new EventSubscription<>(eventClass, null), consumer);
     }
-    public <T extends Event> void addSubscription(Class<T> eventClass, EventFilter<T> filter, Consumer<T> consumer) throws IllegalStateException {
+
+    public <T extends Event> void addSubscription(Class<T> eventClass, EventFilter<T> filter, Consumer<T> consumer)
+            throws IllegalStateException {
         addSubscription(new EventSubscription<>(eventClass, filter), consumer);
     }
 
@@ -428,15 +454,20 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     /**
      * This handles basic authorisation checks for clients that want to subscribe to events in the system
      */
-    public boolean authorizeEventSubscription(String realm, AuthContext authContext, EventSubscription<?> subscription) {
+    public boolean authorizeEventSubscription(String realm, AuthContext authContext,
+            EventSubscription<?> subscription) {
         boolean authorized = eventSubscriptionAuthorizers.stream()
                 .anyMatch(authorizer -> authorizer.authorise(realm, authContext, subscription));
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.log(DEBUG, "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.log(DEBUG,
+                        "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm
+                                + ", username=" + authContext.getUsername() + ", userRealm="
+                                + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.log(DEBUG, "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm=" + realm + ", user=null");
+                LOG.log(DEBUG, "Client not authorised to subscribe: subscription=" + subscription + ", requestRealm="
+                        + realm + ", user=null");
             }
         }
 
@@ -444,19 +475,25 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     }
 
     /**
-     * This handles basic authorisation checks for clients that want to write an event to the system; this gets hit a lot
+     * This handles basic authorisation checks for clients that want to write an event to the system; this gets hit a
+     * lot
      * so should be as performant as possible
      */
-    // TODO: Implement auth cache in OR that covers HTTP, WS and MQTT (ActiveMQ Authorization cache currently covers MQTT which is the main use case)
+    // TODO: Implement auth cache in OR that covers HTTP, WS and MQTT (ActiveMQ Authorization cache currently covers
+    // MQTT which is the main use case)
     public <T extends SharedEvent> boolean authorizeEventWrite(String realm, AuthContext authContext, T event) {
         boolean authorized = eventAuthorizers.stream()
-            .anyMatch(authorizer -> authorizer.authorise(realm, authContext, event));
+                .anyMatch(authorizer -> authorizer.authorise(realm, authContext, event));
 
         if (!authorized) {
             if (authContext != null) {
-                LOG.log(DEBUG, () -> "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                LOG.log(DEBUG,
+                        () -> "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm="
+                                + realm + ", user=" + authContext.getUsername() + ", userRealm="
+                                + authContext.getAuthenticatedRealmName());
             } else {
-                LOG.log(DEBUG, () -> "Client not authorised to send event: type=" + event.getEventType() + ", requestRealm=" + realm + ", user=null");
+                LOG.log(DEBUG, () -> "Client not authorised to send event: type=" + event.getEventType()
+                        + ", requestRealm=" + realm + ", user=null");
             }
         }
 
@@ -476,33 +513,26 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             LOG.log(System.Logger.Level.TRACE, () -> "Publishing to subscribers: " + event);
         }
 
-        messageBrokerService.getFluentProducerTemplate()
-            .withBody(event)
-            .to(PUBLISH_QUEUE)
-            .asyncSend();
+        messageBrokerService.getFluentProducerTemplate().withBody(event).to(PUBLISH_QUEUE).asyncSend();
     }
 
     public void setWebsocketInterceptor(Consumer<Exchange> consumer) {
         this.websocketInterceptor = consumer;
     }
 
-    protected void onWebsocketSubscriptionTriggered(String sessionKey, EventSubscription<?> subscription, SharedEvent event) {
+    protected void onWebsocketSubscriptionTriggered(String sessionKey, EventSubscription<?> subscription,
+            SharedEvent event) {
         // Wrap subscription event in triggered wrapper for client to easily route it
-        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(Collections.singletonList(event), subscription.getSubscriptionId());
+        TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(
+                Collections.singletonList(event), subscription.getSubscriptionId());
 
-        messageBrokerService.getFluentProducerTemplate()
-            .withBody(triggeredEventSubscription)
-            .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey)
-            .to(WEBSOCKET_URI)
-            .asyncSend();
+        messageBrokerService.getFluentProducerTemplate().withBody(triggeredEventSubscription)
+                .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey).to(WEBSOCKET_URI).asyncSend();
     }
 
     public void sendToWebsocketSession(String sessionKey, Object data) {
-        messageBrokerService.getFluentProducerTemplate()
-            .withBody(data)
-            .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey)
-            .to(WEBSOCKET_URI)
-            .asyncSend();
+        messageBrokerService.getFluentProducerTemplate().withBody(data)
+                .withHeader(UndertowConstants.CONNECTION_KEY, sessionKey).to(WEBSOCKET_URI).asyncSend();
     }
 
     public void closeWebsocketSession(String sessionKey) {
@@ -520,7 +550,6 @@ public class ClientEventService extends RouteBuilder implements ContainerService
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            '}';
+        return getClass().getSimpleName() + "{" + '}';
     }
 }

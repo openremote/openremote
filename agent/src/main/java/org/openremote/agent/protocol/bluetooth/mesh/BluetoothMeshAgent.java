@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
@@ -25,32 +26,34 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class BluetoothMeshAgent extends Agent<BluetoothMeshAgent, BluetoothMeshProtocol, BluetoothMeshAgentLink> {
 
-    public static final AttributeDescriptor<String> NETWORK_KEY = new AttributeDescriptor<String>("networkKey", ValueType.TEXT);
-    public static final AttributeDescriptor<String> APPLICATION_KEY = new AttributeDescriptor<String>("applicationKey", ValueType.TEXT);
-    public static final AttributeDescriptor<String> PROXY_ADDRESS = new AttributeDescriptor<String>("proxyAddress", ValueType.TEXT);
-    public static final AttributeDescriptor<String> SOURCE_ADDRESS = new AttributeDescriptor<String>("sourceAddress", ValueType.TEXT);
-    public static final AttributeDescriptor<Integer> SEQUENCE_NUMBER = new AttributeDescriptor<Integer>("sequenceNumber", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> MTU = new AttributeDescriptor<Integer>("mtu", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<String> NETWORK_KEY = new AttributeDescriptor<String>("networkKey",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<String> APPLICATION_KEY = new AttributeDescriptor<String>("applicationKey",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<String> PROXY_ADDRESS = new AttributeDescriptor<String>("proxyAddress",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<String> SOURCE_ADDRESS = new AttributeDescriptor<String>("sourceAddress",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<Integer> SEQUENCE_NUMBER = new AttributeDescriptor<Integer>(
+            "sequenceNumber", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> MTU = new AttributeDescriptor<Integer>("mtu",
+            ValueType.POSITIVE_INTEGER);
 
     public static AgentDescriptor<BluetoothMeshAgent, BluetoothMeshProtocol, BluetoothMeshAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        BluetoothMeshAgent.class, BluetoothMeshProtocol.class, BluetoothMeshAgentLink.class, null
-    );
+            BluetoothMeshAgent.class, BluetoothMeshProtocol.class, BluetoothMeshAgentLink.class, null);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
     protected BluetoothMeshAgent() {
-
     }
 
     public BluetoothMeshAgent(String name) {
         super(name);
-
     }
 
     @Override

@@ -1,4 +1,21 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 declare function require(name: string): any;
 
 import {
@@ -9,23 +26,23 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
-import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import { translate } from "@openremote/or-translate";
+import { AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor } from "@openremote/model";
+import manager, { DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
-import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
+import { Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions } from "chart.js";
 import "chartjs-adapter-moment";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {MDCDataTable} from "@material/data-table";
-import {JSONPath} from "jsonpath-plus";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { MDCDataTable } from "@material/data-table";
+import { JSONPath } from "jsonpath-plus";
 import moment from "moment";
-import {isAxiosError} from "@openremote/rest";
-import {styleMap} from "lit/directives/style-map.js";
+import { isAxiosError } from "@openremote/rest";
+import { styleMap } from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
 
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
@@ -80,12 +97,12 @@ export interface TableConfig {
     default?: AssetTableConfig;
     assetTypes?: {
         [assetType: string]: {
-            attributeNames?: {[attributeName: string]: AssetTableConfig};
-            attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
+            attributeNames?: { [attributeName: string]: AssetTableConfig };
+            attributeValueTypes?: { [attributeValueType: string]: AssetTableConfig };
         };
     };
-    attributeNames?: {[attributeName: string]: AssetTableConfig};
-    attributeValueTypes?: {[attributeValueType: string]: AssetTableConfig};
+    attributeNames?: { [attributeName: string]: AssetTableConfig };
+    attributeValueTypes?: { [attributeValueType: string]: AssetTableConfig };
 }
 
 export interface ChartConfig {
@@ -223,25 +240,25 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         ];
     }
 
-    @property({type: String})
+    @property({ type: String })
     public assetType?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public assetId?: string;
 
-    @property({type: Object})
+    @property({ type: Object })
     public attribute?: Attribute<any>;
 
-    @property({type: Object})
+    @property({ type: Object })
     public attributeRef?: AttributeRef;
 
-    @property({type: String})
+    @property({ type: String })
     public period: moment.unitOfTime.Base = "day";
 
-    @property({type: Number})
+    @property({ type: Number })
     public toTimestamp?: Date;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: HistoryConfig;
 
     @property()
@@ -293,7 +310,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return false;
         }
 
-        if(_changedProperties.has("attribute")) {
+        if (_changedProperties.has("attribute")) {
             this._cleanup();
         }
 
@@ -320,7 +337,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <or-mwc-input id="time-picker" .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-mwc-input>
                     <div id="ending-controls">
-                        <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                        <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.toTimestamp!, false, 0)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.toTimestamp!, true, 0)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-icon>
@@ -405,7 +422,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        onResize:() => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
+                        onResize: () => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
                         plugins: {
                             legend: {
                                 display: false
@@ -533,19 +550,19 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         if (config.autoColumns) {
-            config = {...config};
+            config = { ...config };
 
             config.columns = [];
 
             const dp = this._data!.find((dp) => dp.y !== undefined);
             if (dp) {
-                if (typeof(dp.y) === "object" && !Array.isArray(dp.y)) {
+                if (typeof (dp.y) === "object" && !Array.isArray(dp.y)) {
                     config.columns = Object.entries(dp.y as {}).map(([prop, value]) => {
                         return {
                             type: "prop",
                             header: prop,
                             path: "$.['" + prop + "']",
-                            stringify: typeof(value) === "object",
+                            stringify: typeof (value) === "object",
                             numeric: !isNaN(Number(value))
                         } as TableColumnConfig;
                     });
@@ -553,8 +570,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     config.columns.push({
                         type: "prop",
                         header: "value",
-                        stringify: typeof(dp.y) === "object",
-                        numeric: typeof(dp.y) === "number"
+                        stringify: typeof (dp.y) === "object",
+                        numeric: typeof (dp.y) === "number"
                     });
                 }
             }
@@ -578,15 +595,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     </thead>
                     <tbody class="mdc-data-table__content">
                         ${this._data!.map((dp) => {
-                            return html`
+                return html`
                                 <tr class="mdc-data-table__row">
                                     ${config.columns!.map((c) => {
-                                        const value = this._getCellValue(dp, c, config.timestampFormat);
-                                        return html`<td style="${c.styles ? styleMap(c.styles) : ""}" class="mdc-data-table__cell ${c.numeric ? "mdc-data-table__cell--numeric" : ""}" title="${value}">${value}</td>`;
-                                })}
+                    const value = this._getCellValue(dp, c, config.timestampFormat);
+                    return html`<td style="${c.styles ? styleMap(c.styles) : ""}" class="mdc-data-table__cell ${c.numeric ? "mdc-data-table__cell--numeric" : ""}" title="${value}">${value}</td>`;
+                })}
                                 </tr>
-                            `;            
-                        })}
+                            `;
+            })}
                     </tbody>
                 </table>
             </div>
@@ -666,8 +683,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         // If a new requests comes in, we override it with this one using AbortController.
-        if(this._loading) {
-            if(this._dataAbortController) {
+        if (this._loading) {
+            if (this._dataAbortController) {
                 this._dataAbortController.abort("Data request overridden");
                 delete this._dataAbortController;
             } else {
@@ -740,12 +757,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             const lowerCaseInterval = interval.toLowerCase();
             this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
             this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-            this._timeUnits =  lowerCaseInterval as TimeUnit;
+            this._timeUnits = lowerCaseInterval as TimeUnit;
             this._stepSize = stepSize;
 
             const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
             let response;
-            if(isChart) {
+            if (isChart) {
                 response = await manager.rest.api.AssetDatapointResource.getDatapoints(
                     assetId,
                     attributeName,
@@ -779,13 +796,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         } catch (ex) {
             console.error(ex);
-            if((ex as Error)?.message === "canceled") {
+            if ((ex as Error)?.message === "canceled") {
                 return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
             }
             this._loading = false;
 
-            if(isAxiosError(ex)) {
-                if(ex.message.includes("timeout of 10000ms exceeded")) {
+            if (isAxiosError(ex)) {
+                if (ex.message.includes("timeout of 10000ms exceeded")) {
                     this._error = "noAttributeDataTimeout";
                     return;
                 }
@@ -794,21 +811,21 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {
+    protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout = 300) {
 
         if (this._updateTimestampTimer) {
             window.clearTimeout(this._updateTimestampTimer);
             this._updateTimestampTimer = undefined;
         }
         this._updateTimestampTimer = window.setTimeout(() => {
-                const newMoment = moment(timestamp);
+            const newMoment = moment(timestamp);
 
-                if (forward !== undefined) {
-                    newMoment.add(forward ? 1 : -1, this.period);
-                }
-                this.toTimestamp = newMoment.toDate()
+            if (forward !== undefined) {
+                newMoment.add(forward ? 1 : -1, this.period);
+            }
+            this.toTimestamp = newMoment.toDate()
         }, timeout);
     }
-    
-    
+
+
 }

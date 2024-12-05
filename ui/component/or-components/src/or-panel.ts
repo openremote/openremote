@@ -1,7 +1,25 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {DefaultColor2, DefaultColor3} from "@openremote/core";
-import {when} from "lit/directives/when.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { DefaultColor2, DefaultColor3 } from "@openremote/core";
+import { when } from "lit/directives/when.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const simpleBarStyle = require("simplebar/dist/simplebar.css");
@@ -56,16 +74,16 @@ export class OrPanel extends LitElement {
 
     static get styles() {
         return [
-            css `${unsafeCSS(elevationStyle)}`,
-            css `${unsafeCSS(simpleBarStyle)}`,
+            css`${unsafeCSS(elevationStyle)}`,
+            css`${unsafeCSS(simpleBarStyle)}`,
             style
         ];
     }
 
-    @property({type: Number})
+    @property({ type: Number })
     zLevel?: number;
 
-    @property({type: String})
+    @property({ type: String })
     public heading?: string | TemplateResult;
 
     @query("#panel")

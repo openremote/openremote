@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -25,12 +28,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
 
 @JsonDeserialize(using = MetaMap.MetaObjectDeserializer.class)
 public class MetaMap extends NamedMap<MetaItem<?>> {
@@ -41,7 +41,8 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
     public static class MetaObjectDeserializer extends StdDeserializer<MetaMap> {
 
         public static final String META_DESCRIPTOR_PROVIDER = "meta-descriptor-provider";
-        protected static Function<String, MetaItemDescriptor<?>> DEFAULT_META_DESCRIPTOR_PROVIDER = (name) -> ValueUtil.getMetaItemDescriptor(name).orElse(null);
+        protected static Function<String, MetaItemDescriptor<?>> DEFAULT_META_DESCRIPTOR_PROVIDER = (name) -> ValueUtil
+                .getMetaItemDescriptor(name).orElse(null);
 
         public MetaObjectDeserializer() {
             super(MetaMap.class);
@@ -51,7 +52,8 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         @Override
         public MetaMap deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
 
-            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider = (Function<String, MetaItemDescriptor<?>>)ctxt.getAttribute(META_DESCRIPTOR_PROVIDER);
+            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider = (Function<String, MetaItemDescriptor<?>>) ctxt
+                    .getAttribute(META_DESCRIPTOR_PROVIDER);
             if (metaDescriptorProvider == null) {
                 metaDescriptorProvider = DEFAULT_META_DESCRIPTOR_PROVIDER;
             }
@@ -64,16 +66,17 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt, Function<String, MetaItemDescriptor<?>> metaDescriptorProvider) throws IOException {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static List<MetaItem<?>> deserialiseMetaMap(JsonParser jp, DeserializationContext ctxt,
+            Function<String, MetaItemDescriptor<?>> metaDescriptorProvider) throws IOException {
         if (!jp.isExpectedStartObjectToken()) {
             throw JsonMappingException.from(jp, "MetaMap must be an object");
         }
 
         List<MetaItem<?>> list = new ArrayList<>();
 
-        while(jp.nextToken() != JsonToken.END_OBJECT) {
-            if(jp.currentToken() == JsonToken.FIELD_NAME) {
+        while (jp.nextToken() != JsonToken.END_OBJECT) {
+            if (jp.currentToken() == JsonToken.FIELD_NAME) {
                 jp.nextToken();
             }
             if (jp.currentToken() == JsonToken.VALUE_NULL) {

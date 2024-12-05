@@ -1,5 +1,23 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
 import manager, {
     DefaultBoxShadow,
     DefaultColor1,
@@ -33,17 +51,17 @@ import {
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 import "./or-rule-list";
 import "./or-rule-viewer";
 import "./flow-viewer/flow-viewer";
-import {OrRuleList} from "./or-rule-list";
-import {OrRuleViewer} from "./or-rule-viewer";
-import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
-import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrRuleList } from "./or-rule-list";
+import { OrRuleViewer } from "./or-rule-viewer";
+import { RecurrenceOption } from "./json-viewer/or-rule-then-otherwise";
+import { ValueInputProviderGenerator } from "@openremote/or-mwc-components/or-mwc-input";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
-export {buttonStyle} from "./style";
+export { buttonStyle } from "./style";
 
 export const enum ConditionType {
     AGENT_QUERY = "agentQuery",
@@ -99,7 +117,7 @@ export enum AssetQueryOperator {
 
 export interface AllowedActionTargetTypes {
     default?: NotificationTargetType[];
-    actions?: {[actionType in ActionType]?: NotificationTargetType[]};
+    actions?: { [actionType in ActionType]?: NotificationTargetType[] };
 }
 
 export interface RulesConfig {
@@ -107,7 +125,7 @@ export interface RulesConfig {
         allowedLanguages?: RulesetLang[];
         allowedConditionTypes?: ConditionType[];
         allowedActionTypes?: ActionType[];
-        allowedAssetQueryOperators?: {[name: string]: AssetQueryOperator[]}; // name can be value descriptor name or value descriptor jsonType
+        allowedAssetQueryOperators?: { [name: string]: AssetQueryOperator[] }; // name can be value descriptor name or value descriptor jsonType
         allowedRecurrenceOptions?: RecurrenceOption[];
         allowedActionTargetTypes?: AllowedActionTargetTypes;
         hideActionTypeOptions?: boolean;
@@ -126,7 +144,7 @@ export interface RulesConfig {
         when?: RulesDescriptorSection;
         action?: RulesDescriptorSection;
     };
-    rulesetTemplates?: {[key in RulesetLang]?: string};
+    rulesetTemplates?: { [key in RulesetLang]?: string };
     rulesetAddHandler?: (ruleset: RulesetUnion) => boolean;
     rulesetDeleteHandler?: (ruleset: RulesetUnion) => boolean;
     rulesetCopyHandler?: (ruleset: RulesetUnion) => boolean;
@@ -150,7 +168,7 @@ export interface RulesConfig {
 export interface RulesDescriptorSection {
     includeAssets?: string[];
     excludeAssets?: string[];
-    attributeDescriptors?: {[attributeName: string]: RulesConfigAttribute };
+    attributeDescriptors?: { [attributeName: string]: RulesConfigAttribute };
     /**
      * Asset type specific config; '*' key will be used as a default fallback if no asset type specific entry exists
      */
@@ -163,7 +181,7 @@ export interface RulesConfigAsset {
     name?: string;
     icon?: string;
     color?: string;
-    attributeDescriptors?: {[attributeName: string]: RulesConfigAttribute };
+    attributeDescriptors?: { [attributeName: string]: RulesConfigAttribute };
 }
 
 export interface RulesConfigAttribute extends AttributeDescriptor {
@@ -188,11 +206,11 @@ export interface RuleView {
 }
 
 export interface RuleViewInfo {
-    viewTemplateProvider: (ruleset:RulesetUnion, config: RulesConfig | undefined, readonly: boolean) => TemplateResult;
+    viewTemplateProvider: (ruleset: RulesetUnion, config: RulesConfig | undefined, readonly: boolean) => TemplateResult;
     viewRulesetTemplate?: string;
 }
 
-export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
+export const RuleViewInfoMap: { [key in RulesetLang]: RuleViewInfo } = {
     JSON: {
         viewTemplateProvider: (ruleset, config, readonly) => html`<or-rule-json-viewer id="rule-view" .ruleset="${ruleset}" .config="${config}" .readonly="${readonly}"></or-rule-json-viewer>`,
     },
@@ -446,7 +464,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
             }
 
             const modifiedTypeInfo: AssetTypeInfo = {
-                assetDescriptor: typeInfo.assetDescriptor ? {...typeInfo.assetDescriptor} : {descriptorType: "asset"},
+                assetDescriptor: typeInfo.assetDescriptor ? { ...typeInfo.assetDescriptor } : { descriptorType: "asset" },
                 attributeDescriptors: typeInfo.attributeDescriptors ? [...typeInfo.attributeDescriptors] : [],
                 metaItemDescriptors: typeInfo.metaItemDescriptors ? [...typeInfo.metaItemDescriptors] : [],
                 valueDescriptors: typeInfo.valueDescriptors ? [...typeInfo.valueDescriptors] : []
@@ -466,8 +484,8 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
                 if (includedAttributes || excludedAttributes) {
                     modifiedTypeInfo.attributeDescriptors = modifiedTypeInfo.attributeDescriptors.filter((mad) =>
-                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc,  mad.name!)))
-                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc,  mad.name!))));
+                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc, mad.name!)))
+                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc, mad.name!))));
                 }
 
                 // Override any attribute descriptors
@@ -491,7 +509,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
                                 attributeDescriptor.units = configAttributeDescriptor.units;
                             }
                             if (configAttributeDescriptor.constraints) {
-                                attributeDescriptor.constraints = attributeDescriptor.constraints ? [...configAttributeDescriptor.constraints,...attributeDescriptor.constraints] : configAttributeDescriptor.constraints;
+                                attributeDescriptor.constraints = attributeDescriptor.constraints ? [...configAttributeDescriptor.constraints, ...attributeDescriptor.constraints] : configAttributeDescriptor.constraints;
                             }
                         }
                     });
@@ -505,14 +523,14 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
 // Function for getting assets by type
 // loadedAssets is an object given as parameter that will be updated if new assets are fetched.
-export async function getAssetsByType(type: string, realm?: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]>}> {
-    if(loadedAssets?.has(type)) {
+export async function getAssetsByType(type: string, realm?: string, loadedAssets?: Map<string, Asset[]>): Promise<{ assets?: Asset[], loadedAssets?: Map<string, Asset[]> }> {
+    if (loadedAssets?.has(type)) {
         return {
             assets: loadedAssets?.get(type),
             loadedAssets: loadedAssets
         }
     } else {
-        if(!loadedAssets) {
+        if (!loadedAssets) {
             loadedAssets = new Map<string, any[]>();
         }
         const assetQuery: AssetQuery = {
@@ -521,7 +539,7 @@ export async function getAssetsByType(type: string, realm?: string, loadedAssets
                 property: AssetQueryOrderBy$Property.NAME
             }
         }
-        if(realm != undefined) {
+        if (realm != undefined) {
             assetQuery.realm = { name: realm }
         }
         const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
@@ -764,22 +782,22 @@ export class OrRules extends translate(i18next)(LitElement) {
         ];
     }
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
-    @property({type: String})
+    @property({ type: String })
     public realm?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public language?: RulesetLang;
 
-    @property({type: Array})
+    @property({ type: Array })
     public selectedIds?: number[];
 
-    @property({attribute: false})
+    @property({ attribute: false })
     private _isValidRule?: boolean;
 
     @query("#rule-list")
@@ -841,7 +859,7 @@ export class OrRules extends translate(i18next)(LitElement) {
             const nodes = event.detail.detail.newNodes;
             if (Util.objectsEqual(nodes, event.detail.detail.oldNodes)) {
                 // User has clicked the same node so let's force reload it
-                this._viewer.ruleset =  {...nodes[0].ruleset};
+                this._viewer.ruleset = { ...nodes[0].ruleset };
             } else {
                 this.selectedIds = nodes.map((node) => node.ruleset.id!);
                 this._viewer.ruleset = nodes.length === 1 ? nodes[0].ruleset : undefined;
@@ -852,7 +870,7 @@ export class OrRules extends translate(i18next)(LitElement) {
     protected _onRuleSelectionChanged(event: OrRulesSelectionEvent) {
         const nodes = event.detail.newNodes;
         this.selectedIds = nodes.map((node) => node.ruleset.id!);
-        this._viewer.ruleset = nodes.length === 1 ? {...nodes[0].ruleset} : undefined;
+        this._viewer.ruleset = nodes.length === 1 ? { ...nodes[0].ruleset } : undefined;
     }
 
     protected _onRuleAdd(event: OrRulesAddEvent) {

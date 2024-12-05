@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static java.lang.System.Logger.Level.*;
+import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
+
+import java.net.Inet4Address;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
+import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.json.JacksonConfig;
+import org.openremote.container.security.CORSFilter;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
+import org.xnio.Options;
 
 import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
@@ -34,29 +57,6 @@ import io.undertow.util.HeaderMap;
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
-import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.json.JacksonConfig;
-import org.openremote.container.security.CORSFilter;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
-import org.xnio.Options;
-
-import java.net.Inet4Address;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static java.lang.System.Logger.Level.*;
-import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
-import static org.openremote.model.Constants.OR_HOSTNAME;
 
 public abstract class WebService implements ContainerService {
 
@@ -94,9 +94,11 @@ public abstract class WebService implements ContainerService {
     public static final boolean OR_WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
     public static final String OR_WEBSERVER_ALLOWED_ORIGINS = "OR_WEBSERVER_ALLOWED_ORIGINS";
     public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
-    public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(),
+            2);
     public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
-    public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
+    public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(),
+            10);
     private static final System.Logger LOG = System.getLogger(WebService.class.getName());
     protected static AtomicReference<CORSFilter> corsFilterRef;
     protected boolean devMode;
@@ -124,25 +126,18 @@ public abstract class WebService implements ContainerService {
         devMode = container.isDevMode();
         host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
-        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
-                ? getLocalIpAddress()
-                : host;
+        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0
+                || host.indexOf("0.0.0.0") == 0 ? getLocalIpAddress() : host;
 
-        containerHostUri =
-                UriBuilder.fromPath("/")
-                        .scheme("http")
-                        .host(containerHost)
-                        .port(port).build();
+        containerHostUri = UriBuilder.fromPath("/").scheme("http").host(containerHost).port(port).build();
 
-        undertow = build(
-                container,
-                Undertow.builder()
-                        .addHttpListener(port, host)
-                        .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
-                        .setWorkerOption(Options.WORKER_NAME, "WebService")
-                        .setWorkerOption(Options.THREAD_DAEMON, true)
-        ).build();
+        undertow = build(container, Undertow.builder().addHttpListener(port, host)
+                .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX,
+                        OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX,
+                        WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                .setWorkerOption(Options.WORKER_NAME, "WebService").setWorkerOption(Options.THREAD_DAEMON, true))
+                .build();
     }
 
     @Override
@@ -172,9 +167,8 @@ public abstract class WebService implements ContainerService {
         try {
             if (secure) {
                 if (identityService == null)
-                    throw new IllegalStateException(
-                            "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
-                    );
+                    throw new IllegalStateException("No identity service found, make sure "
+                            + IdentityService.class.getName() + " is added before this service");
                 identityService.secureDeployment(deploymentInfo);
             } else {
                 LOG.log(INFO, "Deploying insecure web context: " + deploymentInfo.getContextPath());
@@ -230,7 +224,8 @@ public abstract class WebService implements ContainerService {
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-        LOG.log(INFO, () -> "Building web routing with handler(s): " + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
+        LOG.log(INFO, () -> "Building web routing with handler(s): "
+                + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
 
         HttpHandler handler = exchange -> {
 
@@ -242,19 +237,19 @@ public abstract class WebService implements ContainerService {
                 String responseType = headers.getFirst(HttpHeaders.ACCEPT);
                 SecurityContext securityContext = exchange.getSecurityContext();
                 Account account = securityContext != null ? securityContext.getAuthenticatedAccount() : null;
-                String userAndRealm
-                    = account != null
-                    ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
-                    : null;
+                String userAndRealm = account != null
+                        ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
+                        : null;
 
-                return "Client request '" + requestPath +" (responseType=" + responseType +")': user=" + userAndRealm  + ", origin=" +
-                    address +", forwarded-for=" + forwardedAddress;
+                return "Client request '" + requestPath + " (responseType=" + responseType + ")': user=" + userAndRealm
+                        + ", origin=" + address + ", forwarded-for=" + forwardedAddress;
             });
 
             boolean handled = false;
             for (RequestHandler requestHandler : getRequestHandlers()) {
                 if (requestHandler.handlePredicate.test(exchange)) {
-                    LOG.log(TRACE, () -> "Handling '" + exchange.getRequestURI() + "' with handler: " + requestHandler.name);
+                    LOG.log(TRACE,
+                            () -> "Handling '" + exchange.getRequestURI() + "' with handler: " + requestHandler.name);
                     requestHandler.handler.handleRequest(exchange);
                     handled = true;
                     break;
@@ -277,7 +272,8 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-    protected ResteasyDeployment createResteasyDeployment(Container container, Collection<Class<?>> apiClasses, Collection<Object> apiSingletons, boolean secure) {
+    protected ResteasyDeployment createResteasyDeployment(Container container, Collection<Class<?>> apiClasses,
+            Collection<Object> apiSingletons, boolean secure) {
         if (apiClasses == null && apiSingletons == null)
             return null;
         WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
@@ -294,7 +290,7 @@ public abstract class WebService implements ContainerService {
         }
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
-        //resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
+        // resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
 
         resteasyDeployment.setSecurityEnabled(secure);
 
@@ -335,8 +331,9 @@ public abstract class WebService implements ContainerService {
 
         if (corsFilterRef.get() != null) {
             CORSFilter finalCorsFilter = corsFilterRef.get();
-            return Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
-                .setAsyncSupported(true);
+            return Servlets
+                    .filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
+                    .setAsyncSupported(true);
         }
 
         return null;
@@ -351,8 +348,7 @@ public abstract class WebService implements ContainerService {
         List<String> externalHostnames = new ArrayList<>();
 
         if (!TextUtil.isNullOrEmpty(additionalHostnamesStr)) {
-            externalHostnames.addAll(Arrays.stream(additionalHostnamesStr.split(","))
-                .toList());
+            externalHostnames.addAll(Arrays.stream(additionalHostnamesStr.split(",")).toList());
         }
 
         if (!TextUtil.isNullOrEmpty(defaultHostname) && !externalHostnames.contains(defaultHostname)) {
@@ -365,9 +361,7 @@ public abstract class WebService implements ContainerService {
     public static Set<String> getAllowedOrigins(Container container) {
         // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
         Set<String> allowedOrigins = new HashSet<>(
-            getExternalHostnames(container)
-                .stream().map(hostname -> "https://" + hostname).toList()
-        );
+                getExternalHostnames(container).stream().map(hostname -> "https://" + hostname).toList());
         String allowedOriginsStr = getString(container.getConfig(), OR_WEBSERVER_ALLOWED_ORIGINS, null);
 
         if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {

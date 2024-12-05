@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,29 +13,35 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 import java.util.*;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.util.EnumUtil;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueType;
 
 public class ThermostatProcessor extends FeatureProcessor {
 
     public enum TemperatureMode {
-        CURRENT(-1, -1, null ,null),
-        COOL_COMFORT(0xC0, 7, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL, VelbusPacket.OutboundCommand.TEMP_MODE2_COMFORT),
+        CURRENT(-1, -1, null, null),
+        COOL_COMFORT(0xC0, 7, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL,
+                VelbusPacket.OutboundCommand.TEMP_MODE2_COMFORT),
         COOL_DAY(0xA0, 8, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL, VelbusPacket.OutboundCommand.TEMP_MODE2_DAY),
-        COOL_NIGHT(0x90, 9, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL, VelbusPacket.OutboundCommand.TEMP_MODE2_NIGHT),
+        COOL_NIGHT(0x90, 9, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL,
+                VelbusPacket.OutboundCommand.TEMP_MODE2_NIGHT),
         COOL_SAFE(0x80, 10, VelbusPacket.OutboundCommand.TEMP_MODE1_COOL, VelbusPacket.OutboundCommand.TEMP_MODE2_SAFE),
-        HEAT_COMFORT(0x40, 1, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT, VelbusPacket.OutboundCommand.TEMP_MODE2_COMFORT),
+        HEAT_COMFORT(0x40, 1, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT,
+                VelbusPacket.OutboundCommand.TEMP_MODE2_COMFORT),
         HEAT_DAY(0x20, 2, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT, VelbusPacket.OutboundCommand.TEMP_MODE2_DAY),
-        HEAT_NIGHT(0x10, 3, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT, VelbusPacket.OutboundCommand.TEMP_MODE2_NIGHT),
+        HEAT_NIGHT(0x10, 3, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT,
+                VelbusPacket.OutboundCommand.TEMP_MODE2_NIGHT),
         HEAT_SAFE(0x00, 4, VelbusPacket.OutboundCommand.TEMP_MODE1_HEAT, VelbusPacket.OutboundCommand.TEMP_MODE2_SAFE);
 
         private static final TemperatureMode[] values = values();
@@ -47,7 +50,8 @@ public class ThermostatProcessor extends FeatureProcessor {
         private final VelbusPacket.OutboundCommand mode1Command;
         private final VelbusPacket.OutboundCommand mode2Command;
 
-        TemperatureMode(int code, int pointerIndex, VelbusPacket.OutboundCommand mode1Command, VelbusPacket.OutboundCommand mode2Command) {
+        TemperatureMode(int code, int pointerIndex, VelbusPacket.OutboundCommand mode1Command,
+                VelbusPacket.OutboundCommand mode2Command) {
             this.code = code;
             this.pointerIndex = pointerIndex;
             this.mode1Command = mode1Command;
@@ -108,37 +112,53 @@ public class ThermostatProcessor extends FeatureProcessor {
     }
 
     protected static final List<PropertyDescriptor> THERMOSTAT_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("heater", "Heater", "HEATER", ValueType.TEXT, true),
-        new PropertyDescriptor("boost", "Boost", "BOOST", ValueType.TEXT, true),
-        new PropertyDescriptor("pump", "Pump", "PUMP", ValueType.TEXT, true),
-        new PropertyDescriptor("cooler", "Cooler", "COOLER", ValueType.TEXT, true),
-        new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", ValueType.TEXT, true),
-        new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", ValueType.TEXT, true),
-        new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", ValueType.TEXT, true),
-        new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", ValueType.TEXT, true),
-        new PropertyDescriptor("tempState", "Thermostat State", "TEMP_STATE", ValueType.TEXT),
-        new PropertyDescriptor("tempStateDisable", "Thermostat Disable (s)", "TEMP_STATE_DISABLE_SECONDS", ValueType.POSITIVE_INTEGER),
-        // Get current mode or set mode until next program step
-        new PropertyDescriptor("tempMode", "Thermostat Mode", "TEMP_MODE", ValueType.TEXT),
-        // MINS VALUE: 0 = Until next program step, -1 = Permanent, 1-65279 = for N mins
-        new PropertyDescriptor("coolComfortMins", "Thermostat Cool Comfort (mins)", "TEMP_MODE_COOL_COMFORT_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("coolDayMins", "Cool Day (mins)", "TEMP_MODE_COOL_DAY_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("coolNightMins", "Cool Night (mins)", "TEMP_MODE_COOL_NIGHT_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("coolSafeMins", "Cool Safe (mins)", "TEMP_MODE_COOL_SAFE_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("heatComfortMins", "Heat Comfort (mins)", "TEMP_MODE_HEAT_COMFORT_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("heatDayMins", "Heat Day (mins)", "TEMP_MODE_HEAT_DAY_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("heatNightMins", "Heat Night (mins)", "TEMP_MODE_HEAT_NIGHT_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("heatSafeMins", "Heat Safe (mins)", "TEMP_MODE_HEAT_SAFE_MINS", ValueType.POSITIVE_INTEGER),
-        new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT", ValueType.NUMBER),
-        new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE", ValueType.NUMBER)
-    );
+            new PropertyDescriptor("heater", "Heater", "HEATER", ValueType.TEXT, true),
+            new PropertyDescriptor("boost", "Boost", "BOOST", ValueType.TEXT, true),
+            new PropertyDescriptor("pump", "Pump", "PUMP", ValueType.TEXT, true),
+            new PropertyDescriptor("cooler", "Cooler", "COOLER", ValueType.TEXT, true),
+            new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", ValueType.TEXT, true),
+            new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", ValueType.TEXT, true),
+            new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", ValueType.TEXT, true),
+            new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", ValueType.TEXT, true),
+            new PropertyDescriptor("tempState", "Thermostat State", "TEMP_STATE", ValueType.TEXT),
+            new PropertyDescriptor("tempStateDisable", "Thermostat Disable (s)", "TEMP_STATE_DISABLE_SECONDS",
+                    ValueType.POSITIVE_INTEGER),
+            // Get current mode or set mode until next program step
+            new PropertyDescriptor("tempMode", "Thermostat Mode", "TEMP_MODE", ValueType.TEXT),
+            // MINS VALUE: 0 = Until next program step, -1 = Permanent, 1-65279 = for N mins
+            new PropertyDescriptor("coolComfortMins", "Thermostat Cool Comfort (mins)", "TEMP_MODE_COOL_COMFORT_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("coolDayMins", "Cool Day (mins)", "TEMP_MODE_COOL_DAY_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("coolNightMins", "Cool Night (mins)", "TEMP_MODE_COOL_NIGHT_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("coolSafeMins", "Cool Safe (mins)", "TEMP_MODE_COOL_SAFE_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("heatComfortMins", "Heat Comfort (mins)", "TEMP_MODE_HEAT_COMFORT_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("heatDayMins", "Heat Day (mins)", "TEMP_MODE_HEAT_DAY_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("heatNightMins", "Heat Night (mins)", "TEMP_MODE_HEAT_NIGHT_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("heatSafeMins", "Heat Safe (mins)", "TEMP_MODE_HEAT_SAFE_MINS",
+                    ValueType.POSITIVE_INTEGER),
+            new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT",
+                    ValueType.NUMBER),
+            new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE",
+                    ValueType.NUMBER));
 
     @Override
     public List<PropertyDescriptor> getPropertyDescriptors(VelbusDeviceType deviceType) {
@@ -147,9 +167,8 @@ public class ThermostatProcessor extends FeatureProcessor {
 
     @Override
     public List<VelbusPacket> getStatusRequestPackets(VelbusDevice device) {
-       return Collections.singletonList(
-           new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.SENSOR_SETTINGS.getCode(), (byte)0x00)
-       );
+        return Collections.singletonList(new VelbusPacket(device.getBaseAddress(),
+                VelbusPacket.OutboundCommand.SENSOR_SETTINGS.getCode(), (byte) 0x00));
     }
 
     @Override
@@ -157,49 +176,35 @@ public class ThermostatProcessor extends FeatureProcessor {
 
         if (property.startsWith("TEMP_TARGET_")) {
             String modeStr = property.substring("TEMP_TARGET_".length());
-            return EnumUtil
-                .enumFromString(TemperatureMode.class, modeStr)
-                .map(mode -> ValueUtil.getDoubleCoerced(value)
-                    .map(newTemp -> Math.round(newTemp*2d))
-                    .map(newTemp -> {
+            return EnumUtil.enumFromString(TemperatureMode.class, modeStr).map(
+                    mode -> ValueUtil.getDoubleCoerced(value).map(newTemp -> Math.round(newTemp * 2d)).map(newTemp -> {
                         int busValue = Math.toIntExact(newTemp);
                         if (busValue >= -110 && busValue <= 125) {
-                            return Collections.singletonList(
-                                new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.TEMP_SET.getCode(), VelbusPacket.PacketPriority.LOW, (byte)mode.getPointerIndex(), (byte)busValue)
-                            );
+                            return Collections.singletonList(new VelbusPacket(device.getBaseAddress(),
+                                    VelbusPacket.OutboundCommand.TEMP_SET.getCode(), VelbusPacket.PacketPriority.LOW,
+                                    (byte) mode.getPointerIndex(), (byte) busValue));
                         }
                         return null;
-                    })
-                    .orElse(null))
-                .orElse(null);
+                    }).orElse(null)).orElse(null);
 
-        } else if("TEMP_MODE".equals(property)) {
-            return EnumUtil
-                .enumFromValue(TemperatureMode.class, value)
-                .map(mode -> getTempModePackets(device, mode, 0xFF00)) // Do this as a program step
-                .orElse(null);
-        }  else if(property.startsWith("TEMP_MODE_") && property.endsWith("_MINS")) {
-            return ValueUtil
-                .getIntegerCoerced(value)
-                .map(durationMinutes -> {
-                    String modeStr = property.substring("TEMP_MODE_".length(), property.length() - "_MINS".length());
-                    return EnumUtil
-                        .enumFromString(TemperatureMode.class, modeStr)
-                        .map(mode -> getTempModePackets(device, mode, durationMinutes))
-                        .orElse(null);
-                })
-                .orElse(null);
+        } else if ("TEMP_MODE".equals(property)) {
+            return EnumUtil.enumFromValue(TemperatureMode.class, value)
+                    .map(mode -> getTempModePackets(device, mode, 0xFF00)) // Do this as a program step
+                    .orElse(null);
+        } else if (property.startsWith("TEMP_MODE_") && property.endsWith("_MINS")) {
+            return ValueUtil.getIntegerCoerced(value).map(durationMinutes -> {
+                String modeStr = property.substring("TEMP_MODE_".length(), property.length() - "_MINS".length());
+                return EnumUtil.enumFromString(TemperatureMode.class, modeStr)
+                        .map(mode -> getTempModePackets(device, mode, durationMinutes)).orElse(null);
+            }).orElse(null);
         } else if ("TEMP_STATE".equals(property)) {
-            return EnumUtil
-                .enumFromValue(TemperatureState.class, value)
-                .map(state -> state == TemperatureState.TIMER ? null : state) // Cannot set timer mode this way
-                .map(state -> getTempStatePackets(device, state, -1))
-                .orElse(null);
+            return EnumUtil.enumFromValue(TemperatureState.class, value)
+                    .map(state -> state == TemperatureState.TIMER ? null : state) // Cannot set timer mode this way
+                    .map(state -> getTempStatePackets(device, state, -1)).orElse(null);
         } else if ("TEMP_STATE_DISABLE_SECONDS".equals(property)) {
-            return ValueUtil
-                .getIntegerCoerced(value)
-                .map(durationSeconds -> getTempStatePackets(device, TemperatureState.DISABLED, durationSeconds))
-                .orElse(null);
+            return ValueUtil.getIntegerCoerced(value)
+                    .map(durationSeconds -> getTempStatePackets(device, TemperatureState.DISABLED, durationSeconds))
+                    .orElse(null);
         }
 
         return null;
@@ -213,13 +218,12 @@ public class ThermostatProcessor extends FeatureProcessor {
             case PUSH_BUTTON_STATUS:
                 if (isPacketForThermostat(device, packet.getAddress())) {
 
-                    for (int i=0; i<2; i++) {
+                    for (int i = 0; i < 2; i++) {
 
-                        InputProcessor.ChannelState state = i == 0
-                            ? InputProcessor.ChannelState.PRESSED
-                            : InputProcessor.ChannelState.RELEASED;
+                        InputProcessor.ChannelState state = i == 0 ? InputProcessor.ChannelState.PRESSED
+                                : InputProcessor.ChannelState.RELEASED;
 
-                        byte stateByte = packet.getByte(i+1);
+                        byte stateByte = packet.getByte(i + 1);
 
                         if ((stateByte & 0x01) == 0x01) {
                             device.setProperty("HEATER", state);
@@ -252,44 +256,62 @@ public class ThermostatProcessor extends FeatureProcessor {
                 return false;
             case SENSOR_STATUS:
                 // Extract TemperatureState
-                TemperatureState temperatureState = TemperatureState.fromCode(packet.getByte(1) & 0x06).orElse(TemperatureState.NORMAL);
-                device.setProperty("TEMP_STATE",  temperatureState);
+                TemperatureState temperatureState = TemperatureState.fromCode(packet.getByte(1) & 0x06)
+                        .orElse(TemperatureState.NORMAL);
+                device.setProperty("TEMP_STATE", temperatureState);
 
                 // Extract mode
-                TemperatureMode mode = TemperatureMode.fromCode(packet.getByte(1) & 0xF0).orElse(TemperatureMode.HEAT_SAFE);
-                device.setProperty("TEMP_MODE",  mode);
+                TemperatureMode mode = TemperatureMode.fromCode(packet.getByte(1) & 0xF0)
+                        .orElse(TemperatureMode.HEAT_SAFE);
+                device.setProperty("TEMP_MODE", mode);
 
                 // Extract button states
-                device.setProperty("HEATER", (packet.getByte(3) & 0x01) == 0x01 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                device.setProperty("BOOST", (packet.getByte(3) & 0x02) == 0x02 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                device.setProperty("PUMP", (packet.getByte(3) & 0x04) == 0x04 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                device.setProperty("COOLER", (packet.getByte(3) & 0x08) == 0x08 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
+                device.setProperty("HEATER", (packet.getByte(3) & 0x01) == 0x01 ? InputProcessor.ChannelState.PRESSED
+                        : InputProcessor.ChannelState.RELEASED);
+                device.setProperty("BOOST", (packet.getByte(3) & 0x02) == 0x02 ? InputProcessor.ChannelState.PRESSED
+                        : InputProcessor.ChannelState.RELEASED);
+                device.setProperty("PUMP", (packet.getByte(3) & 0x04) == 0x04 ? InputProcessor.ChannelState.PRESSED
+                        : InputProcessor.ChannelState.RELEASED);
+                device.setProperty("COOLER", (packet.getByte(3) & 0x08) == 0x08 ? InputProcessor.ChannelState.PRESSED
+                        : InputProcessor.ChannelState.RELEASED);
 
                 device.setProperty("TEMP_CURRENT", (double) packet.getByte(4) / 2);
                 device.setProperty("TEMP_TARGET_CURRENT", (double) packet.getByte(5) / 2);
 
                 if (device.getDeviceType() == VelbusDeviceType.VMB1TS) {
-                    device.setProperty("TEMP_ALARM1", (packet.getByte(3) & 0x20) == 0x20 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                    device.setProperty("TEMP_ALARM2", (packet.getByte(3) & 0x40) == 0x40 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM1",
+                            (packet.getByte(3) & 0x20) == 0x20 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM2",
+                            (packet.getByte(3) & 0x40) == 0x40 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
                 } else {
-                    device.setProperty("TEMP_ALARM1", (packet.getByte(3) & 0x10) == 0x10 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                    device.setProperty("TEMP_ALARM2", (packet.getByte(3) & 0x20) == 0x20 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                    device.setProperty("TEMP_ALARM3", (packet.getByte(3) & 0x40) == 0x40 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
-                    device.setProperty("TEMP_ALARM4", (packet.getByte(3) & 0x80) == 0x80 ? InputProcessor.ChannelState.PRESSED : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM1",
+                            (packet.getByte(3) & 0x10) == 0x10 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM2",
+                            (packet.getByte(3) & 0x20) == 0x20 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM3",
+                            (packet.getByte(3) & 0x40) == 0x40 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
+                    device.setProperty("TEMP_ALARM4",
+                            (packet.getByte(3) & 0x80) == 0x80 ? InputProcessor.ChannelState.PRESSED
+                                    : InputProcessor.ChannelState.RELEASED);
                 }
                 return true;
             case TEMP_SETTINGS1:
-                device.setProperty("TEMP_TARGET_CURRENT",  (double)packet.getByte(1) / 2);
-                device.setProperty("TEMP_TARGET_HEAT_COMFORT",  (double)packet.getByte(2) / 2);
-                device.setProperty("TEMP_TARGET_HEAT_DAY",  (double)packet.getByte(3) / 2);
-                device.setProperty("TEMP_TARGET_HEAT_NIGHT",  (double)packet.getByte(4) / 2);
-                device.setProperty("TEMP_TARGET_HEAT_SAFE",  (double)packet.getByte(5) / 2);
+                device.setProperty("TEMP_TARGET_CURRENT", (double) packet.getByte(1) / 2);
+                device.setProperty("TEMP_TARGET_HEAT_COMFORT", (double) packet.getByte(2) / 2);
+                device.setProperty("TEMP_TARGET_HEAT_DAY", (double) packet.getByte(3) / 2);
+                device.setProperty("TEMP_TARGET_HEAT_NIGHT", (double) packet.getByte(4) / 2);
+                device.setProperty("TEMP_TARGET_HEAT_SAFE", (double) packet.getByte(5) / 2);
                 return true;
             case TEMP_SETTINGS2:
-                device.setProperty("TEMP_TARGET_COOL_COMFORT",  (double)packet.getByte(1) / 2);
-                device.setProperty("TEMP_TARGET_COOL_DAY",  (double)packet.getByte(2) / 2);
-                device.setProperty("TEMP_TARGET_COOL_NIGHT",  (double)packet.getByte(3) / 2);
-                device.setProperty("TEMP_TARGET_COOL_SAFE",  (double)packet.getByte(4) / 2);
+                device.setProperty("TEMP_TARGET_COOL_COMFORT", (double) packet.getByte(1) / 2);
+                device.setProperty("TEMP_TARGET_COOL_DAY", (double) packet.getByte(2) / 2);
+                device.setProperty("TEMP_TARGET_COOL_NIGHT", (double) packet.getByte(3) / 2);
+                device.setProperty("TEMP_TARGET_COOL_SAFE", (double) packet.getByte(4) / 2);
                 return true;
             default:
                 return false;
@@ -323,7 +345,8 @@ public class ThermostatProcessor extends FeatureProcessor {
         return thermostatAddress > 0 && thermostatAddress < 255;
     }
 
-    protected static List<VelbusPacket> getTempModePackets(VelbusDevice device, TemperatureMode mode, int durationMinutes) {
+    protected static List<VelbusPacket> getTempModePackets(VelbusDevice device, TemperatureMode mode,
+            int durationMinutes) {
 
         // Check thermostat is supported
         Optional<Integer> thermostatChannel = getThermostatChannelNumber(device);
@@ -338,7 +361,6 @@ public class ThermostatProcessor extends FeatureProcessor {
             durationMinutes = 0xFFFF; // Permanent change
         }
 
-
         List<VelbusPacket> packets = new ArrayList<>();
 
         // If thermostat is disabled we first need to enable it again
@@ -346,13 +368,16 @@ public class ThermostatProcessor extends FeatureProcessor {
             packets.addAll(InputProcessor.getLockStatePackets(device, thermostatChannel.get(), 0));
         }
 
-        packets.add(new VelbusPacket(device.getBaseAddress(), mode.getMode1Command().getCode(), VelbusPacket.PacketPriority.LOW, (byte)0x00));
-        packets.add(new VelbusPacket(device.getBaseAddress(), mode.getMode2Command().getCode(), VelbusPacket.PacketPriority.LOW, (byte)(durationMinutes >> 8), (byte)durationMinutes));
+        packets.add(new VelbusPacket(device.getBaseAddress(), mode.getMode1Command().getCode(),
+                VelbusPacket.PacketPriority.LOW, (byte) 0x00));
+        packets.add(new VelbusPacket(device.getBaseAddress(), mode.getMode2Command().getCode(),
+                VelbusPacket.PacketPriority.LOW, (byte) (durationMinutes >> 8), (byte) durationMinutes));
 
         return packets;
     }
 
-    protected static List<VelbusPacket> getTempStatePackets(VelbusDevice device, TemperatureState state, int durationSeconds) {
+    protected static List<VelbusPacket> getTempStatePackets(VelbusDevice device, TemperatureState state,
+            int durationSeconds) {
         // Action to perform depends on current value of the temp state
         // Normal -> Disabled: Send a lock command
         // Normal -> Manual: Send TEMP_MODE with no timer
@@ -372,7 +397,7 @@ public class ThermostatProcessor extends FeatureProcessor {
             return null;
         }
 
-        TemperatureState currentState = (TemperatureState)device.getPropertyValue("TEMP_STATE");
+        TemperatureState currentState = (TemperatureState) device.getPropertyValue("TEMP_STATE");
 
         if (state == currentState) {
             return null;
@@ -392,7 +417,7 @@ public class ThermostatProcessor extends FeatureProcessor {
                 break;
             case MANUAL:
                 // Send TEMP_MODE with current MODE as permanent change
-                TemperatureMode currentMode = (TemperatureMode)device.getPropertyValue("TEMP_MODE");
+                TemperatureMode currentMode = (TemperatureMode) device.getPropertyValue("TEMP_MODE");
                 List<VelbusPacket> tempModePackets = getTempModePackets(device, currentMode, -1);
                 if (tempModePackets != null) {
                     packets.addAll(tempModePackets);
@@ -400,7 +425,7 @@ public class ThermostatProcessor extends FeatureProcessor {
                 break;
             case NORMAL:
                 // Send TEMP_MODE with current MODE as temp change
-                currentMode = (TemperatureMode)device.getPropertyValue("TEMP_MODE");
+                currentMode = (TemperatureMode) device.getPropertyValue("TEMP_MODE");
                 tempModePackets = getTempModePackets(device, currentMode, 0);
                 if (tempModePackets != null) {
                     packets.addAll(tempModePackets);

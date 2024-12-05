@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import java.util.List;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshStatusCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * This generic class handles the mesh messages received or sent.
@@ -50,13 +49,12 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
     /**
      * Constructs the base mesh message state class
      *
-     * @param meshMessage   {@link MeshMessage} Mesh message
+     * @param meshMessage {@link MeshMessage} Mesh message
      * @param meshTransport {@link MeshTransport} Mesh transport
-     * @param callbacks     {@link InternalMeshMsgHandlerCallbacks} Internal mesh message handler callbacks
+     * @param callbacks {@link InternalMeshMsgHandlerCallbacks} Internal mesh message handler callbacks
      */
-    MeshMessageState(/* @Nullable */ final MeshMessage meshMessage,
-                     final MeshTransport meshTransport,
-                     final InternalMeshMsgHandlerCallbacks callbacks) {
+    MeshMessageState(/* @Nullable */ final MeshMessage meshMessage, final MeshTransport meshTransport,
+            final InternalMeshMsgHandlerCallbacks callbacks) {
         this.mMeshMessage = meshMessage;
         if (meshMessage != null) {
             this.message = meshMessage.getMessage();
@@ -131,7 +129,8 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
                     final byte[] pdu = message.getNetworkLayerPdu().get(segO);
                     LOG.info("Resending segment " + segO + " : " + MeshParserUtils.bytesToHex(pdu, false));
                     final Message retransmitMeshMessage = mMeshTransport.createRetransmitMeshMessage(message, segO);
-                    mInternalTransportCallbacks.onMeshPduCreated(mDst, retransmitMeshMessage.getNetworkLayerPdu().get(segO));
+                    mInternalTransportCallbacks.onMeshPduCreated(mDst,
+                            retransmitMeshMessage.getNetworkLayerPdu().get(segO));
                 }
             }
         }
@@ -156,7 +155,7 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
 
     @Override
     public synchronized void sendSegmentAcknowledgementMessage(final ControlMessage controlMessage) {
-        //We don't send acknowledgements here
+        // We don't send acknowledgements here
         final ControlMessage message = mMeshTransport.createSegmentBlockAcknowledgementMessage(controlMessage);
         LOG.info("Sending acknowledgement: " + MeshParserUtils.bytesToHex(message.getNetworkLayerPdu().get(0), false));
         mInternalTransportCallbacks.onMeshPduCreated(message.getDst(), message.getNetworkLayerPdu().get(0));
@@ -165,13 +164,13 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
 
     public enum MessageState {
 
-        //Proxy configuration message
+        // Proxy configuration message
         PROXY_CONFIG_MESSAGE_STATE(500),
 
-        //Configuration message States
+        // Configuration message States
         CONFIG_MESSAGE_STATE(501),
 
-        //Application message States
+        // Application message States
         GENERIC_MESSAGE_STATE(502),
         VENDOR_MODEL_ACKNOWLEDGED_STATE(1000),
         VENDOR_MODEL_UNACKNOWLEDGED_STATE(1001);
@@ -187,4 +186,3 @@ abstract class MeshMessageState implements LowerTransportLayerCallbacks {
         }
     }
 }
-

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query.filter;
-
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.NameHolder;
 
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.NameHolder;
 
 /**
  * Predicate for string values; will match based on configured options.
@@ -135,20 +135,14 @@ public class StringPredicate extends ValuePredicate {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "match=" + match +
-            ", caseSensitive=" + caseSensitive +
-            ", negate=" + negate +
-            ", value='" + value + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "match=" + match + ", caseSensitive=" + caseSensitive + ", negate="
+                + negate + ", value='" + value + '\'' + '}';
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(match)
-            + Objects.hashCode(caseSensitive)
-            + Objects.hashCode(negate)
-            + Objects.hashCode(value);
+        return Objects.hashCode(match) + Objects.hashCode(caseSensitive) + Objects.hashCode(negate)
+                + Objects.hashCode(value);
     }
 
     @Override
@@ -158,11 +152,9 @@ public class StringPredicate extends ValuePredicate {
             return false;
         }
 
-        StringPredicate that = (StringPredicate)obj;
+        StringPredicate that = (StringPredicate) obj;
 
-        return Objects.equals(that.match, match)
-            && Objects.equals(that.caseSensitive, caseSensitive)
-            && Objects.equals(that.negate, negate)
-            && Objects.equals(that.value, value);
+        return Objects.equals(that.match, match) && Objects.equals(that.caseSensitive, caseSensitive)
+                && Objects.equals(that.negate, negate) && Objects.equals(that.value, value);
     }
 }

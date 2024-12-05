@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -34,16 +43,6 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.util.ValueUtil;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class RulesetStorageService implements ContainerService {
 
@@ -76,15 +75,10 @@ public class RulesetStorageService implements ContainerService {
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new RulesResourceImpl(
-                        container.getService(TimerService.class),
-                        container.getService(ManagerIdentityService.class),
-                        this,
-                        container.getService(AssetStorageService.class),
-                        container.getService(RulesService.class)
-                )
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new RulesResourceImpl(container.getService(TimerService.class),
+                        container.getService(ManagerIdentityService.class), this,
+                        container.getService(AssetStorageService.class), container.getService(RulesService.class)));
     }
 
     @Override
@@ -93,7 +87,6 @@ public class RulesetStorageService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     public <T extends Ruleset> T find(Class<T> rulesetType, Long id) {
@@ -103,9 +96,7 @@ public class RulesetStorageService implements ContainerService {
     public <T extends Ruleset> T find(Class<T> rulesetType, Long id, boolean loadComplete) {
         if (id == null)
             throw new IllegalArgumentException("Can't query null ruleset identifier");
-        return find(rulesetType, new RulesetQuery()
-            .setFullyPopulate(loadComplete)
-            .setIds(id));
+        return find(rulesetType, new RulesetQuery().setFullyPopulate(loadComplete).setIds(id));
     }
 
     public <T extends Ruleset> T find(Class<T> rulesetType, RulesetQuery query) {
@@ -152,9 +143,7 @@ public class RulesetStorageService implements ContainerService {
     }
 
     public <T extends Ruleset> T merge(T ruleset) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.merge(ruleset)
-        );
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.merge(ruleset));
     }
 
     public <T extends Ruleset> void delete(Class<T> rulesetType, Long id) {
@@ -182,7 +171,7 @@ public class RulesetStorageService implements ContainerService {
     protected <T extends Ruleset> void appendFromString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query) {
         if (rulesetType == GlobalRuleset.class) {
             sb.append(" FROM GLOBAL_RULESET R");
-        }else if (rulesetType == RealmRuleset.class) {
+        } else if (rulesetType == RealmRuleset.class) {
             sb.append(" FROM REALM_RULESET R");
         } else if (rulesetType == AssetRuleset.class) {
             sb.append(" FROM ASSET_RULESET R JOIN ASSET A ON (R.ASSET_ID = A.ID)");
@@ -191,7 +180,8 @@ public class RulesetStorageService implements ContainerService {
         }
     }
 
-    protected <T extends Ruleset> void appendWhereString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query, List<ParameterBinder> binders) {
+    protected <T extends Ruleset> void appendWhereString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query,
+            List<ParameterBinder> binders) {
         sb.append(" WHERE 1=1");
 
         if (query.publicOnly) {
@@ -262,7 +252,8 @@ public class RulesetStorageService implements ContainerService {
     }
 
     @SuppressWarnings("unchecked")
-    protected <T extends Ruleset> T mapResultTuple(Class<T> rulesetType, RulesetQuery query, ResultSet rs) throws SQLException {
+    protected <T extends Ruleset> T mapResultTuple(Class<T> rulesetType, RulesetQuery query, ResultSet rs)
+            throws SQLException {
         T ruleset;
 
         if (rulesetType == GlobalRuleset.class) {

@@ -1,7 +1,25 @@
-import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {markerActiveColorVar, markerColorVar} from "../style";
-import {DefaultBoxShadow} from "@openremote/core";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { markerActiveColorVar, markerColorVar } from "../style";
+import { DefaultBoxShadow } from "@openremote/core";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -134,8 +152,8 @@ export class OrMapMarker extends LitElement {
     }
 
     protected static _defaultTemplate = (icon: string | undefined, options?: TemplateOptions) => `
-        ${options && options.displayValue !== undefined 
-            ? `<div class="label"><span>${options.displayValue}</span></div>` 
+        ${options && options.displayValue !== undefined
+            ? `<div class="label"><span>${options.displayValue}</span></div>`
             : ``
         }
         ${options && options.direction
@@ -151,37 +169,37 @@ export class OrMapMarker extends LitElement {
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
 
-    @property({type: Number, reflect: true, attribute: true})
+    @property({ type: Number, reflect: true, attribute: true })
     public lat?: number;
 
-    @property({type: Number, reflect: true})
+    @property({ type: Number, reflect: true })
     public lng?: number;
 
-    @property({type: Number, reflect: true})
+    @property({ type: Number, reflect: true })
     public radius?: number;
 
-    @property({reflect: true})
+    @property({ reflect: true })
     public displayValue?: string;
 
-    @property({reflect: true})
+    @property({ reflect: true })
     public direction?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public visible: boolean = true;
 
-    @property({type: String})
+    @property({ type: String })
     public icon?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public color?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public activeColor?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public interactive: boolean = true;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     active: boolean = false;
 
     // This is the actual map marker element not the same element as returned from createMarkerElement when using raster map
@@ -231,14 +249,14 @@ export class OrMapMarker extends LitElement {
         let container = document.createElement("div");
 
         if (this._slot) {
-            this._slot.assignedNodes({flatten: true}).forEach((child) => {
+            this._slot.assignedNodes({ flatten: true }).forEach((child) => {
                 if (child instanceof HTMLElement) {
                     container.appendChild(child.cloneNode(true));
                     hasChildren = true;
                 }
             });
         }
-        
+
         if (!hasChildren) {
             return;
         }
@@ -364,7 +382,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, { displayValue: this.displayValue, direction: this.direction });
         return div;
     }
 

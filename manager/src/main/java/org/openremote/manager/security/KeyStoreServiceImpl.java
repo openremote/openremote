@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,9 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.manager.security;
+
+import static org.openremote.container.util.MapAccess.getString;
+
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.openremote.agent.protocol.mqtt.CustomKeyManagerFactory;
 import org.openremote.agent.protocol.mqtt.CustomX509TrustManagerFactory;
@@ -26,25 +36,17 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.model.Container;
 import org.openremote.model.security.KeyStoreService;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.util.logging.Logger;
-import java.util.Optional;
-
-import static org.openremote.container.util.MapAccess.getString;
-
 /**
  * <p>
  * This service is used for retrieving, creating, or editing KeyStore (and TrustStore) files.
- * </p><p>
+ * </p>
+ * <p>
  * Currently the KeyStores are stored in the Storage directory of OpenRemote, which is usually volumed and persisted.
- * </p><p>
+ * </p>
+ * <p>
  * Each realm is allocated 2 KeyStores; A Client KeyStore, which is used for storing key-pairs that are used by
- * clients (be that as an Agent or as a plain client), and a TrustStore, which contains trusted certificates, usually SSL
+ * clients (be that as an Agent or as a plain client), and a TrustStore, which contains trusted certificates, usually
+ * SSL
  * certificates. To ensure both security and extensibility, both the default and predefined TrustStores are used to find
  * the correct certificates.
  * </p>
@@ -92,16 +94,19 @@ public class KeyStoreServiceImpl implements KeyStoreService {
         String trustStoreEnv = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_FILE, null);
 
         Optional<Path> keyStorePath = keyStoreEnv != null ? Optional.of(Paths.get(keyStoreEnv)) : Optional.empty();
-        Optional<Path> trustStorePath = trustStoreEnv != null ? Optional.of(Paths.get(trustStoreEnv)) : Optional.empty();
+        Optional<Path> trustStorePath = trustStoreEnv != null ? Optional.of(Paths.get(trustStoreEnv))
+                : Optional.empty();
 
-        String keyStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
-        String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_PASSWORD, String.valueOf(getKeyStorePassword()));
-
+        String keyStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_KEYSTORE_PASSWORD,
+                String.valueOf(getKeyStorePassword()));
+        String trustStorePassword = getString(container.getConfig(), OR_SSL_CLIENT_TRUSTSTORE_PASSWORD,
+                String.valueOf(getKeyStorePassword()));
 
         if (keyStorePath.isPresent()) {
             this.keyStore = KeyStore.getInstance(keyStorePath.get().toFile(), keyStorePassword.toCharArray());
         } else {
-            Path defaultKeyStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
+            Path defaultKeyStorePath = persistenceService
+                    .resolvePath(Paths.get("keystores").resolve("client_keystore.p12"));
             if (new File(defaultKeyStorePath.toUri()).exists()) {
                 this.keyStorePath = defaultKeyStorePath;
                 this.keyStore = KeyStore.getInstance(new File(defaultKeyStorePath.toUri()), getKeyStorePassword());
@@ -115,7 +120,8 @@ public class KeyStoreServiceImpl implements KeyStoreService {
         if (trustStorePath.isPresent()) {
             this.trustStore = KeyStore.getInstance(trustStorePath.get().toFile(), trustStorePassword.toCharArray());
         } else {
-            Path defaultTrustStorePath = persistenceService.resolvePath(Paths.get("keystores").resolve("client_truststore.p12"));
+            Path defaultTrustStorePath = persistenceService
+                    .resolvePath(Paths.get("keystores").resolve("client_truststore.p12"));
             if (new File(defaultTrustStorePath.toUri()).exists()) {
                 this.trustStorePath = defaultTrustStorePath;
                 this.trustStore = KeyStore.getInstance(new File(defaultTrustStorePath.toUri()), getKeyStorePassword());
@@ -210,7 +216,6 @@ public class KeyStoreServiceImpl implements KeyStoreService {
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     private Logger getLogger() {

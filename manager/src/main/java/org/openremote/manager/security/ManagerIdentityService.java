@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
+
+import static org.openremote.container.util.MapAccess.getString;
+
+import java.util.Locale;
+import java.util.logging.Logger;
 
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.mqtt.MQTTBrokerService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
-
-import java.util.Locale;
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerIdentityService extends IdentityService {
 
@@ -42,12 +41,10 @@ public class ManagerIdentityService extends IdentityService {
         MQTTBrokerService mqttBrokerService = container.getService(MQTTBrokerService.class);
         ManagerWebService managerWebService = container.getService(ManagerWebService.class);
 
+        managerWebService
+                .addApiSingleton(new RealmResourceImpl(container.getService(TimerService.class), this, container));
         managerWebService.addApiSingleton(
-            new RealmResourceImpl(container.getService(TimerService.class), this, container)
-        );
-        managerWebService.addApiSingleton(
-            new UserResourceImpl(container.getService(TimerService.class), this, mqttBrokerService)
-        );
+                new UserResourceImpl(container.getService(TimerService.class), this, mqttBrokerService));
     }
 
     public ManagerIdentityProvider getIdentityProvider() {
@@ -57,7 +54,8 @@ public class ManagerIdentityService extends IdentityService {
     @Override
     public ManagerIdentityProvider createIdentityProvider(Container container) {
         if (identityProvider == null) {
-            String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER, OR_IDENTITY_PROVIDER_DEFAULT);
+            String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER,
+                    OR_IDENTITY_PROVIDER_DEFAULT);
 
             switch (identityProviderType.toLowerCase(Locale.ROOT)) {
                 case "keycloak" -> {
@@ -77,8 +75,6 @@ public class ManagerIdentityService extends IdentityService {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "identityProvider=" + identityProvider +
-            '}';
+        return getClass().getSimpleName() + "{" + "identityProvider=" + identityProvider + '}';
     }
 }

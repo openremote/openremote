@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.datapoint;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.Objects;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -26,9 +29,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
-import java.util.Date;
-import java.util.Objects;
 
 /**
  * <p>
@@ -111,15 +111,15 @@ public abstract class Datapoint implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         Datapoint datapoint = (Datapoint) o;
 
-        return timestamp == datapoint.timestamp
-            && assetId.equals(datapoint.assetId)
-            && attributeName.equals(datapoint.attributeName)
-            && value.equals(datapoint.value);
+        return timestamp == datapoint.timestamp && assetId.equals(datapoint.assetId)
+                && attributeName.equals(datapoint.attributeName) && value.equals(datapoint.value);
     }
 
     @Override
@@ -129,11 +129,7 @@ public abstract class Datapoint implements Serializable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "assetId='" + assetId + '\'' +
-            ", attributeName='" + attributeName + '\'' +
-            ", timestamp=" + timestamp +
-            ", value=" + (value != null ? value : "null") +
-            '}';
+        return getClass().getSimpleName() + "{" + "assetId='" + assetId + '\'' + ", attributeName='" + attributeName
+                + '\'' + ", timestamp=" + timestamp + ", value=" + (value != null ? value : "null") + '}';
     }
 }

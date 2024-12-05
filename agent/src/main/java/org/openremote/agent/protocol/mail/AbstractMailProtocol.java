@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.mail;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.persistence.PersistenceService;
@@ -32,18 +42,8 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-
-public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends AbstractProtocol<T, V> {
+public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>>
+        extends AbstractProtocol<T, V> {
     protected MailClient mailClient;
     protected Map<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
@@ -63,28 +63,20 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         UsernamePassword userPassword = getAgent().getUsernamePassword().orElseThrow();
         Optional<Boolean> startTLS = getAgent().getStartTLS();
 
-        MailClientBuilder clientBuilder = new MailClientBuilder(
-            container.getExecutor(),
-            container.getScheduledExecutor(),
-            getAgent().getProtocol().orElseThrow(),
-            getAgent().getHost().orElseThrow(),
-            getAgent().getPort().orElseThrow()
-        )
-            .setCheckIntervalSeconds(
-                getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_SECONDS)
-            )
-            .setDeleteMessageOnceProcessed(
-                getAgent().getDeleteProcessedMail().orElse(false)
-            )
-            .setFolder(getAgent().getMailFolderName().orElse(null))
-            .setPersistenceDir(persistenceDir)
-            // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it should do
-            .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_SECONDS)
-            .setPreferHTML(getAgent().getPreferHTML().orElse(false))
-            .setEarliestMessageDate(agent.getCreatedOn());
+        MailClientBuilder clientBuilder = new MailClientBuilder(container.getExecutor(),
+                container.getScheduledExecutor(), getAgent().getProtocol().orElseThrow(),
+                getAgent().getHost().orElseThrow(), getAgent().getPort().orElseThrow())
+                .setCheckIntervalSeconds(
+                        getAgent().getCheckIntervalSeconds().orElse(MailClientBuilder.DEFAULT_CHECK_INTERVAL_SECONDS))
+                .setDeleteMessageOnceProcessed(getAgent().getDeleteProcessedMail().orElse(false))
+                .setFolder(getAgent().getMailFolderName().orElse(null)).setPersistenceDir(persistenceDir)
+                // Set an initial delay to allow attributes to be linked before we read messages - not perfect but it
+                // should do
+                .setCheckInitialDelaySeconds(INITIAL_CHECK_DELAY_SECONDS)
+                .setPreferHTML(getAgent().getPreferHTML().orElse(false)).setEarliestMessageDate(agent.getCreatedOn());
 
-        oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
-            clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
+        oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth))
+                .orElseGet(() -> clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
 
         startTLS.map(clientBuilder::setStartTls);
 
@@ -138,12 +130,15 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
             if (value != null) {
                 updateLinkedAttribute(attributeRef, value);
             } else if (LOG.isLoggable(Level.FINEST)) {
-                LOG.log(Level.FINEST, "MailMessage failed to match linked attribute:" + attributeRef + ", " + mailMessage);
+                LOG.log(Level.FINEST,
+                        "MailMessage failed to match linked attribute:" + attributeRef + ", " + mailMessage);
             }
         }));
     }
 
-    protected abstract Predicate<MailMessage> getAttributeMailMessageFilter(String assetId, Attribute<?> attribute, V agentLink);
+    protected abstract Predicate<MailMessage> getAttributeMailMessageFilter(String assetId, Attribute<?> attribute,
+            V agentLink);
 
-    protected abstract String getMailMessageAttributeValue(String assetId, Attribute<?> attribute, V agentLink, MailMessage mailMessage);
+    protected abstract String getMailMessageAttributeValue(String assetId, Attribute<?> attribute, V agentLink,
+            MailMessage mailMessage);
 }

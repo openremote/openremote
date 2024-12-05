@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.notification;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+
+import java.io.UnsupportedEncodingException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 import org.openremote.agent.protocol.mail.MailClientBuilder;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -39,15 +45,9 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 
-import java.io.UnsupportedEncodingException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.security.User.EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE;
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 public class EmailNotificationHandler implements NotificationHandler {
 
@@ -82,32 +82,30 @@ public class EmailNotificationHandler implements NotificationHandler {
         // Parse map of headers
         String headersStr = container.getConfig().getOrDefault(OR_EMAIL_X_HEADERS, null);
         if (!TextUtil.isNullOrEmpty(headersStr)) {
-            headers = Arrays.stream(headersStr.split("\\R"))
-                .map(s -> s.split(":", 2))
-                .collect(Collectors.toMap(
-                    arr -> arr[0].trim(),
-                    arr -> arr.length == 2 ? arr[1].trim() : ""
-                ));
+            headers = Arrays.stream(headersStr.split("\\R")).map(s -> s.split(":", 2))
+                    .collect(Collectors.toMap(arr -> arr[0].trim(), arr -> arr.length == 2 ? arr[1].trim() : ""));
         }
 
         defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
-        if (!TextUtil.isNullOrEmpty(host) && (useOAuth || (!TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)))) {
+        if (!TextUtil.isNullOrEmpty(host)
+                && (useOAuth || (!TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)))) {
 
             // Init client builder
             boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
-            String protocol = startTls ? "smtp" : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
-            MailClientBuilder mailClientBuilder = new MailClientBuilder(
-                    container.getExecutor(), container.getScheduledExecutor(), protocol, host, port
-            );
+            String protocol = startTls ? "smtp"
+                    : getString(container.getConfig(), OR_EMAIL_PROTOCOL, OR_EMAIL_PROTOCOL_DEFAULT);
+            MailClientBuilder mailClientBuilder = new MailClientBuilder(container.getExecutor(),
+                    container.getScheduledExecutor(), protocol, host, port);
 
             // Add authentication
             if (useOAuth) {
                 String oAuthUrl = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_URL, null);
                 String oAuthScopes = container.getConfig().getOrDefault(OR_EMAIL_OAUTH2_SCOPES, "");
 
-                if(TextUtil.isNullOrEmpty(clientId) || TextUtil.isNullOrEmpty(clientSecret)) {
-                    LOG.info("Tried to configure oAuth2, but no client id and/or client secret is present. Falling back to basic auth.");
+                if (TextUtil.isNullOrEmpty(clientId) || TextUtil.isNullOrEmpty(clientSecret)) {
+                    LOG.info(
+                            "Tried to configure oAuth2, but no client id and/or client secret is present. Falling back to basic auth.");
                     mailClientBuilder.setBasicAuth(user, password);
 
                 } else if (TextUtil.isNullOrEmpty(oAuthUrl)) {
@@ -115,7 +113,8 @@ public class EmailNotificationHandler implements NotificationHandler {
                     mailClientBuilder.setBasicAuth(user, password);
 
                 } else {
-                    mailClientBuilder.setOAuth(user, new OAuthClientCredentialsGrant(oAuthUrl, clientId, clientSecret, oAuthScopes));
+                    mailClientBuilder.setOAuth(user,
+                            new OAuthClientCredentialsGrant(oAuthUrl, clientId, clientSecret, oAuthScopes));
                 }
 
             } else {
@@ -160,7 +159,6 @@ public class EmailNotificationHandler implements NotificationHandler {
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
@@ -187,25 +185,27 @@ public class EmailNotificationHandler implements NotificationHandler {
     @Override
     public boolean isMessageValid(AbstractNotificationMessage message) {
         return (message instanceof EmailNotificationMessage);
-//        if (!(message instanceof EmailNotificationMessage)) {
-//            LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
-//            return false;
-//        }
-//
-//        EmailNotificationMessage emailMessage = (EmailNotificationMessage) message;
-//        if (emailMessage.getFrom() == null || (
-//                (emailMessage.getTo() == null || emailMessage.getTo().isEmpty())
-//                        && (emailMessage.getCc() == null || emailMessage.getCc().isEmpty())
-//                        && (emailMessage.getBcc() == null || emailMessage.getBcc().isEmpty()))) {
-//            LOG.warning("Invalid message: must contain a from and at least one recipient");
-//            return false;
-//        }
-//
-//        return true;
+        // if (!(message instanceof EmailNotificationMessage)) {
+        // LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of
+        // PushNotificationMessage");
+        // return false;
+        // }
+        //
+        // EmailNotificationMessage emailMessage = (EmailNotificationMessage) message;
+        // if (emailMessage.getFrom() == null || (
+        // (emailMessage.getTo() == null || emailMessage.getTo().isEmpty())
+        // && (emailMessage.getCc() == null || emailMessage.getCc().isEmpty())
+        // && (emailMessage.getBcc() == null || emailMessage.getBcc().isEmpty()))) {
+        // LOG.warning("Invalid message: must contain a from and at least one recipient");
+        // return false;
+        // }
+        //
+        // return true;
     }
 
     @Override
-    public List<Notification.Target> getTargets(Notification.Source source, String sourceId, List<Notification.Target> targets, AbstractNotificationMessage message) {
+    public List<Notification.Target> getTargets(Notification.Source source, String sourceId,
+            List<Notification.Target> targets, AbstractNotificationMessage message) {
 
         List<Notification.Target> mappedTargets = new ArrayList<>();
 
@@ -233,11 +233,11 @@ public class EmailNotificationHandler implements NotificationHandler {
                         Asset<?> asset = assetStorageService.find(targetId);
                         if (asset != null) {
                             asset.getEmail().map(email -> {
-                                    Notification.Target assetTarget = new Notification.Target(Notification.TargetType.ASSET, asset.getId());
-                                    assetTarget.setData(new EmailNotificationMessage.Recipient(asset.getName(), email));
-                                    return assetTarget;
-                                }
-                            ).ifPresent(mappedTargets::add);
+                                Notification.Target assetTarget = new Notification.Target(Notification.TargetType.ASSET,
+                                        asset.getId());
+                                assetTarget.setData(new EmailNotificationMessage.Recipient(asset.getName(), email));
+                                return assetTarget;
+                            }).ifPresent(mappedTargets::add);
                         }
 
                         userQuery = new UserQuery().assets(targetId);
@@ -248,58 +248,52 @@ public class EmailNotificationHandler implements NotificationHandler {
                 if (userQuery != null) {
                     // Exclude service accounts, system accounts and accounts with disabled email notifications
                     userQuery.serviceUsers(false).attributes(
-                        new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
-                        new UserQuery.AttributeValuePredicate(true, new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE), new StringPredicate("true"))
-                    );
-                    List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
-                            .getIdentityProvider()
-                            .queryUsers(userQuery))
-                        // Exclude system accounts and accounts without emails
-                        .filter(user -> !user.isSystemAccount() && !TextUtil.isNullOrEmpty(user.getEmail()))
-                        .map(user -> {
-                            Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
-                            emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
-                            return emailTarget;
-                        }).toList();
+                            new UserQuery.AttributeValuePredicate(true,
+                                    new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)),
+                            new UserQuery.AttributeValuePredicate(true,
+                                    new StringPredicate(EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE),
+                                    new StringPredicate("true")));
+                    List<Notification.Target> userTargets = Arrays
+                            .stream(managerIdentityService.getIdentityProvider().queryUsers(userQuery))
+                            // Exclude system accounts and accounts without emails
+                            .filter(user -> !user.isSystemAccount() && !TextUtil.isNullOrEmpty(user.getEmail()))
+                            .map(user -> {
+                                Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER,
+                                        user.getId());
+                                emailTarget.setData(
+                                        new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
+                                return emailTarget;
+                            }).toList();
 
                     if (userTargets.isEmpty()) {
                         LOG.fine("No email targets have been mapped");
                     } else {
-                        mappedTargets.addAll(
-                            userTargets
-                                .stream()
-                                .filter(userTarget -> mappedTargets.stream().noneMatch(t -> t.getId().equals(userTarget.getId())))
-                                .toList());
+                        mappedTargets.addAll(userTargets.stream().filter(userTarget -> mappedTargets.stream()
+                                .noneMatch(t -> t.getId().equals(userTarget.getId()))).toList());
                     }
                 }
             });
         }
 
-        EmailNotificationMessage email = (EmailNotificationMessage)message;
+        EmailNotificationMessage email = (EmailNotificationMessage) message;
 
         // Map to/cc/bcc into a custom target for traceability in sent notifications
         List<String> addresses = new ArrayList<>();
 
         if (email.getTo() != null) {
-            addresses.addAll(
-                email.getTo().stream()
-                    .map(EmailNotificationMessage.Recipient::getAddress)
+            addresses.addAll(email.getTo().stream().map(EmailNotificationMessage.Recipient::getAddress)
                     .map(address -> "to:" + address).toList());
 
             email.setTo((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getCc() != null) {
-            addresses.addAll(
-                email.getCc().stream()
-                    .map(EmailNotificationMessage.Recipient::getAddress)
+            addresses.addAll(email.getCc().stream().map(EmailNotificationMessage.Recipient::getAddress)
                     .map(address -> "cc:" + address).toList());
 
             email.setCc((List<EmailNotificationMessage.Recipient>) null);
         }
         if (email.getBcc() != null) {
-            addresses.addAll(
-                email.getBcc().stream()
-                    .map(EmailNotificationMessage.Recipient::getAddress)
+            addresses.addAll(email.getBcc().stream().map(EmailNotificationMessage.Recipient::getAddress)
                     .map(address -> "bcc:" + address).toList());
 
             email.setBcc((List<EmailNotificationMessage.Recipient>) null);
@@ -312,7 +306,8 @@ public class EmailNotificationHandler implements NotificationHandler {
     }
 
     @Override
-    public void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target, AbstractNotificationMessage message) throws Exception {
+    public void sendMessage(long id, Notification.Source source, String sourceId, Notification.Target target,
+            AbstractNotificationMessage message) throws Exception {
 
         List<EmailNotificationMessage.Recipient> toRecipients = new ArrayList<>();
         List<EmailNotificationMessage.Recipient> ccRecipients = new ArrayList<>();
@@ -382,7 +377,8 @@ public class EmailNotificationHandler implements NotificationHandler {
 
         Address[] recipients = email.getAllRecipients();
         if (recipients == null || recipients.length == 0) {
-            throw new NotificationProcessingException(NotificationProcessingException.Reason.INVALID_MESSAGE, "No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
+            throw new NotificationProcessingException(NotificationProcessingException.Reason.INVALID_MESSAGE,
+                    "No recipients set for " + targetType.name().toLowerCase() + ": " + targetId);
         }
 
         // Set from based on source if not already set
@@ -400,9 +396,10 @@ public class EmailNotificationHandler implements NotificationHandler {
         mailTransport.sendMessage(email, email.getAllRecipients());
     }
 
-    protected void buildEmail(long id, EmailNotificationMessage emailNotificationMessage, MimeMessage email) throws Exception {
+    protected void buildEmail(long id, EmailNotificationMessage emailNotificationMessage, MimeMessage email)
+            throws Exception {
         if (emailNotificationMessage.getReplyTo() != null) {
-            email.setReplyTo(new Address[]{convertRecipient(emailNotificationMessage.getReplyTo())});
+            email.setReplyTo(new Address[] { convertRecipient(emailNotificationMessage.getReplyTo()) });
         }
         if (emailNotificationMessage.getFrom() != null) {
             email.setFrom(convertRecipient(emailNotificationMessage.getFrom()));
@@ -411,7 +408,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             email.setSubject(emailNotificationMessage.getSubject());
         }
         if (headers != null) {
-            for (Map.Entry<String, String >entry : headers.entrySet()) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
                 email.addHeader(entry.getKey(), entry.getValue());
             }
         }

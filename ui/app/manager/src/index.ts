@@ -1,8 +1,25 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-import {pageProvisioningProvider} from "./pages/page-provisioning";
-import {combineReducers, configureStore} from "@reduxjs/toolkit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { pageProvisioningProvider } from "./pages/page-provisioning";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import "@openremote/or-app";
-import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
+import { AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig } from "@openremote/or-app";
 import {
     headerItemAccount,
     headerItemAssets,
@@ -22,30 +39,30 @@ import {
     headerItemUsers
 } from "./headers";
 import "./pages/page-map";
-import {PageMapConfig, pageMapProvider, pageMapReducer} from "./pages/page-map";
+import { PageMapConfig, pageMapProvider, pageMapReducer } from "./pages/page-map";
 import "./pages/page-assets";
-import {PageAssetsConfig, pageAssetsProvider, pageAssetsReducer} from "./pages/page-assets";
+import { PageAssetsConfig, pageAssetsProvider, pageAssetsReducer } from "./pages/page-assets";
 import "./pages/page-gateway";
-import {pageGatewayProvider} from "./pages/page-gateway";
+import { pageGatewayProvider } from "./pages/page-gateway";
 import "./pages/page-insights";
-import {PageInsightsConfig, pageInsightsProvider} from "./pages/page-insights";
+import { PageInsightsConfig, pageInsightsProvider } from "./pages/page-insights";
 import "./pages/page-rules";
-import {PageRulesConfig, pageRulesProvider} from "./pages/page-rules";
+import { PageRulesConfig, pageRulesProvider } from "./pages/page-rules";
 import "./pages/page-logs";
-import {PageLogsConfig, pageLogsProvider} from "./pages/page-logs";
+import { PageLogsConfig, pageLogsProvider } from "./pages/page-logs";
 import "./pages/page-account";
-import {pageAccountProvider} from "./pages/page-account";
+import { pageAccountProvider } from "./pages/page-account";
 import "./pages/page-users";
-import {pageUsersProvider} from "./pages/page-users";
+import { pageUsersProvider } from "./pages/page-users";
 import "./pages/page-roles";
-import {pageRolesProvider} from "./pages/page-roles";
+import { pageRolesProvider } from "./pages/page-roles";
 import "./pages/page-realms";
-import {pageRealmsProvider} from "./pages/page-realms";
-import {pageExportProvider} from "./pages/page-export";
+import { pageRealmsProvider } from "./pages/page-realms";
+import { pageExportProvider } from "./pages/page-export";
 import { pageConfigurationProvider } from "./pages/page-configuration";
-import {pageAlarmsProvider} from "./pages/page-alarms";
+import { pageAlarmsProvider } from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
-import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
+import { pageGatewayTunnelProvider } from "./pages/page-gateway-tunnel";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -81,14 +98,14 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageAlarmsProvider(store)
 ];
 
-export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
+export const DefaultHeaderMainMenu: { [name: string]: HeaderItem } = {
     map: headerItemMap(orApp),
     assets: headerItemAssets(orApp),
     rules: headerItemRules(orApp),
     insights: headerItemInsights(orApp)
 };
 
-export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
+export const DefaultHeaderSecondaryMenu: { [name: string]: HeaderItem } = {
     gateway: headerItemGatewayConnection(orApp),
     gatewayTunnel: headerItemGatewayTunnel(orApp),
     language: headerItemLanguage(orApp),
@@ -166,7 +183,7 @@ fetch(configURL).then(async (result) => {
 
             // Replace any supplied page configs
             pages = pages.map(pageProvider => {
-                const config: {[p: string]: any} | undefined = appConfig.pages[pageProvider.name];
+                const config: { [p: string]: any } | undefined = appConfig.pages[pageProvider.name];
 
                 switch (pageProvider.name) {
                     case "map": {
@@ -181,7 +198,7 @@ fetch(configURL).then(async (result) => {
                         const newConfig = (config || {
                             rules: {}
                         }) as PageRulesConfig;
-                        if(!newConfig.rules?.notifications) {
+                        if (!newConfig.rules?.notifications) {
                             newConfig.rules.notifications = Object.fromEntries(
                                 Object.entries(appConfig.realms).map(entry => [entry[0], entry[1].notifications])
                             );
@@ -211,16 +228,16 @@ fetch(configURL).then(async (result) => {
         // Configure realms
         if (!appConfig.realms) {
             orAppConfig.realms = {
-                default: {...DefaultRealmConfig, header: DefaultHeaderConfig}
+                default: { ...DefaultRealmConfig, header: DefaultHeaderConfig }
             };
         } else {
             orAppConfig.realms = {};
-            const defaultRealm = appConfig.realms.default ? {...DefaultRealmConfig,...appConfig.realms.default} : DefaultRealmConfig;
+            const defaultRealm = appConfig.realms.default ? { ...DefaultRealmConfig, ...appConfig.realms.default } : DefaultRealmConfig;
             orAppConfig.realms.default = defaultRealm;
 
             Object.entries(appConfig.realms).forEach(([name, realmConfig]) => {
 
-                const normalisedConfig = {...defaultRealm,...realmConfig};
+                const normalisedConfig = { ...defaultRealm, ...realmConfig };
 
                 let headers = DefaultHeaderConfig;
 
@@ -246,7 +263,7 @@ fetch(configURL).then(async (result) => {
         // When the page is not present in the header, move the PageProvider to the end of the array.
         // This is to prevent the landing page for the user not being visible in the header
         const realmAppConfig = orAppConfig.realms[manager.displayRealm] || orAppConfig.realms.default;
-        if(realmAppConfig) {
+        if (realmAppConfig) {
             const headerPaths = [...realmAppConfig.header.mainMenu, ...realmAppConfig.header.secondaryMenu].map(item => item.href);
             orAppConfig.pages = pages
                 .filter(pageProvider => headerPaths.includes(pageProvider.name))
@@ -257,7 +274,7 @@ fetch(configURL).then(async (result) => {
         // we need to update it with their preferred language from other sources. (consoles, realm configuration etc.)
         // Check local storage for set language, otherwise use language set in config
         manager.getUserPreferredLanguage().then((userLang: string | undefined) => {
-            if(!userLang) {
+            if (!userLang) {
                 manager.getConsolePreferredLanguage().then((consoleLang: string | undefined) => {
                     if (consoleLang) {
                         manager.language = consoleLang;

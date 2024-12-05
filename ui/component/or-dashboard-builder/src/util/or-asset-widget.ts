@@ -1,10 +1,28 @@
-import {OrWidget} from "./or-widget";
-import {Asset, AssetQuery, Attribute, AttributeRef} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { OrWidget } from "./or-widget";
+import { Asset, AssetQuery, Attribute, AttributeRef } from "@openremote/model";
 import { state } from "lit/decorators.js";
 import manager from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {isAxiosError} from "@openremote/rest";
-import {WidgetSettings} from "./widget-settings";
+import { isAxiosError } from "@openremote/rest";
+import { WidgetSettings } from "./widget-settings";
 import { CSSResult } from "lit";
 
 /*
@@ -107,10 +125,10 @@ async function fetchAssets(assetQuery: AssetQuery) {
     }).catch((e) => {
         console.error(e);
         showSnackbar(undefined, "errorOccurred");
-        if(isAxiosError(e)) {
-            if(e.message === "Network Error") {
+        if (isAxiosError(e)) {
+            if (e.message === "Network Error") {
                 throw new Error("youAreOffline")
-            } else if(e.code === "ECONNABORTED") {
+            } else if (e.code === "ECONNABORTED") {
                 throw new Error("noAttributeDataTimeout")
             }
         }

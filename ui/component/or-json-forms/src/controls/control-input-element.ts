@@ -1,8 +1,26 @@
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {css, html} from "lit";
-import {customElement} from "lit/decorators.js";
-import {ControlBaseElement} from "./control-base-element";
-import {baseStyle} from "../styles";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { css, html } from "lit";
+import { customElement } from "lit/decorators.js";
+import { ControlBaseElement } from "./control-base-element";
+import { baseStyle } from "../styles";
 import {
     isBooleanControl,
     isEnumControl,
@@ -12,8 +30,8 @@ import {
     isStringControl,
     JsonSchema
 } from "@jsonforms/core";
-import {isEnumArray} from "../standard-renderers";
-import {getSchemaConst} from "../util";
+import { isEnumArray } from "../standard-renderers";
+import { getSchemaConst } from "../util";
 
 // language=CSS
 const style = css`
@@ -65,7 +83,7 @@ export class ControlInputElement extends ControlBaseElement {
 
             if (min !== undefined && max !== undefined && format === "or-range") {
                 // Limit to 200 graduations
-                if ((max-min)/step <= 200) {
+                if ((max - min) / step <= 200) {
                     this.inputType = InputType.RANGE;
                 }
             }

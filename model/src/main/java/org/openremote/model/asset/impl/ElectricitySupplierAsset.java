@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.ValueType.NUMBER;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
@@ -27,45 +31,45 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.ValueType.NUMBER;
 
 @Entity
 public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySupplierAsset> {
 
-    public static final AttributeDescriptor<Double> FINANCIAL_COST = new AttributeDescriptor<>("financialCost", ValueType.NUMBER).withUnits("EUR");
-    public static final AttributeDescriptor<Double> CARBON_COST = new AttributeDescriptor<>("carbonCost", ValueType.NUMBER,
-            new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
+    public static final AttributeDescriptor<Double> FINANCIAL_COST = new AttributeDescriptor<>("financialCost",
+            ValueType.NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Double> CARBON_COST = new AttributeDescriptor<>("carbonCost",
+            ValueType.NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_KILO, UNITS_GRAM);
     public static final AttributeDescriptor<Double> ENERGY_LOCAL = new AttributeDescriptor<>("energyLocal", NUMBER,
-            new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_RENEWABLE_SHARE = new AttributeDescriptor<>("energyRenewableShare", NUMBER,
-            new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
-    public static final AttributeDescriptor<Double> ENERGY_SELF_CONSUMPTION = new AttributeDescriptor<>("energySelfConsumption", NUMBER,
-            new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
+            new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Double> ENERGY_RENEWABLE_SHARE = new AttributeDescriptor<>(
+            "energyRenewableShare", NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_PERCENTAGE);
+    public static final AttributeDescriptor<Double> ENERGY_SELF_CONSUMPTION = new AttributeDescriptor<>(
+            "energySelfConsumption", NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_PERCENTAGE);
     public static final AttributeDescriptor<Double> ENERGY_AUTARKY = new AttributeDescriptor<>("energyAutarky", NUMBER,
-            new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE);
+            new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_PERCENTAGE);
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
-    public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = ElectricityAsset.EFFICIENCY_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = ElectricityAsset.EFFICIENCY_EXPORT.withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN
+            .withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX
+            .withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN
+            .withOptional(true);
+    public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = ElectricityAsset.EFFICIENCY_IMPORT
+            .withOptional(true);
+    public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = ElectricityAsset.EFFICIENCY_EXPORT
+            .withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricityAsset.TARIFF_IMPORT.withOptional(false);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricityAsset.TARIFF_EXPORT.withOptional(false);
 
-    public static final AssetDescriptor<ElectricitySupplierAsset> DESCRIPTOR = new AssetDescriptor<>("upload-network", "9257A9", ElectricitySupplierAsset.class);
-    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.NUMBER)
-            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
-            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
+    public static final AssetDescriptor<ElectricitySupplierAsset> DESCRIPTOR = new AssetDescriptor<>("upload-network",
+            "9257A9", ElectricitySupplierAsset.class);
+    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport",
+            ValueType.NUMBER).withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR)
+            .withOptional(false);
+    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport",
+            ValueType.NUMBER).withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR)
+            .withOptional(false);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.*;
+
+import java.util.Collection;
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,24 +32,26 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Collection;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricVehicleFleetGroupAsset extends GroupAsset {
 
-    public static final AttributeDescriptor<String> FLEET_CATEGORY = new AttributeDescriptor<>("fleetCategory", ValueType.TEXT);
-    public static final AttributeDescriptor<Integer> AVAILABLE_CHARGING_SPACES = new AttributeDescriptor<>("availableChargingSpaces", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> AVAILABLE_DISCHARGING_SPACES = new AttributeDescriptor<>("availableDischargingSpaces", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_INTEGER);
-    public static final AttributeDescriptor<Integer> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<String> FLEET_CATEGORY = new AttributeDescriptor<>("fleetCategory",
+            ValueType.TEXT);
+    public static final AttributeDescriptor<Integer> AVAILABLE_CHARGING_SPACES = new AttributeDescriptor<>(
+            "availableChargingSpaces", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> AVAILABLE_DISCHARGING_SPACES = new AttributeDescriptor<>(
+            "availableDischargingSpaces", ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax",
+            ValueType.POSITIVE_INTEGER);
+    public static final AttributeDescriptor<Integer> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax",
+            ValueType.POSITIVE_INTEGER);
 
-    public static final AttributeDescriptor<Integer> MILEAGE_MINIMUM = new AttributeDescriptor<>("mileageMinimum", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Integer> MILEAGE_MINIMUM = new AttributeDescriptor<>("mileageMinimum",
+            ValueType.POSITIVE_INTEGER).withUnits(UNITS_KILO, UNITS_METRE);
 
-    public static final AssetDescriptor<ElectricVehicleFleetGroupAsset> DESCRIPTOR = new AssetDescriptor<>("car-multiple", "49B0D8", ElectricVehicleFleetGroupAsset.class);
+    public static final AssetDescriptor<ElectricVehicleFleetGroupAsset> DESCRIPTOR = new AssetDescriptor<>(
+            "car-multiple", "49B0D8", ElectricVehicleFleetGroupAsset.class);
 
     protected ElectricVehicleFleetGroupAsset() {
     }
@@ -57,24 +63,26 @@ public class ElectricVehicleFleetGroupAsset extends GroupAsset {
     public Optional<String> getFleetCategory() {
         return getAttributes().getValue(FLEET_CATEGORY);
     }
-    
+
     public Optional<Integer> getAvailableChargingSpaces() {
         return getAttributes().getValue(AVAILABLE_CHARGING_SPACES);
     }
-    
+
     public Optional<Integer> getAvailableDischargingSpaces() {
         return getAttributes().getValue(AVAILABLE_DISCHARGING_SPACES);
     }
-    
+
     public Optional<Integer> getPowerImportMax() {
         return getAttributes().getValue(POWER_IMPORT_MAX);
     }
-    
+
     public Optional<Integer> getPowerExportMax() {
         return getAttributes().getValue(POWER_EXPORT_MAX);
     }
 
-    public Optional<Integer> getMileageMinimum() { return getAttributes().getValue(MILEAGE_MINIMUM); }
+    public Optional<Integer> getMileageMinimum() {
+        return getAttributes().getValue(MILEAGE_MINIMUM);
+    }
 
     @Override
     public ElectricVehicleFleetGroupAsset setId(String id) {

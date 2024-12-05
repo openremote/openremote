@@ -1,8 +1,6 @@
 buildDir = "dist"
 
-task clean {
-    dependsOn npmClean
-}
+clean.dependsOn npmClean
 
 task installDist(type: Copy) {
     dependsOn npmBuild

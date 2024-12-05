@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,26 +13,31 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-import com.fasterxml.jackson.databind.JsonNode;
-import cz.habarta.typescript.generator.TsType;
-import cz.habarta.typescript.generator.TypeProcessor;
-import cz.habarta.typescript.generator.util.Utils;
-import org.openremote.model.util.TsIgnore;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.TsIgnoreTypeParams;
+
+import cz.habarta.typescript.generator.TsType;
+import cz.habarta.typescript.generator.TypeProcessor;
+import cz.habarta.typescript.generator.util.Utils;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  * <ul>
  * <li>Ignore types/super types annotated with {@link TsIgnore}
- * <li>Will ignore types with a super type in the "com.fasterxml.jackson" package excluding those implementing {@link com.fasterxml.jackson.databind.JsonNode}</li>
+ * <li>Will ignore types with a super type in the "com.fasterxml.jackson" package excluding those implementing
+ * {@link com.fasterxml.jackson.databind.JsonNode}</li>
  * <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
- * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support @JsonSerialize(contentConverter=...)
+ * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't
+ * support @JsonSerialize(contentConverter=...)
  * </ul>
  */
 public class CustomTypeProcessor implements TypeProcessor {
@@ -90,14 +92,15 @@ public class CustomTypeProcessor implements TypeProcessor {
                     discoveredClasses.add(javaClass);
                     final Type[] typeArguments = parameterizedType.getActualTypeArguments();
                     final List<TsType> tsTypeArguments = new ArrayList<>();
-                    for (int i=0; i<typeArguments.length; i++) {
+                    for (int i = 0; i < typeArguments.length; i++) {
                         if (!removeIndexes.contains(i)) {
                             final TypeProcessor.Result typeArgumentResult = context.processType(typeArguments[i]);
                             tsTypeArguments.add(typeArgumentResult.getTsType());
                             discoveredClasses.addAll(typeArgumentResult.getDiscoveredClasses());
                         }
                     }
-                    return new Result(new TsType.GenericReferenceType(context.getSymbol(javaClass), tsTypeArguments), discoveredClasses);
+                    return new Result(new TsType.GenericReferenceType(context.getSymbol(javaClass), tsTypeArguments),
+                            discoveredClasses);
                 }
             }
         }

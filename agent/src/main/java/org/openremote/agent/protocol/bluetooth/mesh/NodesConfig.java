@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-
 import java.util.List;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 
 /**
  * Contains the configuration required when exporting a selected number of mesh nodes in a mesh network.
@@ -59,10 +58,11 @@ public class NodesConfig extends ExportConfig {
         /**
          * Constructs ExportSome to export only a selected number of Nodes when exporting a mesh network.
          *
-         * @param withDeviceKey    List of nodes to be exported with their device keys.
+         * @param withDeviceKey List of nodes to be exported with their device keys.
          * @param withoutDeviceKey List of nodes to be exported without their device keys.
          */
-        public ExportSome(final List<ProvisionedMeshNode> withDeviceKey, final List<ProvisionedMeshNode> withoutDeviceKey) {
+        public ExportSome(final List<ProvisionedMeshNode> withDeviceKey,
+                final List<ProvisionedMeshNode> withoutDeviceKey) {
             this.withDeviceKey = withDeviceKey;
             this.withoutDeviceKey = withoutDeviceKey;
         }
@@ -85,4 +85,3 @@ public class NodesConfig extends ExportConfig {
         super(config);
     }
 }
-

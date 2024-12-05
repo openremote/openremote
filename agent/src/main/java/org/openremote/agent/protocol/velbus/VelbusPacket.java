@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.velbus;
 
 import java.util.Objects;
@@ -321,7 +339,7 @@ public class VelbusPacket {
     }
 
     /*
-     *  Sets the request to reply state of the packet.
+     * Sets the request to reply state of the packet.
      */
     public void setRtr(boolean rtr) {
         if (rtr)
@@ -424,7 +442,7 @@ public class VelbusPacket {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         byte[] packed = pack();
-        for (int i=0; i<MAX_PACKET_SIZE; i++) {
+        for (int i = 0; i < MAX_PACKET_SIZE; i++) {
             if (i != 0) {
                 stringBuilder.append(" ");
             }
@@ -460,8 +478,8 @@ public class VelbusPacket {
 
         String[] byteStrs = packetStr.split("\\s");
         byte[] bytes = new byte[byteStrs.length];
-        for (int i=0; i<byteStrs.length; i++) {
-            bytes[i] = (byte)Integer.parseInt(byteStrs[i], 16);
+        for (int i = 0; i < byteStrs.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(byteStrs[i], 16);
         }
         return new VelbusPacket(bytes);
     }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,31 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset;
 
-import jakarta.persistence.TypedQuery;
+import static java.util.stream.Collectors.toList;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import static org.openremote.model.value.MetaItemType.FORECAST;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -45,25 +63,7 @@ import org.openremote.model.value.ForecastConfiguration;
 import org.openremote.model.value.ForecastConfigurationWeightedExponentialAverage;
 import org.openremote.model.value.MetaItemType;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
-import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
-import static org.openremote.model.value.MetaItemType.FORECAST;
+import jakarta.persistence.TypedQuery;
 
 /**
  * Calculates forecast values for asset attributes with an attached {@link MetaItemType#FORECAST}
@@ -102,20 +102,15 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         List<Asset<?>> assets = getForecastAssets();
 
-        Set<ForecastAttribute> forecastAttributes = assets
-            .stream()
-            .flatMap(asset -> asset.getAttributes()
-                .stream()
-                .filter(attr -> {
+        Set<ForecastAttribute> forecastAttributes = assets.stream()
+                .flatMap(asset -> asset.getAttributes().stream().filter(attr -> {
                     if (attr.hasMeta(FORECAST)) {
                         Optional<ForecastConfiguration> forecastConfig = attr.getMetaValue(FORECAST);
-                        return forecastConfig.isPresent() &&
-                               ForecastConfigurationWeightedExponentialAverage.TYPE.equals(forecastConfig.get().getType());
+                        return forecastConfig.isPresent() && ForecastConfigurationWeightedExponentialAverage.TYPE
+                                .equals(forecastConfig.get().getType());
                     }
                     return false;
-                })
-               .map(attr -> new ForecastAttribute(asset, attr)))
-            .collect(Collectors.toSet());
+                }).map(attr -> new ForecastAttribute(asset, attr))).collect(Collectors.toSet());
 
         LOG.fine("Found forecast asset attributes count  = " + forecastAttributes.size());
 
@@ -130,27 +125,18 @@ public class ForecastService extends RouteBuilder implements ContainerService {
     @SuppressWarnings("unchecked")
     @Override
     public void configure() throws Exception {
-        from(PERSISTENCE_TOPIC)
-            .routeId("Persistence-ForecastConfiguration")
-            .filter(isPersistenceEventForEntityType(Asset.class))
-            .filter(isNotForGateway(gatewayService))
-            .process(exchange -> {
-                PersistenceEvent<Asset<?>> persistenceEvent = (PersistenceEvent<Asset<?>>)exchange.getIn().getBody(PersistenceEvent.class);
-                processAssetChange(persistenceEvent);
-            });
+        from(PERSISTENCE_TOPIC).routeId("Persistence-ForecastConfiguration")
+                .filter(isPersistenceEventForEntityType(Asset.class)).filter(isNotForGateway(gatewayService))
+                .process(exchange -> {
+                    PersistenceEvent<Asset<?>> persistenceEvent = (PersistenceEvent<Asset<?>>) exchange.getIn()
+                            .getBody(PersistenceEvent.class);
+                    processAssetChange(persistenceEvent);
+                });
     }
 
     protected List<Asset<?>> getForecastAssets() {
-        return assetStorageService.findAll(
-            new AssetQuery().attributes(
-                new AttributePredicate().meta(
-                    new NameValuePredicate(
-                        FORECAST,
-                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")
-                    )
-                )
-            )
-        );
+        return assetStorageService.findAll(new AssetQuery().attributes(new AttributePredicate()
+                .meta(new NameValuePredicate(FORECAST, new StringPredicate(AssetQuery.Match.CONTAINS, true, "type")))));
     }
 
     protected void processAssetChange(PersistenceEvent<Asset<?>> persistenceEvent) {
@@ -160,80 +146,58 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         switch (persistenceEvent.getCause()) {
             case CREATE:
-                forecastAttributes = asset.getAttributes()
-                    .stream()
-                    .filter(attr -> {
-                        if (attr.hasMeta(FORECAST)) {
-                            Optional<ForecastConfiguration> forecastConfig = attr.getMetaValue(FORECAST);
-                            return forecastConfig.isPresent() &&
-                                   ForecastConfigurationWeightedExponentialAverage.TYPE.equals(forecastConfig.get().getType());
-                        }
-                        return false;
-                    })
-                    .map(attr -> new ForecastAttribute(asset, attr))
-                    .collect(Collectors.toSet());
+                forecastAttributes = asset.getAttributes().stream().filter(attr -> {
+                    if (attr.hasMeta(FORECAST)) {
+                        Optional<ForecastConfiguration> forecastConfig = attr.getMetaValue(FORECAST);
+                        return forecastConfig.isPresent() && ForecastConfigurationWeightedExponentialAverage.TYPE
+                                .equals(forecastConfig.get().getType());
+                    }
+                    return false;
+                }).map(attr -> new ForecastAttribute(asset, attr)).collect(Collectors.toSet());
 
                 forecastTaskManager.add(forecastAttributes);
 
                 break;
             case UPDATE:
-                if (persistenceEvent.getPropertyNames() == null || persistenceEvent.getPropertyNames().indexOf("attributes") < 0) {
+                if (persistenceEvent.getPropertyNames() == null
+                        || persistenceEvent.getPropertyNames().indexOf("attributes") < 0) {
                     return;
                 }
 
-                List<Attribute<?>> oldAttributes = ((AttributeMap)persistenceEvent.getPreviousState("attributes"))
-                    .stream()
-                    .filter(attr -> attr.hasMeta(FORECAST))
-                    .collect(toList());
+                List<Attribute<?>> oldAttributes = ((AttributeMap) persistenceEvent.getPreviousState("attributes"))
+                        .stream().filter(attr -> attr.hasMeta(FORECAST)).collect(toList());
                 List<Attribute<?>> newAttributes = ((AttributeMap) persistenceEvent.getCurrentState("attributes"))
-                    .stream()
-                    .filter(attr -> attr.hasMeta(FORECAST))
-                    .collect(Collectors.toList());
+                        .stream().filter(attr -> attr.hasMeta(FORECAST)).collect(Collectors.toList());
 
-                List<Attribute<?>> newOrModifiedAttributes = getAddedOrModifiedAttributes(oldAttributes, newAttributes).collect(toList());
+                List<Attribute<?>> newOrModifiedAttributes = getAddedOrModifiedAttributes(oldAttributes, newAttributes)
+                        .collect(toList());
 
-                Set<ForecastAttribute> attributesToDelete = newOrModifiedAttributes
-                    .stream()
-                    .map(attr -> new ForecastAttribute(asset, attr))
-                    .filter(attr -> forecastTaskManager.containsAttribute(attr))
-                    .collect(Collectors.toSet());
+                Set<ForecastAttribute> attributesToDelete = newOrModifiedAttributes.stream()
+                        .map(attr -> new ForecastAttribute(asset, attr))
+                        .filter(attr -> forecastTaskManager.containsAttribute(attr)).collect(Collectors.toSet());
 
-                attributesToDelete.addAll(oldAttributes
-                    .stream()
-                    .filter(oldAttr -> {
-                        return newAttributes
-                            .stream()
-                            .filter(newAttr -> newAttr.getName().equals(oldAttr.getName()))
+                attributesToDelete.addAll(oldAttributes.stream().filter(oldAttr -> {
+                    return newAttributes.stream().filter(newAttr -> newAttr.getName().equals(oldAttr.getName()))
                             .count() == 0;
-                    })
-                    .map(attr -> new ForecastAttribute(asset, attr))
-                    .toList()
-                );
+                }).map(attr -> new ForecastAttribute(asset, attr)).toList());
 
                 forecastTaskManager.delete(attributesToDelete);
 
-                forecastAttributes = newOrModifiedAttributes
-                    .stream()
-                    .filter(attr -> {
-                        if (attr.hasMeta(FORECAST)) {
-                            Optional<ForecastConfiguration> forecastConfig = attr.getMetaValue(FORECAST);
-                            return forecastConfig.isPresent() &&
-                                ForecastConfigurationWeightedExponentialAverage.TYPE.equals(forecastConfig.get().getType());
-                        }
-                        return false;
-                    })
-                    .map(attr -> new ForecastAttribute(asset, attr))
-                    .collect(Collectors.toSet());
+                forecastAttributes = newOrModifiedAttributes.stream().filter(attr -> {
+                    if (attr.hasMeta(FORECAST)) {
+                        Optional<ForecastConfiguration> forecastConfig = attr.getMetaValue(FORECAST);
+                        return forecastConfig.isPresent() && ForecastConfigurationWeightedExponentialAverage.TYPE
+                                .equals(forecastConfig.get().getType());
+                    }
+                    return false;
+                }).map(attr -> new ForecastAttribute(asset, attr)).collect(Collectors.toSet());
 
                 forecastTaskManager.add(forecastAttributes);
 
                 break;
             case DELETE:
-                forecastAttributes = asset.getAttributes()
-                    .stream()
-                    .filter(attr -> attr.hasMeta(FORECAST))
-                    .map(attr -> new ForecastAttribute(asset, attr))
-                    .collect(Collectors.toSet());
+                forecastAttributes = asset.getAttributes().stream().filter(attr -> attr.hasMeta(FORECAST))
+                        .map(attr -> new ForecastAttribute(asset, attr)).collect(Collectors.toSet());
 
                 forecastTaskManager.delete(forecastAttributes);
 
@@ -296,7 +260,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             nextForecastCalculationMap.remove(attribute);
             forecastAttributes.remove(attribute);
 
-            assetPredictedDatapointService.purgeValues(attribute.getAttributeRef().getId(), attribute.getAttributeRef().getName());
+            assetPredictedDatapointService.purgeValues(attribute.getAttributeRef().getId(),
+                    attribute.getAttributeRef().getName());
         }
 
         public synchronized boolean containsAttribute(ForecastAttribute attribute) {
@@ -304,19 +269,13 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         }
 
         public synchronized boolean containsAttribute(AttributeRef attributeRef) {
-            return forecastAttributes
-                .stream()
-                .filter(attr -> attr.getAttributeRef().equals(attributeRef))
-                .findFirst()
-                .isPresent();
+            return forecastAttributes.stream().filter(attr -> attr.getAttributeRef().equals(attributeRef)).findFirst()
+                    .isPresent();
         }
 
         public synchronized ForecastAttribute getAttribute(AttributeRef attributeRef) {
-            return forecastAttributes
-                .stream()
-                .filter(attr -> attr.getAttributeRef().equals(attributeRef))
-                .findFirst()
-                .orElse(null);
+            return forecastAttributes.stream().filter(attr -> attr.getAttributeRef().equals(attributeRef)).findFirst()
+                    .orElse(null);
         }
 
         private boolean stop(long timeout) {
@@ -325,7 +284,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 synchronized (ForecastTaskManager.this) {
                     if (scheduledFuture == null) {
                         return true;
-                    } else if (scheduledFuture != null && scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN_TO_CANCEL_SAFELY) {
+                    } else if (scheduledFuture != null
+                            && scheduledFuture.getDelay(TimeUnit.MILLISECONDS) > DELAY_MIN_TO_CANCEL_SAFELY) {
                         scheduledFuture.cancel(false);
                         scheduledFuture = null;
                         return true;
@@ -390,33 +350,33 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     if (!(attr.getConfig() instanceof ForecastConfigurationWeightedExponentialAverage)) {
                         return;
                     }
-                    ForecastConfigurationWeightedExponentialAverage weaConfig = (ForecastConfigurationWeightedExponentialAverage)attr.getConfig();
+                    ForecastConfigurationWeightedExponentialAverage weaConfig = (ForecastConfigurationWeightedExponentialAverage) attr
+                            .getConfig();
 
                     LOG.fine("Calculating forecast values for attribute: " + attr.getAttributeRef());
 
                     Long offset = forecastTimestamps.get(0) - (now + weaConfig.getForecastPeriod().toMillis());
                     List<List<Long>> allSampleTimestamps = calculateSampleTimestamps(weaConfig, offset);
-                    List<DatapointBucket> historyDatapointBuckets = getHistoryDataFromDb(attr.getAttributeRef(), weaConfig, offset);
+                    List<DatapointBucket> historyDatapointBuckets = getHistoryDataFromDb(attr.getAttributeRef(),
+                            weaConfig, offset);
 
                     List<Optional<Number>> forecastValues = allSampleTimestamps.stream().map(sampleTimestamps -> {
-                        List<AssetDatapoint> sampleDatapoints = findSampleDatapoints(historyDatapointBuckets, sampleTimestamps);
+                        List<AssetDatapoint> sampleDatapoints = findSampleDatapoints(historyDatapointBuckets,
+                                sampleTimestamps);
 
                         if (sampleDatapoints.size() == weaConfig.getPastCount()) {
                             return calculateWeightedExponentialAverage(attr.getAttribute(), sampleDatapoints);
                         } else {
-                            return Optional.<Number>empty();
+                            return Optional.<Number> empty();
                         }
                     }).toList();
 
                     if (forecastTimestamps.size() >= forecastValues.size()) {
-                        List<ValueDatapoint<?>> datapoints = IntStream
-                            .range(0, forecastValues.size())
-                            .filter(i -> forecastValues.get(i).isPresent())
-                            .mapToObj(i -> new ValueDatapoint<>(
-                                forecastTimestamps.get(i),
-                                forecastValues.get(i).get())
-                            )
-                            .collect(Collectors.toList());
+                        List<ValueDatapoint<?>> datapoints = IntStream.range(0, forecastValues.size())
+                                .filter(i -> forecastValues.get(i).isPresent())
+                                .mapToObj(i -> new ValueDatapoint<>(forecastTimestamps.get(i),
+                                        forecastValues.get(i).get()))
+                                .collect(Collectors.toList());
 
                         assetPredictedDatapointService.purgeValues(attr.getId(), attr.getName());
 
@@ -437,10 +397,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception while calculating and updating forecast values", e);
 
-                scheduleForecastCalculation(
-                    timerService.getCurrentTimeMillis(),
-                    Optional.of(DEFAULT_SCHEDULE_DELAY)
-                );
+                scheduleForecastCalculation(timerService.getCurrentTimeMillis(), Optional.of(DEFAULT_SCHEDULE_DELAY));
             }
         }
 
@@ -453,7 +410,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
             if (delay.isPresent()) {
                 LOG.fine("Scheduling next forecast calculation in '" + delay.get() + " [ms]'.");
-                scheduledFuture = scheduledExecutorService.schedule(() -> calculateForecasts(), delay.get(), TimeUnit.MILLISECONDS);
+                scheduledFuture = scheduledExecutorService.schedule(() -> calculateForecasts(), delay.get(),
+                        TimeUnit.MILLISECONDS);
             } else {
                 scheduledFuture = null;
                 if (!forecastAttributes.isEmpty()) {
@@ -463,7 +421,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             }
         }
 
-        private List<List<Long>> calculateSampleTimestamps(ForecastConfigurationWeightedExponentialAverage config, Long offset) {
+        private List<List<Long>> calculateSampleTimestamps(ForecastConfigurationWeightedExponentialAverage config,
+                Long offset) {
             List<List<Long>> sampleTimestamps = new ArrayList<>(config.getForecastCount());
             long now = timerService.getCurrentTimeMillis();
             long pastPeriod = config.getPastPeriod().toMillis();
@@ -480,7 +439,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             return sampleTimestamps;
         }
 
-        private List<Long> calculateForecastTimestamps(long now, ForecastConfigurationWeightedExponentialAverage config) {
+        private List<Long> calculateForecastTimestamps(long now,
+                ForecastConfigurationWeightedExponentialAverage config) {
             List<Long> forecastTimestamps = new ArrayList<>(config.getForecastCount());
             long forecastPeriod = config.getForecastPeriod().toMillis();
 
@@ -491,18 +451,16 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             return forecastTimestamps;
         }
 
-        private List<AssetDatapoint> findSampleDatapoints(List<DatapointBucket> datapointBuckets, List<Long> sampleTimestamps) {
+        private List<AssetDatapoint> findSampleDatapoints(List<DatapointBucket> datapointBuckets,
+                List<Long> sampleTimestamps) {
             List<AssetDatapoint> sampleDatapoints = new ArrayList<>(sampleTimestamps.size());
 
             for (Long timestamp : sampleTimestamps) {
                 AssetDatapoint foundDatapoint = null;
 
-                List<AssetDatapoint> datapoints = datapointBuckets
-                    .stream()
-                    .filter(bucket -> bucket.isInTimeRange(timestamp))
-                    .findFirst()
-                    .map(bucket -> bucket.getDatapoints())
-                    .orElse(null);
+                List<AssetDatapoint> datapoints = datapointBuckets.stream()
+                        .filter(bucket -> bucket.isInTimeRange(timestamp)).findFirst()
+                        .map(bucket -> bucket.getDatapoints()).orElse(null);
 
                 if (datapoints == null) {
                     continue;
@@ -523,29 +481,23 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             return sampleDatapoints;
         }
 
-        private Optional<Number> calculateWeightedExponentialAverage(Attribute<?> attribute, List<AssetDatapoint> datapoints) {
+        private Optional<Number> calculateWeightedExponentialAverage(Attribute<?> attribute,
+                List<AssetDatapoint> datapoints) {
             // a = 2 / (R + 1)
             // p: past period
             // Attr(t) = Attr(t-p) * a + Attr(t-2p) * (1 - a)
-            List<Object> values = datapoints
-                .stream()
-                .map(Datapoint::getValue)
-                .collect(Collectors.toList());
+            List<Object> values = datapoints.stream().map(Datapoint::getValue).collect(Collectors.toList());
             double R = datapoints.size();
             double a = 2 / (R + 1);
 
             Class<?> clazz = attribute.getTypeClass();
-            if (Long.class == clazz || Integer.class == clazz || Short.class == clazz || Byte.class == clazz ||
-                Double.class == clazz || Float.class == clazz) {
+            if (Long.class == clazz || Integer.class == clazz || Short.class == clazz || Byte.class == clazz
+                    || Double.class == clazz || Float.class == clazz) {
                 if (values.size() == 1) {
                     values.add(0, Double.valueOf(0));
                 }
-                Optional<Number> value = values
-                    .stream()
-                    .map(v -> (Number)v)
-                    .reduce((olderValue, oldValue) ->
-                        Double.valueOf(oldValue.doubleValue() * a + olderValue.doubleValue() * (1 - a))
-                    );
+                Optional<Number> value = values.stream().map(v -> (Number) v).reduce((olderValue, oldValue) -> Double
+                        .valueOf(oldValue.doubleValue() * a + olderValue.doubleValue() * (1 - a)));
                 if (value.isPresent()) {
                     if (clazz == Long.class) {
                         value = Optional.of(Long.valueOf(value.get().longValue()));
@@ -568,12 +520,9 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 if (values.size() == 1) {
                     values.add(0, BigDecimal.valueOf(0));
                 }
-                return values
-                    .stream()
-                    .map(v -> (Number)v)
-                    .reduce((olderValue, oldValue) ->
-                        ((BigDecimal)oldValue).multiply(BigDecimal.valueOf(a)).add(((BigDecimal)olderValue).multiply(BigDecimal.valueOf(1 - a)))
-                    );
+                return values.stream().map(v -> (Number) v)
+                        .reduce((olderValue, oldValue) -> ((BigDecimal) oldValue).multiply(BigDecimal.valueOf(a))
+                                .add(((BigDecimal) olderValue).multiply(BigDecimal.valueOf(1 - a))));
             } else if (attribute.getTypeClass() == BigInteger.class) {
                 if (values.size() == 1) {
                     values.add(0, BigInteger.valueOf(0));
@@ -581,14 +530,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 // Attr(t) = Attr(t-p) * a + Attr(t-2p) * (1 - a)
                 // Attr(t) = (Attr(t-p) * 2 / (R + 1) + Attr(t-2p) * (1 - 2 / (R + 1))) * (R + 1)/(R + 1)
                 // Attr(t) = ((Attr(t-p) * 2 + Attr(t-2p) * (R - 1)) / (R + 1)
-                return values
-                    .stream()
-                    .map(v -> (Number)v)
-                    .reduce((olderValue, oldValue) ->
-                        ((BigInteger)oldValue).multiply(BigInteger.valueOf(2))
-                        .add(((BigInteger)olderValue).multiply(BigInteger.valueOf((long)R - 1)))
-                        .divide(BigInteger.valueOf((long)R + 1))
-                    );
+                return values.stream().map(v -> (Number) v)
+                        .reduce((olderValue, oldValue) -> ((BigInteger) oldValue).multiply(BigInteger.valueOf(2))
+                                .add(((BigInteger) olderValue).multiply(BigInteger.valueOf((long) R - 1)))
+                                .divide(BigInteger.valueOf((long) R + 1)));
             }
             return Optional.empty();
         }
@@ -604,7 +549,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
         }
 
         private Optional<Long> calculateScheduleDelay(long now) {
-            OptionalLong calculateForecastTimestamp = nextForecastCalculationMap.values().stream().mapToLong(v -> v).min();
+            OptionalLong calculateForecastTimestamp = nextForecastCalculationMap.values().stream().mapToLong(v -> v)
+                    .min();
             if (calculateForecastTimestamp.isPresent()) {
                 long delay = calculateForecastTimestamp.getAsLong() - now;
                 return Optional.of(delay < 0 ? 0 : delay);
@@ -618,7 +564,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 ForecastConfiguration config = attr.getConfig();
                 ForecastConfigurationWeightedExponentialAverage weaConfig = null;
                 if (config instanceof ForecastConfigurationWeightedExponentialAverage) {
-                    weaConfig = (ForecastConfigurationWeightedExponentialAverage)config;
+                    weaConfig = (ForecastConfigurationWeightedExponentialAverage) config;
                 } else {
                     return;
                 }
@@ -632,18 +578,20 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                     attr.setForecastTimestamps(newTimestamps);
                 } else if (newTimestamps.size() > 0 && oldTimestamps.size() > 0) {
                     long offset = oldTimestamps.get(0) - newTimestamps.get(0);
-                    List<Long> newShiftedTimestamps = newTimestamps.stream().map(timestamp -> timestamp + offset).collect(Collectors.toList());
-                    while(true) {
+                    List<Long> newShiftedTimestamps = newTimestamps.stream().map(timestamp -> timestamp + offset)
+                            .collect(Collectors.toList());
+                    while (true) {
                         if (newShiftedTimestamps.get(0) < now) {
-                            newShiftedTimestamps = newShiftedTimestamps
-                                .stream()
-                                .map(timestamp -> timestamp + ((ForecastConfigurationWeightedExponentialAverage)config).getForecastPeriod().toMillis())
-                                .collect(Collectors.toList());
+                            newShiftedTimestamps = newShiftedTimestamps.stream().map(
+                                    timestamp -> timestamp + ((ForecastConfigurationWeightedExponentialAverage) config)
+                                            .getForecastPeriod().toMillis())
+                                    .collect(Collectors.toList());
                         } else {
                             break;
                         }
                     }
-                    if (isServerRestart && (oldTimestamps.get(0) < now || newTimestamps.size() > oldTimestamps.size())) {
+                    if (isServerRestart
+                            && (oldTimestamps.get(0) < now || newTimestamps.size() > oldTimestamps.size())) {
                         // force immediate forecast calculation
                         newShiftedTimestamps.add(0, now);
                     }
@@ -663,7 +611,7 @@ public class ForecastService extends RouteBuilder implements ContainerService {
                 if (index >= 0) {
                     clearCount = index + 1;
                 } else {
-                    clearCount = index * (-1) -1;
+                    clearCount = index * (-1) - 1;
                 }
                 if (clearCount > 0) {
                     if (clearCount == timestamps.size()) {
@@ -679,17 +627,15 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             });
         }
 
-        private List<DatapointBucket> getHistoryDataFromDb(AttributeRef attributeRef, ForecastConfigurationWeightedExponentialAverage config, long offset) {
+        private List<DatapointBucket> getHistoryDataFromDb(AttributeRef attributeRef,
+                ForecastConfigurationWeightedExponentialAverage config, long offset) {
             List<DatapointBucket> datapointBuckets = new ArrayList<>(config.getPastCount());
 
             StringBuilder sb = new StringBuilder();
-            sb.append(
-                "select dp from " + AssetDatapoint.class.getSimpleName() + " dp " +
-                    "where dp.assetId = :assetId " +
-                    "and dp.attributeName = :attributeName "
-            );
+            sb.append("select dp from " + AssetDatapoint.class.getSimpleName() + " dp " + "where dp.assetId = :assetId "
+                    + "and dp.attributeName = :attributeName ");
             for (int i = 1; i <= config.getPastCount(); i++) {
-                sb.append(i == 1 ? "and (" : " or " );
+                sb.append(i == 1 ? "and (" : " or ");
                 sb.append("(dp.timestamp >= :timestampMin" + i + " and dp.timestamp <= :timestampMax" + i + ")");
                 if (i == config.getPastCount()) {
                     sb.append(") ");
@@ -699,8 +645,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
             List<AssetDatapoint> datapoints = persistenceService.doReturningTransaction(entityManager -> {
                 TypedQuery<AssetDatapoint> query = entityManager.createQuery(sb.toString(), AssetDatapoint.class)
-                    .setParameter("assetId", attributeRef.getId())
-                    .setParameter("attributeName", attributeRef.getName());
+                        .setParameter("assetId", attributeRef.getId())
+                        .setParameter("attributeName", attributeRef.getName());
                 long now = timerService.getCurrentTimeMillis();
                 long pastPeriod = config.getPastPeriod().toMillis();
                 long forecastPeriod = config.getForecastPeriod().toMillis();
@@ -719,10 +665,8 @@ public class ForecastService extends RouteBuilder implements ContainerService {
             });
 
             datapoints.forEach(datapoint -> {
-                datapointBuckets.stream()
-                    .filter(bucket -> bucket.isInTimeRange(datapoint.getTimestamp()))
-                    .findFirst()
-                    .ifPresent(bucket -> bucket.add(datapoint));
+                datapointBuckets.stream().filter(bucket -> bucket.isInTimeRange(datapoint.getTimestamp())).findFirst()
+                        .ifPresent(bucket -> bucket.add(datapoint));
             });
 
             return datapointBuckets;
@@ -730,12 +674,9 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         private List<Long> loadForecastTimestampsFromDb(AttributeRef attributeRef, long now) {
             List<ValueDatapoint> datapoints = assetPredictedDatapointService.getDatapoints(attributeRef);
-            List<Long> timestamps = datapoints
-                .stream()
-                .map(ValueDatapoint::getTimestamp)
-                .filter(timestamp -> timestamp >= now)
-                .sorted()
-                .collect(Collectors.toList());;
+            List<Long> timestamps = datapoints.stream().map(ValueDatapoint::getTimestamp)
+                    .filter(timestamp -> timestamp >= now).sorted().collect(Collectors.toList());
+            ;
             return timestamps;
         }
     }
@@ -765,8 +706,10 @@ public class ForecastService extends RouteBuilder implements ContainerService {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             ForecastAttribute that = (ForecastAttribute) o;
             return assetId.equals(that.assetId) && attribute.getName().equals(that.attribute.getName());
         }

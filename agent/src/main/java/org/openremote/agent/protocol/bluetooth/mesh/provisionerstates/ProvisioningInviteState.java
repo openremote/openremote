@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
-
-import java.util.logging.Logger;
 
 public class ProvisioningInviteState extends ProvisioningState {
 
@@ -33,7 +32,9 @@ public class ProvisioningInviteState extends ProvisioningState {
     private final MeshProvisioningStatusCallbacks mStatusCallbacks;
     private final InternalTransportCallbacks mInternalTransportCallbacks;
 
-    public ProvisioningInviteState(final UnprovisionedMeshNode unprovisionedMeshNode, final int attentionTimer, final InternalTransportCallbacks mInternalTransportCallbacks, final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
+    public ProvisioningInviteState(final UnprovisionedMeshNode unprovisionedMeshNode, final int attentionTimer,
+            final InternalTransportCallbacks mInternalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
         super();
         this.mUnprovisionedMeshNode = unprovisionedMeshNode;
         this.attentionTimer = attentionTimer;
@@ -49,7 +50,7 @@ public class ProvisioningInviteState extends ProvisioningState {
     @Override
     public void executeSend() {
         final byte[] invitePDU = createInvitePDU();
-        //We store the provisioning invite pdu to be used when generating confirmation inputs
+        // We store the provisioning invite pdu to be used when generating confirmation inputs
         mUnprovisionedMeshNode.setProvisioningInvitePdu(invitePDU);
         mStatusCallbacks.onProvisioningStateChanged(mUnprovisionedMeshNode, States.PROVISIONING_INVITE, invitePDU);
         mInternalTransportCallbacks.sendProvisioningPdu(mUnprovisionedMeshNode, invitePDU);
@@ -66,11 +67,10 @@ public class ProvisioningInviteState extends ProvisioningState {
     private byte[] createInvitePDU() {
 
         final byte[] data = new byte[3];
-        data[0] = MeshManagerApi.PDU_TYPE_PROVISIONING; //Provisioning Opcode;
-        //noinspection ConstantConditions
-        data[1] = TYPE_PROVISIONING_INVITE; //PDU type in
+        data[0] = MeshManagerApi.PDU_TYPE_PROVISIONING; // Provisioning Opcode;
+        // noinspection ConstantConditions
+        data[1] = TYPE_PROVISIONING_INVITE; // PDU type in
         data[2] = (byte) attentionTimer;
         return data;
     }
 }
-

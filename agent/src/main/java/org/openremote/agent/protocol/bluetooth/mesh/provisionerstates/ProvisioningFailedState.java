@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
@@ -34,7 +33,6 @@ public class ProvisioningFailedState extends ProvisioningState {
 
     @Override
     public void executeSend() {
-
     }
 
     @Override
@@ -51,26 +49,26 @@ public class ProvisioningFailedState extends ProvisioningState {
     public static String parseProvisioningFailure(final int errorCode) {
         switch (ProvisioningFailureCode.fromErrorCode(errorCode)) {
             case PROHIBITED:
-                return "PROHIBITED";/* context.getString(R.string.error_prohibited);*/
+                return "PROHIBITED";/* context.getString(R.string.error_prohibited); */
             case INVALID_PDU:
-                return "INVALID_PDU";/*context.getString(R.string.error_invalid_pdu);*/
+                return "INVALID_PDU";/* context.getString(R.string.error_invalid_pdu); */
             case INVALID_FORMAT:
-                return "INVALID_FORMAT";/*context.getString(R.string.error_invalid_format);*/
+                return "INVALID_FORMAT";/* context.getString(R.string.error_invalid_format); */
             case UNEXPECTED_PDU:
-                return "UNEXPECTED_PDU";/*context.getString(R.string.error_prohibited);*/
+                return "UNEXPECTED_PDU";/* context.getString(R.string.error_prohibited); */
             case CONFIRMATION_FAILED:
-                return "CONFIRMATION_FAILED";/*context.getString(R.string.error_confirmation_failed);*/
+                return "CONFIRMATION_FAILED";/* context.getString(R.string.error_confirmation_failed); */
             case OUT_OF_RESOURCES:
-                return "OUT_OF_RESOURCES";/*context.getString(R.string.error_prohibited);*/
+                return "OUT_OF_RESOURCES";/* context.getString(R.string.error_prohibited); */
             case DECRYPTION_FAILED:
-                return "DECRYPTION_FAILED";/*context.getString(R.string.error_decryption_failed);*/
+                return "DECRYPTION_FAILED";/* context.getString(R.string.error_decryption_failed); */
             case UNEXPECTED_ERROR:
-                return "UNEXPECTED_ERROR";/*context.getString(R.string.error_unexpected_error);*/
+                return "UNEXPECTED_ERROR";/* context.getString(R.string.error_unexpected_error); */
             case CANNOT_ASSIGN_ADDRESSES:
-                return "CANNOT_ASSIGN_ADDRESSES";/*context.getString(R.string.error_cannot_assign_addresses);*/
+                return "CANNOT_ASSIGN_ADDRESSES";/* context.getString(R.string.error_cannot_assign_addresses); */
             case UNKNOWN_ERROR_CODE:
             default:
-                return "UNKNOWN_ERROR_CODE";/*context.getString(R.string.error_rfu);*/
+                return "UNKNOWN_ERROR_CODE";/* context.getString(R.string.error_rfu); */
         }
     }
 
@@ -99,13 +97,11 @@ public class ProvisioningFailedState extends ProvisioningState {
                 }
             }
             return UNKNOWN_ERROR_CODE;
-            //throw new RuntimeException("Enum not found");
+            // throw new RuntimeException("Enum not found");
         }
 
         public final int getErrorCode() {
             return errorCode;
         }
     }
-
 }
-

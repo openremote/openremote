@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event.bus;
-
-import org.openremote.model.event.Event;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.openremote.model.event.Event;
 
 /**
  * Simple observer/observable implementation, thread-safe.
@@ -51,7 +50,8 @@ public class EventBus {
         return register(false, eventClass, listener);
     }
 
-    public <E extends Event> EventRegistration<E> register(boolean prepare, Class<E> eventClass, EventListener<E> listener) {
+    public <E extends Event> EventRegistration<E> register(boolean prepare, Class<E> eventClass,
+            EventListener<E> listener) {
         EventRegistration<E> registration = new EventRegistration<>(prepare, eventClass, listener);
         add(registration);
         return registration;
@@ -97,7 +97,7 @@ public class EventBus {
             for (EventRegistration<?> activePrepareRegistration : activePrepareRegistrations) {
                 if (activePrepareRegistration.isMatching(event)) {
                     try {
-                        ((EventRegistration<T>)activePrepareRegistration).getListener().on(event);
+                        ((EventRegistration<T>) activePrepareRegistration).getListener().on(event);
                     } catch (VetoEventException ex) {
                         vetoed = true;
                         break;
@@ -119,7 +119,7 @@ public class EventBus {
                 // Only notify listeners after iterating registrations, some listeners might modify registrations!
                 for (EventRegistration<?> activeRegistration : activeRegistrations) {
                     if (activeRegistration.isMatching(event)) {
-                        ((EventRegistration<T>)activeRegistration).getListener().on(event);
+                        ((EventRegistration<T>) activeRegistration).getListener().on(event);
                     }
                 }
             } else if (LOG.isLoggable(Level.FINE)) {
@@ -127,5 +127,4 @@ public class EventBus {
             }
         }
     }
-
 }

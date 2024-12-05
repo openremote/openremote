@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
 import java.util.Arrays;
 
 /**
- * Represents a role; depending on the context then different values will be populated. If getting roles related to a user
+ * Represents a role; depending on the context then different values will be populated. If getting roles related to a
+ * user
  * then the {@link #isAssigned} will indicate whether the role is assigned to the user or not and {@link #isComposite}
  * will indicate if it is a composite role. If getting roles for a client then if {@link #isComposite} then the
  */
@@ -101,12 +101,7 @@ public class Role {
 
     @Override
     public String toString() {
-        return getClass().getName() + "{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", composite=" + composite +
-            ", compositeRoleNames=" + Arrays.toString(compositeRoleIds) +
-            ", assigned=" + assigned +
-            '}';
+        return getClass().getName() + "{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", composite=" + composite
+                + ", compositeRoleNames=" + Arrays.toString(compositeRoleIds) + ", assigned=" + assigned + '}';
     }
 }

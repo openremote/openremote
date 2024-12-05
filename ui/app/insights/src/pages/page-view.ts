@@ -1,21 +1,39 @@
-import {html, TemplateResult} from "lit";
-import {customElement, query, property, state} from "lit/decorators.js";
-import {AppStateKeyed, DefaultMobileLogo, Page, PageProvider, RealmAppConfig, router, updateRealm} from "@openremote/or-app";
-import {EnhancedStore} from "@reduxjs/toolkit";
-import {when} from "lit/directives/when.js";
-import {styleMap} from 'lit/directives/style-map.js';
-import {guard} from "lit/directives/guard.js";
-import {Dashboard, Realm} from "@openremote/model";
-import {registerWidgetTypes} from "@openremote/or-dashboard-builder";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, TemplateResult } from "lit";
+import { customElement, query, property, state } from "lit/decorators.js";
+import { AppStateKeyed, DefaultMobileLogo, Page, PageProvider, RealmAppConfig, router, updateRealm } from "@openremote/or-app";
+import { EnhancedStore } from "@reduxjs/toolkit";
+import { when } from "lit/directives/when.js";
+import { styleMap } from 'lit/directives/style-map.js';
+import { guard } from "lit/directives/guard.js";
+import { Dashboard, Realm } from "@openremote/model";
+import { registerWidgetTypes } from "@openremote/or-dashboard-builder";
 import manager from "@openremote/core";
-import {DashboardMenu} from "../components/dashboard-menu";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate";
-import {style} from "../style";
-import {isAxiosError} from "@openremote/rest";
+import { DashboardMenu } from "../components/dashboard-menu";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { style } from "../style";
+import { isAxiosError } from "@openremote/rest";
 import "../components/dashboard-menu";
 
-export function pageViewProvider(store: EnhancedStore<AppStateKeyed>, realmConfigs: {[p: string]: RealmAppConfig}): PageProvider<AppStateKeyed> {
+export function pageViewProvider(store: EnhancedStore<AppStateKeyed>, realmConfigs: { [p: string]: RealmAppConfig }): PageProvider<AppStateKeyed> {
     return {
         name: "view",
         routes: [
@@ -39,7 +57,7 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
     @property() // configs of all available realms; contains details such as images
-    public realmConfigs?: {[p: string]: RealmAppConfig};
+    public realmConfigs?: { [p: string]: RealmAppConfig };
 
     @property() // setting this to true removes the menu, and only fetches that specific dashboard to avoid clutter
     protected viewDashboardOnly: boolean = false;
@@ -106,33 +124,33 @@ export class PageView extends Page<AppStateKeyed> {
     willUpdate(changedProps: Map<string, any>) {
 
         // Update url if properties have changed that are present in the URL
-        if(changedProps.has("_selectedId") || changedProps.has("viewDashboardOnly")) {
+        if (changedProps.has("_selectedId") || changedProps.has("viewDashboardOnly")) {
             this._updateRoute(this._selectedId, !this.viewDashboardOnly, false);
         }
 
         // Clear loadedDashboards when people switch between realms or viewing modes.
         // For example, if 'view this dashboard only' is active, we only fetch that specific dashboard.
         // When switched to 'view all dashboards', or the other way around, we should fetch all dashboard(s) of that realm again.
-        if(changedProps.has("_realm") || changedProps.has("viewDashboardOnly")) {
+        if (changedProps.has("_realm") || changedProps.has("viewDashboardOnly")) {
             this._loadedDashboards = undefined;
         }
 
         // Fetch dashboard(s) if none exist, and no related fetch calls are active.
-        if(this._loadedDashboards == undefined && !this.getPromise('dashboard/all') && !this.getPromise('dashboard/' + this._selectedId)) {
+        if (this._loadedDashboards == undefined && !this.getPromise('dashboard/all') && !this.getPromise('dashboard/' + this._selectedId)) {
 
             // When visiting '/{id}/false', only fetch dashboard with that ID.
-            if(this.viewDashboardOnly && this._selectedId) {
+            if (this.viewDashboardOnly && this._selectedId) {
                 this.fetchDashboard(this._selectedId).then((dashboard: Dashboard) => {
                     this._loadedDashboards = (dashboard ? [dashboard] : undefined);
                 })
             }
             // When visiting '/{id}/true', fetch dashboard with that ID first...
-            else if(!this.viewDashboardOnly && this._selectedId) {
+            else if (!this.viewDashboardOnly && this._selectedId) {
                 this.fetchDashboard(this._selectedId).then((dashboard: Dashboard) => {
                     this._loadedDashboards = dashboard ? [dashboard] : undefined;
 
                     // If dashboard does not exist, but menu should be shown, then just deselect the dashboard.
-                    if(dashboard === undefined) {
+                    if (dashboard === undefined) {
                         this._selectedId = undefined; // aka redirect to '/'
                     }
                     // If dashboard fetched with success, fetch all other dashboards of that realm as well.
@@ -146,11 +164,11 @@ export class PageView extends Page<AppStateKeyed> {
             // When visiting '/'
             else {
                 this.fetchAllDashboards().then((dashboards) => {
-                    if(!manager.authenticated && dashboards?.length === 0) {
+                    if (!manager.authenticated && dashboards?.length === 0) {
                         manager.login(); // if not logged in, auto login if no public dashboards are available
                     } else {
                         this._loadedDashboards = dashboards;
-                        if(dashboards.length === 1) {
+                        if (dashboards.length === 1) {
                             this._selectedId = this._loadedDashboards[0].id;
                         }
                     }
@@ -165,11 +183,11 @@ export class PageView extends Page<AppStateKeyed> {
     // FETCH RELATED FUNCTIONS
 
     protected async fetchAllDashboards(realmName?: string): Promise<Dashboard[]> {
-        if(!realmName) {
+        if (!realmName) {
             realmName = manager.displayRealm;
         }
         let promise = this.getPromise('dashboard/all');
-        if(promise === undefined) {
+        if (promise === undefined) {
             promise = this.registerPromise('dashboard/all', manager.rest.api.DashboardResource.getAllRealmDashboards(realmName), true, false);
         }
         try {
@@ -183,18 +201,18 @@ export class PageView extends Page<AppStateKeyed> {
 
     protected async fetchDashboard(id: string, loginRedirect: boolean = true): Promise<Dashboard | undefined> {
         let promise = this.getPromise('dashboard/' + id);
-        if(promise == undefined) {
+        if (promise == undefined) {
             promise = this.registerPromise(('dashboard/' + id), manager.rest.api.DashboardResource.get(this._realm, id), true, false);
         }
         try {
             const response = await promise;
             return response.data;
         } catch (ex) {
-            if(isAxiosError(ex)) {
-                if(ex.response.status === 404 && manager.isSuperUser()) {
+            if (isAxiosError(ex)) {
+                if (ex.response.status === 404 && manager.isSuperUser()) {
                     return undefined;
                 }
-                if(!manager.authenticated && ex.response.status === 403 && loginRedirect) {
+                if (!manager.authenticated && ex.response.status === 403 && loginRedirect) {
                     manager.login();
                 }
             }
@@ -209,7 +227,7 @@ export class PageView extends Page<AppStateKeyed> {
         const realmConfig = this.realmConfigs ? this.realmConfigs[this._realm] : undefined;
         const selected: Dashboard | undefined = this._loadedDashboards?.find((d) => d.id === this._selectedId);
         let logoMobile = realmConfig?.logoMobile;
-        if(logoMobile == undefined) {
+        if (logoMobile == undefined) {
             logoMobile = DefaultMobileLogo;
         }
         const pageStyles = {
@@ -219,8 +237,8 @@ export class PageView extends Page<AppStateKeyed> {
         }
         return html`
             ${when(!this.viewDashboardOnly, () => {
-                const realms = this._loadedRealms?.map((r) => ({ name: r.name, displayName: r.displayName }));
-                return html`
+            const realms = this._loadedRealms?.map((r) => ({ name: r.name, displayName: r.displayName }));
+            return html`
                     <dashboard-menu id="dashboard-menu" .dashboards="${this._loadedDashboards}" .realms="${realms}" .realm="${this._realm}"
                                     .selectedId="${this._selectedId}" .userId="${this._userId}" .loading="${this.isLoading()}" .logoMobileSrc="${logoMobile}"
                                     @realm="${(ev: CustomEvent) => this.changeRealm(ev.detail.value)}"
@@ -229,7 +247,7 @@ export class PageView extends Page<AppStateKeyed> {
                                     @logout="${() => { this._updateRoute(); manager.logout(); }}"
                     ></dashboard-menu>
                 `
-            })}
+        })}
             <div style="flex: 1; ${styleMap(pageStyles)}">
                 ${getDashboardHeaderTemplate(!this.viewDashboardOnly, selected, () => this.dashboardMenu?.toggleDrawer(), () => this.rerenderPending = true)}
                 <div style="flex: 1;">
@@ -252,9 +270,9 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
     getErrorMsg(translate: boolean = true): string {
-        if(this.viewDashboardOnly && this._loadedDashboards?.length === 0) {
+        if (this.viewDashboardOnly && this._loadedDashboards?.length === 0) {
             return (translate ? i18next.t('dashboardNotFound') : 'dashboardNotFound');
-        } else if(!this.viewDashboardOnly) {
+        } else if (!this.viewDashboardOnly) {
             return (translate ? i18next.t('noDashboardSelected-mobile') : 'noDashboardSelected-mobile')
         }
         return (translate ? i18next.t('errorOccurred') : 'errorOccurred')
@@ -300,26 +318,26 @@ export class PageView extends Page<AppStateKeyed> {
     }
 
     registerPromise(topic: string, promise: Promise<any>, doUpdate: boolean = true, updateOnComplete: boolean = true): Promise<any> {
-        if(this._activePromises.has(topic)) {
+        if (this._activePromises.has(topic)) {
             promise = this._activePromises.get(topic);
         } else {
             this._activePromises.set(topic, promise);
         }
         promise.finally(() => { this.completePromise(topic, updateOnComplete); });
-        if(doUpdate) { this.requestUpdate("_activePromises"); }
+        if (doUpdate) { this.requestUpdate("_activePromises"); }
         return promise;
     }
 
     completePromise(topic: string, doUpdate: boolean = true) {
         this._activePromises.delete(topic);
-        if(doUpdate) { this.requestUpdate("_activePromises"); }
+        if (doUpdate) { this.requestUpdate("_activePromises"); }
     }
 
 
     // Util method for updating URL
     protected _updateRoute(id?: string, showMenu?: boolean, silent: boolean = true) {
         let path = "view";
-        if(id) {
+        if (id) {
             path += "/" + id + (showMenu != undefined ? ('/' + showMenu) : undefined)
         }
         router.navigate(path, {

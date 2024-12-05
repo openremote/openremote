@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules.facade;
+
+import java.util.Arrays;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
@@ -28,13 +32,8 @@ import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RealmRuleset;
-
-import java.util.Arrays;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
+import org.openremote.model.rules.Ruleset;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not use assets in global scope).
@@ -47,7 +46,8 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
     protected final AssetStorageService assetStorageService;
     protected final Consumer<AttributeEvent> eventConsumer;
 
-    public AssetsFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, Consumer<AttributeEvent> eventConsumer) {
+    public AssetsFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService,
+            Consumer<AttributeEvent> eventConsumer) {
         this.rulesEngineId = rulesEngineId;
         this.assetStorageService = assetStorageService;
         this.eventConsumer = eventConsumer;
@@ -58,18 +58,15 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
         if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Realm is restricted to rules
-            assetQuery.realm = new RealmPredicate(
-                rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
-            );
+            assetQuery.realm = new RealmPredicate(rulesEngineId.getRealm()
+                    .orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
         } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Realm is restricted to assets'
-            assetQuery.realm = new RealmPredicate(
-                rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
-            );
+            assetQuery.realm = new RealmPredicate(rulesEngineId.getRealm()
+                    .orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId)));
 
-            Asset<?> restrictedAsset = assetStorageService.find(
-                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-                true);
+            Asset<?> restrictedAsset = assetStorageService.find(rulesEngineId.getAssetId()
+                    .orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)), true);
 
             if (restrictedAsset == null) {
                 throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
@@ -98,7 +95,8 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         long count = this.getResults(query).count();
 
         if (ids.length != count) {
-            LOG.warning("Access to asset(s) not allowed for this rule engine scope " + rulesEngineId + " for asset IDs: " + String.join(", ", ids));
+            LOG.warning("Access to asset(s) not allowed for this rule engine scope " + rulesEngineId
+                    + " for asset IDs: " + String.join(", ", ids));
             return this;
         }
 

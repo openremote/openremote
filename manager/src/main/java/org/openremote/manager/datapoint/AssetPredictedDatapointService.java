@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.datapoint;
+
+import static java.time.temporal.ChronoUnit.HOURS;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.ProtocolPredictedDatapointService;
 import org.openremote.container.timer.TimerService;
@@ -29,18 +39,8 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.datapoint.ValueDatapoint;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static java.time.temporal.ChronoUnit.HOURS;
-
-public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint> implements ProtocolPredictedDatapointService {
+public class AssetPredictedDatapointService extends AbstractDatapointService<AssetPredictedDatapoint>
+        implements ProtocolPredictedDatapointService {
 
     private static final Logger LOG = Logger.getLogger(AssetPredictedDatapointService.class.getName());
 
@@ -53,23 +53,16 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
     public void init(Container container) throws Exception {
         super.init(container);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new AssetPredictedDatapointResourceImpl(
-                container.getService(TimerService.class),
-                container.getService(ManagerIdentityService.class),
-                container.getService(AssetStorageService.class),
-                this
-            )
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new AssetPredictedDatapointResourceImpl(container.getService(TimerService.class),
+                        container.getService(ManagerIdentityService.class),
+                        container.getService(AssetStorageService.class), this));
     }
 
     @Override
     public void start(Container container) throws Exception {
-        dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
-            this::purgeDataPoints,
-            getFirstPurgeMillis(timerService.getNow()),
-            Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
-        );
+        dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::purgeDataPoints,
+                getFirstPurgeMillis(timerService.getNow()), Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp) {
@@ -85,9 +78,10 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
     }
 
     public void purgeValues(String assetId, String attributeName) {
-        persistenceService.doTransaction(em -> em.createQuery(
-            "delete from " + getDatapointClass().getSimpleName() + " dp where dp.assetId=?1 and dp.attributeName=?2"
-        ).setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
+        persistenceService.doTransaction(em -> em
+                .createQuery("delete from " + getDatapointClass().getSimpleName()
+                        + " dp where dp.assetId=?1 and dp.attributeName=?2")
+                .setParameter(1, assetId).setParameter(2, attributeName).executeUpdate());
     }
 
     @Override

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-
 import java.util.*;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 /**
  * Base mesh model class
@@ -124,19 +123,13 @@ public abstract class MeshModel {
      *
      * @param status publication set status
      */
-    protected void setPublicationStatus(final ConfigModelPublicationStatus status,
-                                        final UUID labelUUID) {
+    protected void setPublicationStatus(final ConfigModelPublicationStatus status, final UUID labelUUID) {
         if (status.isSuccessful()) {
             if (!MeshAddress.isValidUnassignedAddress(status.getPublishAddress())) {
-                mPublicationSettings = new PublicationSettings(status.getPublishAddress(),
-                    labelUUID,
-                    status.getAppKeyIndex(),
-                    status.getCredentialFlag(),
-                    status.getPublishTtl(),
-                    status.getPublicationSteps(),
-                    status.getPublicationResolution(),
-                    status.getPublishRetransmitCount(),
-                    status.getPublishRetransmitIntervalSteps());
+                mPublicationSettings = new PublicationSettings(status.getPublishAddress(), labelUUID,
+                        status.getAppKeyIndex(), status.getCredentialFlag(), status.getPublishTtl(),
+                        status.getPublicationSteps(), status.getPublicationResolution(),
+                        status.getPublishRetransmitCount(), status.getPublishRetransmitIntervalSteps());
             } else {
                 mPublicationSettings = null;
             }
@@ -194,7 +187,7 @@ public abstract class MeshModel {
      * Sets the subscription address in a mesh model
      *
      * @param labelUuid Label uuid of the the subscription address
-     * @param address   Subscription address
+     * @param address Subscription address
      */
     protected void addSubscriptionAddress(final UUID labelUuid, final int address) {
         if (!labelUuids.contains(labelUuid)) {
@@ -219,10 +212,9 @@ public abstract class MeshModel {
      * Removes the subscription address in a mesh model
      *
      * @param labelUuid Label UUID
-     * @param address   Subscription address
+     * @param address Subscription address
      */
-    protected void removeSubscriptionAddress(final UUID labelUuid,
-                                             final Integer address) {
+    protected void removeSubscriptionAddress(final UUID labelUuid, final Integer address) {
         labelUuids.remove(labelUuid);
         removeSubscriptionAddress(address);
     }
@@ -249,10 +241,9 @@ public abstract class MeshModel {
      * Overwrites the subscription addresses in a mesh model by clearing the existing addresses and adding a new address
      *
      * @param labelUuid Label UUID
-     * @param address   Subscription address
+     * @param address Subscription address
      */
-    protected void overwriteSubscriptionAddress(final UUID labelUuid,
-                                                final Integer address) {
+    protected void overwriteSubscriptionAddress(final UUID labelUuid, final Integer address) {
         labelUuids.clear();
         addSubscriptionAddress(labelUuid, address);
         overwriteSubscriptionAddress(address);

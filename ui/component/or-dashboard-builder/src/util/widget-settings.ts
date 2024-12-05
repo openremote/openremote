@@ -1,7 +1,25 @@
-import {LitElement, PropertyValues, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { LitElement, PropertyValues, TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
-import {WidgetConfig} from "./widget-config";
-import {style} from "../style";
+import { WidgetConfig } from "./widget-config";
+import { style } from "../style";
 
 export class WidgetSettingsChangedEvent extends CustomEvent<WidgetConfig> {
 
@@ -36,7 +54,7 @@ export abstract class WidgetSettings extends LitElement {
 
     // Lit lifecycle for "on every update" which triggers on every property/state change
     protected willUpdate(changedProps: PropertyValues) {
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             this.dispatchEvent(new WidgetSettingsChangedEvent(this.widgetConfig));
         }
     }

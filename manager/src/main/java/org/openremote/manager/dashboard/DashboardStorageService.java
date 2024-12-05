@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.dashboard;
 
-import jakarta.persistence.Query;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -36,10 +39,7 @@ import org.openremote.model.query.DashboardQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import jakarta.persistence.Query;
 
 public class DashboardStorageService extends RouteBuilder implements ContainerService {
 
@@ -61,14 +61,9 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         persistenceService = container.getService(PersistenceService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new DashboardResourceImpl(
-                        container.getService(TimerService.class),
-                        identityService,
-                        this,
-                        container.getService(MessageBrokerService.class)
-                )
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new DashboardResourceImpl(container.getService(TimerService.class), identityService,
+                        this, container.getService(MessageBrokerService.class)));
     }
 
     @Override
@@ -79,16 +74,16 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     @Override
     public void stop(Container container) throws Exception {
         /* code not overridden yet */
-
     }
 
     /**
      * Pulls dashboards from the database based on the query object.
      * Useful to specifically filter and request dashboards.
+     *
      * @param dashboardQuery see {@link DashboardQuery} for specification
      * @return List of dashboards present in the database
      */
-    @SuppressWarnings({"unchecked", "SqlSourceToSinkFlow"})
+    @SuppressWarnings({ "unchecked", "SqlSourceToSinkFlow" })
     protected Dashboard[] query(DashboardQuery dashboardQuery, String userId) {
 
         return (Dashboard[]) persistenceService.doReturningTransaction((em) -> {
@@ -97,30 +92,30 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("realm", dashboardQuery.realm.name);
 
-            if(dashboardQuery.ids != null) {
+            if (dashboardQuery.ids != null) {
                 this.appendSqlIdFilter(sql, dashboardQuery, parameters);
             }
-            if(dashboardQuery.names != null) {
+            if (dashboardQuery.names != null) {
                 this.appendSqlNamesFilter(sql, dashboardQuery, parameters);
             }
-            if(dashboardQuery.userIds != null) {
+            if (dashboardQuery.userIds != null) {
                 this.appendSqlUserIdsFilter(sql, dashboardQuery, parameters);
             }
-            if(dashboardQuery.conditions.getDashboard() != null) {
+            if (dashboardQuery.conditions.getDashboard() != null) {
                 this.appendSqlDashboardConditionsFilter(sql, dashboardQuery, parameters, userId);
             }
-            if(dashboardQuery.conditions.getAsset() != null) {
+            if (dashboardQuery.conditions.getAsset() != null) {
                 this.appendSqlAssetConditionsFilter(sql, dashboardQuery, parameters, userId);
             }
 
             /** TODO: Implement SELECT filtering {@link org.openremote.model.query.DashboardQuery.Select} */
 
             // Apply pagination
-            if(dashboardQuery.start != null) {
+            if (dashboardQuery.start != null) {
                 sql.append(" OFFSET :start");
                 parameters.put("start", dashboardQuery.start);
             }
-            if(dashboardQuery.limit != null) {
+            if (dashboardQuery.limit != null) {
                 sql.append(" LIMIT :limit");
                 parameters.put("limit", dashboardQuery.limit);
             }
@@ -136,9 +131,11 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     /**
      * Builds SQL section for filtering dashboards by ID,
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
+     *
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder appendSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlIdFilter(StringBuilder sqlBuilder, DashboardQuery query,
+            Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND id IN (:ids)");
         sqlParams.put("ids", List.of(query.ids));
         return sqlBuilder;
@@ -147,13 +144,16 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     /**
      * Builds SQL section for filtering dashboards by display name using {@link StringPredicate},
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
+     *
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder appendSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlNamesFilter(StringBuilder sqlBuilder, DashboardQuery query,
+            Map<String, Object> sqlParams) {
         IntStream.range(0, query.names.length).forEach(index -> {
             String key = "name" + index;
             StringPredicate pred = query.names[index];
-            sqlBuilder.append(" AND ").append(pred.caseSensitive ? "display_name" : "UPPER(display_name)").append(pred.negate ? " NOT" : "");
+            sqlBuilder.append(" AND ").append(pred.caseSensitive ? "display_name" : "UPPER(display_name)")
+                    .append(pred.negate ? " NOT" : "");
             switch (pred.match) {
                 case BEGIN -> sqlBuilder.append(" LIKE :").append(key).append(" || '%'");
                 case CONTAINS -> sqlBuilder.append(" LIKE '%' || :").append(key).append(" || '%'");
@@ -165,32 +165,36 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
         return sqlBuilder;
     }
 
-    protected StringBuilder appendSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams) {
+    protected StringBuilder appendSqlUserIdsFilter(StringBuilder sqlBuilder, DashboardQuery query,
+            Map<String, Object> sqlParams) {
         sqlBuilder.append(" AND owner_id IN (:ownerIds)");
         sqlParams.put("ownerIds", List.of(query.userIds));
         return sqlBuilder;
     }
 
     /**
-     * Builds SQL section for filtering dashboards by dashboard conditions, such as {@link DashboardAccess} (PRIVATE, SHARED, PUBLIC),
+     * Builds SQL section for filtering dashboards by dashboard conditions, such as {@link DashboardAccess} (PRIVATE,
+     * SHARED, PUBLIC),
      * and applies the necessary data to the sqlBuilder and sqlParams parameters.
+     *
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
+    protected StringBuilder appendSqlDashboardConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query,
+            Map<String, Object> sqlParams, String userId) {
         var dashboardConditions = query.conditions.getDashboard();
-        if(dashboardConditions.getViewAccess() != null || dashboardConditions.getEditAccess() != null) {
+        if (dashboardConditions.getViewAccess() != null || dashboardConditions.getEditAccess() != null) {
 
             List<DashboardAccess> viewAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getViewAccess()));
             List<DashboardAccess> editAccess = new ArrayList<>(Arrays.asList(dashboardConditions.getEditAccess()));
             sqlBuilder.append(" AND (");
 
             // When requesting PRIVATE dashboards, check whether the user is also the owner
-            if(userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
+            if (userId != null && viewAccess.contains(DashboardAccess.PRIVATE)) {
                 viewAccess.remove(DashboardAccess.PRIVATE);
                 sqlBuilder.append("(view_access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
             }
-            if(userId != null && editAccess.contains(DashboardAccess.PRIVATE)) {
+            if (userId != null && editAccess.contains(DashboardAccess.PRIVATE)) {
                 editAccess.remove(DashboardAccess.PRIVATE);
                 sqlBuilder.append("(edit_access = 2 AND owner_id = :userId) OR ");
                 sqlParams.put("userId", userId);
@@ -202,7 +206,10 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             sqlParams.put("viewAccess", viewAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
             sqlParams.put("editAccess", editAccess.stream().map(DashboardAccess::ordinal).collect(Collectors.toList()));
 
-            /** TODO: Implement filtering by {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets} */
+            /**
+             * TODO: Implement filtering by
+             * {@link org.openremote.model.query.DashboardQuery.DashboardConditions.minWidgets}
+             */
 
         }
         return sqlBuilder;
@@ -213,30 +220,37 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
      * For example, to only query dashboards when the user has access to the assets used.
      * Using {@link org.openremote.model.query.DashboardQuery.AssetAccess},
      * it applies the necessary data to the sqlBuilder and sqlParams parameters.
+     *
      * @return {@link StringBuilder} used for building
      */
-    protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query, Map<String, Object> sqlParams, String userId) {
+    protected StringBuilder appendSqlAssetConditionsFilter(StringBuilder sqlBuilder, DashboardQuery query,
+            Map<String, Object> sqlParams, String userId) {
         var assetConditions = query.conditions.getAsset();
-        if(assetConditions.access != null) {
+        if (assetConditions.access != null) {
             List<DashboardQuery.AssetAccess> levels = Arrays.asList(assetConditions.access);
             if (levels.size() == 1 && levels.contains(DashboardQuery.AssetAccess.RESTRICTED)) {
 
                 // Gather asset ids the user is linked to
-                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.realm.name, userId, null);
-                List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId()).collect(Collectors.toList());
+                List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(query.realm.name, userId,
+                        null);
+                List<String> assetIds = userAssetLinks.stream().map(ua -> ua.getId().getAssetId())
+                        .collect(Collectors.toList());
 
                 // AT_LEAST_ONE - When user has access to the assets of at least 1 widget
-                if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
+                if (assetConditions.minAmount == DashboardQuery.ConditionMinAmount.AT_LEAST_ONE) {
                     sqlBuilder.append(" AND (template IS NULL OR template->'widgets' IS NULL OR EXISTS (");
-                    sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(COALESCE(template->'widgets', '[]')) AS j(widget) ");
-                    sqlBuilder.append("LEFT JOIN jsonb_array_elements(COALESCE(widget->'widgetConfig'->'attributeRefs', '[]')) AS a(attributeRef) ");
+                    sqlBuilder.append(
+                            "SELECT 1 FROM jsonb_array_elements(COALESCE(template->'widgets', '[]')) AS j(widget) ");
+                    sqlBuilder.append(
+                            "LEFT JOIN jsonb_array_elements(COALESCE(widget->'widgetConfig'->'attributeRefs', '[]')) AS a(attributeRef) ");
                     sqlBuilder.append("ON a->>'id' IN (:assetIds)))");
                 }
                 // ALL - User needs access to the assets of ALL widgets (or the dashboard has no widgets)
-                else if(assetConditions.minAmount == DashboardQuery.ConditionMinAmount.ALL) {
+                else if (assetConditions.minAmount == DashboardQuery.ConditionMinAmount.ALL) {
                     sqlBuilder.append(" AND NOT EXISTS (");
                     sqlBuilder.append("SELECT 1 FROM jsonb_array_elements(template->'widgets') AS j(widget), ");
-                    sqlBuilder.append("jsonb_array_elements(widget->'widgetConfig'->'attributeRefs') AS a(attributeRef) ");
+                    sqlBuilder.append(
+                            "jsonb_array_elements(widget->'widgetConfig'->'attributeRefs') AS a(attributeRef) ");
                     sqlBuilder.append("WHERE a->>'id' NOT IN (:assetIds))");
                 }
                 sqlParams.put("assetIds", assetIds);
@@ -249,31 +263,28 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
     // Method to check if a dashboardId actually exists in the database
-    // Useful for when query() does not return any accessible dashboard for that user, and check if it does however exist.
+    // Useful for when query() does not return any accessible dashboard for that user, and check if it does however
+    // exist.
     public boolean exists(String dashboardId, String realm) {
-        if(dashboardId == null) {
+        if (dashboardId == null) {
             throw new IllegalArgumentException("No dashboardId is specified.");
         }
-        if(realm == null) {
+        if (realm == null) {
             throw new IllegalArgumentException("No realm is specified.");
         }
-        return this.query(new DashboardQuery()
-                .realm(new RealmPredicate(realm))
-                .ids(dashboardId),
-                null
-        ).length > 0;
+        return this.query(new DashboardQuery().realm(new RealmPredicate(realm)).ids(dashboardId), null).length > 0;
     }
-
 
     // Creation of initial dashboard (so no updating!)
     public Dashboard createNew(Dashboard dashboard) {
-        if(dashboard == null) {
+        if (dashboard == null) {
             throw new IllegalArgumentException("No dashboard is specified.");
         }
         return persistenceService.doReturningTransaction(em -> {
-            if(dashboard.getId() != null && dashboard.getId().length() > 0) {
-                Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in database
-                if(d != null) {
+            if (dashboard.getId() != null && dashboard.getId().length() > 0) {
+                Dashboard d = em.find(Dashboard.class, dashboard.getId()); // checking whether dashboard is already in
+                                                                           // database
+                if (d != null) {
                     throw new IllegalArgumentException("This dashboard has already been created.");
                 }
             }
@@ -283,28 +294,23 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Update of an existing dashboard
     public Dashboard update(Dashboard dashboard, String realm, String userId) throws IllegalArgumentException {
-        if(dashboard == null) {
+        if (dashboard == null) {
             throw new IllegalArgumentException("No dashboard is specified.");
         }
-        if(realm == null) {
+        if (realm == null) {
             throw new IllegalArgumentException("No realm is specified.");
         }
-        if(userId == null) {
+        if (userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
         // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
-        var query = new DashboardQuery()
-                .ids(dashboard.getId())
-                .realm(new RealmPredicate(realm))
-                .userIds(userId)
+        var query = new DashboardQuery().ids(dashboard.getId()).realm(new RealmPredicate(realm)).userIds(userId)
                 .limit(1)
                 .conditions(new DashboardQuery.Conditions().dashboard(
-                        new DashboardQuery.DashboardConditions()
-                                .viewAccess(new DashboardAccess[]{})
-                                .editAccess(new DashboardAccess[]{DashboardAccess.SHARED, DashboardAccess.PRIVATE})
-                ));
+                        new DashboardQuery.DashboardConditions().viewAccess(new DashboardAccess[] {}).editAccess(
+                                new DashboardAccess[] { DashboardAccess.SHARED, DashboardAccess.PRIVATE })));
         Dashboard[] dashboards = this.query(query, userId);
-        if(dashboards != null && dashboards.length > 0) {
+        if (dashboards != null && dashboards.length > 0) {
             Dashboard d = dashboards[0];
             return persistenceService.doReturningTransaction(em -> {
                 dashboard.setVersion(d.getVersion());
@@ -316,29 +322,24 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
     public boolean delete(String dashboardId, String realm, String userId) throws IllegalArgumentException {
-        if(dashboardId == null) {
+        if (dashboardId == null) {
             throw new IllegalArgumentException("No dashboardId is specified.");
         }
-        if(realm == null) {
+        if (realm == null) {
             throw new IllegalArgumentException("No realm is specified.");
         }
-        if(userId == null) {
+        if (userId == null) {
             throw new IllegalArgumentException("No userId is specified.");
         }
         return persistenceService.doReturningTransaction(em -> {
 
             // Query the dashboards with the same ID (which is only 1), and that userId is able to EDIT
-            Dashboard[] dashboards = this.query(new DashboardQuery()
-                    .ids(dashboardId)
-                    .realm(new RealmPredicate(realm))
-                    .userIds(userId)
-                    .limit(1)
-                    .conditions(new DashboardQuery.Conditions().dashboard(
-                            new DashboardQuery.DashboardConditions().editAccess(new DashboardAccess[]{ DashboardAccess.SHARED, DashboardAccess.PRIVATE })
-                    )),
-                    userId
-            );
-            if(dashboards == null || dashboards.length == 0) {
+            Dashboard[] dashboards = this.query(new DashboardQuery().ids(dashboardId).realm(new RealmPredicate(realm))
+                    .userIds(userId).limit(1)
+                    .conditions(new DashboardQuery.Conditions().dashboard(new DashboardQuery.DashboardConditions()
+                            .editAccess(new DashboardAccess[] { DashboardAccess.SHARED, DashboardAccess.PRIVATE }))),
+                    userId);
+            if (dashboards == null || dashboards.length == 0) {
                 throw new IllegalArgumentException("No dashboards could be found.");
             }
             Query query = em.createQuery("DELETE from Dashboard d where d.id=?1 and d.realm =?2");

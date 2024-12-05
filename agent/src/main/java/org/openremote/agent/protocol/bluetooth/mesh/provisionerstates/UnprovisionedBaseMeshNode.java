@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.StaticOOBType;
-
-import java.util.UUID;
-import java.util.logging.Logger;
 
 public class UnprovisionedBaseMeshNode {
 
@@ -56,9 +55,9 @@ public class UnprovisionedBaseMeshNode {
     int numberOfElements;
     UUID deviceUuid;
     byte[] provisioningInvitePdu;
-    //capabilties pdu received by the provisioner
+    // capabilties pdu received by the provisioner
     byte[] provisioningCapabilitiesPdu;
-    //provisioning start pdu sent by the provisioner
+    // provisioning start pdu sent by the provisioner
     byte[] provisioningStartPdu;
     AuthenticationOOBMethods authMethodUsed = AuthenticationOOBMethods.NO_OOB_AUTHENTICATION;
     short authActionUsed;
@@ -202,7 +201,8 @@ public class UnprovisionedBaseMeshNode {
     }
 
     /**
-     * Returns the auth action value and this depends on the {@link AuthenticationOOBMethods} used and the possible values are
+     * Returns the auth action value and this depends on the {@link AuthenticationOOBMethods} used and the possible
+     * values are
      * {@link StaticOOBType}
      * {@link OutputOOBAction}
      * {@link InputOOBAction}

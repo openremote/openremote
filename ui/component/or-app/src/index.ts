@@ -1,28 +1,46 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {AppConfig, Page, RealmAppConfig, router} from "./types";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { AppConfig, Page, RealmAppConfig, router } from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
-import {updateMetadata} from "pwa-helpers/metadata";
+import { updateMetadata } from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util} from "@openremote/core";
-import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
-import {OrMwcDialog, showDialog, showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMwcSnackbar, showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
-import {AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm} from "./app";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {Auth, ManagerConfig, Realm} from "@openremote/model";
-import {pageOfflineProvider} from "./page-offline";
+import manager, { BasicLoginResult, DefaultColor2, DefaultColor3, DefaultColor4, Manager, normaliseConfig, ORError, OREvent, Util } from "@openremote/core";
+import { DEFAULT_LANGUAGES, HeaderConfig } from "./or-header";
+import { OrMwcDialog, showDialog, showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrMwcSnackbar, showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { AnyAction, Store, Unsubscribe } from "@reduxjs/toolkit";
+import { AppStateKeyed, setOffline, setVisibility, updatePage, updateRealm } from "./app";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { Auth, ManagerConfig, Realm } from "@openremote/model";
+import { pageOfflineProvider } from "./page-offline";
 
 export const DefaultLogo = require("../images/logo.svg");
 export const DefaultMobileLogo = require("../images/logo-mobile.svg");
 export const DefaultFavIcon = require("../images/favicon.ico");
 
-export {AnyAction};
+export { AnyAction };
 export * from "./app";
 export * from "./or-header";
 export * from "./types";
@@ -31,7 +49,7 @@ export * from "./types";
 declare var MANAGER_URL: string | undefined;
 declare var KEYCLOAK_URL: string | undefined;
 
-export {HeaderConfig, DEFAULT_LANGUAGES};
+export { HeaderConfig, DEFAULT_LANGUAGES };
 
 export function getDefaultManagerConfig() {
     return normaliseConfig(DEFAULT_MANAGER_CONFIG);
@@ -50,12 +68,12 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
 @customElement("or-app")
 export class OrApp<S extends AppStateKeyed> extends LitElement {
 
-    @property({type: Object})
+    @property({ type: Object })
     public appConfig?: AppConfig<S>;
 
     public appConfigProvider?: (manager: Manager) => AppConfig<S>;
 
-    @property({type: Object})
+    @property({ type: Object })
     public managerConfig?: ManagerConfig;
 
     @query("main")
@@ -160,13 +178,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // For example used for triggering reconnecting logic once the UI becomes visible again.
     protected _handleVisibilityChange(ev: Event) {
 
-        if(document.visibilityState === "visible") {
+        if (document.visibilityState === "visible") {
             this._store.dispatch((setVisibility(true)));
 
             // When the manager appears on Mobile devices, but the connection is OFFLINE,
             // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
             // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
-            if(manager.console?.isMobile && this._offline) {
+            if (manager.console?.isMobile && this._offline) {
                 this._startOfflineFallbackTimer(true);
             }
             // Always try reconnecting (just in case we are disconnected)
@@ -193,7 +211,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
 
-        const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
+        const managerConfig: ManagerConfig = this.managerConfig ? { ...DEFAULT_MANAGER_CONFIG, ...this.managerConfig } : DEFAULT_MANAGER_CONFIG;
         if (!managerConfig.realm) {
             // Use realm query parameter if no specific realm provided
             managerConfig.realm = Util.getQueryParameter("realm");
@@ -202,7 +220,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             managerConfig.defaultLanguage = Util.getBrowserLanguage();
         }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
-        managerConfig.basicLoginProvider = (u:any, p:any) => this.doBasicLogin(u, p);
+        managerConfig.basicLoginProvider = (u: any, p: any) => this.doBasicLogin(u, p);
 
         console.info("Initialising the manager");
 
@@ -281,7 +299,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         pageProvider.routes.forEach((route) => {
                             router.on(
                                 route, (match) => {
-                                    this._store.dispatch(updatePage({page: pageProvider.name, params: match!.data}));
+                                    this._store.dispatch(updatePage({ page: pageProvider.name, params: match!.data }));
                                 }
                             );
                         });
@@ -317,11 +335,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 // If page has changed, replace the previous content with the new page.
                 // However, if no page is present yet, append it to the page.
-                if(changedProps.has('_page') && pageProvider) {
+                if (changedProps.has('_page') && pageProvider) {
                     const currentPage = this._mainElem.firstElementChild;
-                    if(currentPage) {
+                    if (currentPage) {
                         const newPage = pageProvider.pageCreator();
-                        if(showOfflineFallback) {
+                        if (showOfflineFallback) {
                             newPage.style.setProperty('display', 'none'); // hide the new page while offline overlay page is shown
                             newPage.setAttribute('loadedDuringOffline', 'true'); // mark the page as "loaded during offline", since the content is either empty or invalid
                         }
@@ -332,19 +350,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 // CASE: "Offline overlay page is present, but should not be shown"
-                if(offlinePage && !showOfflineFallback) {
+                if (offlinePage && !showOfflineFallback) {
                     this._mainElem.removeChild(offlinePage); // remove offline overlay
 
                     const elem = this._mainElem.firstElementChild as Page<any>;
                     elem?.style.removeProperty('display'); // show the current page again (back to the foreground)
-                    if(elem?.onRefresh) {
+                    if (elem?.onRefresh) {
                         elem.onRefresh(); // If custom onRefresh() is set by the page, run that function.
                     }
                 }
 
                 // CASE: "Offline overlay page is NOT present, but needs to be there"
                 // It either shows the default offline fallback page, or a custom one defined in the AppConfig.
-                else if(!offlinePage && showOfflineFallback) {
+                else if (!offlinePage && showOfflineFallback) {
                     const newOfflinePage = (this.appConfig?.offlinePage) ? this.appConfig.offlinePage.pageCreator() : pageOfflineProvider(this._store).pageCreator();
                     (this._mainElem.firstElementChild as HTMLElement)?.style.setProperty('display', 'none'); // Hide the current page (to the background)
                     newOfflinePage.id = "offline-page";
@@ -405,7 +423,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
         }
         return html`
-            ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
+            ${this._config.styles ? typeof (this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
             ${this._config.header ? html`
                 <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
@@ -425,13 +443,13 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     protected _handleEvent(event: OREvent) {
-        if(event === OREvent.OFFLINE) {
-            if(!this._offline) {
+        if (event === OREvent.OFFLINE) {
+            if (!this._offline) {
                 this._store.dispatch((setOffline(true)))
             }
             this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
-        } else if(event === OREvent.ONLINE) {
-            if(this._offline) {
+        } else if (event === OREvent.ONLINE) {
+            if (this._offline) {
                 this._showOfflineFallback = false;
                 this._completeOfflineFallbackTimer(); // complete fallback timer
                 this._store.dispatch((setOffline(false)));
@@ -448,9 +466,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // To explain; when the Manager reports "We're offline!" it will wait 10+ seconds before visually reporting the user that he/she is offline.
     // However, if the user reconnects within that time period, we resolve this promise early. (which is why using Deferred is useful)
     protected _startOfflineFallbackTimer(force = false): void {
-        if(force) {
+        if (force) {
             this._completeOfflineFallbackTimer(true);
-        } else if(this._offlineFallbackDeferred || this._showOfflineFallback) {
+        } else if (this._offlineFallbackDeferred || this._showOfflineFallback) {
             return;
         }
 
@@ -463,7 +481,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         });
 
         setTimeout(() => {
-            if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
+            if (!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
         }, this.appConfig?.offlineTimeout || 10000)
 
         this._offlineFallbackDeferred = deferred;
@@ -473,7 +491,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // Resolving the timer updates the 'show offline fallback' variable based on OFFLINE state.
     // if 'aborted' is TRUE it will skip that logic. See startOfflineTimer() for more details.
     protected _completeOfflineFallbackTimer(aborted = false) {
-        if(aborted) {
+        if (aborted) {
             this._offlineFallbackDeferred?.reject();
         } else {
             this._offlineFallbackDeferred?.resolve();
@@ -501,7 +519,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     action: () => {
                         manager.language = key;
                     }
-                }})));
+                }
+            })));
     }
 
     protected doAppConfigInit() {

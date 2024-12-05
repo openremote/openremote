@@ -1,6 +1,24 @@
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {ErrorObject} from "ajv";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { ErrorObject } from "ajv";
 import {
     Actions,
     configReducer,
@@ -22,11 +40,11 @@ import {
     setConfig,
     UISchemaElement
 } from "@jsonforms/core";
-import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
-import {getLabel, getTemplateFromProps} from "./util";
-import {baseStyle} from "./styles";
-import {Util} from "@openremote/core";
-import {AdditionalProps} from "./base-element";
+import { getTemplateWrapper, StandardRenderers } from "./standard-renderers";
+import { getLabel, getTemplateFromProps } from "./util";
+import { baseStyle } from "./styles";
+import { Util } from "@openremote/core";
+import { AdditionalProps } from "./base-element";
 
 declare global {
     interface SymbolConstructor {
@@ -60,37 +78,37 @@ const styles = css`
 @customElement("or-json-forms")
 export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
-    @property({type: Object})
+    @property({ type: Object })
     public uischema?: UISchemaElement;
 
-    @property({type: Object})
+    @property({ type: Object })
     public schema?: JsonSchema;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public data: any;
 
-    @property({type: Array})
+    @property({ type: Array })
     public renderers?: JsonFormsRendererRegistryEntry[] = StandardRenderers;
 
-    @property({type: Array})
+    @property({ type: Array })
     public cells?: JsonFormsCellRendererRegistryEntry[];
 
-    @property({type: String, attribute: false})
-    public onChange?: (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => void;
+    @property({ type: String, attribute: false })
+    public onChange?: (dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) => void;
 
-    @property({type: String, attribute: false})
+    @property({ type: String, attribute: false })
     public config: any;
 
-    @property({type: Array})
+    @property({ type: Array })
     public uischemas?: JsonFormsUISchemaRegistryEntry[];
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly: boolean = false;
 
-    @property({type: String})
+    @property({ type: String })
     public label!: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public required: boolean = false;
 
     public static get styles() {
@@ -124,7 +142,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
 
         if (!this.core) {
             this.core = {
-                ajv: createAjv({useDefaults: true, validateFormats: false}),
+                ajv: createAjv({ useDefaults: true, validateFormats: false }),
                 data: {},
                 schema: this.schema!,
                 uischema: this.uischema!
@@ -158,7 +176,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
             if (this.onChange && (!Util.objectsEqual(data, this.previousData, true) || (errors && !Util.objectsEqual(errors, this.previousErrors, true)))) {
                 this.previousErrors = errors || [];
                 this.previousData = data;
-                this.onChange({data: data, errors: errors});
+                this.onChange({ data: data, errors: errors });
             }
         }
 
@@ -167,7 +185,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
 
     updateCore<T extends CoreActions>(coreAction: T): T {
         const coreState = coreReducer(this.core, coreAction);
-        if(coreState !== this.core) {
+        if (coreState !== this.core) {
             this.core = coreState;
         }
         return coreAction;
@@ -179,7 +197,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
         }
 
         const props: JsonFormsProps & AdditionalProps = {
-            ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
+            ...mapStateToJsonFormsRendererProps({ jsonforms: { ...this.contextValue } }, this),
             label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
             required: this.required
         };

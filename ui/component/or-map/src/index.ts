@@ -1,13 +1,31 @@
-import manager, {EventCallback} from "@openremote/core";
-import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {CSSResult, html, LitElement, PropertyValues} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
-import {MapWidget} from "./mapwidget";
-import {style} from "./style";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import manager, { EventCallback } from "@openremote/core";
+import { FlattenedNodesObserver } from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
+import { CSSResult, html, LitElement, PropertyValues } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl } from "maplibre-gl";
+import { MapWidget } from "./mapwidget";
+import { style } from "./style";
 import "./markers/or-map-marker";
 import "./markers/or-map-marker-asset";
-import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
+import { OrMapMarker, OrMapMarkerChangedEvent } from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
     InputType,
@@ -15,17 +33,17 @@ import {
     ValueInputProviderGenerator,
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {getMarkerIconAndColorFromAssetType} from "./util";
-import {i18next} from "@openremote/or-translate";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { getMarkerIconAndColorFromAssetType } from "./util";
+import { i18next } from "@openremote/or-translate";
 import { debounce } from "lodash";
-import {GeoJsonConfig, MapType } from "@openremote/model";
+import { GeoJsonConfig, MapType } from "@openremote/model";
 
 // Re-exports
-export {Util, LngLatLike};
+export { Util, LngLatLike };
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {IControl} from "maplibre-gl";
+export { IControl } from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
@@ -296,7 +314,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                 showAccuracyCircle: false,
                 showUserLocation: false
             });
-        
+
             userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
             });
@@ -307,7 +325,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         }
 
         let content = html`
-            <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => {setPos(ev.detail.lngLat);}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => { setPos(ev.detail.lngLat); }}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
             <span class="long-press-msg">${i18next.t('longPressSetLoc')}</span>
@@ -394,11 +412,12 @@ export class OrMap extends LitElement {
 
     public static styles = style;
 
-    @property({type: String})
+    @property({ type: String })
     public type: MapType = manager.mapType;
 
     protected _markerStyles: string[] = [];
-    @property({type: String, converter: {
+    @property({
+        type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
                 if (!value) {
                     return;
@@ -422,28 +441,29 @@ export class OrMap extends LitElement {
 
                 return "" + lngLat.lng + "," + lngLat.lat;
             }
-        }})
+        }
+    })
     public center?: LngLatLike;
 
-    @property({type: Number})
+    @property({ type: Number })
     public zoom?: number;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showGeoCodingControl: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showBoundaryBoxControl: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public useZoomControl: boolean = true;
 
-    @property({type: Object})
+    @property({ type: Object })
     public geoJson?: GeoJsonConfig;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showGeoJson: boolean = true;
 
-    @property({type: Array})
+    @property({ type: Array })
     public boundary: string[] = [];
 
     public controls?: (IControl | [IControl, ControlPosition?])[];
@@ -487,7 +507,7 @@ export class OrMap extends LitElement {
         if (this._observer) {
             this._observer.disconnect();
         }
-        if(this._resizeObserver) {
+        if (this._resizeObserver) {
             this._resizeObserver.disconnect();
         }
         // Clean up of internal resources associated with the map
@@ -511,7 +531,7 @@ export class OrMap extends LitElement {
         if (changedProperties.has("center") || changedProperties.has("zoom")) {
             this.flyTo(this.center, this.zoom);
         }
-        if (changedProperties.has("boundary") && this.showBoundaryBoxControl){
+        if (changedProperties.has("boundary") && this.showBoundaryBoxControl) {
             this._map?.createBoundaryBox(this.boundary)
         }
     }
@@ -557,7 +577,7 @@ export class OrMap extends LitElement {
 
         this._loaded = true;
     }
-    
+
     public resize() {
         if (this._map) {
             this._map.resize();

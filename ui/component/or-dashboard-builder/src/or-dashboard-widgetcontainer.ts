@@ -1,13 +1,31 @@
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {when} from "lit/directives/when.js";
-import {throttle} from "lodash";
-import {style} from "./style";
-import {DashboardWidget} from "@openremote/model";
-import {OrWidget, WidgetManifest} from "./util/or-widget";
-import {WidgetService} from "./service/widget-service";
-import {WidgetConfig} from "./util/widget-config";
-import {Util} from "@openremote/core";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { when } from "lit/directives/when.js";
+import { throttle } from "lodash";
+import { style } from "./style";
+import { DashboardWidget } from "@openremote/model";
+import { OrWidget, WidgetManifest } from "./util/or-widget";
+import { WidgetService } from "./service/widget-service";
+import { WidgetConfig } from "./util/widget-config";
+import { Util } from "@openremote/core";
 
 /* ------------------------------------ */
 
@@ -60,7 +78,7 @@ export class OrDashboardWidgetContainer extends LitElement {
         if (this.widget) {
             const manifest = WidgetService.getManifest(this.widget.widgetTypeId!);
             if (manifest) {
-                if(this.editMode) {
+                if (this.editMode) {
                     this.widget.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);
                 } else {
                     this.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);

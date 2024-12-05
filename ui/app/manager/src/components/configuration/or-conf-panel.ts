@@ -1,21 +1,39 @@
-import {html, LitElement, TemplateResult} from "lit";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {customElement, property} from "lit/decorators.js";
-import {when} from 'lit/directives/when.js';
-import {ManagerAppConfig} from "@openremote/model";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {i18next} from "@openremote/or-translate";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, TemplateResult } from "lit";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { customElement, property } from "lit/decorators.js";
+import { when } from 'lit/directives/when.js';
+import { ManagerAppConfig } from "@openremote/model";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import "./or-conf-map/or-conf-map-card";
 import "./or-conf-realm/or-conf-realm-card";
-import {OrConfRealmCard} from "./or-conf-realm/or-conf-realm-card";
-import {OrConfMapCard} from "./or-conf-map/or-conf-map-card";
+import { OrConfRealmCard } from "./or-conf-realm/or-conf-realm-card";
+import { OrConfMapCard } from "./or-conf-map/or-conf-map-card";
 
 @customElement("or-conf-panel")
 export class OrConfPanel extends LitElement {
 
     @property()
-    public config?: {[id: string]: any} | ManagerAppConfig = {};
+    public config?: { [id: string]: any } | ManagerAppConfig = {};
 
     @property()
     public realmOptions: { name: string, displayName: string, canDelete: boolean }[] = [];
@@ -23,7 +41,7 @@ export class OrConfPanel extends LitElement {
     protected _addedRealm: null | string = null
 
     public getCardElements(): OrConfRealmCard[] | OrConfMapCard[] | undefined {
-        if(this.isManagerConfig(this.config)) {
+        if (this.isManagerConfig(this.config)) {
             return Array.from(this.shadowRoot?.querySelectorAll('or-conf-realm-card')) as OrConfRealmCard[];
         } else if (this.isMapConfig(this.config)) {
             return Array.from(this.shadowRoot?.querySelectorAll('or-conf-map-card')) as OrConfMapCard[];
@@ -31,9 +49,9 @@ export class OrConfPanel extends LitElement {
     }
 
     protected getRealmsProperty(config: unknown): { [index: string]: any } | undefined {
-        if(this.isManagerConfig(config)) {
+        if (this.isManagerConfig(config)) {
             return config.realms;
-        } else if(this.isMapConfig(config)) {
+        } else if (this.isMapConfig(config)) {
             return config;
         }
         return undefined;
@@ -48,7 +66,7 @@ export class OrConfPanel extends LitElement {
         return 'realms' in object;
     }
 
-    protected notifyConfigChange(config: {[id: string]: any} | ManagerAppConfig) {
+    protected notifyConfigChange(config: { [id: string]: any } | ManagerAppConfig) {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
 
@@ -58,9 +76,9 @@ export class OrConfPanel extends LitElement {
 
         // Define the type of config
         let type: 'managerconfig' | 'mapconfig' | undefined;
-        if(this.isManagerConfig(this.config)) {
+        if (this.isManagerConfig(this.config)) {
             type = 'managerconfig';
-        } else if(this.isMapConfig(this.config)) {
+        } else if (this.isMapConfig(this.config)) {
             type = 'mapconfig';
         }
 
@@ -70,24 +88,24 @@ export class OrConfPanel extends LitElement {
         return html`
             <div class="panels">
                 ${Object.entries(realmConfigs === undefined ? {} : realmConfigs).map(([key, value]) => {
-                    const realmOption = this.realmOptions.find((r) => r.name === key);
-                    switch (type) {
-                        case "managerconfig":
-                            return html`
+            const realmOption = this.realmOptions.find((r) => r.name === key);
+            switch (type) {
+                case "managerconfig":
+                    return html`
                                 <or-conf-realm-card .expanded="${this._addedRealm === key}" .name="${key}" .realm="${value}" .canRemove="${realmOption?.canDelete}"
                                                     @change="${() => this.notifyConfigChange(this.config)}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-realm-card>
                             `;
-                        case "mapconfig":
-                            return html`
+                case "mapconfig":
+                    return html`
                                 <or-conf-map-card .expanded="${this._addedRealm === key}" .name="${key}" .map="${value}" .canRemove="${realmOption?.canDelete}"
                                                   @change="${() => this.notifyConfigChange(this.config)}" @remove="${() => this._removeRealm(key)}"
                                 ></or-conf-map-card>
                             `;
-                        default:
-                            return html`Unknown error.`
-                    }
-                })}
+                default:
+                    return html`Unknown error.`
+            }
+        })}
             </div>
             <!-- Show an "ADD REALM" button if there are realms available to be added -->
             <div style="display: flex; justify-content: space-between;">
@@ -116,9 +134,9 @@ export class OrConfPanel extends LitElement {
 
     // Filter the list of realms that are not present in the config.
     // Most used for the "add realm" dialog, to hide the realms that are already present.
-    protected getAvailableRealms(config?: ManagerAppConfig | {[id: string]: any}, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
+    protected getAvailableRealms(config?: ManagerAppConfig | { [id: string]: any }, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
         const realms = this.getRealmsProperty(config);
-        if(realms) {
+        if (realms) {
             return realmOptions.filter((r) => {
                 if (r.name in realms) {
                     return null;
@@ -157,10 +175,10 @@ export class OrConfPanel extends LitElement {
                         if (!realms) {
                             realms = {}
                         }
-                        if(this.isManagerConfig(this.config)) {
+                        if (this.isManagerConfig(this.config)) {
                             realms[this._addedRealm] = {}; // empty object since no fields are required
-                        } else if(this.isMapConfig(this.config)) {
-                            realms[this._addedRealm] = {bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false}
+                        } else if (this.isMapConfig(this.config)) {
+                            realms[this._addedRealm] = { bounds: [4.42, 51.88, 4.55, 51.94], center: [4.485222, 51.911712], zoom: 14, minZoom: 14, maxZoom: 19, boxZoom: false }
                         }
                         this.requestUpdate("config");
                         this.notifyConfigChange(this.config);

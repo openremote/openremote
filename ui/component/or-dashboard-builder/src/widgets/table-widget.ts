@@ -1,14 +1,32 @@
-import {css, html, PropertyValues, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, PropertyValues, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import {OrAssetWidget} from "../util/or-asset-widget";
-import {WidgetManifest} from "../util/or-widget";
-import {WidgetConfig} from "../util/widget-config";
-import {WidgetSettings} from "../util/widget-settings";
-import {TableSettings} from "../settings/table-settings";
-import {OrMwcTableRowClickEvent, TableColumn, TableRow, TableConfig} from "@openremote/or-mwc-components/or-mwc-table";
-import {i18next} from "@openremote/or-translate";
-import {Util} from "@openremote/core";
-import {Asset, AssetModelUtil} from "@openremote/model";
+import { OrAssetWidget } from "../util/or-asset-widget";
+import { WidgetManifest } from "../util/or-widget";
+import { WidgetConfig } from "../util/widget-config";
+import { WidgetSettings } from "../util/widget-settings";
+import { TableSettings } from "../settings/table-settings";
+import { OrMwcTableRowClickEvent, TableColumn, TableRow, TableConfig } from "@openremote/or-mwc-components/or-mwc-table";
+import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
+import { Asset, AssetModelUtil } from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-table";
 
 export interface TableWidgetConfig extends WidgetConfig {
@@ -69,7 +87,7 @@ export class TableWidget extends OrAssetWidget {
 
     // Lit Lifecycle
     protected willUpdate(changedProps: PropertyValues) {
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             this.loadAssets();
         }
 
@@ -80,15 +98,15 @@ export class TableWidget extends OrAssetWidget {
     /* --------------------------------------- */
 
     protected loadAssets() {
-        if(this.widgetConfig.assetIds.find(id => !this.isAssetLoaded(id))) {
-           this.queryAssets({
-               ids: this.widgetConfig.assetIds,
-               select: {
-                   attributes: this.widgetConfig.attributeNames
-               }
-           }).then((assets) => {
-               this.loadedAssets = assets;
-           })
+        if (this.widgetConfig.assetIds.find(id => !this.isAssetLoaded(id))) {
+            this.queryAssets({
+                ids: this.widgetConfig.assetIds,
+                select: {
+                    attributes: this.widgetConfig.attributeNames
+                }
+            }).then((assets) => {
+                this.loadedAssets = assets;
+            })
         }
     }
 
@@ -97,7 +115,7 @@ export class TableWidget extends OrAssetWidget {
         const attrColumns = attributeNames.map(attrName => {
             let text = attrName;
             let numeric = false;
-            if(this.widgetConfig.assetType && referenceAsset && referenceAsset.attributes && referenceAsset.attributes[attrName]) {
+            if (this.widgetConfig.assetType && referenceAsset && referenceAsset.attributes && referenceAsset.attributes[attrName]) {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, this.widgetConfig.assetType);
                 text = Util.getAttributeLabel(referenceAsset.attributes[attrName], attributeDescriptor, this.widgetConfig.assetType, true);
                 numeric = attributeDescriptor?.format?.asNumber || attributeDescriptor?.format?.asSlider || false;
@@ -114,7 +132,7 @@ export class TableWidget extends OrAssetWidget {
     protected getRows(attributeNames: string[]): TableRow[] {
         return this.loadedAssets.map(asset => {
             const attrEntries = attributeNames.map(attrName => {
-                if(asset.attributes && asset.attributes[attrName]) {
+                if (asset.attributes && asset.attributes[attrName]) {
                     const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, asset.type!);
                     const strValue = Util.getAttributeValueAsString(asset.attributes[attrName], attributeDescriptor, asset.type, false);
                     const numValue = parseFloat(strValue);

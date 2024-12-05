@@ -1,14 +1,32 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset} from "@openremote/model";
-import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
-import {buttonStyle} from "../style";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo, Asset } from "@openremote/model";
+import { OrRulesRuleUnsupportedEvent, RulesConfig } from "../index";
+import { buttonStyle } from "../style";
 import "./or-rule-condition";
 import i18next from "i18next";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import { getWhenTypesMenu, updateRuleConditionType } from "./or-rule-condition";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { translate } from "@openremote/or-translate";
 
 enum ResetOption {
@@ -109,18 +127,18 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         return style;
     }
 
-    @property({type: Object})
+    @property({ type: Object })
     public rule?: JsonRule;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetProvider?: (type: string) => Promise<Asset[]>
 
     public config?: RulesConfig;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public assetInfos?: AssetTypeInfo[];
 
     protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {
@@ -168,13 +186,13 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         if (group.groups && group.groups.length > 0) {
             groupsTemplate = html`
                 ${group.groups.map((childGroup: LogicGroup<RuleCondition>, index) => {
-                    const content = html`
+                const content = html`
                         <div class="rule-group-item">
                             ${this.ruleGroupTemplate(childGroup, group)}
                         </div>
                     `;
-                    return wrapper(content, childGroup, group, true, index == 0);
-                })}
+                return wrapper(content, childGroup, group, true, index == 0);
+            })}
             `;
             isFirst = false;
         }
@@ -182,7 +200,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         if (group.items && group.items.length > 0) {
             itemsTemplate = html`
                 ${group.items.map((condition: RuleCondition, index) => {
-                    const content = html`
+                const content = html`
                         <div class="rule-group-item">
                             <div class="rule-condition">
                                 <or-rule-condition .config="${this.config}" .assetInfos="${this.assetInfos}" .ruleCondition="${condition}" .readonly="${this.readonly}" .assetProvider="${this.assetProvider}"></or-rule-condition>
@@ -192,8 +210,8 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                             </div>
                         </div>
                     `;
-                    return wrapper(content, condition, group, true, isFirst && index === 0);
-                })}
+                return wrapper(content, condition, group, true, isFirst && index === 0);
+            })}
             `;
             isFirst = false;
         }
@@ -202,11 +220,11 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             addTemplate = html`
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
+                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
                                            .label="${i18next.t("rulesEditorAddCondition")}"></or-mwc-input>`,
-                        getWhenTypesMenu(this.config, this.assetInfos),
-                        undefined,
-                        (value) => this.addCondition(group, value as string))}
+                getWhenTypesMenu(this.config, this.assetInfos),
+                undefined,
+                (value) => this.addCondition(group, value as string))}
                 </span>
             `;
         }
@@ -258,10 +276,10 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
-                            html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
-                            getWhenTypesMenu(this.config, this.assetInfos),
-                            undefined,
-                            (value) => this.addGroup(this.rule!.when!, value as string))}
+            html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
+            getWhenTypesMenu(this.config, this.assetInfos),
+            undefined,
+            (value) => this.addGroup(this.rule!.when!, value as string))}
                     </span>
                 </or-panel>
             `}

@@ -1,15 +1,33 @@
-import {GeoJSONPoint, RuleCondition, SunPositionTriggerPosition} from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { GeoJSONPoint, RuleCondition, SunPositionTriggerPosition } from "@openremote/model";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { css, html, LitElement, PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import moment from "moment";
-import {buttonStyle} from "../style";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {TimeTriggerType} from "../index";
-import {Util} from "@openremote/core";
-import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
-import {i18next} from "@openremote/or-translate";
+import { buttonStyle } from "../style";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import { TimeTriggerType } from "../index";
+import { Util } from "@openremote/core";
+import { DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrMap, OrMapClickedEvent } from "@openremote/or-map";
+import { i18next } from "@openremote/or-translate";
 
 // language=CSS
 const style = css`
@@ -51,7 +69,7 @@ export class OrRuleTriggerQuery extends LitElement {
         return style;
     }
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public condition!: RuleCondition;
 
     @property()
@@ -68,17 +86,17 @@ export class OrRuleTriggerQuery extends LitElement {
     constructor() {
         super();
         this.triggerOptions = [];
-        Object.values(TimeTriggerType).forEach((type) => { this.triggerOptions.push({ key: type, value: this.triggerToString(type)}); });
-        this.getSunPositions().forEach((opt) => { this.triggerOptions.push({ key: opt, value: this.triggerToString(opt)}); });
+        Object.values(TimeTriggerType).forEach((type) => { this.triggerOptions.push({ key: type, value: this.triggerToString(type) }); });
+        this.getSunPositions().forEach((opt) => { this.triggerOptions.push({ key: opt, value: this.triggerToString(opt) }); });
         this.selectedTrigger = this.triggerOptions[0];
 
         this.addEventListener(OrMwcDialogOpenedEvent.NAME, this.initMap);
     }
 
     updated(changedProperties: PropertyValues) {
-        if(changedProperties.has('condition')) {
-            if(this.condition.cron) { this.selectedTrigger = { key: TimeTriggerType.TIME_OF_DAY, value: this.triggerToString(TimeTriggerType.TIME_OF_DAY) }}
-            else if(this.condition.sun) { this.selectedTrigger = { key: this.condition.sun.position!, value: this.triggerToString(this.condition.sun.position!) }}
+        if (changedProperties.has('condition')) {
+            if (this.condition.cron) { this.selectedTrigger = { key: TimeTriggerType.TIME_OF_DAY, value: this.triggerToString(TimeTriggerType.TIME_OF_DAY) } }
+            else if (this.condition.sun) { this.selectedTrigger = { key: this.condition.sun.position!, value: this.triggerToString(this.condition.sun.position!) } }
         }
     }
 
@@ -126,11 +144,11 @@ export class OrRuleTriggerQuery extends LitElement {
 
     render() {
         const modalActions: DialogAction[] = [
-            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="close"></or-mwc-input>`, action: () => {} }
+            { actionName: "close", default: true, content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="close"></or-mwc-input>`, action: () => { } }
         ];
         const onMapModalOpen = () => {
             const dialog: OrMwcDialog = this.shadowRoot!.getElementById("map-modal") as OrMwcDialog;
-            if(dialog) {
+            if (dialog) {
                 dialog.dismissAction = null;
                 dialog.open();
                 this.renderDialogHTML(this.condition.sun?.location)
@@ -172,12 +190,12 @@ export class OrRuleTriggerQuery extends LitElement {
     // Getters/setters of the file
 
     setTrigger(trigger: TimeTrigger) {
-        if(trigger) {
-            if(trigger.key == TimeTriggerType.TIME_OF_DAY) {
+        if (trigger) {
+            if (trigger.key == TimeTriggerType.TIME_OF_DAY) {
                 this.condition.sun = undefined;
-            } else if(this.getSunPositions().includes(trigger.key)) {
+            } else if (this.getSunPositions().includes(trigger.key)) {
                 this.condition.cron = undefined;
-                if(this.getSunPositions().includes(this.selectedTrigger.key as SunPositionTriggerPosition)) {
+                if (this.getSunPositions().includes(this.selectedTrigger.key as SunPositionTriggerPosition)) {
                     this.condition.sun = { position: trigger.key, offsetMins: this.condition.sun!.offsetMins, location: this.condition.sun!.location };
                 } else {
                     this.condition.sun = { position: trigger.key, offsetMins: 0 };
@@ -189,7 +207,7 @@ export class OrRuleTriggerQuery extends LitElement {
         }
     }
     setTime(time: string) {
-        if(time) {
+        if (time) {
             const splittedTime = time.split(':');
             const date = new Date();
             date.setHours(Number(splittedTime[0]));
@@ -234,7 +252,7 @@ export class OrRuleTriggerQuery extends LitElement {
     // Utility stuff
 
     triggerToString(position: TimeTriggerType | SunPositionTriggerPosition): string {
-        if(position == TimeTriggerType.TIME_OF_DAY) { return i18next.t("timeOfDay"); }
+        if (position == TimeTriggerType.TIME_OF_DAY) { return i18next.t("timeOfDay"); }
         else {
             return i18next.t(position.toLowerCase());
         }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,33 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.mqtt;
 
+import static java.lang.System.Logger.Level.*;
+import static java.util.stream.StreamSupport.stream;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.syslog.SyslogCategory.API;
+
+import java.security.Principal;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.security.auth.Subject;
+import javax.security.auth.login.AppConfigurationEntry;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.netty.channel.ChannelId;
+
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
 import org.apache.activemq.artemis.api.core.SimpleString;
@@ -78,26 +95,12 @@ import org.openremote.model.util.Debouncer;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.UniqueIdentifierGenerator;
 
-import javax.security.auth.Subject;
-import javax.security.auth.login.AppConfigurationEntry;
-import java.security.Principal;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static java.lang.System.Logger.Level.*;
-import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.model.syslog.SyslogCategory.API;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.netty.channel.ChannelId;
 
 // TODO: Add queue size limiting in canPublish of MQTTHandlers (needs to be done at auth time to allow pub to be rejected)
-public class MQTTBrokerService extends RouteBuilder implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
+public class MQTTBrokerService extends RouteBuilder
+        implements ContainerService, ActiveMQServerConnectionPlugin, ActiveMQServerSessionPlugin {
 
     public static final String MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS = "MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS";
     public static int MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT = 5000;
@@ -141,7 +144,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     public void init(Container container) throws Exception {
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, "0.0.0.0");
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, 1883);
-        int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS, MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
+        int debounceMillis = getInteger(container.getConfig(), MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS,
+                MQTT_FORCE_USER_DISCONNECT_DEBOUNCE_MILLIS_DEFAULT);
         assetStorageService = container.getService(AssetStorageService.class);
         authorisationService = container.getService(AuthorisationService.class);
         clientEventService = container.getService(ClientEventService.class);
@@ -151,12 +155,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         timerService = container.getService(TimerService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
 
-        userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(), id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
+        userAssetDisconnectDebouncer = new Debouncer<>(container.getScheduledExecutor(),
+                id -> processUserAssetLinkChange(id, userAssetLinkChangeMap.remove(id)), debounceMillis);
         // This allows last will messages to be processed
-        disconnectedConnectionCache = CacheBuilder.newBuilder()
-                .maximumSize(10000)
-                .expireAfterWrite(3000, TimeUnit.MILLISECONDS)
-                .build();
+        disconnectedConnectionCache = CacheBuilder.newBuilder().maximumSize(10000)
+                .expireAfterWrite(3000, TimeUnit.MILLISECONDS).build();
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.log(WARNING, "MQTT connections are not supported when not using Keycloak identity provider");
@@ -171,74 +174,72 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         serverConfiguration = new ConfigurationImpl();
         serverConfiguration.addAcceptorConfiguration("in-vm", "vm://0?protocols=core");
         String serverURI = new URIBuilder().setScheme("tcp").setHost(host).setPort(port)
-            .setParameter("protocols", "MQTT")
-            .setParameter("allowLinkStealing", "true")
-            .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
-            .build().toString();
+                .setParameter("protocols", "MQTT").setParameter("allowLinkStealing", "true")
+                .setParameter("defaultMqttSessionExpiryInterval", "0") // Don't support retained sessions
+                .build().toString();
         serverConfiguration.addAcceptorConfiguration("tcp", serverURI);
         serverConfiguration.registerBrokerPlugin(this);
         if (container.getMeterRegistry() != null) {
-            serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false).setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
-                @Override
-                public MeterRegistry getRegistry() {
-                    return container.getMeterRegistry();
-                }
-            }));
+            serverConfiguration.setMetricsConfiguration(new MetricsConfiguration().setJvmMemory(false)
+                    .setPlugin(new org.apache.activemq.artemis.core.server.metrics.plugins.SimpleMetricsPlugin() {
+                        @Override
+                        public MeterRegistry getRegistry() {
+                            return container.getMeterRegistry();
+                        }
+                    }));
         }
         serverConfiguration.setWildCardConfiguration(wildcardConfiguration);
         serverConfiguration.setLiteralMatchMarkers("()");
 
         // Configure global address settings - aggressively cleanup queues (don't support resumable sessions)
         serverConfiguration.addAddressSetting(wildcardConfiguration.getAnyWordsString(),
-            new AddressSettings()
-                .setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
-                .setExpiryAddress(SimpleString.of("ActiveMQ.expired"))
-                .setAutoDeleteCreatedQueues(true)
-                .setAutoDeleteAddresses(true)
-                // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger otherwise
-                .setAutoDeleteAddressesSkipUsageCheck(true)
-                .setAutoDeleteAddressesDelay(86400000)
-                .setAutoDeleteQueuesMessageCount(-1L)
-                .setAutoDeleteQueuesDelay(0)
-                // This has a negative impact on performance if set to 0
-                .setDefaultConsumerWindowSize(-1)
-                .setPageLimitMessages(0L)
-                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
-                .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
-                // We don't want excessive metrics so only enable metrics for each custom handler address
-                .setEnableMetrics(false)
-        );
+                new AddressSettings().setDeadLetterAddress(SimpleString.of("ActiveMQ.DLQ"))
+                        .setExpiryAddress(SimpleString.of("ActiveMQ.expired")).setAutoDeleteCreatedQueues(true)
+                        .setAutoDeleteAddresses(true)
+                        // Auto delete MQTT addresses after 1 day as they never get flagged as used so will linger
+                        // otherwise
+                        .setAutoDeleteAddressesSkipUsageCheck(true).setAutoDeleteAddressesDelay(86400000)
+                        .setAutoDeleteQueuesMessageCount(-1L).setAutoDeleteQueuesDelay(0)
+                        // This has a negative impact on performance if set to 0
+                        .setDefaultConsumerWindowSize(-1).setPageLimitMessages(0L)
+                        .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+                        .setPageFullMessagePolicy(PageFullMessagePolicy.FAIL)
+                        // We don't want excessive metrics so only enable metrics for each custom handler address
+                        .setEnableMetrics(false));
 
         // The below is an example of rate limiting at the address level the FAIL policy will cause an exception
         // that is handled by the MQTTProtocolHandler which will disconnect the client (MQTT doesn't have a nice
         // way of handling rejected publishes)
-//        serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
-//            new AddressSettings()
-//                .setMaxSizeMessages(3)
-//                .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
-//                .setMaxSizeBytes(1L)
-//        );
+        // serverConfiguration.addAddressSetting("*.*.writeattributevalue.#",
+        // new AddressSettings()
+        // .setMaxSizeMessages(3)
+        // .setAddressFullMessagePolicy(AddressFullMessagePolicy.FAIL)
+        // .setMaxSizeBytes(1L)
+        // );
 
         serverConfiguration.setPersistenceEnabled(false);
 
-        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509 certificates for auth
-        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as anonymous and this is then baked into the created ServerSession and cannot be modified
-        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
-        //config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
+        // TODO: Make auto provisioning clients disconnect and reconnect with credentials or pass through X.509
+        // certificates for auth
+        // Cannot use authentication or authorisation cache as auto provisioning MQTT clients will authenticate as
+        // anonymous and this is then baked into the created ServerSession and cannot be modified
+        // so all anonymous sessions will use the same username/password for key lookups in the caches - Can possibly
+        // use caching if ActiveMQ makes changes and/or we move to using X.509 TLS with ActiveMQ
+        // config.setSecurityInvalidationInterval(600000); // Long cache as we force clear it when needed
         serverConfiguration.setAuthenticationCacheSize(0);
         serverConfiguration.setAuthorizationCacheSize(0);
 
         // Load custom handlers
         this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
-                .sorted(Comparator.comparingInt(MQTTHandler::getPriority))
-                .collect(Collectors.toList());
+                .sorted(Comparator.comparingInt(MQTTHandler::getPriority)).collect(Collectors.toList());
 
         // Init each custom handler
         for (MQTTHandler handler : customHandlers) {
             try {
                 handler.init(container, serverConfiguration);
             } catch (Exception e) {
-                LOG.log(WARNING, "MQTT custom handler threw an exception whilst initialising: handler=" + handler.getName(), e);
+                LOG.log(WARNING,
+                        "MQTT custom handler threw an exception whilst initialising: handler=" + handler.getName(), e);
                 throw e;
             }
         }
@@ -255,19 +256,28 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         server = new EmbeddedActiveMQ();
         server.setConfiguration(serverConfiguration);
 
-        securityManager = new ActiveMQORSecurityManager(authorisationService, this, realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "", new SecurityConfiguration() {
-            @Override
-            public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                return new AppConfigurationEntry[]{
-                    new AppConfigurationEntry(GuestLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT, Map.of("debug", "true", "credentialsInvalidate", "true", "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME, "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
-                    new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(
-                        MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION, "true",
-                        AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION, RolePrincipal.class.getName()
-                    )),
-                    new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(), AppConfigurationEntry.LoginModuleControlFlag.REQUISITE, Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST, KeycloakPrincipal.class.getName()))
-                };
-            }
-        });
+        securityManager = new ActiveMQORSecurityManager(authorisationService, this,
+                realm -> identityProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), "",
+                new SecurityConfiguration() {
+                    @Override
+                    public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                        return new AppConfigurationEntry[] {
+                                new AppConfigurationEntry(GuestLoginModule.class.getName(),
+                                        AppConfigurationEntry.LoginModuleControlFlag.SUFFICIENT,
+                                        Map.of("debug", "true", "credentialsInvalidate", "true",
+                                                "org.apache.activemq.jaas.guest.user", ANONYMOUS_USERNAME,
+                                                "org.apache.activemq.jaas.guest.role", ANONYMOUS_USERNAME)),
+                                new AppConfigurationEntry(MultiTenantClientCredentialsGrantsLoginModule.class.getName(),
+                                        AppConfigurationEntry.LoginModuleControlFlag.REQUISITE,
+                                        Map.of(MultiTenantClientCredentialsGrantsLoginModule.INCLUDE_REALM_ROLES_OPTION,
+                                                "true", AbstractKeycloakLoginModule.ROLE_PRINCIPAL_CLASS_OPTION,
+                                                RolePrincipal.class.getName())),
+                                new AppConfigurationEntry(PrincipalConversionLoginModule.class.getName(),
+                                        AppConfigurationEntry.LoginModuleControlFlag.REQUISITE,
+                                        Map.of(PrincipalConversionLoginModule.PRINCIPAL_CLASS_LIST,
+                                                KeycloakPrincipal.class.getName())) };
+                    }
+                });
 
         server.setSecurityManager(securityManager);
         server.start();
@@ -275,10 +285,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Add notification handler for subscribe/unsubscribe and publish events
         server.getActiveMQServer().getManagementService().addNotificationListener(notification -> {
-            if (notification.getType() == CoreNotificationType.CONSUMER_CREATED || notification.getType() == CoreNotificationType.CONSUMER_CLOSED) {
+            if (notification.getType() == CoreNotificationType.CONSUMER_CREATED
+                    || notification.getType() == CoreNotificationType.CONSUMER_CLOSED) {
                 boolean isSubscribe = notification.getType() == CoreNotificationType.CONSUMER_CREATED;
-                String sessionId = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_SESSION_NAME).toString();
-                String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS).toString();
+                String sessionId = notification.getProperties()
+                        .getSimpleStringProperty(ManagementHelper.HDR_SESSION_NAME).toString();
+                String topic = notification.getProperties().getSimpleStringProperty(ManagementHelper.HDR_ADDRESS)
+                        .toString();
                 ServerSession session = server.getActiveMQServer().getSessionByID(sessionId);
 
                 // Ignore internal subscriptions
@@ -288,9 +301,11 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                 }
 
                 if (isSubscribe) {
-                    onSubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
+                    onSubscribe(session.getRemotingConnection(),
+                            MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 } else {
-                    onUnsubscribe(session.getRemotingConnection(), MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
+                    onUnsubscribe(session.getRemotingConnection(),
+                            MQTTUtil.getMqttTopicFromCoreAddress(topic, wildcardConfiguration));
                 }
             }
         });
@@ -304,7 +319,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             try {
                 handler.start(container);
             } catch (Exception e) {
-                LOG.log(WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(), e);
+                LOG.log(WARNING, "MQTT custom handler threw an exception whilst starting: handler=" + handler.getName(),
+                        e);
                 throw e;
             }
         }
@@ -313,11 +329,10 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     @SuppressWarnings("unchecked")
     @Override
     public void configure() throws Exception {
-        from(PERSISTENCE_TOPIC)
-                .routeId("Persistence-UserAndAssetLink")
-                .filter(body().isInstanceOf(PersistenceEvent.class))
-                .process(exchange -> {
-                    PersistenceEvent<?> persistenceEvent = (PersistenceEvent<?>) exchange.getIn().getBody(PersistenceEvent.class);
+        from(PERSISTENCE_TOPIC).routeId("Persistence-UserAndAssetLink")
+                .filter(body().isInstanceOf(PersistenceEvent.class)).process(exchange -> {
+                    PersistenceEvent<?> persistenceEvent = (PersistenceEvent<?>) exchange.getIn()
+                            .getBody(PersistenceEvent.class);
 
                     if (persistenceEvent.getEntity() instanceof User user) {
 
@@ -330,20 +345,23 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                         if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
                             // Force disconnect if certain properties have changed
                             forceDisconnect = persistenceEvent.hasPropertyChanged("enabled")
-                                || persistenceEvent.hasPropertyChanged("username")
-                                || persistenceEvent.hasPropertyChanged("secret");
+                                    || persistenceEvent.hasPropertyChanged("username")
+                                    || persistenceEvent.hasPropertyChanged("secret");
                         }
 
                         if (forceDisconnect) {
-                            LOG.log(TRACE, "User modified or deleted so force closing any sessions for this user: " + user);
+                            LOG.log(TRACE,
+                                    "User modified or deleted so force closing any sessions for this user: " + user);
                             // Find existing connection for this user
                             getUserConnections(user.getId()).forEach(this::doForceDisconnect);
                         }
 
                     } else if (persistenceEvent.getEntity() instanceof UserAssetLink userAssetLink) {
                         String userID = userAssetLink.getId().getUserId();
-                        // Debounce force disconnect check of this user's sessions as there could be many asset links changing
-                        List<PersistenceEvent<UserAssetLink>> changedUserAssetLinks = userAssetLinkChangeMap.computeIfAbsent(userID, id -> Collections.synchronizedList(new ArrayList<>()));
+                        // Debounce force disconnect check of this user's sessions as there could be many asset links
+                        // changing
+                        List<PersistenceEvent<UserAssetLink>> changedUserAssetLinks = userAssetLinkChangeMap
+                                .computeIfAbsent(userID, id -> Collections.synchronizedList(new ArrayList<>()));
                         changedUserAssetLinks.add((PersistenceEvent<UserAssetLink>) persistenceEvent);
                         userAssetDisconnectDebouncer.call(userID);
                     }
@@ -359,12 +377,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         LOG.log(DEBUG, "Stopped MQTT broker");
 
         stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)
-                .sorted(Comparator.comparingInt(MQTTHandler::getPriority).reversed())
-                .forEach(handler -> {
+                .sorted(Comparator.comparingInt(MQTTHandler::getPriority).reversed()).forEach(handler -> {
                     try {
                         handler.stop();
                     } catch (Exception e) {
-                        LOG.log(WARNING, "MQTT custom handler threw an exception whilst stopping: handler=" + handler.getName(), e);
+                        LOG.log(WARNING,
+                                "MQTT custom handler threw an exception whilst stopping: handler=" + handler.getName(),
+                                e);
                     }
                 });
     }
@@ -380,7 +399,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             }
 
             @Override
-            public void connectionFailed(ActiveMQException exception, boolean failedOver, String scaleDownTargetNodeID) {
+            public void connectionFailed(ActiveMQException exception, boolean failedOver,
+                    String scaleDownTargetNodeID) {
                 // TODO: Force delete session (don't allow retained/durable sessions)
 
                 connectionIDConnectionMap.remove(getConnectionIDString(connection));
@@ -392,7 +412,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     }
                 }
 
-                if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for graceful close of connection
+                if (exception.getType() == ActiveMQExceptionType.REMOTE_DISCONNECT) {// Seems to be the type for
+                                                                                     // graceful close of connection
                     // Notify handlers of connection close
                     LOG.log(DEBUG, () -> "Client disconnected: " + connectionToString(connection));
                     for (MQTTHandler handler : getCustomHandlers()) {
@@ -400,7 +421,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
                     }
                 } else {
                     // Notify handlers of connection failure
-                    LOG.log(DEBUG, () -> "Client disconnected (failure=" + exception.getMessage() + "): " + connectionToString(connection));
+                    LOG.log(DEBUG, () -> "Client disconnected (failure=" + exception.getMessage() + "): "
+                            + connectionToString(connection));
                     for (MQTTHandler handler : getCustomHandlers()) {
                         handler.onConnectionLost(connection);
                     }
@@ -409,14 +431,16 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
         });
     }
 
-    // We do this here as connection plugin afterCreateConnection callback fires before client ID and subject are populated
+    // We do this here as connection plugin afterCreateConnection callback fires before client ID and subject are
+    // populated
     // For each connection multiple sessions are created but we only want to call custom handlers onConnect once
     @Override
     public void afterCreateSession(ServerSession session) throws ActiveMQException {
         RemotingConnection remotingConnection = session.getRemotingConnection();
 
         // Ignore internal connections or ones without a client ID
-        if (remotingConnection == null || remotingConnection.getClientID() == null || remotingConnection.getTransportConnection() instanceof InVMConnection) {
+        if (remotingConnection == null || remotingConnection.getClientID() == null
+                || remotingConnection.getTransportConnection() instanceof InVMConnection) {
             return;
         }
 
@@ -471,11 +495,15 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         // Check if user has any active connections
         Set<RemotingConnection> userConnections = getUserConnections(userID);
-        Subject subject = userConnections.stream().filter(connection -> connection.getSubject() != null).findFirst().map(RemotingConnection::getSubject).orElse(null);
+        Subject subject = userConnections.stream().filter(connection -> connection.getSubject() != null).findFirst()
+                .map(RemotingConnection::getSubject).orElse(null);
 
         // Only notify handlers if subject is a restricted user
-        if (subject != null && KeycloakIdentityProvider.getSecurityContext(subject).getToken().getRealmAccess().isUserInRole(Constants.RESTRICTED_USER_REALM_ROLE)) {
-            LOG.log(TRACE, "User asset links modified for connected restricted user so passing to handlers to decide what to do: user=" + subject);
+        if (subject != null && KeycloakIdentityProvider.getSecurityContext(subject).getToken().getRealmAccess()
+                .isUserInRole(Constants.RESTRICTED_USER_REALM_ROLE)) {
+            LOG.log(TRACE,
+                    "User asset links modified for connected restricted user so passing to handlers to decide what to do: user="
+                            + subject);
             // Pass to handlers to decide what to do
             userConnections.forEach(connection -> {
                 for (MQTTHandler handler : customHandlers) {
@@ -504,7 +532,7 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
     protected void doForceDisconnect(RemotingConnection connection) {
         LOG.log(DEBUG, "Force disconnecting client connection: " + connectionToString(connection));
         connection.disconnect(false);
-        ((SecurityStoreImpl)server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
+        ((SecurityStoreImpl) server.getActiveMQServer().getSecurityStore()).invalidateAuthorizationCache();
     }
 
     public boolean disconnectSession(String connectionID) {
@@ -543,14 +571,13 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
             username = getSubjectName(subject);
         }
 
-        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject=" + username;
+        return "connection=" + connection.getRemoteAddress() + ", clientID=" + connection.getClientID() + ", subject="
+                + username;
     }
 
     public static String getSubjectName(Subject subject) {
-        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal)
-            .findFirst()
-            .map(Principal::getName)
-            .orElse(KeycloakIdentityProvider.getSubjectNameAndRealm(subject));
+        return subject.getPrincipals().stream().filter(principal -> principal instanceof UserPrincipal).findFirst()
+                .map(Principal::getName).orElse(KeycloakIdentityProvider.getSubjectNameAndRealm(subject));
     }
 
     public RemotingConnection getConnectionFromClientID(String clientID) {
@@ -563,7 +590,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         if (connection == null) {
             // Try and find the client ID from the sessions
-            for (RemotingConnection remotingConnection : server.getActiveMQServer().getRemotingService().getConnections()) {
+            for (RemotingConnection remotingConnection : server.getActiveMQServer().getRemotingService()
+                    .getConnections()) {
                 if (Objects.equals(clientID, remotingConnection.getClientID())) {
                     connection = remotingConnection;
                     clientIDConnectionMap.put(clientID, connection);
@@ -599,7 +627,8 @@ public class MQTTBrokerService extends RouteBuilder implements ContainerService,
 
         try {
             String internalClientID = UniqueIdentifierGenerator.generateId("Internal client");
-            session = (ClientSessionInternal) sessionFactory.createSession(null, null, false, true, true, true, serverLocator.getAckBatchSize(), internalClientID);
+            session = (ClientSessionInternal) sessionFactory.createSession(null, null, false, true, true, true,
+                    serverLocator.getAckBatchSize(), internalClientID);
             session.addMetaData(ClientSession.JMS_SESSION_IDENTIFIER_PROPERTY, "Internal session");
             ServerSession serverSession = server.getActiveMQServer().getSessionByID(session.getName());
             serverSession.disableSecurity();

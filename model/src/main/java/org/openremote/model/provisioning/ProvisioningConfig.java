@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.provisioning;
+
+import static jakarta.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+
+import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import org.openremote.model.security.ClientRole;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.openremote.model.security.ClientRole;
-
-import java.util.Date;
-
-import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @SuppressWarnings("unchecked")
 @Entity
@@ -40,9 +41,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
-@JsonSubTypes(
-    @JsonSubTypes.Type(name = "x509", value = X509ProvisioningConfig.class)
-)
+@JsonSubTypes(@JsonSubTypes.Type(name = "x509", value = X509ProvisioningConfig.class))
 public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> {
 
     public static final String DISABLED_PROPERTY_NAME = "disabled";
@@ -56,16 +55,15 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     protected Long id;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @NotNull @Column(name = "NAME", nullable = false)
     @Size(min = 1, max = 255, message = "{ProvisioningConfig.name.Size}")
     protected String name;
 
@@ -90,7 +88,8 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Column(name = DISABLED_PROPERTY_NAME, nullable = false)
     protected boolean disabled = false;
 
-    protected ProvisioningConfig() {}
+    protected ProvisioningConfig() {
+    }
 
     protected ProvisioningConfig(String name) {
         this.name = name;
@@ -120,7 +119,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setName(String name) {
         this.name = name;
-        return (U)this;
+        return (U) this;
     }
 
     public String getType() {
@@ -133,7 +132,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setAssetTemplate(String assetTemplate) {
         this.assetTemplate = assetTemplate;
-        return (U)this;
+        return (U) this;
     }
 
     public boolean isRestrictedUser() {
@@ -142,7 +141,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setRestrictedUser(boolean restrictedUser) {
         this.restrictedUser = restrictedUser;
-        return (U)this;
+        return (U) this;
     }
 
     public ClientRole[] getUserRoles() {
@@ -151,7 +150,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setUserRoles(ClientRole[] userRoles) {
         this.userRoles = userRoles;
-        return (U)this;
+        return (U) this;
     }
 
     public boolean isDisabled() {
@@ -160,7 +159,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setDisabled(boolean disabled) {
         this.disabled = disabled;
-        return (U)this;
+        return (U) this;
     }
 
     /**
@@ -168,6 +167,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
      */
     @JsonProperty
     public abstract T getData();
+
     public abstract U setData(T data);
 
     public String getRealm() {
@@ -176,16 +176,12 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     public U setRealm(String realm) {
         this.realm = realm;
-        return (U)this;
+        return (U) this;
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id=" + id +
-            ", name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            ", realm='" + realm + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id=" + id + ", name='" + name + '\'' + ", type='" + type + '\''
+                + ", realm='" + realm + '\'' + '}';
     }
 }

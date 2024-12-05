@@ -1,15 +1,33 @@
-import {html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-chart";
 import "@openremote/or-translate";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 import "@openremote/or-components/or-panel";
-import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
-import {Asset, Attribute} from "@openremote/model";
-import {style} from "./style";
+import { OrChartConfig, OrChartEvent } from "@openremote/or-chart";
+import { Asset, Attribute } from "@openremote/model";
+import { style } from "./style";
 import i18next from "i18next";
-import {styleMap} from "lit/directives/style-map.js";
-import {classMap} from "lit/directives/class-map.js";
+import { styleMap } from "lit/directives/style-map.js";
+import { classMap } from "lit/directives/class-map.js";
 import "@openremote/or-attribute-card";
 import manager from "@openremote/core";
 
@@ -33,7 +51,7 @@ export interface PanelConfig {
 }
 
 export interface DataViewerConfig {
-    panels: {[name: string]: PanelConfig};
+    panels: { [name: string]: PanelConfig };
     viewerStyles?: { [style: string]: string };
     propertyViewProvider?: (property: string, value: any, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (attribute: Attribute<any>, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
@@ -167,7 +185,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
     @property()
     public config?: DataViewerConfig;
 
-    @property({type: Array, attribute: false})
+    @property({ type: Array, attribute: false })
     protected _assets?: Asset[];
 
     @property()
@@ -208,13 +226,13 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
+            <div class=${classMap({ panel: true, mobileHidden: panelConfig.hideOnMobile === true })} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     ${(panelConfig && panelConfig.type === "chart") ? html`
                         <div class="panel-title">
                             <or-translate value="${name}"></or-translate>
                         </div>
-                    ` :  ``}
+                    ` : ``}
                    
                     <div class="panel-content">
                         ${content}
@@ -224,7 +242,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         `;
     }
 
-    public getPanelContent(panelName: string,  panelConfig: PanelConfig): TemplateResult | undefined {
+    public getPanelContent(panelName: string, panelConfig: PanelConfig): TemplateResult | undefined {
         if (panelConfig.hide || !this.config) {
             return;
         }
@@ -254,7 +272,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
 
         if (!this.config) {
-            this.config = {...OrDataViewer.DEFAULT_CONFIG};
+            this.config = { ...OrDataViewer.DEFAULT_CONFIG };
         }
 
         return html`

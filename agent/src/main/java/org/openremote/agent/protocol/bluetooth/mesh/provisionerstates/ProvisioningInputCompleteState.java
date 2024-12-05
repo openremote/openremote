@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
@@ -32,13 +31,13 @@ public class ProvisioningInputCompleteState extends ProvisioningState {
     /**
      * Constructs the provisioning input complete state
      *
-     * @param node                        {@link UnprovisionedMeshNode} node
-     * @param internalTransportCallbacks  {@link InternalTransportCallbacks} callbacks
+     * @param node {@link UnprovisionedMeshNode} node
+     * @param internalTransportCallbacks {@link InternalTransportCallbacks} callbacks
      * @param provisioningStatusCallbacks {@link MeshProvisioningStatusCallbacks} callbacks
      */
     public ProvisioningInputCompleteState(final UnprovisionedMeshNode node,
-                                          final InternalTransportCallbacks internalTransportCallbacks,
-                                          final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
+            final InternalTransportCallbacks internalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
         super();
         this.mNode = node;
         this.mInternalTransportCallbacks = internalTransportCallbacks;
@@ -52,15 +51,15 @@ public class ProvisioningInputCompleteState extends ProvisioningState {
 
     @Override
     public void executeSend() {
-        //Do nothing here
+        // Do nothing here
     }
 
     @Override
     public boolean parseData(final byte[] data) {
-        if (data.length == 2 &&
-            data[0] == MeshManagerApi.PDU_TYPE_PROVISIONING &&
-            data[1] == TYPE_PROVISIONING_INPUT_COMPLETE) {
-            mMeshProvisioningStatusCallbacks.onProvisioningStateChanged(mNode, States.PROVISIONING_AUTHENTICATION_INPUT_ENTERED, null);
+        if (data.length == 2 && data[0] == MeshManagerApi.PDU_TYPE_PROVISIONING
+                && data[1] == TYPE_PROVISIONING_INPUT_COMPLETE) {
+            mMeshProvisioningStatusCallbacks.onProvisioningStateChanged(mNode,
+                    States.PROVISIONING_AUTHENTICATION_INPUT_ENTERED, null);
             return true;
         }
         return false;

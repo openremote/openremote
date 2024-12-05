@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,9 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import { css, html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import {
     RuleActionAlarm,
     AssetQuery,
@@ -26,26 +25,26 @@ import {
 } from "@openremote/model";
 
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 
-import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
-const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
-    if(form) {
+import { DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
+const checkValidity = (form: HTMLElement | null, dialog: OrMwcDialog) => {
+    if (form) {
         const inputs = form.querySelectorAll('or-mwc-input');
         const elements = Array.prototype.slice.call(inputs);
 
         const valid = elements.every((element) => {
-            if(element.shadowRoot) {
-                const input  = element.shadowRoot.querySelector('input, textarea') as any
-                
-                if(element.type === InputType.SELECT) {
+            if (element.shadowRoot) {
+                const input = element.shadowRoot.querySelector('input, textarea') as any
+
+                if (element.type === InputType.SELECT) {
                     return true;
                 }
 
-                if(input && input.checkValidity()) {
+                if (input && input.checkValidity()) {
                     return true
                 } else {
                     element._mdcComponent.valid = false;
@@ -57,7 +56,7 @@ const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
                 return false;
             }
         })
-        if(valid) {
+        if (valid) {
             dialog.close();
         }
     }
@@ -80,17 +79,17 @@ const style = css`
 @customElement("or-rule-alarm-modal")
 export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
 
-  static get styles() {
-    return style;
-  }
+    static get styles() {
+        return style;
+    }
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public action!: RuleActionAlarm;
 
-    @property({type: String})
+    @property({ type: String })
     public title = "settings";
 
-    @property({type: Object})
+    @property({ type: Object })
     public query?: AssetQuery;
 
     constructor() {
@@ -100,17 +99,17 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
 
     initDialog() {
         const modal = this.shadowRoot!.getElementById('alarm-modal');
-        if(!modal) return;
+        if (!modal) return;
     }
 
-    renderDialogHTML(action:RuleActionAlarm) {
+    renderDialogHTML(action: RuleActionAlarm) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("alarm-modal") as OrMwcDialog;
-        if(!this.shadowRoot) return
+        if (!this.shadowRoot) return
 
-        const slot:HTMLSlotElement|null = this.shadowRoot.querySelector('.alarm-form-slot');
+        const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.alarm-form-slot');
         if (dialog && slot) {
             let container = document.createElement("div");
-            slot.assignedNodes({flatten: true}).forEach((child) => {
+            slot.assignedNodes({ flatten: true }).forEach((child) => {
                 if (child instanceof HTMLElement) {
                     container.appendChild(child);
                 }
@@ -121,8 +120,8 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
         }
     }
 
-    firstUpdated(changedProperties: PropertyValues){
-        if(changedProperties.has("action")){
+    firstUpdated(changedProperties: PropertyValues) {
+        if (changedProperties.has("action")) {
             this.renderDialogHTML(this.action);
         }
     }
@@ -133,7 +132,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
         if (this.shadowRoot) {
             const alarmConfig = this.shadowRoot.querySelector('or-rule-form-alarm');
 
-            if(alarmConfig && alarmConfig.shadowRoot) {
+            if (alarmConfig && alarmConfig.shadowRoot) {
                 const form = alarmConfig.shadowRoot.querySelector('form');
                 return checkValidity(form, dialog);
             }
@@ -141,7 +140,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
     }
 
     protected render() {
-        if(!this.action) return html``;
+        if (!this.action) return html``;
 
         const alarmPickerModalActions: DialogAction[] = [
             {
@@ -174,10 +173,10 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
     }
 
     protected setActionAlarmSeverity(value: string | undefined) {
-        if(value && this.action.alarm){
-            const alarm:any = this.action.alarm;
+        if (value && this.action.alarm) {
+            const alarm: any = this.action.alarm;
             alarm.severity = value;
-            this.action.alarm = {...alarm};
+            this.action.alarm = { ...alarm };
         }
 
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.notification;
 
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.model.notification.Notification.Source.CLIENT;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
@@ -34,13 +42,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.model.notification.Notification.Source.CLIENT;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
 
@@ -51,10 +52,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     final protected AssetStorageService assetStorageService;
     final protected ManagerIdentityService managerIdentityService;
 
-    public NotificationResourceImpl(NotificationService notificationService,
-                                    MessageBrokerService messageBrokerService,
-                                    AssetStorageService assetStorageService,
-                                    ManagerIdentityService managerIdentityService) {
+    public NotificationResourceImpl(NotificationService notificationService, MessageBrokerService messageBrokerService,
+            AssetStorageService assetStorageService, ManagerIdentityService managerIdentityService) {
         this.notificationService = notificationService;
         this.messageBrokerService = messageBrokerService;
         this.assetStorageService = assetStorageService;
@@ -62,33 +61,30 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp,
+            Long toTimestamp, String realmId, String userId, String assetId) {
         try {
-            return notificationService.getNotifications(
-                id != null ? Collections.singletonList(id) : null,
-                type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
-                realmId != null ? Collections.singletonList(realmId) : null,
-                userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null
-            ).toArray(new SentNotification[0]);
+            return notificationService
+                    .getNotifications(id != null ? Collections.singletonList(id) : null,
+                            type != null ? Collections.singletonList(type) : null, fromTimestamp, toTimestamp,
+                            realmId != null ? Collections.singletonList(realmId) : null,
+                            userId != null ? Collections.singletonList(userId) : null,
+                            assetId != null ? Collections.singletonList(assetId) : null)
+                    .toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp,
+            Long toTimestamp, String realmId, String userId, String assetId) {
         try {
-            notificationService.removeNotifications(
-                id != null ? Collections.singletonList(id) : null,
-                type != null ? Collections.singletonList(type) : null,
-                fromTimestamp,
-                toTimestamp,
-                realmId != null ? Collections.singletonList(realmId) : null,
-                userId != null ? Collections.singletonList(userId) : null,
-                assetId != null ? Collections.singletonList(assetId) : null);
+            notificationService.removeNotifications(id != null ? Collections.singletonList(id) : null,
+                    type != null ? Collections.singletonList(type) : null, fromTimestamp, toTimestamp,
+                    realmId != null ? Collections.singletonList(realmId) : null,
+                    userId != null ? Collections.singletonList(userId) : null,
+                    assetId != null ? Collections.singletonList(assetId) : null);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
@@ -113,11 +109,8 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             headers.put(Constants.AUTH_CONTEXT, getAuthContext());
         }
 
-        boolean success = messageBrokerService.getFluentProducerTemplate()
-            .withBody(notification)
-            .withHeaders(headers)
-            .to(NotificationService.NOTIFICATION_QUEUE)
-            .request(Boolean.class);
+        boolean success = messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers)
+                .to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
 
         if (!success) {
             throw new WebApplicationException(BAD_REQUEST);
@@ -136,14 +129,16 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void notificationAcknowledged(RequestParams requestParams, String targetId, Long notificationId, JsonNode acknowledgement) {
+    public void notificationAcknowledged(RequestParams requestParams, String targetId, Long notificationId,
+            JsonNode acknowledgement) {
         if (notificationId == null) {
             throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
 
         SentNotification sentNotification = notificationService.getSentNotification(notificationId);
         verifyAccess(sentNotification, targetId);
-        notificationService.setNotificationAcknowledged(notificationId, acknowledgement == null ? null : ValueUtil.asJSON(acknowledgement).orElse(null));
+        notificationService.setNotificationAcknowledged(notificationId,
+                acknowledgement == null ? null : ValueUtil.asJSON(acknowledgement).orElse(null));
     }
 
     protected void verifyAccess(SentNotification sentNotification, String targetId) {
@@ -172,15 +167,19 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             // Check asset is public read amd not linked to any users
             Asset<?> asset = assetStorageService.find(sentNotification.getTargetId(), false, AssetQuery.Access.PUBLIC);
             if (asset == null) {
-                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
-                throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
+                LOG.fine(
+                        "DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
+                throw new WebApplicationException(
+                        "Anonymous request can only update public assets not linked to a user", FORBIDDEN);
             }
 
             // Disabled until console permissions finalised
-//            if (assetStorageService.isUserAsset(asset.getId())) {
-//                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that is linked to one or more users");
-//                throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
-//            }
+            // if (assetStorageService.isUserAsset(asset.getId())) {
+            // LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that is linked to one or
+            // more users");
+            // throw new WebApplicationException("Anonymous request can only update public assets not linked to a user",
+            // FORBIDDEN);
+            // }
         } else {
             // Regular users can only update notifications sent to them or assets in their realm
             // Restricted users can only update notifications sent to them or assets linked to them
@@ -191,13 +190,16 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                     // What does it mean when a notification has been sent to a realm - who can acknowledge them?
                     if (isRestrictedUser) {
                         LOG.fine("DENIED: Restricted user request to update a notification sent to a realm");
-                        throw new WebApplicationException("Restricted users cannot update a realm notification", FORBIDDEN);
+                        throw new WebApplicationException("Restricted users cannot update a realm notification",
+                                FORBIDDEN);
                     }
                     break;
                 case USER:
                     if (!sentNotification.getTargetId().equals(getUserId())) {
                         LOG.fine("DENIED: User request to update a notification sent to a different user");
-                        throw new WebApplicationException("Regular and restricted users can only update user notifications sent to themselves", FORBIDDEN);
+                        throw new WebApplicationException(
+                                "Regular and restricted users can only update user notifications sent to themselves",
+                                FORBIDDEN);
                     }
                     break;
                 case ASSET:
@@ -207,11 +209,13 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                         throw new WebApplicationException("Asset not found", NOT_FOUND);
                     }
                     if (!asset.getRealm().equals(getAuthenticatedRealmName())) {
-                        LOG.fine("DENIED: User request to update a notification sent to an asset that is in another realm");
+                        LOG.fine(
+                                "DENIED: User request to update a notification sent to an asset that is in another realm");
                         throw new WebApplicationException("Asset not in users realm", FORBIDDEN);
                     }
                     if (isRestrictedUser && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
-                        LOG.fine("DENIED: Restricted user request to update a notification sent to an asset that isn't linked to themselves");
+                        LOG.fine(
+                                "DENIED: Restricted user request to update a notification sent to an asset that isn't linked to themselves");
                         throw new WebApplicationException("Asset not linked to restricted user", FORBIDDEN);
                     }
                     break;

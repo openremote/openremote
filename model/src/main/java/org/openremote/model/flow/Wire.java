@@ -1,9 +1,6 @@
 /*
  * Copyright 2015, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,9 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.flow;
+
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,7 +27,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-import java.io.Serializable;
 
 @IdClass(Wire.Id.class)
 @Entity
@@ -50,15 +49,18 @@ public class Wire {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             Id id = (Id) o;
 
-            if (sourceId != null ? !sourceId.equals(id.sourceId) : id.sourceId != null) return false;
-            if (sinkId != null ? !sinkId.equals(id.sinkId) : id.sinkId != null) return false;
+            if (sourceId != null ? !sourceId.equals(id.sourceId) : id.sourceId != null)
+                return false;
+            if (sinkId != null ? !sinkId.equals(id.sinkId) : id.sinkId != null)
+                return false;
             return !(flowId != null ? !flowId.equals(id.flowId) : id.flowId != null);
-
         }
 
         @Override
@@ -71,31 +73,25 @@ public class Wire {
     }
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "SOURCE_NODE_ID")
+    @NotNull @Column(name = "SOURCE_NODE_ID")
     public String sourceId;
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "SINK_NODE_ID")
+    @NotNull @Column(name = "SINK_NODE_ID")
     public String sinkId;
 
     @jakarta.persistence.Id
-    @NotNull
-    @Column(name = "FLOW_ID")
+    @NotNull @Column(name = "FLOW_ID")
 
     @JsonIgnore
     public String flowId;
 
-
     protected Wire() {
     }
-
 
     public Wire(Slot source, Slot sink) {
         this(source.getId(), sink.getId());
     }
-
 
     public Wire(String sourceId, String sinkId) {
         this.sourceId = sourceId;
@@ -111,8 +107,7 @@ public class Wire {
     }
 
     public boolean equalsSlots(Slot sourceSlot, Slot sinkSlot) {
-        return !(sourceSlot == null || sinkSlot == null)
-            && equalsSlotIds(sourceSlot.getId(), sinkSlot.getId());
+        return !(sourceSlot == null || sinkSlot == null) && equalsSlotIds(sourceSlot.getId(), sinkSlot.getId());
     }
 
     public boolean equalsSlotIds(String sourceId, String sinkId) {
@@ -121,12 +116,15 @@ public class Wire {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         Wire wire = (Wire) o;
 
-        if (sourceId != null ? !sourceId.equals(wire.sourceId) : wire.sourceId != null) return false;
+        if (sourceId != null ? !sourceId.equals(wire.sourceId) : wire.sourceId != null)
+            return false;
         return !(sinkId != null ? !sinkId.equals(wire.sinkId) : wire.sinkId != null);
     }
 
@@ -139,9 +137,6 @@ public class Wire {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "sourceId='" + sourceId + '\'' +
-            ", sinkId='" + sinkId + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "sourceId='" + sourceId + '\'' + ", sinkId='" + sinkId + '\'' + '}';
     }
 }

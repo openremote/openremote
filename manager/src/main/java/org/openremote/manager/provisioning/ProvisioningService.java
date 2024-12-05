@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.provisioning;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -32,13 +37,8 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 @SuppressWarnings("rawtypes")
 public class ProvisioningService extends RouteBuilder implements ContainerService {
@@ -55,14 +55,12 @@ public class ProvisioningService extends RouteBuilder implements ContainerServic
 
     @Override
     public void configure() throws Exception {
-        from(PERSISTENCE_TOPIC)
-            .routeId("Persistence-MonitorProvisioningConfigs")
-            .filter(isPersistenceEventForEntityType(ProvisioningConfig.class))
-            .process(exchange -> {
-                synchronized (this) {
-                    provisioningConfigs = null;
-                }
-            });
+        from(PERSISTENCE_TOPIC).routeId("Persistence-MonitorProvisioningConfigs")
+                .filter(isPersistenceEventForEntityType(ProvisioningConfig.class)).process(exchange -> {
+                    synchronized (this) {
+                        provisioningConfigs = null;
+                    }
+                });
     }
 
     @Override
@@ -71,31 +69,30 @@ public class ProvisioningService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         TimerService timerService = container.getService(TimerService.class);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new ProvisioningResourceImpl(this, timerService, identityService)
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new ProvisioningResourceImpl(this, timerService, identityService));
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     public <T extends ProvisioningConfig<?, ?>> T merge(T provisioningConfig) {
         return persistenceService.doReturningTransaction(entityManager -> {
 
             // Do standard JSR-380 validation on the config
-            Set<ConstraintViolation<ProvisioningConfig<?, ?>>> validationFailures = ValueUtil.validate(provisioningConfig);
+            Set<ConstraintViolation<ProvisioningConfig<?, ?>>> validationFailures = ValueUtil
+                    .validate(provisioningConfig);
 
             if (!validationFailures.isEmpty()) {
-                String msg = "Provisioning config merge failed as failed constraint validation: config=" + provisioningConfig;
+                String msg = "Provisioning config merge failed as failed constraint validation: config="
+                        + provisioningConfig;
                 ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
                 LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), ex);
                 throw ex;
@@ -129,11 +126,8 @@ public class ProvisioningService extends RouteBuilder implements ContainerServic
     }
 
     protected void updateProvisioningConfigs() {
-        provisioningConfigs = persistenceService.doReturningTransaction(entityManager ->
-            entityManager.createQuery(
-                    "select pc from " + ProvisioningConfig.class.getSimpleName() + " pc " +
-                        "order by pc.name desc",
-                    ProvisioningConfig.class)
-                .getResultList());
+        provisioningConfigs = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+                "select pc from " + ProvisioningConfig.class.getSimpleName() + " pc " + "order by pc.name desc",
+                ProvisioningConfig.class).getResultList());
     }
 }

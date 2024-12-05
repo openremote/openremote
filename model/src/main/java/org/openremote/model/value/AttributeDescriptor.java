@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.util.TsIgnoreTypeParams;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Describes an {@link Attribute} that can be added to an {@link Asset}; the {@link #getName()} must match the {@link
@@ -48,7 +48,8 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
     protected MetaMap meta;
     protected Boolean optional;
 
-    AttributeDescriptor() {}
+    AttributeDescriptor() {
+    }
 
     public AttributeDescriptor(String name, ValueDescriptor<T> valueDescriptor) {
         this(name, valueDescriptor, (MetaMap) null);
@@ -103,7 +104,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         return newDescriptor;
     }
 
-    public AttributeDescriptor<T> withConstraints(ValueConstraint...constraints) {
+    public AttributeDescriptor<T> withConstraints(ValueConstraint... constraints) {
         AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
@@ -112,7 +113,7 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         return newDescriptor;
     }
 
-    public AttributeDescriptor<T> withUnits(String...units) {
+    public AttributeDescriptor<T> withUnits(String... units) {
         AttributeDescriptor<T> newDescriptor = new AttributeDescriptor<>(name, type, meta);
         newDescriptor.format = format;
         newDescriptor.constraints = constraints;
@@ -121,15 +122,12 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         return newDescriptor;
     }
 
-    public void updateConstraints(ValueConstraint...valueConstraints) {
+    public void updateConstraints(ValueConstraint... valueConstraints) {
         constraints = valueConstraints;
     }
 
     @Override
     public String toString() {
-        return AttributeDescriptor.class.getSimpleName() + "{" +
-            super.toString() +
-            ", optional=" + optional +
-            "}";
+        return AttributeDescriptor.class.getSimpleName() + "{" + super.toString() + ", optional=" + optional + "}";
     }
 }

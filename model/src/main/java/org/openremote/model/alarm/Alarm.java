@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.alarm;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import jakarta.validation.constraints.NotNull;
 
 public class Alarm {
@@ -49,27 +49,21 @@ public class Alarm {
     public static final String HEADER_SOURCE = Alarm.class.getName() + ".SOURCE";
     public static final String HEADER_SOURCE_ID = Alarm.class.getName() + ".SOURCEID";
 
-    @NotNull
-    protected String title;
+    @NotNull protected String title;
 
     protected String content;
 
-    @NotNull
-    protected Severity severity;
+    @NotNull protected Severity severity;
 
-    @NotNull
-    protected Status status;
+    @NotNull protected Status status;
 
     protected String assigneeId;
 
-    @NotNull
-    protected String realm;
+    @NotNull protected String realm;
 
-    @NotNull
-    protected String sourceId;
+    @NotNull protected String sourceId;
 
-    @NotNull
-    protected Source source;
+    @NotNull protected Source source;
 
     @JsonCreator
     public Alarm(String title, String content, Severity severity, String assigneeId, String realm) {
@@ -83,7 +77,6 @@ public class Alarm {
 
     @JsonCreator
     public Alarm() {
-
     }
 
     public String getTitle() {
@@ -160,16 +153,8 @@ public class Alarm {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", severity=" + severity +
-                ", status=" + status +
-                ", assigneeId='" + assigneeId + '\'' +
-                ", realm='" + realm + '\'' +
-                ", sourceId='" + sourceId + '\'' +
-                ", source=" + source +
-                '}';
+        return getClass().getSimpleName() + "{" + "title='" + title + '\'' + ", content='" + content + '\''
+                + ", severity=" + severity + ", status=" + status + ", assigneeId='" + assigneeId + '\'' + ", realm='"
+                + realm + '\'' + ", sourceId='" + sourceId + '\'' + ", source=" + source + '}';
     }
-
 }

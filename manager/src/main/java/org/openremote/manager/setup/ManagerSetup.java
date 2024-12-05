@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.setup;
+
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.MetaItemType.*;
+import static org.openremote.model.value.ValueType.*;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -41,18 +52,6 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.MetaItemType.*;
-import static org.openremote.model.value.ValueType.*;
 
 public class ManagerSetup implements Setup {
 
@@ -83,7 +82,8 @@ public class ManagerSetup implements Setup {
         this.rulesetStorageService = container.getService(RulesetStorageService.class);
         this.setupService = container.getService(SetupService.class);
 
-        provisionDocRoot = Paths.get(getString(container.getConfig(), OR_PROVISIONING_DOCROOT, OR_PROVISIONING_DOCROOT_DEFAULT));
+        provisionDocRoot = Paths
+                .get(getString(container.getConfig(), OR_PROVISIONING_DOCROOT, OR_PROVISIONING_DOCROOT_DEFAULT));
     }
 
     @Override
@@ -147,8 +147,7 @@ public class ManagerSetup implements Setup {
         room.getAttributes().addOrReplace(
                 new Attribute<>("motionSensor", INTEGER).addMeta(new MetaItem<>(LABEL, "Motion sensor"),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(RULE_STATE, true),
-                        new MetaItem<>(STORE_DATA_POINTS),
-                        new MetaItem<>(ACCESS_RESTRICTED_WRITE)),
+                        new MetaItem<>(STORE_DATA_POINTS), new MetaItem<>(ACCESS_RESTRICTED_WRITE)),
                 new Attribute<>("presenceDetected", BOOLEAN).addMeta(new MetaItem<>(LABEL, "Presence detected"),
                         new MetaItem<>(RULE_STATE, true), new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                         new MetaItem<>(READ_ONLY, true), new MetaItem<>(STORE_DATA_POINTS, true)),
@@ -284,7 +283,6 @@ public class ManagerSetup implements Setup {
                     .ifPresent(attr -> attr.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get())));
         }
     }
-
 
     protected PeopleCounterAsset createDemoPeopleCounterAsset(String name, Asset<?> area, GeoJSONPoint location,
             Supplier<AgentLink<?>> agentLinker) {
@@ -462,17 +460,15 @@ public class ManagerSetup implements Setup {
 
         LOG.info("Provisioning assets");
 
-        Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
-                .forEach(file -> {
-                    try {
-                        Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
-                        asset = assetStorageService.merge(asset);
+        Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted().forEach(file -> {
+            try {
+                Asset<?> asset = ValueUtil.JSON.readValue(file.toFile(), Asset.class);
+                asset = assetStorageService.merge(asset);
 
-                        LOG.info("Asset merged: " + asset.toString());
-                    } catch (IOException e) {
-                        LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
-                    }
-                });
-
+                LOG.info("Asset merged: " + asset.toString());
+            } catch (IOException e) {
+                LOG.warn("Processing of file " + file.getFileName() + " went wrong", e);
+            }
+        });
     }
 }

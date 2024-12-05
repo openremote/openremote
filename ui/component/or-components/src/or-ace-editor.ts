@@ -1,6 +1,24 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import ace, {Ace} from "ace-builds";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import ace, { Ace } from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
@@ -71,13 +89,13 @@ export class OrAceEditor extends LitElement {
         `;
     }
 
-    @property({type: Boolean, attribute: false})
+    @property({ type: Boolean, attribute: false })
     public readonly?: boolean;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public value?: any;
 
-    @property({type: String, attribute: false})
+    @property({ type: String, attribute: false })
     public mode: string = "ace/mode/json";
 
     @query("#ace-editor")

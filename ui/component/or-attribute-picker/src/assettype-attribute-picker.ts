@@ -1,12 +1,30 @@
-import {property, state} from "lit/decorators.js";
-import {AttributePicker, AttributePickerPickedEvent} from "./attribute-picker";
-import {PropertyValues, html, unsafeCSS} from "lit";
-import {DefaultColor5, Util} from "@openremote/core";
-import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {AssetDescriptor, AssetModelUtil, AssetTypeInfo, AttributeDescriptor, WellknownMetaItems} from "@openremote/model";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { property, state } from "lit/decorators.js";
+import { AttributePicker, AttributePickerPickedEvent } from "./attribute-picker";
+import { PropertyValues, html, unsafeCSS } from "lit";
+import { DefaultColor5, Util } from "@openremote/core";
+import { when } from "lit/directives/when.js";
+import { until } from "lit/directives/until.js";
+import { ListItem, OrMwcListChangedEvent } from "@openremote/or-mwc-components/or-mwc-list";
+import { AssetDescriptor, AssetModelUtil, AssetTypeInfo, AttributeDescriptor, WellknownMetaItems } from "@openremote/model";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import "./assettype-list";
 
 /**
@@ -138,31 +156,31 @@ export class AssetTypeAttributePicker extends AttributePicker {
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 320px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
                     <asset-type-list .listItems="${assetTypeItems}" style="--or-icon-fill: #000000;" @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
-                        if (evt.detail.length === 1) this._onAssetTypeItemClick(evt.detail[0] as ListItem);
-                    }}"
+                if (evt.detail.length === 1) this._onAssetTypeItemClick(evt.detail[0] as ListItem);
+            }}"
                     ></asset-type-list>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 320px;overflow: auto;">
                     ${when(attributeTypes && attributeTypes.length > 0, () => {
-                        const selectedAttrNames = this._selectedAssetType ? this.selectedAttributes.get(this._selectedAssetType)?.map(desc => desc.name) : undefined;
-                        return html`
+                const selectedAttrNames = this._selectedAssetType ? this.selectedAttributes.get(this._selectedAssetType)?.map(desc => desc.name) : undefined;
+                return html`
                             <div class="attributes-header">
                                 <or-translate value="attribute_plural"></or-translate>
                             </div>
                             ${until(
-                                    this._getAttributesTemplate(undefined, attributeTypes, selectedAttrNames, this.multiSelect, (attrNames) => this._onAttributesSelect(attrNames)),
-                                    html`<or-loading></or-loading>`
-                            )}
+                    this._getAttributesTemplate(undefined, attributeTypes, selectedAttrNames, this.multiSelect, (attrNames) => this._onAttributesSelect(attrNames)),
+                    html`<or-loading></or-loading>`
+                )}
                         `;
-                    }, () => html`
+            }, () => html`
                         <div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;">
                             <span style="width:100%">
                                 <or-translate value="${
-                                        (attributeTypes && attributeTypes.length === 0) ?
-                                                ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
-                                                                this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
-                                                                        this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
-                                                ) : "selectAssetTypeOnTheLeft"}">
+                (attributeTypes && attributeTypes.length === 0) ?
+                    ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
+                        this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
+                            this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
+                    ) : "selectAssetTypeOnTheLeft"}">
                                 </or-translate>
                             </span>
                         </div>

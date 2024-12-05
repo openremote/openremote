@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.agent;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.Map;
+import java.util.logging.Logger;
 
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -29,11 +33,6 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
-
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * A protocol instance is responsible for connecting devices and services to the context broker. A protocol instance has
@@ -51,8 +50,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * If the {@link Agent} was deleted or {@link Agent#isDisabled} then nothing happens otherwise:
  * <ol>
  * <li>{@link #start} - If this call throws an exception then it is assumed that a permanent failure has occurred (i.e.
- *  the {@link Agent} is incorrectly configured) and this Agent's status will be marked as
- *  {@link ConnectionStatus#ERROR} and attribute linking will not occur.</li>
+ * the {@link Agent} is incorrectly configured) and this Agent's status will be marked as
+ * {@link ConnectionStatus#ERROR} and attribute linking will not occur.</li>
  * <li>{@link #linkAttribute} - Called for each attribute linked to the {@link Agent}</li>
  * </ol>
  * <h3>Configuring protocol instances</h3>
@@ -70,7 +69,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * The protocol handles read and write of linked attributes:
  * <p>
  * If the actual state of the device (or service) changes, the linked protocol writes the new state into the attribute
- * by sending an {@link AttributeEvent} using the {@link #}value and notifies the context broker of the change. A protocol updates a linked attributes' value by sending  an
+ * by sending an {@link AttributeEvent} using the {@link #}value and notifies the context broker of the change. A
+ * protocol updates a linked attributes' value by sending an
  * {@link AttributeEvent} messages on the {@link #SENSOR_QUEUE}, including the source protocol name in header {@link
  * #SENSOR_QUEUE_SOURCE_PROTOCOL}.
  * <p>
@@ -223,7 +223,6 @@ public interface Protocol<T extends Agent<T, ?, ?>> {
      * {@link Protocol}.
      */
     void updateLinkedAttribute(final AttributeRef attributeRef, final Object value);
-
 
     /**
      * Called by instantiator during instantiation to allow the {@link Protocol} to interact with {@link Asset}s and

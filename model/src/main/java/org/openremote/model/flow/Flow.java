@@ -1,9 +1,6 @@
 /*
  * Copyright 2015, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.flow;
 
-import jakarta.persistence.*;
 import java.util.*;
 
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "FLOW")
@@ -32,7 +30,6 @@ public class Flow extends FlowObject {
 
     @Version
     public int version;
-
 
     @Column(name = "CREATED_ON")
     @Temporal(TemporalType.TIMESTAMP)
@@ -50,21 +47,17 @@ public class Flow extends FlowObject {
     @Transient
     public FlowDependency[] subDependencies = new FlowDependency[0];
 
-
     protected Flow() {
     }
-
 
     public Flow(String label, String id) {
         super(label, id, TYPE);
     }
 
-
     public Flow(String label, String id, Node... nodes) {
         this(label, id);
         this.nodes = nodes;
     }
-
 
     public Flow(String label, String id, Node[] nodes, Wire[] wires) {
         this(label, id);
@@ -77,7 +70,6 @@ public class Flow extends FlowObject {
                 throw new IllegalArgumentException("Duplicate wires: " + Arrays.toString(wires));
         }
     }
-
 
     public Date getCreatedOn() {
         return createdOn;
@@ -218,8 +210,7 @@ public class Flow extends FlowObject {
         Iterator<Wire> it = collection.iterator();
         while (it.hasNext()) {
             Wire wire = it.next();
-            if (wire.getSourceId().equals(sourceSlot.getId())
-                && wire.getSinkId().equals(sinkSlot.getId())) {
+            if (wire.getSourceId().equals(sourceSlot.getId()) && wire.getSinkId().equals(sinkSlot.getId())) {
                 it.remove();
                 removed = wire;
             }
@@ -329,9 +320,7 @@ public class Flow extends FlowObject {
 
     public Slot[] findSlotsWithoutPeer(Node subflowNode, Flow flow, boolean onlyWiredSlots) {
         if (!subflowNode.isOfTypeSubflow() || !flow.getId().equals(subflowNode.getSubflowId()))
-            throw new IllegalArgumentException(
-                "Node '" + subflowNode + "' is not a subflow node using: " + flow
-            );
+            throw new IllegalArgumentException("Node '" + subflowNode + "' is not a subflow node using: " + flow);
         List<Slot> list = new ArrayList<>();
 
         Slot[] slots = subflowNode.getSlots();
@@ -369,7 +358,7 @@ public class Flow extends FlowObject {
             Node sourceOwner = findOwnerNode(wire.getSourceId());
             Node sinkOwner = findOwnerNode(wire.getSinkId());
             if ((sourceOwner.getId().equals(a.getId()) && sinkOwner.getId().equals(b.getId()))
-                || (sourceOwner.getId().equals(b.getId()) && sinkOwner.getId().equals(a.getId()))) {
+                    || (sourceOwner.getId().equals(b.getId()) && sinkOwner.getId().equals(a.getId()))) {
                 collection.add(wire);
             }
         }
@@ -385,12 +374,10 @@ public class Flow extends FlowObject {
         return null;
     }
 
-
     public void printWires(StringBuilder sb) {
         sb.append("\n").append("Wires of ").append(this).append(" => ").append(getWires().length).append("\n");
         printWires(sb, getWires());
     }
-
 
     public void printWires(StringBuilder sb, Wire[] wires) {
         for (Wire wire : wires) {

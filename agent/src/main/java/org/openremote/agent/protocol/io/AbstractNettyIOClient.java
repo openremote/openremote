@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,22 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.io;
 
-import dev.failsafe.Failsafe;
-import dev.failsafe.RetryPolicy;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
-import io.netty.handler.codec.DecoderException;
-import io.netty.handler.codec.EncoderException;
-import jakarta.validation.constraints.NotNull;
-import org.openremote.agent.protocol.udp.UDPIOClient;
-import org.openremote.agent.protocol.websocket.WebsocketIOClient;
-import org.openremote.container.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -45,7 +32,20 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.udp.UDPIOClient;
+import org.openremote.agent.protocol.websocket.WebsocketIOClient;
+import org.openremote.container.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.syslog.SyslogCategory;
+
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This is a {@link IOClient} implementation for netty.
@@ -69,7 +69,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * For inbound messages; the decoders required are very much dependent on the message type and {@link IOClient} type,
  * any number of standard netty {@link ChannelInboundHandler}s can be used but the last handler should build messages
- * of type &lt;T&gt; and pass them to the {@link #onMessageReceived} method of the client; the {@link ByteToMessageDecoder}
+ * of type &lt;T&gt; and pass them to the {@link #onMessageReceived} method of the client; the
+ * {@link ByteToMessageDecoder}
  * or {@link MessageToByteEncoder} can be used for this purpose, which one to use will depend on the previous
  * {@link ChannelInboundHandler}s in the pipeline.
  * <p>
@@ -79,7 +80,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements NettyIOClient<T> {
 
     public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
-    public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
+    public static long RECONNECT_DELAY_MAX_MILLIS = 5 * 60000L;
 
     /**
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs a {@link ByteBuf};
@@ -109,10 +110,11 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     /**
-     * This is intended to be used at the end of a decoder chain where the previous decoder outputs messages of type &lt;T&gt;.
+     * This is intended to be used at the end of a decoder chain where the previous decoder outputs messages of type
+     * &lt;T&gt;.
      */
     public static class MessageToMessageDecoder<T> extends SimpleChannelInboundHandler<T> {
-        protected AbstractNettyIOClient<T,?> client;
+        protected AbstractNettyIOClient<T, ?> client;
 
         public MessageToMessageDecoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client) {
             super(typeClazz);
@@ -132,7 +134,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         protected AbstractNettyIOClient<T, ?> client;
         protected BiConsumer<T, ByteBuf> encoder;
 
-        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client, BiConsumer<T, ByteBuf> encoder) {
+        public MessageToByteEncoder(Class<? extends T> typeClazz, AbstractNettyIOClient<T, ?> client,
+                BiConsumer<T, ByteBuf> encoder) {
             super(typeClazz);
             this.client = client;
             this.encoder = encoder;
@@ -163,7 +166,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     @Override
-    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider) throws UnsupportedOperationException {
+    public void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider)
+            throws UnsupportedOperationException {
         this.encoderDecoderProvider = encoderDecoderProvider;
     }
 
@@ -211,7 +215,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         bootstrap.handler(new ChannelInitializer<>() {
             @Override
             public void initChannel(Channel channel) throws Exception {
-            AbstractNettyIOClient.this.initChannel(channel);
+                AbstractNettyIOClient.this.initChannel(channel);
             }
         });
 
@@ -220,24 +224,23 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     protected void scheduleDoConnect(long initialDelay) {
         long delay = Math.max(initialDelay, RECONNECT_DELAY_INITIAL_MILLIS);
-        long maxDelay = Math.max(delay+1, RECONNECT_DELAY_MAX_MILLIS);
+        long maxDelay = Math.max(delay + 1, RECONNECT_DELAY_MAX_MILLIS);
 
-        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
-            .withJitter(Duration.ofMillis(delay))
-            .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
-            .handle(Exception.class)
-            .onRetryScheduled((execution) ->
-                LOG.info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
-            .onFailedAttempt((execution) -> {
-                LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri() + ", error=" + (execution.getLastException() != null ? execution.getLastException().getMessage() : null));
-                doDisconnect();
-            })
-            .withMaxRetries(Integer.MAX_VALUE)
-            .build();
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder().withJitter(Duration.ofMillis(delay))
+                .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay)).handle(Exception.class)
+                .onRetryScheduled((execution) -> LOG
+                        .info("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+                .onFailedAttempt((execution) -> {
+                    LOG.info("Connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()
+                            + ", error="
+                            + (execution.getLastException() != null ? execution.getLastException().getMessage()
+                                    : null));
+                    doDisconnect();
+                }).withMaxRetries(Integer.MAX_VALUE).build();
 
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
 
-            LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+            LOG.fine("Connection attempt '" + (execution.getAttemptCount() + 1) + "' for: " + getClientUri());
             // Connection future should timeout so we just wait for it but add additional timeout just in case
             Future<Void> connectFuture = doConnect();
             waitForConnectFuture(connectFuture);
@@ -258,7 +261,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     protected Void waitForConnectFuture(Future<Void> connectFuture) throws Exception {
-        return connectFuture.get(getConnectTimeoutMillis()+1000L, TimeUnit.MILLISECONDS);
+        return connectFuture.get(getConnectTimeoutMillis() + 1000L, TimeUnit.MILLISECONDS);
     }
 
     protected Future<Void> doConnect() {
@@ -270,7 +273,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     @Override
     public void disconnect() {
         synchronized (this) {
-            if (connectionStatus == ConnectionStatus.DISCONNECTED || connectionStatus == ConnectionStatus.DISCONNECTING) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED
+                    || connectionStatus == ConnectionStatus.DISCONNECTING) {
                 LOG.finest("Already disconnected or disconnecting: " + getClientUri());
                 return;
             }
@@ -284,14 +288,16 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 connectRetry.cancel(true);
                 connectRetry = null;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         doDisconnect();
         try {
             if (workerGroup != null) {
                 workerGroup.shutdownGracefully();
                 workerGroup = null;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         bootstrap = null;
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
@@ -308,10 +314,12 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             if (channel != null) {
                 try {
                     channel.disconnect().await();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 try {
                     channel.close().await();
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
                 channel = null;
             }
         } catch (Exception e) {
@@ -375,7 +383,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     /**
-     * Inserts the decoders and encoders into the channel pipeline and configures standard exception handling and logging
+     * Inserts the decoders and encoders into the channel pipeline and configures standard exception handling and
+     * logging
      */
     protected void initChannel(Channel channel) throws Exception {
         this.channel = channel;
@@ -386,7 +395,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             boolean reconnect = false;
 
             if (!closedFuture.isSuccess() && closedFuture.cause() != null) {
-                LOG.info("Connection closed with exception on '" + getClientUri() + "': " + closedFuture.cause().getMessage());
+                LOG.info("Connection closed with exception on '" + getClientUri() + "': "
+                        + closedFuture.cause().getMessage());
             }
 
             synchronized (this) {
@@ -431,9 +441,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         if (encoderDecoderProvider != null) {
             ChannelHandler[] handlers = encoderDecoderProvider.get();
             if (handlers != null) {
-                Arrays.stream(handlers).forEach(
-                    handler -> channel.pipeline().addLast(handler)
-                );
+                Arrays.stream(handlers).forEach(handler -> channel.pipeline().addLast(handler));
             }
         }
     }
@@ -444,17 +452,20 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             try {
                 consumer.accept(message);
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Exception occurred in message handler '" + e.getMessage() + "':" + getClientUri());
+                LOG.log(Level.WARNING,
+                        "Exception occurred in message handler '" + e.getMessage() + "':" + getClientUri());
             }
         });
     }
 
     protected void onDecodeException(ChannelHandlerContext ctx, DecoderException decoderException) {
-        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() +"': " + getClientUri(), decoderException);
+        LOG.log(Level.FINE, "Decoder exception occurred on in-bound message '" + decoderException.getMessage() + "': "
+                + getClientUri(), decoderException);
     }
 
     protected void onEncodeException(ChannelHandlerContext ctx, EncoderException encoderException) {
-        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() +"': " + getClientUri(), encoderException);
+        LOG.log(Level.FINE, "Encoder exception occurred on out-bound message '" + encoderException.getMessage() + "': "
+                + getClientUri(), encoderException);
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
@@ -465,14 +476,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         if (!connectionStatusConsumers.isEmpty()) {
             LOG.finest("Notifying connection status consumers: count=" + connectionStatusConsumers.size());
         }
-        connectionStatusConsumers.forEach(
-            consumer -> {
-                try {
-                    consumer.accept(connectionStatus);
-                } catch (Exception e) {
-                    LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
-                }
-            });
+        connectionStatusConsumers.forEach(consumer -> {
+            try {
+                consumer.accept(connectionStatus);
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Connection status change handler threw an exception: " + getClientUri(), e);
+            }
+        });
     }
 
     @Override
@@ -482,7 +492,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     // Not ideal but need to chain futures
     // TODO: Replace once netty uses completable futures
-    public static CompletableFuture<Void> toCompletableFuture(Future<Void> future) throws UnsupportedOperationException {
+    public static CompletableFuture<Void> toCompletableFuture(Future<Void> future)
+            throws UnsupportedOperationException {
         if (future instanceof CompletableFuture<Void> completableFuture) {
             return completableFuture;
         }
@@ -498,7 +509,8 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                     if (cf.cause() != null) {
                         completableFuture.completeExceptionally(cf.cause());
                     } else if (!cf.isSuccess()) {
-                        completableFuture.completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
+                        completableFuture
+                                .completeExceptionally(new RuntimeException("Unknown connection failure occurred"));
                     } else {
                         completableFuture.complete(null);
                     }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
 import java.util.UUID;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 public final class UnprovisionedMeshNode extends UnprovisionedBaseMeshNode {
 
@@ -78,6 +77,7 @@ public final class UnprovisionedMeshNode extends UnprovisionedBaseMeshNode {
 
     /**
      * Sets the 128-bit authentication value generated based on the user input if the user input was selected
+     *
      * @param authenticationValue 128-bit auth value
      */
     final void setAuthenticationValue(final byte[] authenticationValue) {

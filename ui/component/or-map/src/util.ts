@@ -1,4 +1,22 @@
-import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike } from "maplibre-gl";
 import {
     Asset,
     AssetDescriptor,
@@ -8,7 +26,7 @@ import {
     ValueHolder,
     WellknownAttributes
 } from "@openremote/model";
-import {AttributeMarkerColoursRange, MapMarkerColours} from "./markers/or-map-marker-asset";
+import { AttributeMarkerColoursRange, MapMarkerColours } from "./markers/or-map-marker-asset";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -21,13 +39,13 @@ export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | G
 
     if ((lngLatLike as LngLat).lat) {
         if ((lngLatLike as any).lon) {
-            return {lng: (lngLatLike as any).lon, lat: (lngLatLike as LngLat).lat};
+            return { lng: (lngLatLike as any).lon, lat: (lngLatLike as LngLat).lat };
         }
-        return {lng: (lngLatLike as LngLat).lng, lat: (lngLatLike as LngLat).lat};
+        return { lng: (lngLatLike as LngLat).lng, lat: (lngLatLike as LngLat).lat };
     }
 
     if (Array.isArray(lngLatLike)) {
-        return {lng: (lngLatLike as number[])[0], lat: (lngLatLike as number[])[1]};
+        return { lng: (lngLatLike as number[])[0], lat: (lngLatLike as number[])[1] };
     }
 
     if ((lngLatLike as GeoJSONPoint).coordinates && Array.isArray((lngLatLike as GeoJSONPoint).coordinates) && ((lngLatLike as GeoJSONPoint).coordinates as number[]).length >= 2) {
@@ -56,7 +74,7 @@ export function getGeoJSONPoint(lngLat: LngLatLike | undefined): GeoJSONPoint | 
         return;
     }
 
-    return Array.isArray(lngLat) ? {type: "Point", coordinates: lngLat as number[]} : {type: "Point", coordinates: [(lngLat as any).hasOwnProperty("lng") ? (lngLat as LngLat).lng : (lngLat as any).lon, lngLat.lat]};
+    return Array.isArray(lngLat) ? { type: "Point", coordinates: lngLat as number[] } : { type: "Point", coordinates: [(lngLat as any).hasOwnProperty("lng") ? (lngLat as LngLat).lng : (lngLat as any).lon, lngLat.lat] };
 }
 
 export function getLngLatBounds(lngLatBoundsLike?: LngLatBoundsLike): LngLatBounds | undefined {
@@ -74,7 +92,7 @@ export function getLngLatBounds(lngLatBoundsLike?: LngLatBoundsLike): LngLatBoun
                 return new LngLatBounds(sw, ne);
             }
         }
-        
+
         if (arr.length === 4) {
             return new LngLatBounds([arr[0], arr[1], arr[2], arr[3]]);
         }
@@ -96,13 +114,13 @@ export interface OverrideConfigSettings {
 export function getMarkerIconAndColorFromAssetType(
     type: AssetDescriptor | string | undefined,
     configOverrideSettings?: OverrideConfigSettings
-): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+): { icon: string, color: string | undefined | AttributeMarkerColoursRange[] } | undefined {
 
     if (!type) {
         return;
     }
 
-    const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
+    const descriptor = typeof (type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
     const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
     let colour = descriptor && descriptor.colour ? descriptor.colour : undefined;
 

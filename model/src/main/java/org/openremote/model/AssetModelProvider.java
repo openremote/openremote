@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.ServiceLoader;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -27,10 +30,6 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.ServiceLoader;
-
 /**
  * Provides model descriptors that are processed by {@link ValueUtil}; implementations can be discovered using the
  * standard {@link ServiceLoader} mechanism or can be manually registered by adding an instance to the {@link
@@ -38,7 +37,7 @@ import java.util.ServiceLoader;
  * <p>
  * If {@link #useAutoScan} is true then the {@link org.reflections.Reflections} library is used to find all classes that
  * extend {@link Asset} in the same JAR as the {@link AssetModelProvider}, these are then searched for all types of
- * descriptors; and also if the {@link AssetModelProvider} contains one or more  {@link ModelDescriptor} annotations
+ * descriptors; and also if the {@link AssetModelProvider} contains one or more {@link ModelDescriptor} annotations
  * then those classes will also be scanned for descriptors.
  */
 @TsIgnore
@@ -100,7 +99,8 @@ public interface AssetModelProvider {
      * Called when the full Asset model has been initialised which gives {@link AssetModelProvider}s the chance to do
      * additional work (e.g. add constraints such as allowed values based on available asset types).
      */
-    default void onAssetModelFinished() {}
+    default void onAssetModelFinished() {
+    }
 
     /**
      * Indicates that this model provider is dynamic and can be refreshed when needed.

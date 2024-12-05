@@ -1,4 +1,30 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri;
+
+import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Gateway;
@@ -12,14 +38,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.tradfri.TradfriLightAsset.convertBrightness;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * The class that represents the configuration for the IKEA TRÅDFRI connection.
@@ -58,6 +76,7 @@ public class TradfriConnection {
 
     /**
      * Construct the TradfriConnection class.
+     *
      * @param gatewayIp the IP address of the gateway.
      * @param securityCode the security code to connect to the gateway.
      */
@@ -68,6 +87,7 @@ public class TradfriConnection {
 
     /**
      * Handles the connection.
+     *
      * @return the gateway.
      */
     public synchronized Gateway connect() {
@@ -88,8 +108,7 @@ public class TradfriConnection {
                     return gateway;
                 }
             }
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             LOG.warning("An exception occurred when connecting to Tradfri gateway: " + exception);
         }
         return null;
@@ -97,18 +116,18 @@ public class TradfriConnection {
 
     /**
      * Updates the connection status.
+     *
      * @param connectionStatus the connection status.
      */
     protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
-        connectionStatusConsumers.forEach(
-                consumer -> consumer.accept(connectionStatus)
-        );
+        connectionStatusConsumers.forEach(consumer -> consumer.accept(connectionStatus));
     }
 
     /**
      * Adds a connection status consumer.
+     *
      * @param connectionStatusConsumer the connection status consumer.
      */
     public synchronized void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
@@ -121,32 +140,36 @@ public class TradfriConnection {
      * Handles the disconnection.
      */
     public synchronized void disconnect() {
-        if (connectionStatus != ConnectionStatus.CONNECTED) return;
+        if (connectionStatus != ConnectionStatus.CONNECTED)
+            return;
         LOG.finest("Disconnecting");
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
-        if(gateway.disableObserve()){
+        if (gateway.disableObserve()) {
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
         }
     }
 
     /**
      * Removes the connection status consumer.
+     *
      * @param connectionStatusConsumer the connection status consumer.
      */
-    public synchronized void removeConnectionStatusConsumer(java.util.function.Consumer<ConnectionStatus> connectionStatusConsumer) {
+    public synchronized void removeConnectionStatusConsumer(
+            java.util.function.Consumer<ConnectionStatus> connectionStatusConsumer) {
         connectionStatusConsumers.remove(connectionStatusConsumer);
     }
 
     /**
      * Method to update the values of the device attributes,
      * based on the values entered in the User Interface.
+     *
      * @param device the device to which the update applies.
      * @param event the event representing the update.
      */
     public void controlDevice(Device device, AttributeEvent event) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && event.getValue().isPresent()) {
-                if (device.isLight()){
+                if (device.isLight()) {
                     Light light = device.toLight();
 
                     if (event.getName().equals(LightAsset.BRIGHTNESS.getName())) {
@@ -159,8 +182,7 @@ public class TradfriConnection {
                     } else if (event.getName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
                         light.setColourTemperature(ValueUtil.getInteger(event.getValue()).orElse(0));
                     }
-                }
-                else if (device.isPlug()) {
+                } else if (device.isPlug()) {
                     Plug plug = device.toPlug();
                     if (event.getName().equals(PlugAsset.ON_OFF.getName())) {
                         plug.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));

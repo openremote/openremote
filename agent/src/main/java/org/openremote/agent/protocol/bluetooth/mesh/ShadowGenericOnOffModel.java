@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
+
+import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;
+
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.transport.GenericOnOffGet;
@@ -26,17 +31,13 @@ import org.openremote.agent.protocol.bluetooth.mesh.transport.GenericOnOffStatus
 import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes.GENERIC_ON_OFF_STATUS;
-
 public class ShadowGenericOnOffModel extends ShadowMeshModel {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowGenericOnOffModel.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            ShadowGenericOnOffModel.class.getName());
 
-    public ShadowGenericOnOffModel(ExecutorService executorService, BluetoothMeshNetwork network, ShadowMeshElement element, int appKeyIndex) {
+    public ShadowGenericOnOffModel(ExecutorService executorService, BluetoothMeshNetwork network,
+            ShadowMeshElement element, int appKeyIndex) {
         super(executorService, network, element, appKeyIndex);
     }
 
@@ -45,7 +46,8 @@ public class ShadowGenericOnOffModel extends ShadowMeshModel {
         if (meshMessage.getOpCode() == GENERIC_ON_OFF_STATUS && meshMessage instanceof GenericOnOffStatus) {
             final GenericOnOffStatus status = (GenericOnOffStatus) meshMessage;
             Boolean isOn = status.getPresentState();
-            LOG.info("Received model status update: [model=GenericOnOffServer, address=" + element.getAddress() + ", state=" + (isOn ? "ON":"OFF") + "]");
+            LOG.info("Received model status update: [model=GenericOnOffServer, address=" + element.getAddress()
+                    + ", state=" + (isOn ? "ON" : "OFF") + "]");
             executeSensorValueConsumers(isOn);
         }
     }
@@ -82,11 +84,11 @@ public class ShadowGenericOnOffModel extends ShadowMeshModel {
         }
         Boolean onOffValue = null;
         if (value instanceof Boolean) {
-            onOffValue = (Boolean)value;
+            onOffValue = (Boolean) value;
         } else if (value instanceof Integer) {
-            onOffValue = ((Integer)value) != 0;
+            onOffValue = ((Integer) value) != 0;
         } else if (value instanceof Double) {
-            onOffValue = ((Double)value) != 0;
+            onOffValue = ((Double) value) != 0;
         } else if (value instanceof String) {
             onOffValue = fromStringToBoolean((String) value);
         }
@@ -99,13 +101,11 @@ public class ShadowGenericOnOffModel extends ShadowMeshModel {
         }
         Boolean boolValue = null;
         stringValue = stringValue.trim();
-        if (stringValue.equalsIgnoreCase("false") ||
-            stringValue.equalsIgnoreCase("off")   ||
-            stringValue.equalsIgnoreCase("0")) {
+        if (stringValue.equalsIgnoreCase("false") || stringValue.equalsIgnoreCase("off")
+                || stringValue.equalsIgnoreCase("0")) {
             boolValue = false;
-        } else if (stringValue.equalsIgnoreCase("true") ||
-                   stringValue.equalsIgnoreCase("on")   ||
-                   stringValue.equalsIgnoreCase("1")) {
+        } else if (stringValue.equalsIgnoreCase("true") || stringValue.equalsIgnoreCase("on")
+                || stringValue.equalsIgnoreCase("1")) {
             boolValue = true;
         }
         return boolValue;

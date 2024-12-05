@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
-
 import java.util.Arrays;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
 
 public class TriggeredEventSubscription<T extends SharedEvent> {
 
@@ -33,7 +33,8 @@ public class TriggeredEventSubscription<T extends SharedEvent> {
     protected String subscriptionId;
 
     @JsonCreator
-    public TriggeredEventSubscription(@JsonProperty("events") List<T> events, @JsonProperty("subscriptionId") String subscriptionId) {
+    public TriggeredEventSubscription(@JsonProperty("events") List<T> events,
+            @JsonProperty("subscriptionId") String subscriptionId) {
         this.events = events;
         this.subscriptionId = subscriptionId;
     }
@@ -48,9 +49,7 @@ public class TriggeredEventSubscription<T extends SharedEvent> {
 
     @Override
     public String toString() {
-        return "TriggeredEventSubscription{" +
-                "events=" + Arrays.toString(events.toArray()) +
-                ", subscriptionId='" + subscriptionId + '\'' +
-                '}';
+        return "TriggeredEventSubscription{" + "events=" + Arrays.toString(events.toArray()) + ", subscriptionId='"
+                + subscriptionId + '\'' + '}';
     }
 }

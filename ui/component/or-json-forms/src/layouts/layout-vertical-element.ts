@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     computeLabel,
     ControlElement,
@@ -16,9 +34,9 @@ import {
     StatePropsOfControl,
     VerticalLayout
 } from "@jsonforms/core";
-import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {LayoutBaseElement} from "./layout-base-element";
+import { css, html, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { LayoutBaseElement } from "./layout-base-element";
 import {
     CombinatorInfo,
     controlWithoutLabel,
@@ -27,15 +45,15 @@ import {
     getTemplateFromProps,
     showJsonEditor
 } from "../util";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
-import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {DefaultColor5} from "@openremote/core";
-import {AdditionalProps} from "../base-element";
+import { addItemOrParameterDialogStyle, baseStyle, panelStyle } from "../styles";
+import { ListItem, OrMwcListChangedEvent } from "@openremote/or-mwc-components/or-mwc-list";
+import { DefaultColor5 } from "@openremote/core";
+import { AdditionalProps } from "../base-element";
 
 // language=CSS
 const style = css`
@@ -112,7 +130,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
     render() {
 
         const optionalProps: StatePropsOfControl[] = [];
-        const jsonFormsState = {jsonforms: {...this.state}};
+        const jsonFormsState = { jsonforms: { ...this.state } };
         const rootSchema = getSchema(jsonFormsState);
         const dynamic = isDynamic(this.schema);
         let dynamicPropertyRegex = ".+";
@@ -193,7 +211,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         }
 
         const deleteHandler = (key: string) => {
-            const data = {...this.data};
+            const data = { ...this.data };
             delete data[key];
             this.handleChange(this.path, data);
         };
@@ -210,7 +228,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             } else {
                 orInput.setCustomValidity(undefined);
             }
-            const data = {...this.data};
+            const data = { ...this.data };
             const value = data[oldKey];
             delete data[oldKey];
             data[newKey] = value;
@@ -237,10 +255,10 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         return html`
             <div id="dynamic-wrapper">
                 ${Object.entries(this.data).map(([key, value]) => {
-                    return html`
+            return html`
                         <div class="row">
                             <div class="key-container">
-                                <or-mwc-input .type="${InputType.TEXT}" @or-mwc-input-changed="${(ev:OrInputChangedEvent) => keyChangeHandler(ev.currentTarget as OrMwcInput, key, ev.detail.value)}" required .pattern="${dynamicPropertyRegex}" .value="${key}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.TEXT}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => keyChangeHandler(ev.currentTarget as OrMwcInput, key, ev.detail.value)}" required .pattern="${dynamicPropertyRegex}" .value="${key}"></or-mwc-input>
                             </div>
                             <div class="value-container">
                                 ${getDynamicValueTemplate(key, value)}
@@ -250,7 +268,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                             </div>
                         </div>
                     `;
-                })}
+        })}
             </div>
         `;
     }
@@ -324,7 +342,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     <form id="mdc-dialog-form-add" class="row">
                         ${dynamic ? `` : html`
                             <div id="type-list" class="col">
-                                <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as StatePropsOfControl); }}" .listItems="${listItems}" id="parameter-list"></or-mwc-list>
+                                <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => { if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as StatePropsOfControl); }}" .listItems="${listItems}" id="parameter-list"></or-mwc-list>
                             </div>
                         `}
                         <div id="parameter-desc" class="col">
@@ -351,7 +369,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                                     ${schemaPicker}
                                 </div>
                                 <p id="schema-description">${i18next.t("schema.selectTypeMessage")}</p>`
-                            : html`
+                    : html`
                                 <style>
                                     #dynamic-wrapper > or-mwc-input {
                                         display: block;
@@ -382,7 +400,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     actionName: "add",
                     action: () => {
                         const key = dynamic ? keyValue as string : selectedParameter!.path.split(".").pop()!;
-                        const data = {...this.data};
+                        const data = { ...this.data };
                         const schema = dynamic ? dynamicValueSchema! : selectedParameter!.schema;
                         data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema));
                         this.handleChange(this.path || "", data);

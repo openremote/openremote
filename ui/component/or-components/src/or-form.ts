@@ -1,7 +1,25 @@
-import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query, queryAssignedElements} from "lit/decorators.js";
-import {DefaultColor2} from "@openremote/core";
-import {OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, unsafeCSS } from "lit";
+import { customElement, property, query, queryAssignedElements } from "lit/decorators.js";
+import { DefaultColor2 } from "@openremote/core";
+import { OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 
 // language=CSS
 const style = css`
@@ -68,8 +86,8 @@ export class OrForm extends LitElement {
         return valid;
     }
 
-    public submit(): {[key: string]: any} {
-        const data: {[key: string]: any} = {};
+    public submit(): { [key: string]: any } {
+        const data: { [key: string]: any } = {};
         this.formNodes.filter(node => node instanceof OrMwcInput && node.name).map(node => node as OrMwcInput).forEach(orMwcInput => {
             data[orMwcInput.name! as string] = orMwcInput.value;
         });

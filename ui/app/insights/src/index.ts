@@ -1,8 +1,26 @@
-import {combineReducers, configureStore} from "@reduxjs/toolkit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import "@openremote/or-app";
-import {AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
-import {pageViewProvider} from "./pages/page-view";
-import {ManagerAppConfig} from "@openremote/model";
+import { AppConfig, appReducer, OrApp, PageProvider, RealmAppConfig } from "@openremote/or-app";
+import { pageViewProvider } from "./pages/page-view";
+import { ManagerAppConfig } from "@openremote/model";
 
 declare const CONFIG_URL_PREFIX: string;
 
@@ -78,11 +96,11 @@ fetch(configURL).then(async (result) => {
         // Configure realms
         if (!appConfig.realms) {
             orAppConfig.realms = {
-                default: {...DefaultRealmConfig}
+                default: { ...DefaultRealmConfig }
             };
         } else {
             orAppConfig.realms = {};
-            const defaultRealm = appConfig.realms.default ? {...DefaultRealmConfig,...appConfig.realms.default} : DefaultRealmConfig;
+            const defaultRealm = appConfig.realms.default ? { ...DefaultRealmConfig, ...appConfig.realms.default } : DefaultRealmConfig;
             orAppConfig.realms.default = defaultRealm;
 
             Object.entries(appConfig.realms).forEach(([name, realmConfig]) => {
@@ -94,9 +112,9 @@ fetch(configURL).then(async (result) => {
         manager.console.retrieveData("LANGUAGE").then((value: string | undefined) => {
             manager.language = (value ? value : orAppConfig.realms[manager.displayRealm].language);
         }).catch(() => {
-            if (orAppConfig.realms[manager.displayRealm]){
+            if (orAppConfig.realms[manager.displayRealm]) {
                 manager.language = orAppConfig.realms[manager.displayRealm].language
-            } else if (orAppConfig.realms['default']){
+            } else if (orAppConfig.realms['default']) {
                 manager.language = orAppConfig.realms['default'].language
             } else {
                 manager.language = 'en'

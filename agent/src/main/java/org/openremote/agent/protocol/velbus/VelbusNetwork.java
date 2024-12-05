@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.io.IOClient;
-import org.openremote.agent.protocol.velbus.device.VelbusDevice;
-import org.openremote.model.asset.agent.ConnectionStatus;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.agent.protocol.velbus.device.VelbusDevice;
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 public class VelbusNetwork {
 
@@ -43,7 +42,8 @@ public class VelbusNetwork {
     protected ScheduledExecutorService executorService;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
-    public VelbusNetwork(IOClient<VelbusPacket> client, ScheduledExecutorService executorService, Integer timeInjectionIntervalSeconds) {
+    public VelbusNetwork(IOClient<VelbusPacket> client, ScheduledExecutorService executorService,
+            Integer timeInjectionIntervalSeconds) {
         this.client = client;
         this.executorService = executorService;
         this.timeInjectionIntervalSeconds = timeInjectionIntervalSeconds;
@@ -51,7 +51,8 @@ public class VelbusNetwork {
         client.addMessageConsumer(this::onPacketReceived);
         onConnectionStatusChanged(getConnectionStatus());
         if (timeInjectionIntervalSeconds != null) {
-            timeInjector = getExecutorService().scheduleWithFixedDelay(this::doTimeInjection, timeInjectionIntervalSeconds, timeInjectionIntervalSeconds, TimeUnit.SECONDS);
+            timeInjector = getExecutorService().scheduleWithFixedDelay(this::doTimeInjection,
+                    timeInjectionIntervalSeconds, timeInjectionIntervalSeconds, TimeUnit.SECONDS);
         }
     }
 
@@ -172,7 +173,7 @@ public class VelbusNetwork {
             return;
         }
 
-        VelbusDevice matchingDevice = devices[address-1];
+        VelbusDevice matchingDevice = devices[address - 1];
         VelbusPacket.InboundCommand command = VelbusPacket.InboundCommand.fromCode(packet.getCommand());
         LOG.finest("Received packet " + command + " : " + packet);
 
@@ -180,7 +181,7 @@ public class VelbusNetwork {
             matchingDevice.processReceivedPacket(packet);
         } else {
             // Look for sub address device
-            matchingDevice = subAddressDevices[address-1];
+            matchingDevice = subAddressDevices[address - 1];
 
             if (matchingDevice != null) {
                 matchingDevice.processReceivedPacket(packet);
@@ -200,7 +201,7 @@ public class VelbusNetwork {
         if (!deviceExists) {
             // Device hasn't been created yet so create it
             device = new VelbusDevice(deviceAddress, this);
-            devices[deviceAddress-1] = device;
+            devices[deviceAddress - 1] = device;
         }
 
         device.addPropertyValueConsumer(property, propertyValueConsumer);
@@ -210,7 +211,8 @@ public class VelbusNetwork {
         }
     }
 
-    public void removePropertyValueConsumer(int deviceAddress, String property, Consumer<Object> propertyValueConsumer) {
+    public void removePropertyValueConsumer(int deviceAddress, String property,
+            Consumer<Object> propertyValueConsumer) {
         if (deviceAddress < 1 || deviceAddress > 254) {
             LOG.warning("Invalid device address: " + deviceAddress);
             return;
@@ -258,20 +260,16 @@ public class VelbusNetwork {
             return;
         }
 
-        subAddressDevices[subAddress-1] = velbusDevice;
+        subAddressDevices[subAddress - 1] = velbusDevice;
     }
 
     protected VelbusDevice getDevice(int address) {
-        return devices[address-1];
+        return devices[address - 1];
     }
 
     protected void startSendingPackets() {
-        queueProcessingTask = getExecutorService().scheduleWithFixedDelay(
-            this::doSendPacket,
-            0,
-            DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS,
-            TimeUnit.MILLISECONDS
-        );
+        queueProcessingTask = getExecutorService().scheduleWithFixedDelay(this::doSendPacket, 0,
+                DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS, TimeUnit.MILLISECONDS);
     }
 
     protected void doSendPacket() {

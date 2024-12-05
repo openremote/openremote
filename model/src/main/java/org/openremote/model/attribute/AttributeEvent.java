@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
+
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.annotation.Nonnull;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
@@ -33,14 +36,12 @@ import org.openremote.model.validation.AttributeInfoValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
-import java.util.Date;
-import java.util.Objects;
-import java.util.Optional;
+import jakarta.annotation.Nonnull;
 
 /**
  * Represents an {@link Attribute} value at a point in time.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({ "rawtypes", "unchecked" })
 @AttributeInfoValid
 public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
@@ -50,9 +51,12 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     }
 
     @TsIgnore
-    protected interface Basic {}
+    protected interface Basic {
+    }
+
     @TsIgnore
-    public interface Enhanced {}
+    public interface Enhanced {
+    }
 
     protected AttributeRef ref;
     protected Object value;
@@ -125,8 +129,9 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         }
     }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
-        this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp,
+            Object oldValue, Long oldValueTimestamp) {
+        this(new AttributeRef(asset.getId(), attribute.getName()), value, valueTimestamp);
 
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
@@ -216,7 +221,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @Override
     public String[] getAttributeNames() {
-        return new String[]{getRef().getName()};
+        return new String[] { getRef().getName() };
     }
 
     @Override
@@ -291,10 +296,8 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
      * Compares entity identifier, attribute name, value, source, and optional timestamp.
      */
     public boolean matches(AttributeEvent event) {
-        return getId().equals(event.getId())
-            && getName().equals(event.getName())
-            && isDeleted() == event.isDeleted()
-            && getTimestamp() == event.getTimestamp();
+        return getId().equals(event.getId()) && getName().equals(event.getName()) && isDeleted() == event.isDeleted()
+                && getTimestamp() == event.getTimestamp();
     }
 
     @Override
@@ -317,11 +320,12 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AttributeEvent that = (AttributeEvent) o;
-        return Objects.equals(getName(), that.getName())
-            && Objects.equals(getId(), that.getId());
+        return Objects.equals(getName(), that.getName()) && Objects.equals(getId(), that.getId());
     }
 
     @Override
@@ -331,23 +335,15 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
-            ", ref=" + ref +
-            ", realm=" + realm +
-            ", source=" + source +
-            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
-            "}";
+        return getClass().getSimpleName() + "{" + "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null")
+                + ", ref=" + ref + ", realm=" + realm + ", source=" + source + ", valueType="
+                + (value != null ? value.getClass().getName() : "null") + "}";
     }
 
     public String toStringWithValue() {
         String valueStr = Objects.toString(value);
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp.toInstant() +
-            ", ref=" + ref +
-            ", realm=" + realm +
-            ", source=" + source +
-            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
-            "}";
+        return getClass().getSimpleName() + "{" + "timestamp=" + timestamp.toInstant() + ", ref=" + ref + ", realm="
+                + realm + ", source=" + source + ", value="
+                + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) + "}";
     }
 }

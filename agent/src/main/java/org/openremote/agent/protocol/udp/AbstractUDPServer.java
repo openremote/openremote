@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.udp;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.logging.Level;
+
+import org.openremote.agent.protocol.io.AbstractNettyIOServer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -29,11 +34,6 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.DatagramPacketEncoder;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.io.AbstractNettyIOServer;
-
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.logging.Level;
 
 /**
  * UDP in Netty is crap; everything goes through the single server channel as it is connectionless but there is no way
@@ -42,7 +42,8 @@ import java.util.logging.Level;
  * For outbound messages we wrap each decoder in a {@link DatagramPacketEncoder} which unfortunately only supports
  * {@link MessageToMessageEncoder}s.
  */
-public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, DatagramChannel, Bootstrap, InetSocketAddress> {
+public abstract class AbstractUDPServer<T>
+        extends AbstractNettyIOServer<T, DatagramChannel, Bootstrap, InetSocketAddress> {
 
     protected InetSocketAddress localAddress;
     protected InetSocketAddress lastMessageSender;
@@ -64,9 +65,7 @@ public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, Data
     @Override
     protected Bootstrap createAndConfigureBootstrap() {
         Bootstrap b = new Bootstrap();
-        b.group(new NioEventLoopGroup())
-                .channel(NioDatagramChannel.class)
-                .localAddress(localAddress)
+        b.group(new NioEventLoopGroup()).channel(NioDatagramChannel.class).localAddress(localAddress)
                 .option(ChannelOption.SO_BROADCAST, true);
         return b;
     }
@@ -98,7 +97,8 @@ public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, Data
         channel.pipeline().addLast(new MessageToMessageEncoder<AddressedEnvelope<ByteBuf, InetSocketAddress>>() {
 
             @Override
-            protected void encode(ChannelHandlerContext ctx, AddressedEnvelope<ByteBuf, InetSocketAddress> msg, List<Object> out) throws Exception {
+            protected void encode(ChannelHandlerContext ctx, AddressedEnvelope<ByteBuf, InetSocketAddress> msg,
+                    List<Object> out) throws Exception {
                 if (msg instanceof DatagramPacket) {
                     out.add(msg.retain());
                 } else {
@@ -130,7 +130,7 @@ public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, Data
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected void addEncoder(DatagramChannel channel, ChannelOutboundHandler encoder) {
         if (encoder instanceof DatagramPacketEncoder) {
@@ -142,7 +142,7 @@ public abstract class AbstractUDPServer<T> extends AbstractNettyIOServer<T, Data
             throw new IllegalArgumentException("Only MessageToMessage encoders can be used with UDP");
         }
 
-        MessageToMessageEncoder mEncoder = (MessageToMessageEncoder)encoder;
+        MessageToMessageEncoder mEncoder = (MessageToMessageEncoder) encoder;
         super.addEncoder(channel, new DatagramPacketEncoder(mEncoder));
     }
 

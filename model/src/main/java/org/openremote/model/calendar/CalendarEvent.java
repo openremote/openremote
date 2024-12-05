@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,25 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.calendar;
+
+import java.io.Serializable;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
-import net.fortuna.ical4j.model.DateList;
-import net.fortuna.ical4j.model.Recur;
+
 import org.openremote.model.asset.Asset;
 import org.openremote.model.util.Pair;
 
-import java.io.Serializable;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import net.fortuna.ical4j.model.DateList;
+import net.fortuna.ical4j.model.Recur;
 
 /**
  * Represents an event that occurs at a point in time with a {@link #start}, {#link #end} and optional
@@ -48,14 +49,20 @@ import java.util.Date;
  * </ul>
  * <p>
  * Example 1 (One day, one time only):
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>{@code
 {
     "start": 1441148400000,
     "end": 1441234800000
 }
- * }</pre></blockquote>
+ * }</pre>
+ *
+ * </blockquote>
  * Example 2 (2 days starting 2nd September 2015; repeat every other week, 3 occurrences):
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>{@code
 {
     "start": 1441148400000,
     "end": 1441321200000,
@@ -65,15 +72,21 @@ import java.util.Date;
         "count": 3
     }
 }
- * }</pre></blockquote>
+ * }</pre>
+ *
+ * </blockquote>
  * Example 3 (8 hours starting 2nd September 2015 08:00am, repeat every day until 1st Feb 2018):
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>{@code
 {
     "start": 1441177200000,
     "ends": 1441206000000,
     "recurrence": "RRULE:FREQ=DAILY;INTERVAL=2;COUNT=4"
 }
- * }</pre></blockquote>
+ * }</pre>
+ *
+ * </blockquote>
  */
 // TODO: Update to ical4j 4 once released with DST bug fix https://github.com/ical4j/ical4j/issues/117
 public class CalendarEvent implements Serializable {
@@ -91,12 +104,14 @@ public class CalendarEvent implements Serializable {
     }
 
     @JsonCreator
-    public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
+    public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end,
+            @JsonProperty("recurrence") String recurrence) {
         Recur recur = null;
 
         try {
             recur = new Recur(recurrence);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
         this.start = start;
         this.end = end;
@@ -104,7 +119,7 @@ public class CalendarEvent implements Serializable {
     }
 
     public CalendarEvent(Date start, Date end) {
-        this(start, end, (Recur)null);
+        this(start, end, (Recur) null);
     }
 
     public CalendarEvent(Date start, Date end, Recur recurrence) {
@@ -131,7 +146,7 @@ public class CalendarEvent implements Serializable {
             return new Pair<>(getStart().getTime(), Long.MAX_VALUE);
         }
 
-        if (getStart().before(when) && getEnd().after(when) && (getEnd().getTime()-when.getTime() > 1000)) {
+        if (getStart().before(when) && getEnd().after(when) && (getEnd().getTime() - when.getTime() > 1000)) {
             return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
@@ -144,18 +159,23 @@ public class CalendarEvent implements Serializable {
             return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
-        long whenMillis = when.toInstant().minus(getEnd().getTime() - getStart().getTime(), ChronoUnit.MILLIS).toEpochMilli();
-        DateList matches = recurrence.getDates(new net.fortuna.ical4j.model.DateTime(getStart()), new net.fortuna.ical4j.model.DateTime(whenMillis), new net.fortuna.ical4j.model.DateTime(Long.MAX_VALUE), net.fortuna.ical4j.model.parameter.Value.DATE_TIME, 2);
+        long whenMillis = when.toInstant().minus(getEnd().getTime() - getStart().getTime(), ChronoUnit.MILLIS)
+                .toEpochMilli();
+        DateList matches = recurrence.getDates(new net.fortuna.ical4j.model.DateTime(getStart()),
+                new net.fortuna.ical4j.model.DateTime(whenMillis),
+                new net.fortuna.ical4j.model.DateTime(Long.MAX_VALUE),
+                net.fortuna.ical4j.model.parameter.Value.DATE_TIME, 2);
 
         if (matches.isEmpty()) {
             return null;
         }
 
-        long endTime = matches.get(0).getTime() + (getEnd().getTime()- getStart().getTime());
+        long endTime = matches.get(0).getTime() + (getEnd().getTime() - getStart().getTime());
 
         if (endTime <= when.getTime()) {
             if (matches.size() == 2) {
-                return new Pair<>(matches.get(1).getTime(), matches.get(1).getTime() + (getEnd().getTime()- getStart().getTime()));
+                return new Pair<>(matches.get(1).getTime(),
+                        matches.get(1).getTime() + (getEnd().getTime() - getStart().getTime()));
             }
             return null;
         }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.security.SecureRandom;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
@@ -32,16 +41,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.SecureNetworkBeacon;
 import org.openremote.model.syslog.SyslogCategory;
 
 import jakarta.validation.constraints.NotNull;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.security.SecureRandom;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-
 
 public class SecureUtils {
 
@@ -68,7 +67,7 @@ public class SecureUtils {
     /**
      * K2 Master input
      */
-    public static final byte[] K2_MASTER_INPUT = {0x00};
+    public static final byte[] K2_MASTER_INPUT = { 0x00 };
     /**
      * Salt input for K2
      */
@@ -93,10 +92,11 @@ public class SecureUtils {
      * Output mask for K4
      */
     public static final int ENC_K4_OUTPUT_MASK = 0x3f;
-    //For S1, the key is constant
-    protected static final byte[] SALT_KEY = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    //Padding for the random nonce
-    protected static final byte[] NONCE_PADDING = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // For S1, the key is constant
+    protected static final byte[] SALT_KEY = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00 };
+    // Padding for the random nonce
+    protected static final byte[] NONCE_PADDING = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     private static final String TAG = SecureUtils.class.getSimpleName();
     /**
      * Salt input for identity key
@@ -111,8 +111,8 @@ public class SecureUtils {
      * Salt input for identity key
      */
     private static final byte[] ID128 = "id128".getBytes(Charset.forName("US-ASCII"));
-    //Padding for the random nonce
-    private static final byte[] HASH_PADDING = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // Padding for the random nonce
+    private static final byte[] HASH_PADDING = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
     private static final int HASH_LENGTH = 8;
     public static int NRF_MESH_KEY_SIZE = 16;
 
@@ -150,10 +150,8 @@ public class SecureUtils {
         return cmac;
     }
 
-    public static byte[] encryptCCM(@NotNull final byte[] data,
-                                    @NotNull final byte[] key,
-                                    @NotNull final byte[] nonce,
-                                    final int micSize) {
+    public static byte[] encryptCCM(@NotNull final byte[] data, @NotNull final byte[] key, @NotNull final byte[] nonce,
+            final int micSize) {
         Objects.requireNonNull(data);
         Objects.requireNonNull(key);
         Objects.requireNonNull(nonce);
@@ -173,11 +171,8 @@ public class SecureUtils {
         }
     }
 
-    public static byte[] encryptCCM(@NotNull final byte[] data,
-                                    @NotNull final byte[] key,
-                                    @NotNull final byte[] nonce,
-                                    @NotNull final byte[] additionalData,
-                                    final int micSize) {
+    public static byte[] encryptCCM(@NotNull final byte[] data, @NotNull final byte[] key, @NotNull final byte[] nonce,
+            @NotNull final byte[] additionalData, final int micSize) {
         Objects.requireNonNull(data);
         Objects.requireNonNull(key);
         Objects.requireNonNull(nonce);
@@ -186,7 +181,8 @@ public class SecureUtils {
         final byte[] ccm = new byte[data.length + micSize];
 
         final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
+        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce,
+                additionalData);
         ccmBlockCipher.init(true, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, data.length);
         try {
@@ -198,10 +194,8 @@ public class SecureUtils {
         }
     }
 
-    public static byte[] decryptCCM(@NotNull final byte[] data,
-                                    @NotNull final byte[] key,
-                                    @NotNull final byte[] nonce,
-                                    final int micSize) throws InvalidCipherTextException {
+    public static byte[] decryptCCM(@NotNull final byte[] data, @NotNull final byte[] key, @NotNull final byte[] nonce,
+            final int micSize) throws InvalidCipherTextException {
         Objects.requireNonNull(data);
         Objects.requireNonNull(key);
         Objects.requireNonNull(nonce);
@@ -216,11 +210,8 @@ public class SecureUtils {
         return ccm;
     }
 
-    public static byte[] decryptCCM(@NotNull final byte[] data,
-                                    @NotNull final byte[] key,
-                                    @NotNull final byte[] nonce,
-                                    @NotNull final byte[] additionalData,
-                                    final int micSize) throws InvalidCipherTextException {
+    public static byte[] decryptCCM(@NotNull final byte[] data, @NotNull final byte[] key, @NotNull final byte[] nonce,
+            @NotNull final byte[] additionalData, final int micSize) throws InvalidCipherTextException {
         Objects.requireNonNull(data);
         Objects.requireNonNull(key);
         Objects.requireNonNull(nonce);
@@ -229,7 +220,8 @@ public class SecureUtils {
         final byte[] ccm = new byte[data.length - micSize];
 
         final CCMBlockCipher ccmBlockCipher = new CCMBlockCipher(new AESEngine());
-        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce, additionalData);
+        final AEADParameters aeadParameters = new AEADParameters(new KeyParameter(key), micSize * 8, nonce,
+                additionalData);
         ccmBlockCipher.init(false, aeadParameters);
         ccmBlockCipher.processBytes(data, 0, data.length, ccm, 0);
         ccmBlockCipher.doFinal(ccm, 0);
@@ -244,7 +236,7 @@ public class SecureUtils {
      * Calculate k2
      *
      * @param data network key
-     * @param p    master input
+     * @param p master input
      */
     public static K2Output calculateK2(final byte[] data, final byte[] p) {
         if (data == null || p == null)
@@ -296,7 +288,7 @@ public class SecureUtils {
 
         final byte[] result = calculateCMAC(cmacInput, t);
 
-        //Only the least significant 8 bytes are returned
+        // Only the least significant 8 bytes are returned
         final byte[] networkId = new byte[8];
         final int srcOffset = result.length - networkId.length;
 
@@ -324,7 +316,7 @@ public class SecureUtils {
 
         final byte[] result = calculateCMAC(cmacInput, t);
 
-        //Only the least significant 6 bytes are returned
+        // Only the least significant 6 bytes are returned
         return (byte) ((result[15]) & 0x3F);
     }
 
@@ -363,15 +355,13 @@ public class SecureUtils {
     /**
      * Calculates the authentication value of secure network beacon
      *
-     * @param n         network key
-     * @param flags     flags
+     * @param n network key
+     * @param flags flags
      * @param networkId network id of the network
-     * @param ivIndex   ivindex of the network
+     * @param ivIndex ivindex of the network
      */
-    public static byte[] calculateAuthValueSecureNetBeacon(final byte[] n,
-                                                           final int flags,
-                                                           final byte[] networkId,
-                                                           final int ivIndex) {
+    public static byte[] calculateAuthValueSecureNetBeacon(final byte[] n, final int flags, final byte[] networkId,
+            final int ivIndex) {
         final int inputLength = 1 + networkId.length + 4;
         final ByteBuffer pBuffer = ByteBuffer.allocate(inputLength);
         pBuffer.put((byte) flags);
@@ -384,15 +374,14 @@ public class SecureUtils {
     /**
      * Creates the secure network beacon
      *
-     * @param n         network key
-     * @param flags     network flags, this represents the current state of hte network if key refresh/iv update is ongoing or complete
+     * @param n network key
+     * @param flags network flags, this represents the current state of hte network if key refresh/iv update is ongoing
+     *            or complete
      * @param networkId unique id of the network
-     * @param ivIndex   iv index of the network
+     * @param ivIndex iv index of the network
      */
-    public static SecureNetworkBeacon createSecureNetworkBeacon(final byte[] n,
-                                                                final int flags,
-                                                                final byte[] networkId,
-                                                                final int ivIndex) {
+    public static SecureNetworkBeacon createSecureNetworkBeacon(final byte[] n, final int flags, final byte[] networkId,
+            final int ivIndex) {
         final byte[] authentication = calculateAuthValueSecureNetBeacon(n, flags, networkId, ivIndex);
 
         final int inputLength = 1 + networkId.length + 4;
@@ -410,16 +399,14 @@ public class SecureUtils {
     /**
      * Calculates the secure network beacon
      *
-     * @param n         network key
-     * @param flags     network flags, this represents the current state of hte network if key refresh/iv update is ongoing or complete
+     * @param n network key
+     * @param flags network flags, this represents the current state of hte network if key refresh/iv update is ongoing
+     *            or complete
      * @param networkId unique id of the network
-     * @param ivIndex   iv index of the network
+     * @param ivIndex iv index of the network
      */
-    public static byte[] calculateSecureNetworkBeacon(final byte[] n,
-                                                      final int beaconType,
-                                                      final int flags,
-                                                      final byte[] networkId,
-                                                      final int ivIndex) {
+    public static byte[] calculateSecureNetworkBeacon(final byte[] n, final int beaconType, final int flags,
+            final byte[] networkId, final int ivIndex) {
         final byte[] authentication = calculateAuthValueSecureNetBeacon(n, flags, networkId, ivIndex);
 
         final int inputLength = 1 + networkId.length + 4;
@@ -438,8 +425,8 @@ public class SecureUtils {
      * Calculates hash value for advertising with node id
      *
      * @param identityKey resolving identity key
-     * @param random      64-bit random value
-     * @param src         unicast address of the node
+     * @param random 64-bit random value
+     * @param src unicast address of the node
      * @return hash value
      */
     public static byte[] calculateHash(final byte[] identityKey, final byte[] random, final byte[] src) {
@@ -469,9 +456,9 @@ public class SecureUtils {
 
     public static int getNetMicLength(final int ctl) {
         if (ctl == 0) {
-            return 4; //length;
+            return 4; // length;
         } else {
-            return 8; //length
+            return 8; // length
         }
     }
 
@@ -482,9 +469,9 @@ public class SecureUtils {
      */
     public static int getTransMicLength(final int aszmic) {
         if (aszmic == 0) {
-            return 4; //length;
+            return 4; // length;
         } else {
-            return 8; //length
+            return 8; // length
         }
     }
 

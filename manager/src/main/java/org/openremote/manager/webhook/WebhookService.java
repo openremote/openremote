@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.webhook;
 
-import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import static org.openremote.container.util.MapAccess.getInteger;
+
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -34,11 +33,12 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.webhook.Webhook;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import static org.openremote.container.util.MapAccess.getInteger;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class WebhookService extends RouteBuilder implements ContainerService {
 
@@ -55,12 +55,10 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         this.clientBuilder = new ResteasyClientBuilderImpl()
                 .connectTimeout(
                         getInteger(container.getConfig(), WEBHOOK_CONNECT_TIMEOUT, WEBHOOK_CONNECT_TIMEOUT_DEFAULT),
-                        TimeUnit.MILLISECONDS
-                )
+                        TimeUnit.MILLISECONDS)
                 .readTimeout(
                         getInteger(container.getConfig(), WEBHOOK_REQUEST_TIMEOUT, WEBHOOK_REQUEST_TIMEOUT_DEFAULT),
-                        TimeUnit.MILLISECONDS
-                );
+                        TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -78,12 +76,12 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         // empty
     }
 
-
     public boolean sendHttpRequest(Webhook webhook, MediaType mediaType, WebTarget target) {
 
         try (Response response = this.buildRequest(webhook, target, mediaType)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                LOG.warning("Webhook request responded with error " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
+                LOG.warning("Webhook request responded with error " + response.getStatus() + ": "
+                        + response.getStatusInfo().getReasonPhrase());
             } else {
                 LOG.info("Webhook request executed successfully with response status " + response.getStatus());
                 return true;
@@ -101,7 +99,8 @@ public class WebhookService extends RouteBuilder implements ContainerService {
 
         // Authentication
         if (webhook.getUsernamePassword() != null) {
-            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(), webhook.getUsernamePassword().getPassword());
+            builder.setBasicAuthentication(webhook.getUsernamePassword().getUsername(),
+                    webhook.getUsernamePassword().getPassword());
         } else if (webhook.getOAuthGrant() != null) {
             builder.setOAuthAuthentication(webhook.getOAuthGrant());
         }
@@ -115,6 +114,7 @@ public class WebhookService extends RouteBuilder implements ContainerService {
         }
         Object payload = webhook.getPayload();
 
-        return request.method(webhook.getHttpMethod().name(), (payload != null ? Entity.entity(payload, mediaType) : null));
+        return request.method(webhook.getHttpMethod().name(),
+                (payload != null ? Entity.entity(payload, mediaType) : null));
     }
 }

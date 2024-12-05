@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -44,7 +43,7 @@ public interface MeshMngrApi {
      * </p>
      *
      * @param mtuSize GATT MTU size
-     * @param data    PDU received by the client
+     * @param data PDU received by the client
      */
     void handleNotifications(final int mtuSize, final byte[] data);
 
@@ -52,14 +51,14 @@ public interface MeshMngrApi {
      * Must be called to handle provisioning states
      *
      * @param mtuSize GATT MTU size
-     * @param data    PDU received by the client
+     * @param data PDU received by the client
      */
     void handleWriteCallbacks(final int mtuSize, final byte[] data);
 
     /**
-     * Sends the specified  mesh message specified within the {@link MeshMessage} object
+     * Sends the specified mesh message specified within the {@link MeshMessage} object
      *
-     * @param dst         destination address
+     * @param dst destination address
      * @param meshMessage {@link MeshMessage} Mesh message containing the message opcode and message parameters
      */
     void createMeshPdu(final int dst, final MeshMessage meshMessage) throws IllegalArgumentException;

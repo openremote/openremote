@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules.geofence;
 
@@ -32,7 +31,9 @@ public class GeofenceDefinition {
     protected String url;
 
     @JsonCreator
-    public GeofenceDefinition(@JsonProperty("id") String id, @JsonProperty("lat") double lat, @JsonProperty("lng") double lng, @JsonProperty("radius") int radius, @JsonProperty("httpMethod") String httpMethod, @JsonProperty("url") String url) {
+    public GeofenceDefinition(@JsonProperty("id") String id, @JsonProperty("lat") double lat,
+            @JsonProperty("lng") double lng, @JsonProperty("radius") int radius,
+            @JsonProperty("httpMethod") String httpMethod, @JsonProperty("url") String url) {
         this.id = id;
         this.lat = lat;
         this.lng = lng;

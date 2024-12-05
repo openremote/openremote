@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.util;
-
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import org.openremote.model.mail.MailMessage;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.openremote.model.mail.MailMessage;
+
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
 
 public class MailUtil {
 
@@ -45,35 +45,31 @@ public class MailUtil {
     protected MailUtil() {
     }
 
-    public static MailMessage toMailMessage(Message message, boolean preferHTML) throws MessagingException, IOException {
+    public static MailMessage toMailMessage(Message message, boolean preferHTML)
+            throws MessagingException, IOException {
         MessageContent messageContent = getMessageContent(message, new ArrayList<>(), true, preferHTML);
         if (messageContent == null) {
             return null;
         }
 
         List<Header> headers = messageContent.headers;
-        Map<String, List<String>> headerStrings = headers.stream()
-            .collect(Collectors.groupingBy(
-                Header::getName,
-                Collectors.mapping(Header::getValue, Collectors.toList())));
+        Map<String, List<String>> headerStrings = headers.stream().collect(
+                Collectors.groupingBy(Header::getName, Collectors.mapping(Header::getValue, Collectors.toList())));
 
-        return new MailMessage(
-            messageContent.content,
-            messageContent.mimeType,
-            headerStrings,
-            message.getSubject(),
-            message.getSentDate(),
-            Arrays.stream(message.getFrom()).map(a -> ((InternetAddress)a).getAddress()).toArray(String[]::new));
+        return new MailMessage(messageContent.content, messageContent.mimeType, headerStrings, message.getSubject(),
+                message.getSentDate(),
+                Arrays.stream(message.getFrom()).map(a -> ((InternetAddress) a).getAddress()).toArray(String[]::new));
     }
 
-    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel, boolean preferHTML) throws MessagingException, IOException {
+    protected static MessageContent getMessageContent(Part p, List<Header> headers, boolean isTopLevel,
+            boolean preferHTML) throws MessagingException, IOException {
 
         if (isTopLevel) {
             headers.addAll(Collections.list(p.getAllHeaders()));
         }
 
         if (p.isMimeType("text/*")) {
-            String s = (String)p.getContent();
+            String s = (String) p.getContent();
             String mimeType = p.getContentType();
             if (!isTopLevel) {
                 headers.addAll(Collections.list(p.getAllHeaders()));
@@ -97,7 +93,8 @@ public class MailUtil {
                 boolean returnPart;
 
                 if (partContent != null) {
-                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html")) || (!preferHTML && partContent.mimeType.startsWith("text/plain"));
+                    returnPart = !isAlternative || (preferHTML && partContent.mimeType.startsWith("text/html"))
+                            || (!preferHTML && partContent.mimeType.startsWith("text/plain"));
 
                     if (returnPart) {
                         // Add any top level headers

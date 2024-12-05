@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.concurrent;
 
@@ -36,15 +35,13 @@ public class ContainerScheduledExecutor extends ScheduledThreadPoolExecutor {
     }
 
     public ContainerScheduledExecutor(String name, int corePoolSize, RejectedExecutionHandler rejectedHandler) {
-        super(
-            corePoolSize,
-            new ContainerThreadFactory(name),
-            // Wrap rejected handler to add logging
-            (r, executor) -> {
-                // Log and discard
-                LOG.info("Container scheduled thread pool '" + executor + "' rejected execution of " + r);
-                rejectedHandler.rejectedExecution(r, executor);
-            });
+        super(corePoolSize, new ContainerThreadFactory(name),
+                // Wrap rejected handler to add logging
+                (r, executor) -> {
+                    // Log and discard
+                    LOG.info("Container scheduled thread pool '" + executor + "' rejected execution of " + r);
+                    rejectedHandler.rejectedExecution(r, executor);
+                });
     }
 
     @Override
@@ -61,7 +58,7 @@ public class ContainerScheduledExecutor extends ScheduledThreadPoolExecutor {
                 // log at this point as the logging system might be stopped already.
                 return;
             }
-            LOG.log(Level.WARNING, "Thread terminated unexpectedly executing: " +runnable.getClass(), throwable);
+            LOG.log(Level.WARNING, "Thread terminated unexpectedly executing: " + runnable.getClass(), throwable);
         }
     }
 

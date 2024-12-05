@@ -1,7 +1,25 @@
-import {ConsoleProvider, ConsoleRegistration} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { ConsoleProvider, ConsoleRegistration } from "@openremote/model";
 import manager from "./index";
-import {AxiosResponse} from "axios";
-import {Deferred} from "./util";
+import { AxiosResponse } from "axios";
+import { Deferred } from "./util";
 
 // No ES6 module support in platform lib
 let platform = require('platform');
@@ -11,7 +29,7 @@ export interface ProviderAction {
     action: string;
 }
 
-export interface ProviderMessage extends ProviderAction{
+export interface ProviderMessage extends ProviderAction {
     data?: any;
     [x: string]: any;
 }
@@ -344,7 +362,7 @@ export class Console {
                     console.error("Failed to register console");
                     reject("Failed to register console");
                 }
-            },);
+            });
         });
     }
 
@@ -417,7 +435,7 @@ export class Console {
 
     public _doSendProviderMessage(msg: any) {
         if (this.isMobile) {
-            this._postNativeShellMessage({type: "provider", data: msg});
+            this._postNativeShellMessage({ type: "provider", data: msg });
         } else {
             if (!msg.provider || !msg.action) {
                 return;
@@ -481,42 +499,42 @@ export class Console {
                             this._handleProviderResponse(JSON.stringify(enableResponse));
                             break;
                         case "STORE": {
-                                let keyValue = msg.key ? msg.key.trim() : null;
+                            let keyValue = msg.key ? msg.key.trim() : null;
 
-                                if (!keyValue || keyValue.length === 0) {
-                                    throw new Error("Storage provider 'store' action requires a `key`");
-                                }
-
-                                if (msg.value === null) {
-                                    window.localStorage.removeItem(keyValue);
-                                } else {
-                                    window.localStorage.setItem(keyValue, JSON.stringify(msg.value));
-                                }
+                            if (!keyValue || keyValue.length === 0) {
+                                throw new Error("Storage provider 'store' action requires a `key`");
                             }
+
+                            if (msg.value === null) {
+                                window.localStorage.removeItem(keyValue);
+                            } else {
+                                window.localStorage.setItem(keyValue, JSON.stringify(msg.value));
+                            }
+                        }
                             break;
                         case "RETRIEVE": {
-                                let keyValue = msg.key ? msg.key.trim() : null;
+                            let keyValue = msg.key ? msg.key.trim() : null;
 
-                                if (!keyValue || keyValue.length === 0) {
-                                    throw new Error("Storage provider 'retrieve' action requires a `key`");
-                                }
-
-                                let val = window.localStorage.getItem(keyValue);
-                                if (val !== null) {
-                                    try {
-                                        val = JSON.parse(val);
-                                    } catch (e) {
-                                        // Fallback to just returning the val as it might not be JSON
-                                    }
-                                }
-
-                                this._handleProviderResponse(JSON.stringify({
-                                    action: "RETRIEVE",
-                                    provider: "storage",
-                                    key: keyValue,
-                                    value: val
-                                }));
+                            if (!keyValue || keyValue.length === 0) {
+                                throw new Error("Storage provider 'retrieve' action requires a `key`");
                             }
+
+                            let val = window.localStorage.getItem(keyValue);
+                            if (val !== null) {
+                                try {
+                                    val = JSON.parse(val);
+                                } catch (e) {
+                                    // Fallback to just returning the val as it might not be JSON
+                                }
+                            }
+
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "RETRIEVE",
+                                provider: "storage",
+                                key: keyValue,
+                                value: val
+                            }));
+                        }
                             break;
                         default:
                             throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");

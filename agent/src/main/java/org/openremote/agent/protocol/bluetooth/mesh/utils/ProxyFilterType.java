@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
@@ -33,14 +32,14 @@ public class ProxyFilterType {
      * that are of interest for the Proxy Client. The inclusion list filter blocks all destination addresses
      * except those that have been added to the inclusion list.
      */
-    public static final int INCLUSION_LIST_FILTER = 0x00;   //inclusion list filter type
+    public static final int INCLUSION_LIST_FILTER = 0x00; // inclusion list filter type
 
     /**
      * A exclusion list filter has an associated exclusion list, which is a list of destination addresses
      * that the Proxy Client does not want to receive. The exclusion list filter accepts all destination addresses
      * except those that have been added to the exclusion list.
      */
-    public static final int EXCLUSION_LIST_FILTER = 0x01;   //The node supports Relay feature that is enabled
+    public static final int EXCLUSION_LIST_FILTER = 0x01; // The node supports Relay feature that is enabled
 
     /**
      * Filter type
@@ -52,7 +51,7 @@ public class ProxyFilterType {
      *
      * @param filterType filter type supported by the proxy
      */
-    public ProxyFilterType(/*@FilterTypes*/ final int filterType) {
+    public ProxyFilterType(/* @FilterTypes */ final int filterType) {
         this.filterType = filterType;
     }
 

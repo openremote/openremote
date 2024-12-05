@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothGattCharacteristic;
-import com.welie.blessed.BluetoothPeripheral;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
+import com.welie.blessed.BluetoothCommandStatus;
+import com.welie.blessed.BluetoothGattCharacteristic;
+import com.welie.blessed.BluetoothPeripheral;
+
+import org.openremote.model.syslog.SyslogCategory;
+
 public class SendMultiDataSegmentCommand implements SendDataCommand {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, SendMultiDataSegmentCommand.class.getName());
-
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            SendMultiDataSegmentCommand.class.getName());
 
     // Private Instance Fields ----------------------------------------------------------------
 
@@ -48,7 +48,9 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
 
     // Constructors ---------------------------------------------------------------------------
 
-    public SendMultiDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, int mtuSize, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    public SendMultiDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, int mtuSize,
+            ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data,
+            BluetoothMeshProxySendDataCallback callback) {
         this.meshProxy = proxy;
         this.commandSerializer = commandSerializer;
         this.dataInCharacteristic = characteristic;
@@ -57,7 +59,6 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
         this.data = data;
         this.commands = createCommands(mtuSize, executorService, characteristic, data, callback);
     }
-
 
     // Public Instance Methods ----------------------------------------------------------------
 
@@ -79,20 +80,20 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
         return isSuccess;
     }
 
-
     // Implements BluetoothPeripheralCallback -------------------------------------------------
 
     @Override
-    public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+    public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+            BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         if (currentCommand != null) {
             currentCommand.onCharacteristicWrite(peripheral, value, characteristic, status);
         }
     }
 
-
     // Private Instance Methods ---------------------------------------------------------------
 
-    private List<SendSingleDataSegmentCommand> createCommands(int mtuSize, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    private List<SendSingleDataSegmentCommand> createCommands(int mtuSize, ExecutorService executorService,
+            BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
         int numOfSegments = (data.length / mtuSize) + ((data.length % mtuSize) > 0 ? 1 : 0);
         List<SendSingleDataSegmentCommand> commandList = new ArrayList<>(numOfSegments);
 
@@ -100,7 +101,8 @@ public class SendMultiDataSegmentCommand implements SendDataCommand {
             int length = Math.min(data.length - mtuSize * i, mtuSize);
             byte[] segmentData = new byte[length];
             System.arraycopy(data, mtuSize * i, segmentData, 0, length);
-            SendSingleDataSegmentCommand cmd = new SendSingleDataSegmentCommand(meshProxy, commandSerializer, executorService, characteristic, segmentData, /* callback */null);
+            SendSingleDataSegmentCommand cmd = new SendSingleDataSegmentCommand(meshProxy, commandSerializer,
+                    executorService, characteristic, segmentData, /* callback */null);
             commandList.add(cmd);
         }
 

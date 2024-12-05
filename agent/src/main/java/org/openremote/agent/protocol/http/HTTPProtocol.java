@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,30 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.http;
 
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
+import static org.openremote.container.web.WebTargetBuilder.addHeaders;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.http.client.utils.URIBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -53,28 +63,19 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.container.web.WebTargetBuilder.addHeaders;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 /**
  * This is a HTTP client protocol for communicating with HTTP servers; it uses the {@link WebTargetBuilder} factory to
- * generate JAX-RS {@link jakarta.ws.rs.client.WebTarget}s that can be used to make arbitrary calls to endpoints on a HTTP
+ * generate JAX-RS {@link jakarta.ws.rs.client.WebTarget}s that can be used to make arbitrary calls to endpoints on a
+ * HTTP
  * server but it can also be extended and used as a JAX-RS client proxy.
  * <h2>Response filtering</h2>
  * <p>
@@ -92,7 +93,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * path used for the request = "volume/set/100"
  * <h3>Query parameter example</h3>
  * {@link HTTPAgentLink#getQueryParameters()} =
- * <blockquote><pre>
+ * <blockquote>
+ *
+ * <pre>
  * {@code
  * {
  *     param1: ["val1", "val2"],
@@ -100,15 +103,20 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  *     param3: "%TIME%"
  * }
  * }
- * </pre></blockquote>
+ * </pre>
+ *
+ * </blockquote>
  * Request received to set attribute value to true. Actual query parameters injected into the request =
  * "param1=val1&amp;param1=val2&amp;param2=12232&amp;param3=true"
  * <h3>Body examples</h3>
- * {@link AgentLink#getWriteValue()} = &lt;?xml version="1.0" encoding="UTF-8"?&gt;%VALUE%&lt;/xml&gt; and request received to
+ * {@link AgentLink#getWriteValue()} = &lt;?xml version="1.0" encoding="UTF-8"?&gt;%VALUE%&lt;/xml&gt; and request
+ * received to
  * set attribute value to 100. Actual body used for the request = "{volume: 100}"
  * <p>
  * {@link AgentLink#getWriteValue()} = '{myObject: "%VALUE%"}' and request received to set attribute value to:
- * <blockquote><pre>
+ * <blockquote>
+ *
+ * <pre>
  * {@code
  * {
  *   prop1: true,
@@ -118,7 +126,9 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  *   }
  * }
  * }
- * </pre></blockquote>
+ * </pre>
+ *
+ * </blockquote>
  * Actual body used for the request = "{myObject: {prop1: true, prop2: "test", prop3: {prop4: 1234.4223}}}"
  */
 public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
@@ -137,14 +147,9 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         protected boolean containsDynamicTime;
         private final Supplier<Instant> instantSupplier;
 
-        public HttpClientRequest(WebTarget client,
-                                 String path,
-                                 String method,
-                                 MultivaluedMap<String, ?> headers,
-                                 MultivaluedMap<String, ?> queryParameters,
-                                 boolean pagingEnabled,
-                                 String contentType,
-                                 Supplier<Instant> instantSupplier) {
+        public HttpClientRequest(WebTarget client, String path, String method, MultivaluedMap<String, ?> headers,
+                MultivaluedMap<String, ?> queryParameters, boolean pagingEnabled, String contentType,
+                Supplier<Instant> instantSupplier) {
 
             if (!TextUtil.isNullOrEmpty(path)) {
                 if (path.startsWith("/")) {
@@ -162,21 +167,23 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             this.instantSupplier = instantSupplier;
 
             // Check if this request contains any dynamic value references in headers, query params or path
-            Predicate<Object> containsValue = e -> e instanceof String str && Constants.containsDynamicValuePlaceholder(str);
-            containsDynamicValue = (queryParameters != null && queryParameters.values().stream()
-                .anyMatch(values -> values.stream().anyMatch(containsValue)))
-                || (headers != null && headers.values().stream()
-                .anyMatch(values -> values.stream().anyMatch(containsValue)))
-                || (path != null && containsValue.test(path));
+            Predicate<Object> containsValue = e -> e instanceof String str
+                    && Constants.containsDynamicValuePlaceholder(str);
+            containsDynamicValue = (queryParameters != null
+                    && queryParameters.values().stream().anyMatch(values -> values.stream().anyMatch(containsValue)))
+                    || (headers != null
+                            && headers.values().stream().anyMatch(values -> values.stream().anyMatch(containsValue)))
+                    || (path != null && containsValue.test(path));
 
             // Check if this HTTP request contains any references of dynamic time. We do so by checking query parameters
             // and headers, using the predicate below.
-            Predicate<Object> containsTime = e -> e instanceof String str && Constants.containsDynamicTimePlaceholder(str);
-            containsDynamicTime = (queryParameters != null && queryParameters.values().stream()
-                .anyMatch(values -> values.stream().anyMatch(containsTime)))
-                || (headers != null && headers.values().stream()
-                    .anyMatch(values -> values.stream().anyMatch(containsTime)))
-                || (path != null && containsTime.test(path));
+            Predicate<Object> containsTime = e -> e instanceof String str
+                    && Constants.containsDynamicTimePlaceholder(str);
+            containsDynamicTime = (queryParameters != null
+                    && queryParameters.values().stream().anyMatch(values -> values.stream().anyMatch(containsTime)))
+                    || (headers != null
+                            && headers.values().stream().anyMatch(values -> values.stream().anyMatch(containsTime)))
+                    || (path != null && containsTime.test(path));
 
             requestTarget = createRequestTarget(path);
         }
@@ -267,8 +274,10 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     protected static class PagingResponseBuilder extends ResponseBuilderImpl {
         @Override
         public Response build() {
-            if (status == -1 && entity == null) status = 204;
-            else if (status == -1) status = 200;
+            if (status == -1 && entity == null)
+                status = 204;
+            else if (status == -1)
+                status = 200;
             return new PagingResponse(status, metadata, entity, entityAnnotations);
         }
     }
@@ -301,8 +310,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     @Override
     protected void doStart(Container container) throws Exception {
 
-        String baseUri = agent.getBaseURI().orElseThrow(() ->
-            new IllegalArgumentException("Missing or invalid base URI attribute: " + this));
+        String baseUri = agent.getBaseURI()
+                .orElseThrow(() -> new IllegalArgumentException("Missing or invalid base URI attribute: " + this));
 
         if (baseUri.endsWith("/")) {
             baseUri = baseUri.substring(0, baseUri.length() - 1);
@@ -326,7 +335,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         WebTargetBuilder webTargetBuilder;
         if (readTimeout != null) {
-            webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService, WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
+            webTargetBuilder = new WebTargetBuilder(WebTargetBuilder.createClient(executorService,
+                    WebTargetBuilder.CONNECTION_POOL_SIZE, readTimeout.longValue(), null), uri);
         } else {
             webTargetBuilder = new WebTargetBuilder(client.get(), uri);
         }
@@ -337,8 +347,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         } else {
             usernameAndPassword.ifPresent(userPass -> {
                 LOG.info("Adding Basic Authentication");
-                webTargetBuilder.setBasicAuthentication(userPass.getUsername(),
-                    userPass.getPassword());
+                webTargetBuilder.setBasicAuthentication(userPass.getUsername(), userPass.getPassword());
             });
         }
 
@@ -360,7 +369,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         Map<String, List<String>> headers = agentLink.getHeaders().orElse(null);
         Map<String, List<String>> queryParams = agentLink.getQueryParameters().orElse(null);
-        Integer pollingMillis = agentLink.getPollingMillis().map(millis -> Math.max(millis, MIN_POLLING_MILLIS)).orElse(null);
+        Integer pollingMillis = agentLink.getPollingMillis().map(millis -> Math.max(millis, MIN_POLLING_MILLIS))
+                .orElse(null);
         boolean pagingEnabled = agentLink.getPagingMode().orElse(false);
         String pollingAttribute = agentLink.getPollingAttribute().orElse(null);
 
@@ -385,40 +395,33 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         // We pass in the combined headers as they can only be set on the invocation builder
         MultivaluedMap<String, String> combinedHeaders;
-        Optional<MultivaluedMap<String, String>> agentHeaders = agent.getRequestHeaders().map(WebTargetBuilder::mapToMultivaluedMap);
+        Optional<MultivaluedMap<String, String>> agentHeaders = agent.getRequestHeaders()
+                .map(WebTargetBuilder::mapToMultivaluedMap);
         if (headers != null) {
             combinedHeaders = agentHeaders.map(MultivaluedHashMap::new).orElse(new MultivaluedHashMap<>());
             headers.forEach(combinedHeaders::addAll);
-        } else combinedHeaders = agentHeaders.orElse(null);
+        } else
+            combinedHeaders = agentHeaders.orElse(null);
 
         // We pass in the combined query params so we can determine if the request contains dynamic placeholders
         MultivaluedMap<String, String> combinedQueryParams;
-        Optional<MultivaluedMap<String, String>> agentParams = agent.getRequestQueryParameters().map(WebTargetBuilder::mapToMultivaluedMap);
+        Optional<MultivaluedMap<String, String>> agentParams = agent.getRequestQueryParameters()
+                .map(WebTargetBuilder::mapToMultivaluedMap);
         if (queryParams != null) {
             combinedQueryParams = agentParams.map(MultivaluedHashMap::new).orElse(new MultivaluedHashMap<>());
             queryParams.forEach(combinedQueryParams::addAll);
-        } else combinedQueryParams = agentParams.orElse(null);
+        } else
+            combinedQueryParams = agentParams.orElse(null);
 
-        HttpClientRequest clientRequest = buildClientRequest(
-            path,
-            method,
-            combinedHeaders,
-            combinedQueryParams,
-            pagingEnabled,
-            contentType,
-            timerService);
+        HttpClientRequest clientRequest = buildClientRequest(path, method, combinedHeaders, combinedQueryParams,
+                pagingEnabled, contentType, timerService);
 
         LOG.finer("Creating HTTP client request '" + clientRequest + "': " + attributeRef);
 
         requestMap.put(attributeRef, clientRequest);
 
-        Optional.ofNullable(pollingMillis).ifPresent(seconds ->
-            pollingMap.put(attributeRef, schedulePollingRequest(
-                attributeRef,
-                attribute,
-                agentLink,
-                clientRequest,
-                seconds)));
+        Optional.ofNullable(pollingMillis).ifPresent(seconds -> pollingMap.put(attributeRef,
+                schedulePollingRequest(attributeRef, attribute, agentLink, clientRequest, seconds)));
     }
 
     @Override
@@ -442,14 +445,12 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
         if (request != null) {
 
-            executeAttributeWriteRequest(request,
-                processedValue,
-                response -> onAttributeWriteResponse(request, response));
+            executeAttributeWriteRequest(request, processedValue,
+                    response -> onAttributeWriteResponse(request, response));
         } else {
             LOG.finest("Ignoring attribute write request as either attribute or agent is not linked: " + event);
         }
     }
-
 
     @Override
     public String getProtocolName() {
@@ -469,61 +470,56 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
-    protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, ?> headers, MultivaluedMap<String, ?> queryParams, boolean pagingEnabled, String contentType, TimerService timerService) {
-        return new HttpClientRequest(
-            webTarget,
-            path,
-            method,
-            headers,
-            queryParams,
-            pagingEnabled,
-            contentType,
-            timerService::getNow);
+    protected HttpClientRequest buildClientRequest(String path, String method, MultivaluedMap<String, ?> headers,
+            MultivaluedMap<String, ?> queryParams, boolean pagingEnabled, String contentType,
+            TimerService timerService) {
+        return new HttpClientRequest(webTarget, path, method, headers, queryParams, pagingEnabled, contentType,
+                timerService::getNow);
     }
 
-    protected ScheduledFuture<?> schedulePollingRequest(AttributeRef attributeRef,
-                                                        Attribute<?> attribute,
-                                                        HTTPAgentLink agentLink,
-                                                        HttpClientRequest clientRequest,
-                                                        int pollingMillis) {
+    protected ScheduledFuture<?> schedulePollingRequest(AttributeRef attributeRef, Attribute<?> attribute,
+            HTTPAgentLink agentLink, HttpClientRequest clientRequest, int pollingMillis) {
 
-        LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis + " ms for attribute: " + attribute);
+        LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingMillis
+                + " ms for attribute: " + attribute);
 
         return scheduledExecutorService.scheduleWithFixedDelay(() -> {
 
             try {
-                Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
-                    attributeRef,
-                    agentLink,
-                    agentLink.getWriteValue().orElse(null),
-                    dynamicAttributes.contains(attributeRef),
-                    timerService.getNow());
+                Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(attributeRef,
+                        agentLink, agentLink.getWriteValue().orElse(null), dynamicAttributes.contains(attributeRef),
+                        timerService.getNow());
 
                 if (ignoreAndConverted.key) {
-                    LOG.log(Level.FINER, "Value conversion returned ignore so attribute will not write to protocol: " + attributeRef);
+                    LOG.log(Level.FINER, "Value conversion returned ignore so attribute will not write to protocol: "
+                            + attributeRef);
                     return;
                 }
 
-                String valueStr = ignoreAndConverted.value == null ? null : ValueUtil.convert(ignoreAndConverted.value, String.class);
+                String valueStr = ignoreAndConverted.value == null ? null
+                        : ValueUtil.convert(ignoreAndConverted.value, String.class);
 
                 executePollingRequest(clientRequest, valueStr, response -> {
                     try {
-                        onPollingResponse(
-                            clientRequest,
-                            response,
-                            attributeRef,
-                            agentLink);
+                        onPollingResponse(clientRequest, response, attributeRef, agentLink);
                     } catch (Exception e) {
-                        LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst processing polling response [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString()));
+                        LOG.log(Level.WARNING,
+                                prefixLogMessage("Exception thrown whilst processing polling response ["
+                                        + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: "
+                                        + clientRequest.requestTarget.getUriBuilder().build().toString()));
                     }
                 });
             } catch (Exception e) {
-                LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst processing polling response [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString()));
+                LOG.log(Level.WARNING,
+                        prefixLogMessage("Exception thrown whilst processing polling response ["
+                                + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: "
+                                + clientRequest.requestTarget.getUriBuilder().build().toString()));
             }
         }, 0, pollingMillis, TimeUnit.MILLISECONDS);
     }
 
-    protected void executePollingRequest(HttpClientRequest clientRequest, String body, Consumer<Response> responseConsumer) {
+    protected void executePollingRequest(HttpClientRequest clientRequest, String body,
+            Consumer<Response> responseConsumer) {
         Response originalResponse = null, lastResponse = null;
         List<String> entities = new ArrayList<>();
 
@@ -541,7 +537,10 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
             responseConsumer.accept(originalResponse);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, prefixLogMessage("Exception thrown whilst doing polling request [" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: " + clientRequest.requestTarget.getUriBuilder().build().toString()));
+            LOG.log(Level.WARNING,
+                    prefixLogMessage("Exception thrown whilst doing polling request ["
+                            + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + "]: "
+                            + clientRequest.requestTarget.getUriBuilder().build().toString()));
         } finally {
             if (originalResponse != null) {
                 originalResponse.close();
@@ -555,14 +554,14 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
         if (response.hasLink("next")) {
             URI nextUrl = response.getLink("next").getUri();
-            return clientRequest.client.register(new PaginationFilter(nextUrl)).request().build(clientRequest.method).invoke();
+            return clientRequest.client.register(new PaginationFilter(nextUrl)).request().build(clientRequest.method)
+                    .invoke();
         }
         return null;
     }
 
-    protected void executeAttributeWriteRequest(HttpClientRequest clientRequest,
-                                                Object attributeValue,
-                                                Consumer<Response> responseConsumer) {
+    protected void executeAttributeWriteRequest(HttpClientRequest clientRequest, Object attributeValue,
+            Consumer<Response> responseConsumer) {
         String valueStr = attributeValue == null ? null : ValueUtil.convert(attributeValue, String.class);
         Response response = null;
 
@@ -578,15 +577,14 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
-    protected void onPollingResponse(HttpClientRequest request,
-                                     Response response,
-                                     AttributeRef attributeRef,
-                                     HTTPAgentLink agentLink) {
+    protected void onPollingResponse(HttpClientRequest request, Response response, AttributeRef attributeRef,
+            HTTPAgentLink agentLink) {
 
         int responseCode = response != null ? response.getStatus() : 500;
         Object value = null;
 
-        if (response != null && response.hasEntity() && response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
+        if (response != null && response.hasEntity()
+                && response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
             try {
                 boolean binaryMode = agent.getMessageConvertBinary().orElse(agentLink.isMessageConvertBinary());
                 boolean hexMode = agent.getMessageConvertHex().orElse(agentLink.isMessageConvertHex());
@@ -602,7 +600,8 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
                 response.close();
             }
         } else {
-            LOG.fine(prefixLogMessage("Request returned an un-successful response code (" + responseCode + "):" + request.requestTarget.getUriBuilder().build().toString()));
+            LOG.fine(prefixLogMessage("Request returned an un-successful response code (" + responseCode + "):"
+                    + request.requestTarget.getUriBuilder().build().toString()));
             return;
         }
 
@@ -620,11 +619,12 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
         }
     }
 
-    protected void onAttributeWriteResponse(HttpClientRequest request,
-                                            Response response) {
+    protected void onAttributeWriteResponse(HttpClientRequest request, Response response) {
 
-        if (response != null && response.hasEntity() && response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-            LOG.fine(prefixLogMessage("Attribute write request returned an unsuccessful response code (" + response.getStatus() + "): " + request.requestTarget.getUriBuilder().build().toString()));
+        if (response != null && response.hasEntity()
+                && response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            LOG.fine(prefixLogMessage("Attribute write request returned an unsuccessful response code ("
+                    + response.getStatus() + "): " + request.requestTarget.getUriBuilder().build().toString()));
         }
     }
 
@@ -634,5 +634,4 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
             pollTask.cancel(false);
         }
     }
-
 }

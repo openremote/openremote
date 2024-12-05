@@ -1,7 +1,25 @@
-import {html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -23,15 +41,15 @@ import {
     StringPredicate, WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
-import {style} from "./style";
-import manager, {EventCallback, subscribe, Util} from "@openremote/core";
+import { style } from "./style";
+import manager, { EventCallback, subscribe, Util } from "@openremote/core";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
+import { getAssetDescriptorIconTemplate, OrIcon } from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {i18next} from "@openremote/or-translate";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 
 import {
@@ -40,9 +58,9 @@ import {
     showErrorDialog,
     showOkCancelDialog
 } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
+import { OrAddAssetDialog, OrAddChangedEvent } from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { when } from "lit/directives/when.js";
 
 export interface AssetTreeTypeConfig {
@@ -86,7 +104,7 @@ export interface NodeSelectEventDetail {
     newNodes: UiAssetTreeNode[];
 }
 
-export {style};
+export { style };
 
 export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEventDetail<NodeSelectEventDetail>> {
 
@@ -149,7 +167,7 @@ export class OrAssetTreeToggleExpandEvent extends CustomEvent<ToggleExpandEventD
 }
 
 enum FilterElementType {
-    SEARCH_FILTER, ASSET_TYPE,ATTRIBUTE_NAME, ATTRIBUTE_VALUE
+    SEARCH_FILTER, ASSET_TYPE, ATTRIBUTE_NAME, ATTRIBUTE_VALUE
 }
 
 export type AddEventDetail = {
@@ -249,7 +267,7 @@ export const getAssetTypes = async () => {
         recursive: true
     });
 
-    if(response && response.data) {
+    if (response && response.data) {
         return response.data.map(asset => asset.type!);
     }
 }
@@ -266,60 +284,60 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     /**
      * Allows arbitrary assets to be displayed using a tree
      */
-    @property({type: Array, reflect: false})
+    @property({ type: Array, reflect: false })
     public assets?: Asset[];
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetInfos?: AssetTypeInfo[];
 
-    @property({type: Array})
+    @property({ type: Array })
     public _assetIdsOverride?: string[];
 
-    @property({type: Array})
+    @property({ type: Array })
     public rootAssets?: Asset[];
 
-    @property({type: Array})
+    @property({ type: Array })
     public rootAssetIds?: string[];
 
-    @property({type: Object})
+    @property({ type: Object })
     public dataProvider?: () => Promise<Asset[]>;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disabled: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disableSubscribe: boolean = false;
 
-    @property({type: Array})
+    @property({ type: Array })
     public selectedIds?: string[];
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showDeselectBtn?: boolean = true;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showSortBtn?: boolean = true;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public showFilter: boolean = true;
 
-    @property({type: String})
+    @property({ type: String })
     public sortBy?: string = "name";
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public expandAllNodes?: boolean = false;
 
-    @property({type: Array})
+    @property({ type: Array })
     public expandedIds?: string[] = [];
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public checkboxes?: boolean = false;
 
     protected config?: AssetTreeConfig;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _nodes?: UiAssetTreeNode[];
 
     protected _loading: boolean = false;
@@ -405,7 +423,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }).sort(Util.sortByString((listItem) => listItem.text));
 
         if (withNoneValue) {
-            items.splice(0,0, withNoneValue);
+            items.splice(0, 0, withNoneValue);
         }
 
         return items;
@@ -414,11 +432,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
 
     protected getSelectHeader(): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
+        return html`<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
     }
 
     protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
-        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
+        return html`<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
     }
 
     protected assetTypeSelect(): TemplateResult {
@@ -462,10 +480,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-mwc-input ?hidden="${this._isReadonly() || !canAdd}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
-                            ["name", "type", "createdOn"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
-                            this.sortBy,
-                            (v) => this._onSortClicked(v as string))}
+            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
+            ["name", "type", "createdOn"].map((sort) => { return { value: sort, text: i18next.t(sort) } as ListItem; }),
+            this.sortBy,
+            (v) => this._onSortClicked(v as string))}
                 </div>
             </div>
             
@@ -479,68 +497,68 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   compact="true"
                                   outlined="true"
                                   @input="${(e: KeyboardEvent) => {
-                                      // Means some input is occurring so delay filter
-                                      this._onFilterInputEvent(e);
-                                  }}"
+                    // Means some input is occurring so delay filter
+                    this._onFilterInputEvent(e);
+                }}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      // Means field has lost focus so do filter immediately
-                                      this._onFilterInput((e.detail.value as string) || undefined, true);
-                                  }}">
+                    // Means field has lost focus so do filter immediately
+                    this._onFilterInput((e.detail.value as string) || undefined, true);
+                }}">
                     </or-mwc-input>
                     <or-icon id="filterSettingsIcon" icon="${this._filterSettingOpen ? "window-close" : "tune"}" @click="${() => {
-                        if (this._filterSettingOpen) {
-                            this._filterSettingOpen = false;
-                        } else {
-                            this._filterSettingOpen = true;
-                            // Avoid to build again the types
-                            if (this._assetTypes.length === 0) {
-                                let usedTypes: string[] = [];
-                                const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-                                this._assetTypes = types.filter((t) => t.descriptorType === "asset");
-                            }
-
-                            if (this._filter.attribute.length > 0) {
-                                this._attributeNameFilter.value = this._filter.attribute[0];
-                            }
-
-                            if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
-                                this._attributeValueFilter.disabled = false;
-                                this._attributeValueFilter.value = this._filter.attributeValue[0];
-                            }
-
-                            if (this._filter.assetType.length > 0) {
-                                this._assetTypeFilter = this._filter.assetType[0];
-                            } else {
-                                this._assetTypeFilter = '';
-                            }
+                    if (this._filterSettingOpen) {
+                        this._filterSettingOpen = false;
+                    } else {
+                        this._filterSettingOpen = true;
+                        // Avoid to build again the types
+                        if (this._assetTypes.length === 0) {
+                            let usedTypes: string[] = [];
+                            const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                            this._assetTypes = types.filter((t) => t.descriptorType === "asset");
                         }
-                    }}"></or-icon>
+
+                        if (this._filter.attribute.length > 0) {
+                            this._attributeNameFilter.value = this._filter.attribute[0];
+                        }
+
+                        if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                            this._attributeValueFilter.disabled = false;
+                            this._attributeValueFilter.value = this._filter.attributeValue[0];
+                        }
+
+                        if (this._filter.assetType.length > 0) {
+                            this._assetTypeFilter = this._filter.assetType[0];
+                        } else {
+                            this._assetTypeFilter = '';
+                        }
+                    }
+                }}"></or-icon>
                 </div>
                 <div id="asset-tree-filter-setting" class="${this._filterSettingOpen ? "visible" : ""}">
                     <div class="advanced-filter">
                         ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
-                                this.assetTypeSelect(),
-                                this.mapDescriptors(this._assetTypes, {text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse"}),
-                                undefined,
-                                (v: string[] | string) => {
-                                    this._assetTypeFilter = (v as string);
-                                },
-                                undefined,
-                                false,
-                                true,
-                                true) : html``
-                        }
+                    this.assetTypeSelect(),
+                    this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }),
+                    undefined,
+                    (v: string[] | string) => {
+                        this._assetTypeFilter = (v as string);
+                    },
+                    undefined,
+                    false,
+                    true,
+                    true) : html``
+                }
                         <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
 
                                       .type="${InputType.TEXT}"
                                       style="margin-top: 10px;"
                                       ?disabled="${this._loading}"
                                       @input="${(e: KeyboardEvent) => {
-                                          this._shouldEnableAttrTypeEvent(e);
-                                      }}"
+                    this._shouldEnableAttrTypeEvent(e);
+                }}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                          this._shouldEnableAttrType((e.detail.value as string) || undefined);
-                                      }}"></or-mwc-input>
+                    this._shouldEnableAttrType((e.detail.value as string) || undefined);
+                }}"></or-mwc-input>
                         <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
 
                                       .type="${InputType.TEXT}"
@@ -548,24 +566,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       disabled></or-mwc-input>
                         <div style="margin-top: 10px;">
                             <or-mwc-input style="float:left;" type="${InputType.BUTTON}" label="filter.clear" @or-mwc-input-changed="${() => {
-                                // Wipe the current value and hide the clear button
-                                this._filterInput.value = undefined;
+                    // Wipe the current value and hide the clear button
+                    this._filterInput.value = undefined;
 
-                                this._attributeValueFilter.value = undefined;
-                                this._attributeNameFilter.value = undefined;
+                    this._attributeValueFilter.value = undefined;
+                    this._attributeNameFilter.value = undefined;
 
-                                this._attributeValueFilter.disabled = true;
+                    this._attributeValueFilter.disabled = true;
 
-                                this._assetTypeFilter = '';
+                    this._assetTypeFilter = '';
 
-                                this._filter = new OrAssetTreeFilter();
+                    this._filter = new OrAssetTreeFilter();
 
-                                // Call filtering
-                                this._doFiltering();
-                            }}"></or-mwc-input>
+                    // Call filtering
+                    this._doFiltering();
+                }}"></or-mwc-input>
                             <or-mwc-input style="float: right;" type="${InputType.BUTTON}" label="filter.action" raised @or-mwc-input-changed="${() => {
-                                this._filterFromSettings();
-                            }}"></or-mwc-input>
+                    this._filterFromSettings();
+                }}"></or-mwc-input>
                         </div>
                     </div>
                 </div>
@@ -575,8 +593,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
                 : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
-                            ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
-                            : html`
+                    ? html`<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>`
+                    : html`
                     <div id="list-container">
                         <ol id="list">
                             ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0)).filter(t => !!t)}
@@ -768,7 +786,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    private _findNodeFromAssetId(assetId: string) : UiAssetTreeNode | undefined {
+    private _findNodeFromAssetId(assetId: string): UiAssetTreeNode | undefined {
         if (this._nodes) {
             let foundNode: UiAssetTreeNode | undefined = undefined;
 
@@ -835,10 +853,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     OrAssetTree._forEachNodeRecursive(node.children, (childNode) => {
                         let canSelectChild = true;
                         // If not of required asset type, cancel selection of the child
-                        if(childNode && this.config?.select?.types) {
+                        if (childNode && this.config?.select?.types) {
                             canSelectChild = this.config.select.types.indexOf(childNode.asset!.type!) >= 0;
                         }
-                        if(canSelectChild) {
+                        if (canSelectChild) {
                             childNodes.push(childNode);
                         }
                     });
@@ -877,7 +895,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     endIndex = newIndex;
                                 }
 
-                                let assetIdsToSelect: string[] = hierarchy.slice(startIndex, endIndex + 1 );
+                                let assetIdsToSelect: string[] = hierarchy.slice(startIndex, endIndex + 1);
 
                                 let foundNodes: UiAssetTreeNode[] = [];
 
@@ -940,7 +958,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                         const startIndex: number = value.toString().indexOf('attribute:');
 
-                        const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length-1);
+                        const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length - 1);
 
                         resultingFilter.attribute.push(matchingVal);
                         resultingFilter.attributeValue.push('');
@@ -977,8 +995,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         // Starting from position 1 to remove first "
                         const matchingName: string = value.toString().substring(1, startIndex);
 
-                        if (matchingVal[0] === '"' && matchingVal[matchingVal.length-1] === '"') {
-                            matchingVal = matchingVal.substring(1,matchingVal.length-1);
+                        if (matchingVal[0] === '"' && matchingVal[matchingVal.length - 1] === '"') {
+                            matchingVal = matchingVal.substring(1, matchingVal.length - 1);
                         }
 
                         resultingFilter.attribute.push(matchingName);
@@ -1045,24 +1063,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected applySettingFields(filter: OrAssetTreeFilter): OrAssetTreeFilter {
-        if ( this._assetTypeFilter ) {
-            filter.assetType = [ this._assetTypeFilter ];
+        if (this._assetTypeFilter) {
+            filter.assetType = [this._assetTypeFilter];
         } else {
             filter.assetType = [];
         }
 
-        if ( this._attributeNameFilter.value ) {
-            filter.attribute = [ this._attributeNameFilter.value ];
+        if (this._attributeNameFilter.value) {
+            filter.attribute = [this._attributeNameFilter.value];
         } else {
             filter.attribute = [];
         }
 
-        if ( this._attributeNameFilter.value && this._attributeValueFilter.value ) {
+        if (this._attributeNameFilter.value && this._attributeValueFilter.value) {
             let attributeValueValue: string = this._attributeValueFilter.value;
             if (attributeValueValue.includes(' ')) {
                 attributeValueValue = '"' + attributeValueValue + '"';
             }
-            filter.attributeValue = [ attributeValueValue ];
+            filter.attributeValue = [attributeValueValue];
         } else {
             filter.attributeValue = [];
         }
@@ -1099,7 +1117,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
 
-        if (Util.objectsEqual(this._filter, currentFilter,true)) {
+        if (Util.objectsEqual(this._filter, currentFilter, true)) {
             return;
         }
 
@@ -1231,12 +1249,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let response: any;
         let foundAssetIds: string[];
 
-       try {
-           response = await manager.rest.api.AssetResource.queryAssets(query);
-           foundAssetIds = response.data.map((asset: Asset) => asset.id!);
-       } catch (e) {
+        try {
+            response = await manager.rest.api.AssetResource.queryAssets(query);
+            foundAssetIds = response.data.map((asset: Asset) => asset.id!);
+        } catch (e) {
             this._filter.assetType.forEach((assetT: string) => {
-                if(this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
+                if (this._assetTypes.findIndex((assetD: AssetDescriptor) => { return assetD.name === assetT; }) === -1) {
                     showSnackbar(undefined, "filter.assetTypeDoesNotExist", "dismiss");
                 }
             });
@@ -1255,10 +1273,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     }
                 });
 
-                let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
+                let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id);
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++) {
                         let currentAttributeVal = attributeVal[attributeValIndex];
 
                         let atLeastOneAttributeMatchValue: boolean = false;
@@ -1298,7 +1316,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             const multicharString: string = '*';
 
                                             let parsedValue: string = unparsedValue.replace(multicharString, '.*');
-                                            parsedValue = parsedValue.replace(/"/g,'');
+                                            parsedValue = parsedValue.replace(/"/g, '');
 
                                             let valueFromAttribute: string = attr.value as string;
 
@@ -1365,7 +1383,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     if (detail.allow) {
                         this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
                     }
-            });
+                });
         } catch (e) {
             console.error("Failed to copy asset", e);
             showErrorDialog("Failed to copy asset");
@@ -1392,76 +1410,76 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
                 `)
             .setActions([
-                    {
-                        actionName: "cancel",
-                        content: "cancel"
-                    },
-                    {
-                        actionName: "add",
-                        content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
-                        action: () => {
+                {
+                    actionName: "cancel",
+                    content: "cancel"
+                },
+                {
+                    actionName: "add",
+                    content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="add" disabled></or-mwc-input>`,
+                    action: () => {
 
-                            const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
-                            const descriptor = addAssetDialog.selectedType;
-                            const selectedOptionalAttributes = addAssetDialog.selectedAttributes;
-                            const name = addAssetDialog.name.trim();
-                            const parent = addAssetDialog.parent;
+                        const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
+                        const descriptor = addAssetDialog.selectedType;
+                        const selectedOptionalAttributes = addAssetDialog.selectedAttributes;
+                        const name = addAssetDialog.name.trim();
+                        const parent = addAssetDialog.parent;
 
-                            if (!descriptor) {
-                                return;
-                            }
+                        if (!descriptor) {
+                            return;
+                        }
 
-                            const asset: Asset = {
-                                name: name,
-                                type: descriptor.name,
-                                realm: manager.displayRealm
-                            };
+                        const asset: Asset = {
+                            name: name,
+                            type: descriptor.name,
+                            realm: manager.displayRealm
+                        };
 
-                            // Construct attributes
-                            const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name!);
+                        // Construct attributes
+                        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name!);
 
-                            if (!assetTypeInfo) {
-                                return;
-                            }
+                        if (!assetTypeInfo) {
+                            return;
+                        }
 
-                            if (assetTypeInfo.attributeDescriptors) {
-                                asset.attributes = {};
-                                assetTypeInfo.attributeDescriptors
-                                    .filter((attributeDescriptor) => !attributeDescriptor.optional)
-                                    .forEach((attributeDescriptor) => {
-                                        asset.attributes![attributeDescriptor.name!] = {
-                                            name: attributeDescriptor.name,
-                                            type: attributeDescriptor.type,
-                                            meta: attributeDescriptor.meta ? {...attributeDescriptor.meta} : undefined
-                                        } as Attribute<any>;
-                                    });
-                            }
-
-                            if (selectedOptionalAttributes) {
-                                selectedOptionalAttributes?.forEach(attribute => {
-                                    asset.attributes![attribute.name!] = {
-                                        name: attribute.name,
-                                        type: attribute.type,
-                                        meta: attribute.meta ? {...attribute.meta} : undefined
-                                    }
-                                });
-                            }
-
-                            if (this.selectedIds) {
-                                asset.parentId = parent ? parent.id : undefined;
-                            }
-                            const detail: AddEventDetail = {
-                                asset: asset
-                            };
-                            Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(detail))
-                                .then((detail) => {
-                                    if (detail.allow) {
-                                        this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
-                                    }
+                        if (assetTypeInfo.attributeDescriptors) {
+                            asset.attributes = {};
+                            assetTypeInfo.attributeDescriptors
+                                .filter((attributeDescriptor) => !attributeDescriptor.optional)
+                                .forEach((attributeDescriptor) => {
+                                    asset.attributes![attributeDescriptor.name!] = {
+                                        name: attributeDescriptor.name,
+                                        type: attributeDescriptor.type,
+                                        meta: attributeDescriptor.meta ? { ...attributeDescriptor.meta } : undefined
+                                    } as Attribute<any>;
                                 });
                         }
+
+                        if (selectedOptionalAttributes) {
+                            selectedOptionalAttributes?.forEach(attribute => {
+                                asset.attributes![attribute.name!] = {
+                                    name: attribute.name,
+                                    type: attribute.type,
+                                    meta: attribute.meta ? { ...attribute.meta } : undefined
+                                }
+                            });
+                        }
+
+                        if (this.selectedIds) {
+                            asset.parentId = parent ? parent.id : undefined;
+                        }
+                        const detail: AddEventDetail = {
+                            asset: asset
+                        };
+                        Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(detail))
+                            .then((detail) => {
+                                if (detail.allow) {
+                                    this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
+                                }
+                            });
                     }
-                ])
+                }
+            ])
             .setStyles(html`
                     <style>
                         .mdc-dialog__content {
@@ -1545,7 +1563,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             manager.rest.api.AssetResource.delete({
                 assetId: assetIds
             }, {
-                paramsSerializer: params => Qs.stringify(params, {arrayFormat: 'repeat'})
+                paramsSerializer: params => Qs.stringify(params, { arrayFormat: 'repeat' })
             }).then((response) => {
                 // Clear nodes to re-fetch them
                 this.refresh();
@@ -1650,7 +1668,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             this._loading = true;
 
-            if(this.dataProvider) {
+            if (this.dataProvider) {
                 this.dataProvider().then(assets => {
                     this._loading = false;
                     this._buildTreeNodes(assets, sortFunction);
@@ -1746,7 +1764,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             });
 
             // In case of filter already active, do not override the actual state of assetTree
-            if ( !this._filterInput.value ) {
+            if (!this._filterInput.value) {
                 this._buildTreeNodes(assets, this._getSortFunction());
             }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
@@ -1940,7 +1958,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (this.shadowRoot && assetId && assetId === this._dragDropParentId) {
             const node = this._findNodeFromAssetId(assetId);
             let elem: HTMLElement | null = this.shadowRoot?.querySelector('[node-asset-id="' + assetId + '"]');
-            if(elem && node && !node.expanded) {
+            if (elem && node && !node.expanded) {
 
                 this._toggleExpanderWithoutEventDispatch(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
             }
@@ -1948,7 +1966,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     public _onDragEnter(ev: any): void {
-       let currentElement = ev.currentTarget as HTMLElement;
+        let currentElement = ev.currentTarget as HTMLElement;
 
         currentElement.classList.add('over');
 
@@ -1998,7 +2016,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         return html`
             <li class="asset-list-element" ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
-                <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '' ) : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
+                <div class="in-between-element" node-asset-id="${treeNode.parent ? (treeNode.parent.asset ? treeNode.parent.asset.id : '') : undefined}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}"></div>
                 <div class="node-container draggable" node-asset-id="${treeNode.asset ? treeNode.asset.id : ''}" draggable="${!this._isReadonly()}" @dragleave=${(ev: DragEvent) => { this._onDragLeave(ev) }} @dragenter="${(ev: DragEvent) => this._onDragEnter(ev)}" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
@@ -2006,20 +2024,20 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
-                                ${treeNode.expandable 
-                                    ? html`<div class="mdc-checkbox">
+                                ${treeNode.expandable
+                    ? html`<div class="mdc-checkbox">
                                             <or-icon class="mdc-checkbox--parent" icon="${parentCheckboxIcon}"></or-icon>
                                         </div>`
-                                    : ``}
+                    : ``}
                                 <div class="mdc-checkbox">
-                                    ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
+                                    ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>` : html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                                 </div>
-                            </span>` 
-                        : ``}
+                            </span>`
+                : ``}
                     </div>
                 </div>
                 <ol>
-                    ${!treeNode.children || (treeNode.expandable && !treeNode.expanded)  ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
+                    ${!treeNode.children || (treeNode.expandable && !treeNode.expanded) ? `` : treeNode.children.map((childNode) => this._treeNodeTemplate(childNode, level + 1)).filter(t => !!t)}
                 </ol>
             </li>
         `;

@@ -1,6 +1,24 @@
-import {Dashboard, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { Dashboard, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset } from "@openremote/model";
 import manager from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
+import { i18next } from "@openremote/or-translate";
 
 export enum DashboardSizeOption {
     DESKTOP, MOBILE
@@ -10,7 +28,7 @@ export class DashboardService {
 
     public static async create(dashboard?: Dashboard, size: DashboardSizeOption = DashboardSizeOption.DESKTOP, realm: string = manager.displayRealm, post = true): Promise<Dashboard> {
         const randomId = () => (Math.random() + 1).toString(36).substring(2);
-        if(!dashboard) {
+        if (!dashboard) {
             dashboard = {
                 realm: realm,
                 displayName: this.getDefaultDisplayName(size),
@@ -24,13 +42,13 @@ export class DashboardService {
             } as Dashboard;
         } else {
             dashboard.id = randomId();
-            if(dashboard.template) {
+            if (dashboard.template) {
                 dashboard.template.id = randomId();
                 dashboard.template.widgets?.forEach(w => w.id = randomId());
             }
         }
 
-        if(post) {
+        if (post) {
             return (await manager.rest.api.DashboardResource.create(dashboard)).data;
         } else {
             return dashboard;

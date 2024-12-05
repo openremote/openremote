@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
@@ -49,9 +48,7 @@ public class AssetQuery implements Serializable {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                    ", attributeNames=" + Arrays.toString(attributes) +
-                    '}';
+            return getClass().getSimpleName() + "{" + ", attributeNames=" + Arrays.toString(attributes) + '}';
         }
     }
 
@@ -92,10 +89,7 @@ public class AssetQuery implements Serializable {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                    "property=" + property +
-                    ", descending=" + descending +
-                    '}';
+            return getClass().getSimpleName() + "{" + "property=" + property + ", descending=" + descending + '}';
         }
     }
 
@@ -197,32 +191,29 @@ public class AssetQuery implements Serializable {
         List<Class<? extends Asset<?>>> assetClasses = Arrays.asList(ValueUtil.getAssetClasses(null));
         Set<String> assetSubTypes = new HashSet<>(Arrays.asList(assetTypes));
 
-        Arrays.stream(assetTypes)
-            .map(assetType ->
-                ValueUtil.getAssetClass(assetType).orElseGet(() -> {
-                    // Try and resolve this type to a concrete asset super type class - should be in the type hierarchy
-                    // of one of the registered asset types if it is a valid type
-                    Class<? extends Asset<?>> matchedClass = null;
+        Arrays.stream(assetTypes).map(assetType -> ValueUtil.getAssetClass(assetType).orElseGet(() -> {
+            // Try and resolve this type to a concrete asset super type class - should be in the type hierarchy
+            // of one of the registered asset types if it is a valid type
+            Class<? extends Asset<?>> matchedClass = null;
 
-                    for (Class<?> c : assetClasses) {
-                        Class<?> currentClass = c;
-                        while (Asset.class.isAssignableFrom(currentClass)) {
-                            if (currentClass.getSimpleName().equals(assetType)) {
-                                matchedClass = (Class)currentClass;
-                                break;
-                            }
-                            currentClass = currentClass.getSuperclass();
-                        }
-                        if (matchedClass != null) {
-                            break;
-                        }
+            for (Class<?> c : assetClasses) {
+                Class<?> currentClass = c;
+                while (Asset.class.isAssignableFrom(currentClass)) {
+                    if (currentClass.getSimpleName().equals(assetType)) {
+                        matchedClass = (Class) currentClass;
+                        break;
                     }
+                    currentClass = currentClass.getSuperclass();
+                }
+                if (matchedClass != null) {
+                    break;
+                }
+            }
 
-                    return matchedClass;
-                }))
-            .filter(Objects::nonNull)
-            .flatMap(assetClass -> assetClasses.stream().filter(assetClass::isAssignableFrom).map(Class::getSimpleName))
-            .forEach(assetSubTypes::add);
+            return matchedClass;
+        })).filter(Objects::nonNull).flatMap(
+                assetClass -> assetClasses.stream().filter(assetClass::isAssignableFrom).map(Class::getSimpleName))
+                .forEach(assetSubTypes::add);
 
         return assetSubTypes.toArray(String[]::new);
     }
@@ -296,24 +287,24 @@ public class AssetQuery implements Serializable {
 
     @SuppressWarnings("unchecked")
     @SafeVarargs
-    public final <T extends Asset<?>> AssetQuery types(AssetDescriptor<T>...types) {
+    public final <T extends Asset<?>> AssetQuery types(AssetDescriptor<T>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
         }
 
         this.types = Arrays.stream(types).map(AssetDescriptor::getType).map(Class::getSimpleName)
-            .toArray(String[]::new);
+                .toArray(String[]::new);
         return this;
     }
 
     public final <T extends Asset<?>> AssetQuery types(Class<T> type) {
-        this.types = new String[] {type.getSimpleName()};
+        this.types = new String[] { type.getSimpleName() };
         return this;
     }
 
     @SafeVarargs
-    public final AssetQuery types(Class<? extends Asset<?>>...types) {
+    public final AssetQuery types(Class<? extends Asset<?>>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
@@ -339,7 +330,8 @@ public class AssetQuery implements Serializable {
     }
 
     public AssetQuery attributeNames(String... attributeNames) {
-        LogicGroup<AttributePredicate> predicateLogicGroup = new LogicGroup<>(Arrays.stream(attributeNames).map(name -> new AttributePredicate(name, null)).collect(Collectors.toList()));
+        LogicGroup<AttributePredicate> predicateLogicGroup = new LogicGroup<>(Arrays.stream(attributeNames)
+                .map(name -> new AttributePredicate(name, null)).collect(Collectors.toList()));
         predicateLogicGroup.operator = LogicGroup.Operator.OR;
         return attributes(predicateLogicGroup);
     }
@@ -387,18 +379,11 @@ public class AssetQuery implements Serializable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "select=" + select +
-                ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
-                ", name=" + Arrays.toString(names) +
-                ", parent=" + Arrays.toString(parents) +
-                ", path=" + Arrays.toString(paths) +
-                ", realm=" + realm +
-                ", userId='" + Arrays.toString(userIds) + '\'' +
-                ", type=" + Arrays.toString(types) +
-                ", attribute=" + (attributes != null ? attributes.toString() : "null") +
-                ", orderBy=" + orderBy +
-                ", recursive=" + recursive +
-                '}';
+        return getClass().getSimpleName() + "{" + "select=" + select + ", ids="
+                + (ids != null ? Arrays.toString(ids) : "null") + ", name=" + Arrays.toString(names) + ", parent="
+                + Arrays.toString(parents) + ", path=" + Arrays.toString(paths) + ", realm=" + realm + ", userId='"
+                + Arrays.toString(userIds) + '\'' + ", type=" + Arrays.toString(types) + ", attribute="
+                + (attributes != null ? attributes.toString() : "null") + ", orderBy=" + orderBy + ", recursive="
+                + recursive + '}';
     }
 }

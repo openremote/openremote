@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.device.event;
 
 import org.openremote.agent.protocol.tradfri.device.Plug;
@@ -20,6 +38,7 @@ public class PlugChangeEvent extends PlugEvent {
 
     /**
      * Construct the PlugChangeEvent class
+     *
      * @param plug The plug for which the event occurred
      * @param oldProperties The old properties of the plug (from before the event occurred)
      * @param newProperties The new properties of the plug (from after the event occurred)
@@ -32,18 +51,19 @@ public class PlugChangeEvent extends PlugEvent {
 
     /**
      * Get the old properties of the plug (from before the event occurred)
+     *
      * @return The old properties of the plug
      */
-    public PlugProperties getOldProperties(){
+    public PlugProperties getOldProperties() {
         return oldProperties;
     }
 
     /**
      * Get the new properties of the plug (from after the event occurred)
+     *
      * @return The new properties of the plug
      */
-    public PlugProperties getNewProperties(){
+    public PlugProperties getNewProperties() {
         return newProperties;
     }
-
 }

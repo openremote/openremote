@@ -1,18 +1,36 @@
-import {css, html, LitElement, PropertyValues} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
-import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
 import '@openremote/or-icon';
-import {style} from './style';
-import {Dashboard} from '@openremote/model';
+import { style } from './style';
+import { Dashboard } from '@openremote/model';
 import manager from '@openremote/core';
-import {ListItem} from '@openremote/or-mwc-components/or-mwc-list';
+import { ListItem } from '@openremote/or-mwc-components/or-mwc-list';
 import '@openremote/or-mwc-components/or-mwc-menu';
-import {showOkCancelDialog} from '@openremote/or-mwc-components/or-mwc-dialog';
-import {i18next} from '@openremote/or-translate';
-import {showSnackbar} from '@openremote/or-mwc-components/or-mwc-snackbar';
-import {style as OrAssetTreeStyle} from '@openremote/or-asset-tree';
-import {DashboardService, DashboardSizeOption} from './service/dashboard-service';
-import {isAxiosError} from '@openremote/rest';
+import { showOkCancelDialog } from '@openremote/or-mwc-components/or-mwc-dialog';
+import { i18next } from '@openremote/or-translate';
+import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
+import { style as OrAssetTreeStyle } from '@openremote/or-asset-tree';
+import { DashboardService, DashboardSizeOption } from './service/dashboard-service';
+import { isAxiosError } from '@openremote/rest';
 
 // language=css
 const treeStyling = css`
@@ -81,10 +99,10 @@ export class OrDashboardTree extends LitElement {
             this.getAllDashboards();
         }
         if (changedProperties.has('dashboards') && changedProperties.get('dashboards') != null) {
-            this.dispatchEvent(new CustomEvent('updated', {detail: this.dashboards}));
+            this.dispatchEvent(new CustomEvent('updated', { detail: this.dashboards }));
         }
         if (changedProperties.has('selected')) {
-            this.dispatchEvent(new CustomEvent('select', {detail: this.selected}));
+            this.dispatchEvent(new CustomEvent('select', { detail: this.selected }));
         }
     }
 
@@ -125,7 +143,7 @@ export class OrDashboardTree extends LitElement {
                 this.dashboards.push(d);
                 this.requestUpdate('dashboards');
             }
-            this.dispatchEvent(new CustomEvent('created', {detail: {d}}));
+            this.dispatchEvent(new CustomEvent('created', { detail: { d } }));
             this.selectDashboard(d);
 
         }).catch(e => {
@@ -140,9 +158,9 @@ export class OrDashboardTree extends LitElement {
 
     protected duplicateDashboard(dashboard: Dashboard) {
         if (dashboard?.id !== null) {
-            if(this.hasChanged) {
+            if (this.hasChanged) {
                 this.showDiscardChangesModal().then(ok => {
-                    if(ok) {
+                    if (ok) {
                         this._doDuplicateDashboard(dashboard);
                     }
                 })
@@ -157,7 +175,7 @@ export class OrDashboardTree extends LitElement {
     protected _doDuplicateDashboard(dashboard: Dashboard) {
         const newDashboard = JSON.parse(JSON.stringify(dashboard)) as Dashboard;
         newDashboard.displayName = (newDashboard.displayName + " copy");
-        if(newDashboard.template) {
+        if (newDashboard.template) {
             newDashboard.template.id = Math.random().toString(36).slice(2, (String(newDashboard.template.id).length + 2)); // generate a new ID
         }
         DashboardService.create(newDashboard, undefined, this.realm).then(d => {
@@ -167,7 +185,7 @@ export class OrDashboardTree extends LitElement {
                 this.dashboards.push(d);
                 this.requestUpdate('dashboards');
             }
-            this.dispatchEvent(new CustomEvent('created', {detail: {d}}));
+            this.dispatchEvent(new CustomEvent('created', { detail: { d } }));
             this.selectDashboard(d.id);
         }).catch(e => {
             console.error(e);
@@ -198,7 +216,7 @@ export class OrDashboardTree extends LitElement {
         if (dashboardId !== this.selected?.id) {
             if (this.hasChanged) {
                 this.showDiscardChangesModal().then(ok => {
-                    if(ok) this.selectDashboard(dashboardId);
+                    if (ok) this.selectDashboard(dashboardId);
                 })
             } else {
                 this.selectDashboard(dashboardId);
@@ -224,14 +242,14 @@ export class OrDashboardTree extends LitElement {
                 if (myDashboards.length > 0) {
                     const items: ListItem[] = [];
                     myDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
-                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
+                        items.push({ icon: 'view-dashboard', text: d.displayName, value: d.id });
                     });
                     dashboardItems.push(items);
                 }
                 if (otherDashboards.length > 0) {
                     const items: ListItem[] = [];
                     otherDashboards.sort((a, b) => a.displayName ? a.displayName.localeCompare(b.displayName) : 0).forEach(d => {
-                        items.push({icon: 'view-dashboard', text: d.displayName, value: d.id});
+                        items.push({ icon: 'view-dashboard', text: d.displayName, value: d.id });
                     });
                     dashboardItems.push(items);
                 }
@@ -248,30 +266,30 @@ export class OrDashboardTree extends LitElement {
                     <div id="header-btns">
                         ${this.selected != null ? html`
                             <or-mwc-input type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => {
-                                this.selectDashboard(undefined);
-                            }}"></or-mwc-input>
+                        this.selectDashboard(undefined);
+                    }}"></or-mwc-input>
                             ${!this.readonly ? html`
                                 <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="content-copy"
                                               @or-mwc-input-changed="${() => {
-                                                  this.duplicateDashboard(this.selected!);
-                                              }}"
+                            this.duplicateDashboard(this.selected!);
+                        }}"
                                 ></or-mwc-input>
                                 <or-mwc-input type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => {
-                                    if (this.selected != null) {
-                                        showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', {dashboard: this.selected.displayName}), i18next.t('delete')).then((ok: boolean) => {
-                                            if (ok) {
-                                                this.deleteDashboard(this.selected!);
-                                            }
-                                        });
+                            if (this.selected != null) {
+                                showOkCancelDialog(i18next.t('areYouSure'), i18next.t('dashboard.deletePermanentWarning', { dashboard: this.selected.displayName }), i18next.t('delete')).then((ok: boolean) => {
+                                    if (ok) {
+                                        this.deleteDashboard(this.selected!);
                                     }
-                                }}"></or-mwc-input>
+                                });
+                            }
+                        }}"></or-mwc-input>
                             ` : undefined}
                         ` : undefined}
                         ${!this.readonly ? html`
                             <or-mwc-input type="${InputType.BUTTON}" class="hideMobile" icon="plus"
                                           @or-mwc-input-changed="${() => {
-                                              this.createDashboard(DashboardSizeOption.DESKTOP);
-                                          }}"
+                        this.createDashboard(DashboardSizeOption.DESKTOP);
+                    }}"
                             ></or-mwc-input>
                         ` : undefined}
                     </div>
@@ -290,16 +308,16 @@ export class OrDashboardTree extends LitElement {
                                 <div id="list-container" style="overflow: hidden;">
                                     <ol id="list">
                                         ${items.map((listItem: ListItem) => {
-                                            return html`
+                            return html`
                                                 <li ?data-selected="${listItem.value === this.selected?.id}" @click="${(_evt: MouseEvent) => {
-                                                    this.onDashboardClick(listItem.value);
-                                                }}">
+                                    this.onDashboardClick(listItem.value);
+                                }}">
                                                     <div class="node-container">
                                                         <span class="node-name">${listItem.text} </span>
                                                     </div>
                                                 </li>
                                             `;
-                                        })}
+                        })}
                                     </ol>
                                 </div>
                             </div>

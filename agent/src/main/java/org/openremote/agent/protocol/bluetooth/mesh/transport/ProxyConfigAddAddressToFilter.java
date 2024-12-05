@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ProxyConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AddressArray;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ProxyConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AddressArray;
 
 /**
  * To be used as a wrapper class to create the ProxyConfigSetFilterType message.
@@ -45,9 +44,9 @@ public class ProxyConfigAddAddressToFilter extends ProxyConfigMessage {
 
     @Override
     void assembleMessageParameters() throws IllegalArgumentException {
-        if(addresses.isEmpty())
+        if (addresses.isEmpty())
             throw new IllegalArgumentException("Address list cannot be empty!");
-        final int length = (int) Math.pow(2 , addresses.size());
+        final int length = (int) Math.pow(2, addresses.size());
         mParameters = new byte[length];
         int count = 0;
         for (AddressArray addressArray : addresses) {
@@ -70,8 +69,7 @@ public class ProxyConfigAddAddressToFilter extends ProxyConfigMessage {
     /**
      * Returns the addresses that were added to the proxy filter
      */
-    public List<AddressArray> getAddresses(){
+    public List<AddressArray> getAddresses() {
         return addresses;
     }
 }
-

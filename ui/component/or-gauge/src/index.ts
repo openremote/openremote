@@ -1,10 +1,28 @@
-import {css, html, LitElement} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
-import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
+import { Asset, AssetModelUtil, Attribute, AttributeRef } from "@openremote/model";
 import { Gauge, GaugeOptions } from "gaugeJS";
 import manager, { Util } from "@openremote/core";
-import {i18next} from "@openremote/or-translate";
-import {debounce} from "lodash";
+import { i18next } from "@openremote/or-translate";
+import { debounce } from "lodash";
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 
 //language=css
@@ -95,13 +113,13 @@ export class OrGauge extends LitElement {
         return [styling]
     }
 
-    @property({type: Object})
+    @property({ type: Object })
     public attrRef?: AttributeRef;
 
-    @property({type: Object})
+    @property({ type: Object })
     public asset?: Asset;
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetAttribute?: [number, Attribute<any>];
 
     @property()
@@ -125,7 +143,7 @@ export class OrGauge extends LitElement {
     @property()
     public readonly config?: OrGaugeConfig;
 
-    @property({type: String})
+    @property({ type: String })
     public realm?: string;
 
 
@@ -152,7 +170,7 @@ export class OrGauge extends LitElement {
 
     constructor() {
         super();
-        if(!this.config) {
+        if (!this.config) {
             this.config = this.getDefaultConfig();
         }
         // Register observer when gauge size changes
@@ -173,7 +191,7 @@ export class OrGauge extends LitElement {
 
     // Processing changes before update, to prevent extra render
     willUpdate(changedProps: Map<string, any>) {
-        if(changedProps.has('assetAttribute')) {
+        if (changedProps.has('assetAttribute')) {
             const attr = this.assetAttribute![1];
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.asset!.type!);
             this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
@@ -183,11 +201,11 @@ export class OrGauge extends LitElement {
 
     // After render took place...
     updated(changedProperties: Map<string, any>) {
-        if(changedProperties.has('value')) {
+        if (changedProperties.has('value')) {
             this.gauge?.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('attrRef')) {
-            if(this.attrRef) {
+        if (changedProperties.has('attrRef')) {
+            if (this.attrRef) {
                 this.loadData(this.attrRef);
             } else {
                 this.assetAttribute = undefined;
@@ -196,15 +214,15 @@ export class OrGauge extends LitElement {
         }
 
         // Render gauge again if..
-        if(changedProperties.has('min') && this.min != null && this.gauge) {
+        if (changedProperties.has('min') && this.min != null && this.gauge) {
             this.gauge.setMinValue(this.min);
             this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('max') && this.max != null && this.gauge) {
+        if (changedProperties.has('max') && this.max != null && this.gauge) {
             this.gauge.maxValue = this.max;
             this.gauge.set(this.value != null ? this.value : NaN);
         }
-        if(changedProperties.has('thresholds') && this.thresholds) {
+        if (changedProperties.has('thresholds') && this.thresholds) {
 
             // Make staticZones out of the thresholds.
             // If below the minimum or above the maximum, set the value according to it.
@@ -221,12 +239,12 @@ export class OrGauge extends LitElement {
             }));
 
             // The lowest staticZone should ALWAYS have the minimum value, to prevent the graphic displaying incorrectly.
-            if(this.min && this.config?.options?.staticZones) {
+            if (this.min && this.config?.options?.staticZones) {
                 this.config.options.staticZones[0].min = this.min;
             }
 
             // Applying the options we changed.
-            if(this.gauge) {
+            if (this.gauge) {
                 this.gauge.setOptions(this.config?.options);
             }
         }
@@ -239,13 +257,13 @@ export class OrGauge extends LitElement {
         this.gauge.setMinValue(this.min ? this.min : 0);
         this.gauge.animationSpeed = 1;
         this.gauge.set(this.value != null ? this.value : NaN);
-        if(this.value == null && this.attrRef) {
+        if (this.value == null && this.attrRef) {
             this.loadData(this.attrRef);
         }
     }
 
     getGaugeWidth(gaugeSize?: { width: number, height: number }, includeLabelHeight: boolean = true): string {
-        if(!gaugeSize) {
+        if (!gaugeSize) {
             return "unset"
         }
         const width = gaugeSize.width;
@@ -256,11 +274,11 @@ export class OrGauge extends LitElement {
         return (gaugeSize.width > 70) && (gaugeSize.height > 100);
     }
     getLabelSize(width: number): "s" | "m" | "l" | "xl" {
-        if(width < 120) {
+        if (width < 120) {
             return "s";
-        } else if(width < 240) {
+        } else if (width < 240) {
             return "m";
-        } else if(width < 320) {
+        } else if (width < 320) {
             return "l"
         } else {
             return "xl"

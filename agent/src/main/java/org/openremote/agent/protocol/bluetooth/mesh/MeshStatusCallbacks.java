@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -34,7 +33,7 @@ public interface MeshStatusCallbacks {
      * If all segments are not received during this period, that transaction shall be considered as failed.
      * </p>
      *
-     * @param dst                       Unique dst address of the device
+     * @param dst Unique dst address of the device
      * @param hasIncompleteTimerExpired Flag that notifies if the incomplete timer had expired
      */
     void onTransactionFailed(final int dst, final boolean hasIncompleteTimerExpired);
@@ -42,7 +41,7 @@ public interface MeshStatusCallbacks {
     /**
      * Notifies if an unknown pdu was received
      *
-     * @param src           Address where the message originated from
+     * @param src Address where the message originated from
      * @param accessPayload Access payload of the message
      */
     void onUnknownPduReceived(final int src, final byte[] accessPayload);
@@ -54,7 +53,7 @@ public interface MeshStatusCallbacks {
      * This callback is invoked after {@link MeshManagerCallbacks#onMeshPduCreated(byte[])} where a mesh pdu is created.
      * </p>
      *
-     * @param dst     Destination address to which the block ack was sent
+     * @param dst Destination address to which the block ack was sent
      * @param message Control message containing the block acknowledgement
      */
     void onBlockAcknowledgementProcessed(final int dst, final ControlMessage message);
@@ -62,7 +61,7 @@ public interface MeshStatusCallbacks {
     /**
      * Notifies if a block acknowledgement was received
      *
-     * @param src     Source address from which the block ack was received
+     * @param src Source address from which the block ack was received
      * @param message Control message containing the block acknowledgement
      */
     void onBlockAcknowledgementReceived(final int src, final ControlMessage message);
@@ -75,7 +74,7 @@ public interface MeshStatusCallbacks {
      * a mesh pdu is created and is ready to be sent.
      * </p>
      *
-     * @param dst         Destination address to be sent
+     * @param dst Destination address to be sent
      * @param meshMessage {@link MeshMessage} containing the message that was sent
      */
     void onMeshMessageProcessed(final int dst, final MeshMessage meshMessage);
@@ -83,7 +82,7 @@ public interface MeshStatusCallbacks {
     /**
      * Callback to notify that a mesh status message was received from the bearer
      *
-     * @param src         Source address where the message originated from
+     * @param src Source address where the message originated from
      * @param meshMessage {@link MeshMessage} containing the message that was received
      */
     void onMeshMessageReceived(final int src, final MeshMessage meshMessage);
@@ -91,8 +90,8 @@ public interface MeshStatusCallbacks {
     /**
      * Callback to notify if the decryption failed of a received mesh message
      *
-     * @param meshLayer     Mesh layer name
-     * @param errorMessage  Error message
+     * @param meshLayer Mesh layer name
+     * @param errorMessage Error message
      */
     void onMessageDecryptionFailed(final String meshLayer, final String errorMessage);
 }

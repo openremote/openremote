@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     and,
     ControlElement,
@@ -38,9 +56,9 @@ import {
     Tester,
     uiTypeIs
 } from "@jsonforms/core";
-import {html, TemplateResult} from "lit";
+import { html, TemplateResult } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {JsonFormsStateContext} from "./index";
+import { JsonFormsStateContext } from "./index";
 import {
     getCombinatorInfos,
     getLabel,
@@ -52,9 +70,9 @@ import {
 import "./layouts/layout-vertical-element";
 import "./controls/control-input-element";
 import "./controls/control-array-element";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {AdditionalProps} from "./base-element";
-import {Util} from "@openremote/core";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { AdditionalProps } from "./base-element";
+import { Util } from "@openremote/core";
 
 const hasOneOfItems = (schema: JsonSchema): boolean =>
     schema.oneOf !== undefined &&
@@ -91,7 +109,7 @@ export const verticalOrGroupLayoutTester: RankedTester = rankWith(
 
 export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer & AdditionalProps) => {
     const contentProps: RendererProps & DispatchPropsOfControl & AdditionalProps = {
-        ...mapStateToLayoutProps({jsonforms: {...state}}, props),
+        ...mapStateToLayoutProps({ jsonforms: { ...state } }, props),
         ...mapDispatchToControlProps(state.dispatch),
         label: props.label,
         required: props.required,
@@ -137,7 +155,7 @@ export const inputControlTester: RankedTester = rankWith(
 );
 export const inputControlRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     const contentProps: ControlProps = {
-        ...mapStateToControlProps({jsonforms: {...state}}, props),
+        ...mapStateToControlProps({ jsonforms: { ...state } }, props),
         ...mapDispatchToControlProps(state.dispatch)
     };
 
@@ -172,7 +190,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         enabled,
         uischema,
         rootSchema
-    } = mapStateToControlWithDetailProps({jsonforms: {...state}}, props);
+    } = mapStateToControlWithDetailProps({ jsonforms: { ...state } }, props);
 
     const detailUiSchema = findUISchema(
         uischemas!,
@@ -210,7 +228,7 @@ export const anyOfOneOfControlTester: RankedTester = rankWith(
 );
 export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: ControlProps & AdditionalProps) => {
 
-    const jsonFormsContext = {jsonforms: {...state}};
+    const jsonFormsContext = { jsonforms: { ...state } };
 
     const {
         required,
@@ -309,7 +327,7 @@ export const allOfControlTester: RankedTester = rankWith(
     isAllOfControl
 );
 export const allOfControlRenderer = (state: JsonFormsStateContext, props: ControlProps & AdditionalProps) => {
-    const jsonFormsContext = {jsonforms: {...state}};
+    const jsonFormsContext = { jsonforms: { ...state } };
     const contentProps: StatePropsOfControlWithDetail & AdditionalProps = {
         ...mapStateToControlWithDetailProps(jsonFormsContext, props)
     };
@@ -336,7 +354,7 @@ export const arrayControlTester: RankedTester = rankWith(
 );
 export const arrayControlRenderer = (state: JsonFormsStateContext, props: ControlProps & AdditionalProps) => {
     const contentProps: ControlProps & AdditionalProps = {
-        ...mapStateToControlProps({jsonforms: {...state}}, props),
+        ...mapStateToControlProps({ jsonforms: { ...state } }, props),
         ...mapDispatchToControlProps(state.dispatch)
     };
 
@@ -376,11 +394,11 @@ export function unknownTemplate() {
 
 export const StandardRenderers: JsonFormsRendererRegistryEntry[] = [
 
-    {tester: verticalOrGroupLayoutTester, renderer: verticalLayoutRenderer},
-    {tester: constTester, renderer: constRenderer},
-    {tester: inputControlTester, renderer: inputControlRenderer},
-    {tester: objectControlTester, renderer: objectControlRenderer},
-    {tester: arrayControlTester, renderer: arrayControlRenderer},
-    {tester: anyOfOneOfControlTester, renderer: anyOfOneOfControlRenderer},
-    {tester: allOfControlTester, renderer: allOfControlRenderer}
+    { tester: verticalOrGroupLayoutTester, renderer: verticalLayoutRenderer },
+    { tester: constTester, renderer: constRenderer },
+    { tester: inputControlTester, renderer: inputControlRenderer },
+    { tester: objectControlTester, renderer: objectControlRenderer },
+    { tester: arrayControlTester, renderer: arrayControlRenderer },
+    { tester: anyOfOneOfControlTester, renderer: anyOfOneOfControlRenderer },
+    { tester: allOfControlTester, renderer: allOfControlRenderer }
 ];

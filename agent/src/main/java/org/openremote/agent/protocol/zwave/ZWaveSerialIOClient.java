@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
 
-import io.netty.channel.ChannelHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.controller.protocol.zwave.ZWaveCommandBuilder;
@@ -29,8 +30,7 @@ import org.openremote.protocol.zwave.LoggerUtil;
 import org.openremote.protocol.zwave.port.TransportLayer;
 import org.openremote.protocol.zwave.port.TransportLayerListener;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.netty.channel.ChannelHandler;
 
 /**
  * Wrapper around {@link SerialIOClient} to allow compatibility with Z Wave library
@@ -39,8 +39,7 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
 
     // Constants ----------------------------------------------------------------------------------
 
-    public static final String SERIAL_PORT_LOG_HEADER      = "Serial_Port                 : ";
-
+    public static final String SERIAL_PORT_LOG_HEADER = "Serial_Port                 : ";
 
     // Class Members ------------------------------------------------------------------------------
 
@@ -48,7 +47,8 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
      * Z-Wave logger. Uses a common category for all Z-Wave related logging.
      */
 
-    private final static Logger log = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ZWaveCommandBuilder.ZWAVE_LOG_CATEGORY);
+    private final static Logger log = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            ZWaveCommandBuilder.ZWAVE_LOG_CATEGORY);
 
     // Private Instance Fields --------------------------------------------------------------------
 
@@ -59,13 +59,8 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
     public ZWaveSerialIOClient(String port) {
         super(port, 115200);
 
-        setEncoderDecoderProvider(
-            () -> new ChannelHandler[] {
-                new ZWavePacketEncoder(),
-                new ZWavePacketDecoder(),
-                new AbstractNettyIOClient.MessageToMessageDecoder<>(byte[].class, this)
-            }
-        );
+        setEncoderDecoderProvider(() -> new ChannelHandler[] { new ZWavePacketEncoder(), new ZWavePacketDecoder(),
+                new AbstractNettyIOClient.MessageToMessageDecoder<>(byte[].class, this) });
 
         addMessageConsumer(this::onPacketReceived);
         addConnectionStatusConsumer(this::onConnectionStatusUpdate);
@@ -108,7 +103,7 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
 
     protected void onConnectionStatusUpdate(ConnectionStatus connectionStatus) {
         if (listener != null) {
-            switch(connectionStatus) {
+            switch (connectionStatus) {
                 case CONNECTING:
                     listener.onConnectionStatusChanged(org.openremote.protocol.zwave.port.ConnectionStatus.CONNECTING);
                     break;
@@ -116,10 +111,12 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
                     listener.onConnectionStatusChanged(org.openremote.protocol.zwave.port.ConnectionStatus.CONNECTED);
                     break;
                 case DISCONNECTING:
-                    listener.onConnectionStatusChanged(org.openremote.protocol.zwave.port.ConnectionStatus.DISCONNECTING);
+                    listener.onConnectionStatusChanged(
+                            org.openremote.protocol.zwave.port.ConnectionStatus.DISCONNECTING);
                     break;
                 case DISCONNECTED:
-                    listener.onConnectionStatusChanged(org.openremote.protocol.zwave.port.ConnectionStatus.DISCONNECTED);
+                    listener.onConnectionStatusChanged(
+                            org.openremote.protocol.zwave.port.ConnectionStatus.DISCONNECTED);
                     break;
                 case ERROR:
                     listener.onConnectionStatusChanged(org.openremote.protocol.zwave.port.ConnectionStatus.ERROR);
@@ -135,7 +132,7 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
         StringBuilder builder = new StringBuilder();
         builder.append("[");
 
-        for(int i = 0; i < data.length; i++) {
+        for (int i = 0; i < data.length; i++) {
             if (i > 0) {
                 builder.append(", ");
             }
@@ -145,9 +142,8 @@ public class ZWaveSerialIOClient extends SerialIOClient<byte[]> implements Trans
         builder.append("]");
 
         LoggerUtil.debug(
-            SERIAL_PORT_LOG_HEADER +
-            (isTransmit ? "Data bytes transmitted (TX) : {0}" : "Data bytes received (RX) : {0}"),
-            builder.toString()
-        );
+                SERIAL_PORT_LOG_HEADER
+                        + (isTransmit ? "Data bytes transmitted (TX) : {0}" : "Data bytes received (RX) : {0}"),
+                builder.toString());
     }
 }

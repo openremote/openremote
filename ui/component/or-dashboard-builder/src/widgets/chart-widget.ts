@@ -1,14 +1,32 @@
-import {AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef} from "@openremote/model";
-import {html, PropertyValues, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { AssetDatapointLTTBQuery, AssetDatapointQueryUnion, Attribute, AttributeRef } from "@openremote/model";
+import { html, PropertyValues, TemplateResult } from "lit";
 import { when } from "lit/directives/when.js";
-import {TimePresetCallback} from "@openremote/or-chart";
+import { TimePresetCallback } from "@openremote/or-chart";
 import moment from "moment";
-import {OrAssetWidget} from "../util/or-asset-widget";
+import { OrAssetWidget } from "../util/or-asset-widget";
 import { customElement, state } from "lit/decorators.js";
-import {WidgetConfig} from "../util/widget-config";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
-import {ChartSettings} from "../settings/chart-settings";
-import {WidgetSettings} from "../util/widget-settings";
+import { WidgetConfig } from "../util/widget-config";
+import { OrWidget, WidgetManifest } from "../util/or-widget";
+import { ChartSettings } from "../settings/chart-settings";
+import { WidgetSettings } from "../util/widget-settings";
 import "@openremote/or-chart";
 
 export interface ChartWidgetConfig extends WidgetConfig {
@@ -118,7 +136,7 @@ export class ChartWidget extends OrAssetWidget {
     // We either refresh the datapointQuery or the full widgetConfig depending on the force parameter.
     // TODO: Improve this to a more efficient approach, instead of duplicating the object
     public refreshContent(force: boolean) {
-        if(!force) {
+        if (!force) {
             const datapointQuery = JSON.parse(JSON.stringify(this.widgetConfig.datapointQuery)) as AssetDatapointQueryUnion;
             datapointQuery.fromTimestamp = undefined;
             datapointQuery.toTimestamp = undefined;
@@ -135,18 +153,18 @@ export class ChartWidget extends OrAssetWidget {
     protected willUpdate(changedProps: PropertyValues) {
 
         // Add datapointQuery if not set yet (due to migration)
-        if(!this.widgetConfig.datapointQuery) {
+        if (!this.widgetConfig.datapointQuery) {
             this.widgetConfig.datapointQuery = this.getDefaultQuery();
-            if(!changedProps.has("widgetConfig")) {
+            if (!changedProps.has("widgetConfig")) {
                 changedProps.set("widgetConfig", this.widgetConfig);
             }
         }
 
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             this.datapointQuery = this.widgetConfig.datapointQuery;
 
             const attributeRefs = this.widgetConfig.attributeRefs;
-            if(attributeRefs.length === 0) {
+            if (attributeRefs.length === 0) {
                 this._error = "noAttributesConnected";
             } else {
                 const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
@@ -160,7 +178,7 @@ export class ChartWidget extends OrAssetWidget {
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]): void {
-        if(attributeRefs.length === 0) {
+        if (attributeRefs.length === 0) {
             this._error = "noAttributesConnected";
             return;
         }
@@ -191,7 +209,7 @@ export class ChartWidget extends OrAssetWidget {
                 </div>
                 
             `, () => {
-                return html`
+            return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
                               .attributeControls="${false}" .timestampControls="${!this.widgetConfig?.showTimestampControls}"
@@ -200,7 +218,7 @@ export class ChartWidget extends OrAssetWidget {
                               style="height: 100%"
                     ></or-chart>
                 `;
-            }))}
+        }))}
         `;
     }
 

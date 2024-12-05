@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     css,
     html,
@@ -6,16 +24,16 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {classMap} from 'lit/directives/class-map.js';
-import {MDCMenu} from "@material/menu";
-import {DefaultColor4, DefaultColor8} from "@openremote/core";
+import { customElement, property, query } from "lit/decorators.js";
+import { classMap } from 'lit/directives/class-map.js';
+import { MDCMenu } from "@material/menu";
+import { DefaultColor4, DefaultColor8 } from "@openremote/core";
 
 // @ts-ignore
 import listStyle from "@material/list/dist/mdc.list.css";
 // @ts-ignore
 import menuSurfaceStyle from "@material/menu-surface/dist/mdc.menu-surface.css";
-import {getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent} from "./or-mwc-list";
+import { getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent } from "./or-mwc-list";
 // @ts-ignore
 const menuStyle = require("@material/menu/dist/mdc.menu.css");
 
@@ -64,7 +82,7 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => { if (closedCallback) { closedCallback(); } }}" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => { if (valueChangedCallback) { valueChangedCallback(evt.detail); } }}" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" .fullWidth="${fullWidth}" id="menu"></or-mwc-menu>` : ``}
         </span>
     `;
 }
@@ -110,25 +128,25 @@ export class OrMwcMenu extends LitElement {
         ];
     }
 
-    @property({type: Array})
+    @property({ type: Array })
     public menuItems?: (ListItem | ListItem[] | null)[];
 
-    @property({type: Array})
+    @property({ type: Array })
     public values?: any[] | any;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public multiSelect?: boolean;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public visible?: boolean;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public translateValues?: boolean;
 
-    @property({type: Boolean, attribute: false})
+    @property({ type: Boolean, attribute: false })
     public midHeight?: boolean;
 
-    @property({type: Boolean, attribute: false})
+    @property({ type: Boolean, attribute: false })
     public fullWidth?: boolean;
 
     @query("#wrapper")
@@ -200,7 +218,7 @@ export class OrMwcMenu extends LitElement {
             this._mdcComponent = new MDCMenu(this._mdcElem);
 
             // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
-            (this._mdcComponent as any).menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
+            (this._mdcComponent as any).menuSurface_.foundation.handleBodyClick = function(evt: MouseEvent) {
                 const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                 if (this.adapter.isElementInContainer(el)) {
                     return;

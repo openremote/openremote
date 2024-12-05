@@ -1,11 +1,30 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.query;
 
+import java.util.Arrays;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-
-import java.util.Arrays;
 
 public class UserQuery {
 
@@ -55,11 +74,8 @@ public class UserQuery {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "negated=" + negated +
-                ", name=" + name +
-                ", value=" + value +
-                '}';
+            return getClass().getSimpleName() + "{" + "negated=" + negated + ", name=" + name + ", value=" + value
+                    + '}';
         }
     }
 
@@ -73,9 +89,7 @@ public class UserQuery {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-               ", basic=" + basic +
-                '}';
+            return getClass().getSimpleName() + "{" + ", basic=" + basic + '}';
         }
     }
 
@@ -116,10 +130,7 @@ public class UserQuery {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "property=" + property +
-                ", descending=" + descending +
-                '}';
+            return getClass().getSimpleName() + "{" + "property=" + property + ", descending=" + descending + '}';
         }
     }
 
@@ -152,7 +163,7 @@ public class UserQuery {
         return this;
     }
 
-    public UserQuery assets(String...assetIds) {
+    public UserQuery assets(String... assetIds) {
         this.assets = assetIds;
         return this;
     }
@@ -162,27 +173,27 @@ public class UserQuery {
         return this;
     }
 
-    public UserQuery ids(String...ids) {
+    public UserQuery ids(String... ids) {
         this.ids = ids;
         return this;
     }
 
-    public UserQuery usernames(StringPredicate...usernames) {
+    public UserQuery usernames(StringPredicate... usernames) {
         this.usernames = usernames;
         return this;
     }
 
-    public UserQuery attributes(AttributeValuePredicate...attributes) {
+    public UserQuery attributes(AttributeValuePredicate... attributes) {
         this.attributes = attributes;
         return this;
     }
 
-    public UserQuery clientRoles(StringPredicate...clientRoles) {
+    public UserQuery clientRoles(StringPredicate... clientRoles) {
         this.clientRoles = clientRoles;
         return this;
     }
 
-    public UserQuery realmRoles(StringPredicate...realmRoles) {
+    public UserQuery realmRoles(StringPredicate... realmRoles) {
         this.realmRoles = realmRoles;
         return this;
     }
@@ -214,20 +225,12 @@ public class UserQuery {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "realmPredicate=" + realmPredicate +
-            ", assets=" + assets +
-            ", pathPredicate=" + pathPredicate +
-            ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
-            ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
-            ", serviceUsers=" + serviceUsers +
-            ", attributes=" + (attributes != null ? Arrays.toString(attributes) : "null") +
-            ", clientRoles=" + (clientRoles != null ? Arrays.toString(clientRoles) : "null") +
-            ", realmRoles=" + (realmRoles != null ? Arrays.toString(realmRoles) : "null") +
-            ", limit=" + limit +
-            ", offset=" + offset +
-            ", orderBy=" + orderBy +
-            ", select=" + select +
-            '}';
+        return getClass().getSimpleName() + "{" + "realmPredicate=" + realmPredicate + ", assets=" + assets
+                + ", pathPredicate=" + pathPredicate + ", ids=" + (ids != null ? Arrays.toString(ids) : "null")
+                + ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") + ", serviceUsers="
+                + serviceUsers + ", attributes=" + (attributes != null ? Arrays.toString(attributes) : "null")
+                + ", clientRoles=" + (clientRoles != null ? Arrays.toString(clientRoles) : "null") + ", realmRoles="
+                + (realmRoles != null ? Arrays.toString(realmRoles) : "null") + ", limit=" + limit + ", offset="
+                + offset + ", orderBy=" + orderBy + ", select=" + select + '}';
     }
 }

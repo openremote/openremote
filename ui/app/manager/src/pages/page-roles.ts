@@ -1,22 +1,40 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
-  css,
-  html,
-  PropertyValues,
-  TemplateResult,
-  unsafeCSS,
+    css,
+    html,
+    PropertyValues,
+    TemplateResult,
+    unsafeCSS,
 } from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { Store } from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import { Page, PageProvider } from "@openremote/or-app";
+import { AppStateKeyed } from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -25,7 +43,7 @@ export function pageRolesProvider(store: Store<AppStateKeyed>): PageProvider<App
         name: "roles",
         routes: ["roles"],
         pageCreator: () => {
-          return new PageRoles(store);
+            return new PageRoles(store);
         },
     };
 }
@@ -33,11 +51,11 @@ export function pageRolesProvider(store: Store<AppStateKeyed>): PageProvider<App
 
 @customElement("page-roles")
 export class PageRoles extends Page<AppStateKeyed> {
-  static get styles() {
-    // language=CSS
-    return [
-      unsafeCSS(tableStyle),
-      css`
+    static get styles() {
+        // language=CSS
+        return [
+            unsafeCSS(tableStyle),
+            css`
         #wrapper {
           height: 100%;
           width: 100%;
@@ -215,119 +233,119 @@ export class PageRoles extends Page<AppStateKeyed> {
           }
         }
       `,
-    ];
-  }
-
-  @state()
-  protected _compositeRoles: Role[] = [];
-
-  @state()
-  protected _roles: Role[] = [];
-
-  @state()
-  protected _rolesMapper = {};
-
-  @state()
-  public realm?: string;
-
-  get name(): string {
-    return "role_plural";
-  }
-
-  public shouldUpdate(_changedProperties: PropertyValues): boolean {
-
-      if (_changedProperties.has("realm")) {
-          this.getRoles();
-      }
-
-      return super.shouldUpdate(_changedProperties);
-  }
-
-  public connectedCallback() {
-      super.connectedCallback();
-      this.realm = this.getState().app.realm;
-  }
-
-  protected getState() {
-      return this._store.getState();
-  }
-
-  protected async getRoles() {
-    const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
-    this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
-    this._roles = [...roleResponse.data.filter(role => !role.composite)];
-    this._roles.map(role => {
-        this._rolesMapper[role.id] = role.name
-    });
-  }
-
-  private async _updateRoles() {
-    if(this._compositeRoles.some(role => role.compositeRoleIds.length === 0)) {
-      return
+        ];
     }
-    const roles = [...this._compositeRoles, ...this._roles];
-    await manager.rest.api.UserResource.updateRoles(this.realm, roles);
-    this.getRoles();
-  }
 
-  private _deleteRole(role, rowIndex) {
-    showOkCancelDialog(i18next.t("deleteRole"), i18next.t("deleteRoleConfirm", { roleName: role.name }), i18next.t("delete"))
-    .then((ok) => {
-        if (ok) {
-          this.doDelete(role, rowIndex);
+    @state()
+    protected _compositeRoles: Role[] = [];
+
+    @state()
+    protected _roles: Role[] = [];
+
+    @state()
+    protected _rolesMapper = {};
+
+    @state()
+    public realm?: string;
+
+    get name(): string {
+        return "role_plural";
+    }
+
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
+
+        if (_changedProperties.has("realm")) {
+            this.getRoles();
         }
-    });
-  }
-  
-  private doDelete(role, rowIndex) {
-    this.expanderToggle(rowIndex);
-    this._compositeRoles = [...this._compositeRoles.filter(u => u.id !== role.id)]
-    this._updateRoles()
-  }
 
-  private addRemoveRole(e, r, index) {
-    if(e.detail.value) {
-      this._compositeRoles[index].compositeRoleIds = [...this._compositeRoles[index].compositeRoleIds, r.id]
-    } else {
-      this._compositeRoles[index].compositeRoleIds = this._compositeRoles[index].compositeRoleIds.filter(id=> id !== r.id)
+        return super.shouldUpdate(_changedProperties);
     }
-    this.requestUpdate('_compositeRoles')
-  }
 
-  private expanderToggle(index: number) {
-    const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
-    const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
-    if(metaRow.classList.contains('expanded')){
-      metaRow.classList.remove("expanded");
-      expanderIcon.icon = "chevron-right";
-    } else {
-      metaRow.classList.add("expanded");
-      expanderIcon.icon = "chevron-down";
+    public connectedCallback() {
+        super.connectedCallback();
+        this.realm = this.getState().app.realm;
     }
-  }
 
-  protected render(): TemplateResult | void {
-    if (!manager.authenticated) {
-      return html`
+    protected getState() {
+        return this._store.getState();
+    }
+
+    protected async getRoles() {
+        const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
+        this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
+        this._roles = [...roleResponse.data.filter(role => !role.composite)];
+        this._roles.map(role => {
+            this._rolesMapper[role.id] = role.name
+        });
+    }
+
+    private async _updateRoles() {
+        if (this._compositeRoles.some(role => role.compositeRoleIds.length === 0)) {
+            return
+        }
+        const roles = [...this._compositeRoles, ...this._roles];
+        await manager.rest.api.UserResource.updateRoles(this.realm, roles);
+        this.getRoles();
+    }
+
+    private _deleteRole(role, rowIndex) {
+        showOkCancelDialog(i18next.t("deleteRole"), i18next.t("deleteRoleConfirm", { roleName: role.name }), i18next.t("delete"))
+            .then((ok) => {
+                if (ok) {
+                    this.doDelete(role, rowIndex);
+                }
+            });
+    }
+
+    private doDelete(role, rowIndex) {
+        this.expanderToggle(rowIndex);
+        this._compositeRoles = [...this._compositeRoles.filter(u => u.id !== role.id)]
+        this._updateRoles()
+    }
+
+    private addRemoveRole(e, r, index) {
+        if (e.detail.value) {
+            this._compositeRoles[index].compositeRoleIds = [...this._compositeRoles[index].compositeRoleIds, r.id]
+        } else {
+            this._compositeRoles[index].compositeRoleIds = this._compositeRoles[index].compositeRoleIds.filter(id => id !== r.id)
+        }
+        this.requestUpdate('_compositeRoles')
+    }
+
+    private expanderToggle(index: number) {
+        const metaRow = this.shadowRoot.getElementById('attribute-meta-row-' + index)
+        const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-' + index) as OrIcon
+        if (metaRow.classList.contains('expanded')) {
+            metaRow.classList.remove("expanded");
+            expanderIcon.icon = "chevron-right";
+        } else {
+            metaRow.classList.add("expanded");
+            expanderIcon.icon = "chevron-down";
+        }
+    }
+
+    protected render(): TemplateResult | void {
+        if (!manager.authenticated) {
+            return html`
         <or-translate value="notAuthenticated"></or-translate>
       `;
-    }
+        }
 
-    if (!manager.isKeycloak()) {
-      return html`
+        if (!manager.isKeycloak()) {
+            return html`
         <or-translate value="notSupported"></or-translate>
       `;
-    }
+        }
 
-    if (!this._roles || this._roles.length === 0) {
-        return html``;
-    }
+        if (!this._roles || this._roles.length === 0) {
+            return html``;
+        }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
-    const readRoles = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name))
-    const writeRoles = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
-    const otherRoles = this._roles.filter(role => !role.name.includes('read') && !role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
-    return html`
+        const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+        const readRoles = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name))
+        const writeRoles = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
+        const otherRoles = this._roles.filter(role => !role.name.includes('read') && !role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
+        return html`
       <div id="wrapper">
         <div id="title">
             <or-icon icon="account-box-multiple"></or-icon>${i18next.t("role_plural")}
@@ -351,7 +369,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                     </thead>
                     <tbody class="mdc-data-table__content">
                         ${this._compositeRoles.map((role, index) => {
-                          const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', '); return html`
+            const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', '); return html`
                         <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${() => this.expanderToggle(index)}">
                             <td class="padded-cell mdc-data-table__cell">
                                 <or-icon id="mdc-data-table-icon-${index}" icon="chevron-right"></or-icon>
@@ -380,14 +398,14 @@ export class PageRoles extends Page<AppStateKeyed> {
                                     <div class="row">
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("readPermissions")}</strong> ${readRoles.map(r => {
-                                            return html`
+                return html`
                                               <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
 
                                         </div>
                                         <div class="column">
                                             <strong class="column-title">${i18next.t("writePermissions")}</strong> ${writeRoles.map(r => {
-                                            return html`
+                    return html`
                                               <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
                                         </div>
@@ -396,7 +414,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                                     <div class="row">
                                         <div class="column">
                                             ${otherRoles.map(r => {
-                                            return html`
+                        return html`
                                             <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(" : ")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index)}"></or-mwc-input>
                                             ` })}
                                         </div>
@@ -430,9 +448,9 @@ export class PageRoles extends Page<AppStateKeyed> {
         </div>
       </div>
     `;
-  }
+    }
 
-  public stateChanged(state: AppStateKeyed) {
-      this.realm = state.app.realm;
-  }
+    public stateChanged(state: AppStateKeyed) {
+        this.realm = state.app.realm;
+    }
 }

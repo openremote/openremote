@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.message;
+
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.logging.Logger;
 
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
@@ -40,12 +45,6 @@ import org.apache.camel.support.SimpleRegistry;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.logging.Logger;
-
 public class MessageBrokerService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
@@ -66,7 +65,7 @@ public class MessageBrokerService implements ContainerService {
 
         // Not using InstrumentedThreadPoolFactory directly as it only uses the ThreadPoolProfile ID for naming
         ThreadPoolFactory threadPoolFactory = new DefaultThreadPoolFactory() {
-                @Override
+            @Override
             public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
 
                 ExecutorService executorService;
@@ -82,10 +81,12 @@ public class MessageBrokerService implements ContainerService {
             }
 
             @Override
-            public ScheduledExecutorService newScheduledThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
+            public ScheduledExecutorService newScheduledThreadPool(ThreadPoolProfile profile,
+                    ThreadFactory threadFactory) {
                 ScheduledExecutorService scheduledExecutorService;
 
-                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive thread creation
+                // Force any endpoints that use the default profile to use a single built in executor to avoid excessive
+                // thread creation
                 if (profile.isDefaultProfile()) {
                     scheduledExecutorService = container.getScheduledExecutor();
                 } else {
@@ -130,7 +131,8 @@ public class MessageBrokerService implements ContainerService {
             context.setSourceLocationEnabled(true);
         }
 
-        ((SimpleRegistry)((DefaultRegistry)context.getRegistry()).getFallbackRegistry()).put("OpenRemote", Map.of(Container.class, container));
+        ((SimpleRegistry) ((DefaultRegistry) context.getRegistry()).getFallbackRegistry()).put("OpenRemote",
+                Map.of(Container.class, container));
 
         context.addComponent("snmp", new SnmpComponent());
     }
@@ -162,7 +164,6 @@ public class MessageBrokerService implements ContainerService {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            '}';
+        return getClass().getSimpleName() + "{" + '}';
     }
 }

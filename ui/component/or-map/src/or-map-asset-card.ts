@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     CSSResultGroup,
     html,
@@ -5,7 +23,7 @@ import {
     PropertyValues,
     TemplateResult
 } from "lit";
-import {customElement, property} from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { classMap } from 'lit-html/directives/class-map.js';
 import {
     Asset,
@@ -17,12 +35,12 @@ import {
     WellknownMetaItems,
     AssetModelUtil
 } from "@openremote/model";
-import manager, {subscribe, Util} from "@openremote/core";
+import manager, { subscribe, Util } from "@openremote/core";
 import "@openremote/or-icon";
-import {mapAssetCardStyle} from "./style";
+import { mapAssetCardStyle } from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
+import { getMarkerConfigAttributeName, MapMarkerAssetConfig } from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -66,19 +84,19 @@ export const DefaultConfig: MapAssetCardConfig = {
 @customElement("or-map-asset-card")
 export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
-    @property({type: String, reflect: true, attribute: true})
+    @property({ type: String, reflect: true, attribute: true })
     public assetId?: string;
 
-    @property({type: Object, attribute: true})
+    @property({ type: Object, attribute: true })
     public asset?: Asset;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: MapAssetCardConfig;
 
-    @property({type: Object})
+    @property({ type: Object })
     public markerconfig?: MapMarkerAssetConfig;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public useAssetColor: boolean = true;
 
     static get styles(): CSSResultGroup {
@@ -103,7 +121,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
         if (event.eventType === "asset") {
             const assetEvent = event as AssetEvent;
-            
+
             switch (assetEvent.cause) {
                 case AssetEventCause.READ:
                 case AssetEventCause.CREATE:
@@ -115,7 +133,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                     break;
             }
         }
-        
+
         if (event.eventType === "attribute") {
             if (this.asset) {
                 this.asset = Util.updateAsset(this.asset, event as AttributeEvent);
@@ -123,7 +141,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
             }
         }
     }
-    
+
     protected getCardConfig(): MapAssetCardTypeConfig | undefined {
         let cardConfig = this.config || DefaultConfig;
 
@@ -164,20 +182,20 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 <div id="attribute-list">
                     <ul>
                         ${attrs.map((attr) => {
-                            if (!this.asset || !this.asset.type) { return }
-                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset.type, attr.name, attr);
-                            if (descriptors && descriptors.length) { 
-                                const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
-                                const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
-                                const classes = {highlighted: highlightedAttr === attr.name};
-                                return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
-                            }
-                        })}
+            if (!this.asset || !this.asset.type) { return }
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset.type, attr.name, attr);
+            if (descriptors && descriptors.length) {
+                const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
+                const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
+                const classes = { highlighted: highlightedAttr === attr.name };
+                return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
+            }
+        })}
                     </ul>
                 </div>
                 ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
                     <div id="footer">
-                        <or-mwc-input .type="${InputType.BUTTON}" label="viewAsset" @or-mwc-input-changed="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" label="viewAsset" @or-mwc-input-changed="${(e: MouseEvent) => { e.preventDefault(); this._loadAsset(this.asset!.id!); }}"></or-mwc-input>
                     </div>
                 `}
             </div>

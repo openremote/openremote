@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value.impl;
+
+import java.awt.*;
+import java.io.Serializable;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
+
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
-
-import java.awt.*;
-import java.io.Serializable;
-import java.util.Objects;
 
 @JsonDeserialize(converter = ColourRGB.HexStringColourRGBConverter.class)
 public class ColourRGB implements Serializable {
@@ -41,18 +41,10 @@ public class ColourRGB implements Serializable {
                 return ColourRGB.fromHexString(value.asText());
             }
             if (value.isObject()) {
-                return new ColourRGB(
-                    value.get("r").asInt(),
-                    value.get("g").asInt(),
-                    value.get("b").asInt()
-                );
+                return new ColourRGB(value.get("r").asInt(), value.get("g").asInt(), value.get("b").asInt());
             }
             if (value.isArray() && value.size() == 3) {
-                return new ColourRGB(
-                    value.get(0).asInt(),
-                    value.get(1).asInt(),
-                    value.get(2).asInt()
-                );
+                return new ColourRGB(value.get(0).asInt(), value.get(1).asInt(), value.get(2).asInt());
             }
             return null;
         }
@@ -82,13 +74,17 @@ public class ColourRGB implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ColourRGB other = (ColourRGB) o;
 
-        if (r != other.r) return false;
-        if (g != other.g) return false;
+        if (r != other.r)
+            return false;
+        if (g != other.g)
+            return false;
         return b == other.b;
     }
 
@@ -100,7 +96,7 @@ public class ColourRGB implements Serializable {
     @JsonValue
     @Override
     public String toString() {
-        return "#" + ValueUtil.bytesToHexString(new byte[] {(byte)r, (byte)g, (byte)b});
+        return "#" + ValueUtil.bytesToHexString(new byte[] { (byte) r, (byte) g, (byte) b });
     }
 
     public static ColourRGB fromHexString(String hexString) {
@@ -112,19 +108,16 @@ public class ColourRGB implements Serializable {
         }
         byte[] values = ValueUtil.bytesFromHexString(hexString);
         if (values.length == 3) {
-            return new ColourRGB(
-                Byte.toUnsignedInt(values[0]),
-                Byte.toUnsignedInt(values[1]),
-                Byte.toUnsignedInt(values[2])
-            );
+            return new ColourRGB(Byte.toUnsignedInt(values[0]), Byte.toUnsignedInt(values[1]),
+                    Byte.toUnsignedInt(values[2]));
         }
 
         return null;
     }
 
     public static ColourRGB fromHS(int hue, int saturation) {
-        float hueNormalised = hue/65535f;
-        float saturationNormalised = saturation/65535f;
+        float hueNormalised = hue / 65535f;
+        float saturationNormalised = saturation / 65535f;
         int rgb = Color.HSBtoRGB(hueNormalised, saturationNormalised, 1);
         Color colour = new Color(rgb);
         return new ColourRGB(colour.getRed(), colour.getGreen(), colour.getBlue());
