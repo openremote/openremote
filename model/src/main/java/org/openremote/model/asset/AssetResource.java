@@ -30,6 +30,7 @@ import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import org.openremote.model.Constants;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.AttributeWriteResult;
@@ -247,11 +248,35 @@ public interface AssetResource {
     Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
 
     @PUT
+    //TODO: Using {timestamp:(\\d+)?} does not correctly tokenize when using the assetResource proxy client in Groovy tests.
+    @Path("{assetId}/attribute/{attributeName}/{timestamp}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "writeAttributeValue", summary = "Write to a single attribute with a timestamp", responses = {
+            @ApiResponse(
+                    description = "The result of the write operation",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AttributeWriteResult.class))
+            )})
+    Response writeAttributeValue(@BeanParam RequestParams requestParams,
+                                 @PathParam("assetId") String assetId,
+                                 @PathParam("attributeName") String attributeName,
+                                 @PathParam("timestamp") Long timestamp,
+                                 Object value);
+
+
+    @PUT
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes")
     @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
     AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
+
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("attributes/timestamp")
+    @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
+    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeEvent[] attributeStates);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,
