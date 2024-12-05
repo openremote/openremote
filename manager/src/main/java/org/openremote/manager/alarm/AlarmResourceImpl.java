@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,37 +13,38 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.alarm;
+
+import static org.openremote.model.alarm.Alarm.Source.CLIENT;
+import static org.openremote.model.alarm.Alarm.Source.MANUAL;
+
+import java.util.List;
+import java.util.function.Supplier;
+
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.alarm.Alarm;
+import org.openremote.model.alarm.AlarmAssetLink;
+import org.openremote.model.alarm.AlarmResource;
+import org.openremote.model.alarm.SentAlarm;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.util.TextUtil;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.alarm.Alarm;
-import org.openremote.model.alarm.AlarmResource;
-import org.openremote.model.alarm.SentAlarm;
-import org.openremote.model.alarm.AlarmAssetLink;
-import org.openremote.model.http.RequestParams;
-
-import org.openremote.model.util.TextUtil;
-
-import java.util.List;
-import java.util.function.Supplier;
-
-import static org.openremote.model.alarm.Alarm.Source.CLIENT;
-import static org.openremote.model.alarm.Alarm.Source.MANUAL;
 
 public class AlarmResourceImpl extends ManagerWebResource implements AlarmResource {
 
     private final AlarmService alarmService;
 
-    public AlarmResourceImpl(TimerService timerService,
-                             ManagerIdentityService identityService,
-                             AlarmService alarmService) {
+    public AlarmResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            AlarmService alarmService) {
         super(timerService, identityService);
         this.alarmService = alarmService;
     }
@@ -76,12 +74,14 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     }
 
     @Override
-    public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId, String assigneeId) {
+    public SentAlarm[] getAlarms(RequestParams requestParams, String realm, Alarm.Status status, String assetId,
+            String assigneeId) {
         String filterRealm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm().getName() : realm;
         if (!isRealmActiveAndAccessible(filterRealm)) {
             throw new ForbiddenException("Realm '" + filterRealm + "' is not active or inaccessible");
         }
-        return mapExceptions(() -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
+        return mapExceptions(
+                () -> alarmService.getAlarms(filterRealm, status, assetId, assigneeId).toArray(new SentAlarm[0]));
     }
 
     @Override
@@ -125,5 +125,4 @@ public class AlarmResourceImpl extends ManagerWebResource implements AlarmResour
     public void setAssetLinks(RequestParams requestParams, List<AlarmAssetLink> links) {
         mapExceptions(() -> alarmService.linkAssets(links, getUserId()));
     }
-
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.io.Serializable;
 import java.util.EnumSet;
@@ -30,7 +27,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.openremote.model.syslog.SyslogCategory;
 
 /**
  * Basic cron expression parser (unfortunately the quartz cron expression class
@@ -62,11 +62,11 @@ public class CronExpressionParser implements Serializable {
 
                 try {
                     int i = Integer.parseInt(e);
-                    daysOfWeek = values[i-1];
+                    daysOfWeek = values[i - 1];
                 } catch (NumberFormatException ex) {
                     try {
                         daysOfWeek = DaysOfWeek.valueOf(e.trim().toUpperCase(Locale.ROOT));
-                    } catch(Exception ex2) {
+                    } catch (Exception ex2) {
                         LOG.log(Level.INFO, "Cannot convert cron value for days of week to a day", ex2);
                     }
                 }
@@ -104,11 +104,11 @@ public class CronExpressionParser implements Serializable {
 
                 try {
                     int i = Integer.parseInt(e);
-                    months = values[i-1];
+                    months = values[i - 1];
                 } catch (NumberFormatException ex) {
                     try {
                         months = Months.valueOf(e.trim().toUpperCase(Locale.ROOT));
-                    } catch(Exception ex2) {
+                    } catch (Exception ex2) {
                         LOG.log(Level.INFO, "Cannot convert cron value for days of week to a day", ex2);
                     }
                 }
@@ -143,7 +143,7 @@ public class CronExpressionParser implements Serializable {
             LOG.info("Cron expression doesn't contain the required 6 or 7 space separated values");
             compatible = false;
         } else {
-            for (int i=0; i<3; i++) {
+            for (int i = 0; i < 3; i++) {
                 Integer value = TextUtil.asInteger(fields[i]).orElse(null);
                 if (value == null) {
                     compatible = false;
@@ -172,7 +172,8 @@ public class CronExpressionParser implements Serializable {
         if (!isCompatible()) {
             return originalCronExpression;
         } else {
-            return timeValues[0] + " " + timeValues[1] + " " + timeValues[2] + " " + String.join(" ", otherValues).trim();
+            return timeValues[0] + " " + timeValues[1] + " " + timeValues[2] + " "
+                    + String.join(" ", otherValues).trim();
         }
     }
 

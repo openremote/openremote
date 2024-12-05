@@ -1,11 +1,29 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {MDCDialog} from "@material/dialog";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { MDCDialog } from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType, OrMwcInput} from "./or-mwc-input";
-import {i18next} from "@openremote/or-translate";
-import {Util} from "@openremote/core";
+import { InputType, OrMwcInput } from "./or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { Util } from "@openremote/core";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -77,7 +95,7 @@ export async function showOkCancelDialog(title: string, content: string | Templa
 
     showDialog(
         new OrMwcDialog()
-            .setContent(typeof(content) === "string" ? html`<p>${content}</p>` : content)
+            .setContent(typeof (content) === "string" ? html`<p>${content}</p>` : content)
             .setActions(
                 [
                     {
@@ -112,7 +130,7 @@ export async function showOkDialog(title: string, content: string | TemplateResu
 
     showDialog(
         new OrMwcDialog()
-            .setContent(typeof(content) === "string" ? html`<p>${content}</p>` : content)
+            .setContent(typeof (content) === "string" ? html`<p>${content}</p>` : content)
             .setActions(
                 [
                     {
@@ -196,25 +214,25 @@ export class OrMwcDialog extends LitElement {
         ];
     }
 
-    @property({type: String})
+    @property({ type: String })
     public heading?: string | TemplateResult;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public content?: TemplateResult | (() => TemplateResult);
 
-    @property({type: Array, attribute: false})
+    @property({ type: Array, attribute: false })
     public actions?: DialogAction[];
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public dismissAction: DialogActionBase | null | undefined;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public avatar?: boolean;
 
     @property()
     public styles?: TemplateResult | string;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _open: boolean = false;
 
     @query("#dialog")
@@ -229,7 +247,7 @@ export class OrMwcDialog extends LitElement {
         return this._mdcComponent ? this._mdcComponent.isOpen : false;
     }
 
-    public setOpen(isOpen: boolean): OrMwcDialog  {
+    public setOpen(isOpen: boolean): OrMwcDialog {
         this._open = true;
         return this;
     }
@@ -297,7 +315,7 @@ export class OrMwcDialog extends LitElement {
     protected render() {
 
         return html`
-            ${typeof(this.styles) === "string" ?  html`<style>${this.styles}</style>` : this.styles || ``}
+            ${typeof (this.styles) === "string" ? html`<style>${this.styles}</style>` : this.styles || ``}
             
             <div id="dialog"
                 class="mdc-dialog"
@@ -309,25 +327,25 @@ export class OrMwcDialog extends LitElement {
                 @MDCDialog:closed="${(evt: any) => this._onDialogClosed(evt.detail.action)}">
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface" tabindex="0">
-						${typeof(this.heading) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.heading}"></or-translate></h2>`
-                            : this.heading ? html`<span class="mdc-dialog__title" id="dialog-title">${this.heading}</span>` : ``}
+						${typeof (this.heading) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.heading}"></or-translate></h2>`
+                : this.heading ? html`<span class="mdc-dialog__title" id="dialog-title">${this.heading}</span>` : ``}
                         ${this.content ? html` 
                             <div class="dialog-container mdc-dialog__content" id="dialog-content">
                                 ${typeof this.content === "function" ? this.content() : this.content}
                             </div>
                             <footer class="mdc-dialog__actions">
                                 ${this.actions ? this.actions.map((action) => {
-                                    return html`
+                    return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.disabled ? undefined : action.actionName}">
-                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" @or-mwc-input-changed="${(ev: Event) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
+                                        ${typeof (action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" @or-mwc-input-changed="${(ev: Event) => { if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation() }}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
                                     </div>`;
-                                }) : ``}
+                }) : ``}
                             </footer>
                         ` : html`
                             <ul class="mdc-list ${this.avatar ? "mdc-list--avatar-list" : ""}">
                                 ${!this.actions ? `` : this.actions!.map((action, index) => {
-                                    return html`<li class="mdc-list-item" data-mdc-dialog-action="${action.actionName}"><span class="mdc-list-item__text">${action.content}</span></li>`;                    
-                                })}
+                    return html`<li class="mdc-list-item" data-mdc-dialog-action="${action.actionName}"><span class="mdc-list-item__text">${action.content}</span></li>`;
+                })}
                             </ul>
                         `}
                     </div>

@@ -1,8 +1,24 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.agent.protocol.velbus.VelbusNetwork;
-import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.util.TextUtil;
+import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +26,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
+import org.openremote.agent.protocol.velbus.VelbusNetwork;
+import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.util.TextUtil;
 
 public class VelbusDevice {
 
@@ -47,16 +65,16 @@ public class VelbusDevice {
 
     public int getAddress(int index) {
         index = Math.max(0, Math.min(5, index));
-        return index == 0 ? getBaseAddress() : subAddresses[index-1];
+        return index == 0 ? getBaseAddress() : subAddresses[index - 1];
     }
 
     public int getAddressIndex(int address) {
         if (baseAddress == address) {
             return 0;
         }
-        for (int i=0; i<subAddresses.length; i++) {
+        for (int i = 0; i < subAddresses.length; i++) {
             if (subAddresses[i] == address) {
-                return i+1;
+                return i + 1;
             }
         }
 
@@ -105,14 +123,16 @@ public class VelbusDevice {
             }
 
             LOG.info("Initialisation starting: " + getBaseAddress());
-            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0, INITIALISATION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+            initialisationTask = velbusNetwork.getExecutorService().scheduleWithFixedDelay(this::doInitialisation, 0,
+                    INITIALISATION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
         }
     }
 
     private void doInitialisation() {
         synchronized (this) {
             if (initialisationAttempts >= MAX_INITIALISATION_ATTEMPTS) {
-                LOG.fine("Initialisation failed - Device has reached maximum initialisation attempts: " + getBaseAddress());
+                LOG.fine("Initialisation failed - Device has reached maximum initialisation attempts: "
+                        + getBaseAddress());
                 initialisationFailed = true;
                 cancelInitialisationTask(false);
                 return;
@@ -152,8 +172,8 @@ public class VelbusDevice {
 
             LOG.finest("Sending module status request packets");
             velbusNetwork.sendPackets(Arrays.stream(featureProcessors)
-                .flatMap(processor -> processor.getStatusRequestPackets(this).stream())
-                .distinct().toArray(VelbusPacket[]::new));
+                    .flatMap(processor -> processor.getStatusRequestPackets(this).stream()).distinct()
+                    .toArray(VelbusPacket[]::new));
         }
     }
 
@@ -162,10 +182,9 @@ public class VelbusDevice {
             return;
         }
 
-        List<Consumer<Object>> consumers = propertyValueConsumers
-            .computeIfAbsent(property, p -> new ArrayList<>());
+        List<Consumer<Object>> consumers = propertyValueConsumers.computeIfAbsent(property, p -> new ArrayList<>());
 
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (consumers) {
             consumers.add(propertyValueConsumer);
         }
@@ -180,7 +199,7 @@ public class VelbusDevice {
         }
 
         propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (consumers) {
                 consumers.remove(propertyValueConsumer);
             }
@@ -219,7 +238,8 @@ public class VelbusDevice {
 
         switch (packetCommand) {
             case UNKNOWN:
-                LOG.info("Packet received and ignored for device '" + baseAddress + "': " + Integer.toHexString(velbusPacket.getCommand()) + " (" + packetCommand + ")");
+                LOG.info("Packet received and ignored for device '" + baseAddress + "': "
+                        + Integer.toHexString(velbusPacket.getCommand()) + " (" + packetCommand + ")");
                 break;
             case MODULE_TYPE:
                 // This is the basic initialisation response packet for all devices
@@ -237,9 +257,9 @@ public class VelbusDevice {
                     break;
                 }
 
-                for (int i=4; i<velbusPacket.getDataSize(); i++) {
+                for (int i = 4; i < velbusPacket.getDataSize(); i++) {
                     int subAddress = velbusPacket.getInt(i);
-                    subAddresses[i-4] = subAddress;
+                    subAddresses[i - 4] = subAddress;
                     if (subAddress != 255) {
                         velbusNetwork.registerSubAddress(this, subAddress);
                     }
@@ -259,7 +279,7 @@ public class VelbusDevice {
 
                 if (featureProcessors != null) {
                     handled = Arrays.stream(featureProcessors)
-                        .anyMatch(processor -> processor.processReceivedPacket(this, velbusPacket));
+                            .anyMatch(processor -> processor.processReceivedPacket(this, velbusPacket));
                 }
 
                 handled = handled || velbusPacket.isHandled();
@@ -306,9 +326,11 @@ public class VelbusDevice {
 
         VelbusPacket[] packets = new VelbusPacket[3];
         // Time packet
-        packets[0] = new VelbusPacket(0x00, VelbusPacket.OutboundCommand.REALTIME_CLOCK_SET.getCode(), (byte) dow, (byte) hours, (byte) mins);
+        packets[0] = new VelbusPacket(0x00, VelbusPacket.OutboundCommand.REALTIME_CLOCK_SET.getCode(), (byte) dow,
+                (byte) hours, (byte) mins);
         // Date packet
-        packets[1] = new VelbusPacket(0x00, VelbusPacket.OutboundCommand.REALTIME_DATE_SET.getCode(), (byte) dom, (byte) month, (byte) (year >>> 8), (byte) year);
+        packets[1] = new VelbusPacket(0x00, VelbusPacket.OutboundCommand.REALTIME_DATE_SET.getCode(), (byte) dom,
+                (byte) month, (byte) (year >>> 8), (byte) year);
         // DST packet
         packets[2] = new VelbusPacket(0x00, VelbusPacket.OutboundCommand.DAYLIGHT_SAVING_SET.getCode(), (byte) dst);
         return packets;

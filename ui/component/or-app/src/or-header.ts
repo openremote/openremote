@@ -1,5 +1,23 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import manager, {
     DefaultBoxShadowBottom,
     DefaultColor1,
@@ -9,20 +27,20 @@ import manager, {
     DefaultColor5,
     DefaultHeaderHeight,
     Util,
-  DEFAULT_LANGUAGES,
-  Languages
+    DEFAULT_LANGUAGES,
+    Languages
 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm} from "@openremote/model";
-import {AppStateKeyed, router, updateRealm} from "./index";
-import {AnyAction, Store} from "@reduxjs/toolkit";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
+import { Alarm, AlarmEvent, AlarmStatus, PersistenceEvent, Realm } from "@openremote/model";
+import { AppStateKeyed, router, updateRealm } from "./index";
+import { AnyAction, Store } from "@reduxjs/toolkit";
 import * as Model from "@openremote/model";
 
 
-export {DEFAULT_LANGUAGES, Languages}
+export { DEFAULT_LANGUAGES, Languages }
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -30,14 +48,14 @@ export interface HeaderConfig {
 }
 
 export interface HeaderItem {
-   icon: string;
-   text: string;
-   value?: string;
-   href?: string;
-   absolute?: boolean;
-   action?: () => void;
-   hideMobile?: boolean;
-   roles?: string[] | {[client: string]: string[]} | (() => boolean);
+    icon: string;
+    text: string;
+    value?: string;
+    href?: string;
+    absolute?: boolean;
+    action?: () => void;
+    hideMobile?: boolean;
+    roles?: string[] | { [client: string]: string[] } | (() => boolean);
 }
 
 function getHeaderMenuItems(items: HeaderItem[]): ListItem[] {
@@ -70,7 +88,7 @@ function hasRequiredRole(option: HeaderItem): boolean {
 
 function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
     const menu = window.location.hash.substr(2).split("/")[0];
-	return menu || defaultRef;
+    return menu || defaultRef;
 }
 
 @customElement("or-header")
@@ -324,16 +342,16 @@ export class OrHeader extends LitElement {
     `;
     }
 
-    @property({type: Array})
+    @property({ type: Array })
     public realms!: Realm[];
 
-    @property({type: String})
+    @property({ type: String })
     public realm!: string;
 
-    @property({type: Object})
+    @property({ type: Object })
     public store!: Store<AppStateKeyed, AnyAction>;
 
-    @property({type: String})
+    @property({ type: String })
     public logo?: string;
 
     @property({ type: String })
@@ -417,10 +435,10 @@ export class OrHeader extends LitElement {
                     <nav id="toolbar-list">
                         <div id="desktop-left">
                             ${mainItems ? mainItems.filter(hasRequiredRole).map((headerItem) => {
-                                return html`
+            return html`
                                     <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
-                            }) : ``}
+        }) : ``}
                         </div>
                     </nav>
                     <div id="desktop-right">
@@ -433,9 +451,9 @@ export class OrHeader extends LitElement {
                         ${secondaryItems ? getContentWithMenuTemplate(html`
                             <button id="menu-btn-desktop" class="menu-btn" title="Menu"><or-icon icon="dots-vertical"></or-icon></button>
                         `,
-                        getHeaderMenuItems(secondaryItems),
-                        undefined,
-                        (value) => this._onSecondaryMenuSelect(value as string)) : ``}
+            getHeaderMenuItems(secondaryItems),
+            undefined,
+            (value) => this._onSecondaryMenuSelect(value as string)) : ``}
                     </div>
                     <div id="menu-btn-mobile">
                         ${this._getRealmMenu((value: string) => this._onRealmSelect(value))}
@@ -448,20 +466,20 @@ export class OrHeader extends LitElement {
                     <div id="mobile-top">
                         <nav id="drawer-list">
                             ${mainItems ? mainItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                return html`
+                return html`
                                     <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
-                            }) : ``}
+            }) : ``}
                         </nav>
                     </div>
                     
                     ${secondaryItems ? html`
                         <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
                             ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                return html`
+                return html`
                                     <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
                                 `;
-                            })}
+            })}
                         </div>` : ``}
                 </div>
             </div>
@@ -491,10 +509,10 @@ export class OrHeader extends LitElement {
 
             realmTemplate = html`
                 ${getContentWithMenuTemplate(
-                        realmTemplate,
-                        menuItems,
-                        currentRealm ? currentRealm.name : undefined,
-                        (value) => callback(value as string))}
+                realmTemplate,
+                menuItems,
+                currentRealm ? currentRealm.name : undefined,
+                (value) => callback(value as string))}
             `;
         }
 
@@ -504,7 +522,7 @@ export class OrHeader extends LitElement {
     protected async _getAlarmButton() {
         let newAlarms = false;
         if (manager.hasRole("read:alarms") || manager.hasRole("read:admin")) {
-            const response = await manager.rest.api.AlarmResource.getAlarms({realm: manager.displayRealm, status: Model.AlarmStatus.OPEN});
+            const response = await manager.rest.api.AlarmResource.getAlarms({ realm: manager.displayRealm, status: Model.AlarmStatus.OPEN });
             newAlarms = response.data.length > 0;
         }
         this.alarmButton = newAlarms ? 'bell-badge-outline' : 'bell-outline';

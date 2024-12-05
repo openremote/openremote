@@ -1,38 +1,56 @@
-import {html, LitElement} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import moment from "moment";
 
 @customElement("or-timeline")
 class OrTimeline extends LitElement {
 
     // default value in minutes
-    @property({type: Number})
+    @property({ type: Number })
     public current: number = 0;
 
-    @property({type: Function})
+    @property({ type: Function })
     public onChange: any;
 
     // default value in minutes
-    @property({type: Number})
+    @property({ type: Number })
     public value: number = 0;
 
     // maxRange in minutes
-    @property({type: Number})
+    @property({ type: Number })
     public maxRange: number = 360;
 
     // minRange in minutes
-    @property({type: Number})
+    @property({ type: Number })
     public minRange: number = 0;
 
     // Steps in minutes
-    @property({type: Number})
+    @property({ type: Number })
     public step: number = 5;
 
     constructor() {
         super();
     }
 
-    public moveBubble(e: any= null, value: string|null= null) {
+    public moveBubble(e: any = null, value: string | null = null) {
         let el;
         if (e) {
             el = e.target;
@@ -66,7 +84,7 @@ class OrTimeline extends LitElement {
             } else {
                 newPlace = (width - offset) * newPoint;
 
-                if (newPlace < 0 ) {
+                if (newPlace < 0) {
                     newPlace = 0;
                 }
 
@@ -262,13 +280,14 @@ class OrTimeline extends LitElement {
             <div class="timeline-container">
                  <div id="timelineHourMarkers" class="layout horizontal justified style-scope controller-timeline">
                     ${new Array((this.maxRange / 60) + 1).fill(0).map((_, idx) => {
-                        return html`
+            return html`
                         ${idx === 0 ? html`
                             <div class="timelineHourMark style-scope controller-timeline">Nu</div>
                         ` : html`
                             <div class="timelineHourMark style-scope controller-timeline">+${idx}u</div>
                         `}
-                    `; })}
+                    `;
+        })}
                 </div>
                 
                 <div class="slidecontainer">

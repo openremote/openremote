@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,17 +29,22 @@ import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class GatewayAsset extends Asset<GatewayAsset> {
 
-    public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT, new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.UUID);
-    public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("gatewayStatus", ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("disabled", ValueType.BOOLEAN);
-    public static final AttributeDescriptor<Boolean> TUNNELING_SUPPORTED = new AttributeDescriptor<>("tunnelingSupported", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AssetDescriptor<GatewayAsset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", null, GatewayAsset.class);
+    public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT,
+            new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret",
+            ValueType.UUID);
+    public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("gatewayStatus",
+            ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("disabled",
+            ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> TUNNELING_SUPPORTED = new AttributeDescriptor<>(
+            "tunnelingSupported", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AssetDescriptor<GatewayAsset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", null,
+            GatewayAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -86,7 +92,9 @@ public class GatewayAsset extends Asset<GatewayAsset> {
         return this;
     }
 
-    public Optional<Boolean> getTunnelingSupported() { return getAttributes().getValue(TUNNELING_SUPPORTED); }
+    public Optional<Boolean> getTunnelingSupported() {
+        return getAttributes().getValue(TUNNELING_SUPPORTED);
+    }
 
     public GatewayAsset setTunnelingSupported(Boolean supported) {
         getAttributes().getOrCreate(TUNNELING_SUPPORTED).setValue(supported);

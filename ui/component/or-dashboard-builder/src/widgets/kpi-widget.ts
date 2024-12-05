@@ -1,12 +1,30 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { customElement, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
-import {OrAssetWidget} from "../util/or-asset-widget";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
-import {WidgetSettings} from "../util/widget-settings";
-import {WidgetConfig} from "../util/widget-config";
-import {Attribute, AttributeRef} from "@openremote/model";
-import {html, TemplateResult } from "lit";
-import {KpiSettings} from "../settings/kpi-settings";
+import { OrAssetWidget } from "../util/or-asset-widget";
+import { OrWidget, WidgetManifest } from "../util/or-widget";
+import { WidgetSettings } from "../util/widget-settings";
+import { WidgetConfig } from "../util/widget-config";
+import { Attribute, AttributeRef } from "@openremote/model";
+import { html, TemplateResult } from "lit";
+import { KpiSettings } from "../settings/kpi-settings";
 import "@openremote/or-attribute-card";
 
 export interface KpiWidgetConfig extends WidgetConfig {
@@ -60,7 +78,7 @@ export class KpiWidget extends OrAssetWidget {
     protected willUpdate(changedProps: Map<string, any>) {
 
         // If widgetConfig, and the attributeRefs of them have changed...
-        if(changedProps.has("widgetConfig") && this.widgetConfig) {
+        if (changedProps.has("widgetConfig") && this.widgetConfig) {
             const attributeRefs = this.widgetConfig.attributeRefs;
 
             // Check if list of attributes has changed, based on the cached assets
@@ -76,7 +94,7 @@ export class KpiWidget extends OrAssetWidget {
     }
 
     protected loadAssets(attributeRefs: AttributeRef[]) {
-        if(attributeRefs.length === 0) {
+        if (attributeRefs.length === 0) {
             this._error = "noAttributesConnected";
             return;
         }
@@ -100,8 +118,8 @@ export class KpiWidget extends OrAssetWidget {
         return html`
             <div style="position: relative; height: 100%; overflow: hidden;">
                 ${when(this._loading || this._error, () => {
-                    // Have to use `position: absolute` with white background due to rendering inconsistencies in or-attribute-card
-                    return html`
+            // Have to use `position: absolute` with white background due to rendering inconsistencies in or-attribute-card
+            return html`
                         <div style="position: absolute; top: -5%; width: 100%; height: 105%; background: white; z-index: 1; display: flex; justify-content: center; align-items: center; text-align: center;">
                             ${when(this._loading, () => html`
                                 <or-loading-indicator></or-loading-indicator>
@@ -110,7 +128,7 @@ export class KpiWidget extends OrAssetWidget {
                             `)}
                         </div>
                     `;
-                })}
+        })}
                 <or-attribute-card .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .period="${this.widgetConfig.period}"
                                    .deltaFormat="${this.widgetConfig.deltaFormat}" .mainValueDecimals="${this.widgetConfig.decimals}"
                                    showControls="${this.widgetConfig?.showTimestampControls}" showTitle="${false}" hideAttributePicker="${true}" style="height: 100%;">

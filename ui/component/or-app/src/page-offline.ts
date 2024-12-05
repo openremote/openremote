@@ -1,12 +1,30 @@
-import {Page, PageProvider} from "./types";
-import {css, html, TemplateResult} from "lit";
-import {customElement, state} from "lit/decorators.js";
-import {AppStateKeyed} from "./app";
-import {Store} from "@reduxjs/toolkit";
-import {i18next} from "@openremote/or-translate";
-import manager, {OREvent} from "@openremote/core";
-import {asyncReplace} from 'lit/directives/async-replace.js';
-import {when} from 'lit/directives/when.js';
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { Page, PageProvider } from "./types";
+import { css, html, TemplateResult } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { AppStateKeyed } from "./app";
+import { Store } from "@reduxjs/toolkit";
+import { i18next } from "@openremote/or-translate";
+import manager, { OREvent } from "@openremote/core";
+import { asyncReplace } from 'lit/directives/async-replace.js';
+import { when } from 'lit/directives/when.js';
 
 // language=css
 const styling = css`

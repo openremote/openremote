@@ -1,18 +1,37 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.gateway;
+
+import java.util.Optional;
 
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import java.util.Optional;
-
 /**
  * A filter for limiting when {@link org.openremote.model.attribute.AttributeEvent}s are sent to the central instance.
  * Consists of an {@link AssetQuery} and various options for limiting the frequency of sending matched events. The
  * options are OR'ed except for {@link #skipAlways}. A null {@link #matcher} indicates a match all. If {@link #delta},
  * {@link #duration}, {@link #valueChange} and {@link #skipAlways} are all null then any event that matches will not be
- * filtered. This facilitates an allow exclusion for one or more attributes provided the allow filter is before any other
+ * filtered. This facilitates an allow exclusion for one or more attributes provided the allow filter is before any
+ * other
  * filter that would also match the event.
  */
 public class GatewayAttributeFilter {
@@ -99,17 +118,13 @@ public class GatewayAttributeFilter {
     }
 
     public boolean isAllow() {
-        return (skipAlways == null || !skipAlways) && (valueChange == null || !valueChange) && delta == null && TextUtil.isNullOrEmpty(duration);
+        return (skipAlways == null || !skipAlways) && (valueChange == null || !valueChange) && delta == null
+                && TextUtil.isNullOrEmpty(duration);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "matcher=" + matcher +
-            ", duration='" + duration + '\'' +
-            ", delta=" + delta +
-            ", valueChange=" + valueChange +
-            ", skipAlways=" + skipAlways +
-            '}';
+        return getClass().getSimpleName() + "{" + "matcher=" + matcher + ", duration='" + duration + '\'' + ", delta="
+                + delta + ", valueChange=" + valueChange + ", skipAlways=" + skipAlways + '}';
     }
 }

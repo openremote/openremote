@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
 
@@ -30,6 +29,7 @@ import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -43,18 +43,13 @@ import jakarta.validation.constraints.NotNull;
 @JsonTypeName(JsonPathFilter.NAME)
 public class JsonPathFilter extends ValueFilter {
 
-    protected static ParseContext jsonPathParser = JsonPath.using(
-        Configuration.builder()
-        .jsonProvider(new JacksonJsonNodeJsonProvider())
-        .mappingProvider(new JacksonMappingProvider())
-        .build()
-                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
-        );
+    protected static ParseContext jsonPathParser = JsonPath.using(Configuration.builder()
+            .jsonProvider(new JacksonJsonNodeJsonProvider()).mappingProvider(new JacksonMappingProvider()).build()
+            .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL));
 
     public static final String NAME = "jsonPath";
 
-    @NotNull
-    @JsonProperty
+    @NotNull @JsonProperty
     public String path;
 
     @JsonProperty
@@ -64,9 +59,8 @@ public class JsonPathFilter extends ValueFilter {
     public boolean returnLast;
 
     @JsonCreator
-    public JsonPathFilter(@JsonProperty("path") String path,
-                          @JsonProperty("returnFirst") boolean returnFirst,
-                          @JsonProperty("returnLast") boolean returnLast) {
+    public JsonPathFilter(@JsonProperty("path") String path, @JsonProperty("returnFirst") boolean returnFirst,
+            @JsonProperty("returnLast") boolean returnLast) {
         this.path = path;
         this.returnFirst = returnFirst;
         this.returnLast = returnLast;

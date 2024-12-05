@@ -1,18 +1,36 @@
-import {css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetModelUtil, Attribute, AttributeRef} from "@openremote/model";
-import {style} from "../style";
-import {when} from "lit/directives/when.js";
-import {map} from "lit/directives/map.js";
-import {guard} from "lit/directives/guard.js";
-import {i18next} from "@openremote/or-translate";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, CSSResult, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { Asset, AssetModelUtil, Attribute, AttributeRef } from "@openremote/model";
+import { style } from "../style";
+import { when } from "lit/directives/when.js";
+import { map } from "lit/directives/map.js";
+import { guard } from "lit/directives/guard.js";
+import { i18next } from "@openremote/or-translate";
 import "@openremote/or-translate";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {DefaultColor5, Util} from "@openremote/core";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import manager, { DefaultColor5, Util } from "@openremote/core";
+import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
+import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface AttributeAction {
     icon: string,
@@ -174,7 +192,7 @@ export class AttributesPanel extends LitElement {
             this.loadAssets().then((assets) => {
 
                 // Only dispatch event when it CHANGED, so not from 'undefined' to [];
-                if(changedProps.get("attributeRefs")) {
+                if (changedProps.get("attributeRefs")) {
                     this.dispatchEvent(new AttributesSelectEvent(assets, this.attributeRefs))
                 }
 
@@ -193,7 +211,7 @@ export class AttributesPanel extends LitElement {
     }
 
     protected async loadAssets(): Promise<Asset[]> {
-        if(this.attributeRefs.filter(ar => !this.getLoadedAsset(ar)).length > 0) {
+        if (this.attributeRefs.filter(ar => !this.getLoadedAsset(ar)).length > 0) {
             const assets = await this.fetchAssets(this.attributeRefs);
             this.loadedAssets = assets;
             return assets;
@@ -245,35 +263,35 @@ export class AttributesPanel extends LitElement {
                     <div id="attribute-list">
                         ${guard([this.attributeRefs, this.loadedAssets, this.attributeActionCallback, this.attributeLabelCallback], () => html`
                             ${map(this.attributeRefs, (attributeRef: AttributeRef) => {
-                                const asset = this.getLoadedAsset(attributeRef);
-                                if (asset) {
-                                    const attribute = asset.attributes![attributeRef.name!];
-                                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
-                                    const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
-                                    return html`
+            const asset = this.getLoadedAsset(attributeRef);
+            if (asset) {
+                const attribute = asset.attributes![attributeRef.name!];
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
+                return html`
                                         <div class="attribute-list-item">
                                             <div class="attribute-list-item-icon">
                                                 <span>${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}</span>
                                             </div>
                                             <div class="attribute-list-item-label">
                                                 ${when(!!this.attributeLabelCallback,
-                                                        () => this.attributeLabelCallback!(asset, attribute, label), 
-                                                        () => html`
+                    () => this.attributeLabelCallback!(asset, attribute, label),
+                    () => html`
                                                             <span>${asset.name}</span>
                                                             <span style="font-size:14px; color:grey;">${label}</span>
                                                         `
-                                                )}
+                )}
                                             </div>
                                             <div class="attribute-list-item-actions">
                                                 
                                                 <!-- Custom actions defined by callback -->
                                                 ${when(!!this.attributeActionCallback, () => {
-                                                    return this.attributeActionCallback!(attributeRef).map((action) => html`
+                    return this.attributeActionCallback!(attributeRef).map((action) => html`
                                                         <button class="button-action" .disabled="${action.disabled}" title="${action.tooltip}" @click="${() => this.onAttributeActionClick(asset, attributeRef, action)}">
                                                             <or-icon icon="${action.icon}"></or-icon>
                                                         </button>
                                                     `);
-                                                })}
+                })}
                                                 <!-- Remove attribute button -->
                                                 <button class="button-action" title="${i18next.t('delete')}" @click="${() => this.removeWidgetAttribute(attributeRef)}">
                                                     <or-icon icon="close-circle"></or-icon>
@@ -281,10 +299,10 @@ export class AttributesPanel extends LitElement {
                                             </div>
                                         </div>
                                     `;
-                                } else {
-                                    return undefined;
-                                }
-                            })}
+            } else {
+                return undefined;
+            }
+        })}
                         `)}
                     </div>
 

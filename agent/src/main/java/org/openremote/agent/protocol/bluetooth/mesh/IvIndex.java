@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -34,9 +33,9 @@ public class IvIndex {
     /**
      * Construct the IV Index state of the mesh network
      *
-     * @param ivIndex          IV Index of the network.
+     * @param ivIndex IV Index of the network.
      * @param isIvUpdateActive If true IV Update is in progress and false the network is in Normal operation.
-     * @param transitionDate   Time when the last IV Update happened
+     * @param transitionDate Time when the last IV Update happened
      */
     public IvIndex(final int ivIndex, final boolean isIvUpdateActive, final Calendar transitionDate) {
         this.ivIndex = ivIndex;
@@ -84,12 +83,13 @@ public class IvIndex {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         IvIndex ivIndex1 = (IvIndex) o;
-        return ivIndex == ivIndex1.ivIndex &&
-            isIvUpdateActive == ivIndex1.isIvUpdateActive &&
-            ivRecoveryFlag == ivIndex1.ivRecoveryFlag &&
-            (transitionDate.getTimeInMillis() == ivIndex1.transitionDate.getTimeInMillis());
+        return ivIndex == ivIndex1.ivIndex && isIvUpdateActive == ivIndex1.isIvUpdateActive
+                && ivRecoveryFlag == ivIndex1.ivRecoveryFlag
+                && (transitionDate.getTimeInMillis() == ivIndex1.transitionDate.getTimeInMillis());
     }
 }

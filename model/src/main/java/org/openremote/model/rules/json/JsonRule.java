@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules.json;
 
@@ -28,11 +27,14 @@ import org.openremote.model.query.LogicGroup;
  * <h2>LHS</li>
  * <p>
  * {@link #when} - A series of grouped {@link RuleCondition}s to which bitwise operations can be performed based on the
- * {@link LogicGroup#operator} of each group. These are used to filter {@link org.openremote.model.attribute.AttributeInfo}s
+ * {@link LogicGroup#operator} of each group. These are used to filter
+ * {@link org.openremote.model.attribute.AttributeInfo}s
  * in the RuleEngine that this rule is loaded into to determine which {@link org.openremote.model.asset.Asset}s match;
  * if one or more assets match then the RHS {@link #then} will be triggered. Once a rule is triggered the
- * {@link org.openremote.model.attribute.AttributeInfo}s that triggered the rule cannot trigger the rule again until it no longer
- * matches (within the context of the {@link RuleCondition} i.e. an {@link org.openremote.model.attribute.AttributeInfo} can
+ * {@link org.openremote.model.attribute.AttributeInfo}s that triggered the rule cannot trigger the rule again until it
+ * no longer
+ * matches (within the context of the {@link RuleCondition} i.e. an {@link org.openremote.model.attribute.AttributeInfo}
+ * can
  * re-trigger a rule if it is matched by a different {@link RuleCondition})
  * <p>
  * The {@link #otherwise} {@link RuleAction}s are applied to the {@link org.openremote.model.asset.Asset}s filtered by
@@ -43,17 +45,19 @@ import org.openremote.model.query.LogicGroup;
  * {@link #then} - Defines a series of {@link RuleAction}s to perform when the bitwise result of applying all
  * {@link RuleCondition}s in the {@link #when} is true.
  * <p>
- * {@link #otherwise} - Defines a series of {@link RuleAction}s to perform when there is one or more asset that matched  rule doesn't match the assets specified
+ * {@link #otherwise} - Defines a series of {@link RuleAction}s to perform when there is one or more asset that matched
+ * rule doesn't match the assets specified
  * in the {@link JsonRule#when}. The list of assets this applies to is the assets filtered by applying the
  * {@link JsonRule#when} but excluding the {@link AssetQuery#attributes} predicates and excluding any assets that match
- * the entire {@link JsonRule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will be
+ * the entire {@link JsonRule#when}. If the number of these assets is greater than 0 then these {@link RuleAction}s will
+ * be
  * executed.
  */
 public class JsonRule {
 
     public String name;
     public String description;
-    public int priority = Integer.MAX_VALUE-1;
+    public int priority = Integer.MAX_VALUE - 1;
     public LogicGroup<RuleCondition> when;
     public RuleAction[] then;
     public RuleAction[] otherwise;

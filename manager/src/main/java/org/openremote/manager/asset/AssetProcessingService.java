@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
-import jakarta.validation.ConstraintViolation;
+import static org.openremote.model.attribute.AttributeWriteFailure.*;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.RouteConfigurationBuilder;
@@ -49,13 +51,11 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-
-import static org.openremote.model.attribute.AttributeWriteFailure.*;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
+import jakarta.validation.ConstraintViolation;
 
 /**
  * Receives {@link AttributeEvent} from various sources (clients and services) and processes them.
@@ -125,7 +125,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         executorService = container.getExecutor();
-        EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
+        EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService,
+                assetStorageService);
 
         clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
@@ -146,30 +147,35 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
             // Check realm against user
-            if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext,
-                requestedRealm)) {
+            if (!identityService.getIdentityProvider().isRealmActiveAndAccessible(authContext, requestedRealm)) {
                 LOG.log(System.Logger.Level.INFO, "Realm is inactive, inaccessible or nonexistent: " + requestedRealm);
                 return false;
             }
 
             // Users must have write attributes role
             if (authContext != null && !authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                Constants.KEYCLOAK_CLIENT_ID)) {
-                LOG.log(System.Logger.Level.DEBUG, "User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                    Constants.KEYCLOAK_CLIENT_ID)) {
+                LOG.log(System.Logger.Level.DEBUG,
+                        "User doesn't have required role '" + ClientRole.WRITE_ATTRIBUTES + "': username="
+                                + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
                 return false;
             }
 
-            // Have to load the asset and attribute to perform additional checks - should permissions be moved out of the
+            // Have to load the asset and attribute to perform additional checks - should permissions be moved out of
+            // the
             // asset model (possibly if the performance is determined to be not good enough)
             // TODO: Use a targeted query to retrieve just the info we need
             Asset<?> asset = assetStorageService.find(attributeEvent.getId());
             Attribute<?> attribute = asset != null ? asset.getAttribute(attributeEvent.getName()).orElse(null) : null;
 
             if (asset == null || !asset.hasAttribute(attributeEvent.getName())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: " + attributeEvent.getRef());
+                LOG.log(System.Logger.Level.INFO,
+                        () -> "Cannot authorize asset event as asset and/or attribute doesn't exist: "
+                                + attributeEvent.getRef());
                 return false;
             } else if (!Objects.equals(requestedRealm, asset.getRealm())) {
-                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm=" + requestedRealm + ", ref=" + attributeEvent.getRef());
+                LOG.log(System.Logger.Level.INFO, () -> "Asset is not in the requested realm: requestedRealm="
+                        + requestedRealm + ", ref=" + attributeEvent.getRef());
                 return false;
             }
 
@@ -177,21 +183,28 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 // Check restricted user
                 if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
                     // Must be asset linked to user
-                    if (!assetStorageService.isUserAsset(authContext.getUserId(),
-                        attributeEvent.getId())) {
-                        LOG.log(System.Logger.Level.DEBUG, () -> "Restricted user is not linked to asset '" + attributeEvent.getId() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                    if (!assetStorageService.isUserAsset(authContext.getUserId(), attributeEvent.getId())) {
+                        LOG.log(System.Logger.Level.DEBUG,
+                                () -> "Restricted user is not linked to asset '" + attributeEvent.getId()
+                                        + "': username=" + authContext.getUsername() + ", userRealm="
+                                        + authContext.getAuthenticatedRealmName());
                         return false;
                     }
 
-                    if (attribute == null || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                        LOG.log(System.Logger.Level.DEBUG, () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getRef() + "': username=" + authContext.getUsername() + ", userRealm=" + authContext.getAuthenticatedRealmName());
+                    if (attribute == null
+                            || !attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_WRITE).orElse(false)) {
+                        LOG.log(System.Logger.Level.DEBUG,
+                                () -> "Asset attribute doesn't support restricted write on '" + attributeEvent.getRef()
+                                        + "': username=" + authContext.getUsername() + ", userRealm="
+                                        + authContext.getAuthenticatedRealmName());
                         return false;
                     }
                 }
             } else {
                 // Check attribute has public write flag for anonymous write
                 if (attribute == null || !attribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
-                    LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '" + attributeEvent.getRef() + "': username=null");
+                    LOG.log(System.Logger.Level.DEBUG, () -> "Asset doesn't support public write on '"
+                            + attributeEvent.getRef() + "': username=null");
                     return false;
                 }
             }
@@ -205,40 +218,38 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             @Override
             public void configuration() throws Exception {
                 routeConfiguration(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-                    .onException(IllegalStateException.class, RejectedExecutionException.class, AssetProcessingException.class)
-                    .handled(true)
-                    .logExhausted(false)
-                    .logStackTrace(false)
-                    .process(exchange -> {
-                        Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+                        .onException(IllegalStateException.class, RejectedExecutionException.class,
+                                AssetProcessingException.class)
+                        .handled(true).logExhausted(false).logStackTrace(false).process(exchange -> {
+                            Exception exception = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
 
-                        if (exception instanceof RejectedExecutionException || (exception instanceof IllegalStateException illegalStateException && "Queue full".equals(illegalStateException.getMessage()))) {
-                            exception = new AssetProcessingException(QUEUE_FULL, "Queue for this message is full");
-                        }
-
-                        // Make the exception available if MEP is InOut
-                        exchange.getMessage().setBody(exception);
-
-                        if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
-                            return;
-                        }
-
-                        Object body = exchange.getIn().getBody();
-                        StringBuilder error = new StringBuilder("Route '")
-                            .append(exchange.getFromRouteId())
-                            .append("' error processing message: ")
-                            .append(body);
-
-                        if (exception instanceof AssetProcessingException processingException) {
-                            if (processingException.getReason() == ASSET_NOT_FOUND) {
-                                LOG.log(System.Logger.Level.DEBUG, error::toString);
-                            } else {
-                                LOG.log(System.Logger.Level.WARNING, error::toString);
+                            if (exception instanceof RejectedExecutionException
+                                    || (exception instanceof IllegalStateException illegalStateException
+                                            && "Queue full".equals(illegalStateException.getMessage()))) {
+                                exception = new AssetProcessingException(QUEUE_FULL, "Queue for this message is full");
                             }
-                        } else {
-                            LOG.log(System.Logger.Level.WARNING, error::toString, exception);
-                        }
-                    });
+
+                            // Make the exception available if MEP is InOut
+                            exchange.getMessage().setBody(exception);
+
+                            if (!LOG.isLoggable(System.Logger.Level.WARNING)) {
+                                return;
+                            }
+
+                            Object body = exchange.getIn().getBody();
+                            StringBuilder error = new StringBuilder("Route '").append(exchange.getFromRouteId())
+                                    .append("' error processing message: ").append(body);
+
+                            if (exception instanceof AssetProcessingException processingException) {
+                                if (processingException.getReason() == ASSET_NOT_FOUND) {
+                                    LOG.log(System.Logger.Level.DEBUG, error::toString);
+                                } else {
+                                    LOG.log(System.Logger.Level.WARNING, error::toString);
+                                }
+                            } else {
+                                LOG.log(System.Logger.Level.WARNING, error::toString, exception);
+                            }
+                        });
             }
         });
 
@@ -263,38 +274,35 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void configure() throws Exception {
 
         // All user authorisation checks MUST have been carried out before events reach this queue
-        from(ATTRIBUTE_EVENT_PROCESSOR)
-            .routeId("AttributeEvent-Processor")
-            .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
-            .threads().executorService(executorService)
-            .process(exchange -> {
-                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+        from(ATTRIBUTE_EVENT_PROCESSOR).routeId("AttributeEvent-Processor")
+                .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID).threads().executorService(executorService)
+                .process(exchange -> {
+                    AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
 
-                if (event.getId() == null || event.getId().isEmpty())
-                    throw new AssetProcessingException(ASSET_ID_MISSING);
-                if (event.getName() == null || event.getName().isEmpty())
-                    throw new AssetProcessingException(ATTRIBUTE_NAME_MISSING);
+                    if (event.getId() == null || event.getId().isEmpty())
+                        throw new AssetProcessingException(ASSET_ID_MISSING);
+                    if (event.getName() == null || event.getName().isEmpty())
+                        throw new AssetProcessingException(ATTRIBUTE_NAME_MISSING);
 
-                if (event.getTimestamp() <= 0) {
-                    // Set timestamp if not set
-                    event.setTimestamp(timerService.getCurrentTimeMillis());
-                } else if (event.getTimestamp() > timerService.getCurrentTimeMillis()) {
-                    // Use system time if event time is in the future (clock issue)
-                    event.setTimestamp(timerService.getCurrentTimeMillis());
-                }
+                    if (event.getTimestamp() <= 0) {
+                        // Set timestamp if not set
+                        event.setTimestamp(timerService.getCurrentTimeMillis());
+                    } else if (event.getTimestamp() > timerService.getCurrentTimeMillis()) {
+                        // Use system time if event time is in the future (clock issue)
+                        event.setTimestamp(timerService.getCurrentTimeMillis());
+                    }
 
-                LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + event);
-                Counter counter = getEventCounter(event.getSource());
-                if (counter != null) {
-                    counter.increment();
-                }
+                    LOG.log(System.Logger.Level.TRACE, () -> ">>> Attribute event processing start: " + event);
+                    Counter counter = getEventCounter(event.getSource());
+                    if (counter != null) {
+                        counter.increment();
+                    }
 
-                boolean processed = eventTimer != null ?
-                    eventTimer.record(() -> processAttributeEvent(event)) :
-                    processAttributeEvent(event);
+                    boolean processed = eventTimer != null ? eventTimer.record(() -> processAttributeEvent(event))
+                            : processAttributeEvent(event);
 
-                exchange.getIn().setBody(processed);
-            });
+                    exchange.getIn().setBody(processed);
+                });
     }
 
     protected Counter getEventCounter(String source) {
@@ -302,8 +310,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return null;
         }
         String sourceStr = source == null ? "none" : source;
-        return eventCounters.computeIfAbsent(sourceStr, eventSource ->
-            meterRegistry.counter("or.attributes", Tags.of("source", eventSource)));
+        return eventCounters.computeIfAbsent(sourceStr,
+                eventSource -> meterRegistry.counter("or.attributes", Tags.of("source", eventSource)));
     }
 
     public void addEventInterceptor(AttributeEventInterceptor eventInterceptor) {
@@ -328,9 +336,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (attributeEvent.getTimestamp() <= 0) {
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
         }
-        messageBrokerService.getFluentProducerTemplate()
-                .withBody(attributeEvent)
-                .to(ATTRIBUTE_EVENT_PROCESSOR)
+        messageBrokerService.getFluentProducerTemplate().withBody(attributeEvent).to(ATTRIBUTE_EVENT_PROCESSOR)
                 .asyncSend();
     }
 
@@ -340,10 +346,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      */
     protected boolean processAttributeEvent(AttributeEvent event) throws AssetProcessingException {
 
-        return assetStorageService.withAssetLock(event.getId(),() -> {
+        return assetStorageService.withAssetLock(event.getId(), () -> {
 
             long startMillis = System.currentTimeMillis();
-            // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the timestamp
+            // Need to record time here otherwise an infinite loop generated inside one of the interceptors means the
+            // timestamp
             // is not updated so tests can't then detect the problem.
             lastProcessedEventTimestamp = startMillis;
 
@@ -355,40 +362,47 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     throw new AssetProcessingException(ASSET_NOT_FOUND, event.getId());
                 }
 
-                Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(() ->
-                    new AssetProcessingException(ATTRIBUTE_NOT_FOUND, event.getRef().toString()));
+                Attribute<Object> attribute = asset.getAttribute(event.getName()).orElseThrow(
+                        () -> new AssetProcessingException(ATTRIBUTE_NOT_FOUND, event.getRef().toString()));
 
                 // Type coercion
                 Object value = event.getValue().map(eventValue -> {
                     Class<?> attributeValueType = attribute.getTypeClass();
                     return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
-                        String msg = "Event processing failed unable to coerce value into the correct value type: realm=" + event.getRealm() + ", attribute=" + event.getRef() + ", event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType;
+                        String msg = "Event processing failed unable to coerce value into the correct value type: realm="
+                                + event.getRealm() + ", attribute=" + event.getRef() + ", event value type="
+                                + eventValue.getClass() + ", attribute value type=" + attributeValueType;
                         return new AssetProcessingException(INVALID_VALUE, msg);
                     });
                 }).orElse(null);
                 event.setValue(value);
 
-                AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(), event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null), attribute.getTimestamp().orElse(0L));
+                AttributeEvent enrichedEvent = new AttributeEvent(asset, attribute, event.getSource(),
+                        event.getValue().orElse(null), event.getTimestamp(), attribute.getValue().orElse(null),
+                        attribute.getTimestamp().orElse(0L));
 
                 // Do standard JSR-380 validation on the event
                 Set<ConstraintViolation<AttributeEvent>> validationFailures = ValueUtil.validate(enrichedEvent);
 
                 if (!validationFailures.isEmpty()) {
-                    String msg = "Event processing failed value failed constraint validation: realm=" + enrichedEvent.getRealm() + ", attribute=" + enrichedEvent.getRef() + ", event value type=" + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null") + ", attribute value type=" + enrichedEvent.getTypeClass();
+                    String msg = "Event processing failed value failed constraint validation: realm="
+                            + enrichedEvent.getRealm() + ", attribute=" + enrichedEvent.getRef() + ", event value type="
+                            + enrichedEvent.getValue().map(v -> v.getClass().getName()).orElse("null")
+                            + ", attribute value type=" + enrichedEvent.getTypeClass();
                     throw new AssetProcessingException(INVALID_VALUE, msg);
                 }
 
                 // TODO: Remove AttributeExecuteStatus
-//            // For executable attributes, non-sensor sources can set a writable attribute execute status
-//            if (attribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
-//                Optional<AttributeExecuteStatus> status = event.getValue()
-//                    .flatMap(ValueUtil::getString)
-//                    .flatMap(AttributeExecuteStatus::fromString);
-//
-//                if (status.isPresent() && !status.get().isWrite()) {
-//                    throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
-//                }
-//            }
+                // // For executable attributes, non-sensor sources can set a writable attribute execute status
+                // if (attribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
+                // Optional<AttributeExecuteStatus> status = event.getValue()
+                // .flatMap(ValueUtil::getString)
+                // .flatMap(AttributeExecuteStatus::fromString);
+                //
+                // if (status.isPresent() && !status.get().isWrite()) {
+                // throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                // }
+                // }
 
                 String interceptorName = null;
                 boolean intercepted = false;
@@ -397,13 +411,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     try {
                         intercepted = interceptor.intercept(em, enrichedEvent);
                     } catch (AssetProcessingException ex) {
-                        throw new AssetProcessingException(ex.getReason(), "Interceptor '" + interceptor + "' error=" + ex.getMessage());
+                        throw new AssetProcessingException(ex.getReason(),
+                                "Interceptor '" + interceptor + "' error=" + ex.getMessage());
                     } catch (Throwable t) {
-                        throw new AssetProcessingException(
-                            INTERCEPTOR_FAILURE,
-                            "Interceptor '" + interceptor + "' uncaught exception error=" + t.getMessage(),
-                            t
-                        );
+                        throw new AssetProcessingException(INTERCEPTOR_FAILURE,
+                                "Interceptor '" + interceptor + "' uncaught exception error=" + t.getMessage(), t);
                     }
                     if (intercepted) {
                         interceptorName = interceptor.getName();
@@ -412,22 +424,27 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 if (intercepted) {
-                    LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref=" + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
+                    LOG.log(System.Logger.Level.TRACE, "Event intercepted: interceptor=" + interceptorName + ", ref="
+                            + enrichedEvent.getRef() + ", source=" + enrichedEvent.getSource());
                 } else {
                     if (enrichedEvent.isOutdated()) {
-                        LOG.log(System.Logger.Level.INFO, () -> "Event is older than current attribute value so marking as outdated: ref=" + enrichedEvent.getRef() + ", event=" + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous=" + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
+                        LOG.log(System.Logger.Level.INFO,
+                                () -> "Event is older than current attribute value so marking as outdated: ref="
+                                        + enrichedEvent.getRef() + ", event="
+                                        + Instant.ofEpochMilli(enrichedEvent.getTimestamp()) + ", previous="
+                                        + Instant.ofEpochMilli(enrichedEvent.getOldValueTimestamp()));
                         // Generate an event for this so internal subscribers can act on it if needed
                         clientEventService.publishEvent(new OutdatedAttributeEvent(enrichedEvent));
                     } else if (!assetStorageService.updateAttributeValue(em, enrichedEvent)) {
-                        throw new AssetProcessingException(
-                            STATE_STORAGE_FAILED, "database update failed, no rows updated"
-                        );
+                        throw new AssetProcessingException(STATE_STORAGE_FAILED,
+                                "database update failed, no rows updated");
                     }
                 }
 
                 if (LOG.isLoggable(System.Logger.Level.DEBUG)) {
                     long processingMillis = System.currentTimeMillis() - startMillis;
-                    LOG.log(System.Logger.Level.DEBUG, "<<< Attribute event processed in " + processingMillis + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
+                    LOG.log(System.Logger.Level.DEBUG, "<<< Attribute event processed in " + processingMillis
+                            + "ms: processor=" + Thread.currentThread().getName() + ", event=" + enrichedEvent);
                 }
                 return true;
             });
@@ -436,7 +453,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            '}';
+        return getClass().getSimpleName() + "{" + '}';
     }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
 public enum AuthenticationOOBMethods {
-    //Selecting one of the authentication methods defined below during the provisioning process will require the user to,
+    // Selecting one of the authentication methods defined below during the provisioning process will require the user
+    // to,
 
     // - Nothing
     NO_OOB_AUTHENTICATION((short) 0),
     // - enter a 16-bit value provided by the device manufacturer to be entered during hte provisioning process
     STATIC_OOB_AUTHENTICATION((short) 1),
-    // - enter the number of times the device blinked, beeped, vibrated, displayed or an alphanumeric value displayed by the device
+    // - enter the number of times the device blinked, beeped, vibrated, displayed or an alphanumeric value displayed by
+    // the device
     OUTPUT_OOB_AUTHENTICATION((short) 2),
     // - push, twist, input a number or an alpha numeric value displayed on the provisioner app
     INPUT_OOB_AUTHENTICATION((short) 3);

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.apps;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.PathHandler;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.timer.TimerService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -35,10 +30,15 @@ import java.nio.file.Paths;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.PathHandler;
 
 public class ConsoleAppService implements ContainerService {
 
@@ -58,21 +58,18 @@ public class ConsoleAppService implements ContainerService {
         this.identityService = container.getService(ManagerIdentityService.class);
         this.persistenceService = container.getService(PersistenceService.class);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new AppResourceImpl(this)
-        );
+        container.getService(ManagerWebService.class).addApiSingleton(new AppResourceImpl(this));
 
-        consoleAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
+        consoleAppDocRoot = Paths
+                .get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
 
         // Serve console app config files
         if (Files.isDirectory(consoleAppDocRoot)) {
             HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
 
             HttpHandler pathHandler = new PathHandler().addPrefixPath("info", customBaseFileHandler);
-            managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
-                "Console app info files",
-                "info",
-                pathHandler));
+            managerWebService.getRequestHandlers().add(0,
+                    pathStartsWithHandler("Console app info files", "info", pathHandler));
         }
     }
 
@@ -85,20 +82,15 @@ public class ConsoleAppService implements ContainerService {
     }
 
     public String[] getInstalled() throws Exception {
-        return Stream.concat(
-                Files.list(managerWebService.getBuiltInAppDocRoot()),
-                Files.list(managerWebService.getCustomAppDocRoot()))
-            .filter(Files::isDirectory)
-            .filter(path -> !new File(path.toString(), ".appignore").exists())
-            .map(dir -> dir.getFileName().toString())
-            .distinct()
-            .toArray(String[]::new);
+        return Stream
+                .concat(Files.list(managerWebService.getBuiltInAppDocRoot()),
+                        Files.list(managerWebService.getCustomAppDocRoot()))
+                .filter(Files::isDirectory).filter(path -> !new File(path.toString(), ".appignore").exists())
+                .map(dir -> dir.getFileName().toString()).distinct().toArray(String[]::new);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "consoleAppDocRoot=" + consoleAppDocRoot +
-            '}';
+        return getClass().getSimpleName() + "{" + "consoleAppDocRoot=" + consoleAppDocRoot + '}';
     }
 }

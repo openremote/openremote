@@ -1,11 +1,29 @@
-import {translate} from "./translate-mixin";
-import i18next, {InitOptions, TOptions } from "i18next";
-import {LitElement, html, css} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { translate } from "./translate-mixin";
+import i18next, { InitOptions, TOptions } from "i18next";
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
-export {i18next};
+export { i18next };
 
-export {translate};
+export { translate };
 
 @customElement("or-translate")
 export class OrTranslate extends translate(i18next)(LitElement) {
@@ -20,10 +38,10 @@ export class OrTranslate extends translate(i18next)(LitElement) {
         }
     `;
 
-    @property({type: String})
+    @property({ type: String })
     public value?: string;
 
-    @property({type: Object})
+    @property({ type: Object })
     public options?: TOptions<InitOptions>;
 
     protected render() {

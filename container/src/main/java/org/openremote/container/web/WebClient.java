@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import java.net.URI;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
@@ -26,7 +27,6 @@ import org.openremote.container.security.BearerAuthClientRequestFilter;
 import org.openremote.container.security.ClientSecretRequestFilter;
 
 import jakarta.ws.rs.client.Client;
-import java.net.URI;
 
 public interface WebClient {
 
@@ -39,26 +39,17 @@ public interface WebClient {
     String REQUEST_PROPERTY_X_FORWARDED_PORT = WebClient.class.getName() + ".xForwardedPort";
 
     static ResteasyClientBuilderImpl registerDefaults(ResteasyClientBuilderImpl builder) {
-        return builder
-            .register(new JacksonConfig())
-            .register(new ProxyClientRequestFilter())
-            .register(new BearerAuthClientRequestFilter())
-            .register(new ClientSecretRequestFilter());
+        return builder.register(new JacksonConfig()).register(new ProxyClientRequestFilter())
+                .register(new BearerAuthClientRequestFilter()).register(new ClientSecretRequestFilter());
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, URI forwardUri) {
-        return getTarget(
-            client,
-            uri,
-            accessToken,
-            forwardFor,
-            forwardUri != null ? forwardUri.getHost() : null,
-            forwardUri != null ? forwardUri.getScheme() : null,
-            forwardUri != null ? forwardUri.getPort() : null
-        );
+        return getTarget(client, uri, accessToken, forwardFor, forwardUri != null ? forwardUri.getHost() : null,
+                forwardUri != null ? forwardUri.getScheme() : null, forwardUri != null ? forwardUri.getPort() : null);
     }
 
-    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, String forwardHost, String forwardProto, Integer forwardPort) {
+    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor,
+            String forwardHost, String forwardProto, Integer forwardPort) {
         ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
         if (accessToken != null) {
             target.property(REQUEST_PROPERTY_ACCESS_TOKEN, accessToken);

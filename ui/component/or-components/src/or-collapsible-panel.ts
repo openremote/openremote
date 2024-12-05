@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
@@ -116,9 +115,9 @@ export class OrCollapsiblePanel extends LitElement {
         ];
     }
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     expanded: boolean = false;
-    @property({type: Boolean})
+    @property({ type: Boolean })
     expandable: boolean = true;
     @query("#header")
     protected headerElem!: HTMLDivElement;
@@ -134,7 +133,7 @@ export class OrCollapsiblePanel extends LitElement {
     render() {
 
         return html`
-            <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
+            <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev: MouseEvent) => this._onHeaderClicked(ev)}">
                 ${this.expandable ? html`<or-icon icon="chevron-${this.expanded ? "down" : "right"}"></or-icon>` : ""}
                 <span id="header-content">
                     <span id="header-title"><slot name="header"></slot></span>

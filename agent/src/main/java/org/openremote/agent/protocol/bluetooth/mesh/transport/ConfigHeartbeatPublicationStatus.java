@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.Features;
 import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.HeartbeatPublication;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
-import java.util.logging.Logger;
 
 /**
  * ConfigHeartbeatPublicationStatus message.
@@ -65,11 +64,11 @@ public class ConfigHeartbeatPublicationStatus extends ConfigStatusMessage {
 
         final int featuresInt = MeshParserUtils.unsignedBytesToInt(mParameters[6], mParameters[7]);
         final Features features = new Features(DeviceFeatureUtils.getFriendFeature(featuresInt),
-            DeviceFeatureUtils.getLowPowerFeature(featuresInt),
-            DeviceFeatureUtils.getProxyFeature(featuresInt),
-            DeviceFeatureUtils.getRelayFeature(featuresInt));
+                DeviceFeatureUtils.getLowPowerFeature(featuresInt), DeviceFeatureUtils.getProxyFeature(featuresInt),
+                DeviceFeatureUtils.getRelayFeature(featuresInt));
         final int netKeyIndex = MeshParserUtils.unsignedBytesToInt((mParameters[8]), mParameters[9]);
-        heartbeatPublication = new HeartbeatPublication(dst, (byte) countLog, (byte) periodLog, ttl, features, netKeyIndex);
+        heartbeatPublication = new HeartbeatPublication(dst, (byte) countLog, (byte) periodLog, ttl, features,
+                netKeyIndex);
         LOG.info("Status code: " + mStatusCode);
         LOG.info("Status message: " + mStatusCodeName);
         LOG.info("Heartbeat publication: " + heartbeatPublication.toString());
@@ -88,4 +87,3 @@ public class ConfigHeartbeatPublicationStatus extends ConfigStatusMessage {
         return heartbeatPublication;
     }
 }
-

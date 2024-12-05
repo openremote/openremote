@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import org.openremote.model.Constants;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 import java.io.Serializable;
 
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.Constants;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * A reference to an entity and an {@link Attribute}.
@@ -51,7 +52,7 @@ public class AttributeRef implements Serializable {
 
     /**
      * Constructs an attribute reference.
-
+     *
      * @param id the asset identifier
      * @param name the attribute name
      */
@@ -83,8 +84,10 @@ public class AttributeRef implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AttributeRef that = (AttributeRef) o;
         return id.equals(that.id) && name.equals(that.name);
     }
@@ -98,9 +101,6 @@ public class AttributeRef implements Serializable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", name='" + name + '\'' + '}';
     }
 }

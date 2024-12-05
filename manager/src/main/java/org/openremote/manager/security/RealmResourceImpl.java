@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
+
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.openremote.model.Constants.MASTER_REALM;
+
+import java.util.Arrays;
+import java.util.logging.Logger;
 
 import org.apache.http.HttpStatus;
 import org.openremote.container.timer.TimerService;
@@ -31,11 +36,6 @@ import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.openremote.model.Constants.MASTER_REALM;
 
 public class RealmResourceImpl extends ManagerWebResource implements RealmResource {
 
@@ -69,11 +69,11 @@ public class RealmResourceImpl extends ManagerWebResource implements RealmResour
             if (isSuperUser()) {
                 realms = identityService.getIdentityProvider().getRealms();
             } else {
-                realms = new Realm[] {
-                    (isAuthenticated() ? getAuthenticatedRealm() : getRequestRealm())
-                };
+                realms = new Realm[] { (isAuthenticated() ? getAuthenticatedRealm() : getRequestRealm()) };
             }
-            return Arrays.stream(realms).map(realm -> new Realm().setName(realm.getName()).setDisplayName(realm.getDisplayName())).toArray(Realm[]::new);
+            return Arrays.stream(realms)
+                    .map(realm -> new Realm().setName(realm.getName()).setDisplayName(realm.getDisplayName()))
+                    .toArray(Realm[]::new);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -136,9 +136,7 @@ public class RealmResourceImpl extends ManagerWebResource implements RealmResour
         throwIfIllegalMasterRealmDeletion(realm);
 
         try {
-            identityService.getIdentityProvider().deleteRealm(
-                realm
-            );
+            identityService.getIdentityProvider().deleteRealm(realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

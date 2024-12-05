@@ -1,10 +1,28 @@
-import axios, {AxiosInstance, AxiosRequestConfig, GenericAxiosResponse, AxiosError} from "axios";
-import {ApiClient, RestResponse} from "./restclient";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import axios, { AxiosInstance, AxiosRequestConfig, GenericAxiosResponse, AxiosError } from "axios";
+import { ApiClient, RestResponse } from "./restclient";
 import Qs from "qs";
 
 const isAxiosError = axios.isAxiosError;
 
-export {RestResponse, GenericAxiosResponse, AxiosError, isAxiosError};
+export { RestResponse, GenericAxiosResponse, AxiosError, isAxiosError };
 
 export class RestApi {
 
@@ -19,7 +37,7 @@ export class RestApi {
         this._axiosInstance = axios.create();
         this._axiosInstance.defaults.headers.common["Content-Type"] = "application/json";
         this._axiosInstance.interceptors.request.use((config) => {
-            config.paramsSerializer = (params) => Qs.stringify(params, {arrayFormat: "repeat"});
+            config.paramsSerializer = (params) => Qs.stringify(params, { arrayFormat: "repeat" });
             return config;
         });
     }

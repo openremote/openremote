@@ -1,9 +1,27 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {until} from "lit/directives/until.js";
-import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {i18next, translate} from "@openremote/or-translate";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { until } from "lit/directives/until.js";
+import { createRef, Ref, ref } from 'lit/directives/ref.js';
+import { i18next, translate } from "@openremote/or-translate";
 import {
     Agent,
     AgentDescriptor,
@@ -19,11 +37,11 @@ import {
     AssetModelUtil,
     ClientRole
 } from "@openremote/model";
-import manager, {subscribe, Util} from "@openremote/core";
+import manager, { subscribe, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {progressCircular} from "@openremote/or-mwc-components/style";
+import { progressCircular } from "@openremote/or-mwc-components/style";
 import "@openremote/or-components/or-loading-wrapper";
-import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
+import { OrLoadingWrapper } from "@openremote/or-components/or-loading-wrapper";
 import {
     getValueHolderInputTemplateProvider,
     InputType,
@@ -36,10 +54,10 @@ import {
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-map";
-import {geoJsonPointInputTemplateProvider} from "@openremote/or-map";
+import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 import "@openremote/or-json-forms";
-import {ErrorObject, OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
-import {agentIdRendererRegistryEntry, loadAgents} from "./agent-link-json-forms-renderer";
+import { ErrorObject, OrJSONForms, StandardRenderers } from "@openremote/or-json-forms";
+import { agentIdRendererRegistryEntry, loadAgents } from "./agent-link-json-forms-renderer";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -84,11 +102,11 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
         content = html`
                 ${content}
                 <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-            e.stopPropagation();
-            if (sendValue) {
-                sendValue();
-            }
-        }}"></or-mwc-input>
+                e.stopPropagation();
+                if (sendValue) {
+                    sendValue();
+                }
+            }}"></or-mwc-input>
             `;
     }
 
@@ -129,7 +147,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
     if (valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
 
         // Apply a custom UI schema to remove the outer VerticalLayout
-        const uiSchema: any = {type: "Control", scope: "#"};
+        const uiSchema: any = { type: "Control", scope: "#" };
         let schema: any;
         const jsonForms: Ref<OrJSONForms> = createRef();
         const loadingWrapper: Ref<OrLoadingWrapper> = createRef();
@@ -137,7 +155,7 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
         let initialised = false;
         let agentLink: AgentLink | undefined;
 
-        const onAgentLinkChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
+        const onAgentLinkChanged = (dataAndErrors: { errors: ErrorObject[] | undefined, data: any }) => {
             if (!initialised) {
                 return;
             }
@@ -358,31 +376,31 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         `];
     }
 
-    @property({type: Object, reflect: false})
+    @property({ type: Object, reflect: false })
     public attribute?: Attribute<any>;
 
-    @property({type: String})
+    @property({ type: String })
     public assetId?: string;
 
-    @property({type: Object})
+    @property({ type: Object })
     public attributeDescriptor?: AttributeDescriptor;
 
-    @property({type: Object})
+    @property({ type: Object })
     public valueDescriptor?: ValueDescriptor;
 
-    @property({type: String})
+    @property({ type: String })
     public assetType?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public label?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disabled?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly?: boolean;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public required?: boolean;
 
     @property()
@@ -391,34 +409,34 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property()
     public inputType?: InputType;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public hasHelperText?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disableButton?: boolean;
 
-    @property({type: Boolean, attribute: true})
+    @property({ type: Boolean, attribute: true })
     public disableSubscribe: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disableWrite: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public compact: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public comfortable: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public resizeVertical: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public fullWidth?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public rounded?: boolean;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public outlined?: boolean;
 
     @property()
@@ -463,7 +481,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = {..._changedProperties.get("attribute") as Attribute<any>};
+            const oldAttr = { ..._changedProperties.get("attribute") as Attribute<any> };
             const attr = this.attribute;
 
             if (oldAttr && attr) {
@@ -525,7 +543,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected _getAttributeRef(): AttributeRef | undefined {
         if (this.assetId && this.attribute) {
-            return {name: this.attribute.name, id: this.assetId};
+            return { name: this.attribute.name, id: this.assetId };
         }
     }
 
@@ -620,7 +638,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     public isReadonly(): boolean {
-        if(!manager.hasRole(ClientRole.WRITE_ATTRIBUTES)) {
+        if (!manager.hasRole(ClientRole.WRITE_ATTRIBUTES)) {
             this.readonly = !manager.hasRole(ClientRole.WRITE_ATTRIBUTES);
             return this.readonly;
         }
@@ -633,7 +651,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (!this.assetType || !this._templateProvider) {
             return html``;
         }
-        
+
         // Check if attribute hasn't been loaded yet or pending write
         const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
         let content: TemplateResult;

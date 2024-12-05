@@ -1,4 +1,28 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.snmp;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.snmp.SnmpMessage;
@@ -10,12 +34,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.syslog.SyslogCategory;
 import org.snmp4j.PDU;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a SNMP client protocol for receiving SNMP traps.
@@ -39,10 +57,8 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
     @Override
     public String getProtocolInstanceUri() {
-        return String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%s",
-                agent.getBindHost().orElse(""),
-                agent.getBindPort().orElse(162),
-                agent.getSNMPVersion().orElse(SNMPAgent.SNMPVersion.V2c).getValue());
+        return String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%s", agent.getBindHost().orElse(""),
+                agent.getBindPort().orElse(162), agent.getSNMPVersion().orElse(SNMPAgent.SNMPVersion.V2c).getValue());
     }
 
     @Override
@@ -56,35 +72,34 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
         Integer snmpBindPort = agent.getBindPort().orElse(162);
         SNMPAgent.SNMPVersion snmpVersion = agent.getSNMPVersion().orElse(SNMPAgent.SNMPVersion.V2c);
-        String snmpUri = String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%d", snmpBindHost, snmpBindPort, snmpVersion.getVersion());
+        String snmpUri = String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%d", snmpBindHost, snmpBindPort,
+                snmpVersion.getVersion());
 
         messageBrokerContext.addRoutes(new RouteBuilder() {
             @Override
             public void configure() {
-                from(snmpUri)
-                        .routeId(getProtocolName() + getAgent().getId())
-                        .process(exchange -> {
-                            SnmpMessage msg = exchange.getIn(SnmpMessage.class);
-                            LOG.fine(String.format("Message received: %s", msg));
+                from(snmpUri).routeId(getProtocolName() + getAgent().getId()).process(exchange -> {
+                    SnmpMessage msg = exchange.getIn(SnmpMessage.class);
+                    LOG.fine(String.format("Message received: %s", msg));
 
-                            PDU pdu = msg.getSnmpMessage();
+                    PDU pdu = msg.getSnmpMessage();
 
-                            AttributeRef wildCardAttributeRef;
-                            if ((wildCardAttributeRef = oidMap.get("*")) != null) {
-                                Map<String, Object> wildCardValue = new HashMap<>();
-                                pdu.getVariableBindings().forEach(variableBinding -> {
-                                    wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
-                                });
-                                updateLinkedAttribute(wildCardAttributeRef, wildCardValue);
-                            }
-
-                            pdu.getVariableBindings().forEach(variableBinding -> {
-                                AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
-                                if (attributeRef != null) {
-                                    updateLinkedAttribute(attributeRef, variableBinding.toValueString());
-                                }
-                            });
+                    AttributeRef wildCardAttributeRef;
+                    if ((wildCardAttributeRef = oidMap.get("*")) != null) {
+                        Map<String, Object> wildCardValue = new HashMap<>();
+                        pdu.getVariableBindings().forEach(variableBinding -> {
+                            wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
                         });
+                        updateLinkedAttribute(wildCardAttributeRef, wildCardValue);
+                    }
+
+                    pdu.getVariableBindings().forEach(variableBinding -> {
+                        AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
+                        if (attributeRef != null) {
+                            updateLinkedAttribute(attributeRef, variableBinding.toValueString());
+                        }
+                    });
+                });
             }
         });
 
@@ -97,7 +112,8 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, SNMPAgentLink agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, SNMPAgentLink agentLink)
+            throws RuntimeException {
         String oid = agentLink.getOID().orElseThrow(() -> {
             String msg = "No OID provided for protocol: " + this;
             LOG.info(msg);

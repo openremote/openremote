@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -100,7 +99,8 @@ public class Scene {
      * @return true if is a valid or throws an IllegalArgument exception
      */
     public static boolean isValidSceneNumber(final int sceneNumber) {
-        if (sceneNumber > 0x0000 && sceneNumber <= 0xFFFF) return true;
+        if (sceneNumber > 0x0000 && sceneNumber <= 0xFFFF)
+            return true;
         throw new IllegalArgumentException("Scene number must range from 0x0001 to 0xFFFF!");
     }
 
@@ -108,22 +108,15 @@ public class Scene {
      * Formats the scene number in to a 4 character hexadecimal String
      *
      * @param number Scene number
-     * @param add0x  Sets "0x" as prefix if set to true or false otherwise
+     * @param add0x Sets "0x" as prefix if set to true or false otherwise
      */
     public static String formatSceneNumber(final int number, final boolean add0x) {
-        return add0x ?
-            "0x" + String.format(Locale.US, "%04X", number) :
-            String.format(Locale.US, "%04X", number);
+        return add0x ? "0x" + String.format(Locale.US, "%04X", number) : String.format(Locale.US, "%04X", number);
     }
 
     @Override
     public String toString() {
-        return "Scene{" +
-            "meshUuid='" + meshUuid + '\'' +
-            ", name='" + name + '\'' +
-            ", addresses=" + addresses +
-            ", number=" + number +
-            '}';
+        return "Scene{" + "meshUuid='" + meshUuid + '\'' + ", name='" + name + '\'' + ", addresses=" + addresses
+                + ", number=" + number + '}';
     }
 }
-

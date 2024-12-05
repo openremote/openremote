@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
+
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
@@ -30,15 +38,6 @@ import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.impl.ColourRGB;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
 public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> implements ProtocolAssetDiscovery {
 
@@ -106,8 +105,8 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         Class<?> clazz = attribute.getTypeClass();
-        Consumer<Value> sensorValueConsumer = value ->
-            updateLinkedAttribute(attributeRef, toAttributeValue(value, clazz));
+        Consumer<Value> sensorValueConsumer = value -> updateLinkedAttribute(attributeRef,
+                toAttributeValue(value, clazz));
 
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
         network.addSensorValueConsumer(nodeId, endpoint, linkName, sensorValueConsumer);
@@ -124,7 +123,8 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(ZWaveAgentLink agentLink, AttributeEvent event,
+            Object processedValue) {
         if (network == null) {
             return;
         }
@@ -133,7 +133,6 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
         String linkName = getOrThrowAgentLinkProperty(agentLink.getDeviceValue(), "device property");
         network.writeChannel(nodeId, endpoint, linkName, processedValue);
     }
-
 
     // Implements ProtocolAssetDiscovery ------------------------------------------------
 
@@ -148,16 +147,16 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
             try {
                 AssetTreeNode[] assetTreeNodes = network.discoverDevices(agent);
                 assetConsumer.accept(assetTreeNodes);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Exception thrown during asset discovery: " + this, e);
             }
         }, null);
     }
 
-
     // Private Instance Methods -------------------------------------------------------------------
 
-    private Object toAttributeValue(org.openremote.protocol.zwave.model.commandclasses.channel.value.Value value, Class<?> clazz) {
+    private Object toAttributeValue(org.openremote.protocol.zwave.model.commandclasses.channel.value.Value value,
+            Class<?> clazz) {
         if (value == null || clazz == null) {
             return null;
         }
@@ -170,7 +169,8 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
             retValue = value.getNumber();
         } else if (clazz == Integer.class) {
             retValue = value.getInteger();
-        } else if (clazz == ColourRGB.class && value instanceof org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue zwArray) {
+        } else if (clazz == ColourRGB.class
+                && value instanceof org.openremote.protocol.zwave.model.commandclasses.channel.value.ArrayValue zwArray) {
             if (zwArray.length() >= 3) {
                 List<Object> values = new ArrayList<>(zwArray.length());
                 for (int i = 0; i < zwArray.length(); i++) {
@@ -180,9 +180,8 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> 
                     return null;
                 }
                 int offset = (zwArray.length() == 3 ? 0 : 1); // RGB : ARGB
-                retValue = new ColourRGB(
-                    (Integer) values.get(offset), (Integer) values.get(1 + offset), (Integer) values.get(2 + offset)
-                );
+                retValue = new ColourRGB((Integer) values.get(offset), (Integer) values.get(1 + offset),
+                        (Integer) values.get(2 + offset));
             }
         } else {
             LOG.warning("Couldn't update Z-Wave sensor value because of unexpected attribute type: " + clazz);

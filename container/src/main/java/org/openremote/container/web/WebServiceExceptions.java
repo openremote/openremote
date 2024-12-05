@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.ExceptionHandler;
 import io.undertow.util.HttpString;
-
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.ws.rs.ForbiddenException;
@@ -31,12 +36,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 
 /**
  * Unified exception handling for all web services (Resteasy, Undertow, Servlets, WebSockets).
@@ -129,10 +128,8 @@ public class WebServiceExceptions {
         }
 
         @Override
-        public boolean handleThrowable(HttpServerExchange exchange,
-                                       ServletRequest request,
-                                       ServletResponse response,
-                                       Throwable throwable) {
+        public boolean handleThrowable(HttpServerExchange exchange, ServletRequest request, ServletResponse response,
+                Throwable throwable) {
 
             // We handle the exception (return true), so we must send correct status to browser
             if (!exchange.isResponseStarted()) {
@@ -145,7 +142,8 @@ public class WebServiceExceptions {
         }
     }
 
-    public static Response handleResteasyException(boolean devMode, String origin, Request request, UriInfo uriInfo, Throwable throwable) {
+    public static Response handleResteasyException(boolean devMode, String origin, Request request, UriInfo uriInfo,
+            Throwable throwable) {
 
         logException(throwable, origin, request.getMethod() + " " + uriInfo.getRequestUri());
 
@@ -165,9 +163,11 @@ public class WebServiceExceptions {
         }
         try {
             if (devMode) {
-                return Response.status(statusCode).entity(renderDevModeError(statusCode, throwable)).type(TEXT_PLAIN_TYPE).build();
+                return Response.status(statusCode).entity(renderDevModeError(statusCode, throwable))
+                        .type(TEXT_PLAIN_TYPE).build();
             } else {
-                return Response.status(statusCode).entity(renderProductionError(statusCode, throwable)).type(TEXT_PLAIN_TYPE).build();
+                return Response.status(statusCode).entity(renderProductionError(statusCode, throwable))
+                        .type(TEXT_PLAIN_TYPE).build();
             }
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Couldn't render server error trace response", ex);
@@ -175,14 +175,13 @@ public class WebServiceExceptions {
         }
     }
 
-    public static void handleUndertowException(boolean devMode, String origin, boolean logOnly, HttpServerExchange exchange, Throwable throwable) {
+    public static void handleUndertowException(boolean devMode, String origin, boolean logOnly,
+            HttpServerExchange exchange, Throwable throwable) {
 
         logException(throwable, origin, exchange.toString());
 
         if (!logOnly && exchange.isResponseChannelAvailable()) {
-            exchange.getResponseHeaders().put(
-                HttpString.tryFromString(HttpHeaders.CONTENT_TYPE), "text/plain"
-            );
+            exchange.getResponseHeaders().put(HttpString.tryFromString(HttpHeaders.CONTENT_TYPE), "text/plain");
             try {
                 if (devMode) {
                     exchange.getResponseSender().send(renderDevModeError(exchange.getStatusCode(), throwable));
@@ -199,20 +198,14 @@ public class WebServiceExceptions {
         StringWriter sw = new StringWriter();
         t.printStackTrace(new PrintWriter(sw));
         Response.Status status = Response.Status.fromStatusCode(statusCode);
-        return "Request failed with HTTP error status: "
-            + statusCode
-            + (status != null ? " " + status.getReasonPhrase() : "")
-            + "\n\n"
-            + sw.toString();
+        return "Request failed with HTTP error status: " + statusCode
+                + (status != null ? " " + status.getReasonPhrase() : "") + "\n\n" + sw.toString();
     }
 
     public static String renderProductionError(int statusCode, Throwable t) {
         Response.Status status = Response.Status.fromStatusCode(statusCode);
-        return "Request failed with HTTP error status: "
-            + statusCode
-            + (status != null ? " " + status.getReasonPhrase() : "")
-            + "\n\n"
-            + "Please contact the help desk.";
+        return "Request failed with HTTP error status: " + statusCode
+                + (status != null ? " " + status.getReasonPhrase() : "") + "\n\n" + "Please contact the help desk.";
     }
 
     public static void logException(Throwable throwable, String origin, String info) {
@@ -222,16 +215,19 @@ public class WebServiceExceptions {
         if ("java.io.IOException: Connection reset by peer".equals(getRootCause(throwable).toString()))
             return;
 
-        if (throwable instanceof WebApplicationException && ((WebApplicationException) throwable).getResponse().getStatus() == 404) {
-                // Don't stack trace 404s just want request uri
-                LOG.log(Level.FINE, "Web service exception (404) in '" + origin + "' for '" + info + "'");
-                return;
+        if (throwable instanceof WebApplicationException
+                && ((WebApplicationException) throwable).getResponse().getStatus() == 404) {
+            // Don't stack trace 404s just want request uri
+            LOG.log(Level.FINE, "Web service exception (404) in '" + origin + "' for '" + info + "'");
+            return;
         }
 
         if (LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'" + " type = " + throwable.getClass().getSimpleName() + ", message=" + throwable.getMessage(), throwable);
+            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'" + " type = "
+                    + throwable.getClass().getSimpleName() + ", message=" + throwable.getMessage(), throwable);
         } else {
-            LOG.log(Level.INFO, "Web service exception in '" + origin + "' for '" + info + "', root cause: " + getRootCause(throwable));
+            LOG.log(Level.INFO, "Web service exception in '" + origin + "' for '" + info + "', root cause: "
+                    + getRootCause(throwable));
         }
     }
 
@@ -240,8 +236,7 @@ public class WebServiceExceptions {
         do {
             last = throwable;
             throwable = getCause(throwable);
-        }
-        while (throwable != null);
+        } while (throwable != null);
         return last;
     }
 

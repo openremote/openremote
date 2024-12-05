@@ -1,18 +1,36 @@
-import {css, html, TemplateResult} from "lit";
-import {customElement} from "lit/decorators.js";
-import {AssetWidgetSettings} from "../util/or-asset-widget";
-import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {MapWidgetConfig} from "../widgets/map-widget";
-import {AttributeMarkerColours, LngLatLike, MapMarkerColours} from "@openremote/or-map";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, TemplateResult } from "lit";
+import { customElement } from "lit/decorators.js";
+import { AssetWidgetSettings } from "../util/or-asset-widget";
+import { i18next } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { MapWidgetConfig } from "../widgets/map-widget";
+import { AttributeMarkerColours, LngLatLike, MapMarkerColours } from "@openremote/or-map";
 import "../panels/assettypes-panel";
 import "../panels/thresholds-panel";
-import {LngLat} from "maplibre-gl"; // TODO: Replace this import
-import {when} from "lit/directives/when.js";
-import {AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
+import { LngLat } from "maplibre-gl"; // TODO: Replace this import
+import { when } from "lit/directives/when.js";
+import { AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent } from "../panels/assettypes-panel";
 import manager from "@openremote/core";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {BoolColorsChangeEvent, ThresholdChangeEvent} from "../panels/thresholds-panel";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { BoolColorsChangeEvent, ThresholdChangeEvent } from "../panels/thresholds-panel";
 
 const styling = css`
   .switchMwcInputContainer {
@@ -140,7 +158,7 @@ export class MapSettings extends AssetWidgetSettings {
             this.widgetConfig.assetIds = [];
             this.widgetConfig.showLabels = false;
             this.widgetConfig.showUnits = false;
-            this.widgetConfig.boolColors = {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'};
+            this.widgetConfig.boolColors = { type: 'boolean', 'false': '#ef5350', 'true': '#4caf50' };
             this.widgetConfig.textColors = [['example', "#4caf50"], ['example2', "#ff9800"]];
             this.widgetConfig.thresholds = [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]];
             this.widgetConfig.assetType = ev.detail;

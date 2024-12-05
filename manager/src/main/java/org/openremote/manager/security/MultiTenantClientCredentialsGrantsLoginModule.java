@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.net.URI;
+import java.util.*;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.*;
+import javax.security.auth.login.LoginException;
+
 import com.google.common.collect.Sets;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -40,15 +50,6 @@ import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 import org.keycloak.util.JsonSerialization;
 
-import javax.security.auth.Subject;
-import javax.security.auth.callback.*;
-import javax.security.auth.login.LoginException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.net.URI;
-import java.util.*;
-
 /**
  * A version of the Keycloak {@link org.keycloak.adapters.jaas.AbstractKeycloakLoginModule} that supports client
  * credentials grant and lookup of {@link org.keycloak.adapters.KeycloakDeployment} by using
@@ -68,12 +69,15 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
     protected String refreshToken;
 
     @Override
-    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
+    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState,
+            Map<String, ?> options) {
         super.initialize(subject, callbackHandler, sharedState, options);
-        this.scope = (String)options.get(SCOPE_OPTION);
+        this.scope = (String) options.get(SCOPE_OPTION);
 
         // This is used just for logout
-        Iterator<MultiTenantClientCredentialsGrantsLoginModule.RefreshTokenHolder> iterator = subject.getPrivateCredentials(MultiTenantClientCredentialsGrantsLoginModule.RefreshTokenHolder.class).iterator();
+        Iterator<MultiTenantClientCredentialsGrantsLoginModule.RefreshTokenHolder> iterator = subject
+                .getPrivateCredentials(MultiTenantClientCredentialsGrantsLoginModule.RefreshTokenHolder.class)
+                .iterator();
         if (iterator.hasNext()) {
             refreshToken = iterator.next().refreshToken;
         }
@@ -118,7 +122,7 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
             }
         } catch (UnsupportedCallbackException uce) {
             getLogger().warn("Error: " + uce.getCallback().toString()
-                + " not available to gather authentication information from the user");
+                    + " not available to gather authentication information from the user");
             return false;
         } catch (Exception e) {
             LoginException le = new LoginException(e.toString());
@@ -163,7 +167,7 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
             formparams.add(new BasicNameValuePair(OAuth2Constants.SCOPE, scope));
         }
 
-        //ClientCredentialsProviderUtils.setClientCredentials(deployment, post, formparams);
+        // ClientCredentialsProviderUtils.setClientCredentials(deployment, post, formparams);
 
         UrlEncodedFormEntity form = new UrlEncodedFormEntity(formparams, "UTF-8");
         post.setEntity(form);
@@ -178,7 +182,7 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
                 InputStream is = entity.getContent();
                 OAuth2ErrorRepresentation errorRep = JsonSerialization.readValue(is, OAuth2ErrorRepresentation.class);
                 errorBuilder.append(", OAuth2 error. Error: " + errorRep.getError())
-                    .append(", Error description: " + errorRep.getErrorDescription());
+                        .append(", Error description: " + errorRep.getErrorDescription());
             }
             String error = errorBuilder.toString();
             log.warn(error);
@@ -195,7 +199,8 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
         // refreshToken will be saved to privateCreds of Subject for now
         refreshToken = tokenResponse.getRefreshToken();
 
-        AdapterTokenVerifier.VerifiedTokens tokens = AdapterTokenVerifier.verifyTokens(tokenResponse.getToken(), tokenResponse.getIdToken(), deployment);
+        AdapterTokenVerifier.VerifiedTokens tokens = AdapterTokenVerifier.verifyTokens(tokenResponse.getToken(),
+                tokenResponse.getIdToken(), deployment);
         return postTokenVerification(tokenResponse.getToken(), tokens.getAccessToken());
     }
 
@@ -211,9 +216,11 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
             throw new IllegalStateException("VerifyCaller not supported yet in login module");
         }
 
-        RefreshableKeycloakSecurityContext skSession = new RefreshableKeycloakSecurityContext(deployment, null, tokenString, token, null, null, null);
+        RefreshableKeycloakSecurityContext skSession = new RefreshableKeycloakSecurityContext(deployment, null,
+                tokenString, token, null, null, null);
         String principalName = AdapterUtils.getPrincipalName(deployment, token);
-        final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = new KeycloakPrincipal<RefreshableKeycloakSecurityContext>(principalName, skSession);
+        final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = new KeycloakPrincipal<RefreshableKeycloakSecurityContext>(
+                principalName, skSession);
         Set<String> roles;
         roles = AdapterUtils.getRolesFromSecurityContext(skSession);
 
@@ -223,7 +230,6 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
         }
         return new Auth(principal, roles, tokenString);
     }
-
 
     @Override
     public boolean logout() throws LoginException {
@@ -244,20 +250,24 @@ public class MultiTenantClientCredentialsGrantsLoginModule extends AbstractKeycl
                 int status = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
                 if (status != 204) {
-                    StringBuilder errorBuilder = new StringBuilder("Logout of refreshToken failed. Invalid status: " + status);
+                    StringBuilder errorBuilder = new StringBuilder(
+                            "Logout of refreshToken failed. Invalid status: " + status);
                     if (entity != null) {
                         InputStream is = entity.getContent();
                         if (status == 400) {
-                            OAuth2ErrorRepresentation errorRep = JsonSerialization.readValue(is, OAuth2ErrorRepresentation.class);
+                            OAuth2ErrorRepresentation errorRep = JsonSerialization.readValue(is,
+                                    OAuth2ErrorRepresentation.class);
                             errorBuilder.append(", OAuth2 error. Error: " + errorRep.getError())
-                                .append(", Error description: " + errorRep.getErrorDescription());
+                                    .append(", Error description: " + errorRep.getErrorDescription());
 
                         } else {
-                            if (is != null) is.close();
+                            if (is != null)
+                                is.close();
                         }
                     }
 
-                    // Should do something better than warn if logout failed? Perhaps update of refresh tokens on existing subject might be supported too...
+                    // Should do something better than warn if logout failed? Perhaps update of refresh tokens on
+                    // existing subject might be supported too...
                     log.warn(errorBuilder.toString());
                 }
             } catch (IOException ioe) {

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     css,
     html,
@@ -6,20 +24,20 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 import * as Model from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
+import manager, { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {MDCDataTable} from "@material/data-table";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { MDCDataTable } from "@material/data-table";
 import moment from "moment";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -165,28 +183,28 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         ];
     }
 
-    @property({type: String})
+    @property({ type: String })
     public interval?: Model.DatapointInterval;
 
-    @property({type: Number})
+    @property({ type: Number })
     public timestamp?: Date;
 
-    @property({type: Number})
+    @property({ type: Number })
     public limit?: number;
 
-    @property({type: Array})
+    @property({ type: Array })
     public categories?: Model.SyslogCategory[];
 
-    @property({type: String})
+    @property({ type: String })
     public filter?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public level?: Model.SyslogLevel;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public live: boolean = false;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: ViewerConfig;
 
     @property()
@@ -287,13 +305,13 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div id="log-controls">
                         ${hideCategories ? `` : getContentWithMenuTemplate(
-                            html`<or-mwc-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-mwc-input>`,
-                            this._getCategoryMenuItems(),
-                            this.categories,
-                            (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
-                            () => this._onCategoriesClosed(),
-                            true
-                        )}
+            html`<or-mwc-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-mwc-input>`,
+            this._getCategoryMenuItems(),
+            this.categories,
+            (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
+            () => this._onCategoriesClosed(),
+            true
+        )}
                         <or-mwc-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-mwc-input>
                         <or-mwc-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-mwc-input>
                         <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${"" + this.getLimit()}" .options="${this._getLimitOptions()}"></or-mwc-input>
@@ -316,7 +334,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 </div>
                 
                 ${disabled ? html`<div id="msg">${i18next.t("loading")}</div>` :
-                    html`<div id="table-container">
+                html`<div id="table-container">
                         ${this._data ? this._getTable() : ``}
                     </div>`}
             </div>
@@ -335,7 +353,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
         return categories.map((cat) => {
             return {
-                text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
+                text: i18next.t("logCategory." + cat, { defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " ")) }),
                 value: cat
             } as ListItem;
         });
@@ -427,7 +445,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                     </thead>
                     <tbody class="mdc-data-table__content">
                         ${this._data!.map((ev) => {
-                            return html`
+            return html`
                                 <tr class="mdc-data-table__row">
                                     <td class="mdc-data-table__cell">${moment(ev.timestamp).format(OrLogViewer.DEFAULT_TIMESTAMP_FORMAT)}</td>
                                     <td class="mdc-data-table__cell">${i18next.t(ev.level!)}</td>
@@ -435,8 +453,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                                     <td class="mdc-data-table__cell">${i18next.t(ev.subCategory!)}</td>                                    
                                     <td class="mdc-data-table__cell">${ev.message}</td>                                    
                                 </tr>
-                            `;            
-                        })}
+                            `;
+        })}
                     </tbody>
                 </table>
             </div>

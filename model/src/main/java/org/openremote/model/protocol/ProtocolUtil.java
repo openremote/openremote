@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.protocol;
+
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
+import static org.openremote.model.util.ValueUtil.applyValueFilters;
+
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
@@ -32,25 +45,11 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
-import java.time.Instant;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
-import static org.openremote.model.util.ValueUtil.applyValueFilters;
-
 @TsIgnore
 public final class ProtocolUtil {
 
     protected static Logger LOG = SyslogCategory.getLogger(PROTOCOL, ProtocolUtil.class);
-    
+
     protected ProtocolUtil() {
     }
 
@@ -60,7 +59,8 @@ public final class ProtocolUtil {
      * searched on every single write request (for performance reasons), instead this should be recorded when the
      * attribute is first linked.
      */
-    public static Pair<Boolean, Object> doOutboundValueProcessing(AttributeRef attributeRef, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder, Instant instant) {
+    public static Pair<Boolean, Object> doOutboundValueProcessing(AttributeRef attributeRef, AgentLink<?> agentLink,
+            Object value, boolean containsDynamicPlaceholder, Instant instant) {
 
         String writeValue = agentLink.getWriteValue().orElse(null);
 
@@ -96,31 +96,37 @@ public final class ProtocolUtil {
     }
 
     public static boolean hasDynamicPlaceholders(AgentLink<?> agentLink) {
-        return agentLink.getWriteValue().map(str -> Constants.containsDynamicValuePlaceholder(str) || Constants.containsDynamicTimePlaceholder(str)).orElse(false);
+        return agentLink.getWriteValue().map(
+                str -> Constants.containsDynamicValuePlaceholder(str) || Constants.containsDynamicTimePlaceholder(str))
+                .orElse(false);
     }
 
     /**
      * Will perform standard value processing for inbound values (Protocol -> Linked Attribute); returning the processed
      * value and a flag indicating whether the inbound value should be ignored (i.e. drop the inbound message).
      */
-    public static Pair<Boolean, Object> doInboundValueProcessing(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Object value) {
+    public static Pair<Boolean, Object> doInboundValueProcessing(String assetId, Attribute<?> attribute,
+            AgentLink<?> agentLink, Object value) {
 
         Pair<Boolean, Object> ignoreAndConvertedValue;
         final AtomicReference<Object> valRef = new AtomicReference<>(value);
 
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
-            LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute="
+                    + attribute.getName());
             Object o = applyValueFilters(value, valueFilters);
             if (o == null) {
-                LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+                LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute="
+                        + attribute.getName());
             }
             valRef.set(o);
         });
 
         // value conversion
         ignoreAndConvertedValue = agentLink.getValueConverter().map(converter -> {
-            LOG.finest("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute value converter to attribute: assetId=" + assetId + ", attribute="
+                    + attribute.getName());
             return applyValueConverter(valRef.get(), converter);
         }).orElse(new Pair<>(false, valRef.get()));
 
@@ -144,7 +150,8 @@ public final class ProtocolUtil {
 
             if (valRef.get() == null) {
                 LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
-                LOG.warning("Cannot send linked attribute update: assetId=" + assetId + ", attribute=" + attribute.getName());
+                LOG.warning("Cannot send linked attribute update: assetId=" + assetId + ", attribute="
+                        + attribute.getName());
                 return new Pair<>(true, null);
             }
         }
@@ -159,40 +166,39 @@ public final class ProtocolUtil {
             return new Pair<>(false, value);
         }
 
-        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL);
+        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT))
+                .orElse(NULL_LITERAL);
 
-        return Optional.ofNullable(converter.get(converterKey))
-            .map(converterValue -> {
-                if (converterValue instanceof String convertValueStr) {
-                    if ("@IGNORE".equalsIgnoreCase(convertValueStr)) {
-                        return new Pair<>(true, null);
-                    }
-
-                    if ("@NULL".equalsIgnoreCase(convertValueStr)) {
-                        return new Pair<>(false, null);
-                    }
+        return Optional.ofNullable(converter.get(converterKey)).map(converterValue -> {
+            if (converterValue instanceof String convertValueStr) {
+                if ("@IGNORE".equalsIgnoreCase(convertValueStr)) {
+                    return new Pair<>(true, null);
                 }
 
-                return new Pair<>(false, converterValue);
-            })
-            .orElse((Pair<Boolean, Object>) Optional.ofNullable(converter.get("*"))
-                .map(converterValue -> {
-                    if (converterValue instanceof String converterValueStr) {
-                        if (AttributeLink.ConverterType.NEGATE.getValue().equals(converterValueStr)) {
-                            if (ValueUtil.isNumber(value.getClass())) {
-                                return new Pair<>(false, (ValueUtil.getValueCoerced(value, Double.class).orElse(0D) * -1));
-                            }
-                            if (ValueUtil.isBoolean(value.getClass())) {
-                                return new Pair<>(false, !(ValueUtil.getValueCoerced(value, Boolean.class).orElse(false)));
-                            }
-                        }
+                if ("@NULL".equalsIgnoreCase(convertValueStr)) {
+                    return new Pair<>(false, null);
+                }
+            }
+
+            return new Pair<>(false, converterValue);
+        }).orElse((Pair<Boolean, Object>) Optional.ofNullable(converter.get("*")).map(converterValue -> {
+            if (converterValue instanceof String converterValueStr) {
+                if (AttributeLink.ConverterType.NEGATE.getValue().equals(converterValueStr)) {
+                    if (ValueUtil.isNumber(value.getClass())) {
+                        return new Pair<>(false, (ValueUtil.getValueCoerced(value, Double.class).orElse(0D) * -1));
                     }
-                    return new Pair<>(false, converterValue);
-                })
-                .orElse(new Pair<>(true, value)));
+                    if (ValueUtil.isBoolean(value.getClass())) {
+                        return new Pair<>(false, !(ValueUtil.getValueCoerced(value, Boolean.class).orElse(false)));
+                    }
+                }
+            }
+            return new Pair<>(false, converterValue);
+        }).orElse(new Pair<>(true, value)));
     }
 
-    public static Consumer<String> createGenericAttributeMessageConsumer(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Supplier<Long> currentMillisSupplier, BiConsumer<AttributeRef, Object> stateConsumer) {
+    public static Consumer<String> createGenericAttributeMessageConsumer(String assetId, Attribute<?> attribute,
+            AgentLink<?> agentLink, Supplier<Long> currentMillisSupplier,
+            BiConsumer<AttributeRef, Object> stateConsumer) {
 
         ValueFilter[] matchFilters = agentLink.getMessageMatchFilters().orElse(null);
         ValuePredicate matchPredicate = agentLink.getMessageMatchPredicate().orElse(null);
@@ -206,7 +212,9 @@ public final class ProtocolUtil {
                 Object messageFiltered = applyValueFilters(message, matchFilters);
                 if (messageFiltered != null) {
                     if (matchPredicate.asPredicate(currentMillisSupplier).test(messageFiltered)) {
-                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+                        LOG.finest(
+                                "Inbound message meets attribute matching meta so writing state to state consumer for attribute: assetId="
+                                        + assetId + ", attribute=" + attribute.getName());
                         stateConsumer.accept(new AttributeRef(assetId, attribute.getName()), message);
                     }
                 }

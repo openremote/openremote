@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
 
 public class HeartbeatSubscription extends Heartbeat {
-
 
     private final int src;
     private int minHops;
@@ -31,14 +29,15 @@ public class HeartbeatSubscription extends Heartbeat {
     /**
      * Heartbeat subscription.
      *
-     * @param src       Source address for Heartbeat messages.
-     * @param dst       Destination address for Heartbeat messages.
+     * @param src Source address for Heartbeat messages.
+     * @param dst Destination address for Heartbeat messages.
      * @param periodLog Remaining period for processing Heartbeat messages.
-     * @param countLog  Number of Heartbeat messages received.
-     * @param minHops   Minimum hops when receiving Heartbeat messages.
-     * @param maxHops   Maximum hops when receiving Heartbeat messages.
+     * @param countLog Number of Heartbeat messages received.
+     * @param minHops Minimum hops when receiving Heartbeat messages.
+     * @param maxHops Maximum hops when receiving Heartbeat messages.
      */
-    public HeartbeatSubscription(final int src, final int dst, final byte periodLog, final byte countLog, final int minHops, final int maxHops) {
+    public HeartbeatSubscription(final int src, final int dst, final byte periodLog, final byte countLog,
+            final int minHops, final int maxHops) {
         super(dst, periodLog, countLog);
         this.src = src;
         this.minHops = minHops;
@@ -47,12 +46,9 @@ public class HeartbeatSubscription extends Heartbeat {
 
     @Override
     public String toString() {
-        return "Source address: " + Integer.toHexString(src) +
-            "\nDestination address: " + Integer.toHexString(dst) +
-            "\nPeriod Log: " + Integer.toHexString(periodLog) +
-            "\nCount Log: " + Integer.toHexString(countLog) +
-            "\nMin Hops: " + minHops +
-            "\n Max Hops: " + maxHops;
+        return "Source address: " + Integer.toHexString(src) + "\nDestination address: " + Integer.toHexString(dst)
+                + "\nPeriod Log: " + Integer.toHexString(periodLog) + "\nCount Log: " + Integer.toHexString(countLog)
+                + "\nMin Hops: " + minHops + "\n Max Hops: " + maxHops;
     }
 
     /**
@@ -91,7 +87,7 @@ public class HeartbeatSubscription extends Heartbeat {
             final int upperBound = Math.min(0xFFFE, (int) (Math.pow(2, countLog)) - 1);
             return lowerBound + " ... " + upperBound;
         } else {
-            return "More than 65534"; //0xFFFE
+            return "More than 65534"; // 0xFFFE
         }
     }
 
@@ -106,7 +102,8 @@ public class HeartbeatSubscription extends Heartbeat {
             return periodToTime(lowerBound) + " ... " + periodToTime(upperBound);
         } else if (periodLog == 0x11)
             return "65535";
-        else return "Invalid";
+        else
+            return "Invalid";
     }
 
     public Short getPeriodLog2Period() {
@@ -116,7 +113,7 @@ public class HeartbeatSubscription extends Heartbeat {
             return (short) (Math.pow(2, periodLog - 1));
         } else if (periodLog == 0x11)
             return (short) 0xFFFF;
-        else throw new IllegalArgumentException("Period Log out of range");
+        else
+            throw new IllegalArgumentException("Period Log out of range");
     }
 }
-

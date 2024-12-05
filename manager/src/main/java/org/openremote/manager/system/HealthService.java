@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.system;
 
-import io.prometheus.client.exporter.HTTPServer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
+
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.MapAccess;
 import org.openremote.manager.web.ManagerWebService;
@@ -28,32 +30,31 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ServiceLoader;
+import io.prometheus.client.exporter.HTTPServer;
 
 /**
  * This service is here to initialise the discovered {@link HealthStatusProvider}s and ({@link StatusResource}
  */
 public class HealthService implements ContainerService {
 
-//    /**
-//     * Customised {@link MicrometerRoutePolicy} to add SEDA queue metrics
-//     */
-//    protected static class SedaMicrometerRoutePolicy extends MicrometerRoutePolicy {
-//        @Override
-//        public void onInit(Route route) {
-//            if (route.getEndpoint() instanceof SedaEndpoint sedaEndpoint) {
-//                getMeterRegistry().gauge("or.camel.route.queue.size", getNamingStrategy().getTags(route), sedaEndpoint, SedaEndpoint::getCurrentQueueSize);
-//            }
-//            super.onInit(route);
-//        }
-//    }
+    // /**
+    // * Customised {@link MicrometerRoutePolicy} to add SEDA queue metrics
+    // */
+    // protected static class SedaMicrometerRoutePolicy extends MicrometerRoutePolicy {
+    // @Override
+    // public void onInit(Route route) {
+    // if (route.getEndpoint() instanceof SedaEndpoint sedaEndpoint) {
+    // getMeterRegistry().gauge("or.camel.route.queue.size", getNamingStrategy().getTags(route), sedaEndpoint,
+    // SedaEndpoint::getCurrentQueueSize);
+    // }
+    // super.onInit(route);
+    // }
+    // }
 
     public static final System.Logger LOG = System.getLogger(HealthService.class.getName());
     public static final String OR_METRICS_PORT = "OR_METRICS_PORT";
     public static final int OR_METRICS_PORT_DEFAULT = 8405;
-//    public static final String OR_CAMEL_ROUTE_METRIC_PREFIX = "or_camel_route";
+    // public static final String OR_CAMEL_ROUTE_METRIC_PREFIX = "or_camel_route";
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
     protected boolean metricsEnabled;
     protected HTTPServer metricsServer;
@@ -76,10 +77,8 @@ public class HealthService implements ContainerService {
             healthStatusProvider.init(container);
         }
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new StatusResourceImpl(container, healthStatusProviderList)
-        );
-
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new StatusResourceImpl(container, healthStatusProviderList));
 
         if (metricsEnabled) {
             MessageBrokerService brokerService = container.getService(MessageBrokerService.class);
@@ -88,83 +87,84 @@ public class HealthService implements ContainerService {
 
             // Add additional web server for metrics (this keeps CI/CD prometheus scraper config simple with no oauth
             // this port can be exposed to the host but not to the public
-            metricsServer = new HTTPServer.Builder()
-                .withPort(metricsPort)
-                .withExecutorService(container.getExecutor())
-                .build();
+            metricsServer = new HTTPServer.Builder().withPort(metricsPort).withExecutorService(container.getExecutor())
+                    .build();
 
             // Alternative servlet option to run on existing undertow but would require oauth on prometheus scraper
-//            DeploymentInfo prometheusServlet = Servlets.deployment()
-//                .setClassLoader(Container.class.getClassLoader())
-//                .setContextPath(METRICS_PATH)
-//                .setDeploymentName("Metrics")
-//                .addServlets(
-//                    Servlets.servlet("MetricsServlet", MetricsServlet.class)
-//                        .addMapping("/*")
-//                    .setServletSecurityInfo(
-//                        new ServletSecurityInfo().addRoleAllowed(Constants.READ_ADMIN_ROLE)
-//                    )
-//                );
-//            HttpHandler handler = WebService.addServletDeployment(container, prometheusServlet, true);
-//            container.getService(ManagerWebService.class).getRequestHandlers().add(0, new WebService.RequestHandler("Prometheus Metrics", exchange -> exchange.getRequestPath().equals(METRICS_PATH), handler));
+            // DeploymentInfo prometheusServlet = Servlets.deployment()
+            // .setClassLoader(Container.class.getClassLoader())
+            // .setContextPath(METRICS_PATH)
+            // .setDeploymentName("Metrics")
+            // .addServlets(
+            // Servlets.servlet("MetricsServlet", MetricsServlet.class)
+            // .addMapping("/*")
+            // .setServletSecurityInfo(
+            // new ServletSecurityInfo().addRoleAllowed(Constants.READ_ADMIN_ROLE)
+            // )
+            // );
+            // HttpHandler handler = WebService.addServletDeployment(container, prometheusServlet, true);
+            // container.getService(ManagerWebService.class).getRequestHandlers().add(0, new
+            // WebService.RequestHandler("Prometheus Metrics", exchange ->
+            // exchange.getRequestPath().equals(METRICS_PATH), handler));
 
-//            // Configure camel metrics collection here as need access to the custom registry
-//            MicrometerRoutePolicyFactory micrometerRoutePolicyFactory = new MicrometerRoutePolicyFactory() {
-//                @Override
-//                public RoutePolicy createRoutePolicy(CamelContext camelContext, String routeId, NamedNode routeDefinition) {
-//                    SedaMicrometerRoutePolicy answer = new SedaMicrometerRoutePolicy();
-//                    answer.setMeterRegistry(getMeterRegistry());
-//                    answer.setPrettyPrint(isPrettyPrint());
-//                    answer.setDurationUnit(getDurationUnit());
-//                    answer.setNamingStrategy(getNamingStrategy());
-//                    return answer;
-//                }
-//            };
-//            micrometerRoutePolicyFactory.setNamingStrategy(new MicrometerRoutePolicyNamingStrategy() {
-//                @Override
-//                public String getName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX;
-//                }
-//
-//                @Override
-//                public String getExchangesSucceededName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_succeeded";
-//                }
-//
-//                @Override
-//                public String getExchangesFailedName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed";
-//                }
-//
-//                @Override
-//                public String getExchangesTotalName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_total";
-//                }
-//
-//                @Override
-//                public String getFailuresHandledName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_handled";
-//                }
-//
-//                @Override
-//                public String getExternalRedeliveriesName(Route route) {
-//                    return OR_CAMEL_ROUTE_METRIC_PREFIX + "_redeliveries";
-//                }
-//
-//                @Override
-//                public Tags getTags(Route route) {
-//                    return Tags.of(
-//                        ROUTE_ID_TAG, route.getId());
-//                }
-//
-//                @Override
-//                public Tags getExchangeStatusTags(Route route) {
-//                    return Tags.of(
-//                        ROUTE_ID_TAG, route.getId());
-//                }
-//            });
-//            micrometerRoutePolicyFactory.setMeterRegistry(container.getMeterRegistry());
-//            brokerService.getContext().addRoutePolicyFactory(micrometerRoutePolicyFactory);
+            // // Configure camel metrics collection here as need access to the custom registry
+            // MicrometerRoutePolicyFactory micrometerRoutePolicyFactory = new MicrometerRoutePolicyFactory() {
+            // @Override
+            // public RoutePolicy createRoutePolicy(CamelContext camelContext, String routeId, NamedNode
+            // routeDefinition) {
+            // SedaMicrometerRoutePolicy answer = new SedaMicrometerRoutePolicy();
+            // answer.setMeterRegistry(getMeterRegistry());
+            // answer.setPrettyPrint(isPrettyPrint());
+            // answer.setDurationUnit(getDurationUnit());
+            // answer.setNamingStrategy(getNamingStrategy());
+            // return answer;
+            // }
+            // };
+            // micrometerRoutePolicyFactory.setNamingStrategy(new MicrometerRoutePolicyNamingStrategy() {
+            // @Override
+            // public String getName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX;
+            // }
+            //
+            // @Override
+            // public String getExchangesSucceededName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX + "_succeeded";
+            // }
+            //
+            // @Override
+            // public String getExchangesFailedName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed";
+            // }
+            //
+            // @Override
+            // public String getExchangesTotalName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX + "_total";
+            // }
+            //
+            // @Override
+            // public String getFailuresHandledName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX + "_failed_handled";
+            // }
+            //
+            // @Override
+            // public String getExternalRedeliveriesName(Route route) {
+            // return OR_CAMEL_ROUTE_METRIC_PREFIX + "_redeliveries";
+            // }
+            //
+            // @Override
+            // public Tags getTags(Route route) {
+            // return Tags.of(
+            // ROUTE_ID_TAG, route.getId());
+            // }
+            //
+            // @Override
+            // public Tags getExchangeStatusTags(Route route) {
+            // return Tags.of(
+            // ROUTE_ID_TAG, route.getId());
+            // }
+            // });
+            // micrometerRoutePolicyFactory.setMeterRegistry(container.getMeterRegistry());
+            // brokerService.getContext().addRoutePolicyFactory(micrometerRoutePolicyFactory);
         } else {
             LOG.log(System.Logger.Level.INFO, "Metrics collection disabled");
         }

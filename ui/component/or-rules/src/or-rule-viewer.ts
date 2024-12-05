@@ -1,5 +1,23 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
 import {
     OrRulesRequestSaveEvent,
     OrRulesRuleChangedEvent,
@@ -9,19 +27,19 @@ import {
     RuleView,
     RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetStatus, RulesetUnion} from "@openremote/model";
-import manager, {Util} from "@openremote/core";
+import { ClientRole, RulesetStatus, RulesetUnion } from "@openremote/model";
+import manager, { Util } from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
 import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import { translate } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {GenericAxiosResponse} from "@openremote/rest";
-import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {project} from "./flow-viewer/components/flow-editor";
+import { GenericAxiosResponse } from "@openremote/rest";
+import { showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { project } from "./flow-viewer/components/flow-editor";
 
 // language=CSS
 export const style = css`
@@ -109,25 +127,25 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         ];
     }
 
-    @property({type: Object})
+    @property({ type: Object })
     public ruleset?: RulesetUnion;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disabled: boolean = false;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public modified = false;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _ruleValid = false;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _supported = true;
 
     @query("#rule-view")
@@ -178,7 +196,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         let statusText: string = "NOSTATUS";
         if (this.ruleset.status) statusText = this.ruleset.status;
 
-        switch (this.ruleset.status){
+        switch (this.ruleset.status) {
             case "DEPLOYED":
                 statusIcon = "play";
                 statusClass = "iconfill-gray";

@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query.filter;
-
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import com.vividsolutions.jts.geom.Coordinate;
-import org.geotools.referencing.GeodeticCalculator;
-import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.util.ValueUtil;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import com.vividsolutions.jts.geom.Coordinate;
+
+import org.geotools.referencing.GeodeticCalculator;
+import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified
@@ -49,19 +49,16 @@ public class RadialGeofencePredicate extends GeofencePredicate {
     }
 
     @JsonCreator
-    public RadialGeofencePredicate(@JsonProperty("radius") int radius,
-                                   @JsonProperty("lat") double lat,
-                                   @JsonProperty("lng") double lng,
-                                   @JsonProperty("negated") boolean negated) {
+    public RadialGeofencePredicate(@JsonProperty("radius") int radius, @JsonProperty("lat") double lat,
+            @JsonProperty("lng") double lng, @JsonProperty("negated") boolean negated) {
         this.radius = radius;
         this.lat = lat;
         this.lng = lng;
         this.negated = negated;
     }
 
-    public RadialGeofencePredicate(@JsonProperty("radius") int radius,
-                                   @JsonProperty("lat") double lat,
-                                   @JsonProperty("lng") double lng) {
+    public RadialGeofencePredicate(@JsonProperty("radius") int radius, @JsonProperty("lat") double lat,
+            @JsonProperty("lng") double lng) {
         this(radius, lat, lng, false);
     }
 
@@ -100,13 +97,13 @@ public class RadialGeofencePredicate extends GeofencePredicate {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         RadialGeofencePredicate that = (RadialGeofencePredicate) o;
-        return negated == that.negated &&
-            radius == that.radius &&
-            Double.compare(that.lat, lat) == 0 &&
-            Double.compare(that.lng, lng) == 0;
+        return negated == that.negated && radius == that.radius && Double.compare(that.lat, lat) == 0
+                && Double.compare(that.lng, lng) == 0;
     }
 
     @Override
@@ -116,14 +113,15 @@ public class RadialGeofencePredicate extends GeofencePredicate {
 
     @Override
     public double[] getCentrePoint() {
-        return new double[]{lng, lat};
+        return new double[] { lng, lat };
     }
 
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
 
         return obj -> {
-            if (obj == null) return false;
+            if (obj == null)
+                return false;
 
             Coordinate coordinate;
 

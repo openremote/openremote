@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.container.concurrent.ContainerScheduledExecutor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
 
 /**
  * MeshTransport class is responsible for building the configuration and application layer mesh messages.
@@ -45,10 +44,10 @@ final class MeshTransport extends NetworkLayer {
      *
      */
     /*
-    MeshTransport(@NonNull final Context context) {
-        this.mContext = context;
-        initHandler();
-    }
+     * MeshTransport(@NonNull final Context context) {
+     * this.mContext = context;
+     * initHandler();
+     * }
      */
     MeshTransport() {
         super();
@@ -59,7 +58,7 @@ final class MeshTransport extends NetworkLayer {
     /**
      * Constructs MeshTransport
      *
-     * @param node    Mesh node
+     * @param node Mesh node
      */
     MeshTransport(ScheduledExecutorService scheduledExecutorService, final ProvisionedMeshNode node) {
         super();
@@ -135,28 +134,25 @@ final class MeshTransport extends NetworkLayer {
     /**
      * Creates an access message to be sent to the peripheral node
      * <p>
-     * This method will create the access message and propagate the message through the transport layers to create the final mesh pdu.
+     * This method will create the access message and propagate the message through the transport layers to create the
+     * final mesh pdu.
      * </p>
      *
-     * @param src                     Source address of the provisioner/configurator.
-     * @param dst                     Destination address to be sent to
-     * @param key                     Device Key
-     * @param akf                     Application key flag defines which key to be used to decrypt the message i.e device key or application key.
-     * @param aid                     Identifier of the application key.
-     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit encryption.
-     * @param accessOpCode            Operation code for the access message.
+     * @param src Source address of the provisioner/configurator.
+     * @param dst Destination address to be sent to
+     * @param key Device Key
+     * @param akf Application key flag defines which key to be used to decrypt the message i.e device key or application
+     *            key.
+     * @param aid Identifier of the application key.
+     * @param aszmic Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit
+     *            encryption.
+     * @param accessOpCode Operation code for the access message.
      * @param accessMessageParameters Parameters for the access message.
      * @return access message containing the mesh pdu
      */
-    final synchronized AccessMessage createMeshMessage(final int src,
-                                          final int dst,
-                                          /* @Nullable */ final Integer ttl,
-                                          final byte[] key,
-                                          final int akf,
-                                          final int aid,
-                                          final int aszmic,
-                                          final int accessOpCode,
-                                          final byte[] accessMessageParameters) {
+    final synchronized AccessMessage createMeshMessage(final int src, final int dst, /* @Nullable */ final Integer ttl,
+            final byte[] key, final int akf, final int aid, final int aszmic, final int accessOpCode,
+            final byte[] accessMessageParameters) {
         final ProvisionedMeshNode node = mUpperTransportLayerCallbacks.getNode(src);
         final int sequenceNumber = node.incrementSequenceNumber();
         final byte[] sequenceNum = MeshParserUtils.getSequenceNumberBytes(sequenceNumber);
@@ -192,30 +188,26 @@ final class MeshTransport extends NetworkLayer {
     /**
      * Creates an access message to be sent to the peripheral node
      * <p>
-     * This method will create the access message and propagate the message through the transport layers to create the final mesh pdu.
+     * This method will create the access message and propagate the message through the transport layers to create the
+     * final mesh pdu.
      * </p>
      *
-     * @param src                     Source address of the provisioner/configurator.
-     * @param dst                     Destination address to be sent to
-     * @param label                   Label UUID for destination address
-     * @param key                     Application Key
-     * @param akf                     Application key flag defines which key to be used to decrypt the message i.e device key or application key.
-     * @param aid                     Identifier of the application key.
-     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit encryption.
-     * @param accessOpCode            Operation code for the access message.
+     * @param src Source address of the provisioner/configurator.
+     * @param dst Destination address to be sent to
+     * @param label Label UUID for destination address
+     * @param key Application Key
+     * @param akf Application key flag defines which key to be used to decrypt the message i.e device key or application
+     *            key.
+     * @param aid Identifier of the application key.
+     * @param aszmic Defines the length of the transport mic length where 1 will encrypt with 64 bit and 0 with 32 bit
+     *            encryption.
+     * @param accessOpCode Operation code for the access message.
      * @param accessMessageParameters Parameters for the access message.
      * @return access message containing the mesh pdu
      */
-    final synchronized AccessMessage createMeshMessage(final int src,
-                                          final int dst,
-                                          /* @Nullable */ final UUID label,
-                                          /* @Nullable */ final Integer ttl,
-                                          /* @NonNull */ final ApplicationKey key,
-                                          final int akf,
-                                          final int aid,
-                                          final int aszmic,
-                                          final int accessOpCode,
-                                          /* @Nullable */ final byte[] accessMessageParameters) {
+    final synchronized AccessMessage createMeshMessage(final int src, final int dst, /* @Nullable */ final UUID label,
+            /* @Nullable */ final Integer ttl, /* @NonNull */ final ApplicationKey key, final int akf, final int aid,
+            final int aszmic, final int accessOpCode, /* @Nullable */ final byte[] accessMessageParameters) {
         final ProvisionedMeshNode node = mUpperTransportLayerCallbacks.getNode(src);
         final int sequenceNumber = node.incrementSequenceNumber();
         final byte[] sequenceNum = MeshParserUtils.getSequenceNumberBytes(sequenceNumber);
@@ -254,31 +246,27 @@ final class MeshTransport extends NetworkLayer {
     /**
      * Creates a vendor model access message to be sent to the peripheral node
      * <p>
-     * This method will create the access message and propagate the message through the transport layers to create the final mesh pdu.
+     * This method will create the access message and propagate the message through the transport layers to create the
+     * final mesh pdu.
      * </p>
      *
-     * @param src                     Source address of the provisioner/configurator.
-     * @param dst                     Destination address to be sent to
-     * @param label                   Label UUID
-     * @param key                     Application key
-     * @param akf                     Application key flag defines which key to be used to decrypt the message i.e device key or application key.
-     * @param aid                     Identifier of the application key.
-     * @param aszmic                  Defines the length of the transport mic length where 1 will encrypt within 64 bit and 0 with 32 bit encryption.
-     * @param accessOpCode            Operation code for the access message.
+     * @param src Source address of the provisioner/configurator.
+     * @param dst Destination address to be sent to
+     * @param label Label UUID
+     * @param key Application key
+     * @param akf Application key flag defines which key to be used to decrypt the message i.e device key or application
+     *            key.
+     * @param aid Identifier of the application key.
+     * @param aszmic Defines the length of the transport mic length where 1 will encrypt within 64 bit and 0 with 32 bit
+     *            encryption.
+     * @param accessOpCode Operation code for the access message.
      * @param accessMessageParameters Parameters for the access message.
      * @return access message containing the mesh pdu
      */
-    final synchronized AccessMessage createVendorMeshMessage(final int companyIdentifier,
-                                                final int src,
-                                                final int dst,
-                                                /* @Nullable */ final UUID label,
-                                                /* @Nullable */ final Integer ttl,
-                                                /* @NonNull */ final ApplicationKey key,
-                                                final int akf,
-                                                final int aid,
-                                                final int aszmic,
-                                                final int accessOpCode,
-                                                /* @Nullable */ final byte[] accessMessageParameters) {
+    final synchronized AccessMessage createVendorMeshMessage(final int companyIdentifier, final int src, final int dst,
+            /* @Nullable */ final UUID label, /* @Nullable */ final Integer ttl,
+            /* @NonNull */ final ApplicationKey key, final int akf, final int aid, final int aszmic,
+            final int accessOpCode, /* @Nullable */ final byte[] accessMessageParameters) {
         final ProvisionedMeshNode node = mUpperTransportLayerCallbacks.getNode(src);
         final int sequenceNumber = node.incrementSequenceNumber();
         final byte[] sequenceNum = MeshParserUtils.getSequenceNumberBytes(sequenceNumber);
@@ -318,15 +306,14 @@ final class MeshTransport extends NetworkLayer {
     /**
      * Creates a proxy configuration message to be sent to the peripheral node
      *
-     * @param src        Source address of the provisioner/configurator.
-     * @param dst        destination address to be sent to
-     * @param opcode     Operation code for the access message.
+     * @param src Source address of the provisioner/configurator.
+     * @param dst destination address to be sent to
+     * @param opcode Operation code for the access message.
      * @param parameters Parameters for the access message.
      * @return Control message containing the proxy configuration pdu
      */
-    final synchronized ControlMessage createProxyConfigurationMessage(final int src,
-                                                         final int dst,
-                                                         final int opcode, final byte[] parameters) {
+    final synchronized ControlMessage createProxyConfigurationMessage(final int src, final int dst, final int opcode,
+            final byte[] parameters) {
         final ProvisionedMeshNode node = mUpperTransportLayerCallbacks.getNode(src);
         final int sequenceNumber = node.incrementSequenceNumber();
         final byte[] sequenceNum = MeshParserUtils.getSequenceNumberBytes(sequenceNumber);
@@ -341,7 +328,7 @@ final class MeshTransport extends NetworkLayer {
         message.setSrc(src);
         message.setDst(dst);
         message.setTtl(node.getTtl());
-        message.setTtl(PROXY_CONFIGURATION_TTL); //TTL for proxy configuration messages are set to 0
+        message.setTtl(PROXY_CONFIGURATION_TTL); // TTL for proxy configuration messages are set to 0
         message.setIvIndex(mUpperTransportLayerCallbacks.getIvIndex());
         message.setSequenceNumber(sequenceNum);
         message.setOpCode(opcode);

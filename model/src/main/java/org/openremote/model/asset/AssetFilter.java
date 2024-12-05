@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventFilter;
@@ -27,10 +30,6 @@ import org.openremote.model.util.TsIgnoreTypeParams;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.MetaItemType;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 // TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 @TsIgnoreTypeParams
@@ -268,7 +267,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
             }
         }
 
-        if(path != null && !path.isEmpty()) {
+        if (path != null && !path.isEmpty()) {
             List<String> pathList = Arrays.asList(event.getPath());
             if (path.stream().noneMatch(pathList::contains)) {
                 return null;
@@ -281,7 +280,8 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
             if (assetEvent.getAsset() != null) {
                 Asset<?> asset = ValueUtil.clone(assetEvent.getAsset());
                 MetaItemDescriptor<?> finalFilterAttributesBy = filterAttributesBy;
-                asset.setAttributes(asset.getAttributes().values().stream().filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
+                asset.setAttributes(asset.getAttributes().values().stream()
+                        .filter(attribute -> attribute.hasMeta(finalFilterAttributesBy)).collect(Collectors.toList()));
                 event = (T) new AssetEvent(assetEvent.getCause(), asset, assetEvent.getUpdatedProperties());
             }
         }
@@ -298,12 +298,10 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> implements EventFilt
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "assetIds='" + (assetIds != null ? String.join(",", assetIds) : "") + '\'' +
-            "assetTypes='" + (assetTypes != null ? String.join(",", assetTypes) : "") + '\'' +
-            ", parentIds='" + (parentIds != null ? String.join(",", parentIds) : "") + '\'' +
-            ", realm='" + realm + '\'' +
-            ", attributeNames='" + (attributeNames != null ? String.join(",", attributeNames) : "") + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "assetIds='" + (assetIds != null ? String.join(",", assetIds) : "")
+                + '\'' + "assetTypes='" + (assetTypes != null ? String.join(",", assetTypes) : "") + '\''
+                + ", parentIds='" + (parentIds != null ? String.join(",", parentIds) : "") + '\'' + ", realm='" + realm
+                + '\'' + ", attributeNames='" + (attributeNames != null ? String.join(",", attributeNames) : "") + '\''
+                + '}';
     }
 }

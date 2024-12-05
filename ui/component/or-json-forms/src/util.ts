@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     CombinatorKeyword,
     composeWithUi,
@@ -23,31 +41,31 @@ import {
     resolveSubSchemas,
     StatePropsOfCombinator,
 } from "@jsonforms/core";
-import {DefaultColor5, Util} from "@openremote/core";
+import { DefaultColor5, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-ace-editor";
-import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
-import {html, TemplateResult, unsafeCSS} from "lit";
-import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {ErrorObject} from "./index";
-import {unknownTemplate} from "./standard-renderers";
-import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AdditionalProps} from "./base-element";
+import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
+import { html, TemplateResult, unsafeCSS } from "lit";
+import { createRef, Ref, ref } from 'lit/directives/ref.js';
+import { ErrorObject } from "./index";
+import { unknownTemplate } from "./standard-renderers";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { AdditionalProps } from "./base-element";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
         return html``;
     }
 
-    const renderers = props.renderers || getRenderers({jsonforms: {...state}});
+    const renderers = props.renderers || getRenderers({ jsonforms: { ...state } });
     const schema = props.schema;
     const uischema = props.uischema;
 
     let template: TemplateResult | undefined;
 
     if (renderers && schema && uischema) {
-        const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema)] as [JsonFormsRendererRegistryEntry, number]).sort((a,b) => b[1] - a[1]);
+        const orderedRenderers: [JsonFormsRendererRegistryEntry, number][] = renderers.map(r => [r, r.tester(uischema, schema)] as [JsonFormsRendererRegistryEntry, number]).sort((a, b) => b[1] - a[1]);
         const renderer = orderedRenderers && orderedRenderers.length > 0 ? orderedRenderers[0] : undefined;
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
@@ -137,12 +155,12 @@ export function getSchemaConst(schema: JsonSchema): any {
 
 export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSchema, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
     const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
-    const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
+    const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index + "", combinatorInfo.title || i18next.t("schema.title.indexedItem", { index: index })]);
     const pickerUpdater = (index: number) => {
         const matchedInfo = combinatorInfos[index];
         selectedCallback(matchedInfo);
     };
-    const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", {label: label}) : i18next.t("type");
+    const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", { label: label }) : i18next.t("type");
     return html`                
         <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
     `;
@@ -170,11 +188,11 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
         }
     }
 
-    return [i18next.t("schema.title." + title, {defaultValue: Util.camelCaseToSentenceCase(title)}), undefined];
+    return [i18next.t("schema.title." + title, { defaultValue: Util.camelCaseToSentenceCase(title) }), undefined];
 }
 
 function getLabelFromScopeOrRef(scopeOrRef: string) {
-    return scopeOrRef.substr(scopeOrRef.lastIndexOf("/")+1);
+    return scopeOrRef.substr(scopeOrRef.lastIndexOf("/") + 1);
 }
 
 function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
@@ -345,23 +363,23 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                 <or-ace-editor ${ref(editorRef)} @or-ace-editor-edit="${() => onEditorEdit()}" @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => onEditorChanged(ev)}" .value="${value}"></or-ace-editor>
             `)
         .setActions([
-                {
-                    actionName: "cancel",
-                    content: "cancel"
+            {
+                actionName: "cancel",
+                content: "cancel"
+            },
+            {
+                default: true,
+                actionName: "update",
+                action: () => {
+                    const editor = editorRef.value!;
+                    if (editor.validate()) {
+                        const data = !!editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
+                        updateCallback(data);
+                    }
                 },
-                {
-                    default: true,
-                    actionName: "update",
-                    action: () => {
-                        const editor = editorRef.value!;
-                        if (editor.validate()) {
-                            const data = !!editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
-                            updateCallback(data);
-                        }
-                    },
-                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" label="update"></or-mwc-input>`
-                }
-            ])
+                content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" label="update"></or-mwc-input>`
+            }
+        ])
         .setHeading(title)
         .setDismissAction(null)
         .setStyles(html`

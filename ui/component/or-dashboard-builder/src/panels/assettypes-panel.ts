@@ -1,15 +1,33 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {Asset, AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo} from "@openremote/model";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {i18next} from "@openremote/or-translate";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {Util} from "@openremote/core";
-import {when} from "lit/directives/when.js";
-import {createRef, Ref, ref} from 'lit/directives/ref.js';
-import {AssetTreeConfig, OrAssetTree} from "@openremote/or-asset-tree";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { Asset, AssetDescriptor, AssetModelUtil, AssetQuery, AssetTypeInfo } from "@openremote/model";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { i18next } from "@openremote/or-translate";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import manager, { Util } from "@openremote/core";
+import { when } from "lit/directives/when.js";
+import { createRef, Ref, ref } from 'lit/directives/ref.js';
+import { AssetTreeConfig, OrAssetTree } from "@openremote/or-asset-tree";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export class AssetTypeSelectEvent extends CustomEvent<string> {
 
@@ -123,54 +141,54 @@ export class AssettypesPanel extends LitElement {
                 <!-- Select asset type -->
                 <div>
                     ${this._loadedAssetTypes.length > 0 ? getContentWithMenuTemplate(
-                            this.getAssetTypeTemplate(),
-                            this.mapDescriptors(this._loadedAssetTypes, {
-                                text: i18next.t("filter.assetTypeMenuNone"),
-                                value: "",
-                                icon: "selection-ellipse"
-                            }) as ListItem[],
-                            undefined,
-                            (v: string[] | string) => {
-                                this.assetType = v as string;
-                            },
-                            undefined,
-                            false,
-                            true,
-                            true,
-                            true) : html``
-                    }
+            this.getAssetTypeTemplate(),
+            this.mapDescriptors(this._loadedAssetTypes, {
+                text: i18next.t("filter.assetTypeMenuNone"),
+                value: "",
+                icon: "selection-ellipse"
+            }) as ListItem[],
+            undefined,
+            (v: string[] | string) => {
+                this.assetType = v as string;
+            },
+            undefined,
+            false,
+            true,
+            true,
+            true) : html``
+            }
                 </div>
 
                 <!-- Select one or more assets -->
                 ${when(this.config.assets?.enabled, () => {
-                    const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
-                    return html`
+                const assetIds = (typeof this.assetIds === 'string') ? [this.assetIds] : this.assetIds;
+                return html`
                         <div>
                             <or-mwc-input .type="${InputType.BUTTON}" .label="${(this.assetIds?.length || 0) + ' ' + i18next.t('assets')}" .disabled="${!this.assetType}" fullWidth outlined comfortable style="width: 100%;"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._openAssetSelector(this.assetType!, assetIds, this.config.assets?.multi)}"
                             ></or-mwc-input>
                         </div>
                     `;
-                })}
+            })}
 
                 <!-- Select one or more attributes -->
                 ${when(this.config.attributes?.enabled, () => {
-                    const options: [string, string][] = this._attributeSelectList.map(al => [al[0], al[1]]);
-                    const searchProvider: (search?: string) => Promise<[any, string][]> = async (search) => {
-                        return search ? options.filter(o => o[1].toLowerCase().includes(search.toLowerCase())) : options;
-                    };
-                    return html`
+                const options: [string, string][] = this._attributeSelectList.map(al => [al[0], al[1]]);
+                const searchProvider: (search?: string) => Promise<[any, string][]> = async (search) => {
+                    return search ? options.filter(o => o[1].toLowerCase().includes(search.toLowerCase())) : options;
+                };
+                return html`
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t("filter.attributeLabel")}" .disabled="${!this.assetType}" style="width: 100%;"
                                           .options="${options}" .searchProvider="${searchProvider}" .multiple="${this.config.attributes?.multi}" .value="${this.attributeNames as string}"
                                           @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                              this.attributeNames = ev.detail.value;
-                                          }}"
+                        this.attributeNames = ev.detail.value;
+                    }}"
                             ></or-mwc-input>
                         </div>
                     `
 
-                })}
+            })}
             </div>
         `;
     }
@@ -274,8 +292,8 @@ export class AssettypesPanel extends LitElement {
                     content: "ok",
                     action: () => {
                         const tree = assetTreeRef.value;
-                        if(tree?.selectedIds) {
-                            if(multi) {
+                        if (tree?.selectedIds) {
+                            if (multi) {
                                 this.assetIds = tree.selectedIds;
                             } else {
                                 this.assetIds = tree.selectedIds[0];

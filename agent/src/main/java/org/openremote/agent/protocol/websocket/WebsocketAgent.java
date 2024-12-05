@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.websocket;
+
+import java.util.Optional;
 
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
@@ -26,37 +27,40 @@ import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
 
 @Entity
 public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgentLink> {
 
-    public static final ValueDescriptor<WebsocketSubscription> WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR = new ValueDescriptor<>("websocketSubscription", WebsocketSubscription.class);
+    public static final ValueDescriptor<WebsocketSubscription> WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR = new ValueDescriptor<>(
+            "websocketSubscription", WebsocketSubscription.class);
 
     /**
      * Websocket connect endpoint URI
      */
-    public static final AttributeDescriptor<String> CONNECT_URL = new AttributeDescriptor<>("connectURL", ValueType.WS_URL);
+    public static final AttributeDescriptor<String> CONNECT_URL = new AttributeDescriptor<>("connectURL",
+            ValueType.WS_URL);
 
     /**
      * Headers for websocket connect call
      */
-    public static final AttributeDescriptor<ValueType.MultivaluedStringMap> CONNECT_HEADERS = new AttributeDescriptor<>("connectHeaders", ValueType.MULTIVALUED_TEXT_MAP);
+    public static final AttributeDescriptor<ValueType.MultivaluedStringMap> CONNECT_HEADERS = new AttributeDescriptor<>(
+            "connectHeaders", ValueType.MULTIVALUED_TEXT_MAP);
 
     /**
      * Array of {@link WebsocketSubscription}s that should be executed once the websocket connection is established; the
      * subscriptions are executed in the order specified in the array.
      */
-    public static final AttributeDescriptor<WebsocketSubscription[]> CONNECT_SUBSCRIPTIONS = new AttributeDescriptor<>("connectSubscriptions", WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR.asArray());
+    public static final AttributeDescriptor<WebsocketSubscription[]> CONNECT_SUBSCRIPTIONS = new AttributeDescriptor<>(
+            "connectSubscriptions", WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR.asArray());
 
     /**
      * Ability to disable the Websocket PING/PONG requests which ensure the connection is not broken
      */
-    public static final AttributeDescriptor<Boolean> PING_DISABLED = new AttributeDescriptor<>("pingDisabled", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> PING_DISABLED = new AttributeDescriptor<>("pingDisabled",
+            ValueType.BOOLEAN);
 
     public static final AgentDescriptor<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        WebsocketAgent.class, WebsocketAgentProtocol.class, WebsocketAgentLink.class, null
-    );
+            WebsocketAgent.class, WebsocketAgentProtocol.class, WebsocketAgentLink.class, null);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

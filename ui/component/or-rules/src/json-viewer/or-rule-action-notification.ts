@@ -1,7 +1,25 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {until} from "lit/directives/until.js";
-import {ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { until } from "lit/directives/until.js";
+import { ActionType, OrRulesRuleUnsupportedEvent, RulesConfig } from "../index";
 import {
     AssetQuery,
     AssetQueryOrderBy$Property,
@@ -13,16 +31,16 @@ import {
     WellknownAssets,
     NotificationTargetType, PushNotificationMessage, EmailNotificationMessage, LocalizedNotificationMessage
 } from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { getTargetTypeMap, OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-email-message";
 import "./forms/or-rule-form-push-notification";
 import "./forms/or-rule-form-localized";
 import "./or-rule-action-attribute";
-import {i18next} from "@openremote/or-translate";
-import manager, {Util} from "@openremote/core";
-import {OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent} from "./modals/or-rule-notification-modal";
+import { i18next } from "@openremote/or-translate";
+import manager, { Util } from "@openremote/core";
+import { OrRulesNotificationModalCancelEvent, OrRulesNotificationModalOkEvent } from "./modals/or-rule-notification-modal";
 
 // language=CSS
 const style = css`
@@ -47,21 +65,21 @@ export class OrRuleActionNotification extends LitElement {
         return style;
     }
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public rule!: JsonRule;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public action!: RuleActionNotification;
 
-    @property({type: String, attribute: false})
+    @property({ type: String, attribute: false })
     public actionType!: ActionType;
 
     public readonly?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetInfos?: AssetTypeInfo[];
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
     protected _initialAction?: RuleActionNotification;
@@ -77,7 +95,7 @@ export class OrRuleActionNotification extends LitElement {
         // If the rule property changes, we assume it is a "new rule".
         // For example when the SAVE button is pressed in the JSON editor (which triggers an update of this 'rule' property),
         // we want to reset the _initialAction cache variable.
-        if(changedProps.has("rule") && changedProps.get("rule") !== undefined) {
+        if (changedProps.has("rule") && changedProps.get("rule") !== undefined) {
             this._initialAction = structuredClone(this.action);
         }
 
@@ -93,14 +111,14 @@ export class OrRuleActionNotification extends LitElement {
 
         // Upon rule change, we update the name of the "Notification action" to a sensible value, for example with the subject of an email
         // This is to prevent the NAME (for example showing up in the logs) being NULL or not identifiable.
-        if(this.action.notification) {
+        if (this.action.notification) {
             const message = this.action.notification.message;
-            if(message?.type === "localized") {
+            if (message?.type === "localized") {
                 const locale = this.config?.notifications?.[manager.displayRealm]?.defaultLanguage || this.config?.notifications?.["default"]?.defaultLanguage || manager.config.defaultLanguage;
                 const msg = message.languages?.[locale]; // if localized, we use the default language
-                if(msg?.type === "push") {
+                if (msg?.type === "push") {
                     this.action.notification.name = msg.title;
-                } else if(msg?.type === "email") {
+                } else if (msg?.type === "email") {
                     this.action.notification.name = msg.subject;
                 }
             } else if (message?.type === "push") {
@@ -173,10 +191,10 @@ export class OrRuleActionNotification extends LitElement {
             if (targetType === NotificationTargetType.USER) {
                 // Get users excluding system accounts and service users
                 const query: UserQuery = {
-                    realmPredicate: {name: manager.displayRealm},
-                    select: {basic: true},
+                    realmPredicate: { name: manager.displayRealm },
+                    select: { basic: true },
                     serviceUsers: false,
-                    attributes: [{name: {value: "systemAccount", predicateType: "string"}, negated: true}]
+                    attributes: [{ name: { value: "systemAccount", predicateType: "string" }, negated: true }]
                 }
                 targetValuesGenerator = manager.rest.api.UserResource.query(query).then(
                     async (usersResponse) => {
@@ -184,7 +202,7 @@ export class OrRuleActionNotification extends LitElement {
 
                         // Get realm roles and add as options
                         const realm = await manager.rest.api.RealmResource.get(manager.displayRealm);
-                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.filter(r => Util.realmRoleFilter(r)).map(r => ["linked-" + r.name!,  linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
+                        let realmRoleOpts: [string, string][] = realm.data.realmRoles!.filter(r => Util.realmRoleFilter(r)).map(r => ["linked-" + r.name!, linkedLabel + ": " + i18next.t("realmRole." + r.name, Util.camelCaseToSentenceCase(r.name!.replace("_", " ").replace("-", " ")))]);
                         let values: [string, string][] = usersResponse.data.map((user) => [user.id!, user.username!]);
                         return [["linkedUsers", linkedLabel], ...realmRoleOpts, ...values];
                     }
@@ -222,7 +240,7 @@ export class OrRuleActionNotification extends LitElement {
                 }
 
             } else {
-                const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
+                const assetQuery = baseAssetQuery ? { ...baseAssetQuery } : {};
                 assetQuery.orderBy = {
                     property: AssetQueryOrderBy$Property.NAME
                 };
@@ -236,7 +254,7 @@ export class OrRuleActionNotification extends LitElement {
                         if (targetTypeMap && targetTypeMap.length > 1) {
                             targetTypeMap.forEach((typeAndTag) => {
                                 if (!additionalValues.find((av) => av[0] === typeAndTag[0])) {
-                                    additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", {type: Util.getAssetTypeLabel(typeAndTag[0])})]);
+                                    additionalValues.push([typeAndTag[0], i18next.t("matchedOfType", { type: Util.getAssetTypeLabel(typeAndTag[0]) })]);
                                 }
                             });
                         }
@@ -315,7 +333,8 @@ export class OrRuleActionNotification extends LitElement {
             baseAssetQuery = {
                 types: [
                     WellknownAssets.CONSOLEASSET
-                ]};
+                ]
+            };
         } else {
             baseAssetQuery = {
                 attributes: {
@@ -329,7 +348,7 @@ export class OrRuleActionNotification extends LitElement {
             }
         }
 
-        let targetTemplate = OrRuleActionNotification.getActionTargetTemplate(getTargetTypeMap(this.rule), this.action, this.actionType, !!this.readonly, this.config, baseAssetQuery,(type) => this._onTargetTypeChanged(type), (type, value) => this._onTargetChanged(type, value));
+        let targetTemplate = OrRuleActionNotification.getActionTargetTemplate(getTargetTypeMap(this.rule), this.action, this.actionType, !!this.readonly, this.config, baseAssetQuery, (type) => this._onTargetTypeChanged(type), (type, value) => this._onTargetChanged(type, value));
         let modalTemplate: TemplateResult | string = ``;
 
         if (!targetTemplate) {
@@ -339,11 +358,11 @@ export class OrRuleActionNotification extends LitElement {
 
         // When 'cancel' is pressed, reset ACTION to the initial state (all changes get removed)
         const onModalCancel = (ev: OrRulesNotificationModalCancelEvent) => {
-            if(this._initialAction && this.action.notification) {
+            if (this._initialAction && this.action.notification) {
                 const newAction = structuredClone(this._initialAction);
 
                 // Check if anything in the message has changed
-                if(JSON.stringify(this.action.notification.message) !== JSON.stringify(newAction.notification?.message)) {
+                if (JSON.stringify(this.action.notification.message) !== JSON.stringify(newAction.notification?.message)) {
                     console.debug("Rolling back the notification to former state...");
                     this.action.notification.message = newAction.notification?.message;
                     this.requestUpdate('action');
@@ -371,7 +390,7 @@ export class OrRuleActionNotification extends LitElement {
                     </or-rule-notification-modal>
                 `;
             }
-            
+
             else if (messageType === "email") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="email" .action="${this.action}"
@@ -382,14 +401,14 @@ export class OrRuleActionNotification extends LitElement {
                 `;
             }
 
-            else if(messageType === "localized") {
+            else if (messageType === "localized") {
                 const notificationConfig = this.config?.notifications?.[manager.displayRealm] || this.config?.notifications?.["default"];
                 const languages = [...new Set([
                     ...(notificationConfig?.languages || []),
                     ...(Object.keys((message as LocalizedNotificationMessage).languages || {}) || [])
                 ])] as string[];
                 const defaultLang = notificationConfig?.defaultLanguage || manager.config.defaultLanguage;
-                if(languages.length === 0 && defaultLang) {
+                if (languages.length === 0 && defaultLang) {
                     languages.push(defaultLang);
                 }
                 const defaultLangHasChanged = defaultLang !== (message as LocalizedNotificationMessage).defaultLanguage;
@@ -414,7 +433,7 @@ export class OrRuleActionNotification extends LitElement {
             `
         );
 
-        return html`${until(targetTemplate,html``)}`;
+        return html`${until(targetTemplate, html``)}`;
     }
 
     protected _onTargetTypeChanged(targetType: NotificationTargetType) {
@@ -457,20 +476,20 @@ export class OrRuleActionNotification extends LitElement {
                     }
                 } else if (value) {
                     this.action.target = {
-                        users: {ids: [value]}
+                        users: { ids: [value] }
                     }
                 }
-            break;
+                break;
             case NotificationTargetType.CUSTOM:
-                    this.action.target = {
-                        custom: value
-                    }
+                this.action.target = {
+                    custom: value
+                }
                 break;
             case NotificationTargetType.ASSET:
                 if (!value || value === "allMatched") {
                     delete this.action.target;
                 } else if (value.endsWith("Asset")) {
-                     // This is an asset type
+                    // This is an asset type
                     this.action.target = {
                         matchedAssets: {
                             types: [

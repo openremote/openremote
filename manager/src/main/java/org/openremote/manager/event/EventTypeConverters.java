@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,28 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-/*
- * Copyright 2015, OpenRemote Inc.
- *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
 package org.openremote.manager.event;
+
+import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBED_MESSAGE_PREFIX;
+import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBE_MESSAGE_PREFIX;
+
+import java.util.logging.Logger;
 
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
@@ -45,11 +29,6 @@ import org.apache.camel.TypeConverters;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.*;
 import org.openremote.model.util.ValueUtil;
-
-import java.util.logging.Logger;
-
-import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBED_MESSAGE_PREFIX;
-import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBE_MESSAGE_PREFIX;
 
 public class EventTypeConverters implements TypeConverters {
 
@@ -66,8 +45,10 @@ public class EventTypeConverters implements TypeConverters {
     }
 
     @Converter
-    public String writeTriggeredEventSubscription(TriggeredEventSubscription triggeredEventSubscription, Exchange exchange) throws Exception {
-        return TriggeredEventSubscription.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(triggeredEventSubscription);
+    public String writeTriggeredEventSubscription(TriggeredEventSubscription triggeredEventSubscription,
+            Exchange exchange) throws Exception {
+        return TriggeredEventSubscription.MESSAGE_PREFIX
+                + ValueUtil.JSON.writeValueAsString(triggeredEventSubscription);
     }
 
     @Converter
@@ -80,7 +61,8 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public String writeEventSubscription(EventSubscription eventSubscription, Exchange exchange) throws Exception {
-        return (eventSubscription.isSubscribed() ? SUBSCRIBED_MESSAGE_PREFIX : SUBSCRIBE_MESSAGE_PREFIX) + ValueUtil.JSON.writeValueAsString(eventSubscription);
+        return (eventSubscription.isSubscribed() ? SUBSCRIBED_MESSAGE_PREFIX : SUBSCRIBE_MESSAGE_PREFIX)
+                + ValueUtil.JSON.writeValueAsString(eventSubscription);
     }
 
     @Converter
@@ -100,7 +82,9 @@ public class EventTypeConverters implements TypeConverters {
     }
 
     @Converter
-    public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription, Exchange exchange) throws Exception {
-        return UnauthorizedEventSubscription.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(unauthorizedEventSubscription);
+    public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription,
+            Exchange exchange) throws Exception {
+        return UnauthorizedEventSubscription.MESSAGE_PREFIX
+                + ValueUtil.JSON.writeValueAsString(unauthorizedEventSubscription);
     }
 }

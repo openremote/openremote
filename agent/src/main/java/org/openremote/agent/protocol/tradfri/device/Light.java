@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.device;
 
 import org.openremote.agent.protocol.tradfri.payload.DeviceRequest;
@@ -23,6 +41,7 @@ public class Light extends Device {
 
     /**
      * Construct the Light class
+     *
      * @param name The name of the light
      * @param creationDate The creation date of the light
      * @param instanceId The instance id of the light
@@ -30,7 +49,8 @@ public class Light extends Device {
      * @param properties The properties of the light
      * @param coapClient A CoAP client that can be used to communicate with the light using the IKEA TRÅDFRI gateway
      */
-    public Light(String name, Long creationDate, Integer instanceId, DeviceInfo deviceInfo, LightProperties properties, CoapClient coapClient){
+    public Light(String name, Long creationDate, Integer instanceId, DeviceInfo deviceInfo, LightProperties properties,
+            CoapClient coapClient) {
         super(name, creationDate, instanceId, deviceInfo, coapClient);
         this.properties = properties;
         this.newProperties = new LightProperties();
@@ -38,24 +58,28 @@ public class Light extends Device {
 
     /**
      * Get the properties of the light
+     *
      * @return The properties of the light
      */
     @Override
-    public LightProperties getProperties(){
+    public LightProperties getProperties() {
         return this.properties;
     }
 
     /**
      * Set the properties of the light
+     *
      * @param properties The properties of the light
      */
     @Override
-    public void setProperties(DeviceProperties properties){
-        if(properties instanceof LightProperties) this.properties = (LightProperties) properties;
+    public void setProperties(DeviceProperties properties) {
+        if (properties instanceof LightProperties)
+            this.properties = (LightProperties) properties;
     }
 
     /**
      * Get the on / off state of the light
+     *
      * @return The on / off state of the light (true for on, false for off)
      */
     public Boolean getOn() {
@@ -64,6 +88,7 @@ public class Light extends Device {
 
     /**
      * Get the brightness of the light
+     *
      * @return The brightness of the light
      */
     public Integer getBrightness() {
@@ -72,6 +97,7 @@ public class Light extends Device {
 
     /**
      * Get the colour of the light in hexadecimals
+     *
      * @return The colour of the light in hexadecimals
      */
     public String getColourHex() {
@@ -80,6 +106,7 @@ public class Light extends Device {
 
     /**
      * Get the hue of the light
+     *
      * @return The hue of the light
      */
     public Integer getHue() {
@@ -88,6 +115,7 @@ public class Light extends Device {
 
     /**
      * Get the saturation of the light
+     *
      * @return The saturation of the light
      */
     public Integer getSaturation() {
@@ -96,6 +124,7 @@ public class Light extends Device {
 
     /**
      * Get the X value of the colour of the light
+     *
      * @return The X value of the colour of the light
      */
     public Integer getColourX() {
@@ -104,6 +133,7 @@ public class Light extends Device {
 
     /**
      * Get the Y value of the colour of the light
+     *
      * @return The Y value of the colour of the light
      */
     public Integer getColourY() {
@@ -112,6 +142,7 @@ public class Light extends Device {
 
     /**
      * Get the XY values of the colour of the light
+     *
      * @return The XY values of the colour of the light
      */
     public ColourXY getColourXY() {
@@ -120,14 +151,17 @@ public class Light extends Device {
 
     /**
      * Get the RGB values of the colour of the light
+     *
      * @return The RGB values of the colour of the light
      */
     public ColourRGB getColourRGB() {
-        return ColourRGB.fromHS(properties.getHue() != null ? properties.getHue() : 0, properties.getSaturation() != null ? properties.getSaturation() : 0);
+        return ColourRGB.fromHS(properties.getHue() != null ? properties.getHue() : 0,
+                properties.getSaturation() != null ? properties.getSaturation() : 0);
     }
 
     /**
      * Get the colour temperature of the light
+     *
      * @return The colour temperature of the light
      */
     public Integer getColourTemperature() {
@@ -136,6 +170,7 @@ public class Light extends Device {
 
     /**
      * Update the on / off state of the light in the update queue
+     *
      * @param on The new on / off state for the light (true for on, false for off)
      */
     public void updateOn(Boolean on) {
@@ -144,6 +179,7 @@ public class Light extends Device {
 
     /**
      * Update the brightness of the light in the update queue
+     *
      * @param brightness The new brightness for the light
      */
     public void updateBrightness(Integer brightness) {
@@ -152,6 +188,7 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue to a predefined hexadecimal colour
+     *
      * @param colourHex The new colour for the light
      */
     public void updateColourHex(String colourHex) {
@@ -165,6 +202,7 @@ public class Light extends Device {
 
     /**
      * Update the hue of the light in the update queue
+     *
      * @param hue The new hue for the light
      */
     public void updateHue(Integer hue) {
@@ -177,6 +215,7 @@ public class Light extends Device {
 
     /**
      * Update the saturation of the light in the update queue
+     *
      * @param saturation The new saturation for the light
      */
     public void updateSaturation(Integer saturation) {
@@ -189,6 +228,7 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue
+     *
      * @param colourX The X value of the new colour for the light
      * @param colourY The Y value of the new colour for the light
      */
@@ -203,6 +243,7 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue
+     *
      * @param colourXY The new colour for the light
      */
     public void updateColour(ColourXY colourXY) {
@@ -216,6 +257,7 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue
+     *
      * @param colourRGB The new colour for the light
      */
     public void updateColour(ColourRGB colourRGB) {
@@ -224,6 +266,7 @@ public class Light extends Device {
 
     /**
      * Update the colour of the light in the update queue
+     *
      * @param colourRed The red value of the new colour for the light
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
@@ -234,6 +277,7 @@ public class Light extends Device {
 
     /**
      * Update the colour temperature of the light in the update queue
+     *
      * @param colourTemperature The new colour temperature for the light
      */
     public void updateColourTemperature(Integer colourTemperature) {
@@ -247,14 +291,16 @@ public class Light extends Device {
 
     /**
      * Update the transition time for updating the light in the update queue
+     *
      * @param transitionTime The new transition time for updating the light
      */
-    public void updateTransitionTime(Integer transitionTime){
+    public void updateTransitionTime(Integer transitionTime) {
         newProperties.setTransitionTime(transitionTime);
     }
 
     /**
      * Set the on / off state of the light
+     *
      * @param on The new on / off state for the light (true for on, false for off)
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the on / off state of the light, false if not
@@ -268,15 +314,17 @@ public class Light extends Device {
 
     /**
      * Set the on / off state of the light
+     *
      * @param on The new on / off state for the light (true for on, false for off)
      * @return True if successfully updated the on / off state of the light, false if not
      */
-    public boolean setOn(Boolean on){
+    public boolean setOn(Boolean on) {
         return setOn(on, null);
     }
 
     /**
      * Set the brightness of the light
+     *
      * @param brightness The new brightness for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the brightness of the light, false if not
@@ -290,15 +338,17 @@ public class Light extends Device {
 
     /**
      * Set the brightness of the light
+     *
      * @param brightness The new brightness for the light
      * @return True if successfully updated the brightness of the light, false if not
      */
-    public boolean setBrightness(Integer brightness){
+    public boolean setBrightness(Integer brightness) {
         return setBrightness(brightness, null);
     }
 
     /**
      * Set the colour of the light to a predefined hexadecimal colour
+     *
      * @param colourHex The new colour for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the colour of the light, false if not
@@ -312,15 +362,17 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light to a predefined hexadecimal colour
+     *
      * @param colourHex The new colour for the light
      * @return True if successfully updated the colour of the light, false if not
      */
-    public boolean setColourHex(String colourHex){
+    public boolean setColourHex(String colourHex) {
         return setColourHex(colourHex, null);
     }
 
     /**
      * Set the hue of the light
+     *
      * @param hue The new hue for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the hue of the light, false if not
@@ -334,15 +386,17 @@ public class Light extends Device {
 
     /**
      * Set the hue of the light
+     *
      * @param hue The new hue for the light
      * @return True if successfully updated the hue of the light, false if not
      */
-    public boolean setHue(Integer hue){
+    public boolean setHue(Integer hue) {
         return setHue(hue, null);
     }
 
     /**
      * Set the saturation of the light
+     *
      * @param saturation The new saturation for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the saturation of the light, false if not
@@ -356,15 +410,17 @@ public class Light extends Device {
 
     /**
      * Set the saturation of the light
+     *
      * @param saturation The new saturation for the light
      * @return True if successfully updated the saturation of the light, false if not
      */
-    public boolean setSaturation(Integer saturation){
+    public boolean setSaturation(Integer saturation) {
         return setSaturation(saturation, null);
     }
 
     /**
      * Set the colour of the light
+     *
      * @param colourX The X value of the new colour for the light
      * @param colourY The Y value of the new colour for the light
      * @param transitionTime The transition time for updating the light
@@ -380,16 +436,18 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light
+     *
      * @param colourX The X value of the new colour for the light
      * @param colourY The Y value of the new colour for the light
      * @return True if successfully updated the colour of the light, false if not
      */
-    public boolean setColourXY(Integer colourX, Integer colourY){
+    public boolean setColourXY(Integer colourX, Integer colourY) {
         return setColourXY(colourX, colourY, null);
     }
 
     /**
      * Set the colour of the light
+     *
      * @param colourXY The new colour for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the colour of the light, false if not
@@ -400,15 +458,17 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light
+     *
      * @param colourXY The new colour for the light
      * @return True if successfully updated the colour of the light, false if not
      */
-    public boolean setColour(ColourXY colourXY){
+    public boolean setColour(ColourXY colourXY) {
         return setColour(colourXY, null);
     }
 
     /**
      * Set the colour of the light
+     *
      * @param colourRGB The new colour for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the colour of the light, false if not
@@ -419,15 +479,17 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light
+     *
      * @param colourRGB The new colour for the light
      * @return True if successfully updated the colour of the light, false if not
      */
-    public boolean setColour(ColourRGB colourRGB){
+    public boolean setColour(ColourRGB colourRGB) {
         return setColour(colourRGB, null);
     }
 
     /**
      * Set the colour of the light
+     *
      * @param colourRed The red value of the new colour for the light
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
@@ -440,17 +502,19 @@ public class Light extends Device {
 
     /**
      * Set the colour of the light
+     *
      * @param colourRed The red value of the new colour for the light
      * @param colourGreen The green value of the new colour for the light
      * @param colourBlue The blue value of the new colour for the light
      * @return True if successfully updated the colour of the light, false if not
      */
-    public boolean setColourRGB(int colourRed, int colourGreen, int colourBlue){
+    public boolean setColourRGB(int colourRed, int colourGreen, int colourBlue) {
         return setColour(new ColourRGB(colourRed, colourGreen, colourBlue));
     }
 
     /**
      * Set the colour temperature of the light
+     *
      * @param colourTemperature The new colour temperature for the light
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the colour temperature of the light, false if not
@@ -464,27 +528,31 @@ public class Light extends Device {
 
     /**
      * Set the colour temperature of the light
+     *
      * @param colourTemperature The new colour temperature for the light
      * @return True if successfully updated the colour temperature of the light, false if not
      */
-    public boolean setColourTemperature(Integer colourTemperature){
+    public boolean setColourTemperature(Integer colourTemperature) {
         return setColourTemperature(colourTemperature, null);
     }
 
     /**
      * Apply updates to the light
+     *
      * @param newProperties The new properties to apply to the light
      * @return True if successfully updated the light, false if not
      */
     private boolean applyUpdate(LightProperties newProperties) {
         DeviceRequest request = new DeviceRequest();
-        request.setLightProperties(new LightProperties[]{newProperties});
-        String response = coapClient.put(ApiEndpoint.getUri(ApiEndpoint.DEVICES, String.valueOf(getInstanceId())), request, String.class);
+        request.setLightProperties(new LightProperties[] { newProperties });
+        String response = coapClient.put(ApiEndpoint.getUri(ApiEndpoint.DEVICES, String.valueOf(getInstanceId())),
+                request, String.class);
         return response != null;
     }
 
     /**
      * Apply the updates in the update queue to the light
+     *
      * @return True if successfully updated the light, false if not
      */
     public boolean applyUpdates() {
@@ -495,6 +563,7 @@ public class Light extends Device {
 
     /**
      * Apply the updates in the update queue to the light
+     *
      * @param transitionTime The transition time for updating the light
      * @return True if successfully updated the light, false if not
      */
@@ -502,5 +571,4 @@ public class Light extends Device {
         newProperties.setTransitionTime(transitionTime);
         return applyUpdates();
     }
-
 }

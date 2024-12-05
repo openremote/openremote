@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFilter;
+import static java.util.Objects.requireNonNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueFilter;
 
 /**
  * A link from one attribute to another with a definition of how to map the value from the source attribute
@@ -46,7 +46,9 @@ import static java.util.Objects.requireNonNull;
  * To convert null values the converter key of {@link org.openremote.model.util.ValueUtil#NULL_LITERAL} can be used.
  * <p>
  * Example {@link MetaItemType#ATTRIBUTE_LINKS} meta items:
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>{@code
  * [
  * "name": "urn:openremote:asset:meta:attributeLink",
  * "value": {
@@ -69,9 +71,11 @@ import static java.util.Objects.requireNonNull;
  * }
  * }
  * ]
- * }</pre></blockquote>
+ * }</pre>
+ *
+ * </blockquote>
  */
-//TODO: Somehow combine this with rules
+// TODO: Somehow combine this with rules
 public class AttributeLink implements Serializable {
 
     public enum ConverterType {
@@ -127,8 +131,7 @@ public class AttributeLink implements Serializable {
 
     @JsonCreator
     public AttributeLink(@JsonProperty("ref") AttributeRef ref,
-                         @JsonProperty("converter") Map<String, Object> converter,
-                         @JsonProperty("filters") ValueFilter[] filters) {
+            @JsonProperty("converter") Map<String, Object> converter, @JsonProperty("filters") ValueFilter[] filters) {
         this.ref = requireNonNull(ref);
         this.converter = converter;
         this.filters = filters;
@@ -160,10 +163,7 @@ public class AttributeLink implements Serializable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "ref=" + ref +
-            ", converter=" + converter +
-            ", filters=" + (filters != null ? Arrays.toString(filters) : "null") +
-            '}';
+        return getClass().getSimpleName() + "{" + "ref=" + ref + ", converter=" + converter + ", filters="
+                + (filters != null ? Arrays.toString(filters) : "null") + '}';
     }
 }

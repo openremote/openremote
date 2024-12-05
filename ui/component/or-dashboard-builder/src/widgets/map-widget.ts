@@ -1,11 +1,29 @@
-import {html, PropertyValues, TemplateResult} from "lit";
-import {customElement} from "lit/decorators.js";
-import {OrAssetWidget} from "../util/or-asset-widget";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
-import {WidgetSettings} from "../util/widget-settings";
-import {MapSettings} from "../settings/map-settings";
-import {WidgetConfig} from "../util/widget-config";
-import {Asset, AssetDescriptor, Attribute, AttributeRef, GeoJSONPoint, WellknownAttributes, WellknownMetaItems} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, PropertyValues, TemplateResult } from "lit";
+import { customElement } from "lit/decorators.js";
+import { OrAssetWidget } from "../util/or-asset-widget";
+import { OrWidget, WidgetManifest } from "../util/or-widget";
+import { WidgetSettings } from "../util/widget-settings";
+import { MapSettings } from "../settings/map-settings";
+import { WidgetConfig } from "../util/widget-config";
+import { Asset, AssetDescriptor, Attribute, AttributeRef, GeoJSONPoint, WellknownAttributes, WellknownMetaItems } from "@openremote/model";
 import {
     LngLatLike,
     AttributeMarkerColours,
@@ -13,8 +31,8 @@ import {
     AttributeMarkerColoursRange,
     MapMarkerColours, MapMarkerAssetConfig,
 } from "@openremote/or-map";
-import {when} from "lit/directives/when.js";
-import manager, {Util} from "@openremote/core";
+import { when } from "lit/directives/when.js";
+import manager, { Util } from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import "@openremote/or-map";
 
@@ -51,7 +69,7 @@ function getDefaultWidgetConfig(): MapWidgetConfig {
         showLabels: false,
         showUnits: false,
         showGeoJson: true,
-        boolColors: {type: 'boolean', 'false': '#ef5350', 'true': '#4caf50'},
+        boolColors: { type: 'boolean', 'false': '#ef5350', 'true': '#4caf50' },
         textColors: [['example', '4caf50'], ['example2', 'ef5350']],
         thresholds: [[0, "#4caf50"], [75, "#ff9800"], [90, "#ef5350"]],
         assetTypes: [],
@@ -91,13 +109,13 @@ export class MapWidget extends OrAssetWidget {
     }
 
     protected updated(changedProps: PropertyValues) {
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             this.loadAssets();
         }
     }
 
     protected async loadAssets() {
-        if(this.widgetConfig.assetType && this.widgetConfig.attributeName) {
+        if (this.widgetConfig.assetType && this.widgetConfig.attributeName) {
             this.fetchAssetsByType([this.widgetConfig.assetType], this.widgetConfig.attributeName).then((assets) => {
                 this.loadedAssets = assets;
             });
@@ -131,8 +149,8 @@ export class MapWidget extends OrAssetWidget {
             <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
                 <or-map id="miniMap" class="or-map" .zoom="${this.widgetConfig.zoom}" .center="${this.widgetConfig.center}" .showGeoJson="${this.widgetConfig.showGeoJson}" style="flex: 1;">
                     ${when(this.loadedAssets, () => {
-                        return this.getMarkerTemplates();
-                    })}
+            return this.getMarkerTemplates();
+        })}
                 </or-map>
             </div>
         `;
@@ -148,7 +166,7 @@ export class MapWidget extends OrAssetWidget {
         }).map(asset => {
             if (this.markers) {
                 // Configure map marker asset settings
-                this.markers[asset.type!] = {attributeName: this.widgetConfig.attributeName!};
+                this.markers[asset.type!] = { attributeName: this.widgetConfig.attributeName! };
                 this.markers[asset.type!].showUnits = this.widgetConfig.showUnits;
                 this.markers[asset.type!].showLabel = this.widgetConfig.showLabels;
                 if (this.widgetConfig.valueType == 'boolean') {
@@ -156,7 +174,7 @@ export class MapWidget extends OrAssetWidget {
                     (this.widgetConfig.boolColors as any).false = (this.widgetConfig.boolColors as any).false.replace("#", "");
                     this.markers[asset.type!].colours = this.widgetConfig.boolColors;
                 } else if (this.widgetConfig.valueType == 'text') {
-                    var colors: AttributeMarkerColours = {type: 'string',};
+                    var colors: AttributeMarkerColours = { type: 'string', };
                     (this.widgetConfig.textColors as [string, string][]).map((threshold) => {
                         colors[threshold[0] as string] = (threshold[1] as string).replace('#', '');
                     })

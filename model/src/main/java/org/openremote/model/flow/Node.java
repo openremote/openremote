@@ -1,9 +1,6 @@
 /*
  * Copyright 2015, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.flow;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "NODE")
@@ -46,9 +44,7 @@ public class Node extends FlowObject {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FLOW_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_NODE_FLOW_ID"))
-    @org.hibernate.annotations.OnDelete(
-        action = org.hibernate.annotations.OnDeleteAction.CASCADE
-    )
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
 
     @JsonIgnore
     public Flow flow;
@@ -78,22 +74,17 @@ public class Node extends FlowObject {
     @Column(name = "PERSISTENT_PROPERTY_PATHS", nullable = true)
     public String[] persistentPropertyPaths;
 
-
     protected Node() {
     }
-
 
     public Node(String label, String id, String type) {
         super(label, id, type);
     }
 
-
     public Node(String label, String id, String type, String subflowId) {
         super(label, id, type);
         if (!isOfTypeSubflow()) {
-            throw new IllegalArgumentException(
-                "Node with subflow identifier must be of type: " + TYPE_SUBFLOW
-            );
+            throw new IllegalArgumentException("Node with subflow identifier must be of type: " + TYPE_SUBFLOW);
         }
         this.subflowId = subflowId;
     }

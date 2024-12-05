@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol;
+
+import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -35,15 +43,6 @@ import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.protocol.ProtocolAssetService;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.util.Pair;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 
@@ -144,18 +143,16 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     public void processLinkedAttributeWrite(AttributeEvent event) {
         synchronized (processorLock) {
-            LOG.log(System.Logger.Level.TRACE, () -> "Processing linked attribute write on protocol '" + this + "': " + event);
+            LOG.log(System.Logger.Level.TRACE,
+                    () -> "Processing linked attribute write on protocol '" + this + "': " + event);
             AgentLink<?> agentLink = agent.getAgentLink(event);
 
-            Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
-                event.getRef(),
-                agentLink,
-                event.getValue().orElse(null),
-                dynamicAttributes.contains(event.getRef()),
-                timerService.getNow());
+            Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(event.getRef(), agentLink,
+                    event.getValue().orElse(null), dynamicAttributes.contains(event.getRef()), timerService.getNow());
 
             if (ignoreAndConverted.key) {
-                LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());
+                LOG.log(System.Logger.Level.DEBUG,
+                        "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());
                 return;
             }
 
@@ -183,26 +180,30 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     final protected void sendAttributeEvent(AttributeEvent event) {
         // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
         if (linkedAttributes.containsKey(event.getRef())) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
+            LOG.log(System.Logger.Level.WARNING,
+                    () -> "Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: "
+                            + event);
             return;
         }
         assetService.sendAttributeEvent(event);
     }
-
 
     @Override
     final public void updateLinkedAttribute(final AttributeRef attributeRef, final Object value, long timestamp) {
         Attribute<?> attribute = linkedAttributes.get(attributeRef);
 
         if (attribute == null) {
-            LOG.log(System.Logger.Level.WARNING, () -> "Update linked attribute called for un-linked attribute: " + attributeRef);
+            LOG.log(System.Logger.Level.WARNING,
+                    () -> "Update linked attribute called for un-linked attribute: " + attributeRef);
             return;
         }
 
-        Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doInboundValueProcessing(attributeRef.getId(), attribute, agent.getAgentLink(attribute), value);
+        Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doInboundValueProcessing(attributeRef.getId(),
+                attribute, agent.getAgentLink(attribute), value);
 
         if (ignoreAndConverted.key) {
-            LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not be updated: " + attributeRef);
+            LOG.log(System.Logger.Level.DEBUG,
+                    "Value conversion returned ignore so attribute will not be updated: " + attributeRef);
             return;
         }
 
@@ -219,7 +220,7 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     public boolean onAgentAttributeChanged(AttributeEvent event) {
         // If event is for an agent attribute then we can try and handle it here in a generic way
-        Agent<?,?,?> agent = getAgent();
+        Agent<?, ?, ?> agent = getAgent();
         return agent.isConfigurationAttribute(event.getName());
     }
 
@@ -241,7 +242,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     /**
      * Link an {@link Attribute} to its linked {@link Agent}.
      */
-    abstract protected void doLinkAttribute(String assetId, Attribute<?> attribute, U agentLink) throws RuntimeException;
+    abstract protected void doLinkAttribute(String assetId, Attribute<?> attribute, U agentLink)
+            throws RuntimeException;
 
     /**
      * Unlink an {@link Attribute} from its linked {@link Agent}.

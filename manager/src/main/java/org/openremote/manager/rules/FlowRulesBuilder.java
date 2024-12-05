@@ -1,4 +1,25 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.manager.rules;
+
+import java.util.*;
+import java.util.logging.Logger;
 
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.core.RuleBuilder;
@@ -14,9 +35,6 @@ import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.rules.flow.NodeSocket;
 import org.openremote.model.rules.flow.NodeType;
 
-import java.util.*;
-import java.util.logging.Logger;
-
 public class FlowRulesBuilder {
 
     protected final Logger LOG;
@@ -29,16 +47,10 @@ public class FlowRulesBuilder {
     protected final HistoricDatapoints historicDatapointsFacade;
     protected final PredictedDatapoints predictedDatapointsFacade;
     protected final TimerService timerService;
-  
-    public FlowRulesBuilder(
-        Logger logger,
-        TimerService timerService,
-        AssetStorageService assetStorageService,
-        Assets assetsFacade,
-        Users usersFacade,
-        Notifications notificationFacade,
-        HistoricDatapoints historicDatapointsFacade,
-        PredictedDatapoints predictedDatapointsFacade) {
+
+    public FlowRulesBuilder(Logger logger, TimerService timerService, AssetStorageService assetStorageService,
+            Assets assetsFacade, Users usersFacade, Notifications notificationFacade,
+            HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.assetsFacade = assetsFacade;
@@ -58,7 +70,8 @@ public class FlowRulesBuilder {
         List<Rule> rules = new ArrayList<>();
         for (NodeCollection collection : nodeCollections) {
             for (Node node : collection.getNodes()) {
-                if (node.getType() != NodeType.OUTPUT) continue;
+                if (node.getType() != NodeType.OUTPUT)
+                    continue;
                 try {
                     LOG.fine("Flow rule created");
                     rules.add(createRule(collection.getName() + " - " + count, collection, node));
@@ -72,7 +85,9 @@ public class FlowRulesBuilder {
     }
 
     private Rule createRule(String name, NodeCollection collection, Node outputNode) throws Exception {
-        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName()).execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade, notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
+        Object implementationResult = NodeModel.getImplementationFor(outputNode.getName())
+                .execute(new NodeExecutionRequestInfo(collection, outputNode, null, null, assetsFacade, usersFacade,
+                        notificationFacade, historicDatapointsFacade, predictedDatapointsFacade));
 
         if (!(implementationResult instanceof RulesBuilder.Action action))
             throw new Exception(outputNode.getName() + " node does not return an action");
@@ -88,25 +103,21 @@ public class FlowRulesBuilder {
 
         triggerMap.put(name, -1L);
 
-        return new RuleBuilder().
-                name(name).
-                description(collection.getDescription()).
-                when(facts -> {
-                    Object result = condition.evaluate((RulesFacts) facts);
+        return new RuleBuilder().name(name).description(collection.getDescription()).when(facts -> {
+            Object result = condition.evaluate((RulesFacts) facts);
 
-                    if (result instanceof Boolean) {
-                        return (boolean) result;
-                    } else {
-                        String msg = "Error evaluating condition of rule, expected boolean but got " + (result != null ? result.getClass() : "null");
-                        LOG.warning(msg);
-                        throw new IllegalArgumentException(msg);
-                    }
-                }).
-                then(facts -> {
-                    action.execute((RulesFacts) facts);
-                    triggerMap.put(name, timerService.getCurrentTimeMillis());
-                }).
-                build();
+            if (result instanceof Boolean) {
+                return (boolean) result;
+            } else {
+                String msg = "Error evaluating condition of rule, expected boolean but got "
+                        + (result != null ? result.getClass() : "null");
+                LOG.warning(msg);
+                throw new IllegalArgumentException(msg);
+            }
+        }).then(facts -> {
+            action.execute((RulesFacts) facts);
+            triggerMap.put(name, timerService.getCurrentTimeMillis());
+        }).build();
     }
 
     private List<Node> backtrackFrom(NodeCollection collection, Node node) {
@@ -114,7 +125,8 @@ public class FlowRulesBuilder {
         List<Node> children = new ArrayList<>();
 
         for (NodeSocket s : node.getInputs()) {
-            children.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getTo().equals(s.getId())).map(c -> collection.getNodeById(collection.getSocketById(c.getFrom()).getNodeId())).toList());
+            children.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getTo().equals(s.getId()))
+                    .map(c -> collection.getNodeById(collection.getSocketById(c.getFrom()).getNodeId())).toList());
         }
 
         for (Node child : children) {

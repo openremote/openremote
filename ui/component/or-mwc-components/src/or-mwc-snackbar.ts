@@ -1,6 +1,24 @@
-import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {MDCSnackbar, MDCSnackbarCloseEvent} from "@material/snackbar";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, unsafeCSS } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { MDCSnackbar, MDCSnackbarCloseEvent } from "@material/snackbar";
 
 const drawerStyle = require("@material/snackbar/dist/mdc.snackbar.css");
 
@@ -68,15 +86,15 @@ export class OrMwcSnackbar extends LitElement {
         ];
     }
 
-    @property({type: String, attribute: false})
+    @property({ type: String, attribute: false })
     public text!: string;
-    @property({type: String})
+    @property({ type: String })
     public buttonText?: string;
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public buttonAction?: () => void;
-    @property({type: Number})
+    @property({ type: Number })
     public timeout?: number;
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public _open: boolean = false;
     @query("#mdc-snackbar")
     protected _mdcElem!: HTMLElement;
@@ -144,11 +162,11 @@ export class OrMwcSnackbar extends LitElement {
         if (this.buttonAction) {
             this.buttonAction();
         }
-        this.dispatchChangedEvent({opened: false, closeReason: reason});
+        this.dispatchChangedEvent({ opened: false, closeReason: reason });
     }
 
     protected onOpen() {
-        this.dispatchChangedEvent({opened: true});
+        this.dispatchChangedEvent({ opened: true });
     }
 
     protected dispatchChangedEvent(detail: OrMwcSnackbarChangedEventDetail) {

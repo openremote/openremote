@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.models.VendorModel;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -32,10 +25,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.models.VendorModel;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.DeviceFeatureUtils;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+
 /**
  * To be used as a wrapper class for when creating the ConfigCompositionDataStatus Message.
  */
-public class ConfigCompositionDataStatus extends ConfigStatusMessage{
+public class ConfigCompositionDataStatus extends ConfigStatusMessage {
 
     public static final Logger LOG = Logger.getLogger(ConfigCompositionDataStatus.class.getName());
 
@@ -76,23 +75,23 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
         final AccessMessage message = (AccessMessage) mMessage;
         final byte[] accessPayload = message.getAccessPdu();
 
-        //Bluetooth SIG 16-bit company identifier
+        // Bluetooth SIG 16-bit company identifier
         companyIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[2], accessPayload[3]);
         LOG.info("Company identifier: " + String.format(Locale.US, "%04X", companyIdentifier));
 
-        //16-bit vendor-assigned product identifier;
+        // 16-bit vendor-assigned product identifier;
         productIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[4], accessPayload[5]);
         LOG.info("Product identifier: " + String.format(Locale.US, "%04X", productIdentifier));
 
-        //16-bit vendor-assigned product version identifier;
+        // 16-bit vendor-assigned product version identifier;
         versionIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[6], accessPayload[7]);
         LOG.info("Version identifier: " + String.format(Locale.US, "%04X", versionIdentifier));
 
-        //16-bit representation of the minimum number of replay protection list entries in a device
+        // 16-bit representation of the minimum number of replay protection list entries in a device
         crpl = MeshParserUtils.unsignedBytesToInt(accessPayload[8], accessPayload[9]);
         LOG.info("crpl: " + String.format(Locale.US, "%04X", crpl));
 
-        //16-bit device features
+        // 16-bit device features
         features = MeshParserUtils.unsignedBytesToInt(accessPayload[10], accessPayload[11]);
         LOG.info("Features: " + String.format(Locale.US, "%04X", features));
 
@@ -123,7 +122,7 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
      * Parses the elements within the composition data status
      *
      * @param accessPayload underlying payload containing the elements
-     * @param src           source address
+     * @param src source address
      */
     private void parseElements(final byte[] accessPayload, final int src) {
         int tempOffset = ELEMENTS_OFFSET;
@@ -145,7 +144,8 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
             tempOffset = tempOffset + 1;
             if (numSigModelIds > 0) {
                 for (int i = 0; i < numSigModelIds; i++) {
-                    final int modelId = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset], accessPayload[tempOffset + 1]);
+                    final int modelId = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset],
+                            accessPayload[tempOffset + 1]);
                     models.put(modelId, SigModelParser.getSigModel(modelId)); // sig models are 16-bit
                     LOG.info("Sig model ID " + i + " : " + String.format(Locale.US, "%04X", modelId));
                     tempOffset = tempOffset + 2;
@@ -155,11 +155,14 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
             if (numVendorModelIds > 0) {
                 for (int i = 0; i < numVendorModelIds; i++) {
                     // vendor models are 32-bit that contains a 16-bit company identifier and a 16-bit model identifier
-                    final int companyIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset], accessPayload[tempOffset + 1]);
-                    final int modelIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset + 2], accessPayload[tempOffset + 3]);
+                    final int companyIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset],
+                            accessPayload[tempOffset + 1]);
+                    final int modelIdentifier = MeshParserUtils.unsignedBytesToInt(accessPayload[tempOffset + 2],
+                            accessPayload[tempOffset + 3]);
                     final int vendorModelIdentifier = companyIdentifier << 16 | modelIdentifier;
                     models.put(vendorModelIdentifier, new VendorModel(vendorModelIdentifier));
-                    LOG.info("Vendor - model ID " + i + " : " + String.format(Locale.US, "%08X", vendorModelIdentifier));
+                    LOG.info(
+                            "Vendor - model ID " + i + " : " + String.format(Locale.US, "%08X", vendorModelIdentifier));
                     tempOffset = tempOffset + 4;
                 }
             }
@@ -290,5 +293,4 @@ public class ConfigCompositionDataStatus extends ConfigStatusMessage{
     public int getOpCode() {
         return OP_CODE;
     }
-
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,29 +13,35 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.persistence;
 
+import java.util.Properties;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import org.hibernate.cfg.AvailableSettings;
 import org.openremote.container.concurrent.ContainerThreadFactory;
-
-import java.util.Properties;
 
 public interface Database {
 
     String PROPERTY_POOL_NAME = Database.class.getName() + ".POOL_NAME";
 
     /**
-     * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will be passed into {@link #open}.
+     * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will
+     *         be passed into {@link #open}.
      */
     Properties createProperties();
 
     /**
-     * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+     * Modify persistence properties (e.g. set datasource) used to call
+     * <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
      */
-    void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
+    void open(Properties properties, String connectionUrl, String username, String password,
+            int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
     void close();
 
@@ -50,45 +53,48 @@ public interface Database {
             protected HikariConfig hikariConfig;
             protected HikariDataSource hikariDataSource;
 
-        @Override
-        public Properties createProperties() {
-            return new Properties();
-        }
+            @Override
+            public Properties createProperties() {
+                return new Properties();
+            }
 
-        @Override
-        public String getConnectorName() {
-            return "postgresql";
-        }
+            @Override
+            public String getConnectorName() {
+                return "postgresql";
+            }
 
-        @SuppressWarnings("deprecation")
-        @Override
-        public void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
-            hikariConfig = new HikariConfig();
-            hikariConfig.setRegisterMbeans(true);
-            hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
-            hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
-            hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
-            hikariConfig.addDataSourceProperty("url", connectionUrl);
-            hikariConfig.setUsername(username);
-            hikariConfig.setPassword(password);
-            hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000L);
-            hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000L);
-            hikariConfig.setMinimumIdle(minIdle);
-            hikariConfig.setMaximumPoolSize(maxPoolSize);
+            @SuppressWarnings("deprecation")
+            @Override
+            public void open(Properties properties, String connectionUrl, String username, String password,
+                    int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
+                hikariConfig = new HikariConfig();
+                hikariConfig.setRegisterMbeans(true);
+                hikariConfig.setPoolName(
+                        properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString()
+                                : "or-pool");
+                hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
+                hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
+                hikariConfig.addDataSourceProperty("url", connectionUrl);
+                hikariConfig.setUsername(username);
+                hikariConfig.setPassword(password);
+                hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000L);
+                hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000L);
+                hikariConfig.setMinimumIdle(minIdle);
+                hikariConfig.setMaximumPoolSize(maxPoolSize);
 
-            hikariDataSource = new HikariDataSource(hikariConfig);
+                hikariDataSource = new HikariDataSource(hikariConfig);
 
-            // TODO: Change when hikariCP is updated to look for new property
-            properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
-        }
+                // TODO: Change when hikariCP is updated to look for new property
+                properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
+            }
 
-        @Override
-        public void close() {
-            if (hikariDataSource != null)
-                hikariDataSource.close();
-            hikariConfig = null;
-            hikariDataSource = null;
+            @Override
+            public void close() {
+                if (hikariDataSource != null)
+                    hikariDataSource.close();
+                hikariConfig = null;
+                hikariDataSource = null;
+            }
         }
     }
-}
 }

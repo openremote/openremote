@@ -1,15 +1,33 @@
-import {css, html, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import {WidgetSettings} from "../util/widget-settings";
+import { WidgetSettings } from "../util/widget-settings";
 import "../panels/attributes-panel";
 import "../util/settings-panel";
-import {i18next} from "@openremote/or-translate";
-import {AttributeAction, AttributeActionEvent, AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef} from "@openremote/model";
-import {ChartWidgetConfig} from "../widgets/chart-widget";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {TimePresetCallback} from "@openremote/or-chart";
-import {when} from "lit/directives/when.js";
+import { i18next } from "@openremote/or-translate";
+import { AttributeAction, AttributeActionEvent, AttributesSelectEvent } from "../panels/attributes-panel";
+import { Asset, AssetDatapointIntervalQuery, AssetDatapointIntervalQueryFormula, Attribute, AttributeRef } from "@openremote/model";
+import { ChartWidgetConfig } from "../widgets/chart-widget";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { TimePresetCallback } from "@openremote/or-chart";
+import { when } from "lit/directives/when.js";
 
 const styling = css`
   .switch-container {
@@ -143,9 +161,9 @@ export class ChartSettings extends WidgetSettings {
 
                         <!-- Right axis configuration -->
                         ${when(isMultiAxis, () => {
-                            const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
-                            const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
-                            return html`
+            const rightMin = this.widgetConfig.chartOptions.options?.scales?.y1?.min;
+            const rightMax = this.widgetConfig.chartOptions.options?.scales?.y1?.max;
+            return html`
                                 <div>
                                     <div style="margin-bottom: 8px;">
                                         <span><or-translate value="dashboard.rightAxis"></or-translate></span>
@@ -178,7 +196,7 @@ export class ChartSettings extends WidgetSettings {
                                     </div>
                                 </div>
                             `
-                        })}
+        })}
                     </div>
                 </settings-panel>
 
@@ -221,8 +239,8 @@ export class ChartSettings extends WidgetSettings {
     // When a user clicks on ANY action in the attribute list, we want to switch between LEFT and RIGHT axis.
     // Since that is the only action, there is no need to check the ev.action variable.
     protected onAttributeAction(ev: AttributeActionEvent) {
-        if(this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef) >= 0) {
-            if(this.widgetConfig.rightAxisAttributes.includes(ev.detail.attributeRef)) {
+        if (this.widgetConfig.attributeRefs.indexOf(ev.detail.attributeRef) >= 0) {
+            if (this.widgetConfig.rightAxisAttributes.includes(ev.detail.attributeRef)) {
                 this.removeFromRightAxis(ev.detail.attributeRef);
             } else {
                 this.addToRightAxis(ev.detail.attributeRef);
@@ -242,18 +260,18 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected addToRightAxis(attributeRef: AttributeRef, notify = false) {
-        if(!this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
+        if (!this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
             this.widgetConfig.rightAxisAttributes.push(attributeRef);
-            if(notify) {
+            if (notify) {
                 this.notifyConfigUpdate();
             }
         }
     }
 
     protected removeFromRightAxis(attributeRef: AttributeRef, notify = false) {
-        if(this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
+        if (this.widgetConfig.rightAxisAttributes.includes(attributeRef)) {
             this.widgetConfig.rightAxisAttributes.splice(this.widgetConfig.rightAxisAttributes.indexOf(attributeRef), 1);
-            if(notify) {
+            if (notify) {
                 this.notifyConfigUpdate();
             }
         }
@@ -275,14 +293,14 @@ export class ChartSettings extends WidgetSettings {
     }
 
     protected setAxisMinMaxValue(axis: 'left' | 'right', type: 'min' | 'max', value?: number) {
-        if(axis === 'left') {
-            if(type === 'min') {
+        if (axis === 'left') {
+            if (type === 'min') {
                 this.widgetConfig.chartOptions.options.scales.y.min = value;
             } else {
                 this.widgetConfig.chartOptions.options.scales.y.max = value;
             }
         } else {
-            if(type === 'min') {
+            if (type === 'min') {
                 this.widgetConfig.chartOptions.options.scales.y1.min = value;
             } else {
                 this.widgetConfig.chartOptions.options.scales.y1.max = value;

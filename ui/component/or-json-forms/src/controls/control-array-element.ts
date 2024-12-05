@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     computeLabel,
     createDefaultValue,
@@ -8,19 +26,19 @@ import {
     Resolve,
     update
 } from "@jsonforms/core";
-import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate";
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { css, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor } from "../util";
+import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
-import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {DefaultColor4, DefaultColor5} from "@openremote/core";
-import {ControlBaseElement} from "./control-base-element";
-import {getTemplateWrapper} from "../index";
-import {AdditionalProps} from "../base-element";
+import { addItemOrParameterDialogStyle, baseStyle, panelStyle } from "../styles";
+import { ListItem, OrMwcListChangedEvent } from "@openremote/or-mwc-components/or-mwc-list";
+import { DefaultColor4, DefaultColor5 } from "@openremote/core";
+import { ControlBaseElement } from "./control-base-element";
+import { getTemplateWrapper } from "../index";
+import { AdditionalProps } from "../base-element";
 
 // language=CSS
 const style = css`
@@ -158,17 +176,17 @@ export class ControlArrayElement extends ControlBaseElement {
                     
                     ${!Array.isArray(this.data) ? `` : (this.data as any[]).map((item, index) => {
 
-                        const childPath = Paths.compose(this.path, "" + index);
-            
-                        const props: OwnPropsOfRenderer | AdditionalProps = {
-                            renderers: this.renderers,
-                            uischema: controlWithoutLabel("#"),
-                            schema: this.resolvedSchema,
-                            path: childPath
-                        }
-            
-                        return this.getArrayItemWrapper(getTemplateFromProps(this.state, props) || html``, index);
-                    })}
+            const childPath = Paths.compose(this.path, "" + index);
+
+            const props: OwnPropsOfRenderer | AdditionalProps = {
+                renderers: this.renderers,
+                uischema: controlWithoutLabel("#"),
+                schema: this.resolvedSchema,
+                path: childPath
+            }
+
+            return this.getArrayItemWrapper(getTemplateFromProps(this.state, props) || html``, index);
+        })}
 
                 </div>
                 ${this.errors ? `` : html`
@@ -199,7 +217,7 @@ export class ControlArrayElement extends ControlBaseElement {
         const itemWrapperElem = buttonElem!.parentElement!.parentElement as HTMLDivElement;
         itemWrapperElem.classList.add("dragging");
         const itemContainerElem = itemWrapperElem!.lastElementChild!;
-        ev.dataTransfer!.setDragImage(itemContainerElem, (itemContainerElem.getBoundingClientRect().width/2) - 50, 0);
+        ev.dataTransfer!.setDragImage(itemContainerElem, (itemContainerElem.getBoundingClientRect().width / 2) - 50, 0);
     }
 
     protected _onDragEnd(ev: DragEvent) {
@@ -229,7 +247,7 @@ export class ControlArrayElement extends ControlBaseElement {
         ev.preventDefault();
 
         const draggables = [...((this.shadowRoot!.querySelectorAll(".item-wrapper:not(.dragging)") as any) as HTMLDivElement[])];
-        const initial = {offset: Number.NEGATIVE_INFINITY, element: null} as {
+        const initial = { offset: Number.NEGATIVE_INFINITY, element: null } as {
             offset: number,
             element: HTMLDivElement | null
         };
@@ -238,7 +256,7 @@ export class ControlArrayElement extends ControlBaseElement {
             const box = child.getBoundingClientRect();
             const offset = ev.clientY - box.top - box.height / 2;
             if (offset < 0 && offset > closest.offset) {
-                return {offset: offset, element: child};
+                return { offset: offset, element: child };
             } else {
                 return closest;
             }
@@ -247,7 +265,7 @@ export class ControlArrayElement extends ControlBaseElement {
         draggables.forEach(draggable => draggable.classList.remove("indicator-before", "indicator-after"));
 
         if (afterItem === null) {
-            draggables[draggables.length-1].classList.add("indicator-after");
+            draggables[draggables.length - 1].classList.add("indicator-after");
             dragging.removeAttribute("data-after-index");
         } else {
             afterItem.classList.add("indicator-before");
@@ -301,7 +319,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
-                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
+                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => { if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
                         </div>
                         <div id="parameter-desc" class="col"></div>
                     </form>

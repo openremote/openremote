@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,14 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PushNotificationMessage extends AbstractNotificationMessage {
 
@@ -51,15 +50,12 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
     protected Long ttlSeconds;
 
     @JsonCreator
-    public PushNotificationMessage(@JsonProperty("title") String title,
-                                   @JsonProperty("body") String body,
-                                   @JsonProperty("action") PushNotificationAction action,
-                                   @JsonProperty("buttons") List<PushNotificationButton> buttons,
-                                   @JsonProperty("data") Map<String, Object> data,
-                                   @JsonProperty("priority") MessagePriority priority,
-                                   @JsonProperty("targetType") TargetType targetType,
-                                   @JsonProperty("target") String target,
-                                   @JsonProperty("expiration") Long ttlSeconds) {
+    public PushNotificationMessage(@JsonProperty("title") String title, @JsonProperty("body") String body,
+            @JsonProperty("action") PushNotificationAction action,
+            @JsonProperty("buttons") List<PushNotificationButton> buttons,
+            @JsonProperty("data") Map<String, Object> data, @JsonProperty("priority") MessagePriority priority,
+            @JsonProperty("targetType") TargetType targetType, @JsonProperty("target") String target,
+            @JsonProperty("expiration") Long ttlSeconds) {
         super(TYPE);
         this.title = title;
         this.body = body;
@@ -72,11 +68,8 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
         this.ttlSeconds = ttlSeconds;
     }
 
-    public PushNotificationMessage(String title,
-                                   String body,
-                                   PushNotificationAction action,
-                                   List<PushNotificationButton> buttons,
-                                   Map<String, Object> data) {
+    public PushNotificationMessage(String title, String body, PushNotificationAction action,
+            List<PushNotificationButton> buttons, Map<String, Object> data) {
         super(TYPE);
         this.title = title;
         this.body = body;
@@ -172,16 +165,8 @@ public class PushNotificationMessage extends AbstractNotificationMessage {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "title='" + title + '\'' +
-            ", body='" + body + '\'' +
-            ", action=" + action +
-            ", buttons=" + buttons +
-            ", data=" + data +
-            ", priority=" + priority +
-            ", targetType=" + targetType +
-            ", target='" + target + '\'' +
-            ", ttlSeconds=" + ttlSeconds +
-            '}';
+        return getClass().getSimpleName() + "{" + "title='" + title + '\'' + ", body='" + body + '\'' + ", action="
+                + action + ", buttons=" + buttons + ", data=" + data + ", priority=" + priority + ", targetType="
+                + targetType + ", target='" + target + '\'' + ", ttlSeconds=" + ttlSeconds + '}';
     }
 }

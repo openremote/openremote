@@ -1,5 +1,23 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { GeoJsonConfig } from "@openremote/model";
-import {DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { html, LitElement } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
 import "@openremote/or-components/or-ace-editor";
@@ -28,10 +46,11 @@ export class OrConfMapGeoJson extends LitElement {
         const content = html`
             <or-ace-editor .value="${this.geoJson?.source}"
                            @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
-                               this._jsonValid = ev.detail.valid;
-                               if(this._jsonValid) {
-                                   this._aceEditorValue = ev.detail.value;
-                               }}}"
+                this._jsonValid = ev.detail.valid;
+                if (this._jsonValid) {
+                    this._aceEditorValue = ev.detail.value;
+                }
+            }}"
             ></or-ace-editor>
         `;
         const actions: DialogAction[] = [
@@ -45,7 +64,7 @@ export class OrConfMapGeoJson extends LitElement {
                 disabled: !this._jsonValid,
                 action: () => {
                     this.geoJson = this.parseGeoJson(this._aceEditorValue); // update with new value
-                    this.dispatchEvent(new CustomEvent("update", { detail: { value: this.geoJson }}))
+                    this.dispatchEvent(new CustomEvent("update", { detail: { value: this.geoJson } }))
                 }
             },
         ]
@@ -68,7 +87,7 @@ export class OrConfMapGeoJson extends LitElement {
             </style>
         `
         return html`
-            <or-mwc-input type="button" label="geoJson" outlined icon="pencil" @click="${() => {this.openJsonEditor()}}"></or-mwc-input>
+            <or-mwc-input type="button" label="geoJson" outlined icon="pencil" @click="${() => { this.openJsonEditor() }}"></or-mwc-input>
             <or-mwc-dialog id="geojson-modal" .heading="${heading}" .content="${content}" .actions="${actions}" .styles="${styles}" .dismissAction="${null}"></or-mwc-dialog>
         `
     }

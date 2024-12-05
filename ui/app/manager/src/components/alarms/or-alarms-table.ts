@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import {css, html, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {OrMwcTable, TableColumn, TableConfig, TableContent, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import {AlarmSeverity, AlarmStatus, Asset, SentAlarm} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
-import {classMap} from "lit/directives/class-map.js";
+import { css, html, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { OrMwcTable, TableColumn, TableConfig, TableContent, TableRow } from "@openremote/or-mwc-components/or-mwc-table";
+import { AlarmSeverity, AlarmStatus, Asset, SentAlarm } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { classMap } from "lit/directives/class-map.js";
 
 /**
  * ## AlarmTableColumn
@@ -101,17 +100,17 @@ export class OrAlarmsTable extends OrMwcTable {
     @property()
     public alarms: SentAlarm[] = [];
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly = true;
 
     // Setup columns
     public columns: AlarmTableColumn[] = [
-        {title: i18next.t("alarm.severity"), widthWeight: 3, isSortable: true},
-        {title: i18next.t("alarm.title"), widthWeight: 25, isSortable: true},
-        {title: i18next.t("alarm.status"), widthWeight: 3, isSortable: true},
-        {title: i18next.t("alarm.linkedAssets"), widthWeight: 6, hideMobile: true},
-        {title: i18next.t("alarm.assignee"), widthWeight: 4, isSortable: true},
-        {title: i18next.t("alarm.lastModified"), widthWeight: 6, isSortable: true}
+        { title: i18next.t("alarm.severity"), widthWeight: 3, isSortable: true },
+        { title: i18next.t("alarm.title"), widthWeight: 25, isSortable: true },
+        { title: i18next.t("alarm.status"), widthWeight: 3, isSortable: true },
+        { title: i18next.t("alarm.linkedAssets"), widthWeight: 6, hideMobile: true },
+        { title: i18next.t("alarm.assignee"), widthWeight: 4, isSortable: true },
+        { title: i18next.t("alarm.lastModified"), widthWeight: 6, isSortable: true }
     ];
 
     // Config override

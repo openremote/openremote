@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
@@ -161,7 +160,7 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-    /**********Kerberos************/
+    /********** Kerberos ************/
     public LDAPComponentBuilder setAllowKerberosAuthentication(boolean allowKerberosAuthentication) {
         ldapConfig.add("allowKerberosAuthentication", String.valueOf(allowKerberosAuthentication));
         return this;
@@ -187,7 +186,7 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-    /********Kerberos End ************/
+    /******** Kerberos End ************/
 
     public LDAPComponentBuilder setDebug(boolean debug) {
         ldapConfig.add("debug", String.valueOf(debug));
@@ -249,7 +248,7 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-    public LDAPComponentBuilder setRolesLDAPFilter(String filter){
+    public LDAPComponentBuilder setRolesLDAPFilter(String filter) {
         ldapConfig.add("roles.ldap.filter", filter);
         return this;
     }
@@ -279,8 +278,7 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-
-    public LDAPComponentBuilder setGroupsLDAPFilter(String filter){
+    public LDAPComponentBuilder setGroupsLDAPFilter(String filter) {
         ldapConfig.add("groups.ldap.filter", filter);
         return this;
     }
@@ -326,10 +324,8 @@ public class LDAPComponentBuilder {
         // Count of users processed per single transaction during sync process
         public static final String BATCH_SIZE_FOR_SYNC = "batchSizeForSync";
 
-
         // Custom user search filter
         public static final String CUSTOM_USER_SEARCH_FILTER = "customUserSearchFilter";
-
     }
 
     public enum Vendor {

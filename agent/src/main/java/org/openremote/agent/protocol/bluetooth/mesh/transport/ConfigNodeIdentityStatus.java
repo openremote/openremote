@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * Creates the ConfigNodeIdentityStatus message.
@@ -51,13 +50,12 @@ public class ConfigNodeIdentityStatus extends ConfigStatusMessage {
     @Override
     void parseStatusParameters() {
         mStatusCode = mParameters[0];
-        final byte[] netKeyIndex = new byte[]{(byte) (mParameters[2] & 0x0F), mParameters[1]};
+        final byte[] netKeyIndex = new byte[] { (byte) (mParameters[2] & 0x0F), mParameters[1] };
         this.netKeyIndex = ByteBuffer.wrap(netKeyIndex).order(ByteOrder.BIG_ENDIAN).getShort();
         nodeIdentityState = MeshParserUtils.unsignedByteToInt(mParameters[3]);
         LOG.info("Status: " + mStatusCode);
         LOG.info("Node Identity State: " + nodeIdentityState);
     }
-
 
     @Override
     public int getOpCode() {
@@ -88,4 +86,3 @@ public class ConfigNodeIdentityStatus extends ConfigStatusMessage {
         return netKeyIndex;
     }
 }
-

@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query;
 
@@ -77,18 +76,15 @@ public class LogicGroup<T> {
      */
     public List<LogicGroup<T>> groups;
 
-
     public List<T> getItems() {
         return items == null ? new ArrayList<>() : items;
     }
 
     @Override
     public String toString() {
-        return LogicGroup.class.getSimpleName() + "{" +
-            "operator=" + operator +
-            ", items=" + (items == null ? "[]" : Arrays.toString(items.toArray())) +
-            ", groups=" + (groups == null ? "[]" : Arrays.toString(groups.toArray())) +
-            '}';
+        return LogicGroup.class.getSimpleName() + "{" + "operator=" + operator + ", items="
+                + (items == null ? "[]" : Arrays.toString(items.toArray())) + ", groups="
+                + (groups == null ? "[]" : Arrays.toString(groups.toArray())) + '}';
     }
 
     public static <S> List<S> getItemsRecursive(LogicGroup<S> group) {

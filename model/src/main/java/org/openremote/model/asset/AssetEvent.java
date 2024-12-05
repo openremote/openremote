@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.openremote.model.event.shared.SharedEvent;
+
 /**
- * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or more top
+ * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or
+ * more top
  * level {@link Asset} properties are changed (including attributes). Attribute changes are handled via
  * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
  * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
@@ -46,7 +47,8 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     protected String[] updatedProperties;
 
     @JsonCreator
-    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset<?> asset, @JsonProperty("updatedProperties") String[] updatedProperties) {
+    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset<?> asset,
+            @JsonProperty("updatedProperties") String[] updatedProperties) {
         this.cause = cause;
         this.asset = asset;
         this.updatedProperties = updatedProperties;
@@ -92,7 +94,8 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
 
     @Override
     public String[] getAttributeNames() {
-        return updatedProperties != null && Arrays.asList(updatedProperties).contains("attributes") && asset != null && asset.attributes != null ? asset.attributes.keySet().toArray(new String[0]) : new String[0];
+        return updatedProperties != null && Arrays.asList(updatedProperties).contains("attributes") && asset != null
+                && asset.attributes != null ? asset.attributes.keySet().toArray(new String[0]) : new String[0];
     }
 
     public Cause getCause() {
@@ -113,11 +116,7 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "cause=" + cause +
-                ", asset=" + asset +
-                ", updatedProperties=" + Arrays.toString(updatedProperties) +
-                ", timestamp=" + timestamp +
-                '}';
+        return getClass().getSimpleName() + "{" + "cause=" + cause + ", asset=" + asset + ", updatedProperties="
+                + Arrays.toString(updatedProperties) + ", timestamp=" + timestamp + '}';
     }
 }

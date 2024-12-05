@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,21 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.event;
+
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+
+import java.net.URI;
+
+import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
+import org.apache.camel.component.undertow.UndertowConsumer;
+import org.apache.camel.component.undertow.UndertowHostKey;
+import org.apache.camel.component.undertow.UndertowHostOptions;
+import org.openremote.container.web.WebService;
+import org.openremote.model.Container;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -26,16 +36,6 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.SecurityConstraint;
 import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.WebResourceCollection;
-import org.apache.camel.component.undertow.HttpHandlerRegistrationInfo;
-import org.apache.camel.component.undertow.UndertowConsumer;
-import org.apache.camel.component.undertow.UndertowHostKey;
-import org.apache.camel.component.undertow.UndertowHostOptions;
-import org.openremote.container.web.WebService;
-import org.openremote.model.Container;
-
-import java.net.URI;
-
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
 
 /**
  * Customised to use existing undertow instance so websocket doesn't have to be on a separate web server instance
@@ -63,7 +63,8 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
     }
 
     @Override
-    public HttpHandler registerHandler(UndertowConsumer consumer, HttpHandlerRegistrationInfo registrationInfo, HttpHandler handler) {
+    public HttpHandler registerHandler(UndertowConsumer consumer, HttpHandlerRegistrationInfo registrationInfo,
+            HttpHandler handler) {
 
         if (camelHandler != null) {
             return camelHandler;
@@ -71,12 +72,10 @@ public class UndertowHost implements org.apache.camel.component.undertow.Underto
 
         String path = registrationInfo.getUri().getPath();
         String deploymentName = "Camel WebSocket Deployment";
-        deployment = Servlets.deployment()
-            .setDeploymentName(deploymentName)
-            .setContextPath(path)
-            .setClassLoader(getClass().getClassLoader())
-            //httpHandler for servlet is ignored, camel handler is used instead of it
-            .addInnerHandlerChainWrapper(h -> handler);
+        deployment = Servlets.deployment().setDeploymentName(deploymentName).setContextPath(path)
+                .setClassLoader(getClass().getClassLoader())
+                // httpHandler for servlet is ignored, camel handler is used instead of it
+                .addInnerHandlerChainWrapper(h -> handler);
 
         // Require authentication, but authorize specific roles later in Camel
         WebResourceCollection resourceCollection = new WebResourceCollection();

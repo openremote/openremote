@@ -1,10 +1,28 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {unsafeSVG} from 'lit/directives/unsafe-svg.js';
-import {customElement, property, state} from "lit/decorators.js";
-import {AssetDescriptor, AssetModelUtil, WellknownAssets} from "@openremote/model";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
+import { customElement, property, state } from "lit/decorators.js";
+import { AssetDescriptor, AssetModelUtil, WellknownAssets } from "@openremote/model";
 
 import OrIconSet from "./or-icon-set";
-export {OrIconSet};
+export { OrIconSet };
 
 const mdiFontStyle = require("@mdi/font/css/materialdesignicons.min.css");
 
@@ -31,7 +49,7 @@ export interface IconSet {
     onAdd?: () => void;
 }
 
-export function createSvgIconSet(size: number, icons: {[name: string]: string}): IconSet {
+export function createSvgIconSet(size: number, icons: { [name: string]: string }): IconSet {
     return {
         getIconTemplate: (name) => {
             const iconData = icons[name];
@@ -78,7 +96,7 @@ export function createMdiIconSet(managerUrl: string): IconSet {
 }
 
 class ORIconSets {
-    private _icons: {[name: string]: IconSet} = {};
+    private _icons: { [name: string]: IconSet } = {};
     private _defaultIconSet?: IconSet;
 
     addIconSet(name: string, iconSet: IconSet) {
@@ -179,11 +197,11 @@ export class OrIcon extends LitElement {
                     height: var(--internal-or-icon-height);
                 }
             `,
-            css `${unsafeCSS(mdiFontStyle)}`
+            css`${unsafeCSS(mdiFontStyle)}`
         ];
     }
 
-    @property({type: String, reflect: true})
+    @property({ type: String, reflect: true })
     icon?: string;
 
     @state()

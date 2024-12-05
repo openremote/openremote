@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.datapoint;
 
+import static org.openremote.model.syslog.SyslogCategory.DATA;
+import static org.openremote.model.util.ValueUtil.JSON;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.concurrent.ScheduledFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.container.AsyncResponse;
-import jakarta.ws.rs.container.ConnectionCallback;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
+
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -46,16 +49,14 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemType;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import static org.openremote.model.syslog.SyslogCategory.DATA;
-import static org.openremote.model.util.ValueUtil.JSON;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
@@ -65,20 +66,16 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
 
-    public AssetDatapointResourceImpl(TimerService timerService,
-                                      ManagerIdentityService identityService,
-                                      AssetStorageService assetStorageService,
-                                      AssetDatapointService assetDatapointService) {
+    public AssetDatapointResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            AssetStorageService assetStorageService, AssetDatapointService assetDatapointService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
         this.assetDatapointService = assetDatapointService;
     }
 
     @Override
-    public ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
-                                             String assetId,
-                                             String attributeName,
-                                             AssetDatapointQuery query) {
+    public ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams, String assetId,
+            String attributeName, AssetDatapointQuery query) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -92,38 +89,42 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             // Realm should be accessible
-            if(!isRealmActiveAndAccessible(asset.getRealm())) {
+            if (!isRealmActiveAndAccessible(asset.getRealm())) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
             // If not logged in, asset should be PUBLIC READ
-            if(!isAuthenticated() && !asset.isAccessPublicRead()) {
+            if (!isAuthenticated() && !asset.isAccessPublicRead()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
             // If logged in, user should have READ ASSETS role
-            if(isAuthenticated() && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+            if (isAuthenticated()
+                    && !hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
                 LOG.info("Forbidden access for user '" + getUsername() + "': " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
-                    new WebApplicationException(Response.Status.NOT_FOUND)
-            );
+            Attribute<?> attribute = asset.getAttribute(attributeName)
+                    .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
 
             // If restricted, the attribute should also be restricted
-            if(isRestrictedUser()) {
+            if (isRestrictedUser()) {
                 attribute.getMeta().getValue(MetaItemType.ACCESS_RESTRICTED_READ).ifPresentOrElse((v) -> {
-                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                    if (!v) {
+                        throw new WebApplicationException(Response.Status.FORBIDDEN);
+                    }
                 }, () -> {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
             }
 
             // If not logged in, attribute should be PUBLIC READ
-            if(!isAuthenticated()) {
+            if (!isAuthenticated()) {
                 attribute.getMeta().getValue(MetaItemType.ACCESS_PUBLIC_READ).ifPresentOrElse((v) -> {
-                    if(!v) { throw new WebApplicationException(Response.Status.FORBIDDEN); }
+                    if (!v) {
+                        throw new WebApplicationException(Response.Status.FORBIDDEN);
+                    }
                 }, () -> {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 });
@@ -132,7 +133,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 return assetDatapointService.queryDatapoints(assetId, attribute, query).toArray(ValueDatapoint[]::new);
             }
 
-            return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName)).toArray(ValueDatapoint[]::new);
+            return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName))
+                    .toArray(ValueDatapoint[]::new);
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ex);
         } catch (UnsupportedOperationException ex) {
@@ -158,9 +160,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
-                    new WebApplicationException(Response.Status.NOT_FOUND)
-            );
+            Attribute<?> attribute = asset.getAttribute(attributeName)
+                    .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
 
             return assetDatapointService.getDatapointPeriod(assetId, attributeName);
         } catch (IllegalStateException ex) {
@@ -171,7 +172,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+    public void getDatapointExport(AsyncResponse asyncResponse, String attributeRefsString, long fromTimestamp,
+            long toTimestamp) {
         try {
             AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
 
@@ -191,14 +193,15 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 
-                asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
-                        new WebApplicationException(Response.Status.NOT_FOUND)
-                );
+                asset.getAttribute(attributeRef.getName())
+                        .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
             }
 
-            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
+            DATA_EXPORT_LOG.info("User '" + getUsername() + "' started data export for " + attributeRefsString
+                    + " from " + fromTimestamp + " to " + toTimestamp);
 
-            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+            ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp,
+                    toTimestamp);
 
             asyncResponse.register((ConnectionCallback) disconnected -> exportFuture.cancel(true));
 
@@ -219,9 +222,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 response.setContentType("application/zip");
                 response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
 
-                asyncResponse.resume(
-                    response
-                );
+                asyncResponse.resume(response);
             } catch (Exception ex) {
                 exportFuture.cancel(true);
                 asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
@@ -231,7 +232,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     try {
                         exportFile.delete();
                     } catch (Exception e) {
-                        DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to delete temporary export file: " + exportFile.getPath(), e);
+                        DATA_EXPORT_LOG.log(Level.SEVERE,
+                                "Failed to delete temporary export file: " + exportFile.getPath(), e);
                     }
                 }
             }

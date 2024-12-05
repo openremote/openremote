@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
@@ -26,7 +25,7 @@ public class AllocatedUnicastRange extends AddressRange {
     /**
      * Constructs {@link AllocatedUnicastRange} for provisioner
      *
-     * @param lowAddress  low address of unicast range
+     * @param lowAddress low address of unicast range
      * @param highAddress high address of unicast range
      */
     public AllocatedUnicastRange(final int lowAddress, final int highAddress) {
@@ -38,8 +37,10 @@ public class AllocatedUnicastRange extends AddressRange {
         if (!MeshAddress.isValidUnicastAddress(highAddress))
             throw new IllegalArgumentException("High address must range from 0x0001 to 0x7FFF");
 
-        /*if(lowAddress > highAddress)
-            throw new IllegalArgumentException("low address must be lower than the high address");*/
+        /*
+         * if(lowAddress > highAddress)
+         * throw new IllegalArgumentException("low address must be lower than the high address");
+         */
 
         this.lowAddress = lowAddress;
         this.highAddress = highAddress;

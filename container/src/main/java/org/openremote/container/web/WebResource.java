@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
 
+import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
+
+import java.security.Principal;
+
 import org.keycloak.KeycloakPrincipal;
-import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
+import org.openremote.model.Container;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.*;
-import java.security.Principal;
-
-import static jakarta.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 public class WebResource implements AuthContext {
 
@@ -83,10 +83,8 @@ public class WebResource implements AuthContext {
 
         if (principal instanceof KeycloakPrincipal) {
             KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
-            return new AccessTokenAuthContext(
-                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
-                keycloakPrincipal.getKeycloakSecurityContext().getToken()
-            );
+            return new AccessTokenAuthContext(keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
+                    keycloakPrincipal.getKeycloakSecurityContext().getToken());
         } else if (principal instanceof BasicAuthContext) {
             return (BasicAuthContext) principal;
         } else {

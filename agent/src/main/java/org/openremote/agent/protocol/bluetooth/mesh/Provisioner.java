@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * Class definition of a Provisioner of mesh network
@@ -52,20 +51,18 @@ public class Provisioner {
 
     private boolean lastSelected;
 
-    private final Comparator<AddressRange> addressRangeComparator = (addressRange1, addressRange2) ->
-        Integer.compare(addressRange1.getLowAddress(), addressRange2.getLowAddress());
+    private final Comparator<AddressRange> addressRangeComparator = (addressRange1, addressRange2) -> Integer
+            .compare(addressRange1.getLowAddress(), addressRange2.getLowAddress());
 
-    private final Comparator<AllocatedSceneRange> sceneRangeComparator = (sceneRange1, sceneRange2) ->
-        Integer.compare(sceneRange1.getFirstScene(), sceneRange2.getFirstScene());
+    private final Comparator<AllocatedSceneRange> sceneRangeComparator = (sceneRange1, sceneRange2) -> Integer
+            .compare(sceneRange1.getFirstScene(), sceneRange2.getFirstScene());
 
     /**
      * Constructs {@link Provisioner}
      */
-    public Provisioner(final String provisionerUuid,
-                       final List<AllocatedUnicastRange> allocatedUnicastRanges,
-                       final List<AllocatedGroupRange> allocatedGroupRanges,
-                       final List<AllocatedSceneRange> allocatedSceneRanges,
-                       final String meshUuid) {
+    public Provisioner(final String provisionerUuid, final List<AllocatedUnicastRange> allocatedUnicastRanges,
+            final List<AllocatedGroupRange> allocatedGroupRanges, final List<AllocatedSceneRange> allocatedSceneRanges,
+            final String meshUuid) {
 
         this.provisionerUuid = provisionerUuid.toUpperCase(Locale.US);
         this.allocatedUnicastRanges = allocatedUnicastRanges;
@@ -73,6 +70,7 @@ public class Provisioner {
         this.allocatedSceneRanges = allocatedSceneRanges;
         this.meshUuid = meshUuid;
     }
+
     /**
      * Returns the provisionerUuid of the Mesh network
      *

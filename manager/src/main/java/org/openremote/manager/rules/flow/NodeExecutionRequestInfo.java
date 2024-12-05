@@ -1,13 +1,31 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.manager.rules.flow;
-
-import org.openremote.manager.rules.RulesFacts;
-import org.openremote.model.rules.*;
-import org.openremote.model.rules.flow.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.openremote.manager.rules.RulesFacts;
+import org.openremote.model.rules.*;
+import org.openremote.model.rules.flow.*;
 
 public class NodeExecutionRequestInfo {
     private NodeCollection collection;
@@ -33,9 +51,9 @@ public class NodeExecutionRequestInfo {
         outputSocketIndex = -1;
         outputSocket = null;
         node = null;
-        inputs = new NodeSocket[]{};
-        outputs = new NodeSocket[]{};
-        internals = new NodeInternal[]{};
+        inputs = new NodeSocket[] {};
+        outputs = new NodeSocket[] {};
+        internals = new NodeInternal[] {};
         facts = null;
         assets = null;
         users = null;
@@ -45,9 +63,9 @@ public class NodeExecutionRequestInfo {
     }
 
     public NodeExecutionRequestInfo(NodeCollection collection, int outputSocketIndex, NodeSocket outputSocket,
-                                    Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals,
-                                    RulesFacts facts, Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints) {
+            Node node, NodeSocket[] inputs, NodeSocket[] outputs, NodeInternal[] internals, RulesFacts facts,
+            Assets assets, Users users, Notifications notifications, HistoricDatapoints historicDatapoints,
+            PredictedDatapoints predictedDatapoints) {
         this.collection = collection;
         this.outputSocketIndex = outputSocketIndex;
         this.outputSocket = outputSocket;
@@ -64,8 +82,8 @@ public class NodeExecutionRequestInfo {
     }
 
     public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts,
-                                    Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints) {
+            Assets assets, Users users, Notifications notifications, HistoricDatapoints historicDatapoints,
+            PredictedDatapoints predictedDatapoints) {
         if (socket != null && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
             throw new IllegalArgumentException("Given socket does not belong to given node");
 
@@ -76,13 +94,15 @@ public class NodeExecutionRequestInfo {
 
         List<NodeSocket> inputs = new ArrayList<>();
         for (NodeSocket s : node.getInputs()) {
-            inputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getTo().equals(s.getId())).map(c -> collection.getSocketById(c.getFrom())).collect(Collectors.toList()));
+            inputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getTo().equals(s.getId()))
+                    .map(c -> collection.getSocketById(c.getFrom())).collect(Collectors.toList()));
         }
         this.inputs = inputs.toArray(new NodeSocket[0]);
 
         List<NodeSocket> outputs = new ArrayList<>();
         for (NodeSocket s : node.getOutputs()) {
-            outputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getFrom().equals(s.getId())).map(c -> collection.getSocketById(c.getTo())).collect(Collectors.toList()));
+            outputs.addAll(Arrays.stream(collection.getConnections()).filter(c -> c.getFrom().equals(s.getId()))
+                    .map(c -> collection.getSocketById(c.getTo())).collect(Collectors.toList()));
         }
 
         this.outputs = outputs.toArray(new NodeSocket[0]);
@@ -99,9 +119,9 @@ public class NodeExecutionRequestInfo {
     public Object getValueFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         Node aNode = getCollection().getNodeById(aSocket.getNodeId());
-        return NodeModel.getImplementationFor(aNode.getName()).execute(
-            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints())
-        );
+        return NodeModel.getImplementationFor(aNode.getName())
+                .execute(new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(),
+                        getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints()));
     }
 
     public NodeDataType getTypeFromInput(int index) {

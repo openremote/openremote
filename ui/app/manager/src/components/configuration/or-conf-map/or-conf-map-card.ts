@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { when } from 'lit/directives/when.js';
 import "@openremote/or-components/or-file-uploader";
 import { i18next } from "@openremote/or-translate";
-import {MapRealmConfig} from "@openremote/model";
+import { MapRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { OrMapLongPressEvent } from "@openremote/or-map";
@@ -158,9 +157,9 @@ export class OrConfMapCard extends LitElement {
         this.notifyConfigChange(this.map);
     }
 
-    protected setCenter(cor: LngLat|string) {
+    protected setCenter(cor: LngLat | string) {
         let centerCoordinate: LngLat
-        if (typeof cor === "string"){
+        if (typeof cor === "string") {
             centerCoordinate = {
                 lat: parseFloat(cor.split(',')[1]),
                 lng: parseFloat(cor.split(',')[0])
@@ -183,7 +182,7 @@ export class OrConfMapCard extends LitElement {
         this.notifyConfigChange(this.map);
     }
 
-    protected setZoom(nr:number){
+    protected setZoom(nr: number) {
         this.zoom = nr;
     }
 
@@ -200,8 +199,8 @@ export class OrConfMapCard extends LitElement {
                         <or-map id="vectorMap" .showBoundaryBoxControl="${true}" .zoom="${this.zoom}"
                                 .boundary="${this.map.bounds}"
                                 @or-map-long-press="${(ev: OrMapLongPressEvent) => {
-                                    this.setCenter(ev.detail.lngLat);
-                                }}" .showGeoCodingControl="${true}"
+                this.setCenter(ev.detail.lngLat);
+            }}" .showGeoCodingControl="${true}"
                                 .showGeoJson="${this.map.geoJson != undefined}"
                                 .geoJson="${this.map.geoJson}"
                                 .useZoomControl="${false}"
@@ -243,10 +242,10 @@ export class OrConfMapCard extends LitElement {
                             <span>${i18next.t("configuration.geoJsonDescription")}</span>
                             <div class="input" style="height: 56px; display: flex; align-items: center;">
                                 <or-conf-map-geojson .geoJson="${this.map.geoJson}" @update="${(e: CustomEvent) => {
-                                    this.map.geoJson = e.detail.value;
-                                    this.requestUpdate();
-                                    this.notifyConfigChange(this.map);
-                                }}"></or-conf-map-geojson>
+                this.map.geoJson = e.detail.value;
+                this.requestUpdate();
+                this.notifyConfigChange(this.map);
+            }}"></or-conf-map-geojson>
                             </div>
                         </div>
 
@@ -256,9 +255,9 @@ export class OrConfMapCard extends LitElement {
                             <div class="input">
                                 <or-mwc-input .value="${this.map.zoom}" .type="${InputType.NUMBER}" .label="${i18next.t('default')}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  this.map.zoom = e.detail.value;
-                                                  this.notifyConfigChange(this.map);
-                                              }}"
+                this.map.zoom = e.detail.value;
+                this.notifyConfigChange(this.map);
+            }}"
                                               .step="${1}"></or-mwc-input>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.zoom)}"
@@ -269,10 +268,10 @@ export class OrConfMapCard extends LitElement {
                                               .label="${i18next.t("configuration.minZoom")}"
                                               max="${this.map.maxZoom}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  this.map.minZoom = e.detail.value;
-                                                  this.requestUpdate();
-                                                  this.notifyConfigChange(this.map);
-                                              }}"
+                this.map.minZoom = e.detail.value;
+                this.requestUpdate();
+                this.notifyConfigChange(this.map);
+            }}"
                                               .step="${1}"></or-mwc-input>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.minZoom)}"
@@ -283,10 +282,10 @@ export class OrConfMapCard extends LitElement {
                                               .label="${i18next.t("configuration.maxZoom")}"
                                               min="${this.map.minZoom}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  this.map.maxZoom = e.detail.value;
-                                                  this.requestUpdate("map");
-                                                  this.notifyConfigChange(this.map);
-                                              }}"
+                this.map.maxZoom = e.detail.value;
+                this.requestUpdate("map");
+                this.notifyConfigChange(this.map);
+            }}"
                                               .step="${1}"></or-mwc-input>
                                 <or-mwc-input .type="${InputType.BUTTON}" icon="eye"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setZoom(this.map.maxZoom)}"
@@ -296,9 +295,9 @@ export class OrConfMapCard extends LitElement {
                             <div class="input" style="height: 56px;">
                                 <or-mwc-input .value="${this.map.boxZoom}" .type="${InputType.SWITCH}" label="BoxZoom"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  this.map.boxZoom = e.detail.value;
-                                                  this.notifyConfigChange(this.map);
-                                              }}"
+                this.map.boxZoom = e.detail.value;
+                this.notifyConfigChange(this.map);
+            }}"
                                               .step="${1}"></or-mwc-input>
                             </div>
                         </div>

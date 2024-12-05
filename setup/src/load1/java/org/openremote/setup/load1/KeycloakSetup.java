@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,25 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.load1;
 
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.manager.setup.AbstractKeycloakSetup;
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.security.User;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.model.Constants.MASTER_REALM;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.openremote.manager.setup.AbstractKeycloakSetup;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.security.User;
 
 public class KeycloakSetup extends AbstractKeycloakSetup {
 
@@ -60,10 +59,7 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
             // Re-enable direct access login
             ClientRepresentation clientRepresentation = keycloakProvider.getClient(MASTER_REALM, KEYCLOAK_CLIENT_ID);
             clientRepresentation.setDirectAccessGrantsEnabled(true);
-            keycloakProvider.createUpdateClient(
-                MASTER_REALM,
-                clientRepresentation
-            );
+            keycloakProvider.createUpdateClient(MASTER_REALM, clientRepresentation);
         }
 
         int regularUsers = getInteger(container.getConfig(), OR_SETUP_REGULAR_USERS, 0);
@@ -71,25 +67,23 @@ public class KeycloakSetup extends AbstractKeycloakSetup {
         AtomicInteger createdUsers = new AtomicInteger(0);
 
         if (regularUsers > 0) {
-            IntStream.rangeClosed(1, regularUsers).forEach(i ->
-                executor.submit(() -> {
-                    createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "", "user" + i + "@openremote.local", true, REGULAR_USER_ROLES);
-                    createdUsers.incrementAndGet();
-                })
-            );
+            IntStream.rangeClosed(1, regularUsers).forEach(i -> executor.submit(() -> {
+                createUser(Constants.MASTER_REALM, "user" + i, "user" + i, "User " + i, "",
+                        "user" + i + "@openremote.local", true, REGULAR_USER_ROLES);
+                createdUsers.incrementAndGet();
+            }));
         }
         if (serviceUsers > 0) {
-            IntStream.rangeClosed(1, regularUsers).forEach(i ->
-                executor.submit(() -> {
-                    createUser(Constants.MASTER_REALM, User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + i, null, null, null, null, true, REGULAR_USER_ROLES);
-                    createdUsers.incrementAndGet();
-                })
-            );
+            IntStream.rangeClosed(1, regularUsers).forEach(i -> executor.submit(() -> {
+                createUser(Constants.MASTER_REALM, User.SERVICE_ACCOUNT_PREFIX + "serviceuser" + i, null, null, null,
+                        null, true, REGULAR_USER_ROLES);
+                createdUsers.incrementAndGet();
+            }));
         }
 
         // Wait until all users created
         int waitCounter = 0;
-        while (createdUsers.get() < regularUsers+serviceUsers) {
+        while (createdUsers.get() < regularUsers + serviceUsers) {
             if (waitCounter > 1000) {
                 throw new IllegalStateException("Failed to add all requested user in the specified time");
             }

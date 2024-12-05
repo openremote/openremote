@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.nio.ByteBuffer;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalProvisioningCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
@@ -28,13 +30,11 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
-import java.nio.ByteBuffer;
-import java.util.logging.Logger;
-
 public class ProvisioningConfirmationState extends ProvisioningState {
 
     public static final Logger LOG = Logger.getLogger(ProvisioningConfirmationState.class.getName());
-    private static final byte[] NO_OOB_AUTH = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    private static final byte[] NO_OOB_AUTH = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00 };
     public static final int AUTH_VALUE_LENGTH = 16;
     private final InternalProvisioningCallbacks provisioningCallbacks;
     private final UnprovisionedMeshNode mNode;
@@ -44,9 +44,8 @@ public class ProvisioningConfirmationState extends ProvisioningState {
     private byte[] authenticationValue;
 
     public ProvisioningConfirmationState(final InternalProvisioningCallbacks callbacks,
-                                         final UnprovisionedMeshNode node,
-                                         final InternalTransportCallbacks internalTransportCallbacks,
-                                         final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
+            final UnprovisionedMeshNode node, final InternalTransportCallbacks internalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks provisioningStatusCallbacks) {
         super();
         this.provisioningCallbacks = callbacks;
         this.mNode = node;
@@ -72,7 +71,8 @@ public class ProvisioningConfirmationState extends ProvisioningState {
     public void executeSend() {
 
         final byte[] provisioningConfirmationPDU = createProvisioningConfirmation();
-        mStatusCallbacks.onProvisioningStateChanged(mNode, States.PROVISIONING_CONFIRMATION_SENT, provisioningConfirmationPDU);
+        mStatusCallbacks.onProvisioningStateChanged(mNode, States.PROVISIONING_CONFIRMATION_SENT,
+                provisioningConfirmationPDU);
         mInternalTransportCallbacks.sendProvisioningPdu(mNode, provisioningConfirmationPDU);
     }
 
@@ -85,25 +85,26 @@ public class ProvisioningConfirmationState extends ProvisioningState {
 
     private byte[] createProvisioningConfirmation() {
 
-        final byte[] confirmationInputs = provisioningCallbacks.generateConfirmationInputs(mNode.getProvisionerPublicKeyXY(), mNode.getProvisioneePublicKeyXY());
+        final byte[] confirmationInputs = provisioningCallbacks
+                .generateConfirmationInputs(mNode.getProvisionerPublicKeyXY(), mNode.getProvisioneePublicKeyXY());
         LOG.info("Confirmation inputs: " + MeshParserUtils.bytesToHex(confirmationInputs, false));
 
-        //Generate a confirmation salt of the confirmation inputs
+        // Generate a confirmation salt of the confirmation inputs
         final byte[] confirmationSalt = SecureUtils.calculateSalt(confirmationInputs);
         LOG.info("Confirmation salt: " + MeshParserUtils.bytesToHex(confirmationSalt, false));
 
         final byte[] ecdhSecret = mNode.getSharedECDHSecret();
 
-        //Generate the confirmationKey by calculating the K1 of ECDH, confirmationSalt and ASCII value of "prck".
+        // Generate the confirmationKey by calculating the K1 of ECDH, confirmationSalt and ASCII value of "prck".
         final byte[] confirmationKey = SecureUtils.calculateK1(ecdhSecret, confirmationSalt, SecureUtils.PRCK);
         LOG.info("Confirmation key: " + MeshParserUtils.bytesToHex(confirmationKey, false));
 
-        //Generate provisioner random number
+        // Generate provisioner random number
         final byte[] provisionerRandom = SecureUtils.generateRandomNumber();
         mNode.setProvisionerRandom(provisionerRandom);
         LOG.info("Provisioner random: " + MeshParserUtils.bytesToHex(provisionerRandom, false));
 
-        //Generate authentication value from the user input authentication
+        // Generate authentication value from the user input authentication
         final byte[] authenticationValue = generateAuthenticationValue();
         mNode.setAuthenticationValue(authenticationValue);
         LOG.info("Authentication value: " + MeshParserUtils.bytesToHex(authenticationValue, false));
@@ -116,7 +117,7 @@ public class ProvisioningConfirmationState extends ProvisioningState {
         final byte[] confirmationValue = SecureUtils.calculateCMAC(confirmationData, confirmationKey);
 
         buffer = ByteBuffer.allocate(confirmationValue.length + 2);
-        buffer.put(new byte[]{MeshManagerApi.PDU_TYPE_PROVISIONING, TYPE_PROVISIONING_CONFIRMATION});
+        buffer.put(new byte[] { MeshManagerApi.PDU_TYPE_PROVISIONING, TYPE_PROVISIONING_CONFIRMATION });
         buffer.put(confirmationValue);
         final byte[] provisioningConfirmationPDU = buffer.array();
         LOG.info("Provisioning confirmation: " + MeshParserUtils.bytesToHex(provisioningConfirmationPDU, false));
@@ -135,7 +136,8 @@ public class ProvisioningConfirmationState extends ProvisioningState {
                 return OutputOOBAction.generateOutputOOBAuthenticationValue(action, authentication);
             case INPUT_OOB_AUTHENTICATION:
                 final InputOOBAction inputOOBAction = InputOOBAction.fromValue(mNode.getAuthActionUsed());
-                return InputOOBAction.generateInputOOBAuthenticationValue(inputOOBAction, mNode.getInputAuthentication());
+                return InputOOBAction.generateInputOOBAuthenticationValue(inputOOBAction,
+                        mNode.getInputAuthentication());
         }
         return null;
     }
@@ -146,4 +148,3 @@ public class ProvisioningConfirmationState extends ProvisioningState {
         mNode.setProvisioneeConfirmation(buffer.array());
     }
 }
-

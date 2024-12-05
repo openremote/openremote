@@ -1,7 +1,25 @@
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {Asset, AssetQuery} from "@openremote/model";
-import {surveyResultStyle} from "./style";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { Asset, AssetQuery } from "@openremote/model";
+import { surveyResultStyle } from "./style";
 import manager from "@openremote/core";
 
 export interface ProcessedResultAnswer {
@@ -22,23 +40,23 @@ export interface ProcessedResults {
 @customElement("or-survey-results")
 class OrSurveyResults extends LitElement {
 
-    @property({type: Object})
+    @property({ type: Object })
     public survey?: Asset;
 
-    @property({type: Array})
+    @property({ type: Array })
     public questions?: Asset[];
 
-    @property({type: String})
+    @property({ type: String })
     public surveyId?: string;
 
-    @property({type: Number})
+    @property({ type: Number })
     public activeResult?: number;
 
-    @property({type: Number})
+    @property({ type: Number })
     public maxAmount?: number;
 
     updated(_changedProperties: PropertyValues) {
-        if(_changedProperties.has('surveyId')) {
+        if (_changedProperties.has('surveyId')) {
             this.getSurvey();
         }
     }
@@ -58,9 +76,9 @@ class OrSurveyResults extends LitElement {
         }
 
         if (!this.activeResult) {
-            activeResult = {...results[0]};
+            activeResult = { ...results[0] };
         } else {
-            activeResult = {...results[this.activeResult]};
+            activeResult = { ...results[this.activeResult] };
         }
 
         if (this.survey.attributes) {
@@ -133,7 +151,7 @@ class OrSurveyResults extends LitElement {
     }
     getSurvey() {
         let surveyId: string;
-        if(this.surveyId){
+        if (this.surveyId) {
             surveyId = this.surveyId;
         } else {
             return;
@@ -153,7 +171,7 @@ class OrSurveyResults extends LitElement {
         });
 
         const surveyQuestQuery: AssetQuery = {
-            parents: [{id:surveyId}]
+            parents: [{ id: surveyId }]
         };
 
         manager.rest.api.AssetResource.queryAssets(surveyQuestQuery).then((response) => {
@@ -166,11 +184,11 @@ class OrSurveyResults extends LitElement {
         });
 
     }
-    
+
     computeHeight(barAmount: number) {
         if (barAmount && this.survey && this.survey.attributes) {
             const maxAmount = this.survey.attributes.responseAmount.value;
-            return Math.round((barAmount / maxAmount) * 100)+"%";
+            return Math.round((barAmount / maxAmount) * 100) + "%";
         } else {
             return "0%";
         }
@@ -186,7 +204,7 @@ class OrSurveyResults extends LitElement {
                 name: categoryName,
                 result: category[categoryName].map((question: any) => {
                     const questionId = Object.keys(question)[0];
-                    const assetQuestion = this.questions ? this.questions.find((question)=> question.id === questionId) : null
+                    const assetQuestion = this.questions ? this.questions.find((question) => question.id === questionId) : null
                     return {
                         name: assetQuestion ? assetQuestion.name : "",
                         value: question[questionId].map((answer: any) => {
@@ -195,7 +213,7 @@ class OrSurveyResults extends LitElement {
                             if (typeof amount === "number" &&
                                 isFinite(amount) &&
                                 Math.floor(amount) === amount) {
-                                return {name: answerName, count: amount}
+                                return { name: answerName, count: amount }
                             }
                         })
                     }

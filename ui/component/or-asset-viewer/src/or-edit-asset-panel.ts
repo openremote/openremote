@@ -1,23 +1,41 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {until} from "lit/directives/until.js";
-import {customElement, property, state} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { until } from "lit/directives/until.js";
+import { customElement, property, state } from "lit/decorators.js";
+import { InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
-import { DefaultColor5, DefaultColor3, DefaultColor2, Util} from "@openremote/core";
+import { Asset, Attribute, NameValueHolder, AssetModelUtil } from "@openremote/model";
+import { DefaultColor5, DefaultColor3, DefaultColor2, Util } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {OrIcon} from "@openremote/or-icon";
-import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
+import { OrIcon } from "@openremote/or-icon";
+import { showDialog, OrMwcDialog, DialogAction } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { ListItem, ListType, OrMwcList } from "@openremote/or-mwc-components/or-mwc-list";
 import "./or-add-attribute-panel";
-import {getField, getPanel, getPropertyTemplate} from "./index";
+import { getField, getPanel, getPropertyTemplate } from "./index";
 import {
     OrAddAttributePanelAttributeChangedEvent,
 } from "./or-add-attribute-panel";
-import {panelStyles} from "./style";
+import { panelStyles } from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
-import {createRef, ref, Ref } from "lit/directives/ref.js";
+import { jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import { createRef, ref, Ref } from "lit/directives/ref.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -176,7 +194,7 @@ interface TemplateAndValidator {
 @customElement("or-edit-asset-panel")
 export class OrEditAssetPanel extends LitElement {
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected asset!: Asset;
 
     protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
@@ -218,10 +236,10 @@ export class OrEditAssetPanel extends LitElement {
 
         // Properties panel fields
         const properties: TemplateResult[] = [
-            getField("type", undefined, getPropertyTemplate(this.asset, "type", this, undefined, undefined, {readonly: true, label: i18next.t("assetType")})),
+            getField("type", undefined, getPropertyTemplate(this.asset, "type", this, undefined, undefined, { readonly: true, label: i18next.t("assetType") })),
             getField("parent", undefined, this._getParentTemplate()),
             html`<div @or-mwc-input-changed="${(ev: OrInputChangedEvent) => updatePublicRead(ev.detail.value as boolean)}">
-                    ${getField("accessPublicRead", undefined, getPropertyTemplate(this.asset, "accessPublicRead", this, undefined, undefined, {readonly: false, label: i18next.t("accessPublicRead")}))}
+                    ${getField("accessPublicRead", undefined, getPropertyTemplate(this.asset, "accessPublicRead", this, undefined, undefined, { readonly: false, label: i18next.t("accessPublicRead") }))}
                 </div>`
         ];
 
@@ -278,7 +296,7 @@ export class OrEditAssetPanel extends LitElement {
             }
         };
 
-        this.attributeTemplatesAndValidators = !this.asset.attributes ? [] : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getAttributeTemplate(this.asset.type!, attribute as Attribute<any>);})
+        this.attributeTemplatesAndValidators = !this.asset.attributes ? [] : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => { attribute.name = name; return this._getAttributeTemplate(this.asset.type!, attribute as Attribute<any>); })
 
         const attributes = html`
             <div id="attribute-table" class="mdc-data-table">
@@ -313,8 +331,8 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <div id="edit-wrapper">
-                ${getPanel("0", {type: "info", title: "properties"}, html`${properties}`) || ``}
-                ${getPanel("1", {type: "info", title: "attribute_plural"}, html`${attributes}`) || ``}
+                ${getPanel("0", { type: "info", title: "properties" }, html`${properties}`) || ``}
+                ${getPanel("1", { type: "info", title: "attribute_plural" }, html`${attributes}`) || ``}
             </div>`;
     }
 
@@ -515,7 +533,7 @@ export class OrEditAssetPanel extends LitElement {
                         }
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled label="add"
-                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } }}"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
@@ -678,7 +696,7 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <div id="parent-edit-wrapper">
-                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: true, label: i18next.t("parent")})}
+                ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, { readonly: true, label: i18next.t("parent") })}
                 <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined label="edit" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;

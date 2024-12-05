@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
+import static org.openremote.agent.protocol.bluetooth.mesh.Scene.isValidSceneNumber;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.bluetooth.mesh.Scene.isValidSceneNumber;
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ApplicationMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 /**
  * To be used as a wrapper class when creating a SceneStore message.
@@ -43,12 +42,11 @@ public class SceneStore extends GenericMessage {
     /**
      * Constructs SceneStore message.
      *
-     * @param appKey      Application key for this message
+     * @param appKey Application key for this message
      * @param sceneNumber Scene number of SceneStore message
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
-    public SceneStore(final ApplicationKey appKey,
-                      final int sceneNumber) {
+    public SceneStore(final ApplicationKey appKey, final int sceneNumber) {
         super(appKey);
         if (isValidSceneNumber(sceneNumber))
             this.mSceneNumber = sceneNumber;
@@ -70,4 +68,3 @@ public class SceneStore extends GenericMessage {
         mParameters = paramsBuffer.array();
     }
 }
-

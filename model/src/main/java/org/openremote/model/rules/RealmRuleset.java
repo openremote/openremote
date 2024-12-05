@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.rules;
+
+import java.util.Date;
+import java.util.Map;
+
+import org.openremote.model.calendar.CalendarEvent;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import org.openremote.model.calendar.CalendarEvent;
-
-import java.util.Date;
-import java.util.Map;
 
 /**
  * Rules that can only be triggered by asset modifications in a particular
@@ -43,7 +43,8 @@ public class RealmRuleset extends Ruleset {
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
-    public RealmRuleset() {}
+    public RealmRuleset() {
+    }
 
     public RealmRuleset(String realm, String name, Lang language, String rules) {
         super(name, language, rules);
@@ -154,17 +155,9 @@ public class RealmRuleset extends Ruleset {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", version='" + version + '\'' +
-            ", name='" + name + '\'' +
-            ", lang='" + lang + '\'' +
-            ", createdOn='" + createdOn + '\'' +
-            ", lastModified='" + lastModified + '\'' +
-            ", enabled='" + enabled + '\'' +
-            ", meta='" + meta + '\'' +
-            ", realm='" + realm + '\'' +
-            ", accessPublicRead='" + accessPublicRead + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", version='" + version + '\'' + ", name='"
+                + name + '\'' + ", lang='" + lang + '\'' + ", createdOn='" + createdOn + '\'' + ", lastModified='"
+                + lastModified + '\'' + ", enabled='" + enabled + '\'' + ", meta='" + meta + '\'' + ", realm='" + realm
+                + '\'' + ", accessPublicRead='" + accessPublicRead + '\'' + '}';
     }
 }

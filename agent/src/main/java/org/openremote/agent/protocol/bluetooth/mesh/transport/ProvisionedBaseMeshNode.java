@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,26 +13,28 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.Features;
-import org.openremote.agent.protocol.bluetooth.mesh.NodeKey;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.NetworkTransmitSettings;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.RelaySettings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-abstract class ProvisionedBaseMeshNode  {
+import org.openremote.agent.protocol.bluetooth.mesh.Features;
+import org.openremote.agent.protocol.bluetooth.mesh.NodeKey;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.NetworkTransmitSettings;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.RelaySettings;
+
+abstract class ProvisionedBaseMeshNode {
 
     public static final int DISABLED = 0;
     public static final int ENABLED = 1;
     public static final int UNSUPPORTED = 2;
-    public static final int LOW = 0; //Low security
-    public static final int HIGH = 1; //High security
+    public static final int LOW = 0; // Low security
+    public static final int HIGH = 1; // High security
     protected static final String TAG = ProvisionedBaseMeshNode.class.getSimpleName();
     public long mTimeStampInMillis;
     protected String nodeName = "My Node";
@@ -112,7 +111,9 @@ abstract class ProvisionedBaseMeshNode  {
 
     /**
      * Sets the unicast address of the node
-     * <p>This is to be used only by the library</p>
+     * <p>
+     * This is to be used only by the library
+     * </p>
      */
     public final void setUnicastAddress(final int unicastAddress) {
         this.unicastAddress = unicastAddress;
@@ -160,7 +161,7 @@ abstract class ProvisionedBaseMeshNode  {
     //
     // Returns the {@link SecurityState} of the node
     //
-    //@SecurityState
+    // @SecurityState
     public int getSecurity() {
         return security;
     }
@@ -168,7 +169,7 @@ abstract class ProvisionedBaseMeshNode  {
     //
     // Set security state of the node {@link SecurityState}
     //
-    public void setSecurity(/*@SecurityState*/ final int security) {
+    public void setSecurity(/* @SecurityState */ final int security) {
         this.security = security;
     }
 
@@ -201,7 +202,7 @@ abstract class ProvisionedBaseMeshNode  {
     }
 
     //
-    //Sets the {@link SecureNetworkBeacon} beacon for this node
+    // Sets the {@link SecureNetworkBeacon} beacon for this node
     //
     public void setSecureNetworkBeaconSupported(final Boolean enable) {
         this.secureNetworkBeaconSupported = enable;
@@ -263,20 +264,22 @@ abstract class ProvisionedBaseMeshNode  {
     }
 
     /*
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef({LOW, HIGH})
-    public @interface SecurityState {
-    }
+     * @Retention(RetentionPolicy.SOURCE)
+     *
+     * @IntDef({LOW, HIGH})
+     * public @interface SecurityState {
+     * }
      */
 
     /**
      * Secure Network Beacon state determines if a node is periodically broadcasting Secure Network Beacons.
      */
     /*
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef({DISABLED, ENABLED})
-    public @interface SecureNetworkBeaconState {
-    }
+     * @Retention(RetentionPolicy.SOURCE)
+     *
+     * @IntDef({DISABLED, ENABLED})
+     * public @interface SecureNetworkBeaconState {
+     * }
      */
 
     /**
@@ -284,9 +287,10 @@ abstract class ProvisionedBaseMeshNode  {
      * If the Mesh Proxy Service is exposed, the node can be configured to advertise with Node Identity on a subnet.
      */
     /*
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef({DISABLED, ENABLED, UNSUPPORTED})
-    public @interface NodeIdentityState {
-    }
+     * @Retention(RetentionPolicy.SOURCE)
+     *
+     * @IntDef({DISABLED, ENABLED, UNSUPPORTED})
+     * public @interface NodeIdentityState {
+     * }
      */
 }

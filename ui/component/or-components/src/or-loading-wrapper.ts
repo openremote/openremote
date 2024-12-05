@@ -1,4 +1,22 @@
-import {css, html, LitElement, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 /**
@@ -7,19 +25,19 @@ import { customElement, property } from "lit/decorators.js";
 @customElement("or-loading-wrapper")
 export class OrLoadingWrapper extends LitElement {
 
-    @property({type: Number})
+    @property({ type: Number })
     public loadingHeight?: number;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public loadDom: boolean = true;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public fadeContent: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public loading: boolean = false;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public content?: TemplateResult;
 
     // language=CSS
@@ -53,7 +71,7 @@ export class OrLoadingWrapper extends LitElement {
         return html`
             <div id="wrapper">
                 ${this.loading ? html`<div id="loader">LOADING</div>` : ``}
-                ${this.loadDom || !this.loading? html`
+                ${this.loadDom || !this.loading ? html`
                     <div id="content-wrapper" class="${this.loading ? this.fadeContent ? "faded" : "hidden" : ""}">
                         <slot></slot>
                         ${this.content || ``}

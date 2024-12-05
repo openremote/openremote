@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,9 +25,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.MeshMessage;
+import org.openremote.model.syslog.SyslogCategory;
+
 public class ShadowMeshElement {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowMeshElement.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            ShadowMeshElement.class.getName());
 
     private final ExecutorService executorService;
     private final BluetoothMeshNetwork meshNetwork;

@@ -1,8 +1,45 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.manager.datapoint;
+
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Date;
+import java.time.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.openremote.agent.protocol.ProtocolDatapointService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -19,36 +56,19 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.UniqueIdentifierGenerator;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Date;
-import java.time.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
  * Store and retrieve datapoints for asset attributes and periodically purge data points based on
  * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
- * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
+ * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to
+ * {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
-public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements ProtocolDatapointService {
+public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint>
+        implements ProtocolDatapointService {
 
     public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
     public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
@@ -61,19 +81,17 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public void init(Container container) throws Exception {
         super.init(container);
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-            new AssetDatapointResourceImpl(
-                container.getService(TimerService.class),
-                container.getService(ManagerIdentityService.class),
-                container.getService(AssetStorageService.class),
-                this
-            )
-        );
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new AssetDatapointResourceImpl(container.getService(TimerService.class),
+                        container.getService(ManagerIdentityService.class),
+                        container.getService(AssetStorageService.class), this));
 
-        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
+        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS,
+                OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
 
         if (maxDatapointAgeDays <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+            LOG.warning(
+                    OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
         } else {
             LOG.log(Level.INFO, "Data point purge interval days = " + maxDatapointAgeDays);
         }
@@ -90,11 +108,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     @Override
     public void start(Container container) throws Exception {
         if (maxDatapointAgeDays > 0) {
-            dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(
-                this::purgeDataPoints,
-                getFirstPurgeMillis(timerService.getNow()),
-                Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
-            );
+            dataPointsPurgeScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::purgeDataPoints,
+                    getFirstPurgeMillis(timerService.getNow()), Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS);
         }
 
         ClientEventService clientEventService = container.getService(ClientEventService.class);
@@ -106,11 +121,16 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     }
 
     public void onAttributeEvent(AttributeEvent attributeEvent) {
-        if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store datapoints with null value
+        if (attributeIsStoreDatapoint(attributeEvent) && attributeEvent.getValue().isPresent()) { // Don't store
+                                                                                                  // datapoints with
+                                                                                                  // null value
             try {
-                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null), Instant.ofEpochMilli(attributeEvent.getTimestamp()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+                upsertValue(attributeEvent.getId(), attributeEvent.getName(), attributeEvent.getValue().orElse(null),
+                        Instant.ofEpochMilli(attributeEvent.getTimestamp()).atZone(ZoneId.systemDefault())
+                                .toLocalDateTime());
             } catch (Exception e) {
-                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
+                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED,
+                        "Failed to insert or update asset data point for attribute: " + attributeEvent, e);
             }
         }
     }
@@ -135,48 +155,44 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         try {
             // Get list of attributes that have custom durations
-            List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .attributes(
-                        new AttributePredicate().meta(
-                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        )));
+            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().attributes(new AttributePredicate()
+                    .meta(new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null))));
 
             List<Pair<String, Attribute<?>>> attributes = assets.stream()
-                .map(asset -> asset
-                    .getAttributes().stream()
-                    .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
-                    .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
-                    .collect(toList()))
-                .flatMap(List::stream)
-                .collect(toList());
+                    .map(asset -> asset.getAttributes().stream()
+                            .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
+                            .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
+                            .collect(toList()))
+                    .flatMap(List::stream).collect(toList());
 
             // Purge data points not in the above list using default duration
             LOG.fine("Purging data points of attributes that use default max age days of " + maxDatapointAgeDays);
 
-            persistenceService.doTransaction(em -> em.createQuery(
-                "delete from AssetDatapoint dp " +
-                    "where dp.timestamp < :dt" + buildWhereClause(attributes, true)
-            ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS))).executeUpdate());
+            persistenceService.doTransaction(em -> em
+                    .createQuery("delete from AssetDatapoint dp " + "where dp.timestamp < :dt"
+                            + buildWhereClause(attributes, true))
+                    .setParameter("dt",
+                            Date.from(timerService.getNow().truncatedTo(DAYS).minus(maxDatapointAgeDays, DAYS)))
+                    .executeUpdate());
 
             if (!attributes.isEmpty()) {
                 // Purge data points that have specific age constraints
                 Map<Integer, List<Pair<String, Attribute<?>>>> ageAttributeRefMap = attributes.stream()
-                    .collect(groupingBy(attributeRef ->
-                        attributeRef.value
-                            .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
-                            .orElse(maxDatapointAgeDays)));
+                        .collect(groupingBy(attributeRef -> attributeRef.value
+                                .getMetaValue(MetaItemType.DATA_POINTS_MAX_AGE_DAYS).orElse(maxDatapointAgeDays)));
 
                 ageAttributeRefMap.forEach((age, attrs) -> {
                     LOG.fine("Purging data points of " + attrs.size() + " attributes that use a max age of " + age);
 
                     try {
-                        persistenceService.doTransaction(em -> em.createQuery(
-                            "delete from AssetDatapoint dp " +
-                                "where dp.timestamp < :dt" + buildWhereClause(attrs, false)
-                        ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS))).executeUpdate());
+                        persistenceService.doTransaction(em -> em
+                                .createQuery("delete from AssetDatapoint dp " + "where dp.timestamp < :dt"
+                                        + buildWhereClause(attrs, false))
+                                .setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(age, DAYS)))
+                                .executeUpdate());
                     } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen", e);
+                        LOG.log(Level.SEVERE, "An error occurred whilst deleting data points, this should not happen",
+                                e);
                     }
                 });
             }
@@ -186,27 +202,23 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         // Purge old exports
         try {
-            long oneDayMillis = 24*60*60*1000;
+            long oneDayMillis = 24 * 60 * 60 * 1000;
             File[] obsoleteExports = exportPath.toFile()
-                .listFiles(file ->
-                    file.isFile()
-                        && file.getName().endsWith("csv")
-                        && file.lastModified() < timerService.getCurrentTimeMillis() - oneDayMillis
-                );
+                    .listFiles(file -> file.isFile() && file.getName().endsWith("csv")
+                            && file.lastModified() < timerService.getCurrentTimeMillis() - oneDayMillis);
 
             if (obsoleteExports != null) {
-                Arrays.stream(obsoleteExports)
-                    .forEach(file -> {
-                        boolean success = false;
-                        try {
-                            success = file.delete();
-                        } catch (SecurityException e) {
-                            LOG.log(Level.WARNING, "Cannot access the export file to delete it", e);
-                        }
-                        if (!success) {
-                            LOG.log(Level.WARNING, "Failed to delete obsolete export '" + file.getName() + "'");
-                        }
-                    });
+                Arrays.stream(obsoleteExports).forEach(file -> {
+                    boolean success = false;
+                    try {
+                        success = file.delete();
+                    } catch (SecurityException e) {
+                        LOG.log(Level.WARNING, "Cannot access the export file to delete it", e);
+                    }
+                    if (!success) {
+                        LOG.log(Level.WARNING, "Failed to delete obsolete export '" + file.getName() + "'");
+                    }
+                });
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to purge old exports", e);
@@ -220,8 +232,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
 
         String whereStr = attributes.stream()
-            .map(attributeRef -> "('" + attributeRef.key + "','" + attributeRef.value.getName() + "')")
-            .collect(Collectors.joining(","));
+                .map(attributeRef -> "('" + attributeRef.key + "','" + attributeRef.value.getName() + "')")
+                .collect(Collectors.joining(","));
 
         return " and (dp.assetId, dp.attributeName) " + (negate ? "not " : "") + "in (" + whereStr + ")";
     }
@@ -230,18 +242,18 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
      * container so it can be accessed by this process.
      */
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
-                                                  long fromTimestamp,
-                                                  long toTimestamp) {
+    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")) to '/storage/")
-                .append(EXPORT_STORAGE_DIR_NAME)
-                .append("/")
-                .append(fileName)
-                .append("' delimiter ',' CSV HEADER;");
+            StringBuilder sb = new StringBuilder(String.format(
+                    "copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (",
+                    fromTimestamp / 1000, toTimestamp / 1000))
+                    .append(Arrays.stream(attributeRefs)
+                            .map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')",
+                                    attributeRef.getId(), attributeRef.getName()))
+                            .collect(Collectors.joining(" or ")))
+                    .append(")) to '/storage/").append(EXPORT_STORAGE_DIR_NAME).append("/").append(fileName)
+                    .append("' delimiter ',' CSV HEADER;");
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
+
+import static org.openremote.agent.protocol.bluetooth.mesh.BluetoothMeshProxy.*;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import com.welie.blessed.BluetoothCentralManager;
 import com.welie.blessed.BluetoothCommandStatus;
@@ -26,20 +33,14 @@ import com.welie.blessed.BluetoothGattService;
 import com.welie.blessed.BluetoothPeripheral;
 import com.welie.blessed.BluetoothPeripheralCallback;
 import com.welie.blessed.ScanResult;
+
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-
-import static org.openremote.agent.protocol.bluetooth.mesh.BluetoothMeshProxy.*;
-
 public class BluetoothMeshProxyStateMachine {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProxyStateMachine.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            BluetoothMeshProxyStateMachine.class.getName());
 
     public static final int MAX_RETRY_COUNT = 20;
     public static final int CONNECT_TIMEOUT = 60000;
@@ -77,7 +78,9 @@ public class BluetoothMeshProxyStateMachine {
     private final FailedState failedState = new FailedState(this);
     private volatile State state = startState;
 
-    public BluetoothMeshProxyStateMachine(BluetoothMeshProxy proxy, BluetoothCentralManager bluetoothCentral, ExecutorService executorService, ScheduledExecutorService scheduledExecutorService, MainThreadManager commandSerializer, BluetoothPeripheral peripheral, BluetoothPeripheralCallback callback) {
+    public BluetoothMeshProxyStateMachine(BluetoothMeshProxy proxy, BluetoothCentralManager bluetoothCentral,
+            ExecutorService executorService, ScheduledExecutorService scheduledExecutorService,
+            MainThreadManager commandSerializer, BluetoothPeripheral peripheral, BluetoothPeripheralCallback callback) {
         this.meshProxy = proxy;
         this.bluetoothCentral = bluetoothCentral;
         this.commandSerializer = commandSerializer;
@@ -135,7 +138,8 @@ public class BluetoothMeshProxyStateMachine {
         this.rxDataCallback = callback;
     }
 
-    public synchronized void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
+    public synchronized void connect(Consumer<ConnectionStatus> statusConsumer,
+            BluetoothMeshProxyConnectCallback callback) {
         state.connect(statusConsumer, callback);
     }
 
@@ -166,16 +170,19 @@ public class BluetoothMeshProxyStateMachine {
         state.configureOutCharacteristic();
     }
 
-    public synchronized void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+    public synchronized void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+            BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         state.onNotificationStateUpdate(peripheral, characteristic, status);
     }
 
-    public synchronized void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+    public synchronized void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+            BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         if (!dataOutCharacteristic.getUuid().equals(characteristic.getUuid())) {
             return;
         }
-        if (status == BluetoothCommandStatus.COMMAND_SUCCESS ) {
-            LOG.info("Received '" + value.length + "' data bytes from mesh proxy: [data=" + dataAsHexString(value) + "]");
+        if (status == BluetoothCommandStatus.COMMAND_SUCCESS) {
+            LOG.info("Received '" + value.length + "' data bytes from mesh proxy: [data=" + dataAsHexString(value)
+                    + "]");
             final BluetoothMeshProxyRxCallback callback = rxDataCallback;
             if (callback != null) {
                 executorService.execute(() -> callback.onRxData(value));
@@ -183,7 +190,8 @@ public class BluetoothMeshProxyStateMachine {
         }
     }
 
-    public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+    public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+            BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         if (queueWorker != null) {
             queueWorker.onCharacteristicWrite(peripheral, value, characteristic, status);
         }
@@ -301,7 +309,8 @@ public class BluetoothMeshProxyStateMachine {
         final BluetoothGattCharacteristic out = getDataOutCharacteristic();
         if (out != null) {
             executeOnMainThread(() -> {
-                LOG.info("Disabling out characteristic notifications: [Name=" + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
+                LOG.info("Disabling out characteristic notifications: [Name=" + getPeripheral().getName() + ", Address="
+                        + getPeripheral().getAddress() + "]");
                 getPeripheral().setNotify(out, false);
             });
         }
@@ -309,7 +318,8 @@ public class BluetoothMeshProxyStateMachine {
 
     void cancelConnection() {
         executeOnMainThread(() -> {
-            LOG.info("Cancelling peripheral connection: [Name=" + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
+            LOG.info("Cancelling peripheral connection: [Name=" + getPeripheral().getName() + ", Address="
+                    + getPeripheral().getAddress() + "]");
             getBluetoothCentral().cancelConnection(getPeripheral());
         });
     }
@@ -323,7 +333,7 @@ public class BluetoothMeshProxyStateMachine {
         }
         executeOnMainThread(() -> {
             LOG.info("Scan ON");
-            getBluetoothCentral().scanForPeripheralsWithServices(new UUID[] {MESH_PROXY_UUID});
+            getBluetoothCentral().scanForPeripheralsWithServices(new UUID[] { MESH_PROXY_UUID });
         });
     }
 
@@ -336,10 +346,8 @@ public class BluetoothMeshProxyStateMachine {
 
     void startTimeout(int timeout) {
         timeoutFuture = scheduledExecutorService.schedule(() -> {
-                onTimeout();
-            },
-            timeout, TimeUnit.MILLISECONDS
-        );
+            onTimeout();
+        }, timeout, TimeUnit.MILLISECONDS);
     }
 
     void stopTimeout() {
@@ -359,22 +367,36 @@ public class BluetoothMeshProxyStateMachine {
         return builder.toString();
     }
 
-
     // Nested Classes -----------------------------------------------------------------------------
 
     private interface State {
         void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback);
+
         void disconnect();
+
         void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback);
+
         void onConnectedPeripheral(BluetoothPeripheral peripheral);
+
         void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status);
+
         void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status);
+
         void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services);
+
         void configureOutCharacteristic();
-        void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status);
-        void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status);
-        void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status);
+
+        void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic,
+                BluetoothCommandStatus status);
+
+        void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status);
+
+        void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status);
+
         void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult);
+
         void onTimeout();
     }
 
@@ -408,69 +430,61 @@ public class BluetoothMeshProxyStateMachine {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                LOG.info("Initially connecting to mesh proxy: [Name=" + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
+                LOG.info("Initially connecting to mesh proxy: [Name=" + getPeripheral().getName() + ", Address="
+                        + getPeripheral().getAddress() + "]");
                 getBluetoothCentral().connectPeripheral(getPeripheral(), getPeripheralCallback());
             });
         }
 
         @Override
         public void disconnect() {
-
         }
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -502,7 +516,8 @@ public class BluetoothMeshProxyStateMachine {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                LOG.info("Reconnecting to mesh proxy: [RetryCount=" + getRetryCount() + ", Name=" + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
+                LOG.info("Reconnecting to mesh proxy: [RetryCount=" + getRetryCount() + ", Name="
+                        + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
                 getBluetoothCentral().connectPeripheral(getPeripheral(), getPeripheralCallback());
             });
         }
@@ -515,60 +530,51 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
-
 
     private class ConnectingState implements State {
 
@@ -580,7 +586,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -594,7 +599,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
@@ -624,37 +628,33 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
@@ -680,7 +680,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -693,17 +692,14 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
@@ -719,8 +715,10 @@ public class BluetoothMeshProxyStateMachine {
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
             if (isExpectedPeripheral(peripheral)) {
-                final BluetoothGattCharacteristic in = peripheral.getCharacteristic(MESH_PROXY_UUID, MESH_PROXY_DATA_IN);
-                final BluetoothGattCharacteristic out = peripheral.getCharacteristic(MESH_PROXY_UUID, MESH_PROXY_DATA_OUT);
+                final BluetoothGattCharacteristic in = peripheral.getCharacteristic(MESH_PROXY_UUID,
+                        MESH_PROXY_DATA_IN);
+                final BluetoothGattCharacteristic out = peripheral.getCharacteristic(MESH_PROXY_UUID,
+                        MESH_PROXY_DATA_OUT);
                 if (in != null && out != null) {
                     setDataInCharacteristic(in);
                     setDataOutCharacteristic(out);
@@ -735,32 +733,29 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -774,7 +769,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -787,17 +781,14 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
@@ -812,42 +803,41 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
             final BluetoothGattCharacteristic out = getDataOutCharacteristic();
             executeOnMainThread(() -> {
-                LOG.info("Enabling out characteristic notifications: [Name=" + getPeripheral().getName() + ", Address=" + getPeripheral().getAddress() + "]");
+                LOG.info("Enabling out characteristic notifications: [Name=" + getPeripheral().getName() + ", Address="
+                        + getPeripheral().getAddress() + "]");
                 getPeripheral().setNotify(out, true);
             });
             setState(getConfigureCharacteristicState());
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
             LOG.info("ConfigureCharacteristicState::onNotificationStateUpdate: status=" + status);
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -861,7 +851,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -875,17 +864,14 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
@@ -900,17 +886,17 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-            if (isExpectedPeripheral(peripheral) && getDataOutCharacteristic().getUuid().equals(characteristic.getUuid())) {
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+            if (isExpectedPeripheral(peripheral)
+                    && getDataOutCharacteristic().getUuid().equals(characteristic.getUuid())) {
                 if (status == BluetoothCommandStatus.COMMAND_SUCCESS) {
                     isInitialConnectionSuccessful = true;
                     setRetryCount(0);
@@ -925,23 +911,21 @@ public class BluetoothMeshProxyStateMachine {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -955,7 +939,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -986,9 +969,11 @@ public class BluetoothMeshProxyStateMachine {
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
             SendDataCommand cmd = null;
             if (data.length > mtuSize) {
-                cmd = new SendMultiDataSegmentCommand(meshProxy, commandSerializer, mtuSize, executorService, dataInCharacteristic, data, callback);
+                cmd = new SendMultiDataSegmentCommand(meshProxy, commandSerializer, mtuSize, executorService,
+                        dataInCharacteristic, data, callback);
             } else {
-                cmd = new SendSingleDataSegmentCommand(meshProxy, commandSerializer, executorService, dataInCharacteristic, data, callback);
+                cmd = new SendSingleDataSegmentCommand(meshProxy, commandSerializer, executorService,
+                        dataInCharacteristic, data, callback);
             }
             try {
                 sendDataQueue.put(cmd);
@@ -999,12 +984,10 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
@@ -1020,37 +1003,33 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -1064,7 +1043,6 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
@@ -1082,12 +1060,10 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
@@ -1096,26 +1072,25 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
@@ -1123,7 +1098,8 @@ public class BluetoothMeshProxyStateMachine {
             BluetoothPeripheral oldPeripheral = getPeripheral();
             BluetoothPeripheral newPeripheral = peripheral;
             if (oldPeripheral.getAddress().equals(newPeripheral.getAddress())) {
-                LOG.info("Scanned Bluetooth Mesh proxy after connection loss: [Name='" + peripheral.getName() + "', address='" + peripheral.getAddress() + "']");
+                LOG.info("Scanned Bluetooth Mesh proxy after connection loss: [Name='" + peripheral.getName()
+                        + "', address='" + peripheral.getAddress() + "']");
                 setPeripheral(newPeripheral);
                 stopTimeout();
                 scanOff();
@@ -1152,67 +1128,57 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
         public void disconnect() {
-
         }
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -1226,67 +1192,57 @@ public class BluetoothMeshProxyStateMachine {
 
         @Override
         public void connect(Consumer<ConnectionStatus> statusConsumer, BluetoothMeshProxyConnectCallback callback) {
-
         }
 
         @Override
         public void disconnect() {
-
         }
 
         @Override
         public void sendData(int mtuSize, byte[] data, BluetoothMeshProxySendDataCallback callback) {
-
         }
 
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-
         }
 
         @Override
         public void onServicesDiscovered(BluetoothPeripheral peripheral, List<BluetoothGattService> services) {
-
         }
 
         @Override
         public void configureOutCharacteristic() {
-
         }
 
         @Override
-        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
-        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-
         }
 
         @Override
         public void onTimeout() {
-
         }
     }
 
@@ -1318,7 +1274,8 @@ public class BluetoothMeshProxyStateMachine {
         // Implements BluetoothPeripheralCallback -------------------------------------------------
 
         @Override
-        public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+        public synchronized void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+                BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
             if (pendingCommand != null) {
                 pendingCommand.onCharacteristicWrite(peripheral, value, characteristic, status);
             }

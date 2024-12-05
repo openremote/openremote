@@ -1,14 +1,32 @@
-import {css, html, PropertyValues, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, PropertyValues, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import {ImageWidgetConfig} from "../widgets/image-widget";
-import {i18next} from "@openremote/or-translate";
-import {AttributesSelectEvent} from "../panels/attributes-panel";
-import {Asset, AssetModelUtil, AttributeRef} from "@openremote/model";
+import { ImageWidgetConfig } from "../widgets/image-widget";
+import { i18next } from "@openremote/or-translate";
+import { AttributesSelectEvent } from "../panels/attributes-panel";
+import { Asset, AssetModelUtil, AttributeRef } from "@openremote/model";
 import { map } from "lit/directives/map.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {Util} from "@openremote/core";
+import { Util } from "@openremote/core";
 import { when } from "lit/directives/when.js";
-import {AssetWidgetSettings} from "../util/or-asset-widget";
+import { AssetWidgetSettings } from "../util/or-asset-widget";
 
 const styling = css`
   #marker-container {
@@ -30,7 +48,7 @@ export class ImageSettings extends AssetWidgetSettings {
 
     protected willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             this.updateCoordinateMap(this.widgetConfig);
             this.loadAssets();
         }
@@ -38,9 +56,9 @@ export class ImageSettings extends AssetWidgetSettings {
 
     protected loadAssets() {
         const missingAssets = this.widgetConfig.attributeRefs.filter(ref => !this.isAttributeRefLoaded(ref));
-        if(missingAssets.length > 0) {
+        if (missingAssets.length > 0) {
             this.fetchAssets(this.widgetConfig.attributeRefs).then((assets) => {
-                if(assets === undefined) {
+                if (assets === undefined) {
                     this.loadedAssets = [];
                 } else {
                     this.loadedAssets = assets;
@@ -116,7 +134,7 @@ export class ImageSettings extends AssetWidgetSettings {
         if (config.markers.length > 0) {
             return config.attributeRefs.map((attributeRef) => {
                 const marker = config.markers.find(m => m.attributeRef.id === attributeRef.id && m.attributeRef.name === attributeRef.name);
-                if(marker === undefined) {
+                if (marker === undefined) {
                     console.error("A marker could not be found during drafting coordinate entries.");
                     return html``;
                 }
@@ -124,7 +142,7 @@ export class ImageSettings extends AssetWidgetSettings {
                 const coordinates = marker.coordinates;
                 const asset = this.loadedAssets?.find(a => a.id === attributeRef.id);
                 let label: string | undefined;
-                if(asset) {
+                if (asset) {
                     const attribute = asset.attributes![attributeRef.name!];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
                     label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
@@ -160,12 +178,12 @@ export class ImageSettings extends AssetWidgetSettings {
 
     protected onCoordinateUpdate(index: number, coordinate: 'x' | 'y', value: number) {
         let coords = this.widgetConfig.markers[index].coordinates;
-        if(!coords) {
+        if (!coords) {
             coords = [0, 0];
         }
-        if(coordinate === 'x') {
+        if (coordinate === 'x') {
             coords[0] = value;
-        } else if(coordinate === 'y') {
+        } else if (coordinate === 'y') {
             coords[1] = value;
         }
         this.widgetConfig.markers[index].coordinates = coords;

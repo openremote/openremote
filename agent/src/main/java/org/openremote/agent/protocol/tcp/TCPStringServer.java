@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.tcp;
+
+import java.net.InetSocketAddress;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-
-import java.net.InetSocketAddress;
 
 /**
  * This is an {@link AbstractTCPServer} implementation that handles {@link String} messages.
@@ -38,7 +37,8 @@ public class TCPStringServer extends AbstractTCPServer<String> {
     protected int maxFrameLength;
     protected boolean stripDelimiter;
 
-    public TCPStringServer(InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
+    public TCPStringServer(InetSocketAddress localAddress, String delimiter, int maxFrameLength,
+            boolean stripDelimiter) {
         super(localAddress);
         this.delimiter = delimiter;
         this.maxFrameLength = maxFrameLength;
@@ -48,7 +48,8 @@ public class TCPStringServer extends AbstractTCPServer<String> {
     @Override
     protected void addDecoders(SocketChannel channel) {
         // Add delimiter and string decoders to do the work
-        addDecoder(channel, new DelimiterBasedFrameDecoder(maxFrameLength, stripDelimiter, Unpooled.wrappedBuffer(delimiter.getBytes())));
+        addDecoder(channel, new DelimiterBasedFrameDecoder(maxFrameLength, stripDelimiter,
+                Unpooled.wrappedBuffer(delimiter.getBytes())));
         addDecoder(channel, new StringDecoder());
     }
 

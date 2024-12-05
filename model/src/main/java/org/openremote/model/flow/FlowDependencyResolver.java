@@ -1,9 +1,6 @@
 /*
  * Copyright 2015, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.flow;
 
 import java.util.*;
@@ -61,7 +59,8 @@ public abstract class FlowDependencyResolver {
                     superFlowShouldBeStopped = true;
                 } else {
 
-                    // Find slots we no longer have and delete them and their wires (also include any slots without wires)
+                    // Find slots we no longer have and delete them and their wires (also include any slots without
+                    // wires)
                     Slot[] slotsWithoutPeer = superFlow.findSlotsWithoutPeer(subflowNode, flow, false);
                     for (Slot slotWithoutPeer : slotsWithoutPeer) {
 
@@ -150,16 +149,8 @@ public abstract class FlowDependencyResolver {
                 flowHasInvalidPeers = flowHasInvalidPeers || nodeHasMissingPeers;
             }
 
-            dependencyList.add(
-                new FlowDependency(
-                    subflowDependent.getLabel(),
-                    subflowDependent.getId(),
-                    subflowDependent.getType(),
-                    level,
-                    flowHasWiresAttached,
-                    flowHasInvalidPeers
-                )
-            );
+            dependencyList.add(new FlowDependency(subflowDependent.getLabel(), subflowDependent.getId(),
+                    subflowDependent.getType(), level, flowHasWiresAttached, flowHasInvalidPeers));
 
             populateSuperDependencies(subflowDependent, level + 1, dependencyList);
         }
@@ -176,33 +167,22 @@ public abstract class FlowDependencyResolver {
 
             if (subflow == null)
                 throw new IllegalStateException(
-                    "Missing subflow dependency '" + subflowNode.getSubflowId() + "': in " + subflowNode
-                );
+                        "Missing subflow dependency '" + subflowNode.getSubflowId() + "': in " + subflowNode);
 
             // Do we have a loop?
             if (subflow.getId().equals(flow.getId())) {
-                throw new IllegalStateException(
-                    "Loop detected, can't have flow as its own subflow: " + flow
-                );
+                throw new IllegalStateException("Loop detected, can't have flow as its own subflow: " + flow);
             }
             for (FlowDependency superDependency : flow.getSuperDependencies()) {
                 if (subflow.getId().equals(superDependency.getId())) {
                     throw new IllegalStateException(
-                        "Loop detected in '" + flow + "', subflow is also super dependency: " + subflow
-                    );
+                            "Loop detected in '" + flow + "', subflow is also super dependency: " + subflow);
                 }
             }
 
             if (!added.contains(subflow.getId())) {
-                dependencyList.add(
-                    new FlowDependency(
-                        subflow.getLabel(),
-                        subflow.getId(),
-                        subflow.getType(),
-                        hydrate ? subflow : null,
-                        level
-                    )
-                );
+                dependencyList.add(new FlowDependency(subflow.getLabel(), subflow.getId(), subflow.getType(),
+                        hydrate ? subflow : null, level));
                 added.add(subflow.getId());
                 populateSubDependencies(subflow, hydrate, level + 1, dependencyList);
             }
@@ -219,5 +199,4 @@ public abstract class FlowDependencyResolver {
     protected abstract void stopFlowIfRunning(Flow flow);
 
     protected abstract void storeFlow(Flow flow);
-
 }

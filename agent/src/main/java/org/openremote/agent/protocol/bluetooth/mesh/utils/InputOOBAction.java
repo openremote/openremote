@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
@@ -92,7 +91,7 @@ public enum InputOOBAction {
     }
 
     public static List<InputOOBAction> parseInputActionsFromBitMask(final int inputAction) {
-        final InputOOBAction[] inputActions = {PUSH, TWIST, INPUT_NUMERIC, INPUT_ALPHA_NUMERIC};
+        final InputOOBAction[] inputActions = { PUSH, TWIST, INPUT_NUMERIC, INPUT_ALPHA_NUMERIC };
         final List<InputOOBAction> supportedActionValues = new ArrayList<>();
         for (InputOOBAction action : inputActions) {
             if ((inputAction & action.inputOOBAction) == action.inputOOBAction) {
@@ -149,7 +148,7 @@ public enum InputOOBAction {
      * Generates the Input OOB Authentication value
      *
      * @param inputOOBAction selected {@link InputOOBAction}
-     * @param input          Input authentication
+     * @param input Input authentication
      * @return 128-bit authentication value
      */
     public static byte[] generateInputOOBAuthenticationValue(final InputOOBAction inputOOBAction, final byte[] input) {
@@ -175,13 +174,13 @@ public enum InputOOBAction {
      * Returns a randomly generated Input OOB Authentication value to be input by the user
      *
      * @param inputOOBAction selected {@link InputOOBAction}
-     * @param size           oob size
+     * @param size oob size
      */
     public static byte[] getInputOOOBAuthenticationValue(final short inputOOBAction, final byte size) {
         switch (fromValue(inputOOBAction)) {
             case PUSH:
             case TWIST:
-                //We override the value here to 1 so we generate a 1 digit value for presses.
+                // We override the value here to 1 so we generate a 1 digit value for presses.
                 return MeshParserUtils.generateOOBCount(1);
             case INPUT_NUMERIC:
                 return MeshParserUtils.generateOOBNumeric(size);
@@ -192,4 +191,3 @@ public enum InputOOBAction {
         }
     }
 }
-

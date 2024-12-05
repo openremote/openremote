@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.web;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.ServletInfo;
-import io.undertow.servlet.util.ImmediateInstanceHandle;
-import org.openremote.model.Container;
-import org.openremote.container.web.file.FileServlet;
-import org.openremote.container.web.file.GzipResponseFilter;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +26,19 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.openremote.container.web.file.FileServlet;
+import org.openremote.container.web.file.GzipResponseFilter;
+import org.openremote.model.Container;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 
 public class ManagerFileServlet extends FileServlet {
 
@@ -53,9 +53,7 @@ public class ManagerFileServlet extends FileServlet {
         }
     };
 
-    public static final String[] FILE_EXTENSIONS_ALREADY_ZIPPED = {
-        ".pbf"
-    };
+    public static final String[] FILE_EXTENSIONS_ALREADY_ZIPPED = { ".pbf" };
 
     public static final Map<String, Integer> MIME_TYPES_EXPIRE_SECONDS = new HashMap<String, Integer>() {
         {
@@ -72,47 +70,34 @@ public class ManagerFileServlet extends FileServlet {
         }
     };
 
-    public static final String[] MIME_TYPES_TO_ZIP = {
-        "text/plain",
-        "text/html",
-        "text/xml",
-        "text/css",
-        "text/javascript",
-        "text/csv",
-        "text/rtf",
-        "application/xml",
-        "application/xhtml+xml",
-        "application/javascript",
-        "application/json",
-        "image/svg+xml"
-    };
+    public static final String[] MIME_TYPES_TO_ZIP = { "text/plain", "text/html", "text/xml", "text/css",
+            "text/javascript", "text/csv", "text/rtf", "application/xml", "application/xhtml+xml",
+            "application/javascript", "application/json", "image/svg+xml" };
 
-    public ManagerFileServlet(boolean devMode,
-                              File base,
-                              String[] requiredRoles) {
+    public ManagerFileServlet(boolean devMode, File base, String[] requiredRoles) {
         super(devMode, base, requiredRoles, MIME_TYPES, MIME_TYPES_EXPIRE_SECONDS, FILE_EXTENSIONS_ALREADY_ZIPPED);
     }
 
-    public static DeploymentInfo createDeploymentInfo(boolean devMode, String contextPath, Path docRoot, String[] requiredRoles) {
+    public static DeploymentInfo createDeploymentInfo(boolean devMode, String contextPath, Path docRoot,
+            String[] requiredRoles) {
         if (!Files.isDirectory(docRoot)) {
             throw new IllegalArgumentException("Document root does not exist: " + docRoot.toAbsolutePath());
         }
 
         ManagerFileServlet fileServlet = new ManagerFileServlet(devMode, docRoot.toFile(), requiredRoles);
-        ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
+        ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class,
+                () -> new ImmediateInstanceHandle<>(fileServlet));
         servletInfo.addMapping("/*");
 
         Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);
-        FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
+        FilterInfo gzipFilterInfo = Servlets
+                .filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
                 .setAsyncSupported(true);
 
-        return new DeploymentInfo()
-            .setDeploymentName(contextPath + " File Servlet Deployment")
-            .setContextPath(contextPath)
-            .addServlet(servletInfo)
-            .addFilter(gzipFilterInfo)
-            .addFilterUrlMapping(gzipFilterInfo.getName(), "/*", DispatcherType.REQUEST)
-            .setClassLoader(Container.class.getClassLoader());
+        return new DeploymentInfo().setDeploymentName(contextPath + " File Servlet Deployment")
+                .setContextPath(contextPath).addServlet(servletInfo).addFilter(gzipFilterInfo)
+                .addFilterUrlMapping(gzipFilterInfo.getName(), "/*", DispatcherType.REQUEST)
+                .setClassLoader(Container.class.getClassLoader());
     }
 
     /**

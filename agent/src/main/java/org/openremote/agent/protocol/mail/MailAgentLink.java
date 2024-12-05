@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,23 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.mail;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.query.filter.StringPredicate;
 
 public class MailAgentLink extends AgentLink<MailAgentLink> {
 
-    @JsonPropertyDescription("The predicate to apply to incoming mail message subjects to determine if the message is" +
-        " intended for the linked attribute. This must be defined to enable attributes to be updated by the linked" +
-        " agent.")
+    @JsonPropertyDescription("The predicate to apply to incoming mail message subjects to determine if the message is"
+            + " intended for the linked attribute. This must be defined to enable attributes to be updated by the linked"
+            + " agent.")
     protected StringPredicate subjectMatchPredicate;
-    @JsonPropertyDescription("The predicate to apply to incoming mail message from address(es) to determine if the" +
-        " message is intended for the linked attribute. This must be defined to enable attributes to be updated by the" +
-        " linked agent.")
+    @JsonPropertyDescription("The predicate to apply to incoming mail message from address(es) to determine if the"
+            + " message is intended for the linked attribute. This must be defined to enable attributes to be updated by the"
+            + " linked agent.")
     protected StringPredicate fromMatchPredicate;
 
     @JsonPropertyDescription("Use the subject as value instead of the body")
@@ -44,7 +44,8 @@ public class MailAgentLink extends AgentLink<MailAgentLink> {
     }
 
     // For Hydrators
-    protected MailAgentLink() {}
+    protected MailAgentLink() {
+    }
 
     public MailAgentLink(String id) {
         super(id);

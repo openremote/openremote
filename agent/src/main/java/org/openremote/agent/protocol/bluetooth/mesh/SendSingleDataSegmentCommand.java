@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import com.welie.blessed.BluetoothCommandStatus;
-import com.welie.blessed.BluetoothGattCharacteristic;
-import com.welie.blessed.BluetoothPeripheral;
-import org.openremote.model.syslog.SyslogCategory;
 
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 
+import com.welie.blessed.BluetoothCommandStatus;
+import com.welie.blessed.BluetoothGattCharacteristic;
+import com.welie.blessed.BluetoothPeripheral;
+
+import org.openremote.model.syslog.SyslogCategory;
+
 public class SendSingleDataSegmentCommand implements SendDataCommand {
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, SendSingleDataSegmentCommand.class.getName());
-
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            SendSingleDataSegmentCommand.class.getName());
 
     // Private Instance Fields ----------------------------------------------------------------
 
@@ -43,10 +43,11 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
     private volatile boolean isWaitForCallback = false;
     private final BlockingQueue<BluetoothCommandStatus> resultQueue = new ArrayBlockingQueue<>(1);
 
-
     // Constructors ---------------------------------------------------------------------------
 
-    public SendSingleDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer, ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data, BluetoothMeshProxySendDataCallback callback) {
+    public SendSingleDataSegmentCommand(BluetoothMeshProxy proxy, MainThreadManager commandSerializer,
+            ExecutorService executorService, BluetoothGattCharacteristic characteristic, byte[] data,
+            BluetoothMeshProxySendDataCallback callback) {
         this.meshProxy = proxy;
         this.commandSerializer = commandSerializer;
         this.executorService = executorService;
@@ -54,7 +55,6 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
         this.data = data;
         this.callback = callback;
     }
-
 
     // Public Instance Methods ----------------------------------------------------------------
 
@@ -68,8 +68,7 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
         LOG.info("Sending '" + data.length + "' bytes to mesh proxy: [data=" + dataAsHexString(data) + "]");
 
         Runnable runnable = () -> this.dataInCharacteristic.getService().getPeripheral().writeCharacteristic(
-            this.dataInCharacteristic, data, BluetoothGattCharacteristic.WriteType.WITHOUT_RESPONSE
-        );
+                this.dataInCharacteristic, data, BluetoothGattCharacteristic.WriteType.WITHOUT_RESPONSE);
         commandSerializer.enqueue(runnable);
         try {
             // TODO: timeout constant
@@ -77,13 +76,16 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
             if (status != null) {
                 isSuccess = (status == BluetoothCommandStatus.COMMAND_SUCCESS);
                 if (isSuccess) {
-                    LOG.info("Successfully sent '" + data.length + "' bytes to mesh proxy: [data=" + dataAsHexString(data) + "]");
+                    LOG.info("Successfully sent '" + data.length + "' bytes to mesh proxy: [data="
+                            + dataAsHexString(data) + "]");
                 } else {
-                    LOG.warning("Failed to send '" + data.length + "' bytes to mesh proxy: [data=" + dataAsHexString(data) + ", status=" + status + "]");
+                    LOG.warning("Failed to send '" + data.length + "' bytes to mesh proxy: [data="
+                            + dataAsHexString(data) + ", status=" + status + "]");
                 }
             } else {
                 // Callback timeout
-                LOG.severe("Failed to send '" + data.length + "' bytes to mesh proxy [data=" + dataAsHexString(data) + "] because of confirmation timeout");
+                LOG.severe("Failed to send '" + data.length + "' bytes to mesh proxy [data=" + dataAsHexString(data)
+                        + "] because of confirmation timeout");
                 isSuccess = false;
             }
         } catch (InterruptedException e) {
@@ -97,14 +99,14 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
         return isSuccess;
     }
 
-
     // Implements BluetoothPeripheralCallback -------------------------------------------------
 
     @Override
-    public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
-        if (dataInCharacteristic.getService().getPeripheral().getAddress().equals(peripheral.getAddress()) &&
-            dataInCharacteristic.getService().getUuid().equals(characteristic.getService().getUuid()) &&
-            dataInCharacteristic.getUuid().equals(characteristic.getUuid())) {
+    public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value,
+            BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
+        if (dataInCharacteristic.getService().getPeripheral().getAddress().equals(peripheral.getAddress())
+                && dataInCharacteristic.getService().getUuid().equals(characteristic.getService().getUuid())
+                && dataInCharacteristic.getUuid().equals(characteristic.getUuid())) {
             if (resultQueue.isEmpty()) {
                 try {
                     resultQueue.put(status);
@@ -114,7 +116,6 @@ public class SendSingleDataSegmentCommand implements SendDataCommand {
             }
         }
     }
-
 
     // Private Instance Methods -------------------------------------------------------------------
 

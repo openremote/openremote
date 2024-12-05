@@ -1,9 +1,6 @@
 /*
  * Copyright 2023, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.mail;
 
-import io.undertow.util.Headers;
-import org.openremote.container.util.MailUtil;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.auth.UsernamePassword;
-import org.openremote.model.mail.MailMessage;
-import org.openremote.model.syslog.SyslogCategory;
-
-import jakarta.mail.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,9 +31,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import org.openremote.container.util.MailUtil;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.mail.MailMessage;
+import org.openremote.model.syslog.SyslogCategory;
+
+import io.undertow.util.Headers;
+import jakarta.mail.*;
+
 public class MailClient {
 
-    public static final System.Logger LOG = System.getLogger(MailClient.class.getName() + "." + SyslogCategory.AGENT.name());
+    public static final System.Logger LOG = System
+            .getLogger(MailClient.class.getName() + "." + SyslogCategory.AGENT.name());
     protected MailClientBuilder config;
     protected Session session;
     protected Date lastMessageDate;
@@ -57,21 +58,24 @@ public class MailClient {
 
         if (config.getPersistenceDir() != null) {
             if (!Files.exists(config.getPersistenceDir())) {
-                LOG.log(System.Logger.Level.INFO, "Persistence directory doesn't exist, attempting to create it: " + config.getPersistenceDir());
+                LOG.log(System.Logger.Level.INFO,
+                        "Persistence directory doesn't exist, attempting to create it: " + config.getPersistenceDir());
                 try {
                     Files.createDirectories(config.getPersistenceDir());
                 } catch (IOException e) {
                     LOG.log(System.Logger.Level.INFO, "Persistence directory creation failed", e);
                 }
             } else if (!Files.isDirectory(config.getPersistenceDir())) {
-                LOG.log(System.Logger.Level.INFO, "Persistence directory is not a directory: " + config.getPersistenceDir());
+                LOG.log(System.Logger.Level.INFO,
+                        "Persistence directory is not a directory: " + config.getPersistenceDir());
             } else {
                 persistenceFileAccessible = true;
                 lastMessageDate = readLastMessageDate(config);
             }
         }
 
-        if (config.getEarliestMessageDate() != null && (lastMessageDate == null || lastMessageDate.before(config.getEarliestMessageDate()))) {
+        if (config.getEarliestMessageDate() != null
+                && (lastMessageDate == null || lastMessageDate.before(config.getEarliestMessageDate()))) {
             lastMessageDate = config.getEarliestMessageDate();
         }
 
@@ -93,7 +97,8 @@ public class MailClient {
         try {
             withFolder((folder) -> {
                 connected.set(true);
-                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages, config.getCheckInitialDelaySeconds(), config.getCheckIntervalSeconds(), TimeUnit.SECONDS);
+                mailChecker = config.getScheduledExecutorService().scheduleWithFixedDelay(this::checkForMessages,
+                        config.getCheckInitialDelaySeconds(), config.getCheckIntervalSeconds(), TimeUnit.SECONDS);
             });
 
             updateConnectionStatus(ConnectionStatus.CONNECTED);
@@ -103,36 +108,36 @@ public class MailClient {
             return false;
         }
 
-            // For IMAP folders we can use listener for new messages for POP3 we need to open/close the folder
-            // we'll just use a mechanism that should work for both for now
-//            emailFolder.addMessageCountListener(new MessageCountAdapter() {
-//                public void messagesAdded(MessageCountEvent ev) {
-//                    Message[] messages = ev.getMessages();
-//                    LOG.log(System.Logger.Level.TRACE, "Got " + messages.length + " messages");
-//
-//                    if (!initialised) {
-//                        initialised = true;
-//                        // Filter out earlier messages on first pass
-//                        Arrays.stream(messages)
-//                            .filter(message -> {
-//                                try {
-//                                    if (lastMessageDate != null) {
-//                                        if (message.getReceivedDate().before(lastMessageDate)) {
-//                                            return false;
-//                                        }
-//                                    }
-//                                } catch (MessagingException e) {
-//                                    LOG.log(System.Logger.Level.TRACE, "Failed to read message received date", e);
-//                                    return false;
-//                                }
-//                                return true;
-//                            })
-//                            .forEach(message -> onMessage(message));
-//                    } else {
-//                        Arrays.stream(messages).forEach(message -> onMessage(message));
-//                    }
-//                }
-//            });
+        // For IMAP folders we can use listener for new messages for POP3 we need to open/close the folder
+        // we'll just use a mechanism that should work for both for now
+        // emailFolder.addMessageCountListener(new MessageCountAdapter() {
+        // public void messagesAdded(MessageCountEvent ev) {
+        // Message[] messages = ev.getMessages();
+        // LOG.log(System.Logger.Level.TRACE, "Got " + messages.length + " messages");
+        //
+        // if (!initialised) {
+        // initialised = true;
+        // // Filter out earlier messages on first pass
+        // Arrays.stream(messages)
+        // .filter(message -> {
+        // try {
+        // if (lastMessageDate != null) {
+        // if (message.getReceivedDate().before(lastMessageDate)) {
+        // return false;
+        // }
+        // }
+        // } catch (MessagingException e) {
+        // LOG.log(System.Logger.Level.TRACE, "Failed to read message received date", e);
+        // return false;
+        // }
+        // return true;
+        // })
+        // .forEach(message -> onMessage(message));
+        // } else {
+        // Arrays.stream(messages).forEach(message -> onMessage(message));
+        // }
+        // }
+        // });
     }
 
     protected void withFolder(Consumer<Folder> folderConsumer) throws Exception {
@@ -229,59 +234,69 @@ public class MailClient {
                 try {
                     Message[] messages = emailFolder.getMessages();
 
-                    // Fetch profile only works for IMAP - For POP3 the headers will be loaded and cached once we read one of them
+                    // Fetch profile only works for IMAP - For POP3 the headers will be loaded and cached once we read
+                    // one of them
                     FetchProfile fp = new FetchProfile();
                     fp.add(FetchProfile.Item.ENVELOPE);
                     fp.add(Headers.CONTENT_TYPE_STRING);
                     emailFolder.fetch(messages, fp);
                     Date lastRunLastMessageDate = lastMessageDate;
 
-                    Arrays.stream(messages)
-                        .filter(message -> {
-                            try {
-                                if (message.getFlags().contains(Flags.Flag.SEEN)) {
-                                    LOG.log(System.Logger.Level.TRACE, "Message has already been seen so ignoring: num=" + message.getMessageNumber());
-                                    return false;
-                                }
-                                if (lastRunLastMessageDate != null) {
-                                    Date sentDate = message.getSentDate();
-
-                                    if (sentDate.before(lastRunLastMessageDate) || sentDate.equals(lastRunLastMessageDate)) {
-                                        LOG.log(System.Logger.Level.TRACE, "Message is older than last message date so ignoring: " + messageToString(message));
-                                        return false;
-                                    }
-                                }
-                            } catch (MessagingException e) {
-                                LOG.log(System.Logger.Level.TRACE, "Failed to read message details: num=" + message.getMessageNumber());
+                    Arrays.stream(messages).filter(message -> {
+                        try {
+                            if (message.getFlags().contains(Flags.Flag.SEEN)) {
+                                LOG.log(System.Logger.Level.TRACE,
+                                        "Message has already been seen so ignoring: num=" + message.getMessageNumber());
                                 return false;
                             }
+                            if (lastRunLastMessageDate != null) {
+                                Date sentDate = message.getSentDate();
 
-                            return true;
-                        })
-                        .forEach(message -> {
-                            try {
-                                MailMessage mailMessage = MailUtil.toMailMessage(message, config.isPreferHTML());
-
-                                if (mailMessage == null) {
-                                    LOG.log(System.Logger.Level.INFO, "Unsupported mail message only messages with a text/* part are supported:" + messageToString(message));
-                                } else {
-                                    onMessage(mailMessage);
-
-                                    if (config.isDeleteMessageOnceProcessed()) {
-                                        message.setFlag(Flags.Flag.DELETED, true);
-                                    }
-                                    if (lastMessageDate == null || message.getSentDate().after(lastMessageDate)) {
-                                        lastMessageDate = message.getSentDate();
-                                    }
+                                if (sentDate.before(lastRunLastMessageDate)
+                                        || sentDate.equals(lastRunLastMessageDate)) {
+                                    LOG.log(System.Logger.Level.TRACE,
+                                            "Message is older than last message date so ignoring: "
+                                                    + messageToString(message));
+                                    return false;
                                 }
-                            } catch (IOException e) {
-                                LOG.log(System.Logger.Level.INFO, "Failed to read message content: " + messageToString(message), e);
-                            } catch (MessagingException e) {
-                                LOG.log(System.Logger.Level.INFO, "An exception occurred whilst processing a message: " + messageToString(message), e);
                             }
-                        });
+                        } catch (MessagingException e) {
+                            LOG.log(System.Logger.Level.TRACE,
+                                    "Failed to read message details: num=" + message.getMessageNumber());
+                            return false;
+                        }
 
-                    if (persistenceFileAccessible && lastMessageDate != null && (lastRunLastMessageDate == null || lastMessageDate.after(lastRunLastMessageDate))) {
+                        return true;
+                    }).forEach(message -> {
+                        try {
+                            MailMessage mailMessage = MailUtil.toMailMessage(message, config.isPreferHTML());
+
+                            if (mailMessage == null) {
+                                LOG.log(System.Logger.Level.INFO,
+                                        "Unsupported mail message only messages with a text/* part are supported:"
+                                                + messageToString(message));
+                            } else {
+                                onMessage(mailMessage);
+
+                                if (config.isDeleteMessageOnceProcessed()) {
+                                    message.setFlag(Flags.Flag.DELETED, true);
+                                }
+                                if (lastMessageDate == null || message.getSentDate().after(lastMessageDate)) {
+                                    lastMessageDate = message.getSentDate();
+                                }
+                            }
+                        } catch (IOException e) {
+                            LOG.log(System.Logger.Level.INFO,
+                                    "Failed to read message content: " + messageToString(message), e);
+                        } catch (MessagingException e) {
+                            LOG.log(System.Logger.Level.INFO,
+                                    "An exception occurred whilst processing a message: " + messageToString(message),
+                                    e);
+                        }
+                    });
+
+                    if (persistenceFileAccessible && lastMessageDate != null
+                            && (lastRunLastMessageDate == null || lastMessageDate.after(lastRunLastMessageDate))) {
                         writeLastMessageDate(config, lastMessageDate);
                     }
                 } catch (MessagingException e) {
@@ -322,7 +337,8 @@ public class MailClient {
         Path filePath = getLastMessageFilePath(config);
         LOG.log(System.Logger.Level.INFO, "Trying to write last message date to: " + filePath.toAbsolutePath());
         try {
-            Files.writeString(filePath, Long.toString(lastMessageDate.getTime()), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            Files.writeString(filePath, Long.toString(lastMessageDate.getTime()), StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE);
             return true;
         } catch (IOException e) {
             LOG.log(System.Logger.Level.WARNING, "Failed to write last message date to: " + filePath, e);

@@ -1,17 +1,35 @@
-import {css, html, unsafeCSS, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, unsafeCSS, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
 import "@openremote/or-rules";
-import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
-import {i18next} from "@openremote/or-translate";
+import { Store } from "@reduxjs/toolkit";
+import { Page, PageProvider } from "@openremote/or-app";
+import { AppStateKeyed } from "@openremote/or-app";
+import { i18next } from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrAttributePickerPickedEvent, OrAttributePicker } from "@openremote/or-attribute-picker";
+import { OrAttributePickerPickedEvent, OrAttributePicker } from "@openremote/or-attribute-picker";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules";
-import {createSelector} from "reselect";
+import { createSelector } from "reselect";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -190,19 +208,19 @@ export class PageExport extends Page<AppStateKeyed> {
         ];
     }
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public tableRowsHtml?: TemplateResult;
 
-    @property({type: Number})
+    @property({ type: Number })
     private oldestTimestamp: number = moment().subtract(1, 'months').valueOf();
-    @property({type: Number})
+    @property({ type: Number })
     private latestTimestamp: number = moment().valueOf();
 
     private config?: OrExportConfig;
     private realm: string;
     private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
-    
+
     private tableRows: TableRow[] = [];
 
     protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
@@ -222,13 +240,13 @@ export class PageExport extends Page<AppStateKeyed> {
     constructor(store: Store<AppStateKeyed>) {
         super(store);
     }
-    
+
     protected render() {
 
         const headers = [
-            i18next.t('assetName'), 
-            i18next.t('attributeName'), 
-            i18next.t('oldestDatapoint'), 
+            i18next.t('assetName'),
+            i18next.t('attributeName'),
+            i18next.t('oldestDatapoint'),
             i18next.t('latestDatapoint')
         ];
 
@@ -274,14 +292,14 @@ export class PageExport extends Page<AppStateKeyed> {
         `;
 
     }
-    
+
     protected async renderTable(attributeRefs: AttributeRef[]) {
 
         if (!attributeRefs || attributeRefs.length < 1) {
             this.clearSelection();
             return;
         }
-        
+
         const dataPointInfoPromises = attributeRefs.map((attrRef: AttributeRef) => {
             return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
                 assetId: attrRef.id,
@@ -320,9 +338,9 @@ export class PageExport extends Page<AppStateKeyed> {
             })
 
         });
-        
+
     }
-    
+
     protected renderTableRows() {
 
         this.tableRowsHtml = html`
@@ -341,7 +359,7 @@ export class PageExport extends Page<AppStateKeyed> {
             `)}
         `;
     }
-    
+
     protected _deleteAttribute(assetId, attributeName) {
         const indexTablerows = this.tableRows.findIndex(e => e.assetId === assetId && e.attributeName === attributeName);
         const indexSelectedAttrs = this.config.selectedAttributes.findIndex(e => e.id === assetId && e.name === attributeName);
@@ -349,10 +367,10 @@ export class PageExport extends Page<AppStateKeyed> {
         this.tableRows.splice(indexTablerows, 1);
         this.config.selectedAttributes.splice(indexSelectedAttrs, 1);
         this.saveConfig();
-        
+
         this.renderTableRows();
     }
-    
+
     protected _openDialog() {
 
         const dialog = showDialog(new OrAttributePicker()
@@ -371,15 +389,15 @@ export class PageExport extends Page<AppStateKeyed> {
             this.saveConfig();
         });
     }
-    
+
     protected export = () => {
         manager.rest.api.AssetDatapointResource.getDatapointExport({
-            attributeRefs: JSON.stringify(this.tableRows.map(attr => ({id: attr.assetId, name: attr.attributeName}))),
+            attributeRefs: JSON.stringify(this.tableRows.map(attr => ({ id: attr.assetId, name: attr.attributeName }))),
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
         }, {
             responseType: "blob",
-            
+
         }).then(response => {
             // This is the best we can do with xhr - would need to return a link to the file for proper streamed download support
             // @ts-ignore
@@ -391,15 +409,15 @@ export class PageExport extends Page<AppStateKeyed> {
             link.click();
         });
     }
-    
+
     protected async loadConfig() {
 
         let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
         if (!configs.length || !Object.getOwnPropertyNames(configs[0]).includes("realm")) {
             manager.console.storeData("OrExportConfig", null);
         }
-            
-        this.config = configs.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
+
+        this.config = configs.find(e => e.realm === this.realm) || { realm: this.realm, selectedAttributes: [] };
 
         // prune removed assets that still exist in localstorage
         const response = await manager.rest.api.AssetResource.queryAssets({
@@ -412,7 +430,7 @@ export class PageExport extends Page<AppStateKeyed> {
         this.renderTable(this.config.selectedAttributes);
 
     }
-    
+
     protected async saveConfig() {
 
         let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
@@ -422,7 +440,7 @@ export class PageExport extends Page<AppStateKeyed> {
         }
         manager.console.storeData("OrExportConfig", [...configs, this.config]);
     }
-    
+
     protected clearSelection = () => {
         this.config = {
             realm: this.realm,
@@ -438,5 +456,5 @@ export class PageExport extends Page<AppStateKeyed> {
     public stateChanged(state: AppStateKeyed) {
         this.getRealmState(state);
     }
-    
+
 }

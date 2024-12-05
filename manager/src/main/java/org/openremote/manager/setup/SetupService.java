@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.setup;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.logging.Logger;
 
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
@@ -26,11 +30,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.setup.Setup;
 import org.openremote.model.setup.SetupTasks;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ServiceLoader;
-import java.util.logging.Logger;
 
 /**
  * Executes setup tasks for a clean installation when the application starts.
@@ -76,11 +75,12 @@ public class SetupService implements ContainerService {
         }
 
         tasks.addAll(ServiceLoader.load(SetupTasks.class).stream().map(ServiceLoader.Provider::get)
-            .flatMap(discoveredSetupTasks -> {
-                LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
-                List<Setup> tasks = discoveredSetupTasks.createTasks(container, setupType, keycloakEnabled);
-                return tasks != null ? tasks.stream() : null;
-            }).toList());
+                .flatMap(discoveredSetupTasks -> {
+                    LOG.info("Found custom SetupTasks provider on classpath: "
+                            + discoveredSetupTasks.getClass().getName());
+                    List<Setup> tasks = discoveredSetupTasks.createTasks(container, setupType, keycloakEnabled);
+                    return tasks != null ? tasks.stream() : null;
+                }).toList());
 
         try {
             if (!tasks.isEmpty()) {
@@ -129,7 +129,6 @@ public class SetupService implements ContainerService {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            '}';
+        return getClass().getSimpleName() + "{" + '}';
     }
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.value;
-
-import com.fasterxml.jackson.annotation.*;
-import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -32,6 +28,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.PatternSyntaxException;
 
+import com.fasterxml.jackson.annotation.*;
+
+import org.openremote.model.util.ValueUtil;
+
 // TODO: Switch to JSONSchema with a validator that supports POJOs (something like
 //  https://github.com/java-json-tools/json-schema-validator which is no longer maintained) or find a JSR-380
 //  implementation that supports dynamic validators
@@ -39,20 +39,12 @@ import java.util.regex.PatternSyntaxException;
  * Represents a constraint to apply to a value; these are based on JSR-380 validation.
  */
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes({
-    @JsonSubTypes.Type(ValueConstraint.Size.class),
-    @JsonSubTypes.Type(ValueConstraint.Pattern.class),
-    @JsonSubTypes.Type(ValueConstraint.Min.class),
-    @JsonSubTypes.Type(ValueConstraint.Max.class),
-    @JsonSubTypes.Type(ValueConstraint.AllowedValues.class),
-    @JsonSubTypes.Type(ValueConstraint.Past.class),
-    @JsonSubTypes.Type(ValueConstraint.PastOrPresent.class),
-    @JsonSubTypes.Type(ValueConstraint.Future.class),
-    @JsonSubTypes.Type(ValueConstraint.FutureOrPresent.class),
-    @JsonSubTypes.Type(ValueConstraint.NotEmpty.class),
-    @JsonSubTypes.Type(ValueConstraint.NotBlank.class),
-    @JsonSubTypes.Type(ValueConstraint.NotNull.class)
-})
+@JsonSubTypes({ @JsonSubTypes.Type(ValueConstraint.Size.class), @JsonSubTypes.Type(ValueConstraint.Pattern.class),
+        @JsonSubTypes.Type(ValueConstraint.Min.class), @JsonSubTypes.Type(ValueConstraint.Max.class),
+        @JsonSubTypes.Type(ValueConstraint.AllowedValues.class), @JsonSubTypes.Type(ValueConstraint.Past.class),
+        @JsonSubTypes.Type(ValueConstraint.PastOrPresent.class), @JsonSubTypes.Type(ValueConstraint.Future.class),
+        @JsonSubTypes.Type(ValueConstraint.FutureOrPresent.class), @JsonSubTypes.Type(ValueConstraint.NotEmpty.class),
+        @JsonSubTypes.Type(ValueConstraint.NotBlank.class), @JsonSubTypes.Type(ValueConstraint.NotNull.class) })
 public abstract class ValueConstraint implements Serializable {
 
     public static final String VALUE_CONSTRAINT_INVALID = "{ValueConstraint.Invalid}";
@@ -97,9 +89,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @Override
         public Map<String, Object> getParameters() {
-            return Map.of(
-                "min", min,
-                "max", max);
+            return Map.of("min", min, "max", max);
         }
 
         @SuppressWarnings("rawtypes")
@@ -112,16 +102,16 @@ public abstract class ValueConstraint implements Serializable {
             Class<?> clazz = value.getClass();
 
             if (Map.class.isAssignableFrom(clazz)) {
-                int size = ((Map)value).size();
+                int size = ((Map) value).size();
                 return size >= min && size <= max;
             } else if (Collection.class.isAssignableFrom(clazz)) {
-                int size = ((Collection)value).size();
+                int size = ((Collection) value).size();
                 return size >= min && size <= max;
             } else if (ValueUtil.isArray(clazz)) {
                 int size = Array.getLength(value);
                 return size >= min && size <= max;
             } else if (ValueUtil.isString(clazz)) {
-                int size = ((CharSequence)value).length();
+                int size = ((CharSequence) value).length();
                 return size >= min && size <= max;
             }
 
@@ -283,7 +273,8 @@ public abstract class ValueConstraint implements Serializable {
 
     @JsonTypeName("pattern")
     public static class Pattern extends ValueConstraint {
-        private static final java.util.regex.Pattern ESCAPE_MESSAGE_PARAMETER_PATTERN = java.util.regex.Pattern.compile("([\\\\{}$])");
+        private static final java.util.regex.Pattern ESCAPE_MESSAGE_PARAMETER_PATTERN = java.util.regex.Pattern
+                .compile("([\\\\{}$])");
         protected String regexp;
         protected jakarta.validation.constraints.Pattern.Flag[] flags;
 
@@ -313,7 +304,9 @@ public abstract class ValueConstraint implements Serializable {
 
         @Override
         public Map<String, Object> getParameters() {
-            String escapedRegexp = regexp != null ? ESCAPE_MESSAGE_PARAMETER_PATTERN.matcher(regexp).replaceAll( Matcher.quoteReplacement("\\") + "$1" ) : "null";
+            String escapedRegexp = regexp != null
+                    ? ESCAPE_MESSAGE_PARAMETER_PATTERN.matcher(regexp).replaceAll(Matcher.quoteReplacement("\\") + "$1")
+                    : "null";
             return Map.of("value", escapedRegexp);
         }
 
@@ -336,10 +329,10 @@ public abstract class ValueConstraint implements Serializable {
 
                 try {
                     java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regexp, intFlag);
-                    Matcher m = pattern.matcher((CharSequence)value);
+                    Matcher m = pattern.matcher((CharSequence) value);
                     return m.matches();
+                } catch (PatternSyntaxException ignored) {
                 }
-                catch (PatternSyntaxException ignored) {}
             }
 
             return false;
@@ -352,13 +345,14 @@ public abstract class ValueConstraint implements Serializable {
         String[] allowedValueNames;
 
         @JsonCreator
-        public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object[] allowedValues) {
+        public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames,
+                @JsonProperty("allowedValues") Object[] allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
             this.allowedValueNames = allowedValueNames;
             this.allowedValues = allowedValues;
         }
 
-        public AllowedValues(Object...allowedValues) {
+        public AllowedValues(Object... allowedValues) {
             super(ALLOWED_VALUES_MESSAGE_TEMPLATE);
             this.allowedValues = allowedValues;
         }
@@ -389,10 +383,11 @@ public abstract class ValueConstraint implements Serializable {
             Object compareValue = null;
 
             if (Enum.class.isAssignableFrom(clazz)) {
-                // We can skip this check as the value is already a concrete type so must be valid - allowed values is for informational purposes
+                // We can skip this check as the value is already a concrete type so must be valid - allowed values is
+                // for informational purposes
                 return true;
             } else if (ValueUtil.isString(clazz)) {
-                compareValue = ((CharSequence)value).toString();
+                compareValue = ((CharSequence) value).toString();
             } else if (ValueUtil.isNumber(clazz)) {
                 compareValue = value;
             }
@@ -401,7 +396,8 @@ public abstract class ValueConstraint implements Serializable {
         }
 
         public static <T extends Enum<T>> AllowedValues fromEnumValues(T[] enumValues) {
-            Object[] allowedValues = Arrays.stream(enumValues).map(enm -> ValueUtil.getStringCoerced(enm).orElse(null)).toArray(String[]::new);
+            Object[] allowedValues = Arrays.stream(enumValues).map(enm -> ValueUtil.getStringCoerced(enm).orElse(null))
+                    .toArray(String[]::new);
             return new AllowedValues(allowedValues);
         }
     }
@@ -568,7 +564,7 @@ public abstract class ValueConstraint implements Serializable {
             Class<?> clazz = value.getClass();
 
             if (Map.class.isAssignableFrom(clazz)) {
-                return !((Map<?, ?>)value).isEmpty();
+                return !((Map<?, ?>) value).isEmpty();
             } else if (Collection.class.isAssignableFrom(clazz)) {
                 return !((Collection<?>) value).isEmpty();
             } else if (ValueUtil.isArray(clazz)) {
@@ -655,7 +651,7 @@ public abstract class ValueConstraint implements Serializable {
         return Optional.ofNullable(message);
     }
 
-    public static ValueConstraint[] constraints(ValueConstraint...constraints) {
+    public static ValueConstraint[] constraints(ValueConstraint... constraints) {
         return constraints;
     }
 }

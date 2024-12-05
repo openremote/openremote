@@ -1,6 +1,24 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig } from "../index";
 import {
     Asset,
     AssetTypeInfo,
@@ -9,13 +27,13 @@ import {
     WellknownValueTypes,
     AssetModelUtil
 } from "@openremote/model";
-import {Util} from "@openremote/core";
+import { Util } from "@openremote/core";
 import "@openremote/or-attribute-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {translate} from "@openremote/or-translate";
-import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import { translate } from "@openremote/or-translate";
+import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { when } from "lit/directives/when.js";
 
@@ -44,24 +62,24 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         return style;
     }
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public action!: RuleActionWriteAttribute | RuleActionUpdateAttribute;
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public targetTypeMap?: [string, string?][];
 
     public readonly?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetInfos?: AssetTypeInfo[];
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetProvider!: (type: string) => Promise<Asset[] | undefined>
 
-    @property({type: Array, attribute: false})
+    @property({ type: Array, attribute: false })
     protected _assets?: Asset[];
 
 
@@ -111,7 +129,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         // TODO: Add multiselect support
         const ids = getAssetIdsFromQuery(query);
         const idValue = ids && ids.length > 0 ? ids[0] : "*";
-        const idOptions: [string, string] [] = [
+        const idOptions: [string, string][] = [
             ["*", i18next.t("matched")]
         ];
         let searchProvider: (search?: string) => Promise<[any, string][]>;
@@ -123,63 +141,63 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                 <or-mwc-input id="matchSelect" class="min-width" type="${InputType.SELECT}" .readonly="${true}" .label="${i18next.t('loading')}"></or-mwc-input>
             `, () => {
 
-                // Set list of displayed assets, and filtering assets out if needed.
-                // If <= 25 assets: display everything
-                // If between 25 and 100 assets: display everything with search functionality 
-                // If > 100 assets: only display if in line with search input
-                if (this._assets!.length <= 25) {
-                    idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                } else {
-                    searchProvider = async (search?: string) => {
-                        if (search) {
-                            return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
-                        } else if (this._assets!.length <= 100) {
-                            idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
-                            return idOptions;
-                        } else {
-                            const asset = this._assets?.find((asset) => asset.id == idValue);
-                            if (asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
-                                idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
-                            }
-                            return idOptions;
+            // Set list of displayed assets, and filtering assets out if needed.
+            // If <= 25 assets: display everything
+            // If between 25 and 100 assets: display everything with search functionality 
+            // If > 100 assets: only display if in line with search input
+            if (this._assets!.length <= 25) {
+                idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+            } else {
+                searchProvider = async (search?: string) => {
+                    if (search) {
+                        return this._assets!.filter((asset) => asset.name?.toLowerCase().includes(search.toLowerCase())).map((asset) => [asset.id!, asset.name!] as [string, string]);
+                    } else if (this._assets!.length <= 100) {
+                        idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
+                        return idOptions;
+                    } else {
+                        const asset = this._assets?.find((asset) => asset.id == idValue);
+                        if (asset && idOptions.find(([id, _value]) => id == asset.id) == undefined) {
+                            idOptions.push([asset.id!, asset.name!]); // add selected asset if there is one.
                         }
+                        return idOptions;
                     }
                 }
-                
-                // Get selected asset and its descriptors
-                const asset = idValue && idValue !== "*" ? this._assets!.find(a => a.id === idValue) : undefined;
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName, asset && asset.attributes && this.action.attributeName ? asset.attributes[this.action.attributeName] : undefined);
+            }
 
-                // Only RW attributes can be used in actions
-                let attributes: [string, string][] = [];
-                if (asset && asset.attributes) {
-                    attributes = Object.values(asset.attributes)
-                            .map((attr) => {
-                                const label = Util.getAttributeLabel(attr, descriptors[0], assetType, false);
-                                return [attr.name!, label];
-                            });
-                } else if (assetDescriptor) {
-                    const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(assetDescriptor);
+            // Get selected asset and its descriptors
+            const asset = idValue && idValue !== "*" ? this._assets!.find(a => a.id === idValue) : undefined;
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName, asset && asset.attributes && this.action.attributeName ? asset.attributes[this.action.attributeName] : undefined);
 
-                    attributes =
-                            !assetTypeInfo || !assetTypeInfo.attributeDescriptors
-                                    ? []
-                                    : assetTypeInfo.attributeDescriptors.map((ad) => {
-                                        const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
-                                        return [ad.name!, label];
-                                    });
-                }
+            // Only RW attributes can be used in actions
+            let attributes: [string, string][] = [];
+            if (asset && asset.attributes) {
+                attributes = Object.values(asset.attributes)
+                    .map((attr) => {
+                        const label = Util.getAttributeLabel(attr, descriptors[0], assetType, false);
+                        return [attr.name!, label];
+                    });
+            } else if (assetDescriptor) {
+                const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(assetDescriptor);
 
-                attributes.sort(Util.sortByString((attr) => attr[1]));
-                let attributeInput: TemplateResult | undefined;
-                if (this.action.attributeName) {
-                    const label = descriptors[1] && (descriptors[1].name === WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
-                    let inputType;
-                    if(descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
-                    attributeInput = html`<or-attribute-input ?compact=${descriptors[1] && (descriptors[1].name === WellknownValueTypes.GEOJSONPOINT)} .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
-                }
-                
-                return html`
+                attributes =
+                    !assetTypeInfo || !assetTypeInfo.attributeDescriptors
+                        ? []
+                        : assetTypeInfo.attributeDescriptors.map((ad) => {
+                            const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
+                            return [ad.name!, label];
+                        });
+            }
+
+            attributes.sort(Util.sortByString((attr) => attr[1]));
+            let attributeInput: TemplateResult | undefined;
+            if (this.action.attributeName) {
+                const label = descriptors[1] && (descriptors[1].name === WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
+                let inputType;
+                if (descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
+                attributeInput = html`<or-attribute-input ?compact=${descriptors[1] && (descriptors[1].name === WellknownValueTypes.GEOJSONPOINT)} .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
+            }
+
+            return html`
                     <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}"
                                   .options="${idOptions}" .searchProvider="${searchProvider}" .value="${idValue}" .readonly="${this.readonly || false}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this._assetId = (e.detail.value); this.refresh(); }}"
@@ -191,7 +209,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                         <or-translate value="No attributes with write permission"></or-translate>
                     `}
                 `;
-            })}
+        })}
         `;
     }
 
@@ -204,7 +222,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
             this.action.target = {
                 matchedAssets: {
                     types: [
-                         assetType || ""
+                        assetType || ""
                     ]
                 }
             }

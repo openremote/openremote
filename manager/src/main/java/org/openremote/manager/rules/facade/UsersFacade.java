@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules.facade;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
@@ -33,11 +37,6 @@ import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
 import org.openremote.model.security.User;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not access users in global scope).
  */
@@ -48,7 +47,8 @@ public class UsersFacade<T extends Ruleset> extends Users {
     protected final NotificationService notificationService;
     protected final ManagerIdentityService identityService;
 
-    public UsersFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, NotificationService notificationService, ManagerIdentityService identityService) {
+    public UsersFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService,
+            NotificationService notificationService, ManagerIdentityService identityService) {
         this.rulesEngineId = rulesEngineId;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService;
@@ -61,12 +61,12 @@ public class UsersFacade<T extends Ruleset> extends Users {
         // No restriction for global rulesets
         if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Restrict realm
-            userQuery.realmPredicate = new RealmPredicate(
-                rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-            );
+            userQuery.realmPredicate = new RealmPredicate(rulesEngineId.getRealm()
+                    .orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId)));
         } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             userQuery.realmPredicate = null;
-            String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
+            String assetId = rulesEngineId.getAssetId()
+                    .orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
 
             if (userQuery.pathPredicate == null || userQuery.pathPredicate.path == null) {
                 userQuery.pathPredicate = new PathPredicate(assetId);
@@ -78,13 +78,12 @@ public class UsersFacade<T extends Ruleset> extends Users {
         }
 
         // Prevent system users being retrieved
-        userQuery.attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
+        userQuery.attributes(
+                new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE), null));
 
         // Prevent service users being retrieved
         userQuery.serviceUsers(false);
 
-        return Arrays.stream(identityService.getIdentityProvider().queryUsers(userQuery))
-            .map(User::getId);
+        return Arrays.stream(identityService.getIdentityProvider().queryUsers(userQuery)).map(User::getId);
     }
-
 }

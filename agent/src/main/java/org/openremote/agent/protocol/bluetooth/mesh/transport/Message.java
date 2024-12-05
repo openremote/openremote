@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,35 +13,38 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import java.util.Map;
 
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
 
-import java.util.Map;
-
 public abstract class Message {
 
-    protected int ctl;                                  // If ctl = 0 access message and ctl = 1 control message
-    protected Map<Integer, byte[]> networkLayerPdu;     // Mesh pdu
-    private int pduType;                                // PDU Type
-    private int ttl = 100;                              // Time to live
-    private int src;                                    // Source address
-    private int dst;                                    // Destination address
-    private byte[] mSequenceNumber;                     // unique 24-bit value for each message
-    private byte[] deviceKey;                           // Used for transport layer encryption of configuration messages
-    private ApplicationKey applicationKey;              // Used for transport layer encryption of application messages
-    private NetworkKey networkKey;                      // Used for transport layer encryption of application messages
-    private byte[] encryptionKey;                       // Derived from network key using k2 function
-    private byte[] privacyKey;                          // Derived from privacy key using k2 function
-    private int akf;                                    // Use device key for encryption if akf = 0 or application key otherwise
-    private int aid;                                    // Used to identify the application key generated using k4 function
-    private int aszmic;                                 // if aszmic = 0 the transmic is 32-bits, if aszmic = 1 transmic 64-bits this is usually for a segmented message
-    private int opCode;                                 // Opcode of message
-    private byte[] parameters;                          // Parameters of the message
-    private int companyIdentifier;                      // Company identifier for vendor model messages
-    private byte[] ivIndex;                             // IV Index of the network
+    protected int ctl; // If ctl = 0 access message and ctl = 1 control message
+    protected Map<Integer, byte[]> networkLayerPdu; // Mesh pdu
+    private int pduType; // PDU Type
+    private int ttl = 100; // Time to live
+    private int src; // Source address
+    private int dst; // Destination address
+    private byte[] mSequenceNumber; // unique 24-bit value for each message
+    private byte[] deviceKey; // Used for transport layer encryption of configuration messages
+    private ApplicationKey applicationKey; // Used for transport layer encryption of application messages
+    private NetworkKey networkKey; // Used for transport layer encryption of application messages
+    private byte[] encryptionKey; // Derived from network key using k2 function
+    private byte[] privacyKey; // Derived from privacy key using k2 function
+    private int akf; // Use device key for encryption if akf = 0 or application key otherwise
+    private int aid; // Used to identify the application key generated using k4 function
+    private int aszmic; // if aszmic = 0 the transmic is 32-bits, if aszmic = 1 transmic 64-bits this is usually for a
+                        // segmented message
+    private int opCode; // Opcode of message
+    private byte[] parameters; // Parameters of the message
+    private int companyIdentifier; // Company identifier for vendor model messages
+    private byte[] ivIndex; // IV Index of the network
     private boolean segmented;
 
     Message() {

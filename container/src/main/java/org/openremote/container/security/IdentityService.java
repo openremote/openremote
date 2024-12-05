@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,21 +13,24 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.security;
+
+import java.util.logging.Logger;
+
+import org.jboss.resteasy.spi.CorsHeaders;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.util.HttpString;
-import org.jboss.resteasy.spi.CorsHeaders;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-
-import java.util.logging.Logger;
 
 public abstract class IdentityService implements ContainerService {
 
@@ -72,7 +72,8 @@ public abstract class IdentityService implements ContainerService {
         identityProvider.secureDeployment(deploymentInfo);
 
         if (devMode) {
-            // We need to add an undertow handler wrapper to inject CORS headers on 401/403 responses as the authentication
+            // We need to add an undertow handler wrapper to inject CORS headers on 401/403 responses as the
+            // authentication
             // handler doesn't include headers set by deployment filters
             deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
                 @Override
@@ -87,8 +88,10 @@ public abstract class IdentityService implements ContainerService {
                             }
 
                             String origin = exchange.getRequestHeaders().getFirst(CorsHeaders.ORIGIN);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
-                            exchange.getResponseHeaders().add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
+                            exchange.getResponseHeaders()
+                                    .add(HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN), origin);
+                            exchange.getResponseHeaders().add(
+                                    HttpString.tryFromString(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS), "true");
                             handler.handleRequest(exchange);
                         }
                     };

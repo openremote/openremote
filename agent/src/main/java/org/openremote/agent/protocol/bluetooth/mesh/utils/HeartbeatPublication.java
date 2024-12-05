@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,12 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.utils;
 
-import org.openremote.agent.protocol.bluetooth.mesh.Features;
-
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress.UNASSIGNED_ADDRESS;
+
+import org.openremote.agent.protocol.bluetooth.mesh.Features;
 
 public class HeartbeatPublication extends Heartbeat {
 
@@ -32,21 +31,17 @@ public class HeartbeatPublication extends Heartbeat {
     /**
      * Heartbeat subscription.
      *
-     * @param dst         Destination address identifies the Heartbeat Publication
-     *                    destination where the address can only be an unassigned address,
-     *                    unicast address or a group address. All other values are prohibited.
-     * @param countLog    Number of Heartbeat messages to be sent.
-     * @param periodLog   Period for sending Heartbeat messages.
-     * @param ttl         TTL to be used when sending Heartbeat messages.
-     * @param features    Bit field indicating features that trigger Heartbeat messages when changed.
+     * @param dst Destination address identifies the Heartbeat Publication
+     *            destination where the address can only be an unassigned address,
+     *            unicast address or a group address. All other values are prohibited.
+     * @param countLog Number of Heartbeat messages to be sent.
+     * @param periodLog Period for sending Heartbeat messages.
+     * @param ttl TTL to be used when sending Heartbeat messages.
+     * @param features Bit field indicating features that trigger Heartbeat messages when changed.
      * @param netKeyIndex Net key index.
      */
-    public HeartbeatPublication(final int dst,
-                                final byte countLog,
-                                final byte periodLog,
-                                final int ttl,
-                                final Features features,
-                                final int netKeyIndex) {
+    public HeartbeatPublication(final int dst, final byte countLog, final byte periodLog, final int ttl,
+            final Features features, final int netKeyIndex) {
         super(dst, periodLog, countLog);
         this.ttl = ttl;
         this.features = features;
@@ -55,15 +50,13 @@ public class HeartbeatPublication extends Heartbeat {
 
     @Override
     public String toString() {
-        return "Destination address: " + Integer.toHexString(dst) +
-            "\nCount Log: " + Integer.toHexString(countLog) +
-            "\nPeriod Log: " + Integer.toHexString(periodLog) +
-            "\nTTL: " + ttl +
-            "\nFeatures: " + features == null ? "null" : features.toString() +
-            "\nNet key index: " + Integer.toHexString(netKeyIndex);
+        return "Destination address: " + Integer.toHexString(dst) + "\nCount Log: " + Integer.toHexString(countLog)
+                + "\nPeriod Log: " + Integer.toHexString(periodLog) + "\nTTL: " + ttl + "\nFeatures: "
+                + features == null ? "null"
+                        : features.toString() + "\nNet key index: " + Integer.toHexString(netKeyIndex);
     }
 
-    public int getPeriod(){
+    public int getPeriod() {
         return calculateHeartbeatPeriod(periodLog);
     }
 
@@ -109,7 +102,8 @@ public class HeartbeatPublication extends Heartbeat {
             return 0x0000;
         else if (periodLog >= 0x01 && periodLog <= 0x10) {
             return (short) (Math.pow(2, periodLog - 1));
-        } else return (short) 0xFFFF;
+        } else
+            return (short) 0xFFFF;
     }
 
     public String getCountLogDescription() {
@@ -130,4 +124,3 @@ public class HeartbeatPublication extends Heartbeat {
         }
     }
 }
-

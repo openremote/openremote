@@ -1,29 +1,47 @@
-import {html, LitElement, PropertyValues} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { html, LitElement, PropertyValues } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
 import {
     RuleActionNotification,
     AssetQuery,
 } from "@openremote/model";
 
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 
-import {DialogAction, DialogActionBase, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrRuleFormLocalized} from "../forms/or-rule-form-localized";
-import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
+import { DialogAction, DialogActionBase, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrRuleFormLocalized } from "../forms/or-rule-form-localized";
+import { OrRulesJsonRuleChangedEvent } from "../or-rule-json-viewer";
 
-const checkValidity = (form:HTMLElement | null) => {
-    if(form) {
+const checkValidity = (form: HTMLElement | null) => {
+    if (form) {
         const inputs = form.querySelectorAll('or-mwc-input');
         const elements = Array.prototype.slice.call(inputs);
 
         return elements.every((element) => {
-            if(element.shadowRoot) {
-                const input  = element.shadowRoot.querySelector('input, textarea, select') as any
+            if (element.shadowRoot) {
+                const input = element.shadowRoot.querySelector('input, textarea, select') as any
 
-                if(input && input.checkValidity()) {
+                if (input && input.checkValidity()) {
                     return true;
                 } else {
                     element._mdcComponent.valid = false;
@@ -65,18 +83,18 @@ export class OrRulesNotificationModalOkEvent extends CustomEvent<void> {
 @customElement("or-rule-notification-modal")
 export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
-    @property({type: Object})
+    @property({ type: Object })
     public action!: RuleActionNotification;
 
-    @property({type: String})
+    @property({ type: String })
     public title = "message";
 
-    @property({type: Object})
+    @property({ type: Object })
     public query?: AssetQuery;
 
     @query("#notification-modal")
     protected _orMwcDialog?: OrMwcDialog;
-    
+
     constructor() {
         super();
         this.addEventListener(OrMwcDialogOpenedEvent.NAME, this.initDialog)
@@ -97,17 +115,17 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
     }
 
     initDialog() {
-        if(!this._orMwcDialog) return;
+        if (!this._orMwcDialog) return;
     }
 
-    renderDialogHTML(action:RuleActionNotification) {
+    renderDialogHTML(action: RuleActionNotification) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("notification-modal") as OrMwcDialog;
-        if(!this.shadowRoot) return
+        if (!this.shadowRoot) return
 
-        const slot:HTMLSlotElement|null = this.shadowRoot.querySelector('.notification-form-slot');
+        const slot: HTMLSlotElement | null = this.shadowRoot.querySelector('.notification-form-slot');
         if (dialog && slot) {
             let container = document.createElement("div");
-            slot.assignedNodes({flatten: true}).forEach((child) => {
+            slot.assignedNodes({ flatten: true }).forEach((child) => {
                 if (child instanceof HTMLElement) {
                     container.appendChild(child);
                 }
@@ -118,8 +136,8 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
         }
     }
 
-    firstUpdated(changedProperties: PropertyValues){
-        if(changedProperties.has("action")){
+    firstUpdated(changedProperties: PropertyValues) {
+        if (changedProperties.has("action")) {
             this.renderDialogHTML(this.action);
         }
         // Possibly, a render is triggered by renderDialogHTML(), so we await the pending update. (if there is any)
@@ -131,7 +149,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
     validateForm() {
         const valid = this.checkForm();
         this._orMwcDialog?.setActions(this._orMwcDialog?.actions?.map(action => {
-            if(action.actionName === "ok") {
+            if (action.actionName === "ok") {
                 action.disabled = !valid;
             }
             return action;
@@ -143,21 +161,21 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
             const dialog = this._orMwcDialog;
             const root = dialog?.shadowRoot;
-            if(dialog && root) {
+            if (dialog && root) {
 
                 const messageNotification = root.querySelector("or-rule-form-email-message");
                 const pushNotification = root.querySelector("or-rule-form-push-notification");
                 const localizedNotification = root.querySelector("or-rule-form-localized");
 
-                if(pushNotification?.shadowRoot) {
+                if (pushNotification?.shadowRoot) {
                     const form = pushNotification.shadowRoot.querySelector('form');
                     return checkValidity(form);
                 }
-                else if(messageNotification?.shadowRoot) {
+                else if (messageNotification?.shadowRoot) {
                     const form = messageNotification.shadowRoot.querySelector('form');
                     return checkValidity(form);
                 }
-                else if(localizedNotification?.shadowRoot) {
+                else if (localizedNotification?.shadowRoot) {
                     return (localizedNotification as OrRuleFormLocalized).isValid();
                 }
             }
@@ -200,8 +218,8 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
                 }
             </style>
         `;
-       
-      
+
+
         const notificationPickerModalOpen = () => {
             const dialog: OrMwcDialog = this.shadowRoot!.getElementById("notification-modal") as OrMwcDialog;
             if (dialog) {

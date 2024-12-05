@@ -1,11 +1,29 @@
-import {css, html, PropertyValues} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {NavigationControl} from "maplibre-gl";
-import {Store} from "@reduxjs/toolkit";
-import manager, {Util} from "@openremote/core";
-import {JsonRulesetDefinition} from "@openremote/model";
-import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, PropertyValues } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { Page, PageProvider, AppStateKeyed } from "@openremote/or-app";
+import { NavigationControl } from "maplibre-gl";
+import { Store } from "@reduxjs/toolkit";
+import manager, { Util } from "@openremote/core";
+import { JsonRulesetDefinition } from "@openremote/model";
+import { OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent } from "@openremote/or-map";
 
 export interface GeofencesConfig {
 }
@@ -18,7 +36,7 @@ export function pageMobileGeofencesProvider(store: Store<AppStateKeyed>, config?
         ],
         pageCreator: () => {
             const page = new PageMobileGeofences(store);
-            if(config) page.config = config;
+            if (config) page.config = config;
             return page;
         }
     };
@@ -28,7 +46,7 @@ const APP_ICON_POSITION = new URLSearchParams(window.location.search).get("appIc
 @customElement("page-mobile-geofences")
 export class PageMobileGeofences extends Page<AppStateKeyed> {
 
-    
+
     static get styles() {
         // language=CSS
         return css`
@@ -186,16 +204,16 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         `;
     }
 
-    @property({type: String})
-    view =  QUERY_VIEW ? QUERY_VIEW : "map";
+    @property({ type: String })
+    view = QUERY_VIEW ? QUERY_VIEW : "map";
 
-    @property({type: Array})
+    @property({ type: Array })
     mapItems = [];
 
-    @property({type: Array})
+    @property({ type: Array })
     listItems = [];
 
-    @property({type: Object})
+    @property({ type: Object })
     activeItem?: any;
 
     get name(): string {
@@ -225,7 +243,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     public config?: GeofencesConfig;
 
     protected updated(changedProperties: PropertyValues) {
-        if(changedProperties.has('view') && this.view === "map"){
+        if (changedProperties.has('view') && this.view === "map") {
             const map = this.shadowRoot!.querySelector('.or-map');
             const vectorMap = map as OrMap;
             vectorMap.resize()
@@ -233,7 +251,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected render() {
-        const controls = [new NavigationControl({showCompass: false, showZoom: false})];
+        const controls = [new NavigationControl({ showCompass: false, showZoom: false })];
         return html`
                 <div ?active="${this.view === 'map'}" class="inner">
                     <div class="header">
@@ -245,12 +263,12 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
                     </div>
                     <or-map id="vector" class="or-map" .controls="${controls}" type="VECTOR" style="height: 100vh; width: 100vw">
                         ${this.mapItems.map((marker: any) => {
-                        return html`
-                            <or-map-marker ?active="${JSON.stringify(this.activeItem) === JSON.stringify(marker) }" icon="information" .marker="${marker}" lat="${marker.predicate.lat}" lng="${marker.predicate.lng}"></or-map-marker>
+            return html`
+                            <or-map-marker ?active="${JSON.stringify(this.activeItem) === JSON.stringify(marker)}" icon="information" .marker="${marker}" lat="${marker.predicate.lat}" lng="${marker.predicate.lng}"></or-map-marker>
                         `})}
                     </or-map>
                     ${this.activeItem ? html`
-                        <a class="marker-tooltip ${manager.consoleAppConfig!.menuPosition ? manager.consoleAppConfig!.menuPosition.toLowerCase()  : ""} ${manager.consoleAppConfig!.menuEnabled ? "" : "full-width"}" href="${this.createUrl(this.activeItem.notification.action)}">
+                        <a class="marker-tooltip ${manager.consoleAppConfig!.menuPosition ? manager.consoleAppConfig!.menuPosition.toLowerCase() : ""} ${manager.consoleAppConfig!.menuEnabled ? "" : "full-width"}" href="${this.createUrl(this.activeItem.notification.action)}">
                             <div class="flex marker-tooltip-inner" >
                                     <div style="flex-direction:row;" class="d-flex">
                                     <div class="flex">
@@ -274,7 +292,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
                     </div>
                     <div class="list-container">
                         ${this.listItems.map((item: any) => {
-                            return html`
+                return html`
                             <a class="list-item" href="${this.createUrl(item.notification.action)}">
                                 <div class="flex">
                                     <h3>${item.notification.title}</h3>
@@ -296,7 +314,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         const startDate = new Date(datetime.start).getTime();
         const endDate = new Date(datetime.end).getTime();
 
-        if((today - startDate) > 0 && (today - endDate) < 0) {
+        if ((today - startDate) > 0 && (today - endDate) < 0) {
             return true;
         } else {
             return false;
@@ -304,7 +322,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected getGeoNotifications() {
-        manager.rest.api.RulesResource.getRealmRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
+        manager.rest.api.RulesResource.getRealmRulesets(manager.config.realm, { fullyPopulate: true }).then((response: any) => {
             const mapItemDefinition: JsonRulesetDefinition = {
                 rules: []
             };
@@ -344,10 +362,10 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected createUrl(action) {
-        if(action){
+        if (action) {
             let url = action.url;
 
-            if(action.openInBrowser) {
+            if (action.openInBrowser) {
                 url = url.replace("https", "webbrowser");
             }
 
@@ -360,10 +378,10 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         const map = this.shadowRoot!.querySelector('.or-map');
         const vectorMap = map as OrMap;
 
-        manager.console.sendProviderMessage({provider: 'geofence', action: "GET_LOCATION"}, true).then(response => {
+        manager.console.sendProviderMessage({ provider: 'geofence', action: "GET_LOCATION" }, true).then(response => {
             console.info(JSON.stringify(response));
             if (response.data) {
-                vectorMap.flyTo({lng: response.data.longitude, lat: response.data.latitude});
+                vectorMap.flyTo({ lng: response.data.longitude, lat: response.data.latitude });
             }
         });
     }

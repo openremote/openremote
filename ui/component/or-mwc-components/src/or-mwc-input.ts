@@ -1,24 +1,42 @@
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
-import {Ref, ref, createRef} from "lit/directives/ref.js";
-import {classMap} from "lit/directives/class-map.js";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {when} from 'lit/directives/when.js';
-import {until} from 'lit/directives/until.js';
-import {MDCTextField} from "@material/textfield";
-import {MDCComponent} from "@material/base";
-import {MDCRipple} from "@material/ripple";
-import {MDCCheckbox} from "@material/checkbox";
-import {MDCSwitch} from "@material/switch";
-import {MDCSlider, MDCSliderChangeEventDetail} from "@material/slider";
-import {MDCSelect, MDCSelectEvent} from "@material/select";
-import {MDCList, MDCListActionEvent} from "@material/list";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { Ref, ref, createRef } from "lit/directives/ref.js";
+import { classMap } from "lit/directives/class-map.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { when } from 'lit/directives/when.js';
+import { until } from 'lit/directives/until.js';
+import { MDCTextField } from "@material/textfield";
+import { MDCComponent } from "@material/base";
+import { MDCRipple } from "@material/ripple";
+import { MDCCheckbox } from "@material/checkbox";
+import { MDCSwitch } from "@material/switch";
+import { MDCSlider, MDCSliderChangeEventDetail } from "@material/slider";
+import { MDCSelect, MDCSelectEvent } from "@material/select";
+import { MDCList, MDCListActionEvent } from "@material/list";
 
-import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
-import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
-import {DefaultColor4, DefaultColor5, DefaultColor8, Util} from "@openremote/core";
+import { MDCFormField, MDCFormFieldInput } from "@material/form-field";
+import { MDCIconButtonToggle, MDCIconButtonToggleEventDetail } from "@material/icon-button";
+import { DefaultColor4, DefaultColor5, DefaultColor8, Util } from "@openremote/core";
 import "@openremote/or-icon";
-import {OrIcon} from "@openremote/or-icon";
+import { OrIcon } from "@openremote/or-icon";
 import {
     AssetDescriptor,
     Attribute,
@@ -47,7 +65,7 @@ import {
     WellknownMetaItems,
     WellknownValueTypes
 } from "@openremote/model";
-import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
+import { getItemTemplate, getListTemplate, ListItem, ListType } from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
 import { styleMap } from "lit/directives/style-map.js";
 
@@ -660,22 +678,22 @@ export class OrMwcInput extends LitElement {
         ];
     }
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public focused?: boolean;
 
     @property()
     public value?: any;
 
-    @property({type: String})
+    @property({ type: String })
     public type?: InputType;
 
-    @property({type: String})
+    @property({ type: String })
     public name?: String;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public readonly: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public required: boolean = false;
 
     @property()
@@ -684,123 +702,123 @@ export class OrMwcInput extends LitElement {
     @property()
     public min?: any;
 
-    @property({type: Number})
+    @property({ type: Number })
     public step?: number;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public checked: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public indeterminate: boolean = false;
 
-    @property({type: Number})
+    @property({ type: Number })
     public maxLength?: number;
 
-    @property({type: Number})
+    @property({ type: Number })
     public minLength?: number;
 
-    @property({type: Number})
+    @property({ type: Number })
     public rows?: number;
 
-    @property({type: Number})
+    @property({ type: Number })
     public cols?: number;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public multiple: boolean = false;
 
-    @property({type: String, attribute: true, reflect: false})
+    @property({ type: String, attribute: true, reflect: false })
     public pattern?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public placeHolder?: string;
 
-    @property({type: Array})
+    @property({ type: Array })
     public options?: any[] | any;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public autoSelect?: boolean;
 
-    @property({type: Object})
+    @property({ type: Object })
     public searchProvider?: (search?: string) => Promise<[any, string][]>
 
-    @property({type: String})
+    @property({ type: String })
     public searchLabel = "search"
 
     /* STYLING PROPERTIES BELOW */
 
-    @property({type: String})
+    @property({ type: String })
     public icon?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public iconColor?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public iconOn?: string;
 
-    @property({type: String})
+    @property({ type: String })
     public iconTrailing?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public compact: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public comfortable: boolean = false;
 
     /* BUTTON STYLES START */
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public raised: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public action: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public unElevated: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public outlined: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public rounded: boolean = false;
 
-    @property({type: Object})
+    @property({ type: Object })
     public format?: ValueFormat;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disableSliderNumberInput: boolean = false;
 
     /* BUTTON STYLES END */
 
     /* TEXT INPUT STYLES START */
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public fullWidth: boolean = false;
 
-    @property({type: String})
+    @property({ type: String })
     public helperText?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public helperPersistent: boolean = false;
 
-    @property({type: String, attribute: true})
+    @property({ type: String, attribute: true })
     public validationMessage?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public autoValidate = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public charCounter: boolean = false;
 
-    @property({type: String})
+    @property({ type: String })
     public label?: string;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public disabled: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public continuous: boolean = false;
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     public resizeVertical: boolean = false;
 
     public get nativeValue(): any {
@@ -838,8 +856,8 @@ export class OrMwcInput extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues) {
-        if(_changedProperties.has("indeterminate")) {
-            if(this._mdcComponent && this.type === InputType.CHECKBOX){
+        if (_changedProperties.has("indeterminate")) {
+            if (this._mdcComponent && this.type === InputType.CHECKBOX) {
                 (this._mdcComponent as any).indeterminate = this.indeterminate;
             }
         }
@@ -865,11 +883,11 @@ export class OrMwcInput extends LitElement {
         if (!this.type && this.value) {
             if (this.value instanceof Date) {
                 this.type = InputType.DATETIME;
-            } else if (typeof(this.value) === "boolean") {
+            } else if (typeof (this.value) === "boolean") {
                 this.type = InputType.CHECKBOX;
-            } else if (typeof(this.value) === "number") {
+            } else if (typeof (this.value) === "number") {
                 this.type = InputType.NUMBER;
-            } else if (typeof(this.value) === "string") {
+            } else if (typeof (this.value) === "string") {
                 this.type = InputType.TEXT;
             } else {
                 this.type = InputType.JSON;
@@ -909,10 +927,10 @@ export class OrMwcInput extends LitElement {
                     return html`
                             <div class="mdc-radio-container">
                                 ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
-                                    if (this.value === optValue) {
-                                        this._selectedIndex = index;
-                                    }
-                                    return html`
+                        if (this.value === optValue) {
+                            this._selectedIndex = index;
+                        }
+                        return html`
                                     <div id="field" class="mdc-form-field">
                                         <div class="mdc-radio">
                                             <input type="radio" 
@@ -934,7 +952,7 @@ export class OrMwcInput extends LitElement {
                                     </div>
 
                                     `;
-                                }) : ``}
+                    }) : ``}
                             </div>
                     `;
                 case InputType.SWITCH:
@@ -963,27 +981,27 @@ export class OrMwcInput extends LitElement {
                         </span>
                     `;
                 case InputType.LIST:
-                        const classesList = {
-                            "mdc-select--outlined": outlined,
-                            "mdc-select--disabled": this.disabled,
-                            "mdc-select--required": this.required,
-                            "mdc-select--dense": false, // this.dense,
-                            "mdc-select--no-label": !this.label,
-                            "mdc-select--with-leading-icon": !!this.icon
-                        };
+                    const classesList = {
+                        "mdc-select--outlined": outlined,
+                        "mdc-select--disabled": this.disabled,
+                        "mdc-select--required": this.required,
+                        "mdc-select--dense": false, // this.dense,
+                        "mdc-select--no-label": !this.label,
+                        "mdc-select--with-leading-icon": !!this.icon
+                    };
 
-                        const optsList = this.resolveOptions(this.options);
-                        this._selectedIndex = -1;
-                        return html`
+                    const optsList = this.resolveOptions(this.options);
+                    this._selectedIndex = -1;
+                    return html`
                             <div id="component" class="mdc-list mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
                                 <ul class="mdc-list">
                                     ${optsList ? optsList.map(([optValue, optDisplay], index) => {
-                                        if (this.value === optValue) {
-                                            this._selectedIndex = index;
-                                        }
-                                        // todo: it's not actually putting the mdc-list-item--selected class on even when this.value === optValue...
-                                        return html`<li class="${classMap({"mdc-list-item": true, "mdc-list-item--selected": this.value === optValue})}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
-                                    }) : ``}
+                        if (this.value === optValue) {
+                            this._selectedIndex = index;
+                        }
+                        // todo: it's not actually putting the mdc-list-item--selected class on even when this.value === optValue...
+                        return html`<li class="${classMap({ "mdc-list-item": true, "mdc-list-item--selected": this.value === optValue })}" role="option" data-value="${optValue}"><or-translate value="${optDisplay}"></or-translate></li>`;
+                    }) : ``}
                                 </ul>
                             </div>
                         `;
@@ -1002,7 +1020,7 @@ export class OrMwcInput extends LitElement {
                     };
 
                     let opts: [any, string][] | Promise<[any, string][]>;
-                    if(this.searchProvider != undefined) {
+                    if (this.searchProvider != undefined) {
                         opts = this.searchProvider(this.searchableValue);
                     } else {
                         opts = this.resolveOptions(this.options)!;
@@ -1037,7 +1055,7 @@ export class OrMwcInput extends LitElement {
 
                         // A narrowed down list with search, or a different asynchronous approach does not always trigger @MDCSelect:change,
                         // so using itemClickHandler instead to let it trigger anyway.
-                        else if(this.searchProvider != undefined || !Array.isArray(opts)) {
+                        else if (this.searchProvider != undefined || !Array.isArray(opts)) {
                             this.onValueChange(undefined, item.value);
                         }
 
@@ -1061,7 +1079,7 @@ export class OrMwcInput extends LitElement {
                     };
 
                     const listTemplate = (options: [any, string][]) => {
-                        if(this.searchProvider != undefined && (!options || options.length == 0)) {
+                        if (this.searchProvider != undefined && (!options || options.length == 0)) {
                             return html`<span class="mdc-text-field-helper-line" style="margin: 8px 8px 8px 0;">${i18next.t('noResults')}</span>`
                         } else {
                             return getListTemplate(
@@ -1089,13 +1107,13 @@ export class OrMwcInput extends LitElement {
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
                             @MDCSelect:change="${async (e: MDCSelectEvent) => {
-                                const options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
-                                this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(options[e.detail.index]) ? options[e.detail.index][0] : options[e.detail.index]);
-                            }}">
+                            const options: [any, string][] = (Array.isArray(opts) ? opts : await opts);
+                            this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(options[e.detail.index]) ? options[e.detail.index][0] : options[e.detail.index]);
+                        }}">
                                 <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
-                                     aria-disabled="${""+(this.disabled || this.readonly)}"
+                                     aria-disabled="${"" + (this.disabled || this.readonly)}"
                                      aria-labelledby="label selected-text">
                                     ${!outlined ? html`<span class="mdc-select__ripple"></span>` : undefined}
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
@@ -1134,12 +1152,12 @@ export class OrMwcInput extends LitElement {
                                         </label>
                                     `)}
                                     ${when(Array.isArray(opts), () => {
-                                        return listTemplate(opts as [any, string][]);
-                                    }, () => {
-                                        return until(new Promise(async (resolve) => {
-                                            resolve(listTemplate(await opts));
-                                        }), html`<span class="mdc-text-field-helper-line" style="margin: 8px 8px 8px 0;">${i18next.t('loading')}</span>`)
-                                    })}
+                            return listTemplate(opts as [any, string][]);
+                        }, () => {
+                            return until(new Promise(async (resolve) => {
+                                resolve(listTemplate(await opts));
+                            }), html`<span class="mdc-text-field-helper-line" style="margin: 8px 8px 8px 0;">${i18next.t('loading')}</span>`)
+                        })}
                                 </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
@@ -1193,7 +1211,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
                         "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
-                        "mdc-button--rounded": !isIconButton && !this.action && this.rounded,                        
+                        "mdc-button--rounded": !isIconButton && !this.action && this.rounded,
                         "mdc-button--fullwidth": this.fullWidth,
                     };
                     return html`
@@ -1222,10 +1240,10 @@ export class OrMwcInput extends LitElement {
                     return html`
                             <div class="mdc-checkbox-list">
                                 ${optsCheckboxList ? optsCheckboxList.map(([optValue, optDisplay], index) => {
-                                    if (this.value === optValue) {
-                                        this._selectedIndex = index;
-                                    }
-                                    return html`
+                        if (this.value === optValue) {
+                            this._selectedIndex = index;
+                        }
+                        return html`
                                     <div id="field" class="mdc-form-field">
                                         <div id="component" class="mdc-checkbox">
                                             <input type="checkbox"
@@ -1234,16 +1252,16 @@ export class OrMwcInput extends LitElement {
                                                 name="${optValue}"
                                                 ?disabled="${this.disabled || this.readonly}"
                                                 @change="${(e: Event) => {
-                                                    let val: any[] = this.value;
-                                                    if ((e.target as HTMLInputElement).checked) {
-                                                        if (!val.includes(optValue)) {
-                                                            val = [optValue,...val];
-                                                        }
-                                                    } else {
-                                                        val = val.filter((v: any) => v !== optValue);
-                                                    }
-                                                    this.onValueChange((e.target as HTMLInputElement), val);
-                                                }}"
+                                let val: any[] = this.value;
+                                if ((e.target as HTMLInputElement).checked) {
+                                    if (!val.includes(optValue)) {
+                                        val = [optValue, ...val];
+                                    }
+                                } else {
+                                    val = val.filter((v: any) => v !== optValue);
+                                }
+                                this.onValueChange((e.target as HTMLInputElement), val);
+                            }}"
                                                 class="mdc-checkbox__native-control" id="elem-${optValue}"/>
 
                                             <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
@@ -1252,7 +1270,7 @@ export class OrMwcInput extends LitElement {
                                     </div>
 
                                     `;
-                                }) : ``}
+                    }) : ``}
                             </div>
                     `;
                 case InputType.CHECKBOX:
@@ -1328,7 +1346,7 @@ export class OrMwcInput extends LitElement {
                             }
                         } else {
 
-                            const format = this.format ? {...this.format} : {};
+                            const format = this.format ? { ...this.format } : {};
 
                             switch (this.type) {
                                 case InputType.TIME:
@@ -1359,7 +1377,7 @@ export class OrMwcInput extends LitElement {
 
                             // Numbers/dates must be in english locale without commas etc.
                             format.useGrouping = false;
-                            valMinMax = valMinMax.map((val) => val !== undefined ? Util.getValueAsString(val, () => format, "en-GB") : undefined) as [any,any,any];
+                            valMinMax = valMinMax.map((val) => val !== undefined ? Util.getValueAsString(val, () => format, "en-GB") : undefined) as [any, any, any];
                         }
                     }
 
@@ -1411,10 +1429,11 @@ export class OrMwcInput extends LitElement {
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
                             .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
                             @keydown="${(e: KeyboardEvent) => {
-                                if ((e.code === "Enter" || e.code === "NumpadEnter")) {
-                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
-                                }}}"
-                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}"
+                                    if ((e.code === "Enter" || e.code === "NumpadEnter")) {
+                                        this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
+                                    }
+                                }}"
+                            @blur="${(e: Event) => { if ((e.target as HTMLInputElement).value === "") this.reportValidity() }}"
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -1447,7 +1466,7 @@ export class OrMwcInput extends LitElement {
                         inputElem = html`
                             <span id="wrapper">
                                 ${this.label ? html`<label for="component" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
-                                <div id="component" class="${classMap(classes)}" @MDCSlider:change="${(ev:CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
+                                <div id="component" class="${classMap(classes)}" @MDCSlider:change="${(ev: CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
                                     <input id="elem" class="mdc-slider__input" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${valMinMax[0] || valMinMax[1] || 0}" name="slider" step="${this.step || 1}" ?readonly="${this.readonly}" ?disabled="${this.disabled}" aria-label="${ifDefined(this.label)}" />
                                     <div class="mdc-slider__track">
                                         <div class="mdc-slider__track--inactive"></div>
@@ -1556,9 +1575,9 @@ export class OrMwcInput extends LitElement {
 
                         // Set width of fixed select menu to match the component width
                         // Using an observer to prevent forced reflow / DOM measurements; prevents blocking the thread
-                        if(!this._menuObserver) {
+                        if (!this._menuObserver) {
                             this._menuObserver = new IntersectionObserver((entries, observer) => {
-                                if((entries[0].target as HTMLElement).style.minWidth != (entries[0].target.parentElement?.clientWidth + "px")) {
+                                if ((entries[0].target as HTMLElement).style.minWidth != (entries[0].target.parentElement?.clientWidth + "px")) {
                                     (entries[0].target as HTMLElement).style.minWidth = entries[0].target.parentElement?.clientWidth + "px";
                                 }
                             })
@@ -1568,10 +1587,10 @@ export class OrMwcInput extends LitElement {
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         const searchable: boolean = (this.searchProvider !== undefined);
                         const multi: boolean = this.multiple;
-                        (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
+                        (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function(evt: MouseEvent) {
                             const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
                             if (this.adapter.isElementInContainer(el)) {
-                                if(!searchable) {
+                                if (!searchable) {
                                     return; // Normal select menu closes automatically, so abort
                                 }
                                 // if searchable, we manually close the menu when clicking a list item.
@@ -1631,7 +1650,7 @@ export class OrMwcInput extends LitElement {
                         break;
                 }
 
-                if (this._mdcComponent && this.focused && typeof((this._mdcComponent as any).focus) === "function") {
+                if (this._mdcComponent && this.focused && typeof ((this._mdcComponent as any).focus) === "function") {
                     (this._mdcComponent as any).focus();
                 }
             }
@@ -1667,7 +1686,7 @@ export class OrMwcInput extends LitElement {
             }
         }
 
-        if(_changedProperties.has("label")) {
+        if (_changedProperties.has("label")) {
             (this._mdcComponent as any)?.layout?.(); // Adjusts the dimensions and positions for all sub-elements.
         }
 
@@ -1742,7 +1761,7 @@ export class OrMwcInput extends LitElement {
             newValue = null;
         }
 
-        if (typeof(newValue) === "string") {
+        if (typeof (newValue) === "string") {
             switch (this.type) {
                 case InputType.CHECKBOX:
                 case InputType.SWITCH:
@@ -1796,9 +1815,9 @@ export class OrMwcInput extends LitElement {
         }
 
         // Reset search if value has been selected
-        if(this.searchProvider != undefined && this.type === InputType.SELECT) {
+        if (this.searchProvider != undefined && this.type === InputType.SELECT) {
             const searchableElement = this.shadowRoot?.getElementById('select-searchable')?.children[1];
-            if(searchableElement) {
+            if (searchableElement) {
                 this.searchableValue = undefined;
                 (searchableElement as HTMLInputElement).value = "";
             }
@@ -1833,7 +1852,7 @@ export class OrMwcInput extends LitElement {
                     return opt as [any, string];
                 } else {
                     const optStr = "" + opt;
-                    return [opt, i18next.t(optStr, {defaultValue: Util.camelCaseToSentenceCase(optStr)})]
+                    return [opt, i18next.t(optStr, { defaultValue: Util.camelCaseToSentenceCase(optStr) })]
                 }
             });
         }

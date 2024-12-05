@@ -1,10 +1,32 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.container.security;
 
-import io.undertow.util.StatusCodes;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.jboss.resteasy.spi.CorsHeaders;
 import org.openremote.container.web.file.HttpFilter;
 import org.openremote.model.util.TextUtil;
 
+import io.undertow.util.StatusCodes;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -12,9 +34,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.ws.rs.HttpMethod;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class CORSFilter extends HttpFilter {
     protected boolean allowCredentials = true;
@@ -74,11 +93,11 @@ public class CORSFilter extends HttpFilter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-
     }
 
     @Override
-    public void doFilter(HttpServletRequest request, HttpServletResponse response, HttpSession session, FilterChain chain) throws ServletException, IOException {
+    public void doFilter(HttpServletRequest request, HttpServletResponse response, HttpSession session,
+            FilterChain chain) throws ServletException, IOException {
         String origin = request.getHeader(CorsHeaders.ORIGIN);
         boolean isOptions = request.getMethod().equals(HttpMethod.OPTIONS);
 
@@ -101,8 +120,7 @@ public class CORSFilter extends HttpFilter {
 
             String requestMethods = request.getHeader(CorsHeaders.ACCESS_CONTROL_REQUEST_METHOD);
             if (!TextUtil.isNullOrEmpty(requestMethods)) {
-                if (allowedMethods != null)
-                {
+                if (allowedMethods != null) {
                     requestMethods = this.allowedMethods;
                 }
                 response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_METHODS, requestMethods);
@@ -110,15 +128,13 @@ public class CORSFilter extends HttpFilter {
 
             String requestHeaders = request.getHeader(CorsHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
             if (!TextUtil.isNullOrEmpty(requestHeaders)) {
-                if (allowedHeaders != null)
-                {
+                if (allowedHeaders != null) {
                     requestHeaders = this.allowedHeaders;
                 }
                 response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requestHeaders);
             }
 
-            if (corsMaxAge > -1)
-            {
+            if (corsMaxAge > -1) {
                 response.setHeader(CorsHeaders.ACCESS_CONTROL_MAX_AGE, Integer.toString(corsMaxAge));
             }
         } else {
@@ -138,12 +154,11 @@ public class CORSFilter extends HttpFilter {
 
     @Override
     public void destroy() {
-
     }
 
     protected boolean originOk(String origin) {
         // startsWith test allows for host matching without explicit port mapping
-        return allowedOrigins.contains("*") || allowedOrigins.contains(origin) || allowedOrigins.stream().anyMatch(origin::startsWith);
+        return allowedOrigins.contains("*") || allowedOrigins.contains(origin)
+                || allowedOrigins.stream().anyMatch(origin::startsWith);
     }
-
 }

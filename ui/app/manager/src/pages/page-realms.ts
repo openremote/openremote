@@ -1,30 +1,48 @@
-import {css, html, PropertyValues, TemplateResult, unsafeCSS,} from "lit";
-import {createSelector} from "reselect";
-import {createRef, Ref, ref} from "lit/directives/ref.js";
-import {customElement, property} from "lit/decorators.js";
-import manager, {DefaultColor3} from "@openremote/core";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, PropertyValues, TemplateResult, unsafeCSS, } from "lit";
+import { createSelector } from "reselect";
+import { createRef, Ref, ref } from "lit/directives/ref.js";
+import { customElement, property } from "lit/decorators.js";
+import manager, { DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
-import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {ClientRole, Realm} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
-import {OrIcon} from "@openremote/or-icon";
-import {Util} from "@openremote/core"
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { Store } from "@reduxjs/toolkit";
+import { AppStateKeyed, Page, PageProvider } from "@openremote/or-app";
+import { ClientRole, Realm } from "@openremote/model";
+import { i18next } from "@openremote/or-translate";
+import { OrIcon } from "@openremote/or-icon";
+import { Util } from "@openremote/core"
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageRealmsProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
-  return {
-    name: "realms",
-    routes: ["realms"],
-    pageCreator: () => {
-      return new PageRealms(store);
-    },
-  };
+    return {
+        name: "realms",
+        routes: ["realms"],
+        pageCreator: () => {
+            return new PageRealms(store);
+        },
+    };
 }
 
 
@@ -32,10 +50,10 @@ export function pageRealmsProvider(store: Store<AppStateKeyed>): PageProvider<Ap
 export class PageRealms extends Page<AppStateKeyed> {
 
     static get styles() {
-    // language=CSS
-    return [
-      unsafeCSS(tableStyle),
-      css`
+        // language=CSS
+        return [
+            unsafeCSS(tableStyle),
+            css`
         #wrapper {
           height: 100%;
           width: 100%;
@@ -214,17 +232,17 @@ export class PageRealms extends Page<AppStateKeyed> {
           }
         }
       `,
-    ];
-  }
+        ];
+    }
 
-  @property()
-  protected _realms: Realm[] = [];
+    @property()
+    protected _realms: Realm[] = [];
 
-  protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
-  get name(): string {
-    return "realm_plural";
-  }
+    get name(): string {
+        return "realm_plural";
+    }
 
     protected getRealmState = createSelector(
         [this._realmSelector],
@@ -233,40 +251,40 @@ export class PageRealms extends Page<AppStateKeyed> {
         }
     )
 
-  constructor(store: Store<AppStateKeyed>) {
-    super(store);
-    this._getRealms();
-  }
+    constructor(store: Store<AppStateKeyed>) {
+        super(store);
+        this._getRealms();
+    }
 
-  public shouldUpdate(_changedProperties: PropertyValues): boolean {
+    public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-      if (_changedProperties.has("realm")) {
-          this._getRealms();
-      }
+        if (_changedProperties.has("realm")) {
+            this._getRealms();
+        }
 
-      return super.shouldUpdate(_changedProperties);
-  }
+        return super.shouldUpdate(_changedProperties);
+    }
 
-  protected render(): TemplateResult | void {
-    if (!manager.authenticated) {
-      return html`
+    protected render(): TemplateResult | void {
+        if (!manager.authenticated) {
+            return html`
         <or-translate value="notAuthenticated"></or-translate>
       `;
-    }
+        }
 
-    if (!manager.isKeycloak()) {
-      return html`
+        if (!manager.isKeycloak()) {
+            return html`
         <or-translate value="notSupported"></or-translate>
       `;
-    }
+        }
 
-    const readonly = !manager.hasRole(ClientRole.WRITE_USER);
-    return html`
+        const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+        return html`
          <div id="wrapper">
                 <div id="title">
                 <or-icon icon="domain"></or-icon>${i18next.t(
-                  "realm_plural"
-                )}
+            "realm_plural"
+        )}
                 </div>
                 <div class="panel">
                 <p class="panel-title">${i18next.t("realm_plural")}</p>
@@ -281,9 +299,9 @@ export class PageRealms extends Page<AppStateKeyed> {
                       </thead>
                       <tbody class="mdc-data-table__content">
                       ${this._realms.map(
-                        (realm, index) => {
-                       
-                          return html`
+            (realm, index) => {
+
+                return html`
                           <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => this.expanderToggle(ev, index)}">
                             <td  class="padded-cell mdc-data-table__cell"
                             >
@@ -306,9 +324,9 @@ export class PageRealms extends Page<AppStateKeyed> {
                                     <div class="column">
                                       <or-mwc-input ?readonly="${realm.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${realm.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.name = e.detail.value}"></or-mwc-input>
                                       <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("loginTheme", Util.camelCaseToSentenceCase("loginTheme"))}" .type="${InputType.TEXT}" .value="${realm.loginTheme}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.loginTheme = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.enabled = e.detail.value}"></or-mwc-input>
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>realm.rememberMe = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("resetPasswordAllowed")}" .type="${InputType.SWITCH}" min="1" .value="${realm.resetPasswordAllowed}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.resetPasswordAllowed = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${realm.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.enabled = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("rememberMe")}" .type="${InputType.SWITCH}" min="1" .value="${realm.rememberMe}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.rememberMe = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${realm.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => realm.displayName = e.detail.value}"></or-mwc-input>
@@ -323,7 +341,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                                       ` : ``}
                                       <or-mwc-input style="margin-left: auto;" label="save" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
                                   ` : !readonly ? html`
-                                    <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
+                                    <or-mwc-input label="cancel" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => { this._realms.splice(-1, 1); this._realms = [...this._realms] }}"></or-mwc-input>            
                                     <or-mwc-input style="margin-left: auto;" label="create" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
                                   `: ``}    
                                   </div>
@@ -331,11 +349,11 @@ export class PageRealms extends Page<AppStateKeyed> {
                             </td>
                           </tr>
                         `
-                      })}
-                        ${this._realms.length > 0 && !!this._realms[this._realms.length -1].id && !readonly ? html`
+            })}
+                        ${this._realms.length > 0 && !!this._realms[this._realms.length - 1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                            <a class="button" @click="${() => this._realms = [...this._realms, {displayName:"", enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
+                            <a class="button" @click="${() => this._realms = [...this._realms, { displayName: "", enabled: true }]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
                           </td>
                         </tr>
                       ` : ``}
@@ -347,11 +365,11 @@ export class PageRealms extends Page<AppStateKeyed> {
             </div>
            
         `;
-  }
+    }
 
-  public stateChanged(state: AppStateKeyed) {
-      this.getRealmState(state);
-  }
+    public stateChanged(state: AppStateKeyed) {
+        this.getRealmState(state);
+    }
 
     protected async _getRealms() {
         const response = await manager.rest.api.RealmResource.getAll();
@@ -384,47 +402,47 @@ export class PageRealms extends Page<AppStateKeyed> {
 
     private _deleteRealm(realm: Realm) {
 
-      let confirmedName = "";
-      let okBtnRef: Ref<OrMwcInput> = createRef();
+        let confirmedName = "";
+        let okBtnRef: Ref<OrMwcInput> = createRef();
 
-      const doDelete = async (dialog: OrMwcDialog) => {
-        try {
-            await manager.rest.api.RealmResource.delete(realm.name);
-            this._realms = this._realms.filter(r => r !== realm);
-        } catch (e) {
-            showSnackbar(undefined, "realmDeleteFailed", "dismiss");
-        }
-      };
+        const doDelete = async (dialog: OrMwcDialog) => {
+            try {
+                await manager.rest.api.RealmResource.delete(realm.name);
+                this._realms = this._realms.filter(r => r !== realm);
+            } catch (e) {
+                showSnackbar(undefined, "realmDeleteFailed", "dismiss");
+            }
+        };
 
-      const inputChanged = (value: string) => {
-          confirmedName = value;
-          if (okBtnRef.value) {
-              okBtnRef.value.disabled = confirmedName !== realm.name;
-          }
-      };
+        const inputChanged = (value: string) => {
+            confirmedName = value;
+            if (okBtnRef.value) {
+                okBtnRef.value.disabled = confirmedName !== realm.name;
+            }
+        };
 
-      const dialogContent = html`<div>
-          <p style="text-align: justify; font-weight: bold;">${i18next.t("realmDeleteConfirm", {realmName: realm.name})}</p>
+        const dialogContent = html`<div>
+          <p style="text-align: justify; font-weight: bold;">${i18next.t("realmDeleteConfirm", { realmName: realm.name })}</p>
           <or-mwc-input .type="${InputType.TEXT}" @input=${(ev: Event) => inputChanged((ev.target as OrMwcInput).nativeValue)} .label="${i18next.t("realm")}"></or-mwc-input>
       </div>`;
 
-      const dialogActions: DialogAction[] = [
-          {
-              actionName: "ok",
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled label="ok"></or-mwc-input>`,
-              action: doDelete
-          },
-          {
-              default: true,
-              actionName: "cancel",
-              content: "cancel"
-          }
-      ];
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "ok",
+                content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => { if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation() }}" disabled label="ok"></or-mwc-input>`,
+                action: doDelete
+            },
+            {
+                default: true,
+                actionName: "cancel",
+                content: "cancel"
+            }
+        ];
 
-      const dialog = showDialog(new OrMwcDialog()
-          .setContent(dialogContent)
-          .setActions(dialogActions)
-          .setStyles(html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContent)
+            .setActions(dialogActions)
+            .setStyles(html`
                         <style>
                             .mdc-dialog__surface {
                                 display: flex;
@@ -445,7 +463,7 @@ export class PageRealms extends Page<AppStateKeyed> {
                             }
                         </style>
                     `)
-          .setDismissAction(null));
+            .setDismissAction(null));
     }
 
     private async _doDelete(realm) {
@@ -453,9 +471,9 @@ export class PageRealms extends Page<AppStateKeyed> {
         this._realms = [...this._realms.filter(u => u.id != realm.id)];
     }
 
-    private expanderToggle(ev: MouseEvent, index:number) {
-        const metaRow = this.shadowRoot.getElementById('realm-row-'+index)
-        const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
+    private expanderToggle(ev: MouseEvent, index: number) {
+        const metaRow = this.shadowRoot.getElementById('realm-row-' + index)
+        const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-' + index) as OrIcon
         if (metaRow.classList.contains('expanded')) {
             metaRow.classList.remove("expanded");
             expanderIcon.icon = "chevron-right";

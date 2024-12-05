@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
@@ -27,14 +34,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.ExtendedInvalidCipherT
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * NetworkLayer implementation of the mesh network architecture as per the mesh profile specification.
@@ -119,13 +118,15 @@ abstract class NetworkLayer extends LowerTransportLayer {
                     final byte[] lowerTransportPdu = lowerTransportPduMap.get(i);
                     if (i != 0) {
                         node.setSequenceNumber(MeshParserUtils.convert24BitsToInt(message.getSequenceNumber()));
-                        final byte[] sequenceNumber = MeshParserUtils.getSequenceNumberBytes(node.incrementSequenceNumber());
+                        final byte[] sequenceNumber = MeshParserUtils
+                                .getSequenceNumberBytes(node.incrementSequenceNumber());
                         message.setSequenceNumber(sequenceNumber);
                     }
                     sequenceNumbers.add(message.getSequenceNumber());
                     LOG.info("Sequence Number: " + MeshParserUtils.bytesToHex(sequenceNumbers.get(i), false));
                     final byte[] nonce = createNetworkNonce(ctlTTL, sequenceNumbers.get(i), src, message.getIvIndex());
-                    final byte[] encryptedPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce, message.getDst(), SecureUtils.getNetMicLength(message.getCtl()));
+                    final byte[] encryptedPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce,
+                            message.getDst(), SecureUtils.getNetMicLength(message.getCtl()));
                     encryptedPduPayload.put(i, encryptedPayload);
                     LOG.info("Encrypted Network payload: " + MeshParserUtils.bytesToHex(encryptedPayload, false));
                 }
@@ -138,7 +139,8 @@ abstract class NetworkLayer extends LowerTransportLayer {
                     message.setSequenceNumber(sequenceNum);
                     sequenceNumbers.add(message.getSequenceNumber());
                     final byte[] nonce = createProxyNonce(message.getSequenceNumber(), src, message.getIvIndex());
-                    final byte[] encryptedPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce, message.getDst(), SecureUtils.getNetMicLength(message.getCtl()));
+                    final byte[] encryptedPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce,
+                            message.getDst(), SecureUtils.getNetMicLength(message.getCtl()));
                     encryptedPduPayload.put(i, encryptedPayload);
                     LOG.info("Encrypted Network payload: " + MeshParserUtils.bytesToHex(encryptedPayload, false));
                 }
@@ -147,19 +149,16 @@ abstract class NetworkLayer extends LowerTransportLayer {
 
         final Map<Integer, byte[]> pduArray = new HashMap<>();
         for (int i = 0; i < encryptedPduPayload.size(); i++) {
-            //Create the privacy random
+            // Create the privacy random
             final byte[] encryptedPayload = encryptedPduPayload.get(i);
             final byte[] privacyRandom = createPrivacyRandom(encryptedPayload);
-            //Next we create the PECB
+            // Next we create the PECB
             final byte[] pecb = createPECB(message.getIvIndex(), privacyRandom, privacyKey);
 
             final byte[] header = obfuscateNetworkHeader(ctlTTL, sequenceNumbers.get(i), src, pecb);
-            final byte[] pdu = ByteBuffer.allocate(1 + 1 + header.length + encryptedPayload.length).order(ByteOrder.BIG_ENDIAN)
-                .put((byte) pduType)
-                .put(iviNID)
-                .put(header)
-                .put(encryptedPayload)
-                .array();
+            final byte[] pdu = ByteBuffer.allocate(1 + 1 + header.length + encryptedPayload.length)
+                    .order(ByteOrder.BIG_ENDIAN).put((byte) pduType).put(iviNID).put(header).put(encryptedPayload)
+                    .array();
             pduArray.put(i, pdu);
             message.setNetworkLayerPdu(pduArray);
         }
@@ -195,14 +194,17 @@ abstract class NetworkLayer extends LowerTransportLayer {
             final ProvisionedMeshNode node = mUpperTransportLayerCallbacks.getNode(message.getSrc());
             final byte[] lowerTransportPdu = lowerTransportPduMap.get(segment);
             node.setSequenceNumber(MeshParserUtils.convert24BitsToInt(message.getSequenceNumber()));
-            //final int sequenceNumber = node.incrementSequenceNumber();//incrementSequenceNumber(mNetworkLayerCallbacks.getProvisioner(), message.getSequenceNumber());
+            // final int sequenceNumber =
+            // node.incrementSequenceNumber();//incrementSequenceNumber(mNetworkLayerCallbacks.getProvisioner(),
+            // message.getSequenceNumber());
             final byte[] sequenceNum = MeshParserUtils.getSequenceNumberBytes(node.incrementSequenceNumber());
             message.setSequenceNumber(sequenceNum);
 
             LOG.info("Sequence Number: " + MeshParserUtils.bytesToHex(sequenceNum, false));
 
             final byte[] nonce = createNetworkNonce(ctlTTL, sequenceNum, src, message.getIvIndex());
-            encryptedNetworkPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce, message.getDst(), SecureUtils.getNetMicLength(message.getCtl()));
+            encryptedNetworkPayload = encryptPdu(lowerTransportPdu, encryptionKey, nonce, message.getDst(),
+                    SecureUtils.getNetMicLength(message.getCtl()));
             if (encryptedNetworkPayload == null)
                 return null;
             LOG.info("Encrypted Network payload: " + MeshParserUtils.bytesToHex(encryptedNetworkPayload, false));
@@ -213,16 +215,13 @@ abstract class NetworkLayer extends LowerTransportLayer {
             return null;
 
         final byte[] privacyRandom = createPrivacyRandom(encryptedNetworkPayload);
-        //Next we create the PECB
+        // Next we create the PECB
         final byte[] pecb = createPECB(message.getIvIndex(), privacyRandom, privacyKey);
 
         final byte[] header = obfuscateNetworkHeader(ctlTTL, message.getSequenceNumber(), src, pecb);
-        final byte[] pdu = ByteBuffer.allocate(1 + 1 + header.length + encryptedNetworkPayload.length).order(ByteOrder.BIG_ENDIAN)
-            .put((byte) pduType)
-            .put(iviNID)
-            .put(header)
-            .put(encryptedNetworkPayload)
-            .array();
+        final byte[] pdu = ByteBuffer.allocate(1 + 1 + header.length + encryptedNetworkPayload.length)
+                .order(ByteOrder.BIG_ENDIAN).put((byte) pduType).put(iviNID).put(header).put(encryptedNetworkPayload)
+                .array();
         pduArray.put(segment, pdu);
         message.setNetworkLayerPdu(pduArray);
         return message;
@@ -231,24 +230,21 @@ abstract class NetworkLayer extends LowerTransportLayer {
     /**
      * Parse received mesh message
      * <p>
-     * This method will drop messages with an invalid sequence number as all mesh messages are supposed to have a sequence
+     * This method will drop messages with an invalid sequence number as all mesh messages are supposed to have a
+     * sequence
      * </p>
      *
-     * @param key                     Network Key used to decrypt
-     * @param node                    Mesh node.
-     * @param data                    PDU received from the mesh node.
-     * @param networkHeader           Network header.
+     * @param key Network Key used to decrypt
+     * @param node Mesh node.
+     * @param data PDU received from the mesh node.
+     * @param networkHeader Network header.
      * @param decryptedNetworkPayload Decrypted network payload.
-     * @param ivIndex                 IV Index of the network.
+     * @param ivIndex IV Index of the network.
      * @return complete {@link Message} that was successfully parsed or null otherwise.
      */
-    final synchronized Message parseMeshMessage(final NetworkKey key,
-                                   final ProvisionedMeshNode node,
-                                   final byte[] data,
-                                   final byte[] networkHeader,
-                                   final byte[] decryptedNetworkPayload,
-                                   final int ivIndex,
-                                   final byte[] sequenceNumber) throws ExtendedInvalidCipherTextException {
+    final synchronized Message parseMeshMessage(final NetworkKey key, final ProvisionedMeshNode node, final byte[] data,
+            final byte[] networkHeader, final byte[] decryptedNetworkPayload, final int ivIndex,
+            final byte[] sequenceNumber) throws ExtendedInvalidCipherTextException {
         mMeshNode = node;
         final Provisioner provisioner = mNetworkLayerCallbacks.getProvisioner();
         final int ctlTtl = networkHeader[0];
@@ -257,7 +253,8 @@ abstract class NetworkLayer extends LowerTransportLayer {
         // LOG.info("TTL for received message: " + ttl);
         final int src = MeshParserUtils.unsignedBytesToInt(networkHeader[5], networkHeader[4]);
         if (ctl == 1) {
-            return parseControlMessage(key, provisioner.getProvisionerAddress(), data, networkHeader, decryptedNetworkPayload, src, sequenceNumber);
+            return parseControlMessage(key, provisioner.getProvisionerAddress(), data, networkHeader,
+                    decryptedNetworkPayload, src, sequenceNumber);
         } else {
             return parseAccessMessage(key, data, networkHeader, decryptedNetworkPayload, src, sequenceNumber, ivIndex);
         }
@@ -266,22 +263,18 @@ abstract class NetworkLayer extends LowerTransportLayer {
     /**
      * Parses access message
      *
-     * @param key                     Network Key used to decrypt
-     * @param data                    Received from the node.
-     * @param networkHeader           De-obfuscated network header.
+     * @param key Network Key used to decrypt
+     * @param data Received from the node.
+     * @param networkHeader De-obfuscated network header.
      * @param decryptedNetworkPayload Decrypted network payload.
-     * @param src                     Source address.
-     * @param sequenceNumber          Sequence number of the received message.
-     * @param ivIndex                 IV Index used for decryption.
+     * @param src Source address.
+     * @param sequenceNumber Sequence number of the received message.
+     * @param ivIndex IV Index used for decryption.
      * @return access message
      */
-    private AccessMessage parseAccessMessage(final NetworkKey key,
-                                             final byte[] data,
-                                             final byte[] networkHeader,
-                                             final byte[] decryptedNetworkPayload,
-                                             final int src,
-                                             final byte[] sequenceNumber,
-                                             int ivIndex) throws ExtendedInvalidCipherTextException {
+    private AccessMessage parseAccessMessage(final NetworkKey key, final byte[] data, final byte[] networkHeader,
+            final byte[] decryptedNetworkPayload, final int src, final byte[] sequenceNumber, int ivIndex)
+            throws ExtendedInvalidCipherTextException {
         try {
             int receivedTtl = networkHeader[0] & 0x7F;
             final int dst = MeshParserUtils.unsignedBytesToInt(decryptedNetworkPayload[1], decryptedNetworkPayload[0]);
@@ -290,8 +283,8 @@ abstract class NetworkLayer extends LowerTransportLayer {
             if (isSegmentedMessage(decryptedNetworkPayload[2])) {
                 LOG.info("Received a segmented access message from: " + MeshAddress.formatAddress(src, false));
 
-                //Check if the received segmented message is from the same src as the previous segment
-                //Ideal case this check is not needed but let's leave it for now.
+                // Check if the received segmented message is from the same src as the previous segment
+                // Ideal case this check is not needed but let's leave it for now.
                 if (!mMeshNode.hasUnicastAddress(src)) {
                     LOG.info("Segment received is from a different src than the one we are processing, let's drop it");
                     return null;
@@ -304,13 +297,10 @@ abstract class NetworkLayer extends LowerTransportLayer {
                     final int k = segmentedAccessMessagesMessages.size();
                     segmentedAccessMessagesMessages.put(k, data);
                 }
-                //Removing the mDst here
+                // Removing the mDst here
                 final byte[] pdu = ByteBuffer.allocate(2 + networkHeader.length + decryptedNetworkPayload.length)
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .put(data, 0, 2)
-                    .put(networkHeader)
-                    .put(decryptedNetworkPayload)
-                    .array();
+                        .order(ByteOrder.BIG_ENDIAN).put(data, 0, 2).put(networkHeader).put(decryptedNetworkPayload)
+                        .array();
 
                 // Spec states, section 3.5.2.4 page 77
                 // If the received segments were sent with TTL set to 0, it is recommended that the
@@ -338,13 +328,10 @@ abstract class NetworkLayer extends LowerTransportLayer {
 
             } else {
 
-                //Removing the mDst here
+                // Removing the mDst here
                 final byte[] pdu = ByteBuffer.allocate(2 + networkHeader.length + decryptedNetworkPayload.length)
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .put(data, 0, 2)
-                    .put(networkHeader)
-                    .put(decryptedNetworkPayload)
-                    .array();
+                        .order(ByteOrder.BIG_ENDIAN).put(data, 0, 2).put(networkHeader).put(decryptedNetworkPayload)
+                        .array();
                 final AccessMessage message = parseUnsegmentedAccessLowerTransportPDU(pdu, ivIndex, sequenceNumber);
                 if (message == null)
                     return null;
@@ -362,52 +349,46 @@ abstract class NetworkLayer extends LowerTransportLayer {
                 return message;
             }
         } catch (InvalidCipherTextException ex) {
-            throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), NetworkLayer.class.getSimpleName());
+            throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(),
+                    NetworkLayer.class.getSimpleName());
         }
     }
 
     /**
      * Parses control message
      *
-     * @param key                     Network Key used to decrypt
-     * @param provisionerAddress      Provisioner address.
-     * @param data                    Data received from the node.
-     * @param networkHeader           De-obfuscated network header.
+     * @param key Network Key used to decrypt
+     * @param provisionerAddress Provisioner address.
+     * @param data Data received from the node.
+     * @param networkHeader De-obfuscated network header.
      * @param decryptedNetworkPayload Decrypted network payload.
-     * @param src                     Source address where the pdu originated from.
-     * @param sequenceNumber          Sequence number of the received message.
+     * @param src Source address where the pdu originated from.
+     * @param sequenceNumber Sequence number of the received message.
      * @return a complete {@link ControlMessage} or null if the message was unable to parsed
      */
-    private ControlMessage parseControlMessage(final NetworkKey key,
-                                               /* @Nullable */ final Integer provisionerAddress,
-                                               final byte[] data,
-                                               final byte[] networkHeader,
-                                               final byte[] decryptedNetworkPayload,
-                                               final int src,
-                                               final byte[] sequenceNumber) throws ExtendedInvalidCipherTextException {
+    private ControlMessage parseControlMessage(final NetworkKey key, /* @Nullable */ final Integer provisionerAddress,
+            final byte[] data, final byte[] networkHeader, final byte[] decryptedNetworkPayload, final int src,
+            final byte[] sequenceNumber) throws ExtendedInvalidCipherTextException {
         try {
             final int ttl = networkHeader[0] & 0x7F;
             final int dst = MeshParserUtils.unsignedBytesToInt(decryptedNetworkPayload[1], decryptedNetworkPayload[0]);
 
-            //Removing the mDst here
-            final byte[] decryptedProxyPdu = ByteBuffer.allocate(2 + networkHeader.length + decryptedNetworkPayload.length)
-                .order(ByteOrder.BIG_ENDIAN)
-                .put(data, 0, 2)
-                .put(networkHeader)
-                .put(decryptedNetworkPayload)
-                .array();
+            // Removing the mDst here
+            final byte[] decryptedProxyPdu = ByteBuffer
+                    .allocate(2 + networkHeader.length + decryptedNetworkPayload.length).order(ByteOrder.BIG_ENDIAN)
+                    .put(data, 0, 2).put(networkHeader).put(decryptedNetworkPayload).array();
 
-            //We check the pdu type
+            // We check the pdu type
             final int pduType = data[0];
             switch (pduType) {
                 case MeshManagerApi.PDU_TYPE_NETWORK:
 
-                    //This is not possible however let's return null
+                    // This is not possible however let's return null
                     if (provisionerAddress == null) {
                         return null;
                     }
 
-                    //Check if the message is directed to us, if its not ignore the message
+                    // Check if the message is directed to us, if its not ignore the message
                     if (provisionerAddress != dst) {
                         LOG.info("Received a control message that was not directed to us, so we drop it");
                         return null;
@@ -416,38 +397,36 @@ abstract class NetworkLayer extends LowerTransportLayer {
                     if (isSegmentedMessage(decryptedNetworkPayload[2])) {
                         return parseSegmentedControlMessage(key, data, decryptedProxyPdu, ttl, src, dst);
                     } else {
-                        return parseUnsegmentedControlMessage(key, data, decryptedProxyPdu, ttl, src, dst, sequenceNumber);
+                        return parseUnsegmentedControlMessage(key, data, decryptedProxyPdu, ttl, src, dst,
+                                sequenceNumber);
                     }
                 case MeshManagerApi.PDU_TYPE_PROXY_CONFIGURATION:
-                    //Proxy configuration messages are segmented only at the gatt level
+                    // Proxy configuration messages are segmented only at the gatt level
                     return parseUnsegmentedControlMessage(key, data, decryptedProxyPdu, ttl, src, dst, sequenceNumber);
                 default:
                     return null;
             }
         } catch (InvalidCipherTextException ex) {
-            throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(), NetworkLayer.class.getSimpleName());
+            throw new ExtendedInvalidCipherTextException(ex.getMessage(), ex.getCause(),
+                    NetworkLayer.class.getSimpleName());
         }
     }
 
     /**
      * Parses an unsegmented control message
      *
-     * @param key                     Network Key used to decrypt
-     * @param data              Received pdu data
+     * @param key Network Key used to decrypt
+     * @param data Received pdu data
      * @param decryptedProxyPdu Decrypted proxy pdu
-     * @param ttl               TTL of the pdu
-     * @param src               Source address where the pdu originated from
-     * @param dst               Destination address to which the pdu was sent
-     * @param sequenceNumber    Sequence number of the pdu
+     * @param ttl TTL of the pdu
+     * @param src Source address where the pdu originated from
+     * @param dst Destination address to which the pdu was sent
+     * @param sequenceNumber Sequence number of the pdu
      * @return a complete {@link ControlMessage} or null if the message was unable to parsed
      */
-    private ControlMessage parseUnsegmentedControlMessage(final NetworkKey key,
-                                                          final byte[] data,
-                                                          final byte[] decryptedProxyPdu,
-                                                          final int ttl,
-                                                          final int src,
-                                                          final int dst,
-                                                          final byte[] sequenceNumber) throws ExtendedInvalidCipherTextException {
+    private ControlMessage parseUnsegmentedControlMessage(final NetworkKey key, final byte[] data,
+            final byte[] decryptedProxyPdu, final int ttl, final int src, final int dst, final byte[] sequenceNumber)
+            throws ExtendedInvalidCipherTextException {
         final ControlMessage message = new ControlMessage();
         message.setNetworkKey(key);
         message.setIvIndex(mUpperTransportLayerCallbacks.getIvIndex());
@@ -467,15 +446,16 @@ abstract class NetworkLayer extends LowerTransportLayer {
     /**
      * Parses a unsegmented control message
      *
-     * @param key                     Network Key used to decrypt
-     * @param data              Received pdu data
+     * @param key Network Key used to decrypt
+     * @param data Received pdu data
      * @param decryptedProxyPdu Decrypted proxy pdu
-     * @param ttl               TTL of the pdu
-     * @param src               Source address where the pdu originated from
-     * @param dst               Destination address to which the pdu was sent
+     * @param ttl TTL of the pdu
+     * @param src Source address where the pdu originated from
+     * @param dst Destination address to which the pdu was sent
      * @return a complete {@link ControlMessage} or null if the message was unable to parsed
      */
-    private ControlMessage parseSegmentedControlMessage(final NetworkKey key, final byte[] data, final byte[] decryptedProxyPdu, final int ttl, final int src, final int dst) {
+    private ControlMessage parseSegmentedControlMessage(final NetworkKey key, final byte[] data,
+            final byte[] decryptedProxyPdu, final int ttl, final int src, final int dst) {
         if (segmentedControlMessagesMessages == null) {
             segmentedControlMessagesMessages = new HashMap<>();
             segmentedControlMessagesMessages.put(0, data);
@@ -521,18 +501,19 @@ abstract class NetworkLayer extends LowerTransportLayer {
     /**
      * Obfuscates the network header
      *
-     * @param ctlTTL         Message type and ttl bit
+     * @param ctlTTL Message type and ttl bit
      * @param sequenceNumber Sequence number of the message
-     * @param src            Source address
-     * @param pecb           Value derived from the privacy random
+     * @param src Source address
+     * @param pecb Value derived from the privacy random
      * @return Obfuscated network header
      */
-    private byte[] obfuscateNetworkHeader(final byte ctlTTL, final byte[] sequenceNumber, final int src, final byte[] pecb) {
+    private byte[] obfuscateNetworkHeader(final byte ctlTTL, final byte[] sequenceNumber, final int src,
+            final byte[] pecb) {
 
         final ByteBuffer buffer = ByteBuffer.allocate(1 + sequenceNumber.length + 2).order(ByteOrder.BIG_ENDIAN);
         buffer.put(ctlTTL);
-        buffer.put(sequenceNumber);   //sequence number
-        buffer.putShort((short) src);       //source address
+        buffer.put(sequenceNumber); // sequence number
+        buffer.putShort((short) src); // source address
 
         final byte[] headerBuffer = buffer.array();
 
@@ -552,9 +533,7 @@ abstract class NetworkLayer extends LowerTransportLayer {
      * @param pdu Received from the node
      * @return Obfuscated network header
      */
-    static byte[] deObfuscateNetworkHeader(final byte[] pdu,
-                                           final byte[] ivIndex,
-                                           final byte[] privacyKey) {
+    static byte[] deObfuscateNetworkHeader(final byte[] pdu, final byte[] ivIndex, final byte[] privacyKey) {
         final ByteBuffer obfuscatedNetworkBuffer = ByteBuffer.allocate(6);
         obfuscatedNetworkBuffer.order(ByteOrder.BIG_ENDIAN);
         obfuscatedNetworkBuffer.put(pdu, 2, 6);
@@ -589,7 +568,7 @@ abstract class NetworkLayer extends LowerTransportLayer {
     private static byte[] createPECB(final byte[] ivIndex, final byte[] privacyRandom, final byte[] privacyKey) {
         final ByteBuffer buffer = ByteBuffer.allocate(5 + privacyRandom.length + ivIndex.length);
         buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.put(new byte[]{0x00, 0x00, 0x00, 0x00, 0x00});
+        buffer.put(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00 });
         buffer.put(ivIndex);
         buffer.put(privacyRandom);
         final byte[] temp = buffer.array();
@@ -599,18 +578,19 @@ abstract class NetworkLayer extends LowerTransportLayer {
     /**
      * Creates the network nonce
      *
-     * @param ctlTTL         Combined ctl and ttl value
+     * @param ctlTTL Combined ctl and ttl value
      * @param sequenceNumber Sequence number of the message
-     * @param src            Source address
+     * @param src Source address
      * @return Network nonce
      */
-    static byte[] createNetworkNonce(final byte ctlTTL, final byte[] sequenceNumber, final int src, final byte[] ivIndex) {
+    static byte[] createNetworkNonce(final byte ctlTTL, final byte[] sequenceNumber, final int src,
+            final byte[] ivIndex) {
         final ByteBuffer networkNonce = ByteBuffer.allocate(13);
-        networkNonce.put((byte) NONCE_TYPE_NETWORK); //Nonce type
+        networkNonce.put((byte) NONCE_TYPE_NETWORK); // Nonce type
         networkNonce.put(ctlTTL); // CTL and TTL
         networkNonce.put(sequenceNumber);
         networkNonce.putShort((short) src);
-        networkNonce.put(new byte[]{PAD_NETWORK_NONCE, PAD_NETWORK_NONCE}); //PAD
+        networkNonce.put(new byte[] { PAD_NETWORK_NONCE, PAD_NETWORK_NONCE }); // PAD
         networkNonce.put(ivIndex);
         return networkNonce.array();
     }
@@ -619,16 +599,16 @@ abstract class NetworkLayer extends LowerTransportLayer {
      * Creates the proxy nonce
      *
      * @param sequenceNumber Sequence number of the message
-     * @param src            Source address
+     * @param src Source address
      * @return Proxy nonce
      */
     static byte[] createProxyNonce(final byte[] sequenceNumber, final int src, final byte[] ivIndex) {
         final ByteBuffer applicationNonceBuffer = ByteBuffer.allocate(13);
-        applicationNonceBuffer.put((byte) NONCE_TYPE_PROXY); //Nonce type
-        applicationNonceBuffer.put((byte) PAD_PROXY_NONCE); //PAD
+        applicationNonceBuffer.put((byte) NONCE_TYPE_PROXY); // Nonce type
+        applicationNonceBuffer.put((byte) PAD_PROXY_NONCE); // PAD
         applicationNonceBuffer.put(sequenceNumber);
         applicationNonceBuffer.putShort((short) src);
-        applicationNonceBuffer.put(new byte[]{PAD_PROXY_NONCE, PAD_PROXY_NONCE});
+        applicationNonceBuffer.put(new byte[] { PAD_PROXY_NONCE, PAD_PROXY_NONCE });
         applicationNonceBuffer.put(ivIndex);
         return applicationNonceBuffer.array();
     }
@@ -637,22 +617,17 @@ abstract class NetworkLayer extends LowerTransportLayer {
      * Encrypts the pdu
      *
      * @param lowerTransportPdu lower transport pdu to be encrypted
-     * @param encryptionKey     Encryption key
-     * @param nonce             nonce depending on the pdu type
-     * @param dst               Destination address
-     * @param micLength         Message integrity check length
+     * @param encryptionKey Encryption key
+     * @param nonce nonce depending on the pdu type
+     * @param dst Destination address
+     * @param micLength Message integrity check length
      */
-    private byte[] encryptPdu(final byte[] lowerTransportPdu,
-                              final byte[] encryptionKey,
-                              final byte[] nonce,
-                              final int dst,
-                              final int micLength) {
-        //Adding the destination address on network layer
-        final byte[] unencryptedNetworkPayload = ByteBuffer.allocate(2 + lowerTransportPdu.length).order(ByteOrder.BIG_ENDIAN)
-            .putShort((short) dst)
-            .put(lowerTransportPdu).array();
-        //Network layer encryption
+    private byte[] encryptPdu(final byte[] lowerTransportPdu, final byte[] encryptionKey, final byte[] nonce,
+            final int dst, final int micLength) {
+        // Adding the destination address on network layer
+        final byte[] unencryptedNetworkPayload = ByteBuffer.allocate(2 + lowerTransportPdu.length)
+                .order(ByteOrder.BIG_ENDIAN).putShort((short) dst).put(lowerTransportPdu).array();
+        // Network layer encryption
         return SecureUtils.encryptCCM(unencryptedNetworkPayload, encryptionKey, nonce, micLength);
     }
 }
-

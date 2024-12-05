@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,11 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.notification;
 
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
+import static java.time.temporal.ChronoUnit.*;
+import static java.util.Map.entry;
+import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
+import static org.openremote.model.notification.Notification.HEADER_SOURCE;
+import static org.openremote.model.notification.Notification.Source.*;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -43,21 +56,8 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.time.temporal.ChronoUnit.*;
-import static java.util.Map.entry;
-import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
-import static org.openremote.model.notification.Notification.HEADER_SOURCE;
-import static org.openremote.model.notification.Notification.Source.*;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 public class NotificationService extends RouteBuilder implements ContainerService {
 
@@ -86,33 +86,27 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         executorService = container.getExecutor();
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
-        container.getServices(NotificationHandler.class).forEach(notificationHandler ->
-                notificationHandlerMap.put(notificationHandler.getTypeName(), notificationHandler));
+        container.getServices(NotificationHandler.class).forEach(notificationHandler -> notificationHandlerMap
+                .put(notificationHandler.getTypeName(), notificationHandler));
 
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new NotificationResourceImpl(this,
-                        container.getService(MessageBrokerService.class),
+        container.getService(ManagerWebService.class)
+                .addApiSingleton(new NotificationResourceImpl(this, container.getService(MessageBrokerService.class),
                         container.getService(AssetStorageService.class),
-                        container.getService(ManagerIdentityService.class))
-        );
+                        container.getService(ManagerIdentityService.class)));
     }
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     @Override
     public void configure() throws Exception {
 
-        from(NOTIFICATION_QUEUE)
-                .routeId("NotificationQueue")
-                .threads().executorService(executorService)
+        from(NOTIFICATION_QUEUE).routeId("NotificationQueue").threads().executorService(executorService)
                 .process(exchange -> {
                     Notification notification = exchange.getIn().getBody(Notification.class);
 
@@ -126,7 +120,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         throw new NotificationProcessingException(MISSING_CONTENT, "Notification message must be set");
                     }
 
-                    Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Notification.Source.class);
+                    Notification.Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null,
+                            Notification.Source.class);
 
                     if (source == null) {
                         throw new NotificationProcessingException(MISSING_SOURCE);
@@ -135,10 +130,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     // Validate handler and message
                     NotificationHandler handler = notificationHandlerMap.get(notification.getMessage().getType());
                     if (handler == null) {
-                        throw new NotificationProcessingException(UNSUPPORTED_MESSAGE_TYPE, "No handler for message type: " + notification.getMessage().getType());
+                        throw new NotificationProcessingException(UNSUPPORTED_MESSAGE_TYPE,
+                                "No handler for message type: " + notification.getMessage().getType());
                     }
                     if (!handler.isValid()) {
-                        throw new NotificationProcessingException(NOTIFICATION_HANDLER_CONFIG_ERROR, "Handler is not valid: " + handler.getTypeName());
+                        throw new NotificationProcessingException(NOTIFICATION_HANDLER_CONFIG_ERROR,
+                                "Handler is not valid: " + handler.getTypeName());
                     }
                     if (!handler.isMessageValid(notification.getMessage())) {
                         throw new NotificationProcessingException(INVALID_MESSAGE);
@@ -155,7 +152,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     switch (source) {
                         case INTERNAL -> isSuperUser = true;
                         case CLIENT -> {
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT,
+                                    AuthContext.class);
                             if (authContext == null) {
                                 // Anonymous clients cannot send notifications
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
@@ -179,97 +177,98 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         }
                     }
 
-                    LOG.fine("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
+                    LOG.fine("Sending " + notification.getMessage().getType() + " notification '"
+                            + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> "
+                            + notification.getTargets());
 
                     // Check access permissions
-                    checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
+                    checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser,
+                            isRestrictedUser, assetId);
 
                     // Get the list of notification targets
-                    List<Notification.Target> mappedTargetsList = handler.getTargets(source, sourceId.get(), notification.getTargets(), notification.getMessage());
+                    List<Notification.Target> mappedTargetsList = handler.getTargets(source, sourceId.get(),
+                            notification.getTargets(), notification.getMessage());
 
                     if (mappedTargetsList == null || mappedTargetsList.isEmpty()) {
                         throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
                     } else if (LOG.isLoggable(Level.FINER)) {
-                        LOG.finer("Notification targets mapped from: [" + (notification.getTargets() != null ? notification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "to: [" + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(",")) + "]");
+                        LOG.finer("Notification targets mapped from: ["
+                                + (notification.getTargets() != null ? notification.getTargets().stream()
+                                        .map(Object::toString).collect(Collectors.joining(",")) : "null")
+                                + "to: ["
+                                + mappedTargetsList.stream().map(Object::toString).collect(Collectors.joining(","))
+                                + "]");
                     }
 
                     // Filter targets based on repeat frequency
-                    if (!TextUtil.isNullOrEmpty(notification.getName()) && (!TextUtil.isNullOrEmpty(notification.getRepeatInterval()) || notification.getRepeatFrequency() != null)) {
+                    if (!TextUtil.isNullOrEmpty(notification.getName())
+                            && (!TextUtil.isNullOrEmpty(notification.getRepeatInterval())
+                                    || notification.getRepeatFrequency() != null)) {
                         mappedTargetsList = mappedTargetsList.stream()
-                            .filter(target -> okToSendNotification(source, sourceId.get(), target, notification))
-                            .collect(Collectors.toList());
+                                .filter(target -> okToSendNotification(source, sourceId.get(), target, notification))
+                                .collect(Collectors.toList());
                     }
 
                     // Send message to each applicable target
                     AtomicReference<Exception> error = new AtomicReference<>();
 
                     // As we can have multiple targets in a single exchange we'll track the first exception that occurs
-                    mappedTargetsList.forEach(
-                        target -> {
-                            Exception notificationError = persistenceService.doReturningTransaction(em -> {
+                    mappedTargetsList.forEach(target -> {
+                        Exception notificationError = persistenceService.doReturningTransaction(em -> {
 
-                                // commit the notification first to get the ID
-                                SentNotification sentNotification = new SentNotification()
-                                    .setName(notification.getName())
-                                    .setType(notification.getMessage().getType())
-                                    .setSource(source)
-                                    .setSourceId(sourceId.get())
-                                    .setTarget(target.getType())
-                                    .setTargetId(target.getId())
-                                    .setMessage(notification.getMessage())
-                                    .setSentOn(Date.from(timerService.getNow()));
+                            // commit the notification first to get the ID
+                            SentNotification sentNotification = new SentNotification().setName(notification.getName())
+                                    .setType(notification.getMessage().getType()).setSource(source)
+                                    .setSourceId(sourceId.get()).setTarget(target.getType()).setTargetId(target.getId())
+                                    .setMessage(notification.getMessage()).setSentOn(Date.from(timerService.getNow()));
 
-                                sentNotification = em.merge(sentNotification);
-                                long id = sentNotification.getId();
+                            sentNotification = em.merge(sentNotification);
+                            long id = sentNotification.getId();
 
-                                try {
-                                    handler.sendMessage(
-                                        id,
-                                        source,
-                                        sourceId.get(),
-                                        target,
-                                        notification.getMessage());
+                            try {
+                                handler.sendMessage(id, source, sourceId.get(), target, notification.getMessage());
 
-                                    NotificationSendResult result = NotificationSendResult.success();
-                                    LOG.fine("Notification sent '" + id + "': " + target);
+                                NotificationSendResult result = NotificationSendResult.success();
+                                LOG.fine("Notification sent '" + id + "': " + target);
 
-                                    // Merge the sent notification again with the message included just in case the handler modified the message
-                                    sentNotification.setMessage(notification.getMessage());
+                                // Merge the sent notification again with the message included just in case the handler
+                                // modified the message
+                                sentNotification.setMessage(notification.getMessage());
 
-                                } catch (Exception e) {
-                                    NotificationProcessingException notificationProcessingException;
-                                    if (e instanceof NotificationProcessingException) {
-                                        notificationProcessingException = (NotificationProcessingException) e;
-                                    } else {
-                                        notificationProcessingException = new NotificationProcessingException(SEND_FAILURE, e.getMessage());
-                                    }
-                                    LOG.warning("Notification failed '" + id + "': " + target + ", reason=" + notificationProcessingException);
-                                    sentNotification.setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage()) ? "Unknown error" : notificationProcessingException.getMessage());
-                                    return notificationProcessingException;
-                                } finally {
-                                    em.merge(sentNotification);
+                            } catch (Exception e) {
+                                NotificationProcessingException notificationProcessingException;
+                                if (e instanceof NotificationProcessingException) {
+                                    notificationProcessingException = (NotificationProcessingException) e;
+                                } else {
+                                    notificationProcessingException = new NotificationProcessingException(SEND_FAILURE,
+                                            e.getMessage());
                                 }
-                                return null;
-                            });
-
-                            if (notificationError != null && error.get() == null) {
-                                error.set(notificationError);
+                                LOG.warning("Notification failed '" + id + "': " + target + ", reason="
+                                        + notificationProcessingException);
+                                sentNotification
+                                        .setError(TextUtil.isNullOrEmpty(notificationProcessingException.getMessage())
+                                                ? "Unknown error"
+                                                : notificationProcessingException.getMessage());
+                                return notificationProcessingException;
+                            } finally {
+                                em.merge(sentNotification);
                             }
+                            return null;
+                        });
+
+                        if (notificationError != null && error.get() == null) {
+                            error.set(notificationError);
                         }
-                    );
+                    });
 
                     exchange.getMessage().setBody(error.get() == null);
                     if (error.get() != null) {
                         throw error.get();
                     }
-                })
-            .onException(Exception.class)
-            .logStackTrace(false)
-            .handled(true)
-            .process(exchange -> {
-                // Just notify sender in case of RequestReply
-                exchange.getMessage().setBody(false);
-            });
+                }).onException(Exception.class).logStackTrace(false).handled(true).process(exchange -> {
+                    // Just notify sender in case of RequestReply
+                    exchange.getMessage().setBody(false);
+                });
     }
 
     public boolean sendNotification(Notification notification) {
@@ -277,17 +276,17 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     public void sendNotificationAsync(Notification notification, Notification.Source source, String sourceId) {
-        Map<String, Object> headers = Map.ofEntries(
-            entry(Notification.HEADER_SOURCE, source),
-            entry(Notification.HEADER_SOURCE_ID, sourceId));
-        messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).send();
+        Map<String, Object> headers = Map.ofEntries(entry(Notification.HEADER_SOURCE, source),
+                entry(Notification.HEADER_SOURCE_ID, sourceId));
+        messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers)
+                .to(NotificationService.NOTIFICATION_QUEUE).send();
     }
 
     public boolean sendNotification(Notification notification, Notification.Source source, String sourceId) {
-        Map<String, Object> headers = Map.ofEntries(
-            entry(Notification.HEADER_SOURCE, source),
-            entry(Notification.HEADER_SOURCE_ID, sourceId));
-        return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers).to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
+        Map<String, Object> headers = Map.ofEntries(entry(Notification.HEADER_SOURCE, source),
+                entry(Notification.HEADER_SOURCE_ID, sourceId));
+        return messageBrokerService.getFluentProducerTemplate().withBody(notification).withHeaders(headers)
+                .to(NotificationService.NOTIFICATION_QUEUE).request(Boolean.class);
     }
 
     public void setNotificationDelivered(long id) {
@@ -309,7 +308,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void setNotificationAcknowledged(long id, String acknowledgement, long timestamp) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE SentNotification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
+            Query query = entityManager.createQuery(
+                    "UPDATE SentNotification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
             query.setParameter("id", id);
             query.setParameter("timestamp", new Date(timestamp));
             query.setParameter("acknowledgement", acknowledgement);
@@ -321,16 +321,18 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp,
+            Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds)
+            throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds, false);
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, realmIds, userIds, assetIds,
+                false);
         builder.append(" order by n.sentOn asc");
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-            IntStream.rangeClosed(1, parameters.size())
-                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
+            IntStream.rangeClosed(1, parameters.size()).forEach(i -> query.setParameter(i, parameters.get(i - 1)));
             return query.getResultList();
 
         });
@@ -338,13 +340,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void removeNotification(Long id) {
         persistenceService.doTransaction(entityManager -> entityManager
-                .createQuery("delete SentNotification where id = :id")
-                .setParameter("id", id)
-                .executeUpdate()
-        );
+                .createQuery("delete SentNotification where id = :id").setParameter("id", id).executeUpdate());
     }
 
-    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp,
+            List<String> realmIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
@@ -353,13 +353,14 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            IntStream.rangeClosed(1, parameters.size())
-                    .forEach(i -> query.setParameter(i, parameters.get(i-1)));
+            IntStream.rangeClosed(1, parameters.size()).forEach(i -> query.setParameter(i, parameters.get(i - 1)));
             query.executeUpdate();
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds, boolean isRemove) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types,
+            Long fromTimestamp, Long toTimestamp, List<String> realmIds, List<String> userIds, List<String> assetIds,
+            boolean isRemove) {
         boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
         boolean hasRealms = realmIds != null && !realmIds.isEmpty();
@@ -389,54 +390,44 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         if (hasIds) {
-            builder.append(" AND n.id IN ?")
-                    .append(parameters.size() + 1);
+            builder.append(" AND n.id IN ?").append(parameters.size() + 1);
             parameters.add(ids);
             return;
         }
 
         if (hasTypes) {
-            builder.append(" AND n.type IN ?")
-                    .append(parameters.size() + 1);
+            builder.append(" AND n.type IN ?").append(parameters.size() + 1);
             parameters.add(types);
         }
 
         if (fromTimestamp != null) {
-            builder.append(" AND n.sentOn >= ?")
-                    .append(parameters.size() + 1);
+            builder.append(" AND n.sentOn >= ?").append(parameters.size() + 1);
 
             parameters.add(new Date(fromTimestamp));
         }
 
         if (toTimestamp != null) {
-            builder.append(" AND n.sentOn <= ?")
-                    .append(parameters.size() + 1);
+            builder.append(" AND n.sentOn <= ?").append(parameters.size() + 1);
 
             parameters.add(new Date(toTimestamp));
         }
 
         if (hasAssets) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
+            builder.append(" AND n.target = ?").append(parameters.size() + 1).append(" AND n.targetId IN ?")
                     .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.ASSET);
             parameters.add(assetIds);
 
         } else if (hasUsers) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
+            builder.append(" AND n.target = ?").append(parameters.size() + 1).append(" AND n.targetId IN ?")
                     .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.USER);
             parameters.add(userIds);
 
         } else if (hasRealms) {
-            builder.append(" AND n.target = ?")
-                    .append(parameters.size() + 1)
-                    .append(" AND n.targetId IN ?")
+            builder.append(" AND n.target = ?").append(parameters.size() + 1).append(" AND n.targetId IN ?")
                     .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.REALM);
@@ -467,7 +458,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return timestamp;
     }
 
-    protected void checkAccess(Notification.Source source, String sourceId, List<Notification.Target> targets, String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
+    protected void checkAccess(Notification.Source source, String sourceId, List<Notification.Target> targets,
+            String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId)
+            throws NotificationProcessingException {
 
         if (isSuperUser) {
             return;
@@ -495,16 +488,19 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                     if (target.getType() == Notification.TargetType.USER) {
                         realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(
-                            // Exclude service accounts and system accounts
-                            new UserQuery().ids(target.getId()).serviceUsers(false).attributes(new UserQuery.AttributeValuePredicate(true, new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))
-                            )).allMatch(user -> realm.equals(user.getRealm()));
+                                // Exclude service accounts and system accounts
+                                new UserQuery().ids(target.getId()).serviceUsers(false)
+                                        .attributes(new UserQuery.AttributeValuePredicate(true,
+                                                new StringPredicate(User.SYSTEM_ACCOUNT_ATTRIBUTE)))))
+                                .allMatch(user -> realm.equals(user.getRealm()));
                     } else {
                         // Can only send to the same realm as the requester realm
                         realmMatch = realm.equals(target.getId());
                     }
 
                     if (!realmMatch) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requester");
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS,
+                                "Targets must all be in the same realm as the requester");
                     }
                     break;
 
@@ -514,19 +510,24 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // If requestor is restricted user check all target assets are linked to that user
-                    if (isRestrictedUser && !assetStorageService.isUserAssets(userId, Collections.singletonList(target.getId()))) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be linked to the requesting restricted user");
+                    if (isRestrictedUser
+                            && !assetStorageService.isUserAssets(userId, Collections.singletonList(target.getId()))) {
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS,
+                                "Targets must all be linked to the requesting restricted user");
                     }
 
                     // Target assets must be in the same realm as requester
                     if (!assetStorageService.isRealmAssets(realm, Collections.singletonList(target.getId()))) {
-                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
+                        throw new NotificationProcessingException(INSUFFICIENT_ACCESS,
+                                "Targets must all be in the same realm as the requestor");
                     }
 
                     // Target assets must be descendants of the requesting asset
                     if (!TextUtil.isNullOrEmpty(assetId)) {
-                        if (!assetStorageService.isDescendantAssets(assetId, Collections.singletonList(target.getId()))) {
-                            throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be descendants of the requesting asset");
+                        if (!assetStorageService.isDescendantAssets(assetId,
+                                Collections.singletonList(target.getId()))) {
+                            throw new NotificationProcessingException(INSUFFICIENT_ACCESS,
+                                    "Targets must all be descendants of the requesting asset");
                         }
                     }
                     break;
@@ -534,24 +535,21 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.Target target, Notification notification) {
+    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.Target target,
+            Notification notification) {
 
         if (notification.getRepeatFrequency() == RepeatFrequency.ALWAYS) {
             return true;
         }
 
         Date lastSend = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-                "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
-                .setParameter("source", source)
-                .setParameter("sourceId", sourceId)
-                .setParameter("target", target.getType())
-                .setParameter("targetId", target.getId())
-                .setParameter("name", notification.getName())
-                .setMaxResults(1)
-                .getResultList()).stream().findFirst().orElse(null);
+                "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC",
+                Date.class).setParameter("source", source).setParameter("sourceId", sourceId)
+                .setParameter("target", target.getType()).setParameter("targetId", target.getId())
+                .setParameter("name", notification.getName()).setMaxResults(1).getResultList()).stream().findFirst()
+                .orElse(null);
 
-        return lastSend == null ||
-                (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
-                        timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
+        return lastSend == null || (notification.getRepeatFrequency() != RepeatFrequency.ONCE && timerService.getNow()
+                .plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
     }
 }

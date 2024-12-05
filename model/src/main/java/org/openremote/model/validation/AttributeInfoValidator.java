@@ -1,8 +1,23 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.validation;
 
-import jakarta.validation.ClockProvider;
-import jakarta.validation.ConstraintValidatorContext;
-import jakarta.validation.metadata.ConstraintDescriptor;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidator;
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorInitializationContext;
 import org.openremote.model.asset.Asset;
@@ -12,6 +27,10 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
+
+import jakarta.validation.ClockProvider;
+import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.metadata.ConstraintDescriptor;
 
 /**
  * A JSR-380 validator that uses {@link ValueUtil} to ensure that the
@@ -26,10 +45,13 @@ import org.openremote.model.value.AttributeDescriptor;
 @TsIgnore
 public class AttributeInfoValidator implements HibernateConstraintValidator<AttributeInfoValid, AttributeInfo> {
 
-    public static final System.Logger LOG = System.getLogger(AttributeInfoValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
+    public static final System.Logger LOG = System
+            .getLogger(AttributeInfoValidator.class.getName() + "." + SyslogCategory.MODEL_AND_VALUES.name());
     protected ClockProvider clockProvider;
+
     @Override
-    public void initialize(ConstraintDescriptor<AttributeInfoValid> constraintDescriptor, HibernateConstraintValidatorInitializationContext initializationContext) {
+    public void initialize(ConstraintDescriptor<AttributeInfoValid> constraintDescriptor,
+            HibernateConstraintValidatorInitializationContext initializationContext) {
         clockProvider = initializationContext.getClockProvider();
         HibernateConstraintValidator.super.initialize(constraintDescriptor, initializationContext);
     }
@@ -40,6 +62,7 @@ public class AttributeInfoValidator implements HibernateConstraintValidator<Attr
         String type = attributeInfo.getAssetType();
         AssetTypeInfo assetModelInfo = ValueUtil.getAssetInfo(type).orElse(null);
 
-        return AssetValidator.validateNameValueMetaHolder(assetModelInfo, attributeInfo, context, clockProvider.getClock().instant());
+        return AssetValidator.validateNameValueMetaHolder(assetModelInfo, attributeInfo, context,
+                clockProvider.getClock().instant());
     }
 }

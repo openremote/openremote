@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.simulator.storage;
 
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.impl.ElectricityStorageAsset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.asset.impl.ElectricityStorageAsset.*;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -40,8 +32,15 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.impl.ElectricityStorageAsset.*;
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.Container;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.ElectricityStorageAsset;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorAgent, StorageSimulatorAgentLink> {
 
@@ -63,7 +62,6 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     @Override
     public String getProtocolInstanceUri() {
         return "storagesimulator://" + agent.getId();
-
     }
 
     @Override
@@ -82,7 +80,8 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, StorageSimulatorAgentLink agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, StorageSimulatorAgentLink agentLink)
+            throws RuntimeException {
         lock.lock();
         try {
             if (checkLinkedAttributes(assetId) && !isSimulationStarted(assetId)) {
@@ -107,7 +106,8 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     }
 
     @Override
-    protected void doLinkedAttributeWrite(StorageSimulatorAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(StorageSimulatorAgentLink agentLink, AttributeEvent event,
+            Object processedValue) {
 
         // Power attribute is updated only by this protocol not by clients
         if (event.getName().equals(POWER.getName())) {
@@ -120,7 +120,9 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     protected void updateStorageAsset(String assetId) {
 
         Asset asset = assetService.findAsset(assetId);
-        ElectricityStorageAsset storageAsset = asset instanceof ElectricityStorageAsset ? (ElectricityStorageAsset)asset : null;
+        ElectricityStorageAsset storageAsset = asset instanceof ElectricityStorageAsset
+                ? (ElectricityStorageAsset) asset
+                : null;
         if (storageAsset == null) {
             LOG.finest("Storage asset not set so skipping update");
             return;
@@ -166,16 +168,29 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
             if (seconds > 0) {
 
                 double deltaHours = seconds / 3600d;
-                double efficiency = power > 0 ? ((double) storageAsset.getEfficiencyImport().orElse(100)) / 100d : (1d / (((double) storageAsset.getEfficiencyExport().orElse(100)) / 100d)); // Export efficiency < 1 means more energy is consumed to produce requested power
+                double efficiency = power > 0 ? ((double) storageAsset.getEfficiencyImport().orElse(100)) / 100d
+                        : (1d / (((double) storageAsset.getEfficiencyExport().orElse(100)) / 100d)); // Export
+                                                                                                     // efficiency < 1
+                                                                                                     // means more
+                                                                                                     // energy is
+                                                                                                     // consumed to
+                                                                                                     // produce
+                                                                                                     // requested power
                 double energyDelta = power * deltaHours * efficiency;
                 double newLevel = Math.max(0d, Math.min(capacity, level + energyDelta));
                 energyDelta = newLevel - level;
                 level = newLevel;
 
                 if (energyDelta > 0) {
-                    updateLinkedAttribute(new AttributeRef(storageAsset.getId(), ElectricityStorageAsset.ENERGY_IMPORT_TOTAL.getName()), storageAsset.getEnergyImportTotal().orElse(0d) + energyDelta);
+                    updateLinkedAttribute(
+                            new AttributeRef(storageAsset.getId(),
+                                    ElectricityStorageAsset.ENERGY_IMPORT_TOTAL.getName()),
+                            storageAsset.getEnergyImportTotal().orElse(0d) + energyDelta);
                 } else {
-                    updateLinkedAttribute(new AttributeRef(storageAsset.getId(), ElectricityStorageAsset.ENERGY_EXPORT_TOTAL.getName()), storageAsset.getEnergyExportTotal().orElse(0d) - energyDelta);
+                    updateLinkedAttribute(
+                            new AttributeRef(storageAsset.getId(),
+                                    ElectricityStorageAsset.ENERGY_EXPORT_TOTAL.getName()),
+                            storageAsset.getEnergyExportTotal().orElse(0d) - energyDelta);
                 }
             }
         }
@@ -192,7 +207,8 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
 
         updateLinkedAttribute(new AttributeRef(assetId, POWER.getName()), power);
         updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL.getName()), level);
-        updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()), capacity <= 0d ? 0 : (int) ((level / capacity) * 100));
+        updateLinkedAttribute(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()),
+                capacity <= 0d ? 0 : (int) ((level / capacity) * 100));
     }
 
     protected ScheduledFuture<?> scheduleUpdate(String assetId) {
@@ -208,10 +224,10 @@ public class StorageSimulatorProtocol extends AbstractProtocol<StorageSimulatorA
     }
 
     protected boolean checkLinkedAttributes(String assetId) {
-        return getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER_SETPOINT.getName())) &&
-               getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER.getName())) &&
-               getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL.getName()))&&
-               getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()));
+        return getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER_SETPOINT.getName()))
+                && getLinkedAttributes().containsKey(new AttributeRef(assetId, POWER.getName()))
+                && getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL.getName()))
+                && getLinkedAttributes().containsKey(new AttributeRef(assetId, ENERGY_LEVEL_PERCENTAGE.getName()));
     }
 
     protected boolean isSimulationStarted(String assetId) {

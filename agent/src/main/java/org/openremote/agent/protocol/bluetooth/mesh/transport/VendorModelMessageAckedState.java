@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
-import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
-
 import java.util.UUID;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 
 /**
  * State class for handling VendorModelMessageAckedState messages.
@@ -34,38 +33,33 @@ class VendorModelMessageAckedState extends GenericMessageState {
     /**
      * Constructs {@link VendorModelMessageAckedState}
      *
-     * @param src                     Source address
-     * @param dst                     Destination address to which the message must be sent to
+     * @param src Source address
+     * @param dst Destination address to which the message must be sent to
      * @param vendorModelMessageAcked Wrapper class {@link VendorModelMessageStatus} containing the
-     *                                opcode and parameters for {@link VendorModelMessageStatus} message
-     * @param callbacks               {@link InternalMeshMsgHandlerCallbacks} for internal callbacks
+     *            opcode and parameters for {@link VendorModelMessageStatus} message
+     * @param callbacks {@link InternalMeshMsgHandlerCallbacks} for internal callbacks
      * @throws IllegalArgumentException exception for invalid arguments
      */
-    VendorModelMessageAckedState(final int src,
-                                 final int dst,
-                                 final VendorModelMessageAcked vendorModelMessageAcked,
-                                 final MeshTransport meshTransport,
-                                 final InternalMeshMsgHandlerCallbacks callbacks) throws IllegalArgumentException {
+    VendorModelMessageAckedState(final int src, final int dst, final VendorModelMessageAcked vendorModelMessageAcked,
+            final MeshTransport meshTransport, final InternalMeshMsgHandlerCallbacks callbacks)
+            throws IllegalArgumentException {
         this(src, dst, null, vendorModelMessageAcked, meshTransport, callbacks);
     }
 
     /**
      * Constructs {@link VendorModelMessageAckedState}
      *
-     * @param src                     Source address
-     * @param dst                     Destination address to which the message must be sent to
-     * @param label                   Label UUID of destination address
+     * @param src Source address
+     * @param dst Destination address to which the message must be sent to
+     * @param label Label UUID of destination address
      * @param vendorModelMessageAcked Wrapper class {@link VendorModelMessageStatus} containing the
-     *                                opcode and parameters for {@link VendorModelMessageStatus} message
-     * @param callbacks               {@link InternalMeshMsgHandlerCallbacks} for internal callbacks
+     *            opcode and parameters for {@link VendorModelMessageStatus} message
+     * @param callbacks {@link InternalMeshMsgHandlerCallbacks} for internal callbacks
      * @throws IllegalArgumentException exception for invalid arguments
      */
-    VendorModelMessageAckedState(final int src,
-                                 final int dst,
-                                 /* @Nullable */ UUID label,
-                                 final VendorModelMessageAcked vendorModelMessageAcked,
-                                 final MeshTransport meshTransport,
-                                 final InternalMeshMsgHandlerCallbacks callbacks) throws IllegalArgumentException {
+    VendorModelMessageAckedState(final int src, final int dst, /* @Nullable */ UUID label,
+            final VendorModelMessageAcked vendorModelMessageAcked, final MeshTransport meshTransport,
+            final InternalMeshMsgHandlerCallbacks callbacks) throws IllegalArgumentException {
         super(src, dst, label, vendorModelMessageAcked, meshTransport, callbacks);
     }
 
@@ -84,8 +78,8 @@ class VendorModelMessageAckedState extends GenericMessageState {
         final int opCode = message.getOpCode();
         final byte[] parameters = message.getParameters();
         final int companyIdentifier = message.getCompanyIdentifier();
-        this.message = mMeshTransport.createVendorMeshMessage(companyIdentifier, mSrc, mDst, mLabel,
-            message.messageTtl, key, akf, aid, aszmic, opCode, parameters);
+        this.message = mMeshTransport.createVendorMeshMessage(companyIdentifier, mSrc, mDst, mLabel, message.messageTtl,
+                key, akf, aid, aszmic, opCode, parameters);
         message.setMessage(this.message);
     }
 

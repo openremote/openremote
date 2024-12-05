@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,20 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import com.welie.blessed.*;
-import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.Container;
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.syslog.SyslogCategory;
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -42,7 +31,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
+import com.welie.blessed.*;
+
+import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.syslog.SyslogCategory;
 
 public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 
@@ -56,17 +56,18 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     public static final String REGEXP_INDEX_AND_KEY = "^(\\s*(0|([1-9]+[0-9]*))\\s*:)?(\\s*[0-9A-Fa-f]{32}\\s*)";
     public static final String REGEXP_PROXY_ADDRESS = "^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$";
 
-
     // Class Members --------------------------------------------------------------------------------
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProtocol.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL,
+            BluetoothMeshProtocol.class.getName());
 
     private static final MainThreadManager mainThread = new MainThreadManager();
     private static ScheduledFuture<?> mainThreadFuture = null;
     private static final BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-            LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
+            LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address="
+                    + peripheral.getAddress() + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -77,7 +78,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.info("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            LOG.info("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address="
+                    + peripheral.getAddress() + ", Status=" + status + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -88,7 +90,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.info("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            LOG.info("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address="
+                    + peripheral.getAddress() + ", Status=" + status + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -99,7 +102,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-            LOG.info("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", ScanResult=" + scanResult +"]");
+            LOG.info("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address="
+                    + peripheral.getAddress() + ", ScanResult=" + scanResult + "]");
 
             synchronized (BluetoothMeshProtocol.class) {
                 for (BluetoothMeshNetwork network : networkList) {
@@ -119,7 +123,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             }
         }
     };
-    private static final BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
+    private static final BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(
+            bluetoothManagerCallback);
     private static final List<BluetoothMeshNetwork> networkList = new LinkedList<>();
     // Not ideal this but will do for now
     private static SequenceNumberPersistencyManager sequenceNumberManager;
@@ -134,19 +139,16 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         networkList.add(network);
     }
 
-
     // Private Instance Fields --------------------------------------------------------------------
 
     private volatile BluetoothMeshNetwork meshNetwork;
     private final Map<AttributeRef, Consumer<Object>> sensorValueConsumerMap = new HashMap<>();
-
 
     // Constructors -------------------------------------------------------------------------------
 
     public BluetoothMeshProtocol(BluetoothMeshAgent agent) {
         super(agent);
     }
-
 
     // Implements Protocol --------------------------------------------------------------------------
 
@@ -157,11 +159,10 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
     @Override
     public String getProtocolInstanceUri() {
-        return "bluetoothmesh://" + ((meshNetwork != null && meshNetwork.getNetworkKey() != null) ?
-            MeshParserUtils.bytesToHex(meshNetwork.getNetworkKey().getKey(), false) : "");
-
+        return "bluetoothmesh://" + ((meshNetwork != null && meshNetwork.getNetworkKey() != null)
+                ? MeshParserUtils.bytesToHex(meshNetwork.getNetworkKey().getKey(), false)
+                : "");
     }
-
 
     // Implements AbstractProtocol ------------------------------------------------------------------
 
@@ -171,7 +172,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         synchronized (BluetoothMeshProtocol.mainThread) {
             if (BluetoothMeshProtocol.sequenceNumberManager == null) {
                 Path storagePath = container.getService(PersistenceService.class).getStorageDir();
-                BluetoothMeshProtocol.sequenceNumberManager = new SequenceNumberPersistencyManager(storagePath.resolve("bluetoothmesh"));
+                BluetoothMeshProtocol.sequenceNumberManager = new SequenceNumberPersistencyManager(
+                        storagePath.resolve("bluetoothmesh"));
                 BluetoothMeshProtocol.sequenceNumberManager.load();
             }
         }
@@ -220,7 +222,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         });
         final Integer sourceAddress = toIntegerAddress(sourceAddressParam, null);
         if (sourceAddress == null) {
-            String msg = "Format of Bluetooth Mesh unicast source address '" + sourceAddressParam + "' is invalid for protocol: " + this;
+            String msg = "Format of Bluetooth Mesh unicast source address '" + sourceAddressParam
+                    + "' is invalid for protocol: " + this;
             throw new IllegalArgumentException(msg);
         }
 
@@ -236,16 +239,17 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             }
         };
 
-        Integer oldSequenceNumber = BluetoothMeshProtocol.sequenceNumberManager.getSequenceNumber(networkKey, sourceAddress);
+        Integer oldSequenceNumber = BluetoothMeshProtocol.sequenceNumberManager.getSequenceNumber(networkKey,
+                sourceAddress);
         if (oldSequenceNumber == null) {
             oldSequenceNumber = sequenceNumberParam;
             BluetoothMeshProtocol.sequenceNumberManager.save(networkKey, sourceAddress, oldSequenceNumber);
         }
         BluetoothMeshProtocol.initMainThread(scheduledExecutorService);
-        meshNetwork = new BluetoothMeshNetwork(
-            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
-            proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, scheduledExecutorService, statusConsumer
-        );
+        meshNetwork = new BluetoothMeshNetwork(BluetoothMeshProtocol.bluetoothCentral,
+                BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread, proxyAddress,
+                sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService,
+                scheduledExecutorService, statusConsumer);
         BluetoothMeshProtocol.addNetwork(meshNetwork);
         BluetoothMeshProtocol.mainThread.enqueue(() -> meshNetwork.start());
     }
@@ -260,12 +264,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     }
 
     @Override
-    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, BluetoothMeshAgentLink agentLink) throws RuntimeException {
+    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute,
+            BluetoothMeshAgentLink agentLink) throws RuntimeException {
         if (meshNetwork == null) {
             return;
         }
         final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(), "Bluetooth Mesh Application Key Index");
+        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(),
+                "Bluetooth Mesh Application Key Index");
         String modelName = getOrThrowAgentLinkProperty(agentLink.getModelName(), "Bluetooth Mesh Model Name");
         Integer modelId = toModelId(modelName, attributeRef);
         if (modelId == null) {
@@ -276,12 +282,11 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         if (address == null) {
             return;
         }
-        LOG.info(
-            "Linking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '" +
-                 modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef
-        );
+        LOG.info("Linking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '"
+                + modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef);
         Class<?> clazz = attribute.getTypeClass();
-        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(attributeRef, toAttributeValue(value, clazz));
+        Consumer<Object> sensorValueConsumer = value -> updateLinkedAttribute(attributeRef,
+                toAttributeValue(value, clazz));
         sensorValueConsumerMap.put(attributeRef, sensorValueConsumer);
 
         meshNetwork.addMeshModel(address, modelId, appKeyIndex);
@@ -293,12 +298,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     }
 
     @Override
-    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, BluetoothMeshAgentLink agentLink) {
+    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute,
+            BluetoothMeshAgentLink agentLink) {
         if (meshNetwork == null) {
             return;
         }
         final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
-        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(), "Bluetooth Mesh Application Key Index");
+        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(),
+                "Bluetooth Mesh Application Key Index");
         String modelName = getOrThrowAgentLinkProperty(agentLink.getModelName(), "Bluetooth Mesh Model Name");
         Integer modelId = toModelId(modelName, attributeRef);
         if (modelId == null) {
@@ -309,20 +316,20 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         if (address == null) {
             return;
         }
-        LOG.info(
-            "Unlinking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '" +
-                 modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef
-        );
+        LOG.info("Unlinking Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '"
+                + modelName + "', appKeyIndex: '" + appKeyIndex + "'] - " + attributeRef);
         Consumer<Object> sensorValueConsumer = sensorValueConsumerMap.remove(attributeRef);
         meshNetwork.removeSensorValueConsumer(address, modelId, sensorValueConsumer);
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(BluetoothMeshAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(BluetoothMeshAgentLink agentLink, AttributeEvent event,
+            Object processedValue) {
         if (meshNetwork == null) {
             return;
         }
-        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(), "Bluetooth Mesh Application Key Index");
+        Integer appKeyIndex = getOrThrowAgentLinkProperty(agentLink.getAppKeyIndex(),
+                "Bluetooth Mesh Application Key Index");
         String modelName = getOrThrowAgentLinkProperty(agentLink.getModelName(), "Bluetooth Mesh Model Name");
         Integer modelId = toModelId(modelName, null);
         if (modelId == null) {
@@ -333,15 +340,12 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         if (address == null) {
             return;
         }
-        LOG.info(
-            "Writing Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '" +
-                modelName + "', appKeyIndex: '" + appKeyIndex + "', value: '" + processedValue + "']"
-        );
+        LOG.info("Writing Bluetooth Mesh attribute: [address: '" + String.format("0x%04X", address) + "', model: '"
+                + modelName + "', appKeyIndex: '" + appKeyIndex + "', value: '" + processedValue + "']");
 
         meshNetwork.sendMeshSetCommand(address, modelId, processedValue);
         meshNetwork.sendMeshGetCommand(address, modelId);
     }
-
 
     // Private Instance Methods -------------------------------------------------------------------
 
@@ -358,7 +362,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             if (indexAndKeyArr.length == 2) {
                 try {
                     index = Integer.decode(indexAndKeyArr[0].trim());
-                } catch (NumberFormatException e) {}
+                } catch (NumberFormatException e) {
+                }
             } else {
                 index = defaultIndex;
             }
@@ -382,10 +387,12 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         Integer address = null;
         try {
             address = Integer.decode("0x" + addressAsString);
-        } catch (NumberFormatException e) {}
+        } catch (NumberFormatException e) {
+        }
         if (address == null) {
             if (attributeRef != null) {
-                LOG.warning("Format of Bluetooth Mesh unicast address value '" + addressAsString + "' is invalid for protocol attribute: " + attributeRef);
+                LOG.warning("Format of Bluetooth Mesh unicast address value '" + addressAsString
+                        + "' is invalid for protocol attribute: " + attributeRef);
             } else {
                 LOG.warning("Format of Bluetooth Mesh unicast address value '" + addressAsString + "' is invalid.");
             }
@@ -403,7 +410,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         if (modelId == null) {
             if (attributeRef != null) {
-                LOG.warning("Unknown or unsupported Bluetooth Mesh model name '" + modelName + "' for protocol attribute: " + attributeRef);
+                LOG.warning("Unknown or unsupported Bluetooth Mesh model name '" + modelName
+                        + "' for protocol attribute: " + attributeRef);
             } else {
                 LOG.warning("Unknown or unsupported Bluetooth Mesh model name '" + modelName);
             }
@@ -418,7 +426,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         Object retValue = null;
         if (clazz == String.class) {
             if (value instanceof Boolean) {
-                retValue = ((Boolean)value) ? "On" : "Off";
+                retValue = ((Boolean) value) ? "On" : "Off";
             } else if (value instanceof Integer || value instanceof Double || value instanceof String) {
                 retValue = value.toString();
             }
@@ -426,24 +434,25 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             if (value instanceof Boolean) {
                 retValue = value;
             } else if (value instanceof String) {
-                String strValue = ((String)value).trim().toUpperCase();
+                String strValue = ((String) value).trim().toUpperCase();
                 if (strValue.equals("ON") || strValue.equals("TRUE") || strValue.equals("1")) {
                     retValue = Boolean.valueOf(true);
                 } else if (strValue.equals("OFF") || strValue.equals("FALSE") || strValue.equals("0")) {
                     retValue = Boolean.valueOf(false);
                 }
             } else if (value instanceof Integer) {
-                retValue = ((Integer)value) == 0 ? Boolean.valueOf(false) : Boolean.valueOf(true);
+                retValue = ((Integer) value) == 0 ? Boolean.valueOf(false) : Boolean.valueOf(true);
             } else if (value instanceof Double) {
-                retValue = ((Double)value) == 0 ? Boolean.valueOf(false) : Boolean.valueOf(true);
+                retValue = ((Double) value) == 0 ? Boolean.valueOf(false) : Boolean.valueOf(true);
             }
         } else if (clazz == Integer.class) {
             if (value instanceof Boolean) {
                 retValue = ((Boolean) value) ? Integer.valueOf(1) : Integer.valueOf(0);
             } else if (value instanceof String) {
                 try {
-                    retValue = Double.valueOf((String)value).intValue();
-                } catch (NumberFormatException exception) {}
+                    retValue = Double.valueOf((String) value).intValue();
+                } catch (NumberFormatException exception) {
+                }
             } else if (value instanceof Integer) {
                 retValue = value;
             } else if (value instanceof Double) {

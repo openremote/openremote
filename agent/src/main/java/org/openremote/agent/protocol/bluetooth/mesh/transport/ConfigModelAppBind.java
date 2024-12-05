@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * To be used as a wrapper class to create ConfigModelAppBind message.
@@ -45,16 +44,16 @@ public final class ConfigModelAppBind extends ConfigMessage {
     /**
      * Constructs ConfigModelAppBind message.
      *
-     * @param elementAddress  Element address
+     * @param elementAddress Element address
      * @param modelIdentifier Model id
-     * @param appKeyIndex     Application key index of this message
+     * @param appKeyIndex Application key index of this message
      * @throws IllegalArgumentException if any illegal arguments are passed
      */
-    public ConfigModelAppBind(final int elementAddress,
-                              final int modelIdentifier,
-                              final int appKeyIndex) throws IllegalArgumentException {
+    public ConfigModelAppBind(final int elementAddress, final int modelIdentifier, final int appKeyIndex)
+            throws IllegalArgumentException {
         if (!MeshAddress.isValidUnicastAddress(elementAddress))
-            throw new IllegalArgumentException("Invalid unicast address, unicast address must be a 16-bit value, and must range from 0x0001 to 0x7FFF");
+            throw new IllegalArgumentException(
+                    "Invalid unicast address, unicast address must be a 16-bit value, and must range from 0x0001 to 0x7FFF");
         this.mElementAddress = elementAddress;
         this.mModelIdentifier = modelIdentifier;
         this.mAppKeyIndex = appKeyIndex;
@@ -69,7 +68,8 @@ public final class ConfigModelAppBind extends ConfigMessage {
     void assembleMessageParameters() {
         final ByteBuffer paramsBuffer;
         final byte[] applicationKeyIndex = MeshParserUtils.addKeyIndexPadding(mAppKeyIndex);
-        //We check if the model identifier value is within the range of a 16-bit value here. If it is then it is a sigmodel
+        // We check if the model identifier value is within the range of a 16-bit value here. If it is then it is a
+        // sigmodel
         if (mModelIdentifier >= Short.MIN_VALUE && mModelIdentifier <= Short.MAX_VALUE) {
             paramsBuffer = ByteBuffer.allocate(SIG_MODEL_APP_KEY_BIND_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.putShort((short) mElementAddress);
@@ -82,8 +82,9 @@ public final class ConfigModelAppBind extends ConfigMessage {
             paramsBuffer.putShort((short) mElementAddress);
             paramsBuffer.put(applicationKeyIndex[1]);
             paramsBuffer.put(applicationKeyIndex[0]);
-            final byte[] modelIdentifier = new byte[]{(byte) ((mModelIdentifier >> 24) & 0xFF),
-                (byte) ((mModelIdentifier >> 16) & 0xFF), (byte) ((mModelIdentifier >> 8) & 0xFF), (byte) (mModelIdentifier & 0xFF)};
+            final byte[] modelIdentifier = new byte[] { (byte) ((mModelIdentifier >> 24) & 0xFF),
+                    (byte) ((mModelIdentifier >> 16) & 0xFF), (byte) ((mModelIdentifier >> 8) & 0xFF),
+                    (byte) (mModelIdentifier & 0xFF) };
             paramsBuffer.put(modelIdentifier[1]);
             paramsBuffer.put(modelIdentifier[0]);
             paramsBuffer.put(modelIdentifier[3]);
@@ -119,4 +120,3 @@ public final class ConfigModelAppBind extends ConfigMessage {
         return mAppKeyIndex;
     }
 }
-

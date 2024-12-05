@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,16 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.UNITS_DEGREE;
+import static org.openremote.model.value.ValueType.BOOLEAN;
+
+import java.util.Collection;
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -27,11 +32,6 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
-import java.util.Collection;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.UNITS_DEGREE;
-import static org.openremote.model.value.ValueType.BOOLEAN;
 
 @Entity
 public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
@@ -41,19 +41,24 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         EAST_WEST
     }
 
-    public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("panelOrientation", PanelOrientation.class);
+    public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>(
+            "panelOrientation", PanelOrientation.class);
 
-    public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>("panelOrientation", PANEL_ORIENTATION_VALUE);
-    public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.INTEGER
-    ).withUnits(UNITS_DEGREE);
-    public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
-    ).withUnits(UNITS_DEGREE);
+    public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>(
+            "panelOrientation", PANEL_ORIENTATION_VALUE);
+    public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth",
+            ValueType.INTEGER).withUnits(UNITS_DEGREE);
+    public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch",
+            ValueType.POSITIVE_INTEGER).withUnits(UNITS_DEGREE);
 
-    public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_SOLAR_SERVICE = new AttributeDescriptor<>("includeForecastSolarService", BOOLEAN);
+    public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_SOLAR_SERVICE = new AttributeDescriptor<>(
+            "includeForecastSolarService", BOOLEAN);
 
-    public static final AttributeDescriptor<Boolean> SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualSolarValueWithForecast", BOOLEAN);
+    public static final AttributeDescriptor<Boolean> SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST = new AttributeDescriptor<>(
+            "setActualSolarValueWithForecast", BOOLEAN);
 
-    public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
+    public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>(
+            "white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

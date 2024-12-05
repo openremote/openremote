@@ -1,12 +1,30 @@
-import {Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset} from "@openremote/model";
-import {css, html, LitElement} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {style} from './style';
-import {i18next} from "@openremote/or-translate";
-import {unsafeHTML} from 'lit/directives/unsafe-html.js';
-import {when} from "lit/directives/when.js";
-import {dashboardAccessToString, scalingPresetToString, sortScreenPresets} from ".";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { Dashboard, DashboardAccess, DashboardRefreshInterval, DashboardScalingPreset, DashboardScreenPreset } from "@openremote/model";
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { style } from './style';
+import { i18next } from "@openremote/or-translate";
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { when } from "lit/directives/when.js";
+import { dashboardAccessToString, scalingPresetToString, sortScreenPresets } from ".";
 
 //language=css
 const boardSettingsStyling = css`
@@ -31,7 +49,7 @@ export class OrDashboardBoardsettings extends LitElement {
     }
 
     forceParentUpdate(force: boolean = false) {
-        this.dispatchEvent(new CustomEvent('update', {detail: {force: force}}));
+        this.dispatchEvent(new CustomEvent('update', { detail: { force: force } }));
     }
 
     /* -------------------------------- */
@@ -66,12 +84,12 @@ export class OrDashboardBoardsettings extends LitElement {
     protected render() {
         if (this.dashboard.template?.screenPresets != null) {
             const screenPresets = sortScreenPresets(this.dashboard.template.screenPresets, true);
-            const viewAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({key: access, value: dashboardAccessToString(access)}));
-            const editAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED].map((access) => ({key: access, value: dashboardAccessToString(access)}));
-            const refreshIntervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({key: interval, value: `dashboard.interval.${interval.toLowerCase()}`}))
+            const viewAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED, DashboardAccess.PUBLIC].map((access) => ({ key: access, value: dashboardAccessToString(access) }));
+            const editAccessOptions = [DashboardAccess.PRIVATE, DashboardAccess.SHARED].map((access) => ({ key: access, value: dashboardAccessToString(access) }));
+            const refreshIntervalOptions = [DashboardRefreshInterval.OFF, DashboardRefreshInterval.ONE_MIN, DashboardRefreshInterval.FIVE_MIN, DashboardRefreshInterval.QUARTER, DashboardRefreshInterval.ONE_HOUR].map(interval => ({ key: interval, value: `dashboard.interval.${interval.toLowerCase()}` }))
             const scalingPresets: { key: DashboardScalingPreset, value: string }[] = [];
             [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, /*DashboardScalingPreset.REDIRECT,*/ DashboardScalingPreset.BLOCK_DEVICE].forEach((preset: DashboardScalingPreset) => {
-                scalingPresets.push({key: preset, value: scalingPresetToString(preset)});
+                scalingPresets.push({ key: preset, value: scalingPresetToString(preset) });
             });
             return html`
 
@@ -87,8 +105,8 @@ export class OrDashboardBoardsettings extends LitElement {
                                               .options="${viewAccessOptions.map((access) => access.value)}"
                                               .value="${dashboardAccessToString(this.dashboard.viewAccess!)}"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setViewAccess(viewAccessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                              }}"
+                    this.setViewAccess(viewAccessOptions.find((access) => access.value == event.detail.value)?.key!);
+                }}"
                                 ></or-mwc-input>
                             </div>
                             <div style="margin-bottom: 24px;">
@@ -100,8 +118,8 @@ export class OrDashboardBoardsettings extends LitElement {
                                               .options="${editAccessOptions.map((access) => access.value)}"
                                               .value="${dashboardAccessToString(this.dashboard.editAccess!)}"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  this.setEditAccess(editAccessOptions.find((access) => access.value == event.detail.value)?.key!);
-                                              }}"
+                    this.setEditAccess(editAccessOptions.find((access) => access.value == event.detail.value)?.key!);
+                }}"
                                 ></or-mwc-input>
                             </div>
                         </div>
@@ -116,11 +134,11 @@ export class OrDashboardBoardsettings extends LitElement {
                         <div style="margin-bottom: 24px; display: flex; align-items: center;">
                             <span style="min-width: 180px;"><or-translate value="dashboard.numberOfColumns"></or-translate></span>
                             <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.columns}" min="1" max="24" @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                if (this.dashboard.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
-                                    this.dashboard.template.columns = event.detail.value as number;
-                                    this.forceParentUpdate(true);
-                                }
-                            }}"></or-mwc-input>
+                    if (this.dashboard.template != null && event.detail.value as number <= 24 && event.detail.value as number >= 1) {
+                        this.dashboard.template.columns = event.detail.value as number;
+                        this.forceParentUpdate(true);
+                    }
+                }}"></or-mwc-input>
                         </div>
                         
                         <!-- Scaling preset -->
@@ -139,11 +157,11 @@ export class OrDashboardBoardsettings extends LitElement {
                             <div>
                                 <or-mwc-input type="${InputType.NUMBER}" comfortable .value="${this.dashboard.template.maxScreenWidth}" style="width: 70px;"
                                               @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                                  if (this.dashboard.template != null) {
-                                                      this.dashboard.template.maxScreenWidth = event.detail.value as number;
-                                                      this.forceParentUpdate(true);
-                                                  }
-                                              }}">
+                    if (this.dashboard.template != null) {
+                        this.dashboard.template.maxScreenWidth = event.detail.value as number;
+                        this.forceParentUpdate(true);
+                    }
+                }}">
                                 </or-mwc-input>
                                 <span style="margin-left: 2px;">px</span>
                             </div>
@@ -153,8 +171,8 @@ export class OrDashboardBoardsettings extends LitElement {
                         <div>
                             <or-mwc-input type="${InputType.BUTTON}" comfortable label="dashboard.setToMobilePreset"
                                           @or-mwc-input-changed="${() => {
-                                              this.setToMobilePreset();
-                                          }}">
+                    this.setToMobilePreset();
+                }}">
                             </or-mwc-input>
                         </div>
                     </div>
@@ -169,11 +187,11 @@ export class OrDashboardBoardsettings extends LitElement {
                         <or-mwc-input type="${InputType.SELECT}" comfortable .options="${refreshIntervalOptions.map(o => o.value)}" style="width: 100%;"
                                       .value="${`dashboard.interval.${this.dashboard.template.refreshInterval?.toLowerCase() || `off`}`}"
                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                          const intervalEntry = refreshIntervalOptions.find(o => o.value === ev.detail.value);
-                                          if(intervalEntry) {
-                                              this.setRefreshInterval(intervalEntry.key)
-                                          }
-                                      }}">
+                    const intervalEntry = refreshIntervalOptions.find(o => o.value === ev.detail.value);
+                    if (intervalEntry) {
+                        this.setRefreshInterval(intervalEntry.key)
+                    }
+                }}">
                         </or-mwc-input>
                     </div>
                 </settings-panel>
@@ -205,7 +223,7 @@ export class OrDashboardBoardsettings extends LitElement {
     scalingPresetTemplate(screenPresets: DashboardScreenPreset[], scalingPresets: { key: DashboardScalingPreset, value: string }[]) {
         return html`
             ${screenPresets.map((preset) => {
-                return html`
+            return html`
                     <div style="margin-bottom: ${screenPresets.length > 1 ? '24px' : '16px'}">
                         <div class="label">
                             ${html`<span>${unsafeHTML(i18next.t("dashboard.onScreenMyBoardShould").replace("{{size}}", ("<b>" + i18next.t(preset.displayName!) + "</b>")))}</span>`}
@@ -214,21 +232,21 @@ export class OrDashboardBoardsettings extends LitElement {
                                       .options="${scalingPresets.map((x) => x.value)}"
                                       .value="${scalingPresets.find((p) => p.key == preset.scalingPreset)?.value}"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                          preset.scalingPreset = scalingPresets.find((p) => p.value == event.detail.value)?.key;
-                                          this.forceParentUpdate(true);
-                                          this.requestUpdate();
-                                      }}"
+                    preset.scalingPreset = scalingPresets.find((p) => p.value == event.detail.value)?.key;
+                    this.forceParentUpdate(true);
+                    this.requestUpdate();
+                }}"
                         ></or-mwc-input>
                     </div>
                 `
-            })}
+        })}
         `
     }
 
     screenPresetTemplate(screenPresets: DashboardScreenPreset[], customLabels?: string[]) {
         return html`
             ${screenPresets.map((preset, index) => {
-                return html`
+            return html`
                     <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                         <span style="min-width: 140px;">${customLabels ? customLabels[index] : (preset.displayName + " " + i18next.t('screen'))}</span>
                         <div>
@@ -236,14 +254,14 @@ export class OrDashboardBoardsettings extends LitElement {
                             <or-mwc-input type="${InputType.NUMBER}" comfortable .disabled="${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0)}" style="width: 70px;"
                                           .value="${(screenPresets.length > 1 && screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}"
                                           @or-mwc-input-changed="${(event: OrInputChangedEvent) => {
-                                              this.setBreakpoint(screenPresets.indexOf(preset), event.detail.value)
-                                          }}"
+                    this.setBreakpoint(screenPresets.indexOf(preset), event.detail.value)
+                }}"
                             ></or-mwc-input>
                             <span style="margin-left: 2px;">px</span>
                         </div>
                     </div>
                 `
-            })}
+        })}
         `
     }
 }

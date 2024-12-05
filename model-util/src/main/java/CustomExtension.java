@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,7 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.provisioning.X509ProvisioningConfig;
+import org.openremote.model.util.TsIgnoreTypeParams;
 
 import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.TsType;
@@ -29,20 +36,13 @@ import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
 import cz.habarta.typescript.generator.parser.BeanModel;
 import cz.habarta.typescript.generator.parser.Model;
-import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.provisioning.X509ProvisioningConfig;
-import org.openremote.model.util.TsIgnoreTypeParams;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Does some custom processing for our specific model and fixes any anomalies in the plugin itself:
  * <ul>
  * <li>Removes some or all type params from classes annotated with {@link TsIgnoreTypeParams}
- * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't support @JsonSerialize(contentConverter=...)
+ * <li>Special processing for AssetModelInfo meta item value descriptors as JsonSerialize extension doesn't
+ * support @JsonSerialize(contentConverter=...)
  * </ul>
  */
 public class CustomExtension extends Extension {
@@ -55,57 +55,67 @@ public class CustomExtension extends Extension {
     @Override
     public List<TransformerDefinition> getTransformers() {
         return Arrays.asList(
-            // This is a hack to fix breaking change with latest version of this plugin
-            new TransformerDefinition(ModelCompiler.TransformationPhase.AfterDeclarationSorting, (TsModelTransformer) (context, model) -> {
-                TsBeanModel provBean = model.getBean(X509ProvisioningConfig.class);
-                if (provBean != null) {
-                    provBean.getExtendsList().remove(0);
-                    provBean.getExtendsList().add(provBean.getParent());
-                }
-                return model;
-            }),
-            new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, (TsModelTransformer) (context, model) -> {
-
-                TsBeanModel assetTypeInfoBean = model.getBean(AssetTypeInfo.class);
-                if (assetTypeInfoBean != null) {
-                    assetTypeInfoBean.getProperties().replaceAll(p -> p.getName().equals("metaItemDescriptors") || p.getName().equals("valueDescriptors") ? new TsPropertyModel(p.getName(), new TsType.BasicArrayType(TsType.String), p.modifiers, p.ownProperty, p.comments) : p);
-                }
-
-                // Remove the type parameter - this works in conjunction with the CustomTypeProcessor which replaces
-                // field references
-                model.getBeans().replaceAll(bean -> {
-
-                    if (bean.getOrigin() != null && bean.getOrigin().getAnnotation(TsIgnoreTypeParams.class) != null) {
-                        if (bean.getTypeParameters() != null) {
-                            TsIgnoreTypeParams ignoreTypeParams = bean.getOrigin().getAnnotation(TsIgnoreTypeParams.class);
-                            if (ignoreTypeParams.paramIndexes().length == 0) {
-                                bean.getTypeParameters().clear();
-                            } else {
-                                Arrays.stream(ignoreTypeParams.paramIndexes())
-                                    .boxed()
-                                    .sorted(Collections.reverseOrder())
-                                    .forEach(index -> bean.getTypeParameters().remove(index.intValue()));
+                // This is a hack to fix breaking change with latest version of this plugin
+                new TransformerDefinition(ModelCompiler.TransformationPhase.AfterDeclarationSorting,
+                        (TsModelTransformer) (context, model) -> {
+                            TsBeanModel provBean = model.getBean(X509ProvisioningConfig.class);
+                            if (provBean != null) {
+                                provBean.getExtendsList().remove(0);
+                                provBean.getExtendsList().add(provBean.getParent());
                             }
-                        }
-                    }
+                            return model;
+                        }),
+                new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums,
+                        (TsModelTransformer) (context, model) -> {
 
-                    return bean;
-                });
+                            TsBeanModel assetTypeInfoBean = model.getBean(AssetTypeInfo.class);
+                            if (assetTypeInfoBean != null) {
+                                assetTypeInfoBean.getProperties()
+                                        .replaceAll(p -> p.getName().equals("metaItemDescriptors")
+                                                || p.getName().equals("valueDescriptors")
+                                                        ? new TsPropertyModel(p.getName(),
+                                                                new TsType.BasicArrayType(TsType.String), p.modifiers,
+                                                                p.ownProperty, p.comments)
+                                                        : p);
+                            }
 
-                return model;
-            }),
-            new cz.habarta.typescript.generator.Extension.TransformerDefinition(ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
-                @Override
-                public Model transformModel(SymbolTable symbolTable, Model model) {
+                            // Remove the type parameter - this works in conjunction with the CustomTypeProcessor which
+                            // replaces
+                            // field references
+                            model.getBeans().replaceAll(bean -> {
 
-                    // Remove attribute state from attribute event (can't do this with annotations)
-                    BeanModel attrEventBean = model.getBean(AttributeEvent.class);
-                    if (attrEventBean != null) {
-                        attrEventBean.getProperties().removeIf(pm -> pm.getName().equals("attributeState"));
-                    }
-                    return model;
-                }
-            })
-        );
+                                if (bean.getOrigin() != null
+                                        && bean.getOrigin().getAnnotation(TsIgnoreTypeParams.class) != null) {
+                                    if (bean.getTypeParameters() != null) {
+                                        TsIgnoreTypeParams ignoreTypeParams = bean.getOrigin()
+                                                .getAnnotation(TsIgnoreTypeParams.class);
+                                        if (ignoreTypeParams.paramIndexes().length == 0) {
+                                            bean.getTypeParameters().clear();
+                                        } else {
+                                            Arrays.stream(ignoreTypeParams.paramIndexes()).boxed()
+                                                    .sorted(Collections.reverseOrder()).forEach(
+                                                            index -> bean.getTypeParameters().remove(index.intValue()));
+                                        }
+                                    }
+                                }
+
+                                return bean;
+                            });
+
+                            return model;
+                        }),
+                new cz.habarta.typescript.generator.Extension.TransformerDefinition(
+                        ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
+                            @Override
+                            public Model transformModel(SymbolTable symbolTable, Model model) {
+
+                                // Remove attribute state from attribute event (can't do this with annotations)
+                                BeanModel attrEventBean = model.getBean(AttributeEvent.class);
+                                if (attrEventBean != null) {
+                                    attrEventBean.getProperties().removeIf(pm -> pm.getName().equals("attributeState"));
+                                }
+                                return model;
+                            }
+                        }));
     }
 }

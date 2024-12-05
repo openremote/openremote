@@ -1,9 +1,27 @@
-import {css, html, TemplateResult } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import {AssetWidgetSettings} from "../util/or-asset-widget";
-import {TableWidgetConfig} from "../widgets/table-widget";
+import { AssetWidgetSettings } from "../util/or-asset-widget";
+import { TableWidgetConfig } from "../widgets/table-widget";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {AssetIdsSelectEvent, AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent} from "../panels/assettypes-panel";
+import { AssetIdsSelectEvent, AssetTypeSelectEvent, AssetTypesFilterConfig, AttributeNamesSelectEvent } from "../panels/assettypes-panel";
 
 const styling = css`
   .customMwcInputContainer {
@@ -82,7 +100,7 @@ export class TableSettings extends AssetWidgetSettings {
     protected onTableSizeSelect(ev: OrInputChangedEvent) {
         const value = ev.detail.value || 10;
         this.widgetConfig.tableSize = value;
-        if(value !== 10) {
+        if (value !== 10) {
             this.widgetConfig.tableOptions = [value];
         } else {
             this.widgetConfig.tableOptions = [10, 25, 100]

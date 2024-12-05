@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
 
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-
 import java.nio.ByteBuffer;
 import java.util.Calendar;
+
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * Contains the information related to a secure network beacon.
@@ -45,7 +44,7 @@ public class SecureNetworkBeacon extends MeshBeacon {
         super(beaconData);
         if (beaconData.length != BEACON_DATA_LENGTH)
             throw new IllegalArgumentException("Incorrect Secure Network Beacon length: " + beaconData.length
-                + ", expected: " + BEACON_DATA_LENGTH + ". Check MTU and Proxy Protocol segmentation.");
+                    + ", expected: " + BEACON_DATA_LENGTH + ". Check MTU and Proxy Protocol segmentation.");
 
         final ByteBuffer byteBuffer = ByteBuffer.wrap(beaconData);
         byteBuffer.position(1);
@@ -59,10 +58,8 @@ public class SecureNetworkBeacon extends MeshBeacon {
 
     @Override
     public String toString() {
-        return "SecureNetworkBeacon {" +
-            " KeyRefreshActive: " + isKeyRefreshActive +
-            ", IV Index: " + ivIndex +
-            ", Authentication Value: " + MeshParserUtils.bytesToHex(authenticationValue, true) + "}";
+        return "SecureNetworkBeacon {" + " KeyRefreshActive: " + isKeyRefreshActive + ", IV Index: " + ivIndex
+                + ", Authentication Value: " + MeshParserUtils.bytesToHex(authenticationValue, true) + "}";
     }
 
     @Override
@@ -135,18 +132,16 @@ public class SecureNetworkBeacon extends MeshBeacon {
      * - since: 2.2.2
      * - seeAlso: Bluetooth Mesh Profile 1.0.1, section 3.10.5.
      */
-    protected boolean canOverwrite(final IvIndex ivIndex, final Calendar updatedAt,
-                                   final boolean ivRecoveryActive,
-                                   final boolean isTestMode,
-                                   final boolean ivRecoveryOver42Allowed) {
+    protected boolean canOverwrite(final IvIndex ivIndex, final Calendar updatedAt, final boolean ivRecoveryActive,
+            final boolean isTestMode, final boolean ivRecoveryOver42Allowed) {
         // IV Index must increase, or, in case it's equal to the current one,
         // the IV Update Active flag must change from true to false.
         // The new index must not be greater than the current one + 42,
         // unless this rule is disabled.
-        if ((this.ivIndex.getIvIndex() > ivIndex.getIvIndex() &&
-            (ivRecoveryOver42Allowed || this.ivIndex.getIvIndex() <= ivIndex.getIvIndex() + 42)) ||
-            (this.ivIndex.getIvIndex() == ivIndex.getIvIndex() &&
-                (ivIndex.isIvUpdateActive() || !this.ivIndex.isIvUpdateActive()))) {
+        if ((this.ivIndex.getIvIndex() > ivIndex.getIvIndex()
+                && (ivRecoveryOver42Allowed || this.ivIndex.getIvIndex() <= ivIndex.getIvIndex() + 42))
+                || (this.ivIndex.getIvIndex() == ivIndex.getIvIndex()
+                        && (ivIndex.isIvUpdateActive() || !this.ivIndex.isIvUpdateActive()))) {
 
             // Before version 2.2.2 the timestamp was not stored. The initial
             // Secure Network Beacon is assumed to be valid.
@@ -156,24 +151,21 @@ public class SecureNetworkBeacon extends MeshBeacon {
         }
     }
 
-    private boolean isMinimumTimeRequirementCompleted(final IvIndex ivIndex,
-                                                      final Calendar updatedAt,
-                                                      final boolean isIvRecoveryActive,
-                                                      final boolean isTestMode) {
+    private boolean isMinimumTimeRequirementCompleted(final IvIndex ivIndex, final Calendar updatedAt,
+            final boolean isIvRecoveryActive, final boolean isTestMode) {
         // Let's define a "state" as a pair of IV and IV Update Active flag.
         // "States" change as follows:
-        // 1. IV = X,   IVUA = false (Normal Operation)
-        // 2. IV = X+1, IVUA = true  (Update In Progress)
+        // 1. IV = X, IVUA = false (Normal Operation)
+        // 2. IV = X+1, IVUA = true (Update In Progress)
         // 3. IV = X+1, IVUA = false (Normal Operation)
-        // 4. IV = X+2, IVUA = true  (Update In Progress)
+        // 4. IV = X+2, IVUA = true (Update In Progress)
         // 5. ...
 
         // Calculate number of states between the state defined by the target
         // IV Index and this Secure Network Beacon.
         int stateDiff = (this.ivIndex.getIvIndex() - ivIndex.getIvIndex()) * 2 - 1
-            + (ivIndex.isIvUpdateActive() ? 1 : 0)
-            + (this.ivIndex.isIvUpdateActive() ? 0 : 1)
-            - (isIvRecoveryActive || isTestMode ? 1 : 0); // this may set stateDiff = -1
+                + (ivIndex.isIvUpdateActive() ? 1 : 0) + (this.ivIndex.isIvUpdateActive() ? 0 : 1)
+                - (isIvRecoveryActive || isTestMode ? 1 : 0); // this may set stateDiff = -1
 
         // Each "state" must last for at least 96 hours.
         // Calculate the minimum number of hours that had to pass since last state
@@ -194,6 +186,4 @@ public class SecureNetworkBeacon extends MeshBeacon {
 
         return numberOfHoursSinceDate >= numberOfHoursRequired;
     }
-
 }
-

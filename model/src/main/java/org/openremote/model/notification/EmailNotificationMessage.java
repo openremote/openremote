@@ -1,9 +1,6 @@
 /*
  * Copyright 2018, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.notification;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class EmailNotificationMessage extends AbstractNotificationMessage {
 
@@ -54,10 +53,7 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "name='" + name + '\'' +
-                ", address='" + address + '\'' +
-                '}';
+            return getClass().getSimpleName() + "{" + "name='" + name + '\'' + ", address='" + address + '\'' + '}';
         }
     }
 
@@ -132,11 +128,12 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return to;
     }
 
-    public EmailNotificationMessage setTo(String...addresses) {
-        return setTo(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
+    public EmailNotificationMessage setTo(String... addresses) {
+        return setTo(
+                addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
-    public EmailNotificationMessage setTo(Recipient...recipients) {
+    public EmailNotificationMessage setTo(Recipient... recipients) {
         return setTo(recipients != null ? Arrays.asList(recipients) : null);
     }
 
@@ -149,11 +146,11 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return addTo(recipients);
     }
 
-    public EmailNotificationMessage addTo(String...addresses) {
+    public EmailNotificationMessage addTo(String... addresses) {
         return addTo(Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()));
     }
 
-    public EmailNotificationMessage addTo(Recipient...recipients) {
+    public EmailNotificationMessage addTo(Recipient... recipients) {
         return addTo(Arrays.asList(recipients));
     }
 
@@ -170,11 +167,12 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return cc;
     }
 
-    public EmailNotificationMessage setCc(String...addresses) {
-        return setCc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
+    public EmailNotificationMessage setCc(String... addresses) {
+        return setCc(
+                addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
-    public EmailNotificationMessage setCc(Recipient...recipients) {
+    public EmailNotificationMessage setCc(Recipient... recipients) {
         return setCc(recipients != null ? Arrays.asList(recipients) : null);
     }
 
@@ -187,11 +185,11 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return addCc(recipients);
     }
 
-    public EmailNotificationMessage addCc(String...addresses) {
+    public EmailNotificationMessage addCc(String... addresses) {
         return addCc(Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()));
     }
 
-    public EmailNotificationMessage addCc(Recipient...recipients) {
+    public EmailNotificationMessage addCc(Recipient... recipients) {
         return addCc(Arrays.asList(recipients));
     }
 
@@ -208,11 +206,12 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return bcc;
     }
 
-    public EmailNotificationMessage setBcc(String...addresses) {
-        return setBcc(addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
+    public EmailNotificationMessage setBcc(String... addresses) {
+        return setBcc(
+                addresses != null ? Arrays.stream(addresses).map(Recipient::new).collect(Collectors.toList()) : null);
     }
 
-    public EmailNotificationMessage setBcc(Recipient...recipients) {
+    public EmailNotificationMessage setBcc(Recipient... recipients) {
         return setBcc(recipients != null ? Arrays.asList(recipients) : null);
     }
 
@@ -225,11 +224,11 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
         return addBcc(recipients);
     }
 
-    public EmailNotificationMessage addBcc(String...address) {
+    public EmailNotificationMessage addBcc(String... address) {
         return addBcc(Arrays.stream(address).map(Recipient::new).collect(Collectors.toList()));
     }
 
-    public EmailNotificationMessage addBcc(Recipient...recipients) {
+    public EmailNotificationMessage addBcc(Recipient... recipients) {
         return addBcc(Arrays.asList(recipients));
     }
 

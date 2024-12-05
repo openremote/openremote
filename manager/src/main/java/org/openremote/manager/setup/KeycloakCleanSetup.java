@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.setup;
 
-import org.openremote.model.Container;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.RealmPredicate;
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
+import static org.openremote.model.Constants.*;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.DEFAULT_CLIENTS;
-import static org.openremote.model.Constants.*;
+import org.openremote.model.Container;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
@@ -54,16 +53,14 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
         LOG.info("Deleting all non-master admin users");
         Arrays.stream(keycloakProvider.queryUsers(
-            // Exclude service accounts (client deletion will remove the user)
-            new UserQuery()
-                .realm(new RealmPredicate(MASTER_REALM))
-                .serviceUsers(false)
-        )).forEach(user -> {
-            if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER) && !user.getUsername().equals(MANAGER_CLIENT_ID)) {
-                LOG.info("Deleting user: " + user);
-                keycloakProvider.deleteUser(MASTER_REALM, user.getId());
-            }
-        });
+                // Exclude service accounts (client deletion will remove the user)
+                new UserQuery().realm(new RealmPredicate(MASTER_REALM)).serviceUsers(false))).forEach(user -> {
+                    if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER)
+                            && !user.getUsername().equals(MANAGER_CLIENT_ID)) {
+                        LOG.info("Deleting user: " + user);
+                        keycloakProvider.deleteUser(MASTER_REALM, user.getId());
+                    }
+                });
 
         // Delete all non built in clients
         LOG.info("Deleting all non default clients");

@@ -1,13 +1,31 @@
-import {Asset, DashboardWidget } from "@openremote/model";
-import {html, LitElement, TemplateResult, unsafeCSS } from "lit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { Asset, DashboardWidget } from "@openremote/model";
+import { html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {style} from './style';
+import { style } from './style';
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
-import {WidgetService} from "./service/widget-service";
-import {WidgetSettings, WidgetSettingsChangedEvent} from "./util/widget-settings";
-import {WidgetManifest} from "./util/or-widget";
+import { WidgetService } from "./service/widget-service";
+import { WidgetSettings, WidgetSettingsChangedEvent } from "./util/widget-settings";
+import { WidgetManifest } from "./util/or-widget";
 import { guard } from "lit/directives/guard.js";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -21,7 +39,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         return [unsafeCSS(tableStyle), style]
     }
 
-    @property({type: Object})
+    @property({ type: Object })
     protected selectedWidget!: DashboardWidget;
 
     @state()
@@ -33,7 +51,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     // Method to update the Grid. For example after changing a setting.
     forceParentUpdate(changes: Map<string, any>, force: boolean = false) {
         this.requestUpdate();
-        this.dispatchEvent(new CustomEvent('update', { detail: { changes: changes, force: force }}));
+        this.dispatchEvent(new CustomEvent('update', { detail: { changes: changes, force: force } }));
     }
 
     protected render() {
@@ -59,7 +77,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     protected async generateContent(widgetTypeId: string): Promise<TemplateResult> {
-        if(!this.settingsElem || this.settingsElem.id !== this.selectedWidget.id) {
+        if (!this.settingsElem || this.settingsElem.id !== this.selectedWidget.id) {
             const manifest = WidgetService.getManifest(widgetTypeId);
             this.settingsElem = this.initSettings(manifest);
         }
@@ -69,7 +87,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     protected initSettings(manifest: WidgetManifest): WidgetSettings {
-        const settingsElem =  manifest.getSettingsHtml(this.selectedWidget!.widgetConfig);
+        const settingsElem = manifest.getSettingsHtml(this.selectedWidget!.widgetConfig);
         settingsElem.id = this.selectedWidget.id!;
         settingsElem.getDisplayName = () => this.selectedWidget.displayName;
         settingsElem.setDisplayName = (name?: string) => this.setDisplayName(name);

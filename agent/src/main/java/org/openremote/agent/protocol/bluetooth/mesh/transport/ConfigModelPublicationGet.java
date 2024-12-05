@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.CompositionDataParser;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.CompositionDataParser;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 
 /**
  * To be used as a wrapper class to create a ConfigModelPublicationSet message.
@@ -44,14 +43,15 @@ public class ConfigModelPublicationGet extends ConfigMessage {
     /**
      * Constructs a ConfigModelPublicationGet message
      *
-     * @param elementAddress                 Element address that should publish
-     * @param modelIdentifier                identifier for this model that will do publication
+     * @param elementAddress Element address that should publish
+     * @param modelIdentifier identifier for this model that will do publication
      * @throws IllegalArgumentException for invalid arguments
      */
-    public ConfigModelPublicationGet(final int elementAddress,
-                                     final int modelIdentifier) throws IllegalArgumentException {
+    public ConfigModelPublicationGet(final int elementAddress, final int modelIdentifier)
+            throws IllegalArgumentException {
         if (!MeshAddress.isValidUnicastAddress(elementAddress))
-            throw new IllegalArgumentException("Invalid unicast address, unicast address must be a 16-bit value, and must range from 0x0001 to 0x7FFF");
+            throw new IllegalArgumentException(
+                    "Invalid unicast address, unicast address must be a 16-bit value, and must range from 0x0001 to 0x7FFF");
         this.elementAddress = elementAddress;
         this.modelIdentifier = modelIdentifier;
         assembleMessageParameters();
@@ -62,14 +62,14 @@ public class ConfigModelPublicationGet extends ConfigMessage {
         return OP_CODE;
     }
 
-
     @Override
     void assembleMessageParameters() {
         final ByteBuffer paramsBuffer;
         LOG.info("Element address: " + MeshAddress.formatAddress(elementAddress, true));
         LOG.info("Model: " + CompositionDataParser.formatModelIdentifier(modelIdentifier, false));
 
-        //We check if the model identifier value is within the range of a 16-bit value here. If it is then it is a sigmodel
+        // We check if the model identifier value is within the range of a 16-bit value here. If it is then it is a
+        // sigmodel
         if (modelIdentifier >= Short.MIN_VALUE && modelIdentifier <= Short.MAX_VALUE) {
             paramsBuffer = ByteBuffer.allocate(SIG_MODEL_PUBLISH_GET_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.putShort((short) elementAddress);
@@ -78,8 +78,9 @@ public class ConfigModelPublicationGet extends ConfigMessage {
         } else {
             paramsBuffer = ByteBuffer.allocate(VENDOR_MODEL_PUBLISH_GET_PARAMS_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
             paramsBuffer.putShort((short) elementAddress);
-            final byte[] modelIdentifier = new byte[]{(byte) ((this.modelIdentifier >> 24) & 0xFF), (byte) ((this.modelIdentifier >> 16) & 0xFF),
-                (byte) ((this.modelIdentifier >> 8) & 0xFF), (byte) (this.modelIdentifier & 0xFF)};
+            final byte[] modelIdentifier = new byte[] { (byte) ((this.modelIdentifier >> 24) & 0xFF),
+                    (byte) ((this.modelIdentifier >> 16) & 0xFF), (byte) ((this.modelIdentifier >> 8) & 0xFF),
+                    (byte) (this.modelIdentifier & 0xFF) };
             paramsBuffer.put(modelIdentifier[1]);
             paramsBuffer.put(modelIdentifier[0]);
             paramsBuffer.put(modelIdentifier[3]);
@@ -106,4 +107,3 @@ public class ConfigModelPublicationGet extends ConfigMessage {
         return modelIdentifier;
     }
 }
-

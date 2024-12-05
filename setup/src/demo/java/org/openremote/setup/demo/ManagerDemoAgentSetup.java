@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.setup.demo;
+
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
@@ -25,8 +26,6 @@ import org.openremote.container.util.MapAccess;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Realm;
-
-import java.util.logging.Logger;
 
 public class ManagerDemoAgentSetup extends ManagerSetup {
 
@@ -54,11 +53,14 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
         super(container);
 
         this.knx = MapAccess.getBoolean(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX, false);
-        this.knxGatewayIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP, "localhost");
-        this.knxLocalIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP, "localhost");
+        this.knxGatewayIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP,
+                "localhost");
+        this.knxLocalIp = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP,
+                "localhost");
 
         this.velbus = MapAccess.getBoolean(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS, false);
-        this.velbusHost = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST, "localhost");
+        this.velbusHost = MapAccess.getString(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST,
+                "localhost");
         this.velbusPort = MapAccess.getInteger(container.getConfig(), OR_SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT, 6000);
     }
 
@@ -73,10 +75,8 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
         if (knx) {
             LOG.info("Enable KNX demo agent, gateway/local IP: " + knxGatewayIp + "/" + knxLocalIp);
 
-            KNXAgent agent = new KNXAgent("Demo KNX agent")
-                .setRealm(realmMasterName)
-                .setHost(knxGatewayIp)
-                .setBindHost(knxLocalIp);
+            KNXAgent agent = new KNXAgent("Demo KNX agent").setRealm(realmMasterName).setHost(knxGatewayIp)
+                    .setBindHost(knxLocalIp);
 
             agent = assetStorageService.merge(agent);
         }
@@ -84,10 +84,8 @@ public class ManagerDemoAgentSetup extends ManagerSetup {
         if (velbus) {
             LOG.info("Enable Velbus demo agent, host/port: " + velbusHost + "/" + velbusPort);
 
-            VelbusTCPAgent agent = new VelbusTCPAgent("Demo VELBUS agent")
-                .setRealm(realmMasterName)
-                .setHost(velbusHost)
-                .setPort(velbusPort);
+            VelbusTCPAgent agent = new VelbusTCPAgent("Demo VELBUS agent").setRealm(realmMasterName).setHost(velbusHost)
+                    .setPort(velbusPort);
 
             agent = assetStorageService.merge(agent);
         }

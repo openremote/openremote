@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     css,
     html,
@@ -6,17 +24,17 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {styleMap} from "lit/directives/style-map.js";
-import {ifDefined} from "lit/directives/if-defined.js";
-import {MDCList, MDCListActionEvent} from "@material/list";
+import { customElement, property, query } from "lit/decorators.js";
+import { styleMap } from "lit/directives/style-map.js";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { MDCList, MDCListActionEvent } from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import "@openremote/or-translate";
 import { i18next } from "@openremote/or-translate";
 const listStyle = require("@material/list/dist/mdc.list.css");
 const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
 
-export {MDCListActionEvent};
+export { MDCListActionEvent };
 
 export interface ListItem {
     icon?: string;
@@ -26,7 +44,7 @@ export interface ListItem {
     secondaryText?: string;
     value: any;
     data?: any;
-    styleMap?: {[style: string]: string};
+    styleMap?: { [style: string]: string };
 }
 
 export class OrMwcListChangedEvent extends CustomEvent<ListItem[]> {
@@ -64,11 +82,11 @@ export function createListGroup(lists: ListGroupItem[]) {
     return html`
         <div class="mdc-list-group">
             ${lists.map((list) => {
-                return html`
+        return html`
                     <h3 class="mdc-list-group__subheader">${list.heading}</h3>
                     ${list.list}
-                `                            
-            })}
+                `
+    })}
         </div>    
     `;
 }
@@ -116,7 +134,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
     let icon = listItem.icon;
     let selectedClassName = "mdc-list-item--selected";
     translate = translate || item.translate;
-    
+
     if (multiSelect && type === ListType.MULTI_TICK) {
         icon = isSelected ? "checkbox-marked" : "checkbox-blank-outline";
     }
@@ -149,7 +167,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
             leftTemplate = html`
                     <span class="mdc-list-item__graphic">
                         <div class="mdc-radio">
-                            <input class="mdc-radio__native-control" id="radio-item-${index+1}" type="radio" value="${value}" />
+                            <input class="mdc-radio__native-control" id="radio-item-${index + 1}" type="radio" value="${value}" />
                             <div class="mdc-radio__background">
                                 <div class="mdc-radio__outer-circle"></div>
                                 <div class="mdc-radio__inner-circle"></div>
@@ -189,7 +207,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
                 `;
         } else {
             if (type === ListType.RADIO) {
-                textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</label>`;
+                textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index + 1}">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</label>`;
             } else {
                 textTemplate = html`<span class="mdc-list-item__text" title="${translate && !!text ? i18next.t(text) : text}">${translate && !!text ? html`<or-translate value="${text}"></or-translate>` : text}</span>`;
             }
@@ -197,7 +215,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
     }
 
     return html`
-        <li @click="${(e: MouseEvent) => { itemClickCallback && itemClickCallback(e, item)}}" style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item ${isSelected ? selectedClassName : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}" data-value="${value}">
+        <li @click="${(e: MouseEvent) => { itemClickCallback && itemClickCallback(e, item) }}" style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item ${isSelected ? selectedClassName : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}" data-value="${value}">
             <span class="mdc-list-item__ripple"></span>
             ${leftTemplate}
             ${textTemplate}
@@ -239,13 +257,13 @@ export class OrMwcList extends LitElement {
         ];
     }
 
-    @property({type: Array})
+    @property({ type: Array })
     public listItems?: (ListItem | null)[];
 
-    @property({type: Array})
+    @property({ type: Array })
     public values?: string[] | string;
 
-    @property({type: String, attribute: true})
+    @property({ type: String, attribute: true })
     public type: ListType = ListType.SELECT;
 
     @query("#wrapper")
@@ -314,7 +332,7 @@ export class OrMwcList extends LitElement {
             return;
         }
 
-        const itemArr = (!Array.isArray(items) ? [items] : items).map((item) => typeof(item) === "string" ? item : item.value);
+        const itemArr = (!Array.isArray(items) ? [items] : items).map((item) => typeof (item) === "string" ? item : item.value);
         const listItems = this.listItems.filter((item) => item !== null) as ListItem[];
 
         const indexes = listItems.reduce((indexes, listItem, index) => {

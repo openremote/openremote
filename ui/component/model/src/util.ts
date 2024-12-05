@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     AgentDescriptor,
     AssetDescriptor,
@@ -38,7 +56,7 @@ export class AssetModelUtil {
             return type as AssetTypeInfo;
         }
 
-        if (typeof(type) !== "string") {
+        if (typeof (type) !== "string") {
             type = (type as AssetDescriptor).name!;
         }
 
@@ -56,7 +74,7 @@ export class AssetModelUtil {
             return (type as AssetTypeInfo).assetDescriptor;
         }
 
-        if (typeof(type) !== "string") {
+        if (typeof (type) !== "string") {
             return type as AssetDescriptor;
         }
 
@@ -90,7 +108,7 @@ export class AssetModelUtil {
 
         if (name.endsWith("[]")) {
             arrayDimensions = 0;
-            while(name.endsWith("[]")) {
+            while (name.endsWith("[]")) {
                 name = name.substring(0, name.length - 2);
                 arrayDimensions++;
             }
@@ -99,7 +117,7 @@ export class AssetModelUtil {
         // Value descriptor names are globally unique
         let valueDescriptor = this._valueDescriptors.find((valueDescriptor) => valueDescriptor.name === name);
         if (valueDescriptor && arrayDimensions) {
-            valueDescriptor = {...valueDescriptor, arrayDimensions: arrayDimensions};
+            valueDescriptor = { ...valueDescriptor, arrayDimensions: arrayDimensions };
         }
         return valueDescriptor;
     }
@@ -108,7 +126,7 @@ export class AssetModelUtil {
         let valueDescriptor: ValueDescriptor | undefined;
 
         if (descriptorOrValueType) {
-            if (typeof(descriptorOrValueType) === "string") {
+            if (typeof (descriptorOrValueType) === "string") {
                 valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorOrValueType);
             }
             if ((descriptorOrValueType as ValueDescriptor).jsonType) {

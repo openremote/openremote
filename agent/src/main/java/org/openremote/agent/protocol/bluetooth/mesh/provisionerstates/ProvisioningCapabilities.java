@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
-
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AlgorithmType;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AlgorithmType;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.AuthenticationOOBMethods;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.InputOOBAction;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.OutputOOBAction;
+
 public class ProvisioningCapabilities {
     private static final int PUBLIC_KEY_INFORMATION_AVAILABLE = 0x01;
     private static final int STATIC_OOB_INFO_AVAILABLE = 0x01;
 
-
-    private static final Logger LOG = java.util.logging.Logger.getLogger(ProvisioningCapabilities.class.getName());    
+    private static final Logger LOG = java.util.logging.Logger.getLogger(ProvisioningCapabilities.class.getName());
     private byte numberOfElements;
     private short rawAlgorithm;
     private List<AlgorithmType> supportedAlgorithmTypes;
@@ -83,7 +81,8 @@ public class ProvisioningCapabilities {
 
         final short outputOOBAction = (short) (((capabilities[8] & 0xff) << 8) | (capabilities[9] & 0xff));
         this.rawOutputOOBAction = outputOOBAction;
-        this.supportedOutputOOBActions = outputOOBSize == 0 ? new ArrayList<>() : OutputOOBAction.parseOutputActionsFromBitMask(outputOOBAction);
+        this.supportedOutputOOBActions = outputOOBSize == 0 ? new ArrayList<>()
+                : OutputOOBAction.parseOutputActionsFromBitMask(outputOOBAction);
 
         final byte inputOOBSize = capabilities[10];
         this.inputOOBSize = inputOOBSize;
@@ -91,7 +90,8 @@ public class ProvisioningCapabilities {
 
         final short inputOOBAction = (short) (((capabilities[11] & 0xff) << 8) | (capabilities[12] & 0xff));
         this.rawInputOOBAction = inputOOBAction;
-        this.supportedInputOOBActions = inputOOBSize == 0 ? new ArrayList<>() : InputOOBAction.parseInputActionsFromBitMask(inputOOBAction);
+        this.supportedInputOOBActions = inputOOBSize == 0 ? new ArrayList<>()
+                : InputOOBAction.parseInputActionsFromBitMask(inputOOBAction);
         generateAvailableOOBTypes();
     }
 

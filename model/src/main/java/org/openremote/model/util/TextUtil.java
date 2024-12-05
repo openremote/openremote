@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.util;
 
@@ -43,22 +42,25 @@ public class TextUtil {
     public static final String REGEXP_PATTERN_STRING_NON_EMPTY = "(.|\\s)*\\S(.|\\s)*";
     public static final String REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE = "^\\S+$";
     public static final Pattern REGEXP_INTEGER_POSITIVE = Pattern.compile(REGEXP_PATTERN_INTEGER_POSITIVE);
-    public static final Predicate<String> INTEGER_POSITIVE_VALIDATOR = name -> !isNullOrEmpty(name) && REGEXP_INTEGER_POSITIVE.matcher(name).matches();
+    public static final Predicate<String> INTEGER_POSITIVE_VALIDATOR = name -> !isNullOrEmpty(name)
+            && REGEXP_INTEGER_POSITIVE.matcher(name).matches();
 
     // TODO Unused, doesn't work for "0 30 8 ? * FRI *
     public static final String REGEXP_PATTERN_CRON_EXPRESSION = "^\\\\s*($|#|\\\\w+\\\\s*=|(\\\\?|\\\\*|(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?(?:,(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?)*)\\\\s+(\\\\?|\\\\*|(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?(?:,(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?)*)\\\\s+(\\\\?|\\\\*|(?:[01]?\\\\d|2[0-3])(?:(?:-|\\/|\\\\,)(?:[01]?\\\\d|2[0-3]))?(?:,(?:[01]?\\\\d|2[0-3])(?:(?:-|\\/|\\\\,)(?:[01]?\\\\d|2[0-3]))?)*)\\\\s+(\\\\?|\\\\*|(?:0?[1-9]|[12]\\\\d|3[01])(?:(?:-|\\/|\\\\,)(?:0?[1-9]|[12]\\\\d|3[01]))?(?:,(?:0?[1-9]|[12]\\\\d|3[01])(?:(?:-|\\/|\\\\,)(?:0?[1-9]|[12]\\\\d|3[01]))?)*)\\\\s+(\\\\?|\\\\*|(?:[1-9]|1[012])(?:(?:-|\\/|\\\\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\\/|\\\\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\\\\?|\\\\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\\\\s+(\\\\?|\\\\*|(?:[0-6])(?:(?:-|\\/|\\\\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\\/|\\\\,|#)(?:[0-6]))?(?:L)?)*|\\\\?|\\\\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\\\\s)+(\\\\?|\\\\*|(?:|\\\\d{4})(?:(?:-|\\/|\\\\,)(?:|\\\\d{4}))?(?:,(?:|\\\\d{4})(?:(?:-|\\/|\\\\,)(?:|\\\\d{4}))?)*))$";
 
     /**
      * Converts a String which represents a pollingInterval into an int which can be used as delay
-     * for Thread.sleep();  <p>
+     * for Thread.sleep();
      * <p>
-     * Following conversion will happen:  <p>
      * <p>
-     * null || "" = -1                  <br>
-     * 500 = 500                        <br>
-     * 1s = 1000 * 1 = 1000             <br>
-     * 1m = 1000 * 60 = 60000           <br>
-     * 1h = 1000 * 60 * 60 = 3600000    <br>
+     * Following conversion will happen:
+     * <p>
+     * <p>
+     * null || "" = -1 <br>
+     * 500 = 500 <br>
+     * 1s = 1000 * 1 = 1000 <br>
+     * 1m = 1000 * 60 = 60000 <br>
+     * 1h = 1000 * 60 * 60 = 3600000 <br>
      *
      * @param pollingInterval interval string, such as '1m' as millisecond value
      * @return interval in milliseconds
@@ -189,9 +191,7 @@ public class TextUtil {
         if (s.length() <= maxLength)
             return s;
 
-        return alignRight
-            ? s.substring(s.length() - maxLength, s.length())
-            : s.substring(0, maxLength);
+        return alignRight ? s.substring(s.length() - maxLength, s.length()) : s.substring(0, maxLength);
     }
 
     public static boolean isNullOrEmpty(String str) {
@@ -227,7 +227,7 @@ public class TextUtil {
     private static String toCamelCase(String s, boolean upper, boolean convertUnderscoreToSpace) {
         String[] parts = s.split("_");
         StringBuilder camelCaseString = new StringBuilder();
-        int i=0;
+        int i = 0;
         for (String part : parts) {
             if (!isNullOrEmpty(part)) {
                 if (!upper && i == 0) {
@@ -235,7 +235,7 @@ public class TextUtil {
                 } else {
                     camelCaseString.append(toProperCase(part));
                 }
-                if (convertUnderscoreToSpace && i>0) {
+                if (convertUnderscoreToSpace && i > 0) {
                     camelCaseString.append(" ");
                 }
                 i++;
@@ -245,8 +245,7 @@ public class TextUtil {
     }
 
     public static String toProperCase(String s) {
-        return s.substring(0, 1).toUpperCase() +
-            s.substring(1).toLowerCase();
+        return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 
     public static String toProperCase(String s, boolean convertUnderscoreToSpace) {
@@ -259,7 +258,7 @@ public class TextUtil {
         }
         try {
             return Optional.of(Integer.parseInt(str));
-        } catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return Optional.empty();
         }
     }

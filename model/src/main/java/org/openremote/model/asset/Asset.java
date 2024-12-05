@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset;
+
+import static jakarta.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
@@ -28,13 +34,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import jakarta.persistence.Table;
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+
 import org.hibernate.annotations.*;
 import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
@@ -54,12 +54,13 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static jakarta.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import jakarta.persistence.*;
+import jakarta.persistence.Table;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 // @formatter:off
 
@@ -238,6 +239,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public static class AssetDeserializer extends StdDeserializer<Asset<?>> implements ResolvableDeserializer {
         public static final String ASSET_TYPE_INFO_ATTRIBUTE = "assetTypeInfo";
         protected final JsonDeserializer<Asset<?>> defaultDeserializer;
+
         public AssetDeserializer(JsonDeserializer<Asset<?>> defaultDeserializer, Class<?> clazz) {
             super(clazz);
             this.defaultDeserializer = defaultDeserializer;
@@ -248,7 +250,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
             JavaType jType = getValueType(ctxt);
             if (jType != null) {
                 // Make the asset type info available to the attribute deserialiser
-                ctxt.setAttribute(ASSET_TYPE_INFO_ATTRIBUTE, ValueUtil.getAssetInfo(jType.getRawClass().getSimpleName()).orElse(null));
+                ctxt.setAttribute(ASSET_TYPE_INFO_ATTRIBUTE,
+                        ValueUtil.getAssetInfo(jType.getRawClass().getSimpleName()).orElse(null));
             }
             return defaultDeserializer.deserialize(p, ctxt);
         }
@@ -267,15 +270,21 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
      * WILL INHERIT THESE DESCRIPTORS ALSO; IT IS REQUIRED THAT EACH DESCRIPTOR HAS CORRESPONDING GETTER WITH OPTIONAL
      * SETTER, THIS ENSURES BASIC COMPILE TIME CHECKING OF CONFLICTS BUT JUST MAKES GOOD SENSE FOR CONSUMERS
      */
-    public static final AttributeDescriptor<GeoJSONPoint> LOCATION = new AttributeDescriptor<>("location", ValueType.GEO_JSON_POINT);
+    public static final AttributeDescriptor<GeoJSONPoint> LOCATION = new AttributeDescriptor<>("location",
+            ValueType.GEO_JSON_POINT);
 
-    public static final AttributeDescriptor<String> EMAIL = new AttributeDescriptor<>("email", ValueType.EMAIL).withOptional(true);
+    public static final AttributeDescriptor<String> EMAIL = new AttributeDescriptor<>("email", ValueType.EMAIL)
+            .withOptional(true);
 
-    public static final AttributeDescriptor<String[]> TAGS = new AttributeDescriptor<>("tags", ValueType.TEXT.asArray()).withOptional(true);
+    public static final AttributeDescriptor<String[]> TAGS = new AttributeDescriptor<>("tags", ValueType.TEXT.asArray())
+            .withOptional(true);
 
-    public static final AttributeDescriptor<String> NOTES = new AttributeDescriptor<>("notes", ValueType.TEXT).withFormat(ValueFormat.TEXT_MULTILINE());
-    public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
-    public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> NOTES = new AttributeDescriptor<>("notes", ValueType.TEXT)
+            .withFormat(ValueFormat.TEXT_MULTILINE());
+    public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer",
+            ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT)
+            .withOptional(true);
 
     @Id
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
@@ -315,7 +324,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
     @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = LTreeType.TYPE)
     @Type(LTreeType.class)
-    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Generated(event = { EventType.INSERT, EventType.UPDATE })
     protected String[] path;
 
     @Column(name = "ATTRIBUTES")
@@ -405,12 +414,10 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return parentId;
     }
 
-
     public T setParentId(String parentId) {
         this.parentId = parentId;
         return (T) this;
     }
-
 
     public String getRealm() {
         return realm;
@@ -499,38 +506,25 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", type ='" + type + '\'' +
-            ", parentId='" + parentId + '\'' +
-            ", realm='" + realm + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", type ='" + type
+                + '\'' + ", parentId='" + parentId + '\'' + ", realm='" + realm + '\'' + '}';
     }
 
     public String toStringAll() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", version=" + version +
-            ", createdOn=" + createdOn +
-            ", name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            ", accessPublicRead='" + accessPublicRead + '\'' +
-            ", parentId='" + parentId + '\'' +
-            ", realm='" + realm + '\'' +
-            ", path=" + Arrays.toString(path) +
-            ", attributes=" + getAttributesString() +
-            '}';
+        return getClass().getSimpleName() + "{" + "id='" + id + '\'' + ", version=" + version + ", createdOn="
+                + createdOn + ", name='" + name + '\'' + ", type='" + type + '\'' + ", accessPublicRead='"
+                + accessPublicRead + '\'' + ", parentId='" + parentId + '\'' + ", realm='" + realm + '\'' + ", path="
+                + Arrays.toString(path) + ", attributes=" + getAttributesString() + '}';
     }
 
     protected String getAttributesString() {
         if (attributes == null || attributes.isEmpty()) {
             return "";
         }
-        return "[" +
-            attributes.values().stream().map(attr ->
-                "attr=" + attr.getName() + ",timestamp=" + attr.getTimestamp().orElse(null) + ",meta=" + getMetaString(attr.getMeta())).collect(Collectors.joining("; ")) +
-        "]";
+        return "[" + attributes
+                .values().stream().map(attr -> "attr=" + attr.getName() + ",timestamp="
+                        + attr.getTimestamp().orElse(null) + ",meta=" + getMetaString(attr.getMeta()))
+                .collect(Collectors.joining("; ")) + "]";
     }
 
     protected String getMetaString(MetaMap meta) {
@@ -538,19 +532,17 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
             return "[]";
         }
 
-        return "[" +
-            meta.entrySet().stream().map(nameAndValue ->
-                "meta=" + nameAndValue.getKey() + ",value=" + ValueUtil.asJSON(nameAndValue.getValue().getValue()).orElse(null)).collect(Collectors.joining("; ")) +
-        "]";
+        return "[" + meta.entrySet().stream()
+                .map(nameAndValue -> "meta=" + nameAndValue.getKey() + ",value="
+                        + ValueUtil.asJSON(nameAndValue.getValue().getValue()).orElse(null))
+                .collect(Collectors.joining("; ")) + "]";
     }
 
     /* WELL KNOWN ATTRIBUTE GETTER / SETTERS */
 
-
     public Optional<GeoJSONPoint> getLocation() {
         return getAttributes().getValue(LOCATION);
     }
-
 
     public T setLocation(GeoJSONPoint location) {
         getAttributes().getOrCreate(LOCATION).setValue(location);
@@ -561,7 +553,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return getAttributes().getValue(TAGS);
     }
 
-
     public T setTags(String[] tags) {
         getAttributes().getOrCreate(TAGS).setValue(tags);
         return (T) this;
@@ -571,7 +562,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return getAttributes().getValue(EMAIL);
     }
 
-
     public T setEmail(String email) {
         getAttributes().getOrCreate(EMAIL).setValue(email);
         return (T) this;
@@ -580,7 +570,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public Optional<String> getNotes() {
         return getAttributes().getValue(NOTES);
     }
-
 
     public T setNotes(String notes) {
         getAttributes().getOrCreate(NOTES).setValue(notes);
@@ -609,13 +598,13 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     protected void postLoadCallback() {
         if (attributes != null) {
             // Make sure the attribute types are correctly set based on current asset descriptor not what is in the DB
-            ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo ->
-                attributes.values().forEach(attribute -> {
-                    AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors().get(attribute.getName());
-                    if (attributeDescriptor != null) {
-                        ((Attribute)attribute).setTypeInternal(attributeDescriptor.getType());
-                    }
-                }));
+            ValueUtil.getAssetInfo(getType()).ifPresent(assetTypeInfo -> attributes.values().forEach(attribute -> {
+                AttributeDescriptor<?> attributeDescriptor = assetTypeInfo.getAttributeDescriptors()
+                        .get(attribute.getName());
+                if (attributeDescriptor != null) {
+                    ((Attribute) attribute).setTypeInternal(attributeDescriptor.getType());
+                }
+            }));
         }
     }
 }

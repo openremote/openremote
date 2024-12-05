@@ -1,7 +1,26 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.model.rules.flow;
 
 public class Node {
-    // Generation of ID is the responsibility of the front end and is unique for every node in a structure, not for every node in the system
+    // Generation of ID is the responsibility of the front end and is unique for every node in a structure, not for
+    // every node in the system
     private String id;
     private NodeType type;
     private String name;
@@ -23,7 +42,8 @@ public class Node {
         this.displayCharacter = null;
     }
 
-    public Node(NodeType type, String displayCharacter, NodeInternal[] internals, NodeSocket[] inputs, NodeSocket[] outputs) {
+    public Node(NodeType type, String displayCharacter, NodeInternal[] internals, NodeSocket[] inputs,
+            NodeSocket[] outputs) {
         if (internals.length != 0)
             throw new IllegalArgumentException("A node cannot have internals when a display character is specified");
 
@@ -43,9 +63,9 @@ public class Node {
         name = "Unnamed node";
         position = new NodePosition();
         size = new NodePosition();
-        internals = new NodeInternal[]{};
-        inputs = new NodeSocket[]{};
-        outputs = new NodeSocket[]{};
+        internals = new NodeInternal[] {};
+        inputs = new NodeSocket[] {};
+        outputs = new NodeSocket[] {};
         displayCharacter = null;
     }
 
@@ -101,4 +121,3 @@ public class Node {
         this.size = size;
     }
 }
-

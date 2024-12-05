@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.query;
+
+import java.io.Serializable;
+import java.util.Arrays;
 
 import org.openremote.model.dashboard.DashboardAccess;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-
-import java.io.Serializable;
-import java.util.Arrays;
 
 public class DashboardQuery implements Serializable {
 
@@ -75,8 +74,10 @@ public class DashboardQuery implements Serializable {
         protected Integer minWidgets;
 
         public DashboardConditions() {
-            this.viewAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
-            this.editAccess = new DashboardAccess[]{DashboardAccess.PUBLIC, DashboardAccess.SHARED, DashboardAccess.PRIVATE};
+            this.viewAccess = new DashboardAccess[] { DashboardAccess.PUBLIC, DashboardAccess.SHARED,
+                    DashboardAccess.PRIVATE };
+            this.editAccess = new DashboardAccess[] { DashboardAccess.PUBLIC, DashboardAccess.SHARED,
+                    DashboardAccess.PRIVATE };
         }
 
         public DashboardConditions(DashboardAccess[] viewAccess, DashboardAccess[] editAccess, Integer minWidgets) {
@@ -117,14 +118,18 @@ public class DashboardQuery implements Serializable {
      *
      */
     public enum AssetAccess {
-        RESTRICTED, LINKED, REALM
+        RESTRICTED,
+        LINKED,
+        REALM
     }
 
     /**
      *
      */
     public enum ConditionMinAmount {
-        AT_LEAST_ONE, ALL, NONE
+        AT_LEAST_ONE,
+        ALL,
+        NONE
     }
 
     /**
@@ -136,9 +141,9 @@ public class DashboardQuery implements Serializable {
         public ParentPredicate[] parents;
 
         public AssetConditions() {
-            this.access = new AssetAccess[]{AssetAccess.REALM, AssetAccess.LINKED};
+            this.access = new AssetAccess[] { AssetAccess.REALM, AssetAccess.LINKED };
             this.minAmount = ConditionMinAmount.ALL;
-            this.parents = new ParentPredicate[]{};
+            this.parents = new ParentPredicate[] {};
         }
 
         public AssetConditions(AssetAccess[] access, ConditionMinAmount minAmount, ParentPredicate[] parents) {
@@ -182,12 +187,15 @@ public class DashboardQuery implements Serializable {
         public Conditions() {
             this(new DashboardConditions(), new AssetConditions());
         }
+
         public Conditions(DashboardConditions dashboard) {
             this(dashboard, null);
         }
+
         public Conditions(AssetConditions asset) {
             this(null, asset);
         }
+
         public Conditions(DashboardConditions dashboard, AssetConditions asset) {
             this.dashboard = dashboard;
             this.asset = asset;

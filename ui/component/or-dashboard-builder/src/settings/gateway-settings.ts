@@ -1,11 +1,29 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { customElement } from "lit/decorators.js";
-import {WidgetSettings} from "../util/widget-settings";
-import {TemplateResult, html} from "lit";
+import { WidgetSettings } from "../util/widget-settings";
+import { TemplateResult, html } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {i18next} from "@openremote/or-translate";
-import {Asset, AssetQuery, GatewayTunnelInfoType} from "@openremote/model";
-import {GatewayWidgetConfig} from "../widgets/gateway-widget";
-import {Task} from "@lit/task";
+import { i18next } from "@openremote/or-translate";
+import { Asset, AssetQuery, GatewayTunnelInfoType } from "@openremote/model";
+import { GatewayWidgetConfig } from "../widgets/gateway-widget";
+import { Task } from "@lit/task";
 import manager from "@openremote/core";
 
 @customElement("gateway-settings")
@@ -29,29 +47,29 @@ export class GatewaySettings extends WidgetSettings {
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div>
                             ${this._fetchAssetsTask.render({
-                                pending: () => html`
+            pending: () => html`
                                     <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;" disabled
                                                   label="${i18next.t('gatewayTunnels.selectAsset')}"
                                     ></or-mwc-input>
                                 `,
-                                complete: (gatewayAssets) => {
-                                    const options: [string, string][] = gatewayAssets.map(a => [a.id, a.name]);
-                                    const selected = gatewayAssets.find(a => a.id === this.widgetConfig.gatewayId);
-                                    const value = selected ? [selected.id, selected.name] as [string, string] : undefined;
-                                    return html`
+            complete: (gatewayAssets) => {
+                const options: [string, string][] = gatewayAssets.map(a => [a.id, a.name]);
+                const selected = gatewayAssets.find(a => a.id === this.widgetConfig.gatewayId);
+                const value = selected ? [selected.id, selected.name] as [string, string] : undefined;
+                return html`
                                         <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;"
                                                       .options="${options}" .value="${value}"
                                                       label="${i18next.t('gatewayTunnels.selectAsset')}"
                                                       @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onAssetSelect(ev)}"
                                         ></or-mwc-input>
                                     `;
-                                },
-                                error: () => html`
+            },
+            error: () => html`
                                     <or-mwc-input .type="${InputType.TEXT}" compact style="width: 100%;" disabled
                                                   label="${i18next.t('gatewayTunnels.selectAsset')}" .value="${i18next.t('errorOccurred')}"
                                     ></or-mwc-input>
                                 `
-                            })}
+        })}
                         </div>
                         <div>
                             <or-mwc-input .type="${InputType.SELECT}" compact style="width: 100%;"
@@ -102,7 +120,7 @@ export class GatewaySettings extends WidgetSettings {
 
 
     protected _fetchAssetsTask = new Task(this, {
-        task: async ([], {signal}) => {
+        task: async ([], { signal }) => {
             return await this._fetchAssets(true, signal);
         },
         args: () => []
@@ -110,8 +128,8 @@ export class GatewaySettings extends WidgetSettings {
 
     protected async _fetchAssets(requireTunnelSupport = true, signal?: AbortSignal): Promise<Asset[]> {
         const query = {
-            realm: {name: manager.displayRealm},
-            select: {attributes: ["tunnelingSupported"]},
+            realm: { name: manager.displayRealm },
+            select: { attributes: ["tunnelingSupported"] },
             types: this.GATEWAY_ASSET_TYPES,
             attributes: requireTunnelSupport ? {
                 items: [

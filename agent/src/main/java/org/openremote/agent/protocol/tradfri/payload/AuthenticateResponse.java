@@ -1,7 +1,26 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.payload;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
@@ -25,11 +44,12 @@ public class AuthenticateResponse {
     /**
      * Construct the AuthenticateResponse class
      */
-    public AuthenticateResponse(){
+    public AuthenticateResponse() {
     }
 
     /**
      * Get the preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
+     *
      * @return The preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
      */
     public String getPresharedKey() {
@@ -38,6 +58,7 @@ public class AuthenticateResponse {
 
     /**
      * Get the firmware version of the IKEA TRÅDFRI gateway
+     *
      * @return The firmware version of the IKEA TRÅDFRI gateway
      */
     public String getGatewayFirmwareVersion() {
@@ -46,6 +67,7 @@ public class AuthenticateResponse {
 
     /**
      * Set the preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
+     *
      * @param presharedKey The new preshared key that can be used to authenticate to the IKEA TRÅDFRI gateway
      */
     public void setPresharedKey(String presharedKey) {
@@ -54,6 +76,7 @@ public class AuthenticateResponse {
 
     /**
      * Set the firmware version of the IKEA TRÅDFRI gateway
+     *
      * @param gatewayFirmwareVersion The new firmware version of the IKEA TRÅDFRI gateway
      */
     public void setGatewayFirmwareVersion(String gatewayFirmwareVersion) {

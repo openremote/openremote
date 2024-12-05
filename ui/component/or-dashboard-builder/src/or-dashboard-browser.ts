@@ -1,8 +1,26 @@
-import {GridStack, GridStackNode } from "gridstack";
-import {css, html, LitElement, unsafeCSS } from "lit";
-import { customElement, state} from "lit/decorators.js";
-import {style} from "./style";
-import {widgetTypes} from "./index";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { GridStack, GridStackNode } from "gridstack";
+import { css, html, LitElement, unsafeCSS } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { style } from "./style";
+import { widgetTypes } from "./index";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -65,17 +83,17 @@ export class OrDashboardBrowser extends LitElement {
 
     protected renderGrid() {
         const sidebarElement = this.shadowRoot?.getElementById("sidebarElement");
-        const coords: Array<[number, number]> = new Array<[number, number]>([0,0],[2,0], [0,2], [2,2], [0,4], [2,4], [0,6], [2,6], [0,8], [2,8]) // TODO: make this unlimited possibilities with a formula
+        const coords: Array<[number, number]> = new Array<[number, number]>([0, 0], [2, 0], [0, 2], [2, 2], [0, 4], [2, 4], [0, 6], [2, 6], [0, 8], [2, 8]) // TODO: make this unlimited possibilities with a formula
         const sidebarItems: any[] = Array.from(widgetTypes)
             .sort((a, b) => a[1].displayName.localeCompare(b[1].displayName))
             .map((typeArr, index) => {
-                return {x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>`}
-        });
+                return { x: coords[index][0], y: coords[index][1], w: 2, h: 2, widgetTypeId: typeArr[0], locked: true, content: `<div class="sidebarItem"><or-icon icon="${typeArr[1].displayIcon}"></or-icon><span class="itemText">${typeArr[1].displayName}</span>` }
+            });
 
         // Setting Sidebar height depending on sidebarItems
         let sidebarHeight = 0;
         sidebarItems.forEach((item) => {
-            if((item.y + item.h) > sidebarHeight) {
+            if ((item.y + item.h) > sidebarHeight) {
                 sidebarHeight = (item.y + item.h);
             }
         });
@@ -88,7 +106,7 @@ export class OrDashboardBrowser extends LitElement {
             newSidebarHeight = sidebarItems.length
         }
         // Creation of the sidebarGrid. Only loads items if already existing
-        if(this.sidebarGrid !== undefined) {
+        if (this.sidebarGrid !== undefined) {
             this.sidebarGrid.removeAll();
             this.sidebarGrid.load(sidebarItems);
         } else {
@@ -106,14 +124,14 @@ export class OrDashboardBrowser extends LitElement {
 
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, sidebarElement);
-            
+
             this.sidebarGrid.load(sidebarItems);
 
             // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
             // This is done by just loading the initial/original widget back in the sidebar.
             // @ts-ignore typechecking since we assume they are not undefined
             this.sidebarGrid.on('removed', (_event: Event, items: GridStackNode[]) => {
-                if(items.length === 1) {
+                if (items.length === 1) {
                     const filteredItems = sidebarItems.filter(widget => {
                         return (widget.content === items[0].content);
                     });
@@ -131,7 +149,7 @@ export class OrDashboardBrowser extends LitElement {
 
         // Seperate Static Background grid (to make it look like the items duplicate)
         const sidebarBgElement = this.shadowRoot?.getElementById("sidebarBgElement");
-        if(this.backgroundGrid != undefined) {
+        if (this.backgroundGrid != undefined) {
             this.backgroundGrid.removeAll();
             this.backgroundGrid.load(sidebarItems);
 

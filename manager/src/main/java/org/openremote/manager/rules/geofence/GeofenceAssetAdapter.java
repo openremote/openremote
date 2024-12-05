@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.rules.geofence;
 
-import org.openremote.model.ContainerService;
+import java.util.List;
+
 import org.openremote.manager.rules.RulesEngine;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
-
-import java.util.List;
 
 /**
  * Defines an adapter that can take a collection of {@link LocationAttributePredicate} that apply to a given
@@ -57,7 +56,8 @@ public interface GeofenceAssetAdapter extends ContainerService {
 
     /**
      * If an adapter handles the location predicates for a particular asset then the adapter should remove that item
-     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetLocationPredicates#getLocationPredicates}
+     * from the list to prevent other adapters from also handling it. If an
+     * {@link RulesEngine.AssetLocationPredicates#getLocationPredicates}
      * is empty then it means there are no longer any location predicates associated with that asset
      */
     void processLocationPredicates(List<RulesEngine.AssetLocationPredicates> modifiedAssetLocationPredicates);

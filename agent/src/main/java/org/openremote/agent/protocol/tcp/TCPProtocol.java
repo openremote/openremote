@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.tcp;
 
-import io.netty.channel.ChannelHandler;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+
 import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -29,13 +35,7 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+import io.netty.channel.ChannelHandler;
 
 /**
  * This is a generic TCP client protocol for communicating with TCP servers; it uses the {@link TCPIOClient} to
@@ -44,7 +44,8 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * To use this protocol create a {@link TCPAgent}.
  */
-public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent, DefaultAgentLink, String, TCPIOClient<String>> {
+public class TCPProtocol
+        extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent, DefaultAgentLink, String, TCPIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TCPProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "TCP Client";
@@ -63,13 +64,11 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
     @Override
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
 
-        Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
+        Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute,
+                agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
 
         if (messageConsumer != null) {
-            protocolMessageConsumers.add(new Pair<>(
-                new AttributeRef(assetId, attribute.getName()),
-                messageConsumer
-            ));
+            protocolMessageConsumers.add(new Pair<>(new AttributeRef(assetId, attribute.getName()), messageConsumer));
         }
     }
 

@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.simulator;
+
+import java.util.List;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.manager.agent.AgentService;
@@ -31,9 +33,6 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorAttributeInfo;
 import org.openremote.model.simulator.SimulatorState;
-
-import java.util.List;
-import java.util.logging.Logger;
 
 // RT: Removed this from META-INF as RequestSimulatorState not used anywhere
 /**
@@ -93,12 +92,10 @@ public class SimulatorService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
     // TODO Should realm admins be able to work with simulators in their realm?
@@ -131,7 +128,8 @@ public class SimulatorService implements ContainerService {
         LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
 
         // We need asset names instead of identifiers for user-friendly display
-        List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId).distinct().toList();
+        List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId)
+                .distinct().toList();
         List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
 
         if (assetNames.size() != linkedAssetIds.size()) {
@@ -139,10 +137,13 @@ public class SimulatorService implements ContainerService {
             return null;
         }
 
-        SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream().map(refAttributeEntry -> {
-            String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
-            return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(), refAttributeEntry.getValue(), protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
-        }).toArray(SimulatorAttributeInfo[]::new);
+        SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream()
+                .map(refAttributeEntry -> {
+                    String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
+                    return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(),
+                            refAttributeEntry.getValue(),
+                            protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
+                }).toArray(SimulatorAttributeInfo[]::new);
 
         return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
     }

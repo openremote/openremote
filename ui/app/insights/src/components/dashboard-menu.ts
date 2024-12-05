@@ -1,14 +1,32 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { html, css, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-drawer";
-import {when} from "lit/directives/when.js";
+import { when } from "lit/directives/when.js";
 import { Dashboard } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
-import {style} from "../style";
+import { style } from "../style";
 import { OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {DefaultColor5} from "@openremote/core";
+import { DefaultColor5 } from "@openremote/core";
 
 // language=css
 const styling = css`
@@ -75,10 +93,10 @@ export class DashboardMenu extends LitElement {
     // For toggling drawer elsewhere, such as page-insights.ts
     // Returned value is the new status of the Drawer
     public async toggleDrawer(state?: boolean): Promise<boolean> {
-        if(state != undefined && state == this.drawer.open) {
+        if (state != undefined && state == this.drawer.open) {
             return this.drawer.open;
         }
-        if(this.drawer?.open) {
+        if (this.drawer?.open) {
             this.drawerScrim?.classList.add("drawer-scrim-fadeout");
             this.drawer.toggle();
             await new Promise(r => setTimeout(r, 250)); // one-liner for waiting until fadeout animation is done
@@ -86,7 +104,7 @@ export class DashboardMenu extends LitElement {
             this.drawer?.toggle();
         }
         this.requestUpdate(); // to reload the component, since we need to remove the drawerScrim we added earlier
-        this.dispatchEvent(new CustomEvent('toggle', { detail: { value: this.drawer.open }}))
+        this.dispatchEvent(new CustomEvent('toggle', { detail: { value: this.drawer.open } }))
         return this.drawer?.open;
     }
 
@@ -101,12 +119,12 @@ export class DashboardMenu extends LitElement {
 
     protected selectDashboard(id: string) {
         const dashboard = this.dashboards.find((d) => d.id == id);
-        this.dispatchEvent(new CustomEvent('change', { detail: { value: dashboard }}));
+        this.dispatchEvent(new CustomEvent('change', { detail: { value: dashboard } }));
     }
 
     protected changeRealm(realm: string) {
-        if(realm != this.realm) {
-            this.dispatchEvent(new CustomEvent("realm", { detail: { value: realm }}));
+        if (realm != this.realm) {
+            this.dispatchEvent(new CustomEvent("realm", { detail: { value: realm } }));
         }
     }
 
@@ -150,10 +168,10 @@ export class DashboardMenu extends LitElement {
             </div>
         `;
         const actionItems: ListItem[] = [];
-        if(this.realms !== undefined && this.realms.length > 1) {
+        if (this.realms !== undefined && this.realms.length > 1) {
             actionItems.push({ icon: 'domain', text: i18next.t('changeRealm'), value: 'realm' })
         }
-        if(this.userId !== undefined) {
+        if (this.userId !== undefined) {
             actionItems.push({ icon: 'logout', text: i18next.t('logout'), value: 'logout' });
         } else {
             actionItems.push({ icon: 'login', text: i18next.t('login'), value: 'login' })
@@ -167,18 +185,18 @@ export class DashboardMenu extends LitElement {
                     </div>
                     <div id="drawer-actions-container">
                         <or-mwc-list .listItems="${actionItems}" .values="${this.selectedActions}" @or-mwc-list-changed="${(ev: CustomEvent) => {
-                            switch (ev.detail[0].value) {
-                                case 'realm': {
-                                    this.promptRealmSwitch(); break;
-                                } case 'logout': {
-                                    this.logout(); break;
-                                } case 'login': {
-                                    this.login(); break;
-                                }
-                            }
-                            // Hacky way to remove "select" status on or-mwc-list by updating selectedActions 
-                            this.selectedActions = this.selectedActions == null ? [] : null;
-                        }}"
+                switch (ev.detail[0].value) {
+                    case 'realm': {
+                        this.promptRealmSwitch(); break;
+                    } case 'logout': {
+                        this.logout(); break;
+                    } case 'login': {
+                        this.login(); break;
+                    }
+                }
+                // Hacky way to remove "select" status on or-mwc-list by updating selectedActions 
+                this.selectedActions = this.selectedActions == null ? [] : null;
+            }}"
                         ></or-mwc-list.>
                     </div>
                 </div>
@@ -201,8 +219,8 @@ function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, o
         ${when(loading, () => html`
             <or-loading-indicator></or-loading-indicator>
         `, () => {
-            const menuItems = getDashboardMenuItems(dashboards, userId);
-            return html`
+        const menuItems = getDashboardMenuItems(dashboards, userId);
+        return html`
                 <div style="padding: 16px 0;">
                     <div id="list-container">
                         ${when(menuItems[0] == undefined, () => html`
@@ -228,13 +246,13 @@ function getDashboardListTemplate(dashboards: Dashboard[], selectedId: string, o
                     </div>
                 </div>
             `
-        })}
+    })}
     `
 }
 
 function getDashboardMenuItems(dashboards: Dashboard[], userId?: string): ListItem[][] {
     const dashboardItems: ListItem[][] = [];
-    if(dashboards?.length > 0) {
+    if (dashboards?.length > 0) {
         const myDashboards: Dashboard[] = [];
         const otherDashboards: Dashboard[] = [];
         dashboards?.forEach((d) => {

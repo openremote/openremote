@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.util;
 
 import org.openremote.model.value.impl.ColourRGB;
@@ -19,6 +37,7 @@ public class ColourXY {
 
     /**
      * Construct the ColourXY class
+     *
      * @param X The X value of the colour
      * @param Y The Y value of the colour
      */
@@ -35,6 +54,7 @@ public class ColourXY {
 
     /**
      * Get the X value of the colour
+     *
      * @return The X value of the colour
      */
     public Integer getX() {
@@ -43,6 +63,7 @@ public class ColourXY {
 
     /**
      * Get the Y value of the colour
+     *
      * @return The Y value of the colour
      */
     public Integer getY() {
@@ -51,6 +72,7 @@ public class ColourXY {
 
     /**
      * Set the X value of the colour
+     *
      * @param X The new X value of the colour
      */
     public void setX(Integer X) {
@@ -59,6 +81,7 @@ public class ColourXY {
 
     /**
      * Set the Y value of the colour
+     *
      * @param Y The new Y value of the colour
      */
     public void setY(Integer Y) {
@@ -67,6 +90,7 @@ public class ColourXY {
 
     /**
      * Construct the ColourXY class from the {@link ColourRGB} class
+     *
      * @param colourRGB The {@link ColourRGB} class
      * @return The ColourXY class
      */

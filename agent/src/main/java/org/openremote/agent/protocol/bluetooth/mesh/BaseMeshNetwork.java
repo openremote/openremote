@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh;
-
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigNetKeyUpdate;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigAppKeyUpdate;
-import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigKeyRefreshPhaseSet;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-import org.openremote.agent.protocol.bluetooth.mesh.NetworkKey;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,18 +29,27 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigAppKeyUpdate;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigKeyRefreshPhaseSet;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigNetKeyUpdate;
+import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.ProxyFilter;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
 
 abstract public class BaseMeshNetwork {
 
     public static final Logger LOG = Logger.getLogger(BaseMeshNetwork.class.getName());
 
     // Key refresh phases
-    public static final int NORMAL_OPERATION = 0; //Normal operation
-    public static final int IV_UPDATE_ACTIVE = 1; //IV Update active
+    public static final int NORMAL_OPERATION = 0; // Normal operation
+    public static final int IV_UPDATE_ACTIVE = 1; // IV Update active
 
     final String meshUUID;
-    protected final Comparator<ApplicationKey> appKeyComparator = (key1, key2) -> Integer.compare(key1.getKeyIndex(), key2.getKeyIndex());
-    protected final Comparator<NetworkKey> netKeyComparator = (key1, key2) -> Integer.compare(key1.getKeyIndex(), key2.getKeyIndex());
+    protected final Comparator<ApplicationKey> appKeyComparator = (key1, key2) -> Integer.compare(key1.getKeyIndex(),
+            key2.getKeyIndex());
+    protected final Comparator<NetworkKey> netKeyComparator = (key1, key2) -> Integer.compare(key1.getKeyIndex(),
+            key2.getKeyIndex());
     protected MeshNetworkCallbacks mCallbacks;
     String schema = "http://json-schema.org/draft-04/schema#";
     String id = "http://www.bluetooth.com/specifications/assigned-numbers/mesh-profile/cdb-schema.json#";
@@ -66,24 +65,24 @@ abstract public class BaseMeshNetwork {
     List<Group> groups = new ArrayList<>();
     List<Scene> scenes = new ArrayList<>();
     protected Map<Integer, List<Integer>> networkExclusions = new HashMap<>();
-    //Library related attributes
+    // Library related attributes
     int unicastAddress = 0x0001;
     boolean lastSelected;
-    //protected SparseIntArray sequenceNumbers = new SparseIntArray();
+    // protected SparseIntArray sequenceNumbers = new SparseIntArray();
     protected Map<Integer, Integer> sequenceNumbers = new HashMap<>();
     private ProxyFilter proxyFilter;
-    protected final Comparator<ProvisionedMeshNode> nodeComparator = (node1, node2) ->
-        Integer.compare(node1.getUnicastAddress(), node2.getUnicastAddress());
-    protected final Comparator<Group> groupComparator = (group1, group2) ->
-        Integer.compare(group1.getAddress(), group2.getAddress());
+    protected final Comparator<ProvisionedMeshNode> nodeComparator = (node1, node2) -> Integer
+            .compare(node1.getUnicastAddress(), node2.getUnicastAddress());
+    protected final Comparator<Group> groupComparator = (group1, group2) -> Integer.compare(group1.getAddress(),
+            group2.getAddress());
     // protected final Comparator<Scene> sceneComparator = (scene1, scene2) ->
-    //    Integer.compare(scene1.getNumber(), scene2.getNumber());
-    protected final Comparator<AllocatedUnicastRange> unicastRangeComparator = (range1, range2) ->
-        Integer.compare(range1.getLowAddress(), range2.getLowAddress());
-    protected final Comparator<AllocatedGroupRange> groupRangeComparator = (range1, range2) ->
-        Integer.compare(range1.getLowAddress(), range2.getLowAddress());
-    protected final Comparator<AllocatedSceneRange> sceneRangeComparator = (range1, range2) ->
-        Integer.compare(range1.getFirstScene(), range2.getFirstScene());
+    // Integer.compare(scene1.getNumber(), scene2.getNumber());
+    protected final Comparator<AllocatedUnicastRange> unicastRangeComparator = (range1, range2) -> Integer
+            .compare(range1.getLowAddress(), range2.getLowAddress());
+    protected final Comparator<AllocatedGroupRange> groupRangeComparator = (range1, range2) -> Integer
+            .compare(range1.getLowAddress(), range2.getLowAddress());
+    protected final Comparator<AllocatedSceneRange> sceneRangeComparator = (range1, range2) -> Integer
+            .compare(range1.getFirstScene(), range2.getFirstScene());
 
     BaseMeshNetwork(final String meshUUID) {
         this.meshUUID = meshUUID;
@@ -105,7 +104,8 @@ abstract public class BaseMeshNetwork {
      * @throws IllegalArgumentException in case the generated application key already exists
      */
     public synchronized NetworkKey createNetworkKey() throws IllegalArgumentException {
-        final NetworkKey key = new NetworkKey(getAvailableNetKeyIndex(), MeshParserUtils.toByteArray(SecureUtils.generateRandomNetworkKey()));
+        final NetworkKey key = new NetworkKey(getAvailableNetKeyIndex(),
+                MeshParserUtils.toByteArray(SecureUtils.generateRandomNetworkKey()));
         key.setMeshUuid(meshUUID);
         return key;
     }
@@ -148,10 +148,11 @@ abstract public class BaseMeshNetwork {
      * </p>
      *
      * @param networkKey Network key
-     * @param newNetKey  16-byte hexadecimal string
+     * @param newNetKey 16-byte hexadecimal string
      * @throws IllegalArgumentException if the key is already in use
      */
-    public synchronized boolean updateNetKey(final NetworkKey networkKey, final String newNetKey) throws IllegalArgumentException {
+    public synchronized boolean updateNetKey(final NetworkKey networkKey, final String newNetKey)
+            throws IllegalArgumentException {
         if (MeshParserUtils.validateKeyInput(newNetKey)) {
             final byte[] key = MeshParserUtils.toByteArray(newNetKey);
             if (isNetKeyExists(key)) {
@@ -161,8 +162,8 @@ abstract public class BaseMeshNetwork {
             final int keyIndex = networkKey.getKeyIndex();
             final NetworkKey netKey = getNetKey(keyIndex);
             if (!isKeyInUse(netKey)) {
-                //We check if the contents of the key are the same
-                //This will return true only if the key index and the key are the same
+                // We check if the contents of the key are the same
+                // This will return true only if the key index and the key are the same
                 if (netKey.equals(networkKey)) {
                     netKey.setKey(key);
                     return updateMeshKey(netKey);
@@ -192,16 +193,16 @@ abstract public class BaseMeshNetwork {
     public synchronized boolean updateNetKey(final NetworkKey networkKey) throws IllegalArgumentException {
         final int keyIndex = networkKey.getKeyIndex();
         final NetworkKey key = getNetKey(keyIndex);
-        //We check if the contents of the key are the same
-        //This will return true only if the key index and the key are the same
+        // We check if the contents of the key are the same
+        // This will return true only if the key index and the key are the same
         if (key.equals(networkKey)) {
             // The name might be updated so we must update the key.
             return updateMeshKey(networkKey);
         } else {
-            //If the keys are not the same we check if its in use before updating the key
+            // If the keys are not the same we check if its in use before updating the key
             if (!isKeyInUse(key)) {
-                //We check if the contents of the key are the same
-                //This will return true only if the key index and the key are the same
+                // We check if the contents of the key are the same
+                // This will return true only if the key index and the key are the same
                 return updateMeshKey(networkKey);
             } else {
                 throw new IllegalArgumentException("Unable to update a network key that's already in use.");
@@ -217,24 +218,35 @@ abstract public class BaseMeshNetwork {
      * {@link NetworkKey#KEY_DISTRIBUTION} - Distribution of the new Keys {@link #distributeNetKey(NetworkKey, byte[])}.
      * {@link NetworkKey#USING_NEW_KEYS} - Switching to the new keys {@link #switchToNewKey(NetworkKey)}.
      * {@link NetworkKey#REVOKE_OLD_KEYS} - Revoking old keys {@link #revokeOldKey(NetworkKey)}.
-     * The new key is distributed to the provisioner node by setting the currently used key as the old key and setting the
-     * currently used key to the new key value. This will change the phase of the network key to{@link NetworkKey#KEY_DISTRIBUTION}.
-     * During this phase a node will transmit using the old key but may receive using both old and the new key. After a successful
-     * distribution to the provisioner, the user may start sending {@link ConfigNetKeyUpdate} messages to the respective nodes in the
-     * network that requires updating. In addition if the user wishes to update the AppKey call {@link #distributeAppKey(ApplicationKey, byte[])}
-     * to update the Application Key on the provisioner and then distribute it to other nodes by sending {@link ConfigAppKeyUpdate} to
-     * update an AppKey. However it shall be only successfully processed if the NetworkKey bound to the Application Key is in
-     * {@link NetworkKey#KEY_DISTRIBUTION} and the received app key value is different or when the received AppKey value is the same as
-     * previously received value. Also note that sending a ConfigNetKeyUpdate during {@link NetworkKey#NORMAL_OPERATION} will switch the
-     * phase to {@link NetworkKey#KEY_DISTRIBUTION}. Once distribution is completed, call {@link #switchToNewKey(NetworkKey)} and
+     * The new key is distributed to the provisioner node by setting the currently used key as the old key and setting
+     * the
+     * currently used key to the new key value. This will change the phase of the network key
+     * to{@link NetworkKey#KEY_DISTRIBUTION}.
+     * During this phase a node will transmit using the old key but may receive using both old and the new key. After a
+     * successful
+     * distribution to the provisioner, the user may start sending {@link ConfigNetKeyUpdate} messages to the respective
+     * nodes in the
+     * network that requires updating. In addition if the user wishes to update the AppKey call
+     * {@link #distributeAppKey(ApplicationKey, byte[])}
+     * to update the Application Key on the provisioner and then distribute it to other nodes by sending
+     * {@link ConfigAppKeyUpdate} to
+     * update an AppKey. However it shall be only successfully processed if the NetworkKey bound to the Application Key
+     * is in
+     * {@link NetworkKey#KEY_DISTRIBUTION} and the received app key value is different or when the received AppKey value
+     * is the same as
+     * previously received value. Also note that sending a ConfigNetKeyUpdate during {@link NetworkKey#NORMAL_OPERATION}
+     * will switch the
+     * phase to {@link NetworkKey#KEY_DISTRIBUTION}. Once distribution is completed, call
+     * {@link #switchToNewKey(NetworkKey)} and
      * send {@link ConfigKeyRefreshPhaseSet} to other nodes.
      * </p>
      *
      * @param networkKey Network key
-     * @param newNetKey  16-byte key
+     * @param newNetKey 16-byte key
      * @throws IllegalArgumentException the key value is already in use.
      */
-    public synchronized NetworkKey distributeNetKey(final NetworkKey networkKey, final byte[] newNetKey) throws IllegalArgumentException {
+    public synchronized NetworkKey distributeNetKey(final NetworkKey networkKey, final byte[] newNetKey)
+            throws IllegalArgumentException {
         if (validateKey(newNetKey)) {
             if (isNetKeyExists(newNetKey)) {
                 throw new IllegalArgumentException("Net key value is already in use.");
@@ -303,8 +315,10 @@ abstract public class BaseMeshNetwork {
     /**
      * Revokes the old key.
      * <p>
-     * This initiates {@link NetworkKey#REVOKE_OLD_KEYS} of the Key Refresh Procedure in which user must send {@link ConfigKeyRefreshPhaseSet}
-     * message with transition set to {@link NetworkKey#REVOKE_OLD_KEYS} to the other nodes going through the Key Refresh Procedure.
+     * This initiates {@link NetworkKey#REVOKE_OLD_KEYS} of the Key Refresh Procedure in which user must send
+     * {@link ConfigKeyRefreshPhaseSet}
+     * message with transition set to {@link NetworkKey#REVOKE_OLD_KEYS} to the other nodes going through the Key
+     * Refresh Procedure.
      * The library at this point will set the given Network Key's Phase to {@link NetworkKey#NORMAL_OPERATION}.
      * </p>
      *
@@ -317,7 +331,6 @@ abstract public class BaseMeshNetwork {
         }
         return false;
     }
-
 
     /**
      * Removes a network key from the network key list
@@ -363,10 +376,12 @@ abstract public class BaseMeshNetwork {
      */
     public synchronized ApplicationKey createAppKey() throws IllegalArgumentException {
         if (netKeys.isEmpty()) {
-            throw new IllegalStateException("Cannot create an App Key without a Network key. Consider creating a network key first");
+            throw new IllegalStateException(
+                    "Cannot create an App Key without a Network key. Consider creating a network key first");
         }
 
-        final ApplicationKey key = new ApplicationKey(getAvailableAppKeyIndex(), MeshParserUtils.toByteArray(SecureUtils.generateRandomApplicationKey()));
+        final ApplicationKey key = new ApplicationKey(getAvailableAppKeyIndex(),
+                MeshParserUtils.toByteArray(SecureUtils.generateRandomApplicationKey()));
         key.setMeshUuid(meshUUID);
         return key;
     }
@@ -380,7 +395,8 @@ abstract public class BaseMeshNetwork {
      */
     public synchronized boolean addAppKey(final ApplicationKey newAppKey) {
         if (netKeys.isEmpty()) {
-            throw new IllegalStateException("Cannot create an App Key without a Network key. Consider creating a network key first");
+            throw new IllegalStateException(
+                    "Cannot create an App Key without a Network key. Consider creating a network key first");
         }
 
         if (isAppKeyExists(newAppKey.getKey())) {
@@ -452,15 +468,18 @@ abstract public class BaseMeshNetwork {
      * <p>
      * Updates the Key if it is not use, if not Updating a Key's key value requires initiating a Key Refresh Procedure.
      * This requires the bound NetworkKey of the AppKey to be updated. A NetworkKey that's in use would require a
-     * Key Refresh Procedure to update it's key contents. However a NetworkKey that's not in could be updated without this
-     * procedure. If the key is in use, call {@link #distributeNetKey(NetworkKey, byte[])} to initiate the Key Refresh Procedure.
+     * Key Refresh Procedure to update it's key contents. However a NetworkKey that's not in could be updated without
+     * this
+     * procedure. If the key is in use, call {@link #distributeNetKey(NetworkKey, byte[])} to initiate the Key Refresh
+     * Procedure.
      * </p>
      *
      * @param applicationKey {@link ApplicationKey}
-     * @param newAppKey      Application key
+     * @param newAppKey Application key
      * @throws IllegalArgumentException if the key is in use.
      */
-    public synchronized boolean updateAppKey(final ApplicationKey applicationKey, final String newAppKey) throws IllegalArgumentException {
+    public synchronized boolean updateAppKey(final ApplicationKey applicationKey, final String newAppKey)
+            throws IllegalArgumentException {
         if (MeshParserUtils.validateKeyInput(newAppKey)) {
             final byte[] key = MeshParserUtils.toByteArray(newAppKey);
             if (isNetKeyExists(key)) {
@@ -470,8 +489,8 @@ abstract public class BaseMeshNetwork {
             final int keyIndex = applicationKey.getKeyIndex();
             final ApplicationKey appKey = getAppKey(keyIndex);
             if (!isKeyInUse(appKey)) {
-                //We check if the contents of the key are the same
-                //This will return true only if the key index and the key are the same
+                // We check if the contents of the key are the same
+                // This will return true only if the key index and the key are the same
                 if (appKey.equals(applicationKey)) {
                     appKey.setKey(key);
                     return updateMeshKey(appKey);
@@ -489,11 +508,16 @@ abstract public class BaseMeshNetwork {
      * Updates an app key in the mesh network.
      *
      * <p>
-     * Updates the Key if it is not use, if not Updating a Key's key value requires initiating a Key Refresh Procedure. This requires
-     * the bound NetworkKey of the AppKey to be updated. A NetworkKey that's in use would require aKey Refresh Procedure to update
-     * it's key contents. However a NetworkKey that's not in could be updated without this procedure. If the key is in use, call
-     * {@link #distributeNetKey(NetworkKey, byte[])} to initiate the Key Refresh Procedure. After distributing the NetworkKey bound to
-     * the Application Key, user may call {@link #distributeAppKey(ApplicationKey, byte[])} to update the corresponding ApplicationKey.
+     * Updates the Key if it is not use, if not Updating a Key's key value requires initiating a Key Refresh Procedure.
+     * This requires
+     * the bound NetworkKey of the AppKey to be updated. A NetworkKey that's in use would require aKey Refresh Procedure
+     * to update
+     * it's key contents. However a NetworkKey that's not in could be updated without this procedure. If the key is in
+     * use, call
+     * {@link #distributeNetKey(NetworkKey, byte[])} to initiate the Key Refresh Procedure. After distributing the
+     * NetworkKey bound to
+     * the Application Key, user may call {@link #distributeAppKey(ApplicationKey, byte[])} to update the corresponding
+     * ApplicationKey.
      * </p>
      *
      * @param applicationKey {@link ApplicationKey}
@@ -502,10 +526,10 @@ abstract public class BaseMeshNetwork {
     public synchronized boolean updateAppKey(final ApplicationKey applicationKey) throws IllegalArgumentException {
         final int keyIndex = applicationKey.getKeyIndex();
         final ApplicationKey key = getAppKey(keyIndex);
-        //If the keys are not the same we check if its in use before updating the key
+        // If the keys are not the same we check if its in use before updating the key
         if (!isKeyInUse(key)) {
-            //We check if the contents of the key are the same
-            //This will return true only if the key index and the key are the same
+            // We check if the contents of the key are the same
+            // This will return true only if the key index and the key are the same
             return updateMeshKey(applicationKey);
         } else {
             throw new IllegalArgumentException("Unable to update a application key that's already in use.");
@@ -516,20 +540,25 @@ abstract public class BaseMeshNetwork {
      * Distributes/updates the provisioner node's the application key and returns the updated Application Key.
      *
      * <p>
-     * This will only work if the NetworkKey bound to this ApplicationKey is in Phase 1 of the Key Refresh Procedure. Therefore the NetworkKey
-     * must be updated first before updating it's bound application key. Call {@link #distributeNetKey(NetworkKey, byte[])} to initiate the
-     * Key Refresh Procedure to update a Network Key that's in use by the provisioner or the nodes, if it has not been started already.
+     * This will only work if the NetworkKey bound to this ApplicationKey is in Phase 1 of the Key Refresh Procedure.
+     * Therefore the NetworkKey
+     * must be updated first before updating it's bound application key. Call
+     * {@link #distributeNetKey(NetworkKey, byte[])} to initiate the
+     * Key Refresh Procedure to update a Network Key that's in use by the provisioner or the nodes, if it has not been
+     * started already.
      * To update a key that's not in use call {@link #updateAppKey(ApplicationKey, String)}
      * <p>
-     * Once the provisioner nodes' AppKey is updated user must distribute the updated AppKey to the nodes. This can be done by sending
+     * Once the provisioner nodes' AppKey is updated user must distribute the updated AppKey to the nodes. This can be
+     * done by sending
      * {@link ConfigAppKeyUpdate} message with the new key.
      * </p>
      *
      * @param applicationKey Network key
-     * @param newAppKey      16-byte key
+     * @param newAppKey 16-byte key
      * @throws IllegalArgumentException the key value is already in use.
      */
-    public synchronized ApplicationKey distributeAppKey(final ApplicationKey applicationKey, final byte[] newAppKey) throws IllegalArgumentException {
+    public synchronized ApplicationKey distributeAppKey(final ApplicationKey applicationKey, final byte[] newAppKey)
+            throws IllegalArgumentException {
         if (validateKey(newAppKey)) {
             if (isAppKeyExists(newAppKey)) {
                 throw new IllegalArgumentException("App key value is already in use.");
@@ -538,7 +567,7 @@ abstract public class BaseMeshNetwork {
             final int keyIndex = applicationKey.getKeyIndex();
             final ApplicationKey appKey = getAppKey(keyIndex);
             if (appKey.equals(applicationKey)) {
-                if(appKey.distributeKey(newAppKey)){
+                if (appKey.distributeKey(newAppKey)) {
                     updateNodeKeyStatus(appKey);
                     if (updateMeshKey(appKey)) {
                         return appKey;
@@ -615,7 +644,7 @@ abstract public class BaseMeshNetwork {
         for (ProvisionedMeshNode node : nodes) {
             if (!node.getUuid().equalsIgnoreCase(getSelectedProvisioner().getProvisionerUuid())) {
                 final int index = meshKey.getKeyIndex();
-                //We need to check if a key index is in use by checking in the added net/app key indexes
+                // We need to check if a key index is in use by checking in the added net/app key indexes
                 if (meshKey instanceof ApplicationKey) {
                     return MeshParserUtils.isNodeKeyExists(node.getAddedAppKeys(), index);
                 } else {
@@ -629,17 +658,16 @@ abstract public class BaseMeshNetwork {
     /**
      * Creates a provisioner
      *
-     * @param name         Provisioner name
+     * @param name Provisioner name
      * @param unicastRange {@link AllocatedUnicastRange} for the provisioner
-     * @param groupRange   {@link AllocatedGroupRange} for the provisioner
-     * @param sceneRange   {@link AllocatedSceneRange} for the provisioner
+     * @param groupRange {@link AllocatedGroupRange} for the provisioner
+     * @param sceneRange {@link AllocatedSceneRange} for the provisioner
      * @return {@link Provisioner}
      * @throws IllegalArgumentException if the name is empty
      */
-    public synchronized Provisioner createProvisioner(final String name,
-                                         final AllocatedUnicastRange unicastRange,
-                                         final AllocatedGroupRange groupRange,
-                                         final AllocatedSceneRange sceneRange) throws IllegalArgumentException {
+    public synchronized Provisioner createProvisioner(final String name, final AllocatedUnicastRange unicastRange,
+            final AllocatedGroupRange groupRange, final AllocatedSceneRange sceneRange)
+            throws IllegalArgumentException {
         if (name == null || name.length() == 0) {
             throw new IllegalArgumentException("Name cannot be empty.");
         }
@@ -649,7 +677,8 @@ abstract public class BaseMeshNetwork {
         unicastRanges.add(unicastRange != null ? unicastRange : new AllocatedUnicastRange(0x0001, 0x7FFF));
         groupRanges.add(groupRange != null ? groupRange : new AllocatedGroupRange(0xC000, 0xFEFF));
         sceneRanges.add(sceneRange != null ? sceneRange : new AllocatedSceneRange(0x0001, 0xFFFF));
-        final Provisioner provisioner = new Provisioner(UUID.randomUUID().toString(), unicastRanges, groupRanges, sceneRanges, meshUUID);
+        final Provisioner provisioner = new Provisioner(UUID.randomUUID().toString(), unicastRanges, groupRanges,
+                sceneRanges, meshUUID);
         provisioner.setProvisionerName(name);
         return provisioner;
     }
@@ -685,14 +714,15 @@ abstract public class BaseMeshNetwork {
 
         for (Provisioner other : provisioners) {
             if (provisioner.hasOverlappingUnicastRanges(other.getAllocatedUnicastRanges())
-                || provisioner.hasOverlappingGroupRanges(other.getAllocatedGroupRanges())
-                || provisioner.hasOverlappingSceneRanges(other.getAllocatedSceneRanges())) {
+                    || provisioner.hasOverlappingGroupRanges(other.getAllocatedGroupRanges())
+                    || provisioner.hasOverlappingSceneRanges(other.getAllocatedSceneRanges())) {
                 throw new IllegalArgumentException("Provisioner ranges overlap.");
             }
         }
 
         if (!provisioner.isAddressWithinAllocatedRange(provisioner.getProvisionerAddress())) {
-            throw new IllegalArgumentException("Unicast address assigned to a provisioner must be within an allocated unicast address range.");
+            throw new IllegalArgumentException(
+                    "Unicast address assigned to a provisioner must be within an allocated unicast address range.");
         }
 
         if (isAddressInUse(provisioner.getProvisionerAddress())) {
@@ -779,9 +809,6 @@ abstract public class BaseMeshNetwork {
         return false;
     }
 
-
-
-
     final synchronized void notifyProvisionersUpdated(final List<Provisioner> provisioner) {
         if (mCallbacks != null) {
             mCallbacks.onProvisionersUpdated(provisioner);
@@ -866,7 +893,6 @@ abstract public class BaseMeshNetwork {
         return true;
     }
 
-
     /**
      * Returns the list of {@link Provisioner}
      */
@@ -911,7 +937,8 @@ abstract public class BaseMeshNetwork {
     /**
      * Sets the {@link ProxyFilter} settings on the proxy
      * <p>
-     * Please note that this is not persisted within the node since the filter is reinitialized to a whitelist filter upon connecting to a proxy node.
+     * Please note that this is not persisted within the node since the filter is reinitialized to a whitelist filter
+     * upon connecting to a proxy node.
      * Therefore after setting a proxy filter and disconnecting users will have to manually
      */
     public synchronized void setProxyFilter(final ProxyFilter proxyFilter) {
@@ -922,8 +949,10 @@ abstract public class BaseMeshNetwork {
      * Deletes a mesh node from the list of provisioned nodes
      *
      * <p>
-     * Note that deleting a node manually will not reset the node, but only be deleted from the stored list of provisioned nodes.
-     * However you may still be able to connect to the same node, if it was not reset since the network may still exist. This
+     * Note that deleting a node manually will not reset the node, but only be deleted from the stored list of
+     * provisioned nodes.
+     * However you may still be able to connect to the same node, if it was not reset since the network may still exist.
+     * This
      * would be useful to in case if a node was physically reset and needs to be removed from the mesh network/db
      * </p>
      *
@@ -931,7 +960,7 @@ abstract public class BaseMeshNetwork {
      * @return true if deleted and false otherwise
      */
     public synchronized boolean deleteNode(ProvisionedMeshNode meshNode) {
-        //Let's go through the nodes and delete if a node exists
+        // Let's go through the nodes and delete if a node exists
         boolean nodeDeleted = false;
         for (ProvisionedMeshNode node : nodes) {
             if (node.getUuid().equalsIgnoreCase(meshNode.getUuid())) {
@@ -942,7 +971,7 @@ abstract public class BaseMeshNetwork {
                 break;
             }
         }
-        //We must also check if there is a provisioner based on the node we deleted
+        // We must also check if there is a provisioner based on the node we deleted
         if (nodeDeleted) {
             for (Provisioner provisioner : provisioners) {
                 if (provisioner.getProvisionerUuid().equalsIgnoreCase(meshNode.getUuid())) {
@@ -967,7 +996,7 @@ abstract public class BaseMeshNetwork {
      * @param node Provisioned mesh node.
      */
     private void excludeNode(final ProvisionedMeshNode node) {
-        //Exclude node
+        // Exclude node
         node.setExcluded(true);
         notifyNodeUpdated(node);
         List<Integer> addresses = networkExclusions.get(ivIndex.getIvIndex());
@@ -984,7 +1013,4 @@ abstract public class BaseMeshNetwork {
         networkExclusions.put(ivIndex.getIvIndex(), addresses);
         notifyNetworkUpdated();
     }
-
-
-
 }

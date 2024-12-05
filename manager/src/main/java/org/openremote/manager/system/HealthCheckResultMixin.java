@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.system;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,11 +28,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
-import org.apache.camel.health.HealthCheck;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
+import org.apache.camel.health.HealthCheck;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface HealthCheckResultMixin {
@@ -40,8 +40,7 @@ public interface HealthCheckResultMixin {
         }
 
         @Override
-        public void serialize(HealthCheck value, JsonGenerator g, SerializerProvider provider) throws IOException
-        {
+        public void serialize(HealthCheck value, JsonGenerator g, SerializerProvider provider) throws IOException {
             g.writeString(value.getClass().getSimpleName());
         }
     }

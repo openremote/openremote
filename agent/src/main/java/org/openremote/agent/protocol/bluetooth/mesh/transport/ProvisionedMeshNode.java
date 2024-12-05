@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.ApplicationKey;
 import org.openremote.agent.protocol.bluetooth.mesh.Features;
@@ -29,14 +36,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.models.SigModelParser;
 import org.openremote.agent.protocol.bluetooth.mesh.provisionerstates.UnprovisionedMeshNode;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
 
 public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
 
@@ -67,12 +66,11 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
      * Constructor to be used only by the library
      *
      * @param provisioner {@link Provisioner}
-     * @param netKeys     List of {@link NetworkKey}
-     * @param appKeys     List of {@link ApplicationKey}
+     * @param netKeys List of {@link NetworkKey}
+     * @param appKeys List of {@link ApplicationKey}
      */
-    public ProvisionedMeshNode(final Provisioner provisioner,
-                               final List<NetworkKey> netKeys,
-                               final List<ApplicationKey> appKeys) {
+    public ProvisionedMeshNode(final Provisioner provisioner, final List<NetworkKey> netKeys,
+            final List<ApplicationKey> appKeys) {
         this.meshUuid = provisioner.getMeshUuid();
         uuid = provisioner.getProvisionerUuid();
         isConfigured = true;
@@ -96,7 +94,8 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         final Map<Integer, Element> elements = new HashMap<>();
         elements.put(unicastAddress, element);
         mElements = elements;
-        nodeFeatures = new Features(Features.UNSUPPORTED, Features.UNSUPPORTED, Features.UNSUPPORTED, Features.UNSUPPORTED);
+        nodeFeatures = new Features(Features.UNSUPPORTED, Features.UNSUPPORTED, Features.UNSUPPORTED,
+                Features.UNSUPPORTED);
     }
 
     public final Map<Integer, Element> getElements() {
@@ -256,8 +255,8 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
                     for (MeshModel model : element.getMeshModels().values()) {
                         if (model.getModelId() == SigModelParser.CONFIGURATION_SERVER) {
                             final ConfigurationServerModel configServerModel = (ConfigurationServerModel) model;
-                            if (configServerModel.getHeartbeatPublication() != null &&
-                                configServerModel.getHeartbeatPublication().getNetKeyIndex() == index) {
+                            if (configServerModel.getHeartbeatPublication() != null
+                                    && configServerModel.getHeartbeatPublication().getNetKeyIndex() == index) {
                                 configServerModel.setHeartbeatPublication(null);
                             }
                         }
@@ -306,9 +305,10 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
      * Update the added net key list of the node
      *
      * @param netKeyIndex NetKey Index
-     * @param indexes     AppKey indexes
+     * @param indexes AppKey indexes
      */
-    protected final void updateAppKeyList(final int netKeyIndex, final List<Integer> indexes, final List<ApplicationKey> keyIndexes) {
+    protected final void updateAppKeyList(final int netKeyIndex, final List<Integer> indexes,
+            final List<ApplicationKey> keyIndexes) {
         if (mAddedAppKeys.isEmpty()) {
             mAddedAppKeys.addAll(addAppKeyList(indexes, new ArrayList<>()));
         } else {
@@ -380,9 +380,9 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
         final boolean friendFeatureSupported = configCompositionDataStatus.isFriendFeatureSupported();
         final boolean lowPowerFeatureSupported = configCompositionDataStatus.isLowPowerFeatureSupported();
         nodeFeatures = new Features(friendFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED,
-            lowPowerFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED,
-            proxyFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED,
-            relayFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED);
+                lowPowerFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED,
+                proxyFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED,
+                relayFeatureSupported ? Features.ENABLED : Features.UNSUPPORTED);
         mElements.putAll(configCompositionDataStatus.getElements());
     }
 
@@ -398,8 +398,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
      *
      * @param configModelAppStatus ConfigModelAppStatus containing the bound app key information
      */
-    protected final void setAppKeyBindStatus(
-        final ConfigModelAppStatus configModelAppStatus) {
+    protected final void setAppKeyBindStatus(final ConfigModelAppStatus configModelAppStatus) {
         if (configModelAppStatus.isSuccessful()) {
             final Element element = mElements.get(configModelAppStatus.getElementAddress());
             if (element != null) {
@@ -418,8 +417,7 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
      *
      * @param configModelAppStatus ConfigModelAppStatus containing the unbound app key information
      */
-    protected final void setAppKeyUnbindStatus(
-        final ConfigModelAppStatus configModelAppStatus) {
+    protected final void setAppKeyUnbindStatus(final ConfigModelAppStatus configModelAppStatus) {
         if (configModelAppStatus.isSuccessful()) {
             final Element element = mElements.get(configModelAppStatus.getElementAddress());
             if (element != null) {
@@ -474,6 +472,4 @@ public final class ProvisionedMeshNode extends ProvisionedBaseMeshNode {
     public int incrementSequenceNumber() {
         return sequenceNumber = sequenceNumber + 1;
     }
-
-
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,13 +13,29 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.persistence;
 
-import jakarta.persistence.*;
-import jakarta.persistence.spi.ClassTransformer;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
-import jakarta.ws.rs.core.UriBuilder;
+import static org.openremote.container.util.MapAccess.*;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
+
+import javax.sql.DataSource;
+
 import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.Predicate;
 import org.flywaydb.core.Flyway;
@@ -64,22 +77,10 @@ import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
 
-import javax.sql.DataSource;
-import java.io.File;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import static org.openremote.container.util.MapAccess.*;
+import jakarta.persistence.*;
+import jakarta.persistence.spi.ClassTransformer;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
@@ -91,16 +92,16 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         List<String> managedClassNames;
         Properties properties;
 
-
         public PersistenceUnitInfo(List<String> managedClassNames, Properties properties) {
             // Configure default props
             Properties props = new Properties();
             props.put(AvailableSettings.FORMAT_SQL, "true");
             props.put(AvailableSettings.USE_SQL_COMMENTS, "true");
             props.put(AvailableSettings.SCANNER_DISCOVERY, "none");
-            //props.put(AvailableSettings.SHOW_SQL, "true");
+            // props.put(AvailableSettings.SHOW_SQL, "true");
             props.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "thread");
-            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedSqlScriptExtractor");
+            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
+                    "org.openremote.container.persistence.EnhancedSqlScriptExtractor");
 
             // Add custom properties
             props.putAll(properties);
@@ -186,7 +187,6 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         @Override
         public void addTransformer(ClassTransformer transformer) {
-
         }
 
         @Override
@@ -196,8 +196,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     }
 
     // TODO: Make configurable
-    public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
+    public static final String PERSISTENCE_TOPIC = "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
@@ -263,8 +262,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     @Override
     public void init(Container container) throws Exception {
         this.messageBrokerService = container.hasService(MessageBrokerService.class)
-            ? container.getService(MessageBrokerService.class)
-            : null;
+                ? container.getService(MessageBrokerService.class)
+                : null;
 
         String dbVendor = getString(container.getConfig(), OR_DB_VENDOR, OR_DB_VENDOR_DEFAULT).toUpperCase(Locale.ROOT);
         LOG.info("Preparing persistence service for database: " + dbVendor);
@@ -283,15 +282,14 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         String dbUsername = getString(container.getConfig(), OR_DB_USER, OR_DB_USER_DEFAULT);
         String dbPassword = getString(container.getConfig(), OR_DB_PASSWORD, OR_DB_PASSWORD_DEFAULT);
         String connectionUrl = "jdbc:" + database.getConnectorName() + "://" + dbHost + ":" + dbPort + "/" + dbName;
-        connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", dbSchema).build().toString();
+        connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", dbSchema).build()
+                .toString();
 
         persistenceUnitProperties = database.createProperties();
 
         if (messageBrokerService != null) {
-            persistenceUnitProperties.put(
-                AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
-                PersistenceEventInterceptor.class.getName()
-            );
+            persistenceUnitProperties.put(AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
+                    PersistenceEventInterceptor.class.getName());
         }
 
         persistenceUnitProperties.put(AvailableSettings.JSON_FORMAT_MAPPER, JsonFormatMapper.class.getName());
@@ -301,7 +299,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
 
         // Add custom integrator so we can register a custom flush entity event listener
-        persistenceUnitProperties.put(EntityManagerFactoryBuilderImpl.INTEGRATOR_PROVIDER, IntegratorProvider.class.getName());
+        persistenceUnitProperties.put(EntityManagerFactoryBuilderImpl.INTEGRATOR_PROVIDER,
+                IntegratorProvider.class.getName());
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
@@ -334,11 +333,9 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
         PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
 
-        return new EntityManagerFactoryBuilderImpl(
-            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
-            .build();
+        return new EntityManagerFactoryBuilderImpl(new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
+                .build();
     }
-
 
     @Override
     public void start(Container container) throws Exception {
@@ -369,21 +366,20 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add("org.openremote.container.util");
 
         // Get asset sub type entities from asset model
-        entityClasses.add(UnknownAsset.class.getName()); // This doesn't have an asset descriptor which is why it is specifically added
-        Arrays.stream(ValueUtil.getAssetDescriptors(null))
-            .map(AssetDescriptor::getType)
-            .filter(assetClass -> assetClass != null && assetClass.getAnnotation(Entity.class) != null)
-            .map(Class::getName)
-            .forEach(entityClasses::add);
+        entityClasses.add(UnknownAsset.class.getName()); // This doesn't have an asset descriptor which is why it is
+                                                         // specifically added
+        Arrays.stream(ValueUtil.getAssetDescriptors(null)).map(AssetDescriptor::getType)
+                .filter(assetClass -> assetClass != null && assetClass.getAnnotation(Entity.class) != null)
+                .map(Class::getName).forEach(entityClasses::add);
 
         // Get any entity class providers from the service loader
         ServiceLoader<EntityClassProvider> entityClassProviders = ServiceLoader.load(EntityClassProvider.class);
         entityClassProviders.forEach(entityClassProvider -> entityClassProvider.getEntityClasses().stream()
-            .filter(entityClass -> entityClass.getAnnotation(Entity.class) != null)
-            .map(Class::getName).forEach(entityClasses::add));
+                .filter(entityClass -> entityClass.getAnnotation(Entity.class) != null).map(Class::getName)
+                .forEach(entityClasses::add));
 
         this.entityManagerFactory = getEntityManagerFactory(persistenceUnitProperties, entityClasses);
-        //Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
+        // Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
     }
 
     @Override
@@ -407,8 +403,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
             // The persistence event interceptor is scoped to an EntityManager, so each new EM needs
             // access to the dependencies of the interceptor
             Session session = entityManager.unwrap(Session.class);
-            PersistenceEventInterceptor persistenceEventInterceptor =
-                (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
+            PersistenceEventInterceptor persistenceEventInterceptor = (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session)
+                    .getInterceptor();
             persistenceEventInterceptor.setEventConsumer(this);
         }
 
@@ -460,7 +456,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     /**
      * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
      */
-    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object currentEntity, Object previousEntity, Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
+    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object currentEntity, Object previousEntity,
+            Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
 
         Field[] propertyFields = getEntityPropertyFields(clazz, includeFields, excludeFields);
 
@@ -480,7 +477,8 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
                         previousState.add(previousValue);
                     }
                 });
-                publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]), currentState.toArray(), previousState.toArray());
+                publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]),
+                        currentState.toArray(), previousState.toArray());
             }
         }
     }
@@ -488,29 +486,33 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
     /**
      * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
      */
-    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
+    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object entity, String[] propertyNames,
+            Object[] currentState, Object[] previousState) {
         // Fire persistence event although we don't use database for Realm CUD but call Keycloak API
-        PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, entity, propertyNames, currentState, previousState);
+        PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, entity, propertyNames, currentState,
+                previousState);
 
         if (messageBrokerService.getFluentProducerTemplate() != null) {
-            messageBrokerService.getFluentProducerTemplate()
-                .withBody(persistenceEvent)
-                .withHeader(HEADER_ENTITY_TYPE, persistenceEvent.getEntity().getClass())
-                .to(PERSISTENCE_TOPIC)
-                .asyncSend();
+            messageBrokerService.getFluentProducerTemplate().withBody(persistenceEvent)
+                    .withHeader(HEADER_ENTITY_TYPE, persistenceEvent.getEntity().getClass()).to(PERSISTENCE_TOPIC)
+                    .asyncSend();
         }
     }
 
-    protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {
+    protected void openDatabase(Container container, Database database, String username, String password,
+            String connectionUrl) {
 
         int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MIN_SIZE, OR_DB_POOL_MIN_SIZE_DEFAULT);
         int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_POOL_MAX_SIZE, OR_DB_POOL_MAX_SIZE_DEFAULT);
-        int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS, OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+        int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS,
+                OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
-        database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
+        database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds,
+                databaseMinPoolSize, databaseMaxPoolSize);
     }
 
-    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername, String databasePassword, String schemaName) {
+    protected void prepareSchema(Container container, String connectionUrl, String databaseUsername,
+            String databasePassword, String schemaName) {
 
         boolean outOfOrder = getBoolean(container.getConfig(), OR_DB_FLYWAY_OUT_OF_ORDER, false);
 
@@ -521,32 +523,31 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         appendSchemas(schemas);
         appendSchemaLocations(locations);
 
-        // Adding timescaledb extension to make sure it has been initialized. Flyway clean caused issues with relations to timescaledb tables.
-        // Excluding the extension(s) in the cleanup process will not be added soon https://github.com/flyway/flyway/issues/2271
-        // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension during cleanup.
+        // Adding timescaledb extension to make sure it has been initialized. Flyway clean caused issues with relations
+        // to timescaledb tables.
+        // Excluding the extension(s) in the cleanup process will not be added soon
+        // https://github.com/flyway/flyway/issues/2271
+        // Now applied it here (so it is excluded for the migration process), to prevent that flyway drops the extension
+        // during cleanup.
         StringBuilder initSql = new StringBuilder();
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb UPDATE;");
+        // initSql.append("ALTER EXTENSION timescaledb UPDATE;");
         initSql.append("CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit SCHEMA public cascade;");
-//        initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
+        // initSql.append("ALTER EXTENSION timescaledb_toolkit UPDATE;");
 
-        flyway = Flyway.configure()
-            .cleanDisabled(false)
-            .validateMigrationNaming(true)
-            .dataSource(connectionUrl, databaseUsername, databasePassword)
-            .schemas(schemas.toArray(new String[0]))
-            .locations(locations.toArray(new String[0]))
-            .initSql(initSql.toString())
-            .baselineOnMigrate(true)
-            .outOfOrder(outOfOrder)
-            .load();
+        flyway = Flyway.configure().cleanDisabled(false).validateMigrationNaming(true)
+                .dataSource(connectionUrl, databaseUsername, databasePassword).schemas(schemas.toArray(new String[0]))
+                .locations(locations.toArray(new String[0])).initSql(initSql.toString()).baselineOnMigrate(true)
+                .outOfOrder(outOfOrder).load();
 
         MigrationInfo currentMigration;
         try {
             currentMigration = flyway.info().current();
         } catch (FlywaySqlScriptException fssex) {
-            if(fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public cascade;
-                LOG.severe("Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
+            if (fssex.getStatement().contains("CREATE EXTENSION IF NOT EXISTS timescaledb")) { // ... SCHEMA public
+                                                                                               // cascade;
+                LOG.severe(
+                        "Timescale DB extension not found; please ensure you are using a postgres image with timescale DB extension included.");
             }
             throw fssex;
         }
@@ -585,20 +586,16 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         FluentProducerTemplate producerTemplate = messageBrokerService.getFluentProducerTemplate();
 
         if (producerTemplate != null) {
-            producerTemplate
-                .withBody(persistenceEvent)
-                .withHeader(HEADER_ENTITY_TYPE, persistenceEvent.getEntity().getClass())
-                .to(PERSISTENCE_TOPIC)
-                .asyncSend();
+            producerTemplate.withBody(persistenceEvent)
+                    .withHeader(HEADER_ENTITY_TYPE, persistenceEvent.getEntity().getClass()).to(PERSISTENCE_TOPIC)
+                    .asyncSend();
         }
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "database=" + database +
-            ", persistenceUnitName='" + persistenceUnitName + '\'' +
-            '}';
+        return getClass().getSimpleName() + "{" + "database=" + database + ", persistenceUnitName='"
+                + persistenceUnitName + '\'' + '}';
     }
 
     public Path getStorageDir() {
@@ -619,10 +616,14 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         return getStorageDir().resolve(path);
     }
 
-    public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields, List<String> excludeFields) {
+    public static Field[] getEntityPropertyFields(Class<?> clazz, List<String> includeFields,
+            List<String> excludeFields) {
         return Arrays.stream(clazz.getDeclaredFields())
-            .filter(field -> ((field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(EmbeddedId.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class)) && (excludeFields == null || !excludeFields.contains(field.getName())))
-                || (includeFields != null && includeFields.contains(field.getName())))
-            .toArray(Field[]::new);
+                .filter(field -> ((field.isAnnotationPresent(Column.class)
+                        || field.isAnnotationPresent(EmbeddedId.class) || field.isAnnotationPresent(JoinColumn.class)
+                        || field.isAnnotationPresent(Formula.class))
+                        && (excludeFields == null || !excludeFields.contains(field.getName())))
+                        || (includeFields != null && includeFields.contains(field.getName())))
+                .toArray(Field[]::new);
     }
 }

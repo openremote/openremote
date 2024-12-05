@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.openremote.model.Constants;
-
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.openremote.model.Constants;
 
 /**
  * Roles available for our client application on Keycloak.
@@ -49,41 +49,18 @@ public enum ClientRole {
     WRITE_INSIGHTS(Constants.WRITE_INSIGHTS_ROLE, "Write dashboard data"),
     WRITE_ALARMS(Constants.WRITE_ALARMS_ROLE, "Write alarm data"),
 
-    READ("read", "Read all data", new ClientRole[]{
-        READ_ADMIN,
-        READ_LOGS,
-        READ_USERS,
-        READ_MAP,
-        READ_ASSETS,
-        READ_RULES,
-        READ_INSIGHTS,
-        READ_ALARMS
-    }),
+    READ("read", "Read all data",
+            new ClientRole[] { READ_ADMIN, READ_LOGS, READ_USERS, READ_MAP, READ_ASSETS, READ_RULES, READ_INSIGHTS,
+                    READ_ALARMS }),
 
-    WRITE("write", "Write all data", new ClientRole[]{
-        READ_ADMIN,
-        READ_LOGS,
-        READ_USERS,
-        READ_MAP,
-        READ_ASSETS,
-        READ_RULES,
-        READ_INSIGHTS,
-        READ_ALARMS,
-        WRITE_USER,
-        WRITE_ADMIN,
-        WRITE_LOGS,
-        WRITE_ASSETS,
-        WRITE_ATTRIBUTES,
-        WRITE_RULES,
-        WRITE_INSIGHTS,
-        WRITE_ALARMS
-    });
+    WRITE("write", "Write all data",
+            new ClientRole[] { READ_ADMIN, READ_LOGS, READ_USERS, READ_MAP, READ_ASSETS, READ_RULES, READ_INSIGHTS,
+                    READ_ALARMS, WRITE_USER, WRITE_ADMIN, WRITE_LOGS, WRITE_ASSETS, WRITE_ATTRIBUTES, WRITE_RULES,
+                    WRITE_INSIGHTS, WRITE_ALARMS });
 
     // Only individual roles, not composites
-    public static final Set<String> ALL_ROLES = Arrays.stream(values())
-        .filter(r -> r.composites == null)
-        .map(ClientRole::getValue)
-        .collect(Collectors.toSet());
+    public static final Set<String> ALL_ROLES = Arrays.stream(values()).filter(r -> r.composites == null)
+            .map(ClientRole::getValue).collect(Collectors.toSet());
 
     final protected String value;
     final protected String description;

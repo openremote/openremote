@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
@@ -29,12 +28,12 @@ import { ManagerAppConfig } from "@openremote/model";
 @customElement("or-conf-json")
 export class OrConfJson extends LitElement {
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public managerConfig: ManagerAppConfig = {};
 
     protected _aceEditor: Ref<OrAceEditor> = createRef();
 
-    public beforeSave():false|string|undefined {
+    public beforeSave(): false | string | undefined {
         if (!this._aceEditor.value) {
             return false;
         }
@@ -46,7 +45,7 @@ export class OrConfJson extends LitElement {
         }
     }
 
-    protected _showManagerConfigDialog(){
+    protected _showManagerConfigDialog() {
         let dialog: OrMwcDialog;
         const _saveConfig = () => {
             const config = this.beforeSave()
@@ -54,7 +53,7 @@ export class OrConfJson extends LitElement {
                 this.managerConfig = config as ManagerAppConfig
                 this.dispatchEvent(
                     new CustomEvent('saveLocalManagerConfig',
-                        {detail: {value: this.managerConfig}}
+                        { detail: { value: this.managerConfig } }
                     )
                 )
                 return true
@@ -82,12 +81,12 @@ export class OrConfJson extends LitElement {
                     ${ref(this._aceEditor)} 
                     .value="${this.managerConfig}"
                     @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
-                        const okButton = dialog.actions?.find(action => action.actionName === "ok");
-                        if (okButton) {
-                            okButton.disabled = !ev.detail.valid;
-                            dialog.requestUpdate();
-                        }
-                    }}"
+                    const okButton = dialog.actions?.find(action => action.actionName === "ok");
+                    if (okButton) {
+                        okButton.disabled = !ev.detail.valid;
+                        dialog.requestUpdate();
+                    }
+                }}"
                 ></or-ace-editor>
             `)
             .setStyles(html`
@@ -115,7 +114,7 @@ export class OrConfJson extends LitElement {
 
     render() {
         return html`
-            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => {this._showManagerConfigDialog()}}"></or-mwc-input>
+            <or-mwc-input type="button" label="JSON" outlined icon="pencil" @click="${() => { this._showManagerConfigDialog() }}"></or-mwc-input>
         `
     }
 

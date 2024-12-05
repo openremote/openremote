@@ -1,4 +1,24 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri;
+
+import java.util.function.Consumer;
 
 import org.openremote.agent.protocol.tradfri.device.Device;
 import org.openremote.agent.protocol.tradfri.device.Light;
@@ -8,14 +28,12 @@ import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.attribute.AttributeEvent;
 
 import jakarta.persistence.Entity;
-import java.util.function.Consumer;
 
 @Entity
 public class TradfriLightAsset extends LightAsset implements TradfriAsset {
 
-    public static final AssetDescriptor<TradfriLightAsset> DESCRIPTOR = new AssetDescriptor<>(
-        "lightbulb", "e6688a", TradfriLightAsset.class
-    );
+    public static final AssetDescriptor<TradfriLightAsset> DESCRIPTOR = new AssetDescriptor<>("lightbulb", "e6688a",
+            TradfriLightAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -43,7 +61,8 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
         EventHandler<LightChangeBrightnessEvent> lightBrightnessEventHandler = new EventHandler<LightChangeBrightnessEvent>() {
             @Override
             public void handle(LightChangeBrightnessEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), BRIGHTNESS.getName(), convertBrightness(light.getBrightness(), true)));
+                attributeEventConsumer.accept(new AttributeEvent(getId(), BRIGHTNESS.getName(),
+                        convertBrightness(light.getBrightness(), true)));
             }
         };
 
@@ -57,7 +76,8 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
         EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler = new EventHandler<LightChangeColourTemperatureEvent>() {
             @Override
             public void handle(LightChangeColourTemperatureEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), COLOUR_TEMPERATURE.getName(), light.getColourTemperature()));
+                attributeEventConsumer.accept(
+                        new AttributeEvent(getId(), COLOUR_TEMPERATURE.getName(), light.getColourTemperature()));
             }
         };
 
@@ -75,12 +95,13 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
         }
         getAttributes().get(ON_OFF).ifPresent(attribute -> attribute.setValue(light.getOn()));
 
-        getAttributes().get(BRIGHTNESS).ifPresent(attribute ->
-            attribute.setValue(convertBrightness(light.getBrightness(), true)));
+        getAttributes().get(BRIGHTNESS)
+                .ifPresent(attribute -> attribute.setValue(convertBrightness(light.getBrightness(), true)));
 
         getAttributes().get(COLOUR_RGB).ifPresent(attribute -> attribute.setValue(light.getColourRGB()));
 
-        getAttributes().get(COLOUR_TEMPERATURE).ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
+        getAttributes().get(COLOUR_TEMPERATURE)
+                .ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
     }
 
     public static Integer convertBrightness(Integer value, boolean toPercentage) {
@@ -89,9 +110,9 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
         }
 
         if (toPercentage) {
-            return (int)Math.round((Double.valueOf(value) / 254d) * 100);
+            return (int) Math.round((Double.valueOf(value) / 254d) * 100);
         }
 
-        return (int)Math.round((Double.valueOf(value) / 100) * 254d);
+        return (int) Math.round((Double.valueOf(value) / 100) * 254d);
     }
 }

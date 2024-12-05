@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
 
@@ -29,19 +28,15 @@ class ConfigMessageState extends MeshMessageState {
     /**
      * Constructs the ConfigMessageState
      *
-     * @param src           Source address
-     * @param dst           Destination address
-     * @param deviceKey     Device key
-     * @param meshMessage   {@link MeshMessage} Mesh message to be sent
+     * @param src Source address
+     * @param dst Destination address
+     * @param deviceKey Device key
+     * @param meshMessage {@link MeshMessage} Mesh message to be sent
      * @param meshTransport {@link MeshTransport} Mesh transport
-     * @param callbacks     {@link InternalMeshMsgHandlerCallbacks} callbacks
+     * @param callbacks {@link InternalMeshMsgHandlerCallbacks} callbacks
      */
-    ConfigMessageState(final int src,
-                       final int dst,
-                       final byte[] deviceKey,
-                       final MeshMessage meshMessage,
-                       final MeshTransport meshTransport,
-                       final InternalMeshMsgHandlerCallbacks callbacks) {
+    ConfigMessageState(final int src, final int dst, final byte[] deviceKey, final MeshMessage meshMessage,
+            final MeshTransport meshTransport, final InternalMeshMsgHandlerCallbacks callbacks) {
         super(meshMessage, meshTransport, callbacks);
         this.mSrc = src;
         this.mDst = dst;
@@ -61,9 +56,8 @@ class ConfigMessageState extends MeshMessageState {
         final int aszmic = configMessage.getAszmic();
         final int opCode = configMessage.getOpCode();
         final byte[] parameters = configMessage.getParameters();
-        message = mMeshTransport.createMeshMessage(mSrc, mDst, configMessage.messageTtl,
-            mDeviceKey, akf, aid, aszmic, opCode, parameters);
+        message = mMeshTransport.createMeshMessage(mSrc, mDst, configMessage.messageTtl, mDeviceKey, akf, aid, aszmic,
+                opCode, parameters);
         configMessage.setMessage(message);
     }
 }
-

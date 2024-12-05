@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.provisionerstates;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.bluetooth.mesh.InternalProvisioningCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.InternalTransportCallbacks;
@@ -25,10 +28,6 @@ import org.openremote.agent.protocol.bluetooth.mesh.MeshManagerApi;
 import org.openremote.agent.protocol.bluetooth.mesh.MeshProvisioningStatusCallbacks;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 import org.openremote.agent.protocol.bluetooth.mesh.utils.SecureUtils;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.logging.Logger;
 
 public class ProvisioningRandomConfirmationState extends ProvisioningState {
 
@@ -39,9 +38,9 @@ public class ProvisioningRandomConfirmationState extends ProvisioningState {
     private final InternalTransportCallbacks mInternalTransportCallbacks;
 
     public ProvisioningRandomConfirmationState(final InternalProvisioningCallbacks callbacks,
-                                               final UnprovisionedMeshNode unprovisionedMeshNode,
-                                               final InternalTransportCallbacks mInternalTransportCallbacks,
-                                               final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
+            final UnprovisionedMeshNode unprovisionedMeshNode,
+            final InternalTransportCallbacks mInternalTransportCallbacks,
+            final MeshProvisioningStatusCallbacks meshProvisioningStatusCallbacks) {
         super();
         this.provisioningCallbacks = callbacks;
         this.mUnprovisionedMeshNode = unprovisionedMeshNode;
@@ -57,7 +56,8 @@ public class ProvisioningRandomConfirmationState extends ProvisioningState {
     @Override
     public void executeSend() {
         final byte[] provisionerRandomConfirmationPDU = createProvisionerRandomPDU();
-        mStatusCallbacks.onProvisioningStateChanged(mUnprovisionedMeshNode, States.PROVISIONING_CONFIRMATION_SENT, provisionerRandomConfirmationPDU);
+        mStatusCallbacks.onProvisioningStateChanged(mUnprovisionedMeshNode, States.PROVISIONING_CONFIRMATION_SENT,
+                provisionerRandomConfirmationPDU);
         mInternalTransportCallbacks.sendProvisioningPdu(mUnprovisionedMeshNode, provisionerRandomConfirmationPDU);
     }
 
@@ -71,7 +71,7 @@ public class ProvisioningRandomConfirmationState extends ProvisioningState {
     private byte[] createProvisionerRandomPDU() {
         final byte[] provisionerRandom = mUnprovisionedMeshNode.getProvisionerRandom();
         final ByteBuffer buffer = ByteBuffer.allocate(provisionerRandom.length + 2);
-        buffer.put(new byte[]{MeshManagerApi.PDU_TYPE_PROVISIONING, TYPE_PROVISIONING_RANDOM_CONFIRMATION});
+        buffer.put(new byte[] { MeshManagerApi.PDU_TYPE_PROVISIONING, TYPE_PROVISIONING_RANDOM_CONFIRMATION });
         buffer.put(provisionerRandom);
         final byte[] data = buffer.array();
         LOG.info("Provisioner random PDU: " + MeshParserUtils.bytesToHex(data, false));
@@ -81,21 +81,21 @@ public class ProvisioningRandomConfirmationState extends ProvisioningState {
     private boolean provisioneeMatches() {
         final byte[] provisioneeRandom = mUnprovisionedMeshNode.getProvisioneeRandom();
 
-        final byte[] confirmationInputs = provisioningCallbacks.generateConfirmationInputs(mUnprovisionedMeshNode.getProvisionerPublicKeyXY(),
-            mUnprovisionedMeshNode.getProvisioneePublicKeyXY());
+        final byte[] confirmationInputs = provisioningCallbacks.generateConfirmationInputs(
+                mUnprovisionedMeshNode.getProvisionerPublicKeyXY(), mUnprovisionedMeshNode.getProvisioneePublicKeyXY());
         LOG.info("Confirmation inputs: " + MeshParserUtils.bytesToHex(confirmationInputs, false));
 
-        //Generate a confirmation salt of the confirmation inputs
+        // Generate a confirmation salt of the confirmation inputs
         final byte[] confirmationSalt = SecureUtils.calculateSalt(confirmationInputs);
         LOG.info("Confirmation salt: " + MeshParserUtils.bytesToHex(confirmationSalt, false));
 
         final byte[] ecdhSecret = mUnprovisionedMeshNode.getSharedECDHSecret();
 
-        //Generate the confirmationKey by calculating the K1 of ECDH, confirmationSalt and ASCII value of "prck".
+        // Generate the confirmationKey by calculating the K1 of ECDH, confirmationSalt and ASCII value of "prck".
         final byte[] confirmationKey = SecureUtils.calculateK1(ecdhSecret, confirmationSalt, SecureUtils.PRCK);
         LOG.info("Confirmation key: " + MeshParserUtils.bytesToHex(confirmationKey, false));
 
-        //Generate authentication value from the user input pin
+        // Generate authentication value from the user input pin
         final byte[] authenticationValue = mUnprovisionedMeshNode.getAuthenticationValue();
         LOG.info("Authentication value: " + MeshParserUtils.bytesToHex(authenticationValue, false));
 
@@ -120,4 +120,3 @@ public class ProvisioningRandomConfirmationState extends ProvisioningState {
         mUnprovisionedMeshNode.setProvisioneeRandom(buffer.array());
     }
 }
-

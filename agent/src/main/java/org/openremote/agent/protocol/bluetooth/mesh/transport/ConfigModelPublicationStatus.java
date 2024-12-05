@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,16 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
-import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.logging.Logger;
+
+import org.openremote.agent.protocol.bluetooth.mesh.opcodes.ConfigMessageOpCodes;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
+import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils;
 
 /**
  * To be used as a wrapper class for when creating the ConfigModelAppStatus Message.
@@ -46,7 +45,7 @@ public class ConfigModelPublicationStatus extends ConfigStatusMessage {
     private int publicationResolution;
     private int publishRetransmitCount;
     private int publishRetransmitIntervalSteps;
-    private int mModelIdentifier; //16-bit SIG Model or 32-bit Vendor Model identifier
+    private int mModelIdentifier; // 16-bit SIG Model or 32-bit Vendor Model identifier
 
     /**
      * Constructs the ConfigModelAppStatus mMessage.
@@ -66,7 +65,7 @@ public class ConfigModelPublicationStatus extends ConfigStatusMessage {
         mStatusCodeName = getStatusCodeName(mStatusCode);
         mElementAddress = MeshParserUtils.unsignedBytesToInt(mParameters[1], mParameters[2]);
         publishAddress = MeshParserUtils.unsignedBytesToInt(mParameters[3], mParameters[4]);
-        final byte[] appKeyIndex = new byte[]{(byte) (mParameters[6] & 0x0F), mParameters[5]};
+        final byte[] appKeyIndex = new byte[] { (byte) (mParameters[6] & 0x0F), mParameters[5] };
         mAppKeyIndex = ByteBuffer.wrap(appKeyIndex).order(ByteOrder.BIG_ENDIAN).getShort();
         credentialFlag = (mParameters[6] & 0xF0) >> 4 == 1;
         publishTtl = MeshParserUtils.unsignedByteToInt(mParameters[7]);
@@ -81,7 +80,7 @@ public class ConfigModelPublicationStatus extends ConfigStatusMessage {
         if (mParameters.length == CONFIG_MODEL_PUBLICATION_STATUS_SIG_MODEL_PDU_LENGTH) {
             mModelIdentifier = MeshParserUtils.unsignedBytesToInt(mParameters[10], mParameters[11]);
         } else {
-            modelIdentifier = new byte[]{mParameters[11], mParameters[10], mParameters[13], mParameters[12]};
+            modelIdentifier = new byte[] { mParameters[11], mParameters[10], mParameters[13], mParameters[12] };
             mModelIdentifier = ByteBuffer.wrap(modelIdentifier).order(ByteOrder.BIG_ENDIAN).getInt();
         }
 
@@ -200,5 +199,4 @@ public class ConfigModelPublicationStatus extends ConfigStatusMessage {
     public int getModelIdentifier() {
         return mModelIdentifier;
     }
-
 }

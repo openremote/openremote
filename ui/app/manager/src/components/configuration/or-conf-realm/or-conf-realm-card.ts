@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { css, html, LitElement, unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -35,7 +34,7 @@ import {
 import { i18next } from "@openremote/or-translate";
 import { FileInfo, ManagerAppRealmConfig } from "@openremote/model";
 import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
-import {when} from 'lit/directives/when.js';
+import { when } from 'lit/directives/when.js';
 import ISO6391 from 'iso-639-1';
 
 @customElement("or-conf-realm-card")
@@ -120,15 +119,15 @@ export class OrConfRealmCard extends LitElement {
     @property({ attribute: true })
     public name: string = "";
 
-    @property({type: Boolean})
+    @property({ type: Boolean })
     expanded: boolean = false;
 
     @property()
     public canRemove: boolean = false;
 
-    protected logo:string = this.realm.logo;
-    protected logoMobile:string = this.realm.logoMobile;
-    protected favicon:string = this.realm.favicon;
+    protected logo: string = this.realm.logo;
+    protected logoMobile: string = this.realm.logoMobile;
+    protected favicon: string = this.realm.favicon;
 
     protected headerListPrimary: string[] = [
         "map",
@@ -176,12 +175,12 @@ export class OrConfRealmCard extends LitElement {
             '--or-app-color6': unsafeCSS(DefaultColor6).toString(),
             '--or-app-color8': unsafeCSS(DefaultColor8).toString()
         }
-        if (this.realm?.styles){
+        if (this.realm?.styles) {
             //TODO use regex for filtering and getting color codes CSS
-            const css = this.realm.styles.slice(this.realm.styles.indexOf("{") +1, this.realm.styles.indexOf("}"))
-            css.split(";").forEach(function(value){
+            const css = this.realm.styles.slice(this.realm.styles.indexOf("{") + 1, this.realm.styles.indexOf("}"))
+            css.split(";").forEach(function(value) {
                 const col = value.split(":")
-                if (col.length >= 2){
+                if (col.length >= 2) {
                     colors[col[0].trim()] = col[1].trim()
                 }
             })
@@ -189,12 +188,12 @@ export class OrConfRealmCard extends LitElement {
         return colors
     }
 
-    protected _setColor(key:string, value:string){
-        const colors  = this._getColors()
+    protected _setColor(key: string, value: string) {
+        const colors = this._getColors()
         colors[key] = value
         let css = ":host > * {"
         Object.entries(colors).forEach(([key, value]) => {
-            css += key +":" +value + ";"
+            css += key + ":" + value + ";"
         })
         css += "}";
         this.realm.styles = css;
@@ -212,19 +211,19 @@ export class OrConfRealmCard extends LitElement {
         this.notifyConfigChange(this.realm);
     }
 
-    protected _getImagePath(file:File, fileName: string){
-        if (file.type.startsWith("image/")){
+    protected _getImagePath(file: File, fileName: string) {
+        if (file.type.startsWith("image/")) {
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
             return "/images/" + this.name + "/" + fileName + extension
         }
         return null
     }
 
-    protected files: {[name:string] : FileInfo} = {}
+    protected files: { [name: string]: FileInfo } = {}
 
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
-        if (path){
+        if (path) {
             this.files[path] = {
                 path: path,
                 contents: await Util.blobToBase64(file),
@@ -242,7 +241,7 @@ export class OrConfRealmCard extends LitElement {
         return this.files;
     }
 
-    protected _showRemoveRealmDialog(){
+    protected _showRemoveRealmDialog() {
 
         const dialogActions: DialogAction[] = [
             {
@@ -255,13 +254,14 @@ export class OrConfRealmCard extends LitElement {
                 content: "yes",
                 action: () => {
                     this.dispatchEvent(new CustomEvent("remove"));
-                }},
+                }
+            },
 
         ];
         showDialog(new OrMwcDialog()
             .setHeading(i18next.t('delete'))
             .setActions(dialogActions)
-            .setContent(html `
+            .setContent(html`
                 ${i18next.t('configuration.deleteRealmCustomizationConfirm')}
             `)
             .setStyles(html`
@@ -303,17 +303,17 @@ export class OrConfRealmCard extends LitElement {
                 <div slot="content" class="panel-content">
                     <div class="subheader">${i18next.t("configuration.main")}</div>
                     <or-mwc-input class="appTitle" .type="${InputType.TEXT}" .label="${i18next.t("configuration.realmTitle")}" value="${app.realm?.appTitle}"
-                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
-                                      app.realm.appTitle = e.detail.value;
-                                      app.notifyConfigChange(app.realm);
-                                  }}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                app.realm.appTitle = e.detail.value;
+                app.notifyConfigChange(app.realm);
+            }}"
                     ></or-mwc-input>
                     <or-mwc-input class="language" .type="${InputType.SELECT}" .label="${i18next.t("configuration.defaultLanguage")}" value="${app.realm?.language}"
                                   .options="${Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => [key, i18next.t(value)])}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      app.realm.language = e.detail.value;
-                                      app.notifyConfigChange(app.realm);
-                                  }}"
+                app.realm.language = e.detail.value;
+                app.notifyConfigChange(app.realm);
+            }}"
                     ></or-mwc-input>
                     <div class="logo-group">
                         <div class="subheader">${i18next.t("configuration.images")}</div>
@@ -364,8 +364,8 @@ export class OrConfRealmCard extends LitElement {
                                     class="header-item"
                                     .label="${i18next.t("configuration.primaryNavigation")}"
                                     .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
-                                        return app.headerListPrimary.includes(ele);
-                                    }) : app.headerListPrimary}"
+                return app.headerListPrimary.includes(ele);
+            }) : app.headerListPrimary}"
                                     .options="${app.headerListPrimary}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListPrimary)}"
                             ></or-mwc-input>
@@ -374,8 +374,8 @@ export class OrConfRealmCard extends LitElement {
                                     class="header-item"
                                     .label="${i18next.t("configuration.secondaryNavigation")}"
                                     .value="${!!app.realm.headers ? app.realm.headers?.filter(function(ele: string) {
-                                        return app.headerListSecondary.includes(ele);
-                                    }) : app.headerListSecondary}"
+                return app.headerListSecondary.includes(ele);
+            }) : app.headerListSecondary}"
                                     .options="${app.headerListSecondary}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => app._setHeader(e.detail.value, app.headerListSecondary)}"
                             ></or-mwc-input>
@@ -394,15 +394,15 @@ export class OrConfRealmCard extends LitElement {
                                     .options="${this._languages}"
                                     .searchProvider="${searchProvider}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                        const newLanguages: string[] | undefined = e.detail.value;
-                                        const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
-                                        app.realm.notifications = {
-                                            languages: newLanguages,
-                                            defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
-                                        }
-                                        app.notifyConfigChange(app.realm);
-                                        this.requestUpdate(); // force render
-                                    }}"
+                const newLanguages: string[] | undefined = e.detail.value;
+                const currentDefault: string | undefined = app.realm.notifications?.defaultLanguage;
+                app.realm.notifications = {
+                    languages: newLanguages,
+                    defaultLanguage: newLanguages?.includes(currentDefault) ? currentDefault : newLanguages?.[0]
+                }
+                app.notifyConfigChange(app.realm);
+                this.requestUpdate(); // force render
+            }}"
                             ></or-mwc-input>
                             ${when(app.realm.notifications?.languages?.length > 0, () => html`
                                 <or-mwc-input
@@ -412,10 +412,10 @@ export class OrConfRealmCard extends LitElement {
                                         .value="${app.realm.notifications?.defaultLanguage || []}"
                                         .options="${this._languages.filter(entry => app.realm.notifications?.languages.includes(entry[0]))}"
                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                            app.realm.notifications.defaultLanguage = e.detail.value;
-                                            app.notifyConfigChange(app.realm);
-                                            this.requestUpdate(); // force render
-                                        }}"
+                    app.realm.notifications.defaultLanguage = e.detail.value;
+                    app.notifyConfigChange(app.realm);
+                    this.requestUpdate(); // force render
+                }}"
                                 ></or-mwc-input>
                             `, () => html`
                                 <or-mwc-input

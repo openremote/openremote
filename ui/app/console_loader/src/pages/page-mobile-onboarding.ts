@@ -1,7 +1,25 @@
-import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { Page, PageProvider, AppStateKeyed } from "@openremote/or-app";
+import { Store } from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 
 export interface ConsoleProvider {
@@ -30,7 +48,7 @@ export function pageMobileOnboardingProvider(store: Store<AppStateKeyed>, config
         ],
         pageCreator: () => {
             const page = new PageMobileOnboarding(store);
-            if(config) page.config = config;
+            if (config) page.config = config;
             return page;
         }
     };
@@ -110,16 +128,16 @@ export class PageMobileOnboarding extends Page<AppStateKeyed> {
 
     @property()
     public pageIndex: number = 0;
-  
+
     @property()
     public config?: OnboardingConfig;
 
     protected render() {
-        if(this.active) {
+        if (this.active) {
             return html`
                 ${this.config.pages.map((page, index) => {
-                    return html`
-                        <div class="page-container ${this.pageIndex === index ? "active" :""}">
+                return html`
+                        <div class="page-container ${this.pageIndex === index ? "active" : ""}">
                             <div class="page-content">
                                 ${page.type === "default" ? html`
                                     <div><img src="${page.image}" /></div> 
@@ -139,15 +157,15 @@ export class PageMobileOnboarding extends Page<AppStateKeyed> {
                             </div>
                         </div>
                     `
-                })}
+            })}
             `;
         }
     }
 
     private enableProviders(): Promise<any> {
-        if(this.config.pages[this.pageIndex].enableProviders) {
+        if (this.config.pages[this.pageIndex].enableProviders) {
             return Promise.all(this.config.pages[this.pageIndex].enableProviders.map(provider => {
-                return manager.console.sendProviderMessage({provider: provider.name, action: provider.action, consoleId: manager.console.registration.id}, true);
+                return manager.console.sendProviderMessage({ provider: provider.name, action: provider.action, consoleId: manager.console.registration.id }, true);
             }));
         }
         return Promise.resolve();

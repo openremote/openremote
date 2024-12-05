@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.*;
+
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -28,46 +31,36 @@ import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class WeatherAsset extends Asset<WeatherAsset> {
 
-    public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_CELSIUS);
-    public static final AttributeDescriptor<Double> UV_INDEX = new AttributeDescriptor<>("uVIndex", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.LABEL, "UV index"),
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_IRRADIANCE = new AttributeDescriptor<>("sunIrradiance", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_AZIMUTH = new AttributeDescriptor<>("sunAzimuth", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_ZENITH = new AttributeDescriptor<>("sunZenith", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> SUN_ALTITUDE = new AttributeDescriptor<>("sunAltitude", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> WIND_SPEED = new AttributeDescriptor<>("windSpeed", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> WIND_DIRECTION = new AttributeDescriptor<>("windDirection", ValueType.DIRECTION,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> RAINFALL = new AttributeDescriptor<>("rainfall", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_MILLI, UNITS_METRE);
-    public static final AttributeDescriptor<Integer> HUMIDITY = new AttributeDescriptor<>("humidity", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature",
+            ValueType.NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_CELSIUS);
+    public static final AttributeDescriptor<Double> UV_INDEX = new AttributeDescriptor<>("uVIndex",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.LABEL, "UV index"),
+            new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> SUN_IRRADIANCE = new AttributeDescriptor<>("sunIrradiance",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> SUN_AZIMUTH = new AttributeDescriptor<>("sunAzimuth",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> SUN_ZENITH = new AttributeDescriptor<>("sunZenith",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> SUN_ALTITUDE = new AttributeDescriptor<>("sunAltitude",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> WIND_SPEED = new AttributeDescriptor<>("windSpeed",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY))
+            .withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
+    public static final AttributeDescriptor<Integer> WIND_DIRECTION = new AttributeDescriptor<>("windDirection",
+            ValueType.DIRECTION, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Double> RAINFALL = new AttributeDescriptor<>("rainfall",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_MILLI, UNITS_METRE);
+    public static final AttributeDescriptor<Integer> HUMIDITY = new AttributeDescriptor<>("humidity",
+            ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_PERCENTAGE)
+            .withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
 
-    public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy", "49B0D8", WeatherAsset.class);
+    public static final AssetDescriptor<WeatherAsset> DESCRIPTOR = new AssetDescriptor<>("weather-partly-cloudy",
+            "49B0D8", WeatherAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

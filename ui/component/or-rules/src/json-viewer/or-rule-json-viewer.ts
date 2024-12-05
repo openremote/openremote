@@ -1,5 +1,23 @@
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, state} from "lit/decorators.js";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import {
     getAssetInfos, getAssetsByType,
     getAssetTypeFromQuery,
@@ -22,12 +40,12 @@ import {
     RulesetUnion,
     ValuePredicateUnion
 } from "@openremote/model";
-import manager, {Util} from "@openremote/core";
+import manager, { Util } from "@openremote/core";
 import "./or-rule-when";
 import "./or-rule-then-otherwise";
 import "@openremote/or-components/or-panel";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
+import { translate } from "@openremote/or-translate";
 
 export class OrRulesJsonRuleChangedEvent extends CustomEvent<void> {
 
@@ -111,13 +129,13 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         return style;
     }
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public readonly?: boolean;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     public config?: RulesConfig;
 
-    @property({attribute: false})
+    @property({ attribute: false })
     protected _ruleset!: RulesetUnion;
 
     @state() // to be exact: Map<AssetType name, Asset[]>
@@ -224,7 +242,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     // If so, await for those to finish to prevent multiple API requests.
     // Also using caching with the _loadedAssets object.
     protected async loadAssets(type: string): Promise<Asset[] | undefined> {
-        if(this._activeAssetPromises.has(type)) {
+        if (this._activeAssetPromises.has(type)) {
             const data = await (this._activeAssetPromises.get(type)); // await for the already existing fetch
             return data.assets;
         } else {
@@ -307,11 +325,11 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                     return false;
                 }
 
-                if(condition.cron && !Util.cronStringToISOString(condition.cron, true)) {
+                if (condition.cron && !Util.cronStringToISOString(condition.cron, true)) {
                     return false;
                 }
 
-                if(condition.sun && (!condition.sun.position || !condition.sun.location)) {
+                if (condition.sun && (!condition.sun.position || !condition.sun.location)) {
                     return false;
                 }
 
@@ -359,7 +377,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                     // TODO: validate alarm rule action
                     break;
                 case "webhook":
-                    if(!action.webhook?.url || !action.webhook.httpMethod) {
+                    if (!action.webhook?.url || !action.webhook.httpMethod) {
                         return false;
                     }
                     break;

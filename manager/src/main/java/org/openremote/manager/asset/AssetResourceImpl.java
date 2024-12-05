@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,19 +13,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.asset;
 
+import static jakarta.ws.rs.core.Response.Status.*;
+import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
+import static org.openremote.model.query.AssetQuery.Access;
+import static org.openremote.model.value.MetaItemType.*;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
+
 import com.fasterxml.jackson.databind.node.NullNode;
-import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.plugins.validation.ResteasyViolationExceptionImpl;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
@@ -47,15 +48,15 @@ import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import static jakarta.ws.rs.core.Response.Status.*;
-import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVENT_PROCESSOR;
-import static org.openremote.model.query.AssetQuery.Access;
-import static org.openremote.model.value.MetaItemType.*;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
@@ -64,11 +65,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     protected final MessageBrokerService messageBrokerService;
     protected final ClientEventService clientEventService;
 
-    public AssetResourceImpl(TimerService timerService,
-                             ManagerIdentityService identityService,
-                             AssetStorageService assetStorageService,
-                             MessageBrokerService messageBrokerService,
-                             ClientEventService clientEventService) {
+    public AssetResourceImpl(TimerService timerService, ManagerIdentityService identityService,
+            AssetStorageService assetStorageService, MessageBrokerService messageBrokerService,
+            ClientEventService clientEventService) {
         super(timerService, identityService);
         this.assetStorageService = assetStorageService;
         this.messageBrokerService = messageBrokerService;
@@ -116,13 +115,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
 
             if (!hasAdminReadRole && userId != null && !Objects.equals(getUserId(), userId)) {
-                throw new ForbiddenException("Can only retrieve own asset links unless you have role '" + ClientRole.READ_ADMIN + "'");
+                throw new ForbiddenException(
+                        "Can only retrieve own asset links unless you have role '" + ClientRole.READ_ADMIN + "'");
             }
 
             if (userId != null && !identityService.getIdentityProvider().isUserInRealm(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
 
-            UserAssetLink[] result = assetStorageService.findUserAssetLinks(realm, userId, assetId).toArray(new UserAssetLink[0]);
+            UserAssetLink[] result = assetStorageService.findUserAssetLinks(realm, userId, assetId)
+                    .toArray(new UserAssetLink[0]);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -133,7 +134,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
     }
-
 
     @Override
     public void createUserAssetLinks(RequestParams requestParams, List<UserAssetLink> userAssetLinks) {
@@ -165,12 +165,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             throw new WebApplicationException(FORBIDDEN);
         }
 
-        List<Asset<?>> assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new AssetQuery.Select().excludeAttributes())
-                .realm(new RealmPredicate(realm))
-                .ids(assetIds)
-        );
+        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery()
+                .select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realm)).ids(assetIds));
 
         if (assets.size() != userAssetLinks.size()) {
             throw new BadRequestException("One or more asset IDs are invalid");
@@ -219,7 +215,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         String realm = userAssetLinks.get(0).getId().getRealm();
         String userId = userAssetLinks.get(0).getId().getUserId();
 
-        if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId))) {
+        if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm)
+                || !userAssetLink.getId().getUserId().equals(userId))) {
             throw new BadRequestException("All user asset links must be for the same user");
         }
 
@@ -254,7 +251,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Check restricted
             if (isRestrictedUser()) {
                 if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
-                    LOG.fine("Forbidden access for restricted user: username=" + getUsername() + ", assetID=" + assetId);
+                    LOG.fine(
+                            "Forbidden access for restricted user: username=" + getUsername() + ", assetID=" + assetId);
                     throw new WebApplicationException(FORBIDDEN);
                 }
                 asset = assetStorageService.find(assetId, loadComplete, Access.PROTECTED);
@@ -266,7 +264,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(NOT_FOUND);
 
             if (!isRealmActiveAndAccessible(asset.getRealm())) {
-                LOG.fine("Forbidden access (realm '" + asset.getRealm() + "' nonexistent, inactive or inaccessible) for user: " + getUsername());
+                LOG.fine("Forbidden access (realm '" + asset.getRealm()
+                        + "' nonexistent, inactive or inaccessible) for user: " + getUsername());
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -295,17 +294,20 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Realm of asset must be accessible
             if (!isRealmActiveAndAccessible(storageAsset.getRealm())) {
-                LOG.fine("Realm '" + storageAsset.getRealm() + "' is nonexistent, inactive or inaccessible: username=" + getUsername() + ", assetID=" + assetId);
+                LOG.fine("Realm '" + storageAsset.getRealm() + "' is nonexistent, inactive or inaccessible: username="
+                        + getUsername() + ", assetID=" + assetId);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
             if (!storageAsset.getRealm().equals(asset.getRealm())) {
-                LOG.fine("Cannot change asset's realm: existingRealm=" + storageAsset.getRealm() + ", requestedRealm=" + asset.getRealm());
+                LOG.fine("Cannot change asset's realm: existingRealm=" + storageAsset.getRealm() + ", requestedRealm="
+                        + asset.getRealm());
                 throw new WebApplicationException(FORBIDDEN);
             }
 
             if (!storageAsset.getType().equals(asset.getType())) {
-                LOG.fine("Cannot change asset's type: existingType=" + storageAsset.getType() + ", requestedType=" + asset.getType());
+                LOG.fine("Cannot change asset's type: existingType=" + storageAsset.getType() + ", requestedType="
+                        + asset.getType());
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -341,7 +343,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // If the existing attribute is not writable by restricted client, ignore it
                         if (!existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                            LOG.fine("Existing attribute not writable by restricted client, ignoring update of: " + updatedAttributeName);
+                            LOG.fine("Existing attribute not writable by restricted client, ignoring update of: "
+                                    + updatedAttributeName);
                             continue;
                         }
 
@@ -386,20 +389,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 }
 
                 // Remove missing attributes
-                storageAsset.getAttributes().removeIf(existingAttribute ->
-                        !asset.hasAttribute(existingAttribute.getName()) && existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false)
-                );
+                storageAsset.getAttributes()
+                        .removeIf(existingAttribute -> !asset.hasAttribute(existingAttribute.getName())
+                                && existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false));
             }
 
-//            // If attribute is type RULES_TEMPLATE_FILTER, enforce meta item RULE_STATE
-//            // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
-//            // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
-//            resultAsset .getAttributes().stream().forEach(attribute -> {
-//                if (attribute.getType().map(attributeType -> attributeType == ValueType.RULES_TEMPLATE_FILTER).orElse(false)
-//                    && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
-//                    attribute.addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true));
-//                }
-//            });
+            // // If attribute is type RULES_TEMPLATE_FILTER, enforce meta item RULE_STATE
+            // // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
+            // // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags
+            // is not great
+            // resultAsset .getAttributes().stream().forEach(attribute -> {
+            // if (attribute.getType().map(attributeType -> attributeType ==
+            // ValueType.RULES_TEMPLATE_FILTER).orElse(false)
+            // && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
+            // attribute.addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true));
+            // }
+            // });
 
             // Store the result
             return assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
@@ -407,14 +412,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, FORBIDDEN);
         } catch (ConstraintViolationException ex) {
-            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(),
+                    requestParams.headers.getAcceptableMediaTypes());
         } catch (OptimisticLockException opEx) {
-            throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
+            throw new WebApplicationException("Refresh the asset from the server and try to update the changes again",
+                    opEx, CONFLICT);
         }
     }
 
     @Override
-    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
+    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName,
+            Object value) {
 
         Response.Status status = Response.Status.OK;
 
@@ -487,7 +495,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             return assetStorageService.merge(newAsset);
 
         } catch (ConstraintViolationException ex) {
-            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(), requestParams.headers.getAcceptableMediaTypes());
+            throw new ResteasyViolationExceptionImpl(ex.getConstraintViolations(),
+                    requestParams.headers.getAcceptableMediaTypes());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
@@ -509,14 +518,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(new AssetQuery.Select().excludeAttributes()));
+            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0]))
+                    .select(new AssetQuery.Select().excludeAttributes()));
             if (assets == null || assets.size() != assetIds.size()) {
                 LOG.fine("Request to delete one or more invalid assets");
                 throw new WebApplicationException(BAD_REQUEST);
             }
 
             if (assets.stream().map(Asset::getRealm).distinct().anyMatch(asset -> !isRealmActiveAndAccessible(asset))) {
-                LOG.fine("One or more assets in an nonexistent, inactive or inaccessible realm: username=" + getUsername());
+                LOG.fine("One or more assets in an nonexistent, inactive or inaccessible realm: username="
+                        + getUsername());
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -561,10 +572,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Process synchronously - need to directly use the ATTRIBUTE_EVENT_QUEUE as the client inbound queue
             // has multiple consumers and so doesn't support In/Out MEP
             event.setSource(AssetResource.class.getSimpleName());
-            Object result = messageBrokerService.getFluentProducerTemplate()
-                .withBody(event)
-                .to(ATTRIBUTE_EVENT_PROCESSOR)
-                .request();
+            Object result = messageBrokerService.getFluentProducerTemplate().withBody(event)
+                    .to(ATTRIBUTE_EVENT_PROCESSOR).request();
 
             if (result instanceof AssetProcessingException processingException) {
                 failure = processingException.getReason();

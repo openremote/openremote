@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,27 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
 
-import org.hibernate.Session;
-import org.openremote.model.Container;
-import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.basic.BasicIdentityProvider;
-import org.openremote.container.security.basic.PasswordStorage;
-import org.openremote.model.event.shared.RealmFilter;
-import org.openremote.model.query.UserQuery;
-import org.openremote.model.security.*;
-import org.openremote.model.util.TextUtil;
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import org.hibernate.Session;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.basic.BasicIdentityProvider;
+import org.openremote.container.security.basic.PasswordStorage;
+import org.openremote.model.Container;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.security.*;
+import org.openremote.model.util.TextUtil;
 
 public class ManagerBasicIdentityProvider extends BasicIdentityProvider implements ManagerIdentityProvider {
 
@@ -110,7 +109,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         user.setId(UUID.randomUUID().toString());
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)";
-            if(allowUpdate) {
+            if (allowUpdate) {
                 sql += " ON CONFLICT (ID, USERNAME) DO UPDATE";
             }
             sql += " SET username = excluded.username, password = excluded.password, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
@@ -158,8 +157,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
             throw new IllegalStateException("This provider only has a single master realm");
         }
         return ClientRole.ALL_ROLES.stream()
-            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
-            .toArray(Role[]::new);
+                .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null)).toArray(Role[]::new);
     }
 
     @Override
@@ -170,8 +168,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     @Override
     public Role[] getUserRoles(String realm, String userId, String client) {
         return ClientRole.ALL_ROLES.stream()
-            .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
-            .toArray(Role[]::new);
+                .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null)).toArray(Role[]::new);
     }
 
     @Override

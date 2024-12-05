@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.syslog;
 
@@ -24,62 +23,17 @@ import java.util.logging.Logger;
 
 public enum SyslogCategory {
 
-    ASSET(
-        "Asset Processing",
-        false,
-        "AssetProcessingService",
-        "AssetStorageService",
-        "AssetDatapointService"
-    ),
-    AGENT(
-        "Agents",
-        false,
-        "AgentService"
-    ),
-    NOTIFICATION(
-        "Notification",
-        false,
-        "NotificationService",
-        "FCMDeliveryService"
-    ),
-    ALARM(
-            "ALARM",
-            false,
-            "AlarmService"
-    ),
-    RULES(
-        "Rules",
-        true,
-        "RulesService",
-        "RulesEngine",
-        "RuleExecutionLogger",
-        "Rules",
-        "RulesEngineStats",
-        "RulesFired"
-    ),
-    PROTOCOL(
-        "Protocol",
-        true,
-        "Protocol"
-    ),
-    GATEWAY(
-        "Gateway",
-        true,
-        "GatewayService",
-        "GatewayConnector"
-    ),
-    MODEL_AND_VALUES(
-        "Model and Value",
-        true
-    ),
-    API(
-            "API",
-            true
-    ),
-    DATA(
-            "DATA",
-            true
-    );
+    ASSET("Asset Processing", false, "AssetProcessingService", "AssetStorageService", "AssetDatapointService"),
+    AGENT("Agents", false, "AgentService"),
+    NOTIFICATION("Notification", false, "NotificationService", "FCMDeliveryService"),
+    ALARM("ALARM", false, "AlarmService"),
+    RULES("Rules", true, "RulesService", "RulesEngine", "RuleExecutionLogger", "Rules", "RulesEngineStats",
+            "RulesFired"),
+    PROTOCOL("Protocol", true, "Protocol"),
+    GATEWAY("Gateway", true, "GatewayService", "GatewayConnector"),
+    MODEL_AND_VALUES("Model and Value", true),
+    API("API", true),
+    DATA("DATA", true);
 
     protected final String categoryLabel;
     protected final boolean includeSubCategory;
@@ -116,7 +70,7 @@ public enum SyslogCategory {
         // Sub category is the last word of the logger name (separated by dots)
         String[] words = loggerName.split("\\.");
         if (words.length > 0) {
-            return words[words.length-1];
+            return words[words.length - 1];
         }
         return null;
     }
@@ -138,8 +92,8 @@ public enum SyslogCategory {
 
                 // Append the exception message if this is a severe error
                 String message = level.ordinal() >= SyslogLevel.ERROR.ordinal() && record.getThrown() != null
-                    ? record.getMessage() + " -- " + record.getThrown().getMessage()
-                    : record.getMessage();
+                        ? record.getMessage() + " -- " + record.getThrown().getMessage()
+                        : record.getMessage();
 
                 return new SyslogEvent(record.getMillis(), level, category, subCategory, message);
             }

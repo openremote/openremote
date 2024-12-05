@@ -1,9 +1,6 @@
 /*
  * Copyright 2019, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.zwave;
+
+import java.util.function.Consumer;
 
 import org.openremote.protocol.zwave.model.Controller;
 import org.openremote.protocol.zwave.model.ControllerListener;
@@ -26,14 +27,14 @@ import org.openremote.protocol.zwave.model.commandclasses.channel.Channel;
 import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelListener;
 import org.openremote.protocol.zwave.model.commandclasses.channel.value.Value;
 
-import java.util.function.Consumer;
-
 public class ChannelConsumerLink implements ChannelListener, ControllerListener {
 
-    public static ChannelConsumerLink createLink(int nodeId, int endpoint, String channelName, Consumer<Value> consumer, Controller controller) {
+    public static ChannelConsumerLink createLink(int nodeId, int endpoint, String channelName, Consumer<Value> consumer,
+            Controller controller) {
         Channel channel = null;
         channel = controller.findChannel(nodeId, endpoint, channelName);
-        ChannelConsumerLink link = new ChannelConsumerLink(nodeId, endpoint, channelName, channel, consumer, controller);
+        ChannelConsumerLink link = new ChannelConsumerLink(nodeId, endpoint, channelName, channel, consumer,
+                controller);
         if (channel != null) {
             channel.addValueListener(link);
         }
@@ -48,7 +49,8 @@ public class ChannelConsumerLink implements ChannelListener, ControllerListener 
     private final int endpoint;
     private final String channelName;
 
-    private ChannelConsumerLink(int nodeId, int endpoint, String channelName, Channel channel, Consumer<Value> consumer, Controller controller) {
+    private ChannelConsumerLink(int nodeId, int endpoint, String channelName, Channel channel, Consumer<Value> consumer,
+            Controller controller) {
         this.nodeId = nodeId;
         this.endpoint = endpoint;
         this.channelName = channelName;
@@ -57,14 +59,12 @@ public class ChannelConsumerLink implements ChannelListener, ControllerListener 
         this.controller = controller;
     }
 
-
     // Implements ChannelListener -----------------------------------------------------------------
 
     @Override
     public synchronized void valueHasChanged(Channel channel, Value channelValue) {
         consumer.accept(channelValue);
     }
-
 
     // Implements ControllerListener --------------------------------------------------------------
 
@@ -87,7 +87,6 @@ public class ChannelConsumerLink implements ChannelListener, ControllerListener 
             controller.removeListener(this);
         }
     }
-
 
     // Public Methods -----------------------------------------------------------------------------
 

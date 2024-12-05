@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.control;
 
@@ -30,7 +29,6 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
     public static final Logger LOG = Logger.getLogger(BlockAcknowledgementMessage.class.getName());
 
     public BlockAcknowledgementMessage(final byte[] acknowledgementPayload) {
-
     }
 
     /**
@@ -40,7 +38,7 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
      * </p>
      *
      * @param blockAck block acknowledgement payload to be sent
-     * @param segO     segment index
+     * @param segO segment index
      */
     public static Integer calculateBlockAcknowledgement(final Integer blockAck, final int segO) {
         int ack = 0;
@@ -85,9 +83,10 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
      * </p>
      *
      * @param blockAcknowledgement acknowledgement payload received
-     * @param segmentCount         number of segments
+     * @param segmentCount number of segments
      */
-    public static List<Integer> getSegmentsToBeRetransmitted(final byte[] blockAcknowledgement, final int segmentCount) {
+    public static List<Integer> getSegmentsToBeRetransmitted(final byte[] blockAcknowledgement,
+            final int segmentCount) {
         final List<Integer> retransmitSegments = new ArrayList<>();
         final int blockAck = ByteBuffer.wrap(blockAcknowledgement).order(ByteOrder.BIG_ENDIAN).getInt();
         for (int i = 0; i < segmentCount; i++) {
@@ -106,7 +105,7 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
      * Checks if all segments are received based on the segment count
      *
      * @param blockAcknowledgement acknowledgement payload received
-     * @param segN                 number of segments
+     * @param segN number of segments
      */
     public static boolean hasAllSegmentsBeenReceived(final Integer blockAcknowledgement, final int segN) {
         if (blockAcknowledgement == null)
@@ -121,6 +120,7 @@ public class BlockAcknowledgementMessage extends TransportControlMessage {
             }
         }
         LOG.info("bit count: " + setBitCount);
-        return setBitCount == segN + 1; //Since segN is 0 based add 1 as the bit count represents the number of segments
+        return setBitCount == segN + 1; // Since segN is 0 based add 1 as the bit count represents the number of
+                                        // segments
     }
 }

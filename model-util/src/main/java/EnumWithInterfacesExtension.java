@@ -1,21 +1,21 @@
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import cz.habarta.typescript.generator.*;
-import cz.habarta.typescript.generator.compiler.ModelCompiler;
-import cz.habarta.typescript.generator.compiler.TsModelTransformer;
-import cz.habarta.typescript.generator.emitter.*;
-import cz.habarta.typescript.generator.util.Pair;
-import cz.habarta.typescript.generator.util.Utils;
-
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -28,31 +28,57 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import cz.habarta.typescript.generator.*;
+import cz.habarta.typescript.generator.compiler.ModelCompiler;
+import cz.habarta.typescript.generator.compiler.TsModelTransformer;
+import cz.habarta.typescript.generator.emitter.*;
+import cz.habarta.typescript.generator.util.Pair;
+import cz.habarta.typescript.generator.util.Utils;
+
 /**
  * This extension exports enums that implement an interface as an object whose keys are the enum names and whose value
  * is the enum value as an instance of the interface that the enum implements (only supports a single interface at the
  * moment).
- * <blockquote><pre>{@code
+ * <blockquote>
+ *
+ * <pre>{@code
  * public interface Coloured {
- *    String getColour();
+ *     String getColour();
  * }
  *
  * public enum Fruit implements Coloured {
- *    BANANA("yellow"),
- *    ORANGE("orange");
+ *     BANANA("yellow"),
+ *     ORANGE("orange");
  *
- *    public String getColour();
+ *     public String getColour();
  * }
  *
  * public interface ColouredUsage {
- *    Coloured getColouredThing();
+ *     Coloured getColouredThing();
  * }
  * }
- * </pre></blockquote>
+ * </pre>
  *
- * <p>This would transpile to:
+ * </blockquote>
  *
- * <blockquote><pre>{@code
+ * <p>
+ * This would transpile to:
+ *
+ * <blockquote>
+ *
+ * <pre>{@code
  * const Fruit = {
  *     BANANA: {colour: "yellow"},
  *     ORANGE: {colour: "orange"}
@@ -70,8 +96,11 @@ import java.util.stream.Collectors;
  *    colouredThing: Fruit.BANANA
  * }
  * }
- * </pre></blockquote>
- * <a href="https://github.com/vojtechhabarta/typescript-generator/issues/299">https://github.com/vojtechhabarta/typescript-generator/issues/299</a>
+ * </pre>
+ *
+ * </blockquote>
+ * <a href=
+ * "https://github.com/vojtechhabarta/typescript-generator/issues/299">https://github.com/vojtechhabarta/typescript-generator/issues/299</a>
  */
 @SuppressWarnings("deprecation")
 public class EnumWithInterfacesExtension extends Extension {
@@ -122,16 +151,13 @@ public class EnumWithInterfacesExtension extends Extension {
     public static final String TMPL_ENUM_FIELD_SEPARATOR = ", public readonly ";
     public static final String TMPL_ENUM_MEMBER_VALUE_SEPARATOR = ", ";
 
-    protected static final List<String> ENUM_CLASS_HEADER_TEMPLATE = Arrays.asList("", "/*export*/ class $$EnumName$$ implements $$EnumImplements$$ {");
-    protected static final List<String> ENUM_CLASS_MEMBER_TEMPLATE = Collections.singletonList("\tpublic static readonly $$MemberName$$ = new $$EnumName$$(\"$$MemberName$$\"$$MemberFieldValues$$);");
-    protected static final List<String> ENUM_CLASS_FOOTER_TEMPLATE = Arrays.asList(
-            "",
-            "\tprivate constructor(public readonly name: string$$EnumFields$$) {}",
-            "",
-            "\ttoString() {",
-            "\t\treturn this.name;",
-            "\t}",
-            "}");
+    protected static final List<String> ENUM_CLASS_HEADER_TEMPLATE = Arrays.asList("",
+            "/*export*/ class $$EnumName$$ implements $$EnumImplements$$ {");
+    protected static final List<String> ENUM_CLASS_MEMBER_TEMPLATE = Collections.singletonList(
+            "\tpublic static readonly $$MemberName$$ = new $$EnumName$$(\"$$MemberName$$\"$$MemberFieldValues$$);");
+    protected static final List<String> ENUM_CLASS_FOOTER_TEMPLATE = Arrays.asList("",
+            "\tprivate constructor(public readonly name: string$$EnumFields$$) {}", "", "\ttoString() {",
+            "\t\treturn this.name;", "\t}", "}");
 
     protected List<Pattern> enumPatterns = null;
     protected List<Pattern> enumInterfacePatterns = null;
@@ -143,16 +169,13 @@ public class EnumWithInterfacesExtension extends Extension {
             || settings.optionalPropertiesDeclaration == OptionalPropertiesDeclaration.undefinableType);
 
     public static final Predicate<Field> interfaceFieldPredicate = field -> !field.isSynthetic()
-            && !Modifier.isStatic(field.getModifiers())
-            && field.getAnnotation(JsonIgnore.class) == null
+            && !Modifier.isStatic(field.getModifiers()) && field.getAnnotation(JsonIgnore.class) == null
             && (Modifier.isPrivate(field.getModifiers()) || Modifier.isProtected(field.getModifiers()));
 
     protected JacksonAnnotationIntrospector ignoreJsonFormatIntrospector = new JacksonAnnotationIntrospector() {
         @Override
         protected <A extends Annotation> A _findAnnotation(Annotated ann, Class<A> annoClass) {
-            if (ann.getRawType().isEnum()
-                    && annoClass == JsonFormat.class
-                    && ann.hasAnnotation(JsonFormat.class)
+            if (ann.getRawType().isEnum() && annoClass == JsonFormat.class && ann.hasAnnotation(JsonFormat.class)
                     && ann.getAnnotation(JsonFormat.class).shape() == JsonFormat.Shape.OBJECT
                     && matchedEnums.stream().anyMatch(matchedEnum -> matchedEnum.getOrigin() == ann.getRawType())) {
                 return null;
@@ -188,33 +211,33 @@ public class EnumWithInterfacesExtension extends Extension {
 
     @Override
     public void setConfiguration(Map<String, String> configuration) throws RuntimeException {
-        enumPatterns = configuration.entrySet().stream()
-                .filter(es -> es.getKey().startsWith(CFG_ENUM_PATTERN))
+        enumPatterns = configuration.entrySet().stream().filter(es -> es.getKey().startsWith(CFG_ENUM_PATTERN))
                 .map(es -> globToRegexp(es.getValue())).collect(Collectors.toList());
 
         enumInterfacePatterns = configuration.entrySet().stream()
-                .filter(es -> es.getKey().startsWith(CFG_ENUM_INTERFACE_PATTERN))
-                .map(es -> globToRegexp(es.getValue())).collect(Collectors.toList());
+                .filter(es -> es.getKey().startsWith(CFG_ENUM_INTERFACE_PATTERN)).map(es -> globToRegexp(es.getValue()))
+                .collect(Collectors.toList());
 
         hasNoConfig = enumPatterns.isEmpty() && enumInterfacePatterns.isEmpty();
     }
 
     @Override
     public List<TransformerDefinition> getTransformers() {
-        return Arrays.asList(new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, new TsModelTransformer() {
-            @Override
-            public TsModel transformModel(Context context, TsModel model) {
-                List<TsEnumModel> enums = model.getEnums();
+        return Arrays.asList(
+                new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeEnums, new TsModelTransformer() {
+                    @Override
+                    public TsModel transformModel(Context context, TsModel model) {
+                        List<TsEnumModel> enums = model.getEnums();
 
-                for (TsEnumModel enm : enums) {
-                    if (enumOrInterfacesMatch(enm)) {
-                        matchedEnums.add(enm);
+                        for (TsEnumModel enm : enums) {
+                            if (enumOrInterfacesMatch(enm)) {
+                                matchedEnums.add(enm);
+                            }
+                        }
+
+                        return model.withRemovedEnums(matchedEnums);
                     }
-                }
-
-                return model.withRemovedEnums(matchedEnums);
-            }
-        }));
+                }));
     }
 
     @SuppressWarnings("rawtypes")
@@ -228,14 +251,16 @@ public class EnumWithInterfacesExtension extends Extension {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new SimpleModule().addSerializer(Enum.class, new JsonSerializer<Enum>() {
                     @Override
-                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+                    public void serialize(Enum anEnum, JsonGenerator jsonGenerator,
+                            SerializerProvider serializerProvider) throws IOException {
                         jsonGenerator.writeRawValue(anEnum.getClass().getSimpleName() + "." + anEnum.name());
                     }
-                }))
-                .setAnnotationIntrospector(ignoreJsonFormatIntrospector); // Ignore Shape Object so we get proper enum references
+                })).setAnnotationIntrospector(ignoreJsonFormatIntrospector); // Ignore Shape Object so we get proper
+                                                                             // enum references
 
         if (!supportsNullValuesPredicate.test(settings)) {
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // Don't output nulls if settings don't support it
+            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL); // Don't output nulls if settings
+                                                                                  // don't support it
         }
 
         // Do a topological sort of matched enums to ensure they are output in the correct order
@@ -251,24 +276,23 @@ public class EnumWithInterfacesExtension extends Extension {
                 return beanModel != null ? beanModel.getName().getFullName() : i.getSimpleName();
             }).collect(Collectors.joining(" | "));
 
-
-            String fieldsStr = enumInterfaceModel.getFieldTypeMap().entrySet().stream().map(es -> es.getKey() + ": " + es.getValue()).collect(Collectors.joining(TMPL_ENUM_FIELD_SEPARATOR));
+            String fieldsStr = enumInterfaceModel.getFieldTypeMap().entrySet().stream()
+                    .map(es -> es.getKey() + ": " + es.getValue())
+                    .collect(Collectors.joining(TMPL_ENUM_FIELD_SEPARATOR));
             if (!fieldsStr.isEmpty()) {
                 fieldsStr = TMPL_ENUM_FIELD_SEPARATOR + fieldsStr;
             }
 
-            final Map<String, String> replacements = Map.of(
-            "\"", settings.quotes,
-            "/*export*/ ", exportKeyword ? "export " : "",
-            TMPL_ENUM_NAME, tsEnum.getName().getSimpleName(),
-            TMPL_ENUM_IMPLEMENTS, implementsStr,
-            TMPL_ENUM_FIELDS, fieldsStr);
+            final Map<String, String> replacements = Map.of("\"", settings.quotes, "/*export*/ ",
+                    exportKeyword ? "export " : "", TMPL_ENUM_NAME, tsEnum.getName().getSimpleName(),
+                    TMPL_ENUM_IMPLEMENTS, implementsStr, TMPL_ENUM_FIELDS, fieldsStr);
             Emitter.writeTemplate(writer, settings, ENUM_CLASS_HEADER_TEMPLATE, replacements);
 
             enumInterfaceModel.getMemberModels().forEach(enumInterfaceMemberModel -> {
 
                 String memberFieldValues = enumInterfaceMemberModel.getMemberFieldValues().entrySet().stream()
-                        .map(es -> getMemberValue(tsEnum.getName().getFullName(), es.getKey(), es.getValue(), settings, objectMapper))
+                        .map(es -> getMemberValue(tsEnum.getName().getFullName(), es.getKey(), es.getValue(), settings,
+                                objectMapper))
                         .collect(Collectors.joining(TMPL_ENUM_MEMBER_VALUE_SEPARATOR));
                 if (!memberFieldValues.isEmpty()) {
                     memberFieldValues = TMPL_ENUM_MEMBER_VALUE_SEPARATOR + memberFieldValues;
@@ -283,7 +307,9 @@ public class EnumWithInterfacesExtension extends Extension {
     }
 
     protected boolean enumOrInterfacesMatch(TsEnumModel tsEnumModel) {
-        return tsEnumModel.getOrigin().getInterfaces().length > 0 && (hasNoConfig || enumMatches(tsEnumModel.getName().getFullName()) || enumInterfacesMatch(tsEnumModel.getOrigin().getGenericInterfaces()));
+        return tsEnumModel.getOrigin().getInterfaces().length > 0
+                && (hasNoConfig || enumMatches(tsEnumModel.getName().getFullName())
+                        || enumInterfacesMatch(tsEnumModel.getOrigin().getGenericInterfaces()));
     }
 
     protected boolean enumMatches(String enumName) {
@@ -291,13 +317,15 @@ public class EnumWithInterfacesExtension extends Extension {
     }
 
     protected boolean enumInterfacesMatch(Type[] interfaces) {
-        return enumInterfacePatterns != null && Arrays.stream(interfaces).anyMatch(i -> Utils.classNameMatches(i.getTypeName(), enumInterfacePatterns));
+        return enumInterfacePatterns != null && Arrays.stream(interfaces)
+                .anyMatch(i -> Utils.classNameMatches(i.getTypeName(), enumInterfacePatterns));
     }
 
     /**
      * returns the string representation of an enum's member value
      */
-    protected String getMemberValue(String enumName, String memberName, Object value, Settings settings, ObjectMapper objectMapper) {
+    protected String getMemberValue(String enumName, String memberName, Object value, Settings settings,
+            ObjectMapper objectMapper) {
 
         if (value == null) {
             if (!supportsNullValuesPredicate.test(settings)) {
@@ -309,7 +337,8 @@ public class EnumWithInterfacesExtension extends Extension {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException ex) {
-            throw new RuntimeException("Failed to convert enum '" + enumName + "' member '" + memberName + "' value to string: " + ex.getMessage());
+            throw new RuntimeException("Failed to convert enum '" + enumName + "' member '" + memberName
+                    + "' value to string: " + ex.getMessage());
         }
     }
 
@@ -320,57 +349,56 @@ public class EnumWithInterfacesExtension extends Extension {
     protected EnumInterfaceModel parseEnum(TsEnumModel enm, TsModel model, Settings settings) {
 
         List<TsPropertyModel> interfacePropertyModels = Arrays.stream(enm.getOrigin().getInterfaces())
-                .map(model::getBean)
-                .filter(b -> !Objects.isNull(b))
-                .flatMap(tsBean -> tsBean.getProperties().stream())
+                .map(model::getBean).filter(b -> !Objects.isNull(b)).flatMap(tsBean -> tsBean.getProperties().stream())
                 .collect(Collectors.toList());
 
         // Get field info from implemented interfaces and ensure optional fields are at the end
         List<Pair<Field, Optional<TsPropertyModel>>> enumFieldInfos = Arrays.stream(enm.getOrigin().getDeclaredFields())
-                .filter(interfaceFieldPredicate)
-                .map(field -> {
-                    // Ignore case in comparison as TsPropertyModel has the first two letters as lower case for some reason might be coming from jackson - not investigated (e.g. getAArray() -> aarray)
-                    Optional<TsPropertyModel> matchingPropertyModel = interfacePropertyModels.stream().filter(ipm -> ipm.getName().equalsIgnoreCase(field.getName())).findFirst();
+                .filter(interfaceFieldPredicate).map(field -> {
+                    // Ignore case in comparison as TsPropertyModel has the first two letters as lower case for some
+                    // reason might be coming from jackson - not investigated (e.g. getAArray() -> aarray)
+                    Optional<TsPropertyModel> matchingPropertyModel = interfacePropertyModels.stream()
+                            .filter(ipm -> ipm.getName().equalsIgnoreCase(field.getName())).findFirst();
                     return Pair.of(field, matchingPropertyModel);
-                })
-                .sorted((pair1, pair2) -> {
-                    boolean pair1IsOptional = pair1.getValue2().map(mpm -> mpm.getTsType() instanceof TsType.OptionalType).orElse(false);
-                    boolean pair2IsOptional = pair2.getValue2().map(mpm -> mpm.getTsType() instanceof TsType.OptionalType).orElse(false);
+                }).sorted((pair1, pair2) -> {
+                    boolean pair1IsOptional = pair1.getValue2()
+                            .map(mpm -> mpm.getTsType() instanceof TsType.OptionalType).orElse(false);
+                    boolean pair2IsOptional = pair2.getValue2()
+                            .map(mpm -> mpm.getTsType() instanceof TsType.OptionalType).orElse(false);
                     return pair1IsOptional ? pair2IsOptional ? 0 : 1 : pair2IsOptional ? -1 : 0;
-                })
-                .collect(Collectors.toList());
+                }).collect(Collectors.toList());
 
-        Map<String, String> fieldTypeMap = enumFieldInfos.stream().collect(LinkedHashMap::new,
-                (map, enumFieldInfo) -> {
+        Map<String, String> fieldTypeMap = enumFieldInfos.stream().collect(LinkedHashMap::new, (map, enumFieldInfo) -> {
 
-                    Field field = enumFieldInfo.getValue1();
-                    Optional<TsPropertyModel> tsPropertyModel = enumFieldInfo.getValue2();
-                    String fieldTypeStr;
-                    boolean propertyOptional = tsPropertyModel.map(mpm -> mpm.getTsType() instanceof TsType.OptionalType).orElseGet(() -> settings.optionalProperties == OptionalProperties.all);
+            Field field = enumFieldInfo.getValue1();
+            Optional<TsPropertyModel> tsPropertyModel = enumFieldInfo.getValue2();
+            String fieldTypeStr;
+            boolean propertyOptional = tsPropertyModel.map(mpm -> mpm.getTsType() instanceof TsType.OptionalType)
+                    .orElseGet(() -> settings.optionalProperties == OptionalProperties.all);
 
-                    // TODO: Need access to the DefaultTypeProcessor known types here but it is private
-                    if (tsPropertyModel.isPresent()) {
-                        fieldTypeStr = tsPropertyModel.get().getTsType().toString();
-                    } else if (field.getType() == String.class) {
-                        fieldTypeStr = TsType.String.toString();
-                    } else if (Number.class.isAssignableFrom(field.getType())) {
-                        fieldTypeStr = TsType.Number.toString();
-                    } else if (field.getType() == Boolean.class) {
-                        fieldTypeStr = TsType.Boolean.toString();
-                    } else if (field.getType() == Date.class) {
-                        fieldTypeStr = TsType.Date.toString();
-                    } else if (field.getType() == Void.class) {
-                        fieldTypeStr = TsType.Void.toString();
-                    } else {
-                        fieldTypeStr = field.getType().getSimpleName();
-                    }
-                    map.put(propertyOptional ? field.getName() + "?" : field.getName(), fieldTypeStr);
-                }, HashMap::putAll);
+            // TODO: Need access to the DefaultTypeProcessor known types here but it is private
+            if (tsPropertyModel.isPresent()) {
+                fieldTypeStr = tsPropertyModel.get().getTsType().toString();
+            } else if (field.getType() == String.class) {
+                fieldTypeStr = TsType.String.toString();
+            } else if (Number.class.isAssignableFrom(field.getType())) {
+                fieldTypeStr = TsType.Number.toString();
+            } else if (field.getType() == Boolean.class) {
+                fieldTypeStr = TsType.Boolean.toString();
+            } else if (field.getType() == Date.class) {
+                fieldTypeStr = TsType.Date.toString();
+            } else if (field.getType() == Void.class) {
+                fieldTypeStr = TsType.Void.toString();
+            } else {
+                fieldTypeStr = field.getType().getSimpleName();
+            }
+            map.put(propertyOptional ? field.getName() + "?" : field.getName(), fieldTypeStr);
+        }, HashMap::putAll);
 
-        List<EnumInterfaceMemberModel> memberModels = Arrays.stream(enm.getOrigin().getEnumConstants())
-                .map(m -> {
-                    String memberName = ((Enum<?>) m).name();
-                    Map<String, Object> memberFieldValues = enumFieldInfos.stream().collect(LinkedHashMap::new, (map, enumFieldInfo) -> {
+        List<EnumInterfaceMemberModel> memberModels = Arrays.stream(enm.getOrigin().getEnumConstants()).map(m -> {
+            String memberName = ((Enum<?>) m).name();
+            Map<String, Object> memberFieldValues = enumFieldInfos.stream().collect(LinkedHashMap::new,
+                    (map, enumFieldInfo) -> {
 
                         Field field = enumFieldInfo.getValue1();
                         Object val = null;
@@ -378,15 +406,15 @@ public class EnumWithInterfacesExtension extends Extension {
                             field.setAccessible(true);
                             val = field.get(m);
                         } catch (IllegalAccessException ex) {
-                            TypeScriptGenerator.getLogger().verbose("Failed to get field '" + field.getName() + "' value: " + ex.getMessage());
+                            TypeScriptGenerator.getLogger()
+                                    .verbose("Failed to get field '" + field.getName() + "' value: " + ex.getMessage());
                         }
 
                         map.put(field.getName(), val);
                     }, HashMap::putAll);
 
-                    return new EnumInterfaceMemberModel(memberName, memberFieldValues);
-                })
-                .collect(Collectors.toList());
+            return new EnumInterfaceMemberModel(memberName, memberFieldValues);
+        }).collect(Collectors.toList());
 
         return new EnumInterfaceModel(memberModels, fieldTypeMap);
     }
@@ -413,28 +441,21 @@ public class EnumWithInterfacesExtension extends Extension {
 
         List<int[]> edgeList = new ArrayList<>();
 
-        for (int i=0; i<enumModels.size(); i++) {
+        for (int i = 0; i < enumModels.size(); i++) {
             TsEnumModel enumModel = enumModels.get(i);
 
             int finalI = i;
-            Arrays.stream(enumModel.getOrigin().getDeclaredFields())
-                    .filter(interfaceFieldPredicate)
-                    .map(f -> {
-                        if (f.getType().isArray()) {
-                            return f.getType().getComponentType();
-                        }
-                        return f.getType();
-                    })
-                    .map(t ->
-                            enumModels.stream().filter(em -> {
-                                // Check if type matches an enum or any of an enums interfaces
-                                return em.getOrigin() == t || Arrays.stream(em.getOrigin().getInterfaces()).anyMatch(intrface -> intrface == t);
-                            }).findFirst()
-                    )
-                    .filter(Optional::isPresent)
-                    .map(modelOptional -> enumModels.indexOf(modelOptional.get()))
-                    .map(dependencyIndex -> new int[] {finalI, dependencyIndex})
-                    .forEach(edgeList::add);
+            Arrays.stream(enumModel.getOrigin().getDeclaredFields()).filter(interfaceFieldPredicate).map(f -> {
+                if (f.getType().isArray()) {
+                    return f.getType().getComponentType();
+                }
+                return f.getType();
+            }).map(t -> enumModels.stream().filter(em -> {
+                // Check if type matches an enum or any of an enums interfaces
+                return em.getOrigin() == t
+                        || Arrays.stream(em.getOrigin().getInterfaces()).anyMatch(intrface -> intrface == t);
+            }).findFirst()).filter(Optional::isPresent).map(modelOptional -> enumModels.indexOf(modelOptional.get()))
+                    .map(dependencyIndex -> new int[] { finalI, dependencyIndex }).forEach(edgeList::add);
         }
 
         for (int[] edge : edgeList) {
@@ -446,8 +467,7 @@ public class EnumWithInterfacesExtension extends Extension {
         }
 
         try {
-            outer:
-            while (!todo.isEmpty()) {
+            outer: while (!todo.isEmpty()) {
                 for (Integer r : todo) {
                     if (!hasDependency.apply(r, todo)) {
                         todo.remove(r);
@@ -459,7 +479,8 @@ public class EnumWithInterfacesExtension extends Extension {
                 throw new Exception("Graph has cycles");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to order enums with interfaces so cannot generate output: " + e.getMessage());
+            throw new RuntimeException(
+                    "Failed to order enums with interfaces so cannot generate output: " + e.getMessage());
         }
 
         enumModels.sort(Comparator.comparingInt(result::indexOf));

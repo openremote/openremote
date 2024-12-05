@@ -1,13 +1,31 @@
-import {WidgetConfig} from "../util/widget-config";
-import {AssetModelUtil, Attribute, AttributeRef, WellknownValueTypes} from "@openremote/model";
-import {OrWidget, WidgetManifest} from "../util/or-widget";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { WidgetConfig } from "../util/widget-config";
+import { AssetModelUtil, Attribute, AttributeRef, WellknownValueTypes } from "@openremote/model";
+import { OrWidget, WidgetManifest } from "../util/or-widget";
 import { customElement } from "lit/decorators.js";
-import {WidgetSettings} from "../util/widget-settings";
-import {css, CSSResult, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
-import {OrAssetWidget} from "../util/or-asset-widget";
-import {ImageSettings} from "../settings/image-settings";
+import { WidgetSettings } from "../util/widget-settings";
+import { css, CSSResult, html, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import { OrAssetWidget } from "../util/or-asset-widget";
+import { ImageSettings } from "../settings/image-settings";
 import { when } from "lit/directives/when.js";
-import {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
+import { DefaultColor2, DefaultColor3, Util } from "@openremote/core";
 import { styleMap } from "lit/directives/style-map.js";
 
 const styling = css`
@@ -103,7 +121,7 @@ export class ImageWidget extends OrAssetWidget {
 
     willUpdate(changedProps: PropertyValues) {
 
-        if(changedProps.has('widgetConfig') && this.widgetConfig) {
+        if (changedProps.has('widgetConfig') && this.widgetConfig) {
             const attributeRefs = this.widgetConfig.attributeRefs;
             const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
             if (missingAssets.length > 0) {
@@ -129,7 +147,7 @@ export class ImageWidget extends OrAssetWidget {
     protected handleMarkerPlacement(config: ImageWidgetConfig) {
         if (this.assetAttributes.length && config.attributeRefs.length > 0) {
 
-            if(config.markers.length === 0) {
+            if (config.markers.length === 0) {
                 console.error("No markers found!");
                 return [];
             }
@@ -141,11 +159,11 @@ export class ImageWidget extends OrAssetWidget {
                     "left": `${marker!.coordinates[0]}%`,
                     "top": `${marker!.coordinates[1]}%`
                 };
-                if(asset) {
+                if (asset) {
                     const attribute = asset.attributes![attributeRef.name!];
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attributeRef.name, attribute);
                     value = Util.getAttributeValueAsString(attribute, descriptors[0], asset.type, true, "-");
-                    if(attribute?.type === WellknownValueTypes.COLOURRGB && value !== "-") {
+                    if (attribute?.type === WellknownValueTypes.COLOURRGB && value !== "-") {
                         styles.backgroundColor = value;
                         styles.minHeight = "21px";
                         styles.minWidth = "13px";

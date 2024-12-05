@@ -1,24 +1,42 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { Auth, ManagerConfig } from "@openremote/model";
 
 declare function require(name: string): any;
 
-import {combineReducers, configureStore} from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import "@openremote/or-app";
 import {
     OrApp,
     AppConfig,
-    appReducer} from "@openremote/or-app";
+    appReducer
+} from "@openremote/or-app";
 
 import "./pages/page-mobile-onboarding";
-import {pageMobileOnboardingProvider, OnboardingConfig} from "./pages/page-mobile-onboarding";
+import { pageMobileOnboardingProvider, OnboardingConfig } from "./pages/page-mobile-onboarding";
 import "./pages/page-mobile-splash";
-import {pageMobileSplashProvider, SplashConfig} from "./pages/page-mobile-splash";
+import { pageMobileSplashProvider, SplashConfig } from "./pages/page-mobile-splash";
 import "./pages/page-mobile-geofences";
-import {pageMobileGeofencesProvider} from "./pages/page-mobile-geofences";
+import { pageMobileGeofencesProvider } from "./pages/page-mobile-geofences";
 import { Util } from "@openremote/core";
 
-const onboardingConfig:OnboardingConfig  = {
+const onboardingConfig: OnboardingConfig = {
     pages: [
         {
             title: "The city assets in your pocket",
@@ -27,8 +45,8 @@ const onboardingConfig:OnboardingConfig  = {
             image: require("../images/onboarding-assets.svg"),
             enableProviders: [
                 {
-                    name:"push",
-                    action:"PROVIDER_ENABLE"
+                    name: "push",
+                    action: "PROVIDER_ENABLE"
                 }
             ],
         },
@@ -38,8 +56,8 @@ const onboardingConfig:OnboardingConfig  = {
             description: "You can receive notifications that are created by workflow rules. Based on your location relevant messages can be sent to you.",
             enableProviders: [
                 {
-                    name:"geofence",
-                    action:"PROVIDER_ENABLE"
+                    name: "geofence",
+                    action: "PROVIDER_ENABLE"
                 }
             ],
             image: require("../images/onboarding-geofence.svg")
@@ -48,7 +66,7 @@ const onboardingConfig:OnboardingConfig  = {
     redirect: "/manager/?realm=smartcity&consoleProviders=geofence push storage"
 }
 
-const splashConfig:SplashConfig  = {
+const splashConfig: SplashConfig = {
     redirect: "#onboarding/",
     interval: 3000,
     logoMobile: require("../images/logo-mobile.svg")

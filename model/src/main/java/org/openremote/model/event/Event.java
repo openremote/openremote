@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,19 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.event;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+
 import org.openremote.model.util.TextUtil;
 
-import java.util.Date;
+import jakarta.persistence.*;
 
 /**
  * A timestamped event.
@@ -87,8 +88,6 @@ public abstract class Event {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp +
-            '}';
+        return getClass().getSimpleName() + "{" + "timestamp=" + timestamp + '}';
     }
 }

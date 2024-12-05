@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,17 +13,18 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.alarm;
-
-import org.hibernate.annotations.Formula;
-
-
-import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
+
+import org.hibernate.annotations.Formula;
+
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ALARM_ASSET_LINK")
@@ -37,7 +35,6 @@ public class AlarmAssetLink {
 
         @Column(name = "SENTALARM_ID", nullable = false)
         protected Long sentalarmId;
-
 
         @Column(name = "ASSET_ID", nullable = false)
         protected String assetId;
@@ -65,13 +62,17 @@ public class AlarmAssetLink {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             Id id = (Id) o;
 
-            if (!realm.equals(id.realm)) return false;
-            if (!sentalarmId.equals(id.sentalarmId)) return false;
+            if (!realm.equals(id.realm))
+                return false;
+            if (!sentalarmId.equals(id.sentalarmId))
+                return false;
             return assetId.equals(id.assetId);
         }
 
@@ -82,11 +83,8 @@ public class AlarmAssetLink {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + "{" +
-                    "realm='" + realm + '\'' +
-                    ", alarmId='" + sentalarmId + '\'' +
-                    ", assetId='" + assetId + '\'' +
-                    '}';
+            return getClass().getSimpleName() + "{" + "realm='" + realm + '\'' + ", alarmId='" + sentalarmId + '\''
+                    + ", assetId='" + assetId + '\'' + '}';
         }
     }
 
@@ -136,8 +134,10 @@ public class AlarmAssetLink {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AlarmAssetLink that = (AlarmAssetLink) o;
         return id.equals(that.id);
     }
@@ -149,12 +149,7 @@ public class AlarmAssetLink {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "id=" + id +
-                ", createdOn=" + createdOn +
-                ", assetName='" + assetName + '\'' +
-                ", parentAssetName='" + parentAssetName + '\'' +
-                '}';
+        return getClass().getSimpleName() + "{" + "id=" + id + ", createdOn=" + createdOn + ", assetName='" + assetName
+                + '\'' + ", parentAssetName='" + parentAssetName + '\'' + '}';
     }
-
 }

@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,15 +13,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.bluetooth.mesh.transport;
-
-import java.util.UUID;
 
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.RESOLUTION_100_MS;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.RESOLUTION_10_M;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.RESOLUTION_10_S;
 import static org.openremote.agent.protocol.bluetooth.mesh.utils.MeshParserUtils.RESOLUTION_1_S;
+
+import java.util.UUID;
 
 public class PublicationSettings {
 
@@ -52,73 +51,57 @@ public class PublicationSettings {
     /**
      * Constructs a PublicationSettings
      *
-     * @param publishAddress                 Address to which the element must publish
-     * @param appKeyIndex                    Index of the application key
-     * @param credentialFlag                 Credentials flag define which credentials to be used, set true to use
-     *                                       friendship credentials and false for master credentials. Currently supports only master credentials
-     * @param publishRetransmitCount         Number of publication retransmits
+     * @param publishAddress Address to which the element must publish
+     * @param appKeyIndex Index of the application key
+     * @param credentialFlag Credentials flag define which credentials to be used, set true to use
+     *            friendship credentials and false for master credentials. Currently supports only master credentials
+     * @param publishRetransmitCount Number of publication retransmits
      * @param publishRetransmitIntervalSteps Publish retransmit interval steps
      */
-    public PublicationSettings(final int publishAddress,
-                               final int appKeyIndex,
-                               final boolean credentialFlag,
-                               final int publishRetransmitCount,
-                               final int publishRetransmitIntervalSteps) {
-        this(publishAddress, appKeyIndex, credentialFlag,
-            DEFAULT_PUBLISH_TTL,
-            DEFAULT_PUBLICATION_STEPS,
-            DEFAULT_PUBLICATION_RESOLUTION,
-            MIN_PUBLICATION_RETRANSMIT_COUNT,
-            DEFAULT_PUBLICATION_RETRANSMIT_INTERVAL_STEPS);
+    public PublicationSettings(final int publishAddress, final int appKeyIndex, final boolean credentialFlag,
+            final int publishRetransmitCount, final int publishRetransmitIntervalSteps) {
+        this(publishAddress, appKeyIndex, credentialFlag, DEFAULT_PUBLISH_TTL, DEFAULT_PUBLICATION_STEPS,
+                DEFAULT_PUBLICATION_RESOLUTION, MIN_PUBLICATION_RETRANSMIT_COUNT,
+                DEFAULT_PUBLICATION_RETRANSMIT_INTERVAL_STEPS);
     }
 
     /**
      * Constructs a PublicationSettings
      *
-     * @param publishAddress                 Address to which the element must publish
-     * @param appKeyIndex                    Index of the application key
-     * @param credentialFlag                 Credentials flag define which credentials to be used, set true to use
-     *                                       friendship credentials and false for master credentials. Currently supports only master credentials
-     * @param publishTtl                     Publication ttl
-     * @param publicationSteps               Publication steps for the publication period
-     * @param publicationResolution          Publication resolution of the publication period
-     * @param publishRetransmitCount         Number of publication retransmits
+     * @param publishAddress Address to which the element must publish
+     * @param appKeyIndex Index of the application key
+     * @param credentialFlag Credentials flag define which credentials to be used, set true to use
+     *            friendship credentials and false for master credentials. Currently supports only master credentials
+     * @param publishTtl Publication ttl
+     * @param publicationSteps Publication steps for the publication period
+     * @param publicationResolution Publication resolution of the publication period
+     * @param publishRetransmitCount Number of publication retransmits
      * @param publishRetransmitIntervalSteps Publish retransmit interval steps
      */
-    PublicationSettings(final int publishAddress,
-                        final int appKeyIndex,
-                        final boolean credentialFlag,
-                        final int publishTtl,
-                        final int publicationSteps,
-                        final int publicationResolution,
-                        final int publishRetransmitCount,
-                        final int publishRetransmitIntervalSteps) {
-        this(publishAddress, null, appKeyIndex, credentialFlag, publishTtl,
-            publicationSteps, publicationResolution, publishRetransmitCount, publishRetransmitIntervalSteps);
+    PublicationSettings(final int publishAddress, final int appKeyIndex, final boolean credentialFlag,
+            final int publishTtl, final int publicationSteps, final int publicationResolution,
+            final int publishRetransmitCount, final int publishRetransmitIntervalSteps) {
+        this(publishAddress, null, appKeyIndex, credentialFlag, publishTtl, publicationSteps, publicationResolution,
+                publishRetransmitCount, publishRetransmitIntervalSteps);
     }
 
     /**
      * Constructs a PublicationSettings
      *
-     * @param publishAddress                 Address to which the element must publish
-     * @param appKeyIndex                    Index of the application key
-     * @param credentialFlag                 Credentials flag define which credentials to be used, set true to use
-     *                                       friendship credentials and false for master credentials. Currently supports only master credentials
-     * @param publishTtl                     Publication ttl
-     * @param publicationSteps               Publication steps for the publication period
-     * @param publicationResolution          Publication resolution of the publication period
-     * @param publishRetransmitCount         Number of publication retransmits
+     * @param publishAddress Address to which the element must publish
+     * @param appKeyIndex Index of the application key
+     * @param credentialFlag Credentials flag define which credentials to be used, set true to use
+     *            friendship credentials and false for master credentials. Currently supports only master credentials
+     * @param publishTtl Publication ttl
+     * @param publicationSteps Publication steps for the publication period
+     * @param publicationResolution Publication resolution of the publication period
+     * @param publishRetransmitCount Number of publication retransmits
      * @param publishRetransmitIntervalSteps Publish retransmit interval steps
      */
-    PublicationSettings(final int publishAddress,
-                        final UUID labelUUID,
-                        final int appKeyIndex,
-                        final boolean credentialFlag,
-                        final int publishTtl,
-                        final int publicationSteps,
-                        final int publicationResolution,
-                        final int publishRetransmitCount,
-                        final int publishRetransmitIntervalSteps) {
+    PublicationSettings(final int publishAddress, final UUID labelUUID, final int appKeyIndex,
+            final boolean credentialFlag, final int publishTtl, final int publicationSteps,
+            final int publicationResolution, final int publishRetransmitCount,
+            final int publishRetransmitIntervalSteps) {
         this.publishAddress = publishAddress;
         this.labelUUID = labelUUID;
         this.appKeyIndex = appKeyIndex;
@@ -187,7 +170,8 @@ public class PublicationSettings {
     }
 
     /**
-     * Sets the credential flags true if friendship credentials is to be used or false if master credentials flags must be used.
+     * Sets the credential flags true if friendship credentials is to be used or false if master credentials flags must
+     * be used.
      *
      * @param credentialFlag credential flag
      */
@@ -260,7 +244,8 @@ public class PublicationSettings {
     }
 
     /**
-     * Returns the resolution bit-field of publication steps. The resolution can be 100ms, 1 second, 10 seconds or 10 minutes
+     * Returns the resolution bit-field of publication steps. The resolution can be 100ms, 1 second, 10 seconds or 10
+     * minutes
      *
      * @return resolution
      */
@@ -355,7 +340,8 @@ public class PublicationSettings {
      * @param intervalSteps Retransmit interval steps
      */
     public static int getRetransmissionInterval(final int intervalSteps) {
-        if (intervalSteps >= DEFAULT_PUBLICATION_RETRANSMIT_INTERVAL_STEPS && intervalSteps <= MAX_PUBLICATION_RETRANSMIT_INTERVAL_STEPS)
+        if (intervalSteps >= DEFAULT_PUBLICATION_RETRANSMIT_INTERVAL_STEPS
+                && intervalSteps <= MAX_PUBLICATION_RETRANSMIT_INTERVAL_STEPS)
             return (intervalSteps + 1) * 50;
         return 0;
     }

@@ -1,18 +1,36 @@
-import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, state} from "lit/decorators.js";
-import {until} from "lit/directives/until.js";
-import {when} from "lit/directives/when.js";
-import {Task} from "@lit/task";
-import {Store} from "@reduxjs/toolkit";
-import {i18next} from "@openremote/or-translate";
-import {DefaultColor3, manager} from "@openremote/core";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import {Asset, AssetQuery, GatewayTunnelInfo, GatewayTunnelInfoType} from "@openremote/model";
-import {TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import {getAssetsRoute} from "../routes";
-import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { AppStateKeyed, Page, PageProvider, router } from "@openremote/or-app";
+import { css, html, TemplateResult, unsafeCSS } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { until } from "lit/directives/until.js";
+import { when } from "lit/directives/when.js";
+import { Task } from "@lit/task";
+import { Store } from "@reduxjs/toolkit";
+import { i18next } from "@openremote/or-translate";
+import { DefaultColor3, manager } from "@openremote/core";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { Asset, AssetQuery, GatewayTunnelInfo, GatewayTunnelInfoType } from "@openremote/model";
+import { TableColumn, TableRow } from "@openremote/or-mwc-components/or-mwc-table";
+import { getAssetsRoute } from "../routes";
+import { OrMwcDialog, showDialog, showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import moment from "moment";
 
 export function pageGatewayTunnelProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -135,10 +153,10 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                         ></or-mwc-input>
                     </div>
                     ${this._fetchTunnelsTask.render({
-                        pending: () => html`${i18next.t('loading')}`,
-                        complete: (tunnels) => until(this.getTunnelsTable(tunnels), html`${i18next.t('loading')}`),
-                        error: () => html`${i18next.t('errorOccurred')}`
-                    })}
+            pending: () => html`${i18next.t('loading')}`,
+            complete: (tunnels) => until(this.getTunnelsTable(tunnels), html`${i18next.t('loading')}`),
+            error: () => html`${i18next.t('errorOccurred')}`
+        })}
                 </div>
             </div>
         `;
@@ -151,14 +169,14 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected async getTunnelsTable(tunnels?: GatewayTunnelInfo[]): Promise<TemplateResult> {
         const columns: TableColumn[] = [
-            {title: i18next.t("gatewayTunnels.id"), isSortable: true},
-            {title: i18next.t("gatewayTunnels.gatewayId")},
-            {title: i18next.t("gatewayTunnels.type"), isSortable: true},
-            {title: i18next.t("gatewayTunnels.target"), isSortable: true, hideMobile: true},
-            {title: i18next.t("gatewayTunnels.targetPort"), isSortable: true, hideMobile: true},
-            {title: i18next.t("gatewayTunnels.assignedPort"), isSortable: true, hideMobile: true},
-            {title: i18next.t("gatewayTunnels.closesAt"), isSortable: true, hideMobile: true},
-            {title: ""}
+            { title: i18next.t("gatewayTunnels.id"), isSortable: true },
+            { title: i18next.t("gatewayTunnels.gatewayId") },
+            { title: i18next.t("gatewayTunnels.type"), isSortable: true },
+            { title: i18next.t("gatewayTunnels.target"), isSortable: true, hideMobile: true },
+            { title: i18next.t("gatewayTunnels.targetPort"), isSortable: true, hideMobile: true },
+            { title: i18next.t("gatewayTunnels.assignedPort"), isSortable: true, hideMobile: true },
+            { title: i18next.t("gatewayTunnels.closesAt"), isSortable: true, hideMobile: true },
+            { title: "" }
         ];
         const rows: TableRow[] = tunnels?.map(tunnel => ({
             content: [
@@ -251,7 +269,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected _onCopyTunnelAddressClick(ev: OrInputChangedEvent, tunnel: GatewayTunnelInfo): void {
         const address = this._getTunnelAddress(tunnel);
-        if(address) {
+        if (address) {
             navigator.clipboard.writeText(address).finally(() => {
                 showSnackbar(undefined, i18next.t('gatewayTunnels.copySuccess'));
             });
@@ -282,8 +300,8 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
         }
         const updateActions = () => {
             dialog.setActions([
-                {actionName: "cancel", content: "cancel"},
-                {actionName: "add", disabled: (!tunnel.gatewayId || !tunnel.target || !tunnel.targetPort), content: "add", action: () => onAddClick()},
+                { actionName: "cancel", content: "cancel" },
+                { actionName: "add", disabled: (!tunnel.gatewayId || !tunnel.target || !tunnel.targetPort), content: "add", action: () => onAddClick() },
             ])
         }
         const gatewayListTemplate = async (): Promise<TemplateResult> => {
@@ -293,28 +311,28 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
                 <div style="display: flex; flex-direction: column; gap: 20px; width: 360px;">
                     <or-mwc-input .type="${InputType.SELECT}" .options="${items}" .value="${tunnel.gatewayId}" label="${i18next.t('gatewayTunnels.selectAsset')}" style="width: 100%;"
                                   @or-mwc-input-changed="${(ev) => {
-                                      tunnel.gatewayId = ev.detail.value;
-                                      updateActions();
-                                  }}"
+                    tunnel.gatewayId = ev.detail.value;
+                    updateActions();
+                }}"
                     ></or-mwc-input>
                     <or-mwc-input .type="${InputType.SELECT}" label="${i18next.t('gatewayTunnels.protocol')}" .value="${tunnel.type}" .options="${this.GATEWAY_TUNNEL_PROTOCOL_TYPES}"
                                   style="width: 100%"
                                   @or-mwc-input-changed="${(ev) => {
-                                      tunnel.type = ev.detail.value;
-                                      updateActions();
-                                  }}"
+                    tunnel.type = ev.detail.value;
+                    updateActions();
+                }}"
                     ></or-mwc-input>
                     <or-mwc-input .type="${InputType.TEXT}" label="${i18next.t('host')}" .value="${tunnel.target}" style="width: 100%;"
                                   @or-mwc-input-changed="${(ev) => {
-                                      tunnel.target = ev.detail.value;
-                                      updateActions();
-                                  }}"
+                    tunnel.target = ev.detail.value;
+                    updateActions();
+                }}"
                     ></or-mwc-input>
                     <or-mwc-input .type="${InputType.NUMBER}" label="${i18next.t('port')}" .value="${tunnel.targetPort}" style="width: 100%"
                                   @or-mwc-input-changed="${(ev) => {
-                                      tunnel.targetPort = ev.detail.value;
-                                      updateActions();
-                                  }}"
+                    tunnel.targetPort = ev.detail.value;
+                    updateActions();
+                }}"
                     ></or-mwc-input>
                 </div>
             `
@@ -403,7 +421,7 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      * It acts as a reactive controller, and keeps its value cached.
      */
     protected _fetchTunnelsTask = new Task(this, {
-        task: async ([realm], {signal}) => {
+        task: async ([realm], { signal }) => {
             return await this._fetchTunnels(realm, signal);
         },
         args: () => [this._realm]
@@ -452,8 +470,8 @@ export class PageGatewayTunnel extends Page<AppStateKeyed> {
      */
     protected async _fetchGatewayAssets(requireTunnelSupport = true): Promise<Asset[]> {
         const query = {
-            realm: {name: manager.displayRealm},
-            select: {attributes: ["tunnelingSupported"]},
+            realm: { name: manager.displayRealm },
+            select: { attributes: ["tunnelingSupported"] },
             types: this.GATEWAY_TUNNEL_TYPES,
             attributes: requireTunnelSupport ? {
                 items: [

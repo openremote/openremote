@@ -1,19 +1,37 @@
-import {css, html, LitElement, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil} from "@openremote/model";
-import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, LitElement, TemplateResult } from "lit";
+import { customElement, property, query } from "lit/decorators.js";
+import { AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil } from "@openremote/model";
+import { ConditionType, getAssetTypeFromQuery, RulesConfig } from "../index";
 import "./or-rule-asset-query";
 import "./or-rule-trigger-query";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
-import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {Util} from "@openremote/core";
-import {i18next, translate} from "@openremote/or-translate";
-import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import {OrRuleAssetQuery} from "./or-rule-asset-query";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { Util } from "@openremote/core";
+import { i18next, translate } from "@openremote/or-translate";
+import { OrRulesJsonRuleChangedEvent } from "./or-rule-json-viewer";
+import { OrRuleAssetQuery } from "./or-rule-asset-query";
 
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
@@ -39,7 +57,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
 
                 const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
                 const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+                const styleMap = color ? { "--or-icon-fill": "#" + color } : undefined;
 
                 return {
                     text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
@@ -61,7 +79,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
 
                 const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
                 const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+                const styleMap = color ? { "--or-icon-fill": "#" + color } : undefined;
 
                 return {
                     text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
@@ -81,7 +99,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
             text: i18next.t("time"),
             icon: "timer",
             value: ConditionType.TIME,
-            styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
+            styleMap: { "--or-icon-fill": "#" + TIMER_COLOR }
         } as ListItem);
     }
 
@@ -131,18 +149,18 @@ const style = css`
 @customElement("or-rule-condition")
 class OrRuleCondition extends translate(i18next)(LitElement) {
 
-    @property({type: Object, attribute: false})
+    @property({ type: Object, attribute: false })
     public ruleCondition!: RuleCondition;
 
     public readonly: boolean = false;
 
-    @property({type: Object})
+    @property({ type: Object })
     public config?: RulesConfig;
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetInfos?: AssetTypeInfo[];
 
-    @property({type: Object})
+    @property({ type: Object })
     public assetProvider?: (type: string) => Promise<any[] | undefined>
 
     @query("#asset-query")
@@ -182,7 +200,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         break;
                 }
             }
-            if(this.readonly) {
+            if (this.readonly) {
                 typeTemplate = html`
                 <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                     <or-mwc-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
@@ -192,10 +210,10 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                 typeTemplate = html`
                 <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
-                        getWhenTypesMenu(this.config, this.assetInfos),
-                        type,
-                        (value) => this.type = value as ConditionType)}
+                    html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
+                    getWhenTypesMenu(this.config, this.assetInfos),
+                    type,
+                    (value) => this.type = value as ConditionType)}
                 </div>
             `;
             }

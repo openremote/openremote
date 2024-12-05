@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.app;
+
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
+import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
+
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.persistence.PersistenceService;
@@ -30,16 +39,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.ValueUtil;
-
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT;
-import static org.openremote.manager.web.ManagerWebService.OR_CUSTOM_APP_DOCROOT_DEFAULT;
-import static org.openremote.container.util.MapAccess.getString;
 
 public class ConfigurationService extends RouteBuilder implements ContainerService {
 
@@ -63,12 +62,10 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
     public void init(Container container) throws Exception {
         identityService = container.getService(ManagerIdentityService.class);
         persistenceService = container.getService(PersistenceService.class);
-        pathPublicRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
+        pathPublicRoot = Paths
+                .get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
         container.getService(ManagerWebService.class).addApiSingleton(
-                new ConfigurationResourceImpl(
-                        container.getService(TimerService.class),
-                        identityService, this)
-        );
+                new ConfigurationResourceImpl(container.getService(TimerService.class), identityService, this));
     }
 
     @Override
@@ -81,7 +78,6 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         /* code not overridden yet */
     }
 
-
     public void saveMangerConfig(Object managerConfiguration) {
         LOG.log(Level.INFO, "Saving manager_config.json..");
         try (OutputStream out = new FileOutputStream(pathPublicRoot + "/manager_config.json")) {
@@ -89,9 +85,7 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when trying to save manager_config.json", exception);
         }
-
     }
-
 
     public void saveImageFile(String path, FileInfo fileInfo) {
         LOG.log(Level.INFO, "Saving image in manger_config.json..");
@@ -111,6 +105,5 @@ public class ConfigurationService extends RouteBuilder implements ContainerServi
         } catch (IOException | SecurityException exception) {
             LOG.log(Level.WARNING, "Error when saving image in manger_config.json", exception);
         }
-
     }
 }

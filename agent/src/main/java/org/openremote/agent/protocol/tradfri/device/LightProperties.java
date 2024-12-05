@@ -1,8 +1,27 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 package org.openremote.agent.protocol.tradfri.device;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.openremote.agent.protocol.tradfri.util.ApiCode;
 
 /**
@@ -69,11 +88,12 @@ public class LightProperties extends DeviceProperties {
     /**
      * Construct the LightProperties class
      */
-    public LightProperties(){
+    public LightProperties() {
     }
 
     /**
      * Get the on state of the light
+     *
      * @return The on state of the light (true for on, false for off)
      */
     public Boolean getOn() {
@@ -82,6 +102,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the brightness of the light
+     *
      * @return The brightness of the light
      */
     public Integer getBrightness() {
@@ -90,6 +111,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the colour of the light in hexadecimals
+     *
      * @return The colour of the light in hexadecimals
      */
     public String getColourHex() {
@@ -98,6 +120,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the hue of the light
+     *
      * @return The hue of the light
      */
     public Integer getHue() {
@@ -106,6 +129,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the saturation of the light
+     *
      * @return The saturation of the light
      */
     public Integer getSaturation() {
@@ -114,6 +138,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the X value of the colour of the light
+     *
      * @return The X value of the colour of the light
      */
     public Integer getColourX() {
@@ -122,6 +147,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the Y value of the colour of the light
+     *
      * @return The Y value of the colour of the light
      */
     public Integer getColourY() {
@@ -130,6 +156,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the colour temperature of the light
+     *
      * @return The colour temperature of the light
      */
     public Integer getColourTemperature() {
@@ -138,6 +165,7 @@ public class LightProperties extends DeviceProperties {
 
     /**
      * Get the transition time for updating the light
+     *
      * @return The transition time for updating the light
      */
     public Integer getTransitionTime() {
@@ -147,6 +175,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the on state of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param on The new on state for the light (true for on, false for off)
      */
     public void setOn(Boolean on) {
@@ -156,6 +185,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the brightness of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param brightness The new brightness for the light
      */
     public void setBrightness(Integer brightness) {
@@ -165,6 +195,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the colour of the light to a predefined hexadecimal colour within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param colourHex The new colour for the light
      */
     public void setColourHex(String colourHex) {
@@ -174,6 +205,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the hue of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param hue The new hue for the light
      */
     public void setHue(Integer hue) {
@@ -183,6 +215,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the saturation of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param saturation The new saturation for the light
      */
     public void setSaturation(Integer saturation) {
@@ -192,6 +225,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the X value of the colour of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param colourX The X value of the new colour for the light
      */
     public void setColourX(Integer colourX) {
@@ -201,6 +235,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the Y value of the colour of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param colourY The Y value of the new colour for the light
      */
     public void setColourY(Integer colourY) {
@@ -210,6 +245,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the colour temperature of the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param colourTemperature The new colour temperature for the light
      */
     public void setColourTemperature(Integer colourTemperature) {
@@ -219,6 +255,7 @@ public class LightProperties extends DeviceProperties {
     /**
      * Set the transition time for updating the light within the LightProperties class<br>
      * <i>Note: This does not change the actual light</i>
+     *
      * @param transitionTime The new transition time for updating the light
      */
     public void setTransitionTime(Integer transitionTime) {

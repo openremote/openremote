@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,18 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 package org.openremote.model.util;
-
-import cz.habarta.typescript.generator.Extension;
-import cz.habarta.typescript.generator.Settings;
-import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
-import cz.habarta.typescript.generator.emitter.TsModel;
-import org.openremote.agent.protocol.AgentModelProvider;
-import org.openremote.model.Constants;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.value.MetaItemDescriptor;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +24,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.openremote.agent.protocol.AgentModelProvider;
+import org.openremote.model.Constants;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.value.MetaItemDescriptor;
+
+import cz.habarta.typescript.generator.Extension;
+import cz.habarta.typescript.generator.Settings;
+import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
+import cz.habarta.typescript.generator.emitter.TsModel;
 
 /**
  * Outputs enums for well known Asset types, attribute names and meta item names
@@ -100,7 +98,7 @@ public class AssetModelInfoExtension extends Extension {
         Arrays.stream(Constants.class.getFields()).filter(f -> f.getName().startsWith("UNITS_")).forEach(unitField -> {
             String unitName = unitField.getName().substring(6);
             try {
-                otherMap.put(unitName.toUpperCase(Locale.ROOT), (String)unitField.get(null));
+                otherMap.put(unitName.toUpperCase(Locale.ROOT), (String) unitField.get(null));
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -109,14 +107,16 @@ public class AssetModelInfoExtension extends Extension {
         emitEnum(writer, "WellknownUnitTypes", otherMap);
 
         otherMap.clear();
-        Arrays.stream(Ruleset.class.getFields()).filter(f -> f.getType() == MetaItemDescriptor.class).forEach(rulesetMeta -> {
-            try {
-                MetaItemDescriptor metaItemDescriptor = (MetaItemDescriptor) rulesetMeta.get(null);
-                otherMap.put(metaItemDescriptor.getName().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", ""), metaItemDescriptor.getName());
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        });
+        Arrays.stream(Ruleset.class.getFields()).filter(f -> f.getType() == MetaItemDescriptor.class)
+                .forEach(rulesetMeta -> {
+                    try {
+                        MetaItemDescriptor metaItemDescriptor = (MetaItemDescriptor) rulesetMeta.get(null);
+                        otherMap.put(metaItemDescriptor.getName().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", ""),
+                                metaItemDescriptor.getName());
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                });
         writer.writeIndentedLine("");
         emitEnum(writer, "WellknownRulesetMetaItems", otherMap);
     }
@@ -126,7 +126,8 @@ public class AssetModelInfoExtension extends Extension {
         int last = values.size();
         AtomicInteger counter = new AtomicInteger(1);
         values.forEach((itemName, itemValue) -> {
-            writer.writeIndentedLine("    " + itemName + " = \"" + itemValue + "\"" + (last != counter.getAndIncrement() ? "," : ""));
+            writer.writeIndentedLine(
+                    "    " + itemName + " = \"" + itemValue + "\"" + (last != counter.getAndIncrement() ? "," : ""));
         });
         writer.writeIndentedLine("}");
     }

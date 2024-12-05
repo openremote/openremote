@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,28 +13,31 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.http;
-
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.http.HTTPMethod;
-import org.openremote.model.value.ValueType;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.http.HTTPMethod;
+import org.openremote.model.value.ValueType;
+
 public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
 
-    @JsonPropertyDescription("A JSON object of headers to be added to HTTP request; the key represents the name of the header and for each string value" +
-        " supplied a new header will be added with the key name and specified string value")
+    @JsonPropertyDescription("A JSON object of headers to be added to HTTP request; the key represents the name of the header and for each string value"
+            + " supplied a new header will be added with the key name and specified string value")
     protected Map<String, List<String>> headers;
-    @JsonPropertyDescription("A JSON object of query parameters to be added to HTTP request URL; the key represents the name of the query parameter and for each string value" +
-        " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test=2')")
+    @JsonPropertyDescription("A JSON object of query parameters to be added to HTTP request URL; the key represents the name of the query parameter and for each string value"
+            + " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test=2')")
     protected Map<String, List<String>> queryParameters;
-    @JsonPropertyDescription("Indicates that this HTTP request is used to update the linked attribute; this value indicates how frequently the HTTP request is made in order" +
-        " to update the linked attribute value")
+    @JsonPropertyDescription("Indicates that this HTTP request is used to update the linked attribute; this value indicates how frequently the HTTP request is made in order"
+            + " to update the linked attribute value")
     protected Integer pollingMillis;
     @JsonPropertyDescription("Indicates that the HTTP server supports pagination using the standard Link header mechanism")
     protected Boolean pagingMode;

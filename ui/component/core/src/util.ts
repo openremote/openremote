@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     Asset,
     AssetDescriptor,
@@ -26,10 +44,10 @@ import {
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
-import {AssetModelUtil} from "@openremote/model";
+import { AssetModelUtil } from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import {transform} from "lodash";
+import { transform } from "lodash";
 
 export class Deferred<T> {
 
@@ -68,7 +86,7 @@ export function getBrowserLanguage(): string {
 }
 
 export function getQueryParameters(queryStr: string): any {
-    return Qs.parse(queryStr, {ignoreQueryPrefix: true});
+    return Qs.parse(queryStr, { ignoreQueryPrefix: true });
 }
 
 export function getQueryParameter(parameter: string): any | undefined {
@@ -266,8 +284,8 @@ export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): bool
         // recursive object equality check
         const p = Object.keys(obj1);
         return Object.keys(obj2).every((i) => {
-                return p.indexOf(i) !== -1;
-            }) &&
+            return p.indexOf(i) !== -1;
+        }) &&
             p.every((i) => {
                 return objectsEqual(obj1[i], obj2[i]);
             });
@@ -332,9 +350,9 @@ export function camelCaseToSentenceCase(str: string | undefined): string {
         if (v === '_') return " ";
         // We have a capital or number
         if (v.length === 1 && v === v.toUpperCase()) {
-            const previousCapital = !arr[i-1] || arr[i-1] === '_';
-            const nextWord = i+1 < arr.length && arr[i+1] && arr[i+1] !== '_';
-            const nextTwoCapitalsOrEndOfString = i+3 > arr.length || !arr[i+1] && !arr[i+3];
+            const previousCapital = !arr[i - 1] || arr[i - 1] === '_';
+            const nextWord = i + 1 < arr.length && arr[i + 1] && arr[i + 1] !== '_';
+            const nextTwoCapitalsOrEndOfString = i + 3 > arr.length || !arr[i + 1] && !arr[i + 3];
             // Insert space
             if (!previousCapital || nextWord) v = " " + v;
             // Start of word or single letter word
@@ -415,11 +433,11 @@ export function getWeekNumber(date: Date): number {
     date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     // Set to nearest Thursday: current date + 4 - current day number
     // Make Sunday's day number 7
-    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
     // Get first day of year
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
     // Calculate full weeks to nearest Thursday
-    const weekNo = Math.ceil(( ( ((date.getTime() - yearStart.getTime()) / 86400000) + 1)/7));
+    const weekNo = Math.ceil(((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7));
     // Return array of year and week number
     return weekNo;
 }
@@ -445,29 +463,29 @@ const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP
 * */
 export function formatCronString(years?: string | number | string[], months?: string | string[] | number[], days?: string | number[], hours?: string | number[], minutes?: string | number[], seconds?: string | number[], daysOfTheWeek?: string): string {
     let cron = "";
-    if(seconds) {
-        if(Array.isArray(seconds)) { cron += (seconds.toString().replace(" ", "")); }
+    if (seconds) {
+        if (Array.isArray(seconds)) { cron += (seconds.toString().replace(" ", "")); }
         else { cron += seconds.toString(); }
-    } else { cron += "0"}
+    } else { cron += "0" }
     cron += " ";
-    if(minutes) {
-        if(Array.isArray(minutes)) { cron += (minutes.toString().replace(" ", "")); }
+    if (minutes) {
+        if (Array.isArray(minutes)) { cron += (minutes.toString().replace(" ", "")); }
         else { cron += minutes.toString(); }
-    } else { cron += "0"}
+    } else { cron += "0" }
     cron += " ";
-    if(hours) {
-        if(Array.isArray(hours)) { cron += (hours.toString().replace(" ", "")); }
+    if (hours) {
+        if (Array.isArray(hours)) { cron += (hours.toString().replace(" ", "")); }
         else { cron += hours.toString(); }
-    } else { cron += "0"}
+    } else { cron += "0" }
     cron += " "
-    if(days) {
-        if(Array.isArray(days)) { cron += (days.toString().replace(" ", "")); }
+    if (days) {
+        if (Array.isArray(days)) { cron += (days.toString().replace(" ", "")); }
         else { cron += days.toString(); }
-    } else { cron += "*"}
+    } else { cron += "*" }
     cron += " ";
-    if(months) {
-        if(Array.isArray(months)) {
-            if(typeof months[0] == 'number') {
+    if (months) {
+        if (Array.isArray(months)) {
+            if (typeof months[0] == 'number') {
                 const monthStrings: string[] = [];
                 months.forEach(month => { monthStrings.push(monthNames[month as number].toString()); })
                 cron += (monthStrings.toString().replace(" ", ""));
@@ -476,15 +494,15 @@ export function formatCronString(years?: string | number | string[], months?: st
             }
         }
         else { cron += months.toString(); }
-    } else { cron += "*"}
+    } else { cron += "*" }
     cron += " ";
-    if(daysOfTheWeek) { cron += daysOfTheWeek.toString(); }
+    if (daysOfTheWeek) { cron += daysOfTheWeek.toString(); }
     else { cron += "?" }
     cron += " ";
-    if(years) {
+    if (years) {
         if (Array.isArray(years)) { cron += (years.toString().replace(" ", "")); }
         else { cron += years; }
-    } else { cron += "*"}
+    } else { cron += "*" }
     return cron;
 }
 /* Transforms an JS date to a cron string, to trigger ONCE A YEAR on that specific date */
@@ -498,10 +516,10 @@ export function dateToCronString(date: Date): string {
 */
 export function cronStringToISOString(cronString: String, isUTC: boolean): string | undefined {
     const splStr = cronString.split(" ");
-    if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
+    if (!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
         const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
         let month: string = "";
-        if(splStr[4] != '*') {
+        if (splStr[4] != '*') {
             month = monthNames.indexOf(splStr[4]).toString();
         } else {
             month = new Date().getMonth().toString();
@@ -511,11 +529,11 @@ export function cronStringToISOString(cronString: String, isUTC: boolean): strin
         const hour: string = ((splStr[2].length == 1 && splStr[2] != '*') ? ("0" + splStr[2]) : splStr[2].replace('*', '00'));
         const minute: string = ((splStr[1].length == 1 && splStr[1] != '*') ? ("0" + splStr[1]) : splStr[1].replace('*', '00'));
         const second: string = ((splStr[0].length == 1 && splStr[0] != '*') ? ("0" + splStr[0]) : splStr[0].replace('*', '00'));
-        if(year.length > 0 && month.length > 0) {
-            if(isUTC) {
-                return moment.utc({year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second)}).toISOString();
+        if (year.length > 0 && month.length > 0) {
+            if (isUTC) {
+                return moment.utc({ year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second) }).toISOString();
             } else {
-                return moment({year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second)}).toISOString();
+                return moment({ year: Number(year), month: Number(month), date: Number(date), hour: Number(hour), minute: Number(minute), second: Number(second) }).toISOString();
             }
         }
     }
@@ -524,7 +542,7 @@ export function cronStringToISOString(cronString: String, isUTC: boolean): strin
 
 
 
-export function getMetaValue(name: string | NameHolder, attribute: Attribute<any> | undefined, descriptor?:  ValueDescriptorHolder | ValueDescriptor | string): any | undefined {
+export function getMetaValue(name: string | NameHolder, attribute: Attribute<any> | undefined, descriptor?: ValueDescriptorHolder | ValueDescriptor | string): any | undefined {
     const metaName = typeof name === "string" ? name : (name as NameHolder).name!;
 
     if (attribute && attribute.meta && attribute.meta.hasOwnProperty(metaName)) {
@@ -557,15 +575,15 @@ export function getAssetTypeLabel(type: string | AssetDescriptor | undefined): s
     if (!type) {
         return "";
     }
-    return i18next.t("label.asset." + type.name, {defaultValue: camelCaseToSentenceCase(type.name!)});
+    return i18next.t("label.asset." + type.name, { defaultValue: camelCaseToSentenceCase(type.name!) });
 }
 
 export function getValueDescriptorLabel(descriptor: ValueDescriptor | undefined | string): string {
     if (!descriptor) {
-        return i18next.t("label.value.unknown", {defaultValue: "Unknown"});
+        return i18next.t("label.value.unknown", { defaultValue: "Unknown" });
     }
-    const name = (typeof(descriptor) === "string" ? descriptor : descriptor.name);
-    return i18next.t("label.value." + name, {defaultValue: camelCaseToSentenceCase(name || "")});
+    const name = (typeof (descriptor) === "string" ? descriptor : descriptor.name);
+    return i18next.t("label.value." + name, { defaultValue: camelCaseToSentenceCase(name || "") });
 }
 
 export function getAllowedValueLabel(allowedValue: string, fallback?: string): string | undefined {
@@ -573,7 +591,7 @@ export function getAllowedValueLabel(allowedValue: string, fallback?: string): s
         return;
     }
 
-    return i18next.t("label.allowedValue." + allowedValue, {defaultValue: fallback || camelCaseToSentenceCase(allowedValue || ""), nsSeparator: false});
+    return i18next.t("label.allowedValue." + allowedValue, { defaultValue: fallback || camelCaseToSentenceCase(allowedValue || ""), nsSeparator: false });
 }
 
 export function getMetaItemNameValueHolder(metaNameOrDescriptor: MetaItemDescriptor | string, value: any): NameValueHolder<any> {
@@ -652,28 +670,28 @@ function getValueHolderValueAsString(nameValueHolder: NameValueHolder<any> | und
 export function getValueAsString(value: any, formatProvider: () => ValueFormat | undefined, language?: string, fallback?: string): string {
     let valueStr = "";
 
-    if (value === null || typeof(value) === "undefined") {
+    if (value === null || typeof (value) === "undefined") {
         valueStr = fallback || "";
     } else {
-        if (typeof(value) === "string") {
+        if (typeof (value) === "string") {
             valueStr = value;
-        } else if (typeof(value) === "number" || typeof(value) === "boolean" || value instanceof Date) {
+        } else if (typeof (value) === "number" || typeof (value) === "boolean" || value instanceof Date) {
 
             const format = formatProvider && formatProvider();
 
             if (format && Object.keys(format).length !== 0) {
-                if (typeof(value) === "number") {
+                if (typeof (value) === "number") {
                     if (format.asBoolean) {
                         value = !!value;
                     } else if (format.asDate) {
                         // Assume UNIX timestamp in ms
                         value = new Date(value);
                     }
-                } else if (typeof(value) === "boolean" && format.asNumber) {
+                } else if (typeof (value) === "boolean" && format.asNumber) {
                     value = value ? 1 : 0;
                 }
 
-                switch (typeof(value)) {
+                switch (typeof (value)) {
                     case "number":
                         valueStr = new Intl.NumberFormat(language || i18next.language, format).format(value);
                         break;
@@ -696,7 +714,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                             valueStr = value.toISOString();
                         } else if (format.week) {
                             const weekNo = getWeekNumber(value);
-                            valueStr = format.week === ValueFormatStyleRepresentation.DIGIT_2 ? String(weekNo).padStart(2,"0") : Number(weekNo).toString(10);
+                            valueStr = format.week === ValueFormatStyleRepresentation.DIGIT_2 ? String(weekNo).padStart(2, "0") : Number(weekNo).toString(10);
                         } else {
                             valueStr = new Intl.DateTimeFormat(language || i18next.language, format as DateTimeFormatOptions).format(value);
                         }
@@ -727,7 +745,7 @@ export function resolveUnits(units: string[] | undefined, valueStr?: string): st
     const unitsStr = units.map((unit, index) => {
         if (unit.length === 3 && unit.toUpperCase() === unit) {
             // This is a currency code - use Intl API to find the symbol
-            const parts = new Intl.NumberFormat(i18next.language, {currency: unit, style: "currency"}).formatToParts();
+            const parts = new Intl.NumberFormat(i18next.language, { currency: unit, style: "currency" }).formatToParts();
             // Check whether it goes before or after the value
             if (index === 0 && parts[0].type === "currency") {
                 if (valueStr) {
@@ -736,7 +754,7 @@ export function resolveUnits(units: string[] | undefined, valueStr?: string): st
                     return parts[0].value;
                 }
             } else {
-                return (parts[0].type === "currency" ? parts[0].value : parts[parts.length-1].value);
+                return (parts[0].type === "currency" ? parts[0].value : parts[parts.length - 1].value);
             }
         } else {
             return i18next.t(["units." + unit, "or:units." + unit]);
@@ -793,15 +811,15 @@ export function getMetaValueFormat(metaItem: NameValueHolder<any> | undefined, d
 
 export function mergeObjects(a: object | undefined, b: object | undefined, mergeArrays: boolean): object {
     if (a && !b) {
-        return {...a};
+        return { ...a };
     }
     if (b && !a) {
-        return {...b};
+        return { ...b };
     }
-    const merged = {...a};
+    const merged = { ...a };
     const path: string[] = [];
     Object.entries(b!).forEach(([k, v]) => {
-        mergeObjectKey(merged, path, k, v,mergeArrays)
+        mergeObjectKey(merged, path, k, v, mergeArrays)
     });
     return merged;
 }
@@ -825,8 +843,8 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
             delete dest[key];
         } else if (Array.isArray(value)) {
             dest[key] = [...value];
-        } else if (typeof(value) === "object") {
-            dest[key] = {...value};
+        } else if (typeof (value) === "object") {
+            dest[key] = { ...value };
         } else {
             dest[key] = value;
         }
@@ -839,8 +857,8 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
             } else {
                 dest[key] = [...value];
             }
-        } else if (typeof(value) === "object") {
-            dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
+        } else if (typeof (value) === "object") {
+            dest[key] = mergeObjects({ ...dest[key] }, value, mergeArrays);
         } else {
             dest[key] = value;
         }
@@ -887,7 +905,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         }
     }
 
-    if (descriptor && typeof(descriptor) !== "string" && (descriptor as any).hasOwnProperty(lookup)) {
+    if (descriptor && typeof (descriptor) !== "string" && (descriptor as any).hasOwnProperty(lookup)) {
         matched = (descriptor as any)[lookup] as T;
         if (lookup === WellknownMetaItems.FORMAT) {
             formats.push(matched as ValueFormat);
@@ -912,7 +930,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
 
     let mergedFormat: ValueFormat = {};
     formats.reverse().forEach((format) => {
-        mergedFormat = {...mergedFormat,...format};
+        mergedFormat = { ...mergedFormat, ...format };
     })
 
     return mergedFormat as T;
@@ -959,7 +977,7 @@ function doStandardTranslationLookup(lookup: WellknownMetaItems.LABEL | Wellknow
     lookups.push(prefix + name);
 
     if (lookups.length > 0) {
-        return i18next.t(lookups, {defaultValue: fallback || ""});
+        return i18next.t(lookups, { defaultValue: fallback || "" });
     }
 }
 
@@ -1049,7 +1067,7 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
 
 // left: 37, up: 38, right: 39, down: 40,
 // spacebar: 32, pageup: 33, pagedown: 34, end: 35, home: 36
-const keys = {37: 1, 38: 1, 39: 1, 40: 1};
+const keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
 function preventDefault(e: Event) {
     e.preventDefault();
 }
@@ -1067,7 +1085,7 @@ try {
     window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
         get: () => { supportsPassive = true; }
     }));
-} catch(e) {}
+} catch (e) { }
 
 const wheelOpt = supportsPassive ? { passive: false } : false;
 const wheelEvent = "onwheel" in document.createElement("div") ? "wheel" : "mousewheel";
@@ -1090,7 +1108,7 @@ export function enableScroll() {
     window.removeEventListener('keydown', preventDefaultForScrollKeys, false);
 }
 
-export function blobToBase64(blob:Blob) {
+export function blobToBase64(blob: Blob) {
     return new Promise((resolve, reject) => {
         const fileReader = new FileReader();
         fileReader.readAsDataURL(blob);

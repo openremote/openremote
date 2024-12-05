@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,28 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.security;
+
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
+import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Set;
+import java.util.function.Function;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.KerberosPrincipal;
 
 import org.apache.activemq.artemis.spi.core.protocol.RemotingConnection;
 import org.apache.activemq.artemis.spi.core.security.jaas.CertificateCallback;
 import org.apache.activemq.artemis.spi.core.security.jaas.JaasCallbackHandler;
 import org.apache.activemq.artemis.spi.core.security.jaas.PrincipalsCallback;
 import org.keycloak.adapters.KeycloakDeployment;
-
-import javax.security.auth.Subject;
-import javax.security.auth.callback.*;
-import javax.security.auth.kerberos.KerberosPrincipal;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Set;
-import java.util.function.Function;
-
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getCertsFromConnection;
-import static org.apache.activemq.artemis.core.remoting.CertificateUtil.getPeerPrincipalFromConnection;
 
 /**
  * A version of {@link JaasCallbackHandler} that supports multi-tenancy by introducing support for
@@ -48,7 +48,8 @@ public class MultiTenantJaasCallbackHandler implements CallbackHandler {
     protected final String realm;
     protected final Function<String, KeycloakDeployment> deploymentResolver;
 
-    public MultiTenantJaasCallbackHandler(Function<String, KeycloakDeployment> deploymentResolver, String realm, String username, String password, RemotingConnection remotingConnection) {
+    public MultiTenantJaasCallbackHandler(Function<String, KeycloakDeployment> deploymentResolver, String realm,
+            String username, String password, RemotingConnection remotingConnection) {
         this.username = username;
         this.password = password;
         this.remotingConnection = remotingConnection;
@@ -83,7 +84,7 @@ public class MultiTenantJaasCallbackHandler implements CallbackHandler {
                 Subject peerSubject = remotingConnection.getSubject();
                 if (peerSubject != null) {
                     for (KerberosPrincipal principal : peerSubject.getPrivateCredentials(KerberosPrincipal.class)) {
-                        principalsCallback.setPeerPrincipals(new Principal[]{principal});
+                        principalsCallback.setPeerPrincipals(new Principal[] { principal });
                         return;
                     }
                     Set<Principal> principals = peerSubject.getPrincipals();
@@ -95,7 +96,7 @@ public class MultiTenantJaasCallbackHandler implements CallbackHandler {
 
                 Principal peerPrincipalFromConnection = getPeerPrincipalFromConnection(remotingConnection);
                 if (peerPrincipalFromConnection != null) {
-                    principalsCallback.setPeerPrincipals(new Principal[]{peerPrincipalFromConnection});
+                    principalsCallback.setPeerPrincipals(new Principal[] { peerPrincipalFromConnection });
                 }
             } else if (callback instanceof KeycloakDeploymentCallback keycloakDeploymentCallback) {
                 keycloakDeploymentCallback.setDeployment(deploymentResolver.apply(realm));

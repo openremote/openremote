@@ -1,17 +1,35 @@
-import {css, html, TemplateResult, unsafeCSS, CSSResult} from "lit";
-import {customElement, query, state} from "lit/decorators.js";
-import manager, {DefaultColor3} from "@openremote/core";
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+import { css, html, TemplateResult, unsafeCSS, CSSResult } from "lit";
+import { customElement, query, state } from "lit/decorators.js";
+import manager, { DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
-import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {when} from "lit/directives/when.js";
-import {until} from "lit/directives/until.js";
-import {guard} from "lit/directives/guard.js";
-import {i18next} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {ClientRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
-import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { Store } from "@reduxjs/toolkit";
+import { Page, PageProvider, AppStateKeyed } from "@openremote/or-app";
+import { when } from "lit/directives/when.js";
+import { until } from "lit/directives/until.js";
+import { guard } from "lit/directives/guard.js";
+import { i18next } from "@openremote/or-translate";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { ClientRole, Role, User, UserAssetLink, UserQuery } from "@openremote/model";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
@@ -193,11 +211,11 @@ export class PageAccount extends Page<AppStateKeyed>  {
                     
                     <!-- Account settings row -->
                     ${guard([this._user], () => until(
-                        this._getAccountRowTemplate(this._user, readonly, (_user, dirty, invalid) => {
-                            this._dirty = dirty;
-                            this._invalid = invalid;
-                        })
-                    ))}
+            this._getAccountRowTemplate(this._user, readonly, (_user, dirty, invalid) => {
+                this._dirty = dirty;
+                this._invalid = invalid;
+            })
+        ))}
                     
                     <!-- Actions row (such as the save button) -->
                     ${when(this._user, () => until(this._getActionsRowTemplate(this._user)))}
@@ -228,7 +246,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
      */
     protected async _getAccountRowTemplate(user?: UserModel, readonly = true, onchange?: (user: User, dirty: boolean, invalid: boolean) => void): Promise<TemplateResult> {
         const registrationEmailAsUsername = true;
-        if(!user) {
+        if (!user) {
             user = await this._getUser();
         }
         return html`
@@ -245,9 +263,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   .value="${user?.username}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.username = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
+                user.username = e.detail.value;
+                onchange?.(user, true, this._isInvalid());
+            }}"
                     ></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
                     <or-mwc-input id="email" class="validate"
@@ -260,9 +278,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .validationMessage="${i18next.t("invalidEmail")}"
                                   .value="${user?.email}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.email = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
+                user.email = e.detail.value;
+                onchange?.(user, true, this._isInvalid());
+            }}"
                     ></or-mwc-input>
                     <or-mwc-input id="firstName" class="validate"
                                   .label="${i18next.t("firstName")}"
@@ -272,9 +290,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   minLength="5"
                                   .value="${user?.firstName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.firstName = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}"
+                user.firstName = e.detail.value;
+                onchange?.(user, true, this._isInvalid());
+            }}"
                     ></or-mwc-input>
                     <or-mwc-input id="surname" class="validate"
                                   .label="${i18next.t("surname")}"
@@ -284,9 +302,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   minLength="1"
                                   .value="${user?.lastName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                      user.lastName = e.detail.value;
-                                      onchange?.(user, true, this._isInvalid());
-                                  }}">
+                user.lastName = e.detail.value;
+                onchange?.(user, true, this._isInvalid());
+            }}">
                     </or-mwc-input>
                 </div>
                 <div class="column">
@@ -298,9 +316,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .disabled="${!user}"
                                   min="1"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
-                                      const changed = this._onPasswordChanged(user);
-                                      onchange?.(user, changed, this._isInvalid());
-                                  }}"
+                const changed = this._onPasswordChanged(user);
+                onchange?.(user, changed, this._isInvalid());
+            }}"
                     ></or-mwc-input>
                     <or-mwc-input id="repeatPassword"
                                   .label="${i18next.t("repeatPassword")}"
@@ -310,9 +328,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .disabled="${!user}"
                                   min="1"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
-                                      const changed = this._onPasswordChanged(user);
-                                      onchange?.(user, changed, this._isInvalid());
-                                  }}"
+                const changed = this._onPasswordChanged(user);
+                onchange?.(user, changed, this._isInvalid());
+            }}"
                     ></or-mwc-input>
                 </div>
             </div>
@@ -345,9 +363,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
     protected _onPasswordChanged(user: UserModel): boolean {
         const password = this._passwordElem?.nativeValue;
         const repeatPassword = this._repeatPasswordElem?.nativeValue;
-        if(password && repeatPassword) {
+        if (password && repeatPassword) {
 
-            if(password !== repeatPassword) {
+            if (password !== repeatPassword) {
                 const error = i18next.t("passwordMismatch");
                 this._repeatPasswordElem?.setCustomValidity(error);
                 user.password = "";
@@ -368,7 +386,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
      * Checks if the input fields are valid, and calls the {@link _updateUser} function.
      */
     protected _onSaveBtnClick(_e: OrInputChangedEvent) {
-        if(this._user && !this._isInvalid()) {
+        if (this._user && !this._isInvalid()) {
             this._updateUser(this._user);
         } else {
             console.warn("The fields are invalid!");
@@ -382,7 +400,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
      */
     protected _isInvalid(): boolean {
         const validateArray = this.shadowRoot.querySelectorAll(".validate");
-        if(validateArray.length === 0) {
+        if (validateArray.length === 0) {
             return true;
         }
         return Array.from(validateArray).filter(e => e instanceof OrMwcInput).some(input => !(input as OrMwcInput).valid);
@@ -399,18 +417,18 @@ export class PageAccount extends Page<AppStateKeyed>  {
      * Function that fetches (and returns) the currently logged in {@link UserModel} from the Manager HTTP API.
      */
     protected async _getUser(): Promise<UserModel> {
-        if(!this._user) {
+        if (!this._user) {
             try {
                 const usersResponse = await manager.rest.api.UserResource.query({
-                    realmPredicate: {name: manager.getRealm()},
-                    usernames: [{predicateType: "string", value: manager.username}],
+                    realmPredicate: { name: manager.getRealm() },
+                    usernames: [{ predicateType: "string", value: manager.username }],
                     limit: 1
                 } as UserQuery);
 
-                if(usersResponse.status < 200 || usersResponse.status > 299) {
+                if (usersResponse.status < 200 || usersResponse.status > 299) {
                     throw new Error(usersResponse.statusText);
                 }
-                if(!usersResponse.data || usersResponse.data.length === 0) {
+                if (!usersResponse.data || usersResponse.data.length === 0) {
                     throw new Error("No user could be found.");
                 }
                 this._user = usersResponse.data[0];
@@ -429,8 +447,8 @@ export class PageAccount extends Page<AppStateKeyed>  {
      */
     protected async _updateUser(user: UserModel): Promise<void> {
         await manager.rest.api.UserResource.update(manager.getRealm(), user).then(() => {
-            if(user.password) {
-                const credentials = {value: user.password};
+            if (user.password) {
+                const credentials = { value: user.password };
                 manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials);
             }
             this._dirty = false;

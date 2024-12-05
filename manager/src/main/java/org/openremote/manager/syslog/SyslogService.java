@@ -1,9 +1,6 @@
 /*
  * Copyright 2017, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,24 +13,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.syslog;
 
-import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.MapAccess;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
-import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.syslog.SyslogLevel;
-import org.openremote.model.util.Pair;
+import static java.time.temporal.ChronoUnit.DAYS;
 
-import jakarta.persistence.TypedQuery;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +33,21 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static java.time.temporal.ChronoUnit.DAYS;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.syslog.SyslogConfig;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.util.Pair;
+
+import jakarta.persistence.TypedQuery;
 
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores
@@ -88,18 +88,20 @@ public class SyslogService extends Handler implements ContainerService {
         }
 
         if (clientEventService != null) {
-            clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) ->
-                subscription.isEventType(SyslogEvent.class) && auth != null && (auth.isSuperUser() || auth.hasResourceRole(Constants.READ_LOGS_ROLE, Constants.KEYCLOAK_CLIENT_ID)));
+            clientEventService.addSubscriptionAuthorizer((realm, auth,
+                    subscription) -> subscription.isEventType(SyslogEvent.class) && auth != null && (auth.isSuperUser()
+                            || auth.hasResourceRole(Constants.READ_LOGS_ROLE, Constants.KEYCLOAK_CLIENT_ID)));
         }
 
         if (container.hasService(ManagerWebService.class)) {
-            container.getService(ManagerWebService.class).addApiSingleton(
-                new SyslogResourceImpl(this)
-            );
+            container.getService(ManagerWebService.class).addApiSingleton(new SyslogResourceImpl(this));
         }
 
-        int maxAgeDays = MapAccess.getInteger(container.getConfig(), OR_SYSLOG_MAX_AGE_DAYS, OR_SYSLOG_MAX_AGE_DAYS_DEFAULT);
-        SyslogLevel syslogLevel = Optional.ofNullable(MapAccess.getString(container.getConfig(), OR_SYSLOG_LOG_LEVEL, null)).map(SyslogLevel::valueOf).orElse(OR_SYSLOG_LOG_LEVEL_DEFAULT);
+        int maxAgeDays = MapAccess.getInteger(container.getConfig(), OR_SYSLOG_MAX_AGE_DAYS,
+                OR_SYSLOG_MAX_AGE_DAYS_DEFAULT);
+        SyslogLevel syslogLevel = Optional
+                .ofNullable(MapAccess.getString(container.getConfig(), OR_SYSLOG_LOG_LEVEL, null))
+                .map(SyslogLevel::valueOf).orElse(OR_SYSLOG_LOG_LEVEL_DEFAULT);
         config = new SyslogConfig(syslogLevel, SyslogCategory.values(), maxAgeDays * 24 * 60);
     }
 
@@ -115,27 +117,22 @@ public class SyslogService extends Handler implements ContainerService {
             // Clear outdated events once a day
             if (config.getStoredMaxAgeMinutes() > 0) {
                 // Schedule purge at approximately 3AM daily
-                long initialDelay = ChronoUnit.MILLIS.between(
-                    timerService.getNow(),
-                    timerService.getNow().truncatedTo(DAYS).plus(27, ChronoUnit.HOURS));
+                long initialDelay = ChronoUnit.MILLIS.between(timerService.getNow(),
+                        timerService.getNow().truncatedTo(DAYS).plus(27, ChronoUnit.HOURS));
 
-                deleteOldFuture = scheduledExecutorService.scheduleAtFixedRate(
-                    this::purgeSyslog,
-                    initialDelay,
-                    Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
-                );
+                deleteOldFuture = scheduledExecutorService.scheduleAtFixedRate(this::purgeSyslog, initialDelay,
+                        Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
 
     protected void purgeSyslog() {
         try {
-            persistenceService.doTransaction(em -> em.createQuery(
-                "delete from SyslogEvent e " +
-                    "where e.timestamp <= :date")
-                    .setParameter("date",
-                            Date.from(Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES)))
-                    .executeUpdate());
+            persistenceService
+                    .doTransaction(em -> em.createQuery("delete from SyslogEvent e " + "where e.timestamp <= :date")
+                            .setParameter("date",
+                                    Date.from(Instant.now().minus(config.getStoredMaxAgeMinutes(), ChronoUnit.MINUTES)))
+                            .executeUpdate());
         } catch (Throwable e) {
             LOG.log(Level.WARNING, "Failed to purge syslog events", e);
         }
@@ -200,7 +197,8 @@ public class SyslogService extends Handler implements ContainerService {
         }
     }
 
-    public Pair<Long, List<SyslogEvent>> getEvents(SyslogLevel level, int perPage, int page, Instant from, Instant to, List<SyslogCategory> categories, List<String> subCategories) {
+    public Pair<Long, List<SyslogEvent>> getEvents(SyslogLevel level, int perPage, int page, Instant from, Instant to,
+            List<SyslogCategory> categories, List<String> subCategories) {
         if (persistenceService == null)
             return null;
 
@@ -216,7 +214,8 @@ public class SyslogService extends Handler implements ContainerService {
         AtomicLong count = new AtomicLong();
 
         List<SyslogEvent> events = persistenceService.doReturningTransaction(em -> {
-            StringBuilder sb = new StringBuilder("from SyslogEvent e where e.timestamp >= :from and e.timestamp <= :to");
+            StringBuilder sb = new StringBuilder(
+                    "from SyslogEvent e where e.timestamp >= :from and e.timestamp <= :to");
             if (level != null) {
                 sb.append(" and e.level >= :level");
             }
@@ -262,7 +261,7 @@ public class SyslogService extends Handler implements ContainerService {
 
             query.setMaxResults(perPage);
             if (page > 1) {
-                query.setFirstResult(((page-1) * perPage) + 1);
+                query.setFirstResult(((page - 1) * perPage) + 1);
             }
             return query.getResultList();
         });
@@ -278,8 +277,7 @@ public class SyslogService extends Handler implements ContainerService {
         if (persistenceService.getEntityManagerFactory() == null) {
             return;
         }
-        boolean isLoggable =
-            config.getStoredLevel().isLoggable(syslogEvent)
+        boolean isLoggable = config.getStoredLevel().isLoggable(syslogEvent)
                 && Arrays.asList(config.getStoredCategories()).contains(syslogEvent.getCategory());
         if (isLoggable) {
             synchronized (batch) {
@@ -304,8 +302,10 @@ public class SyslogService extends Handler implements ContainerService {
                             em.persist(e);
                         }
                     } catch (RuntimeException ex) {
-                        // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
-                        // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
+                        // This is not a big problem, it may happen on shutdown of database connections during tests,
+                        // just inform the user
+                        // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is
+                        // not good
                         LOG.info("Error flushing syslog to database, some events are lost: " + ex);
                     } finally {
                         em.flush();

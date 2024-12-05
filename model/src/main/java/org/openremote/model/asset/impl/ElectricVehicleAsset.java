@@ -1,9 +1,6 @@
 /*
  * Copyright 2020, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.model.asset.impl;
+
+import static org.openremote.model.Constants.*;
+
+import java.util.Collection;
+import java.util.Optional;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -31,10 +35,6 @@ import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import jakarta.persistence.Entity;
-import java.util.Collection;
-import java.util.Optional;
-
-import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricVehicleAsset extends ElectricityBatteryAsset {
@@ -44,27 +44,30 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
         PHEV
     }
 
-    public static final ValueDescriptor<EnergyType> ENERGY_TYPE_VALUE = new ValueDescriptor<>("energyType", EnergyType.class);
+    public static final ValueDescriptor<EnergyType> ENERGY_TYPE_VALUE = new ValueDescriptor<>("energyType",
+            EnergyType.class);
 
-    public static final AttributeDescriptor<EnergyType> ENERGY_TYPE = new AttributeDescriptor<>("energyType", ENERGY_TYPE_VALUE);
-    public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
-    public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY))
-        .withUnits(UNITS_KILO, UNITS_METRE);
-    public static final AttributeDescriptor<Boolean> CHARGER_CONNECTED = new AttributeDescriptor<>("chargerConnected", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<EnergyType> ENERGY_TYPE = new AttributeDescriptor<>("energyType",
+            ENERGY_TYPE_VALUE);
+    public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>(
+            "connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
+    public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer",
+            ValueType.POSITIVE_INTEGER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Boolean> CHARGER_CONNECTED = new AttributeDescriptor<>("chargerConnected",
+            ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<String> CHARGER_ID = new AttributeDescriptor<>("chargerID", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<Integer> MILEAGE_CAPACITY = new AttributeDescriptor<>("mileageCapacity", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_METRE);
-    public static final AttributeDescriptor<Double> MILEAGE_CHARGED = new AttributeDescriptor<>("mileageCharged", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_METRE);
-    public static final AttributeDescriptor<Integer> MILEAGE_MIN = new AttributeDescriptor<>("mileageMin", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_METRE);
-    public static final AttributeDescriptor<String> VEHICLE_CATEGORY = new AttributeDescriptor<>("vehicleCategory", ValueType.TEXT);
+            new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Integer> MILEAGE_CAPACITY = new AttributeDescriptor<>("mileageCapacity",
+            ValueType.POSITIVE_INTEGER).withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Double> MILEAGE_CHARGED = new AttributeDescriptor<>("mileageCharged",
+            ValueType.POSITIVE_NUMBER, new MetaItem<>(MetaItemType.READ_ONLY)).withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Integer> MILEAGE_MIN = new AttributeDescriptor<>("mileageMin",
+            ValueType.POSITIVE_INTEGER).withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<String> VEHICLE_CATEGORY = new AttributeDescriptor<>("vehicleCategory",
+            ValueType.TEXT);
 
-    public static final AssetDescriptor<ElectricVehicleAsset> DESCRIPTOR = new AssetDescriptor<>("car-electric", "49B0D8", ElectricVehicleAsset.class);
+    public static final AssetDescriptor<ElectricVehicleAsset> DESCRIPTOR = new AssetDescriptor<>("car-electric",
+            "49B0D8", ElectricVehicleAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
