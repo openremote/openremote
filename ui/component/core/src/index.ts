@@ -578,7 +578,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected doRestApiInit(): boolean {
-        rest.setTimeout(10000);
+        rest.setTimeout(20000);
         rest.initialise(this.getApiBaseUrl());
         return true;
     }

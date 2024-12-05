@@ -8,10 +8,10 @@ export function getMapRoute(assetId?: string) {
     return route;
 }
 
-export function getAssetsRoute(editMode?: boolean, assetId?: string) {
+export function getAssetsRoute(editMode?: boolean, assetIds?: string) {
     let route = "assets/" + (editMode ? "true" : "false");
-    if (assetId) {
-        route += "/" + assetId;
+    if (assetIds) {
+        route += "/" + assetIds;
     }
 
     return route;

@@ -86,6 +86,11 @@ export interface NodeSelectEventDetail {
     newNodes: UiAssetTreeNode[];
 }
 
+export interface ChangeParentEventDetail {
+    parentId: string | undefined;
+    assetIds: string[];
+}
+
 export {style};
 
 export class OrAssetTreeRequestSelectionEvent extends CustomEvent<Util.RequestEventDetail<NodeSelectEventDetail>> {
@@ -117,7 +122,7 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
     }
 }
 
-export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
+export class OrAssetTreeChangeParentEvent extends CustomEvent<ChangeParentEventDetail> {
 
     public static readonly NAME = "or-asset-tree-change-parent";
 
@@ -127,7 +132,7 @@ export class OrAssetTreeChangeParentEvent extends CustomEvent<any> {
             composed: true,
             detail: {
                 parentId: parent,
-                assetsIds: assetsIds
+                assetIds: assetsIds
             }
         });
     }
@@ -688,7 +693,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         nodes.forEach((node) => this._updateSort(node.children, sortFunction));
     }
 
-    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null) {
+    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null, silent: boolean = false) {
         if (node && node.expandable) {
             node.expanded = !node.expanded;
 
@@ -700,30 +705,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const elem = expander.parentElement!.parentElement!.parentElement!;
             elem.toggleAttribute("data-expanded");
-            this.dispatchEvent(new OrAssetTreeToggleExpandEvent({ node: node }));
-            this.requestUpdate();
-        }
-    }
-
-    /**
-     * This method is used to avoid to re-render and erase all the this.selectedIds attribute
-     *
-     * @param expander
-     * @param node
-     * @protected
-     */
-    protected _toggleExpanderWithoutEventDispatch(expander: HTMLElement, node: UiAssetTreeNode | null) {
-        if (node && node.expandable) {
-            node.expanded = !node.expanded;
-
-            if (node.expanded) {
-                this._expandedNodes.push(node);
-            } else {
-                this._expandedNodes = this._expandedNodes.filter(n => n !== node);
+            if (!silent) {
+                this.dispatchEvent(new OrAssetTreeToggleExpandEvent({node: node}));
             }
-
-            const elem = expander.parentElement!.parentElement!.parentElement!;
-            elem.toggleAttribute("data-expanded");
             this.requestUpdate();
         }
     }
@@ -1722,7 +1706,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             return;
         }
 
-        if (event.eventType === "asset" && this._nodes && this._nodes.length > 0) {
+        if (event.eventType === "asset") {
 
             const assetEvent = event as AssetEvent;
             if (assetEvent.cause === AssetEventCause.READ) {
@@ -1739,15 +1723,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             if (assetEvent.cause !== AssetEventCause.DELETE) {
                 assets.push(assetEvent.asset!);
             }
-            OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
-                if (node.asset!.id !== assetEvent.asset!.id) {
-                    assets.push(node.asset!);
-                }
-            });
+            if (this._nodes) {
+                OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
+                    if (node.asset!.id !== assetEvent.asset!.id) {
+                        assets.push(node.asset!);
+                    }
+                });
+            }
 
             // In case of filter already active, do not override the actual state of assetTree
-            if ( !this._filterInput.value ) {
-                this._buildTreeNodes(assets, this._getSortFunction());
+            this._buildTreeNodes(assets, this._getSortFunction());
+            if (this._filterInput.value) {
+                this._doFiltering();
             }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
@@ -1828,9 +1815,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const newExpanded: UiAssetTreeNode[] = [];
             this._expandedNodes.forEach(expandedNode => {
                 OrAssetTree._forEachNodeRecursive(this._nodes!, n => {
-                    if (n.asset && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
+                    if (n.asset && expandedNode && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
                         n.expanded = true;
                         newExpanded.push(n);
+
+                        // Expand every ancestor
+                        let parent = n.parent;
+                        while (parent) {
+                            parent.expanded = true;
+                            parent = parent.parent;
+                            if (newExpanded.indexOf(parent) < 0) {
+                                newExpanded.push(parent);
+                            }
+                        }
                     }
                 });
             });
@@ -1941,8 +1938,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             const node = this._findNodeFromAssetId(assetId);
             let elem: HTMLElement | null = this.shadowRoot?.querySelector('[node-asset-id="' + assetId + '"]');
             if(elem && node && !node.expanded) {
-
-                this._toggleExpanderWithoutEventDispatch(elem.firstElementChild!.firstElementChild! as HTMLElement, node);
+                this._toggleExpander(elem.firstElementChild!.firstElementChild! as HTMLElement, node, true);
             }
         }
     }
