@@ -93,7 +93,7 @@ export function pageAssetsProvider(store: Store<AssetsStateKeyed>, config?: Page
         routes: [
             "assets",
             "assets/:editMode",
-            "assets/:editMode/:id"
+            "assets/:editMode/:ids"
         ],
         pageCreator: () => {
             const page = new PageAssets(store);
@@ -269,9 +269,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     stateChanged(state: AssetsStateKeyed) {
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
-        if (!this._assetIds || this._assetIds.length === 0) {
-            this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
-        }
+        this._assetIds = state.app.params && state.app.params.ids ? state.app.params.ids.split(",") : undefined;
     }
 
     protected _onParentChangeClick() {
@@ -387,7 +385,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
             if (this._viewer) {
                 this._viewer.assetId = assetIds && assetIds.length === 1 ? assetIds[0] : undefined;
             }
-            this._updateRoute(true);
+            this._updateRoute(false);
         }
     }
 
@@ -471,9 +469,8 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         if (this._viewer?.asset && !this._viewer.asset.id) {
             // Prevent the request and handle at this level to allow selection within the tree
             ev.detail.allow = false;
+            this._doSaveAndLoad(this._viewer.asset);
         }
-
-        this._doSaveAndLoad(this._viewer.asset);
     }
 
     protected async _doSaveAndLoad(asset: Asset) {
@@ -539,8 +536,8 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     }
 
     protected _updateRoute(silent: boolean = true) {
-        const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
-        router.navigate(getAssetsRoute(this._editMode, assetId), {
+        const assetIds = this._assetIds ? this._assetIds.toString() : undefined;
+        router.navigate(getAssetsRoute(this._editMode, assetIds), {
             callHooks: !silent,
             callHandler: !silent
         });
