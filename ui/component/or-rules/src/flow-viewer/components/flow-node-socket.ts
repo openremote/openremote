@@ -38,7 +38,6 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
             display:inline-block;
             vertical-align: top;
             color: rgba(0,0,0,.5);
-            text-transform: lowercase;
         }
         .circle{
             box-sizing: border-box;
@@ -122,7 +121,7 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
             </div>`;
 
         if (!this.renderLabel) { return socket; }
-        const label = html`<div class="label">${i18next.t(this.socket.name!)}</div>`;
+        const label = html`<div class="label">${i18next.t(Utilities.humanLike(this.socket.name!))}</div>`;
         if (this.side === "input") {
             return html`${socket}${label}`;
         } else {

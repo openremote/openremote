@@ -29,11 +29,10 @@ export const FlowNodeStyle = css`
 }
 .internal-container{
     grid-area: internal;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 0 8px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-auto-rows: min-content;
+    column-gap: 20px;
 }
 .socket-side{
     display: flex;
