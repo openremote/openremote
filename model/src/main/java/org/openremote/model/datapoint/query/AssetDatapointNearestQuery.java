@@ -18,8 +18,6 @@ public class AssetDatapointNearestQuery extends AssetDatapointQuery {
 
 	@Override
 	public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
-		// We assume the "timestamp" column is of type TIMESTAMP in your table.
-		// We use to_timestamp(?) since fromTimestamp is stored in seconds.
 		return "WITH after_row AS ( " +
 				"    SELECT * " +
 				"    FROM " + tableName + " " +

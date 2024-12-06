@@ -30,8 +30,7 @@ export class FlowNode extends SelectableElement {
                 display: flex;
                 flex-direction: column;
                 align-items: flex-start;
-                padding-bottom: 8px;
-                padding-right: 8px;
+                flex: 0 0 auto;
             }
             .internal-title {
                 font-size: 0.8em;
@@ -95,35 +94,30 @@ export class FlowNode extends SelectableElement {
         this.style.boxShadow = this.selected ? "var(--highlight) 0 0 0 3px" : "";
 
         const title = this.minimal ?
-            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${i18next.t(this.node.displayCharacter!)}</div>` :
+            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${i18next.t(this.node.displayCharacter!).toUpperCase()}</div>` :
             html`<div class="title ${this.node.type!.toLowerCase()}" @mousedown="${this.startDrag}">${i18next.t(this.node.name!) || "invalid"}</div>`;
 
         const inputSide = html`<div class="socket-side inputs">${this.node.inputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="input"></flow-node-socket>`)}</div>`;
         const outputSide = html`<div class="socket-side outputs">${this.node.outputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="output"></flow-node-socket>`)}</div>`;
         const spacer = html`<div style="width: 10px"></div>`;
-        let currentRow = 1;
-        let currentColumn = 1;
         return html`
         ${title}
         ${this.node.inputs!.length > 0 ? inputSide : spacer}
-        ${(this.minimal) ? null : html`<div class="internal-container">${this.node.internals!.map((i, index) => {
-            const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
-            const style = `grid-column: ${currentColumn}; grid-row: ${currentRow};`;
-            if (isNewLine) {
-                currentRow++;
-            } else {
-                currentColumn++;
-            }
-            return html`
-            <div class="internal-item" style="${style}">
-                <p class="internal-title">${Utilities.humanLike(i.name)}</p>
-                <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
-                this.forceUpdate();
-                await this.updateComplete;
-                await project.removeInvalidConnections();
-            }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>
-            </div>`;
-        })}</div>`}
+        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 300px; padding: 10px; gap: 8px">
+            ${this.node.internals!.map((i) => {
+                const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
+                const style = isNewLine ? "flex-basis: 100%;" : "";
+                return html`
+                    <div class="internal-item" style="${style};">
+<!--                        <p class="internal-title">${Utilities.humanLike(i.name)}</p>-->
+                        <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
+                            this.forceUpdate();
+                            await this.updateComplete;
+                            await project.removeInvalidConnections();
+                        }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>
+                    </div>`;
+            })}
+        </div>`}
         ${this.node.outputs!.length > 0 ? outputSide : spacer}
         ${(this.frozen ? html`<or-icon class="lock-icon ${this.node.type!.toLowerCase()}" icon="lock"></or-icon>` : ``)}
         `;
