@@ -21,58 +21,97 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
-// will remove/revise later
-// import {
-//     OrMwcTable,
-//     OrMwcTableRowClickEvent,
-//     OrMwcTableRowSelectEvent
-// } from "@openremote/or-mwc-components/or-mwc-table";
+import { OrNotificationsTable } from "../components/notifications/or-notifications-table";
+import "../components/notifications/or-notifications-table";
+import {
+    OrMwcTable,
+    OrMwcTableRowClickEvent,
+    OrMwcTableRowSelectEvent
+} from "@openremote/or-mwc-components/or-mwc-table";
 // import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
 
 
 export class NotificationService {
+    
     async getNotifications(realm: string): Promise<SentNotification[]> {
         try {
-            
-            // get todays start (midnight) and end (23:59)
-            const today = new Date();
-            const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,599).getTime();
+            console.log("Fetching notifications for realm:", realm);
 
-            console.log("Making API request for realm:", realm);
-            const response = await manager.rest.api.NotificationResource.getNotifications({
-                realmId: realm,
-                from: startOfDay,
-                to: endOfDay
-            });
-
-            // Log the raw response
-            console.log("Raw API response:", response);
-            console.log("Response data length:", response.data?.length || 0);
-
-
-            if (response.status !== 200) {
-                throw new Error("Failed to load notifications");
+            // call the notifications endpoint with minimal filtering
+            const response = await manager.rest.api.NotificationResource.getAllNotifications({});
+            if (!response.data) {
+                console.warn("No data in response:", response);
+                return [];
             }
 
-            console.log("All notifications:", response.data);
-            const filtered = response.data.filter(notification => notification.message.type === "push");
-            console.log("Filtered notifications:", filtered);
-            return filtered; 
+            console.log("Notifications response:", {
+                total: response.data.length,
+                data: response.data.slice(0, 3), // log first few for sanity check
+                status: response.status
+            });
+
+            return response.data;
         } catch (error) {
-            console.error('Failed to load notifications: ', error);
+            console.error('Failed to fetch notifications:', error);
             if (isAxiosError(error)) {
-                console.error('Error details:', error.response?.data);
+                console.error('API Error details:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data
+                });
             }
             throw error;
         }
     }
 
+
+
+    // async getNotifications(realm: string): Promise<SentNotification[]> {
+    //     try {
+            
+    //         // get todays start (midnight) and end (23:59)
+    //         const today = new Date();
+    //         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    //         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,599).getTime();
+
+    //         console.log("Making API request for realm:", realm);
+    //         const response = await manager.rest.api.NotificationResource.getNotifications({
+    //             realmId: realm,
+    //             from: startOfDay,
+    //             to: endOfDay
+    //         });
+
+    //         // Log the raw response
+    //         console.log("Raw API response:", response);
+    //         console.log("Response data length:", response.data?.length || 0);
+
+
+    //         if (response.status !== 200) {
+    //             throw new Error("Failed to load notifications");
+    //         }
+
+    //         console.log("All notifications:", response.data);
+    //         const filtered = response.data.filter(notification => notification.message.type === "push");
+    //         console.log("Filtered notifications:", filtered);
+    //         return filtered; 
+    //     } catch (error) {
+    //         console.error('Failed to load notifications: ', error);
+    //         if (isAxiosError(error)) {
+    //             console.error('Error details:', error.response?.data);
+    //         }
+    //         throw error;
+    //     }
+    // }
+
     async sendNotification(notification: Notification): Promise<boolean> {
         try {
             console.log("About to send notification:", notification);
     
-            const response = await manager.rest.api.NotificationResource.sendNotification(
+            // const response = await manager.rest.api.NotificationResource.sendNotification(
+            //     notification
+            // );
+
+            const response = await manager.rest.api.NotificationResource.createNotificationInDB(
                 notification
             );
             
@@ -577,6 +616,63 @@ export class PageNotifications extends Page<AppStateKeyed> {
         )
     }
 
+    protected getNotificationsTable() {
+        return html`
+            <or-notifications-table .notifications=${this._data || []}
+                @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
+            ></or-notifications-table>
+        `;
+    }
+
+    private _onRowClick(e: OrMwcTableRowClickEvent) {
+        // prevent handling if no notificiation data
+        if (!this._data || !e.detail) {
+            console.warn("No data available.");
+            return;
+        }
+
+        // get notification by index
+        const index = e.detail.index;
+        const notification = this._data[index];
+
+        // if no notif. return
+        if (!notification) {
+            console.warn(`No notification found at index ${index}`);
+            return;
+        }
+
+        // cast the message to PushNotificationMessage (to access the content)
+        const pushMessage = notification.message as PushNotificationMessage;
+
+        // log selection
+        console.log("Clicked notification:", notification);
+        
+        // show notification details in dialog
+        const dialog = showDialog(
+            new OrMwcDialog()
+            .setHeading(i18next.t("Notification details"))
+            .setContent(html`
+                    <div style="padding: 20px;">
+                        <h3>${notification.name || ''}</h3>
+                        <p><strong>${i18next.t("Id")}:</strong> ${notification.id}</p>
+                        <p><strong>${i18next.t("Title")}:</strong> ${pushMessage.title}</p>
+                        <p><strong>${i18next.t("Message")}:</strong> ${pushMessage.body}</p>
+                        <p><strong>${i18next.t("Source")}:</strong> ${notification.source + ", " + notification.sourceId}</p>
+                        <p><strong>${i18next.t("Target")}:</strong> ${notification.target + ", " + notification.targetId}</p>
+                        <p><strong>${i18next.t("Sent")}:</strong> ${notification.sentOn ? new Date(notification.sentOn).toLocaleString() : '-'}</p>
+                        <p><strong>${i18next.t("Delivered")}:</strong> ${notification.deliveredOn ? new Date(notification.deliveredOn).toLocaleString() : '-'}</p>
+                        <p><strong>${i18next.t("Status")}:</strong> ${notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending")}</p>
+                    </div>
+                `)
+        ).setActions([
+            {
+                actionName: "close",
+                content: i18next.t("close"),
+                action: () => dialog.close()
+            }
+        ])
+    }
+
     protected render() {
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"/>`;
@@ -602,41 +698,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     ` : ``}
                 </div>
 
-                <div class="table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th><or-translate value="${i18next.t("Name")}"/></th>
-                                <th><or-translate value="${i18next.t("Title")}"/></th>
-                                <th><or-translate value="${i18next.t("Priority")}"/></th>
-                                <th><or-translate value="${i18next.t("Sent on")}"/></th>
-                                <th><or-translate value="${i18next.t("Status")}"/></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${this._data ? this._data.map(notification => {
-                                const pushMessage = notification.message as PushNotificationMessage;
-                                return html`
-                                    <tr>
-                                        <td>${notification.name}</td>
-                                        <td>${pushMessage.title}</td>
-                                        <td>${pushMessage.priority || 'NORMAL'}</td>
-                                        <td>${new Date(notification.sentOn).toLocaleString()}</td>
-                                        <td>${notification.deliveredOn ? "Delivered" : "Sent"}</td>
-                                    </tr>
-                                `;
-                            }) : html`
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">
-                                        <or-translate value="loading"/>
-                                    </td>
-                                </tr>
-                            `}
-                        </tbody>
-                    </table>
-                </div>
+                ${this.getNotificationsTable()}
             </div>
         `;
     }
 
 }
+
