@@ -1,15 +1,23 @@
 package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesBuilder;
+import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.attribute.AttributeInfo;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.datapoint.query.AssetDatapointNearestQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueHolder;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public enum NodeModel {
     READ_ATTRIBUTE(
@@ -23,6 +31,7 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
+				System.out.println(new AttributeRef(assetId, attributeName));
                 Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
                 return readValue.flatMap(ValueHolder::getValue).orElse(null);
             },
@@ -41,6 +50,61 @@ public enum NodeModel {
                 });
             }
     ),
+
+	HISTORIC_VALUE(
+			new Node(NodeType.INPUT, new NodeInternal[]{
+					new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
+					new NodeInternal("time_period", new Picker(PickerType.NUMBER),  NodeInternal.BreakType.SPACER),
+					new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN,
+							Arrays.stream(TimeUnit.values()).sorted(Comparator.reverseOrder()).map(t -> new Option(t.name().toLowerCase(), t)).toArray(Option[]::new)),
+							NodeInternal.BreakType.SPACER
+					)
+			},
+					new NodeSocket[0], new NodeSocket[]{
+					new NodeSocket("value", NodeDataType.ANY)
+			}),
+			info -> {
+				AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
+				AttributeRef ref = new AttributeRef(assetAttributePair.getAssetId(), assetAttributePair.getAttributeName());
+				Number timePeriod = null;
+				try {
+					timePeriod = NumberFormat.getInstance().parse(info.getInternals()[1].getValue().toString());
+				} catch (ParseException e) {
+					throw new RuntimeException(e);
+				}
+				TimeUnit timeUnit = TimeUnit.valueOf(info.getInternals()[2].getValue().toString());
+				long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
+
+				long pastMillis = currentMillis - timeUnit.toMillis(timePeriod.longValue());
+				Instant pastInstant = Instant.ofEpochMilli(pastMillis);
+
+				final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.getEpochSecond() * 1000));
+				return valueDatapoints.length > 0 ? valueDatapoints[0] : null;
+			},
+			params -> {
+				AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+				String assetId = internal.getAssetId();
+				String attributeName = internal.getAttributeName();
+				List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
+				).toList();
+
+				return allAssets.stream().anyMatch(state -> {
+					long timestamp = state.getTimestamp();
+					long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+					if (triggerStamp == -1L) return true; //The flow has never been executed
+					return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+				});
+			}
+	),
+
+	DEBUG_TO_CONSOLE(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("value", NodeDataType.ANY)
+	}, new NodeSocket[0]),
+			info -> ((RulesBuilder.Action) facts -> {
+				info.setFacts(facts);
+				Object obj = info.getValueFromInput(0);
+				info.getFacts().logVars(Logger.getLogger("NodeModel.DEBUG_TO_CONSOLE"), Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+			})),
 
     WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{
             new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
@@ -130,6 +194,63 @@ public enum NodeModel {
                 Number b = (Number) info.getValueFromInput(1);
                 return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
             }),
+    SUM_PROCESSOR(new Node(NodeType.PROCESSOR, "Σ", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+    }, new NodeSocket[]{
+            new NodeSocket("b", NodeDataType.NUMBER),
+    }),
+    info -> {
+	        Object[] a = info.getValuesFromInput(info.getInputs());
+            return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
+        }
+	),
+	MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).max();
+			}
+	),
+	MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).min();
+			}
+	),
+	AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).average();
+			}
+	),
+	MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				final double[] sortedDoubles = Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sorted().toArray();
+				if (sortedDoubles.length == 0) {
+					return 0.0;
+				} else if (sortedDoubles.length % 2 == 0) {
+					return (sortedDoubles[sortedDoubles.length / 2 - 1] + sortedDoubles[sortedDoubles.length / 2]) / 2.0;
+				} else {
+					return sortedDoubles[sortedDoubles.length / 2];
+				}
+			}
+	),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),

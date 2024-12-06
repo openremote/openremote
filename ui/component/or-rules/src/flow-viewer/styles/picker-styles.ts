@@ -12,7 +12,7 @@ textarea, input[type=text], input[type=number], select{
     font-family: inherit;
     padding: 10px;
     border-radius: var(--roundness);    
-    width: auto;
+    width: fit-content;
     border: none;
 }
 .attribute-label{
