@@ -864,6 +864,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmRepresentation.setEnabled(realm.getEnabled());
             realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
             realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
+            realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
             realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
