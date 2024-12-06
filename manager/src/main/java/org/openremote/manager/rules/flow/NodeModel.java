@@ -1,6 +1,7 @@
 package org.openremote.manager.rules.flow;
 
 import org.openremote.manager.rules.RulesBuilder;
+import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
@@ -15,6 +16,8 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public enum NodeModel {
     READ_ATTRIBUTE(
@@ -93,6 +96,15 @@ public enum NodeModel {
 				});
 			}
 	),
+
+	DEBUG_TO_CONSOLE(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("value", NodeDataType.ANY)
+	}, new NodeSocket[0]),
+			info -> ((RulesBuilder.Action) facts -> {
+				info.setFacts(facts);
+				Object obj = info.getValueFromInput(0);
+				info.getFacts().logVars(Logger.getLogger("NodeModel.DEBUG_TO_CONSOLE"), Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+			})),
 
     WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{
             new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
@@ -189,10 +201,55 @@ public enum NodeModel {
     }),
     info -> {
 	        Object[] a = info.getValuesFromInput(info.getInputs());
-			System.out.println("EXECUTING");
-			System.out.println(Arrays.toString(Arrays.stream(a).toArray()));
             return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
         }
+	),
+	MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).max();
+			}
+	),
+	MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).min();
+			}
+	),
+	AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).average();
+			}
+	),
+	MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				final double[] sortedDoubles = Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sorted().toArray();
+				if (sortedDoubles.length == 0) {
+					return 0.0;
+				} else if (sortedDoubles.length % 2 == 0) {
+					return (sortedDoubles[sortedDoubles.length / 2 - 1] + sortedDoubles[sortedDoubles.length / 2]) / 2.0;
+				} else {
+					return sortedDoubles[sortedDoubles.length / 2];
+				}
+			}
 	),
 
     SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{

@@ -32,7 +32,7 @@ export const FlowNodeStyle = css`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     grid-auto-rows: min-content;
-    column-gap: 20px;
+    column-gap: 30px;
 }
 .socket-side{
     display: flex;
