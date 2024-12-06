@@ -21,8 +21,7 @@ package org.openremote.model.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
@@ -54,8 +53,12 @@ public class Realm {
     public static class PasswordPolicyDeserializer extends JsonDeserializer<List<String>> {
         @Override
         public List<String> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            String value = p.getValueAsString();
-            return Arrays.asList(value.split(" and "));
+            JsonNode node = p.getCodec().readTree(p);
+            List<String> policies = new ArrayList<>();
+            if (node.isArray()) {
+                node.forEach(element -> policies.add(element.asText()));
+            }
+            return policies;
         }
     }
 
