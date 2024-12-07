@@ -422,10 +422,10 @@ task tscWatch(type: Exec) {
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
-    // Use Java 17
+    // Use Java 21
     tasks.withType(JavaCompile) {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
         def warnLogFile = file("$buildDir/${name}Warnings.log")
         logging.addStandardErrorListener(new StandardOutputListener() {
             void onOutput(CharSequence output) {
