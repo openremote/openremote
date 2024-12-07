@@ -19,7 +19,7 @@ dependencies {
     testImplementation resolveProject(":setup").sourceSets.integration.output
     testFixturesApi resolveProject(":manager")
 
-    testFixturesImplementation "org.codehaus.groovy:groovy:$groovyVersion"
+    testFixturesImplementation "org.apache.groovy:groovy-all:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
     testFixturesApi 'org.spockframework:spock-core'
 
