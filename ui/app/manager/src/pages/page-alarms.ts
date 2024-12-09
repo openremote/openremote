@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
@@ -224,8 +242,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     @property()
     public realm?: string;
+
     @state()
     public alarm?: AlarmModel;
+
     @state()
     public creationState?: {
         alarmModel: AlarmModel;
@@ -233,14 +253,17 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     @state()
     protected _alarms: AlarmModel[] = [];
+
     @state()
     protected _linkedAssets: Asset[] = [];
+
     @state()
     protected _linkedUsers: User[] = [];
+
     @state()
     protected _loadedUsers: User[] = [];
 
-    protected _loading: boolean = false;
+    protected _loading = false;
 
     @state()
     public severity?: AlarmSeverity;
@@ -249,10 +272,10 @@ export class PageAlarms extends Page<AppStateKeyed> {
     public status?: AlarmStatus;
 
     @state()
-    public assign: boolean = false;
+    public assign = false;
 
     @state()
-    public allActive: boolean = true;
+    public allActive = true;
 
     @state()
     protected _data?: SentAlarm[];
@@ -268,6 +291,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
     @query("#table")
     protected _tableElem!: HTMLDivElement;
+
     protected _table?: OrMwcTable;
     protected _refresh?: number;
     @state()
@@ -612,7 +636,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         })
     }
 
-    protected getSingleAlarmView(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
+    protected getSingleAlarmView(alarm: AlarmModel, readonly = true): TemplateResult {
         return html`
             ${when(
                     alarm.loaded,
@@ -632,7 +656,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         `;
     }
 
-    protected getSingleAlarmTemplate(alarm: AlarmModel, readonly: boolean = true): TemplateResult {
+    protected getSingleAlarmTemplate(alarm: AlarmModel, readonly = true): TemplateResult {
         const write = manager.hasRole("write:alarms");
         return html`
             <!-- Breadcrumb on top of the page-->
@@ -916,7 +940,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
 
 
     protected _getUsers() {
-        let options = this._loadedUsers.filter((u) => u.username != 'manager-keycloak').map((u) => {
+        const options = this._loadedUsers.filter((u) => u.username != 'manager-keycloak').map((u) => {
             return {value: u.id, label: u.username};
         });
         options.unshift({value: null, label: i18next.t("none")})
@@ -1035,7 +1059,7 @@ export class PageAlarms extends Page<AppStateKeyed> {
         }
     }
 
-    protected _updateRoute(silent: boolean = false) {
+    protected _updateRoute(silent = false) {
         router.navigate(getAlarmsRoute(this.alarm?.id.toString()), {
             callHooks: !silent,
             callHandler: !silent,

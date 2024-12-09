@@ -1,8 +1,25 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { GeoJsonConfig } from "@openremote/model";
 import {DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { html, LitElement } from "lit";
 import { customElement, property, state, query } from "lit/decorators.js";
-import "@openremote/or-components/or-ace-editor";
 import { OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 
 @customElement("or-conf-map-geojson")
@@ -12,7 +29,7 @@ export class OrConfMapGeoJson extends LitElement {
     protected geoJson?: GeoJsonConfig;
 
     @state()
-    protected _jsonValid: boolean = true;
+    protected _jsonValid = true;
 
     @query("#geojson-modal")
     protected _dialog: OrMwcDialog
@@ -72,6 +89,7 @@ export class OrConfMapGeoJson extends LitElement {
             <or-mwc-dialog id="geojson-modal" .heading="${heading}" .content="${content}" .actions="${actions}" .styles="${styles}" .dismissAction="${null}"></or-mwc-dialog>
         `
     }
+
     protected openJsonEditor() {
         this._dialog.open();
     }

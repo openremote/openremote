@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {
@@ -19,15 +37,13 @@ import {
     AssetModelUtil
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-attribute-input";
+import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import {Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
-import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
@@ -132,7 +148,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY
         ];
-        this._queryOperatorsMap["string"] = [
+        this._queryOperatorsMap.string = [
             AssetQueryOperator.EQUALS,
             AssetQueryOperator.NOT_EQUALS,
             AssetQueryOperator.CONTAINS,
@@ -144,7 +160,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY
         ];
-        this._queryOperatorsMap["number"] = [
+        this._queryOperatorsMap.number = [
             AssetQueryOperator.EQUALS,
             AssetQueryOperator.NOT_EQUALS,
             AssetQueryOperator.GREATER_THAN,
@@ -156,13 +172,13 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY
         ];
-        this._queryOperatorsMap["boolean"] = [
+        this._queryOperatorsMap.boolean = [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY
         ];
-        this._queryOperatorsMap["array"] = [
+        this._queryOperatorsMap.array = [
             AssetQueryOperator.CONTAINS,
             AssetQueryOperator.NOT_CONTAINS,
             AssetQueryOperator.INDEX_CONTAINS,
@@ -174,7 +190,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.VALUE_EMPTY,
             AssetQueryOperator.VALUE_NOT_EMPTY
         ];
-        this._queryOperatorsMap["object"] = [
+        this._queryOperatorsMap.object = [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
@@ -192,7 +208,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetDescriptor = assetTypeInfo.assetDescriptor!;
         const operator = this.getOperator(attributePredicate);
         const attributeName = this.getAttributeName(attributePredicate);
-        let attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
+        const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         let attributes: [string, string][] = [];
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset ? asset.type : assetDescriptor.name, attribute || attributeName, attribute);
 
@@ -434,7 +450,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return operatorMap[valueDescriptor.jsonType!];
             }
             if (valueDescriptor.arrayDimensions) {
-                return operatorMap["array"];
+                return operatorMap.array;
             }
         }
     }

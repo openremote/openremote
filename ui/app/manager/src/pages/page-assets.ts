@@ -1,6 +1,23 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
-import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
     OrAssetViewerEditToggleEvent,
@@ -168,7 +185,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     public config?: PageAssetsConfig;
 
     @property()
-    protected _editMode: boolean = false;
+    protected _editMode = false;
 
     @property() // selected asset ids
     protected _assetIds?: string[];
@@ -286,7 +303,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
 
         const setParent = () => {
             const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
-            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
+            const idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
             this._onAssetParentChange({parentId: idd, assetIds: this._assetIds});
         };
 
@@ -505,8 +522,8 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
     }
 
     protected async _onAssetParentChange(parentChange: ChangeParentEventDetail) {
-        let parentId: string | undefined = parentChange.parentId;
-        let assetsIds: string[] = parentChange.assetIds;
+        const parentId: string | undefined = parentChange.parentId;
+        const assetsIds: string[] = parentChange.assetIds;
 
         try {
             if (parentId) {
@@ -516,7 +533,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
                     showSnackbar(undefined, "moveAssetFailed", "dismiss");
                 }
             } else {
-                //So need to remove parent from all the selected assets
+                // So need to remove parent from all the selected assets
                 await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
             }
         } catch (e) {
@@ -535,7 +552,7 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         this._store.dispatch(updateExpandedParents([ event.detail.node.asset.id, event.detail.node.expanded]));
     }
 
-    protected _updateRoute(silent: boolean = true) {
+    protected _updateRoute(silent = true) {
         const assetIds = this._assetIds ? this._assetIds.toString() : undefined;
         router.navigate(getAssetsRoute(this._editMode, assetIds), {
             callHooks: !silent,
@@ -543,14 +560,14 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         });
     }
 
-    protected _onLoadUserEvent(event: OrAssetViewerLoadUserEvent, silent: boolean = false) {
+    protected _onLoadUserEvent(event: OrAssetViewerLoadUserEvent, silent = false) {
         router.navigate(getUsersRoute(event.detail), {
             callHooks: !silent,
             callHandler: !silent
         });
     }
 
-    protected _onLoadAlarmEvent(event: OrAssetViewerLoadAlarmEvent, silent: boolean = false) {
+    protected _onLoadAlarmEvent(event: OrAssetViewerLoadAlarmEvent, silent = false) {
         router.navigate(getAlarmsRoute(event.detail.toString()), {
             callHooks: !silent,
             callHandler: !silent

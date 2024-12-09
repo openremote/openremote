@@ -1,9 +1,6 @@
 /*
  * Copyright 2021, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,46 +13,49 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.agent.protocol.mqtt;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.openremote.model.asset.agent.AgentLink;
-
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.openremote.model.asset.agent.AgentLink;
 
 public class MQTTAgentLink extends AgentLink<MQTTAgentLink> {
 
-    protected String subscriptionTopic;
-    protected String publishTopic;
+  protected String subscriptionTopic;
+  protected String publishTopic;
 
-    @JsonSerialize
-    protected String getType() {
-        return getClass().getSimpleName();
-    }
+  @JsonSerialize
+  protected String getType() {
+    return getClass().getSimpleName();
+  }
 
-    // For Hydrators
-    protected MQTTAgentLink() {}
+  // For Hydrators
+  protected MQTTAgentLink() {}
 
-    public MQTTAgentLink(String id) {
-        super(id);
-    }
+  public MQTTAgentLink(String id) {
+    super(id);
+  }
 
-    public Optional<String> getSubscriptionTopic() {
-        return Optional.ofNullable(subscriptionTopic);
-    }
+  public Optional<String> getSubscriptionTopic() {
+    return Optional.ofNullable(subscriptionTopic);
+  }
 
-    public MQTTAgentLink setSubscriptionTopic(String subscriptionTopic) {
-        this.subscriptionTopic = subscriptionTopic;
-        return this;
-    }
+  public MQTTAgentLink setSubscriptionTopic(String subscriptionTopic) {
+    this.subscriptionTopic = subscriptionTopic;
+    return this;
+  }
 
-    public Optional<String> getPublishTopic() {
-        return Optional.ofNullable(publishTopic);
-    }
+  public Optional<String> getPublishTopic() {
+    return Optional.ofNullable(publishTopic);
+  }
 
-    public MQTTAgentLink setPublishTopic(String publishTopic) {
-        this.publishTopic = publishTopic;
-        return this;
-    }
+  public MQTTAgentLink setPublishTopic(String publishTopic) {
+    this.publishTopic = publishTopic;
+    return this;
+  }
 }
