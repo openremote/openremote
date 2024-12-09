@@ -47,7 +47,8 @@ import {pageAlarmsProvider} from "./pages/page-alarms";
 import { ManagerAppConfig } from "@openremote/model";
 import {pageGatewayTunnelProvider} from "./pages/page-gateway-tunnel";
 
-declare var CONFIG_URL_PREFIX: string;
+declare var CONFIG_URL_PREFIX: string | undefined;
+declare var MANAGER_URL: string | undefined;
 
 const rootReducer = combineReducers({
     app: appReducer,
@@ -122,14 +123,20 @@ export const DefaultAppConfig: AppConfig<RootState> = {
 };
 
 // Try and load the app config from JSON and if anything is found amalgamate it with default
-const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
+const configURL =  (MANAGER_URL ?? "") + "/api/master/configuration/manager";
 
 fetch(configURL).then(async (result) => {
-    if (!result.ok) {
+    if (!result.ok || result.status === 204) {
         return DefaultAppConfig;
     }
 
-    return await result.json() as ManagerAppConfig;
+    const appConfig = await result.json() as ManagerAppConfig;
+
+    if (appConfig === null) {
+        return DefaultAppConfig;
+    }
+
+    return appConfig;
 
 }).then((appConfig: ManagerAppConfig) => {
 
@@ -273,18 +280,6 @@ fetch(configURL).then(async (result) => {
                 })
             }
         })
-
-        // Add config prefix if defined (used in dev)
-        if (CONFIG_URL_PREFIX) {
-            Object.values(orAppConfig.realms).forEach((realmConfig) => {
-                if (typeof (realmConfig.logo) === "string") {
-                    realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
-                }
-                if (typeof (realmConfig.logoMobile) === "string") {
-                    realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
-                }
-            });
-        }
 
         return orAppConfig;
     };
