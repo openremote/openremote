@@ -19,12 +19,13 @@
  */
 package org.openremote.manager.event;
 
-import io.undertow.server.HttpHandler;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.undertow.*;
+import org.apache.camel.component.undertow.UndertowComponent;
+import org.apache.camel.component.undertow.UndertowConstants;
+import org.apache.camel.component.undertow.UndertowHostKey;
 import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
@@ -46,7 +47,6 @@ import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.Pair;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.*;
@@ -104,7 +104,7 @@ import static org.openremote.model.Constants.*;
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
+    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000&keepAlive=false"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
@@ -147,21 +147,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
         executorService = container.getExecutor();
 
         UndertowComponent undertowWebsocketComponent = new UndertowComponent(messageBrokerService.getContext()) {
-            // This override is to allow reuse of existing undertow instance
             @Override
             protected org.apache.camel.component.undertow.UndertowHost createUndertowHost(UndertowHostKey key) {
                 return new UndertowHost(container, key, getHostOptions());
-            }
-
-            // This override is to allow handling pong messages and to allow closing of the session if no ping is received for 10s
-            @Override
-            public HttpHandler registerEndpoint(
-                    UndertowConsumer consumer, HttpHandlerRegistrationInfo registrationInfo, SSLContext sslContext, HttpHandler handler)
-                    throws Exception {
-
-                // Replace the CamelWebSocketHandler
-
-                return super.registerEndpoint(consumer, registrationInfo, sslContext, handler);
             }
         };
         messageBrokerService.getContext().addComponent("undertow", undertowWebsocketComponent);
