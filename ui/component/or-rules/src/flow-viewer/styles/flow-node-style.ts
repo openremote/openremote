@@ -27,12 +27,6 @@ export const FlowNodeStyle = css`
     grid-template-areas: 
         "input title output";
 }
-//.internal-container{
-//    grid-area: internal;
-//    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-//    grid-auto-rows: min-content;
-//    column-gap: 10px;
-//}
 .socket-side{
     display: flex;
     flex-direction: column;

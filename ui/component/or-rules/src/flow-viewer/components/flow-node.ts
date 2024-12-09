@@ -103,7 +103,7 @@ export class FlowNode extends SelectableElement {
         return html`
         ${title}
         ${this.node.inputs!.length > 0 ? inputSide : spacer}
-        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 300px; padding: 10px; gap: 8px">
+        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 300px; padding: 0 10px 10px 10px; gap: 8px">
             ${this.node.internals!.map((i) => {
                 const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
                 const style = isNewLine ? "flex-basis: 100%;" : "";
