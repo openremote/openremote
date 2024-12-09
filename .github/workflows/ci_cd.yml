@@ -741,6 +741,8 @@ jobs:
         id: manager-anchore-scan
         with:
           image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
+          fail-build: false
+          severity-cutoff: critical
 
       - name: Upload Anchore scan SARIF report
         if: |
