@@ -717,6 +717,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setLocation(new GeoJSONPoint(0, 0))
 
+
+        //  new MetaItem<>(MetaItemType.RULE_STATE) to brightness        
+        def ruleState = new MetaItem<>(MetaItemType.RULE_STATE)
+        lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
         lightAsset = assetStorageService.merge(lightAsset)
 
         then: "the light asset should be present"
@@ -743,11 +747,28 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 1 // +1 for the rule state we added
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
+        when: "the light asset is updated"
+        lightAsset.getAttribute("brightness").get().setValue(91)
+        lightAsset = assetStorageService.merge(lightAsset)
+
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+        then: "the brightness should be 91"
+        conditions.eventually {
+            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 91
+        }
+
+        when: "time advances 5 minutes"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
+
+        then: "the brightness should be 91"
+        conditions.eventually {
+            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 91
+        }
 
 
 

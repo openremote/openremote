@@ -48,29 +48,6 @@
                                         ]
                                     }
                                 }
-                            },
-                            {
-                                "assets": {
-                                    "types": [
-                                        "LightAsset"
-                                    ],
-                                    "attributes": {
-                                        "items": [
-                                            {
-                                                "name": {
-                                                    "predicateType": "string",
-                                                    "match": "EXACT",
-                                                    "value": "brightness"
-                                                },
-                                                "value": {
-                                                    "predicateType": "number",
-                                                    "operator": "GREATER_THAN",
-                                                    "value": 85
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
                             }
                         ]
                     }

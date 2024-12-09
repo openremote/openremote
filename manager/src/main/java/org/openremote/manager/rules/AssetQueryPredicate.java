@@ -180,6 +180,10 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             && valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
     }
 
+
+
+    private static Map<String, Long> startingTimes = new HashMap<>();
+
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
      * {@link LogicGroup.Operator#AND} to be applied.
@@ -198,12 +202,25 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
         List<Function<Collection<AttributeInfo>, Set<AttributeInfo>>> assetStateMatchers = new ArrayList<>();
         List<Predicate<AttributeInfo>> attributePredicates = new ArrayList<>();
-        Map<Integer, Long> startingTimes = new HashMap<>();
 
         if (!condition.getItems().isEmpty()) {
             condition.getItems().stream().forEach(p -> {
                 int index = condition.getItems().indexOf(p);
                 attributePredicates.add((Predicate<AttributeInfo>) (Predicate) asPredicate(currentMillisProducer, p));
+
+                // Check if a duration is specified for this predicate
+                if (durationMap != null && durationMap.containsKey(index)) {
+                    String duration = durationMap.get(index);
+                    long durationMillis = TimeUtil.parseTimeDuration(duration);
+                    attributePredicates.add(assetState -> {
+                        Long startTime = startingTimes.get(assetState.getId());
+                        if (startTime == null) {
+                            startingTimes.put(assetState.getId(), currentMillisProducer.get());
+                            return false;
+                        }
+                        return (currentMillisProducer.get() - startTime) >= durationMillis;
+                    });
+                }
 
                 AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                 AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
@@ -214,7 +231,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                             .reduce(x -> true, Predicate::and);
 
                     metaPredicate.set(assetState -> {
-                        MetaMap metaItems = ((MetaHolder) assetState).getMeta();
+                        MetaMap metaItems = (assetState).getMeta();
                         return metaItems.stream().anyMatch(metaItem -> innerMetaPredicate.test(assetState));
                     });
                     attributePredicates.add(metaPredicate.get());
@@ -226,21 +243,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                     attributePredicates.add(oldValuePredicate.get());
                 }
 
-                // if duration is provided we add an additional predicate to check if the attribute has been true for the duration
-                if (durationMap != null && durationMap.containsKey(index)) {
-                    long requiredDuration = TimeUtil.parseTimeDuration(durationMap.get(index));
-                    attributePredicates.add(assetState -> {
-                        boolean isMatch = asPredicate(currentMillisProducer, p).test(assetState);
-                        if (isMatch) {
-                            startingTimes.putIfAbsent(index, currentMillisProducer.get());
-                            long elapsedTime = currentMillisProducer.get() - startingTimes.get(index);
-                            return elapsedTime >= requiredDuration;
-                        } else {
-                            startingTimes.remove(index);
-                            return false;
-                        }
-                    });
-                }
+
             });
         }
 

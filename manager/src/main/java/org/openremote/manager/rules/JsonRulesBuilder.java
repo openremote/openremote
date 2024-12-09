@@ -89,6 +89,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         RuleCondition ruleCondition;
         final TimerService timerService;
         boolean trackUnmatched;
+        Map<Integer, String> durationMap;
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
@@ -98,7 +99,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
-        private Map<String, Long> conditionTrueStartTimes = new HashMap<>();
 
         @SuppressWarnings("ConstantConditions")
         public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) throws Exception {
@@ -173,16 +173,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
+                durationMap = ruleCondition.duration;
 
                 if (attributePredicates != null && attributePredicates.items != null) {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
                     assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
-
-        
-                    
-           
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
