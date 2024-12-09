@@ -182,7 +182,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
 
 
-    private static Map<String, Long> startingTimes = new HashMap<>();
+    private static Map<Integer, Long> startingTimes = new HashMap<>();
 
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
@@ -208,20 +208,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                 int index = condition.getItems().indexOf(p);
                 attributePredicates.add((Predicate<AttributeInfo>) (Predicate) asPredicate(currentMillisProducer, p));
 
-                // Check if a duration is specified for this predicate
-                if (durationMap != null && durationMap.containsKey(index)) {
-                    String duration = durationMap.get(index);
-                    long durationMillis = TimeUtil.parseTimeDuration(duration);
-                    attributePredicates.add(assetState -> {
-                        Long startTime = startingTimes.get(assetState.getId());
-                        if (startTime == null) {
-                            startingTimes.put(assetState.getId(), currentMillisProducer.get());
-                            return false;
-                        }
-                        return (currentMillisProducer.get() - startTime) >= durationMillis;
-                    });
-                }
-
                 AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                 AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
 
@@ -241,6 +227,29 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                     Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
                     oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
                     attributePredicates.add(oldValuePredicate.get());
+                }
+
+                // If a durationmap is present, check if a duration is specified for this predicate
+                if (durationMap != null && durationMap.containsKey(index)) {
+                    String duration = durationMap.get(index);
+                    long durationMillis = TimeUtil.parseTimeDuration(duration);
+                    attributePredicates.add(assetState -> {
+                        Long startTime = startingTimes.get(index);
+                        if (startTime == null) {
+                            startingTimes.put(index, currentMillisProducer.get());
+                            return false;
+                        }
+
+
+                        // if any of the other predicates do not match we need to reset the starting time
+                        // if (attributePredicates.stream().anyMatch(attributePredicate -> !attributePredicate.test(assetState))) {
+                        //     startingTimes.remove(index);
+                        //     return false;
+                        // }
+
+
+                        return (currentMillisProducer.get() - startTime) >= durationMillis;
+                    });
                 }
 
 
