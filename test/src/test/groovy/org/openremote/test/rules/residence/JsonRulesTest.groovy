@@ -30,6 +30,7 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
@@ -690,6 +691,66 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
         }
+    }
+
+    def "Trigger actions based on the duration of an attribute predicate"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def timerService = container.getService(TimerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "the pseudo clock is stopped"
+        stopPseudoClock()
+
+        when: "a light asset is added to the building realm"
+        def lightId = UniqueIdentifierGenerator.generateId("TestLight")
+        def lightAsset = new LightAsset("TestLight")
+                .setId(lightId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+
+        lightAsset = assetStorageService.merge(lightAsset)
+
+        then: "the light asset should be present"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light != null
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+        }
+
+        when: "a ruleset with a duration map is added"
+        def rulesStr = getClass().getResource("/org/openremote/test/rules/AttributeDurationRule.json").text
+        def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Duration Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        def lastFireTimestamp = 0
+
+
+        then: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+
+
+
     }
 
     def "Trigger actions based on the position of the sun"() {

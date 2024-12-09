@@ -35,7 +35,8 @@ import java.util.Map;
  * returned after applying the query.</li>
  * </ol>
  * <p>
- *  The {@link #duration} map is used to keep track attribute predicates and how long they true before triggering an action
+ *  The {@link #duration} map tracks attribute predicates and their required duration thresholds. A predicate with a duration
+ *  is only considered true after it has continuously remained true for its specified duration period.
  * <p>
  * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
  * be used in the rule RHS to perform actions on these specific assets.
@@ -45,7 +46,7 @@ public class RuleCondition {
     /**
      * Map of attribute and ISO8601 duration expression (e.g. PT1H)
      */
-    public Map<String, String> duration;
+    public Map<Integer, String> duration;
 
     /**
      * CRON expression in UTC (e.g. *&#47;5 * * * *)

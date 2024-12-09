@@ -178,30 +178,16 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
+
+        
                     
-                    // If a duration is provided then wrap the assetPredicate with a duration check
-                    // if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
-                    //     assetPredicate = states -> {
-                    //         Set<AttributeInfo> matches = assetPredicate.apply(states);
-                    //         if (matches != null) {
-                    //             long currentTime = timerService.getCurrentTimeMillis();
-                    //             matches.removeIf(match -> {
-                    //                 String assetId = match.getId();
-                    //                 Long startTime = conditionTrueStartTimes.get(assetId);
-                    //                 if (startTime == null) {
-                    //                     conditionTrueStartTimes.put(assetId, currentTime);
-                    //                     return true; 
-                    //                 } else return currentTime - startTime < TimeUtil.parseTimeDuration(ruleCondition.duration);
-                    //             });
-                    //         }
-                    //         return matches;
-                    //     };
-                    // }
+           
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
                 ruleCondition.assets.attributes = null;
+                ruleCondition.duration = null;
             } else {
                 throw new IllegalStateException("Invalid rule condition either timer or asset query must be set");
             }
