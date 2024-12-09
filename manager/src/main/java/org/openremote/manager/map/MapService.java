@@ -30,7 +30,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -79,16 +79,18 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
+    public ObjectNode saveMapConfig(MapConfig mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
         this.mapConfig.putNull("options");
+        this.mapConfig.putNull("sources");
         this.mapSettings.clear();
         ObjectNode mapSettingsJson = loadMapSettingsJson(mapSettingsPath);
         if(mapSettingsJson == null) {
             mapSettingsJson = ValueUtil.JSON.createObjectNode();
         }
         try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
-            mapSettingsJson.putPOJO("options", mapConfiguration);
+            mapSettingsJson.putPOJO("options", mapConfiguration.options);
+            mapSettingsJson.putPOJO("sources", mapConfiguration.sources);
             out.write(ValueUtil.JSON.writeValueAsString(mapSettingsJson).getBytes());
             this.setData();
         } catch (ClassNotFoundException | IOException | NullPointerException | SQLException exception) {
@@ -346,8 +348,23 @@ public class MapService implements ContainerService {
                                 vectorTilesObj.replace("center", centerArray);
                             }));
 
+                    final JsonNode external = settings.get("sources").get("external");
+                    boolean hasExtUrl = external != null && external.hasNonNull("url");
+                    @SuppressWarnings("null")
+                    boolean hasSecret = hasExtUrl ? external.get("url").textValue().contains("{secret}") : false;
+
+                    @SuppressWarnings("null")
+                    String tileUrl = hasExtUrl && !hasSecret 
+                        ? external.get("url").textValue() 
+                        : UriBuilder.fromUri(host)
+                            .replacePath(API_PATH)
+                            .path(realm)
+                            .path(hasSecret ? "map/external/tile" : "map/tile")
+                            .build()
+                            .toString() + "/{z}/{x}/{y}";
+                    
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
 
@@ -440,6 +457,36 @@ public class MapService implements ContainerService {
         } finally {
             closeQuietly(query, result);
         }
+    }
+
+    public URI getExternalMapTileUri(int zoom, int column, int row) {
+        final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty()) 
+                ? mapConfig.deepCopy()
+                : mapConfig.objectNode();
+
+        final String source = settings
+            .get("sources")
+            .get("external")
+            .get("url")
+            .textValue();
+
+        if (!source.contains("{secret}")) {
+            return null;
+        }
+
+        final String secret = settings
+            .get("sources")
+            .get("external")
+            .get("secret")
+            .textValue();
+
+        final UriBuilder baseUri = UriBuilder.fromUri(source)
+            .resolveTemplate("z", zoom)
+            .resolveTemplate("x", column)
+            .resolveTemplate("y", row)
+            .resolveTemplate("secret", secret);
+
+        return baseUri.build();
     }
 
     @Override
