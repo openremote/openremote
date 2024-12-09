@@ -5,7 +5,7 @@ import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointNearestQuery;
+import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
@@ -15,7 +15,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,35 +49,34 @@ public enum NodeModel {
                 });
             }
     ),
-
 	HISTORIC_VALUE(
-			new Node(NodeType.INPUT, new NodeInternal[]{
-					new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
-					new NodeInternal("time_period", new Picker(PickerType.NUMBER),  NodeInternal.BreakType.SPACER),
-					new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN,
-							Arrays.stream(TimeUnit.values()).sorted(Comparator.reverseOrder()).map(t -> new Option(t.name().toLowerCase(), t)).toArray(Option[]::new)),
-							NodeInternal.BreakType.SPACER
-					)
-			},
-					new NodeSocket[0], new NodeSocket[]{
-					new NodeSocket("value", NodeDataType.ANY)
-			}),
+			new Node(NodeType.INPUT, new NodeInternal[]
+					{
+						new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
+						new NodeInternal("time_period", new Picker(PickerType.NUMBER),  NodeInternal.BreakType.SPACER),
+						new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN, TimeUnit.getHistoricValueOptions()), NodeInternal.BreakType.SPACER)
+					},
+					new NodeSocket[0],
+					new NodeSocket[]{
+						new NodeSocket("value", NodeDataType.ANY)
+					}
+			),
 			info -> {
 				AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
 				AttributeRef ref = new AttributeRef(assetAttributePair.getAssetId(), assetAttributePair.getAttributeName());
-				Number timePeriod = null;
+				Number timePeriod;
+				Number timeUnit;
 				try {
 					timePeriod = NumberFormat.getInstance().parse(info.getInternals()[1].getValue().toString());
+					timeUnit = Long.parseLong(info.getInternals()[2].getValue().toString());
 				} catch (ParseException e) {
 					throw new RuntimeException(e);
 				}
-				TimeUnit timeUnit = TimeUnit.valueOf(info.getInternals()[2].getValue().toString());
 				long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
 
-				long pastMillis = currentMillis - timeUnit.toMillis(timePeriod.longValue());
-				Instant pastInstant = Instant.ofEpochMilli(pastMillis);
+				Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
-				final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.getEpochSecond() * 1000));
+				final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointLTTBQuery(pastInstant.toEpochMilli(), pastInstant.toEpochMilli(), 1));
 				return valueDatapoints.length > 0 ? valueDatapoints[0] : null;
 			},
 			params -> {
@@ -521,6 +519,34 @@ public enum NodeModel {
         this.implementation = implementation;
         this.triggerFunction = triggerFunction;
     }
+
+
+	private enum TimeUnit {
+		SECONDS("seconds ago"),
+		MINUTES("minutes ago"),
+		HOURS("hours ago"),
+		DAYS("days ago"),
+		MONTHS("months ago");
+
+		private final String label;
+
+		TimeUnit(String label) {
+			this.label = label;
+		}
+
+		public String getLabel() {
+			return label;
+		}
+		public static Option[] getHistoricValueOptions(){
+			Map<TimeUnit, Long> dict = new HashMap<>();
+			dict.put(TimeUnit.SECONDS, 1000L);
+			dict.put(TimeUnit.MINUTES, dict.get(TimeUnit.SECONDS)*60);
+			dict.put(TimeUnit.HOURS, dict.get(TimeUnit.MINUTES)*24);
+			dict.put(TimeUnit.DAYS, dict.get(TimeUnit.HOURS)*30);
+			dict.put(TimeUnit.MONTHS, dict.get(TimeUnit.DAYS)*12);
+			return dict.entrySet().stream().map(e -> new Option(e.getKey().getLabel(), e.getValue())).toArray(Option[]::new);
+		}
+	}
 
     private Node definition;
     private NodeImplementation implementation;
