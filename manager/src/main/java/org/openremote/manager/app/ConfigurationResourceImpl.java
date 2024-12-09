@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,39 +13,43 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.app;
+
+import java.util.logging.Logger;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-
-import java.util.logging.Logger;
+import org.openremote.model.manager.ConfigurationResource;
 
 public class ConfigurationResourceImpl extends ManagerWebResource implements ConfigurationResource {
 
-    protected ConfigurationService configurationService;
-    private static final Logger LOG = Logger.getLogger(WebService.class.getName());
+  protected ConfigurationService configurationService;
+  private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
-    public ConfigurationResourceImpl(TimerService timerService, ManagerIdentityService identityService, ConfigurationService configurationService) {
-        super(timerService, identityService);
-        this.configurationService = configurationService;
-    }
+  public ConfigurationResourceImpl(
+      TimerService timerService,
+      ManagerIdentityService identityService,
+      ConfigurationService configurationService) {
+    super(timerService, identityService);
+    this.configurationService = configurationService;
+  }
 
+  @Override
+  public Object update(RequestParams requestParams, Object managerConfiguration) {
+    this.configurationService.saveMangerConfig(managerConfiguration);
+    return managerConfiguration;
+  }
 
-    @Override
-    public Object update(RequestParams requestParams, Object managerConfiguration) {
-        this.configurationService.saveMangerConfig(managerConfiguration);
-        return managerConfiguration;
-    }
-
-    @Override
-    public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
-        this.configurationService.saveImageFile(path, fileInfo);
-        return path;
-    }
+  @Override
+  public String fileUpload(RequestParams requestParams, String path, FileInfo fileInfo) {
+    this.configurationService.saveImageFile(path, fileInfo);
+    return path;
+  }
 }

@@ -1,9 +1,25 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, TemplateResult} from "lit";
 import {customElement, property, query, state } from "lit/decorators.js";
-import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
-import {Page, PageProvider, router} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {Page, PageProvider, router,AppStateKeyed} from "@openremote/or-app";
 import {Store} from "@reduxjs/toolkit";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
@@ -57,10 +73,10 @@ export class PageInsights extends Page<AppStateKeyed>  {
     protected _dataviewer!: OrDataViewer;
 
     @property()
-    protected _editMode: boolean = true;
+    protected _editMode = true;
 
     @property()
-    protected _fullscreen: boolean = true;
+    protected _fullscreen = true;
 
     @property()
     private _dashboardId: string;
@@ -126,7 +142,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         this._dashboardId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
     }
 
-    protected _updateRoute(silent: boolean = true) {
+    protected _updateRoute(silent = true) {
         router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
             callHooks: !silent,
             callHandler: !silent

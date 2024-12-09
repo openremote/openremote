@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import {classMap} from "lit/directives/class-map.js";
@@ -258,10 +276,10 @@ export class OrMwcTable extends LitElement {
     };
 
     @property({type: Number})
-    protected paginationIndex: number = 0;
+    protected paginationIndex = 0;
 
     @property({type: Number})
-    public paginationSize: number = 10;
+    public paginationSize = 10;
 
     @state()
     protected _dataTable?: MDCDataTable;
@@ -353,8 +371,8 @@ export class OrMwcTable extends LitElement {
                                                 `
                                                 }`
                                         }
-                                        return (typeof column == "string") ? html`
-                                            <th class="mdc-data-table__header-cell ${!!this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
+                                        return (typeof column === "string") ? html`
+                                            <th class="mdc-data-table__header-cell ${this.config.multiSelect ? "mdc-data-table__header-cell" : ''}" id="column-${index+1}" role="columnheader" scope="col"
                                                 title="${column}">
                                                 ${column}
                                             </th>
@@ -401,7 +419,7 @@ export class OrMwcTable extends LitElement {
                                                                 "mdc-data-table__cell": true,
                                                                 "mdc-data-table__cell--numeric": typeof cell === "number",
                                                                 "mdc-data-table__cell--clickable": (!Array.isArray(item) && (item as TableRow).clickable)!,
-                                                                "hide-mobile": (this.columns && typeof this.columns[index] != "string" && (this.columns[index] as TableColumn).hideMobile)!
+                                                                "hide-mobile": (this.columns && typeof this.columns[index] !== "string" && (this.columns[index] as TableColumn).hideMobile)!
                                                             }
                                                             const styles = {
                                                                 maxWidth: this.getMaxColumnWidth(index, this.columns, tableWidth),
@@ -683,7 +701,7 @@ export class OrMwcTable extends LitElement {
 
     // Getting the amount of rows/entries in the table.
     // Makes sure that both the rows, and rowsTemplate properties work.
-    async getRowCount(wait: boolean = true, tableElem?: HTMLElement): Promise<number> {
+    async getRowCount(wait = true, tableElem?: HTMLElement): Promise<number> {
         if (this.rows?.length) {
             return this.rows?.length;
         }
@@ -694,7 +712,7 @@ export class OrMwcTable extends LitElement {
         return rowElems!.length;
     }
 
-    async getTableElem(wait: boolean = false): Promise<HTMLElement | undefined> {
+    async getTableElem(wait = false): Promise<HTMLElement | undefined> {
         if (wait) {
             await this.updateComplete;
         }

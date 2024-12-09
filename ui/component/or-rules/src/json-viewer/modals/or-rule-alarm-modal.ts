@@ -1,9 +1,6 @@
 /*
  * Copyright 2024, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,6 +13,8 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
@@ -25,7 +24,6 @@ import {
     AlarmSeverity
 } from "@openremote/model";
 
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
@@ -109,7 +107,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
 
         const slot:HTMLSlotElement|null = this.shadowRoot.querySelector('.alarm-form-slot');
         if (dialog && slot) {
-            let container = document.createElement("div");
+            const container = document.createElement("div");
             slot.assignedNodes({flatten: true}).forEach((child) => {
                 if (child instanceof HTMLElement) {
                     container.appendChild(child);

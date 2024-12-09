@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     Asset,
     AssetDescriptor,
@@ -23,10 +41,9 @@ import {
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
     Role,
-} from "@openremote/model";
+AssetModelUtil} from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
-import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
 import {transform} from "lodash";
@@ -207,16 +224,16 @@ export function isTimeDuration(time?: string): boolean {
 
 export function isTimeDurationPositiveInfinity(time?: string): boolean {
     time = time != null ? time.trim() : undefined;
-    return "*" === time || "+*" === time;
+    return time === "*" || time === "+*";
 }
 
 export function isTimeDurationNegativeInfinity(time?: string): boolean {
     time = time != null ? time.trim() : undefined;
-    return "-*" === time;
+    return time === "-*";
 }
 
 export function isObject(object: any): boolean {
-    if (!!object) {
+    if (object) {
         return typeof object === "object";
     }
     return false;
@@ -226,7 +243,7 @@ export function isFunction(object: any): boolean {
     return !!(object && object.constructor && object.call && object.apply);
 }
 
-export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): boolean {
+export function objectsEqual(obj1?: any, obj2?: any, deep = true): boolean {
     if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
         return obj1 === obj2;
     }
@@ -467,7 +484,7 @@ export function formatCronString(years?: string | number | string[], months?: st
     cron += " ";
     if(months) {
         if(Array.isArray(months)) {
-            if(typeof months[0] == 'number') {
+            if(typeof months[0] === 'number') {
                 const monthStrings: string[] = [];
                 months.forEach(month => { monthStrings.push(monthNames[month as number].toString()); })
                 cron += (monthStrings.toString().replace(" ", ""));
@@ -496,11 +513,11 @@ export function dateToCronString(date: Date): string {
 * Input for example would be `0 00 11 * * ? *` for every day at 11am.
 * If the input is '*', it will be replaced by 1. (month parameter of '*' becomes January)
 */
-export function cronStringToISOString(cronString: String, isUTC: boolean): string | undefined {
+export function cronStringToISOString(cronString: string, isUTC: boolean): string | undefined {
     const splStr = cronString.split(" ");
     if(!Number.isNaN(Number(splStr[0])) && !Number.isNaN(Number(splStr[1])) && !Number.isNaN(Number(splStr[2])) && (!Number.isNaN(Number(splStr[3])) || splStr[3] == '*')) {
         const year: string = (!Number.isNaN(Number(splStr[6])) ? splStr[6] : new Date().getFullYear()).toString();
-        let month: string = "";
+        let month = "";
         if(splStr[4] != '*') {
             month = monthNames.indexOf(splStr[4]).toString();
         } else {

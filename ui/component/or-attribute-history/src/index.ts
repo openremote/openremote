@@ -1,6 +1,21 @@
-// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
-declare function require(name: string): any;
-
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     css,
     html,
@@ -14,19 +29,19 @@ import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
 import "@openremote/or-chart";
 import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
 import "chartjs-adapter-moment";
-import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
 import {isAxiosError} from "@openremote/rest";
 import {styleMap} from "lit/directives/style-map.js";
 import { when } from "lit/directives/when.js";
+
+declare function require(name: string): any;
 
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 
@@ -245,7 +260,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     public config?: HistoryConfig;
 
     @property()
-    protected _loading: boolean = false;
+    protected _loading = false;
 
     @property()
     protected _data?: ValueDatapoint<any>[];
@@ -255,8 +270,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     @query("#chart")
     protected _chartElem!: HTMLCanvasElement;
+
     @query("#table")
     protected _tableElem!: HTMLDivElement;
+
     protected _table?: MDCDataTable;
     protected _chart?: Chart<"line", ScatterDataPoint[]>;
     protected _type?: ValueDescriptor;
@@ -269,7 +286,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _updateTimestampTimer?: number;
     protected _dataAbortController?: AbortController;
 
-    protected _dataFirstLoaded: boolean = false;
+    protected _dataFirstLoaded = false;
 
     connectedCallback() {
         super.connectedCallback();
@@ -282,7 +299,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
+        const reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp") || _changedProperties.has("attribute");
 
         if (this._dataFirstLoaded && !_changedProperties.get('_loading') && !reloadData) {
             return false;
@@ -650,6 +667,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return [interval, i18next.t(interval.toLowerCase())];
         });
     }
+
     protected _getPeriodOptions() {
         return [
             DatapointInterval.HOUR.toLowerCase(),

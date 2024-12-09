@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {html, LitElement} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import moment from "moment";
@@ -7,26 +25,26 @@ class OrTimeline extends LitElement {
 
     // default value in minutes
     @property({type: Number})
-    public current: number = 0;
+    public current = 0;
 
     @property({type: Function})
     public onChange: any;
 
     // default value in minutes
     @property({type: Number})
-    public value: number = 0;
+    public value = 0;
 
     // maxRange in minutes
     @property({type: Number})
-    public maxRange: number = 360;
+    public maxRange = 360;
 
     // minRange in minutes
     @property({type: Number})
-    public minRange: number = 0;
+    public minRange = 0;
 
     // Steps in minutes
     @property({type: Number})
-    public step: number = 5;
+    public step = 5;
 
     constructor() {
         super();

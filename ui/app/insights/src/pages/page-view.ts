@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {html, TemplateResult} from "lit";
 import {customElement, query, property, state} from "lit/decorators.js";
 import {AppStateKeyed, DefaultMobileLogo, Page, PageProvider, RealmAppConfig, router, updateRealm} from "@openremote/or-app";
@@ -13,7 +31,6 @@ import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {style} from "../style";
 import {isAxiosError} from "@openremote/rest";
-import "../components/dashboard-menu";
 
 export function pageViewProvider(store: EnhancedStore<AppStateKeyed>, realmConfigs: {[p: string]: RealmAppConfig}): PageProvider<AppStateKeyed> {
     return {
@@ -42,7 +59,7 @@ export class PageView extends Page<AppStateKeyed> {
     public realmConfigs?: {[p: string]: RealmAppConfig};
 
     @property() // setting this to true removes the menu, and only fetches that specific dashboard to avoid clutter
-    protected viewDashboardOnly: boolean = false;
+    protected viewDashboardOnly = false;
 
     @state()
     protected _loadedDashboards?: Dashboard[];
@@ -63,7 +80,7 @@ export class PageView extends Page<AppStateKeyed> {
     protected _activePromises: Map<string, Promise<any>> = new Map<string, Promise<any>>();
 
     @state() // boolean that is put to true if a fresh render should take place. Similar to the one used in or-dashboard-builder.
-    private rerenderPending: boolean = false;
+    private rerenderPending = false;
 
     @query('#dashboard-menu')
     private dashboardMenu: DashboardMenu;
@@ -181,7 +198,7 @@ export class PageView extends Page<AppStateKeyed> {
         }
     }
 
-    protected async fetchDashboard(id: string, loginRedirect: boolean = true): Promise<Dashboard | undefined> {
+    protected async fetchDashboard(id: string, loginRedirect = true): Promise<Dashboard | undefined> {
         let promise = this.getPromise('dashboard/' + id);
         if(promise == undefined) {
             promise = this.registerPromise(('dashboard/' + id), manager.rest.api.DashboardResource.get(this._realm, id), true, false);
@@ -251,7 +268,7 @@ export class PageView extends Page<AppStateKeyed> {
         `
     }
 
-    getErrorMsg(translate: boolean = true): string {
+    getErrorMsg(translate = true): string {
         if(this.viewDashboardOnly && this._loadedDashboards?.length === 0) {
             return (translate ? i18next.t('dashboardNotFound') : 'dashboardNotFound');
         } else if(!this.viewDashboardOnly) {
@@ -260,7 +277,7 @@ export class PageView extends Page<AppStateKeyed> {
         return (translate ? i18next.t('errorOccurred') : 'errorOccurred')
     }
 
-    selectDashboard(id: string, closeDrawer: boolean = true) {
+    selectDashboard(id: string, closeDrawer = true) {
         if (id) {
             if (this.dashboardMenu && closeDrawer) {
                 this.dashboardMenu.toggleDrawer(false).then(() => {
@@ -299,7 +316,7 @@ export class PageView extends Page<AppStateKeyed> {
         return this._activePromises.get(topic);
     }
 
-    registerPromise(topic: string, promise: Promise<any>, doUpdate: boolean = true, updateOnComplete: boolean = true): Promise<any> {
+    registerPromise(topic: string, promise: Promise<any>, doUpdate = true, updateOnComplete = true): Promise<any> {
         if(this._activePromises.has(topic)) {
             promise = this._activePromises.get(topic);
         } else {
@@ -310,14 +327,14 @@ export class PageView extends Page<AppStateKeyed> {
         return promise;
     }
 
-    completePromise(topic: string, doUpdate: boolean = true) {
+    completePromise(topic: string, doUpdate = true) {
         this._activePromises.delete(topic);
         if(doUpdate) { this.requestUpdate("_activePromises"); }
     }
 
 
     // Util method for updating URL
-    protected _updateRoute(id?: string, showMenu?: boolean, silent: boolean = true) {
+    protected _updateRoute(id?: string, showMenu?: boolean, silent = true) {
         let path = "view";
         if(id) {
             path += "/" + id + (showMenu != undefined ? ('/' + showMenu) : undefined)

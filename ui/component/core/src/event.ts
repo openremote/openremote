@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import manager from "./index";
 import {arrayRemove, Deferred} from "./util";
 import {
@@ -78,9 +96,9 @@ const EVENT_MESSAGE_PREFIX = "EVENT:";
 
 abstract class EventProviderImpl implements EventProvider {
 
-    protected static MIN_RECONNECT_DELAY: number = 0;
-    protected static MAX_RECONNECT_DELAY: number = 30000;
-    protected _disconnectRequested: boolean = false;
+    protected static MIN_RECONNECT_DELAY = 0;
+    protected static MAX_RECONNECT_DELAY = 30000;
+    protected _disconnectRequested = false;
     protected _reconnectDelayMillis: number = WebSocketEventProvider.MIN_RECONNECT_DELAY;
     protected _reconnectTimer: number | null = null;
     protected _status: EventProviderStatus = EventProviderStatus.DISCONNECTED;
@@ -94,7 +112,7 @@ abstract class EventProviderImpl implements EventProvider {
     protected _attributeEventPromise?: Promise<string>;
     protected _attributeEventCallbackMap: Map<string, (e: AttributeEvent) => void> = new Map();
     protected _unloading = false;
-    protected static _subscriptionCounter: number = 0;
+    protected static _subscriptionCounter = 0;
 
     abstract get endpointUrl(): string;
 
@@ -247,7 +265,7 @@ abstract class EventProviderImpl implements EventProvider {
                 this._attributeEventPromise = undefined;
                 this.unsubscribe(attributeEventSubscriptionId);
             }
-            return;
+            
         }
     }
 
@@ -581,7 +599,7 @@ abstract class EventProviderImpl implements EventProvider {
 
 export class WebSocketEventProvider extends EventProviderImpl {
 
-    protected static _subscriptionCounter: number = 1;
+    protected static _subscriptionCounter = 1;
 
     private readonly _endpointUrl: string;
     protected _webSocket: WebSocket | undefined = undefined;
