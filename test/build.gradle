@@ -18,6 +18,8 @@ dependencies {
 
     testImplementation resolveProject(":setup").sourceSets.integration.output
     testFixturesApi resolveProject(":manager")
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.3.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
 
     testFixturesImplementation "org.apache.groovy:groovy-all:$groovyVersion"
     testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
@@ -27,11 +29,16 @@ dependencies {
     testFixturesRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
     testFixturesRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+
+
     testImplementation "com.github.calimero:calimero-server:$calimeroVersion"
 
     testImplementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     testImplementation "org.shredzone.commons:commons-suncalc:$suncalcVersion"
     testImplementation "com.icegreen:greenmail:$greenmailVersion"
+
 }
 
 tasks.withType(Test) {
