@@ -483,8 +483,10 @@ jobs:
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
               echo "pushRequired=true" >> $GITHUB_OUTPUT
+              echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG"
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+              echo "managerDockerImage=openremote/manager:$commitShaShort"
             fi
             echo "value=$command" >> $GITHUB_OUTPUT
           fi
@@ -612,6 +614,7 @@ jobs:
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
           echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
+          echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
           echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
           echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
@@ -731,6 +734,18 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+
+      - name: Scan manager docker image
+        if: steps.manager-docker-command.outputs.value != ''
+        uses: anchore/scan-action@v3
+        id: manager-anchore-scan
+        with:
+          image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
+
+      - name: Upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Run maven publish command
         if: steps.maven-publish-command.outputs.value != ''
