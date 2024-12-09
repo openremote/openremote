@@ -1,13 +1,14 @@
-import { html, css } from "lit";
+import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, NodeSocket } from "@openremote/model";
-import { IdentityDomLink } from "../node-structure";
-import { FlowNodeStyle } from "../styles/flow-node-style";
-import { i18next } from "@openremote/or-translate";
-import { nodeConverter } from "../converters/node-converter";
-import { SelectableElement } from "./selectable-element";
-import { EditorWorkspace } from "./editor-workspace";
-import { project, newIds } from "./flow-editor";
+import {Node, NodeInternalBreakType} from "@openremote/model";
+import {IdentityDomLink} from "../node-structure";
+import {FlowNodeStyle} from "../styles/flow-node-style";
+import {i18next} from "@openremote/or-translate";
+import {nodeConverter} from "../converters/node-converter";
+import {SelectableElement} from "./selectable-element";
+import {EditorWorkspace} from "./editor-workspace";
+import {newIds, project} from "./flow-editor";
+import {Utilities} from "../utils";
 
 @customElement("flow-node")
 export class FlowNode extends SelectableElement {
@@ -23,7 +24,21 @@ export class FlowNode extends SelectableElement {
     }
 
     public static get styles() {
-        return FlowNodeStyle;
+        return [FlowNodeStyle,
+            css`
+            .internal-item {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                flex: 0 0 auto;
+            }
+            .internal-title {
+                font-size: 0.8em;
+                margin-bottom: 0;
+                margin-top:3px;
+                text-align: left;
+            }
+        `]
     }
 
     public disconnectedCallback() {
@@ -79,8 +94,8 @@ export class FlowNode extends SelectableElement {
         this.style.boxShadow = this.selected ? "var(--highlight) 0 0 0 3px" : "";
 
         const title = this.minimal ?
-            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${i18next.t(this.node.displayCharacter!)}</div>` :
-            html`<div class="title ${this.node.type!.toLowerCase()}" @mousedown="${this.startDrag}">${i18next.t(this.node.name!) || "invalid"}</div>`;
+            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${String(i18next.t("flow."+this.node.displayCharacter!, this.node.displayCharacter!))}</div>` :
+            html`<div class="title ${this.node.type!.toLowerCase()}" @mousedown="${this.startDrag}">${i18next.t("flow."+this.node.name!) || "invalid"}</div>`;
 
         const inputSide = html`<div class="socket-side inputs">${this.node.inputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="input"></flow-node-socket>`)}</div>`;
         const outputSide = html`<div class="socket-side outputs">${this.node.outputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="output"></flow-node-socket>`)}</div>`;
@@ -88,12 +103,21 @@ export class FlowNode extends SelectableElement {
         return html`
         ${title}
         ${this.node.inputs!.length > 0 ? inputSide : spacer}
-        ${(this.minimal) ? null : html`<div class="internal-container">${this.node.internals!.map((i) =>
-            html`<internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")}" @picked="${async () => {
-                this.forceUpdate();
-                await this.updateComplete;
-                project.removeInvalidConnections();
-            }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>`)}</div>`}
+        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 300px; padding: 0 10px 10px 10px; gap: 8px">
+            ${this.node.internals!.map((i) => {
+                const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
+                const style = isNewLine ? "flex-basis: 100%;" : "";
+                return html`
+                    <div class="internal-item" style="${style};">
+                        <p class="internal-title">${Utilities.humanLike(i.name)}</p>
+                        <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
+                            this.forceUpdate();
+                            await this.updateComplete;
+                            await project.removeInvalidConnections();
+                        }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>
+                    </div>`;
+            })}
+        </div>`}
         ${this.node.outputs!.length > 0 ? outputSide : spacer}
         ${(this.frozen ? html`<or-icon class="lock-icon ${this.node.type!.toLowerCase()}" icon="lock"></or-icon>` : ``)}
         `;

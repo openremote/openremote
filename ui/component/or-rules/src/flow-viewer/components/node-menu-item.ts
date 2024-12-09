@@ -86,8 +86,8 @@ export class NodeMenuItem extends translate(i18next)(LitElement) {
     }
 
     private get flowNodeName() {
-        return i18next.t(this.node.displayCharacter || this.node.name!, 
-            this.node.displayCharacter || Utilities.humanLike(this.node.name || "invalid node name"));
+        return i18next.t(this.node.displayCharacter ? "flow."+this.node.displayCharacter : "flow."+this.node.name!,
+            this.node.displayCharacter || this.node.name || "invalid node name");
     }
 
     private startDrag = (e: MouseEvent) => {
