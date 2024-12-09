@@ -109,7 +109,7 @@ export class FlowNode extends SelectableElement {
                 const style = isNewLine ? "flex-basis: 100%;" : "";
                 return html`
                     <div class="internal-item" style="${style};">
-<!--                        <p class="internal-title">${Utilities.humanLike(i.name)}</p>-->
+                        <p class="internal-title">${Utilities.humanLike(i.name)}</p>
                         <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
                             this.forceUpdate();
                             await this.updateComplete;
