@@ -5,7 +5,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {ClientRole, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -352,11 +352,6 @@ export class PageUsers extends Page<AppStateKeyed> {
             // Ensure user ID is set
             user.id = response.data.id;
 
-            if (user.password) {
-                const credentials = {value: user.password}
-                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
-            }
-
             await this._updateRoles(user, false);
             await this._updateRoles(user, true);
             await this._updateUserAssetLinks(user);
@@ -375,6 +370,16 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         } finally {
             await this.loadData();
+
+            // After updating the user, reset the password if it has changed.
+            // This is handled asynchronously, so it will not 'wait' before the request has succeeded.
+            if (user.password) {
+                const credentials = {value: user.password} as Credential;
+                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(() => {
+                    showSnackbar(undefined, "reset password failed");
+                });
+            }
+
             return result;
         }
     }
