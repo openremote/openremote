@@ -12,8 +12,8 @@
                         "items": [
                             {
                                 "duration": { 
-                                    "0": "PT1M",
-                                    "1": "PT2M"
+                                    "0": "PT15S",
+                                    "1": "PT30S"
                                 },
                                 "assets": {
                                     "types": [

@@ -20,6 +20,8 @@
 package org.openremote.manager.rules;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.AttributeInfo;
@@ -33,6 +35,7 @@ import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -47,6 +50,8 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
     final protected List<String> resolvedAssetTypes;
+
+    private static final System.Logger LOG = System.getLogger(AssetQueryPredicate.class.getName() + "." + "AssetQueryPredicate");
 
     public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, AssetQuery query) {
         this.timerService = timerService;
@@ -182,7 +187,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
 
 
-    private static Map<Integer, Long> startingTimes = new HashMap<>();
+    private static Map<Integer, Long> attributeDurationStartTimes = new ConcurrentHashMap<>();
 
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
@@ -205,11 +210,12 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
         if (!condition.getItems().isEmpty()) {
             condition.getItems().stream().forEach(p -> {
-                int index = condition.getItems().indexOf(p);
+         
                 attributePredicates.add((Predicate<AttributeInfo>) (Predicate) asPredicate(currentMillisProducer, p));
 
                 AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                 AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
+                AtomicReference<Predicate<AttributeInfo>> durationPredicate = new AtomicReference<>(assetState -> true);
 
                 if (p.meta != null) {
                     final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
@@ -229,30 +235,29 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                     attributePredicates.add(oldValuePredicate.get());
                 }
 
-                // If a durationmap is present, check if a duration is specified for this predicate
+
+                int index = condition.getItems().indexOf(p);
+
                 if (durationMap != null && durationMap.containsKey(index)) {
                     String duration = durationMap.get(index);
                     long durationMillis = TimeUtil.parseTimeDuration(duration);
-                    attributePredicates.add(assetState -> {
-                        Long startTime = startingTimes.get(index);
+                    durationPredicate.set(assetState -> {
+                        Long startTime = attributeDurationStartTimes.get(index);
                         if (startTime == null) {
-                            startingTimes.put(index, currentMillisProducer.get());
+                            attributeDurationStartTimes.put(index, currentMillisProducer.get());
                             return false;
                         }
 
-
-                        // if any of the other predicates do not match we need to reset the starting time
-                        // if (attributePredicates.stream().anyMatch(attributePredicate -> !attributePredicate.test(assetState))) {
-                        //     startingTimes.remove(index);
-                        //     return false;
-                        // }
-
+                        boolean anyOtherPredicateIsFalse = attributePredicates.stream().filter(attributePredicate -> attributePredicate != durationPredicate.get()).anyMatch(attributePredicate -> !attributePredicate.test(assetState));
+                        if (anyOtherPredicateIsFalse) {
+                            attributeDurationStartTimes.remove(index);
+                        }
 
                         return (currentMillisProducer.get() - startTime) >= durationMillis;
                     });
+
+                    attributePredicates.add(durationPredicate.get());
                 }
-
-
             });
         }
 

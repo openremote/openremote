@@ -173,7 +173,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
-                durationMap = ruleCondition.duration;
+               
 
                 if (attributePredicates != null && attributePredicates.items != null) {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
@@ -184,7 +184,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
                 ruleCondition.assets.attributes = null;
-                ruleCondition.duration = null;
+                
+      
             } else {
                 throw new IllegalStateException("Invalid rule condition either timer or asset query must be set");
             }
@@ -273,7 +274,9 @@ public class JsonRulesBuilder extends RulesBuilder {
                 results.put(false, unmatched);
 
                 unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
+                    LOG.info("Applying asset predicate to " + states.size() + " asset states");
                     Set<AttributeInfo> matches = assetPredicate.apply(states);
+                
                     if (matches != null) {
                         matched.addAll(matches);
                         unmatched.addAll(states.stream().filter(matches::contains).collect(Collectors.toSet()));
