@@ -752,6 +752,12 @@ jobs:
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
 
+      - name: Inspect Anchore scan SARIF report
+        if: |
+          !cancelled() &&
+          steps.manager-docker-command.outputs.value != ''
+        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
+
       - name: Run maven publish command
         if: steps.maven-publish-command.outputs.value != ''
         run: |
