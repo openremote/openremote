@@ -88,19 +88,17 @@ public class JsonRulesBuilder extends RulesBuilder {
         RuleCondition ruleCondition;
         final TimerService timerService;
         boolean trackUnmatched;
-        Map<Integer, String> durationMap;
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
-        // Used to store the duration times for the conditions
-        AttributeConditionTimeState attributeConditionTimeState;
 
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
+        AttributeConditionTimeState attributeConditionTimeState;
 
         @SuppressWarnings("ConstantConditions")
         public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) throws Exception {
