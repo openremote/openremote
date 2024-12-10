@@ -4,7 +4,6 @@ create table PUBLIC.REALM (
   ENABLED                   boolean default false not null,
   RESET_PASSWORD_ALLOWED    boolean default true not null,
   DUPLICATE_EMAILS_ALLOWED  boolean default false not null,
-  PASSWORD_POLICY           varchar(255) default null,
   REMEMBER_ME               boolean default false not null,
   REGISTRATION_ALLOWED      boolean default false not null,
   REG_EMAIL_AS_USERNAME     boolean default false not null,
