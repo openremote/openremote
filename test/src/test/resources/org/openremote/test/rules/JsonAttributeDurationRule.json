@@ -56,8 +56,7 @@
                         "items": [
                             {
                                 "duration": {
-                                    "0": "PT30S",
-                                    "1": "PT60S"
+                                    "0": "PT5M"
                                 },
                                 "assets": {
                                     "types": [
@@ -73,20 +72,8 @@
                                                 },
                                                 "value": {
                                                     "predicateType": "number",
-                                                    "operator": "LESS_THAN",
-                                                    "value": 30
-                                                }
-                                            },
-                                            {
-                                                "name": {
-                                                    "predicateType": "string",
-                                                    "match": "EXACT",
-                                                    "value": "brightness"
-                                                },
-                                                "value": {
-                                                    "predicateType": "number",
-                                                    "operator": "GREATER_THAN",
-                                                    "value": 10
+                                                    "operator": "EQUALS",
+                                                    "value": 0
                                                 }
                                             }
                                         ]

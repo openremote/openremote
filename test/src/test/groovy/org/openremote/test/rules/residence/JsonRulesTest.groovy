@@ -698,13 +698,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine realmBuildingEngine
 
         and: "the pseudo clock is stopped"
@@ -731,8 +729,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 91
         }
 
-        when: "a ruleset with a duration map is added"
-        def rulesStr = getClass().getResource("/org/openremote/test/rules/AttributeDurationRule.json").text
+        when: "a ruleset with a duration map has been added where the brightness attribute has to be above 80 for 90 seconds and above 90 for 45 seconds OR at 0 for 5 minutes"
+        def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonAttributeDurationRule.json").text
         def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
         Ruleset ruleset = new RealmRuleset(
                 keycloakTestSetup.realmBuilding.name,
@@ -755,22 +753,73 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "time advances 1 minute"
         advancePseudoClock(1, TimeUnit.MINUTES, container)
 
-        then: "the brightness value should not have changed and the rule engine should have fired"
+        then: "the brightness value should not have changed since it hasn't been above 80 for 90 seconds"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 91
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        when: "time advances 2 minutes"
+
+        when: "time advances another minute"
         advancePseudoClock(2, TimeUnit.MINUTES, container)
 
-        then: "the brightness value should be 55 because it has been greater than 90 for 90 seconds"
+        then: "the brightness value should be 55 because it has been greater than 80 for 90 seconds"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
-            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 55
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "the light asset is updated with a value lower than 0"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.setBrightness(0)
+        lightAsset = assetStorageService.merge(lightAsset)
+
+        then: "the brightness value should be 0"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+        }
+
+        when: "time advances 1 minute"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should still be 0 since it hasn't been at 0 for 5 minutes"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances 5 minutes"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should be 55 because it at 0 for at least 5 minutes"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 55
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
 
