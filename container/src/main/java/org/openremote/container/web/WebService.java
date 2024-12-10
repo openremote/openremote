@@ -20,7 +20,6 @@
 package org.openremote.container.web;
 
 import io.undertow.Undertow;
-import io.undertow.UndertowOptions;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;
