@@ -506,10 +506,7 @@ jobs:
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.event_name != 'release' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
-          command="./gradlew publish --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
-          if [ "$MAVEN_TAG" != "" ]; then
-             command="$command -PopenremoteVersion=$MAVEN_TAG"
-          fi
+          command="./gradlew publishToSonatype closeSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
@@ -548,16 +545,14 @@ jobs:
         id: install-command
         shell: bash
         run: |
-          REF_NAME=${REF_NAME//\//_}
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
-            echo "value=./gradlew installDist -PopenremoteVersion=$REF_NAME" >> $GITHUB_OUTPUT
+            echo "value=./gradlew installDist" >> $GITHUB_OUTPUT
           elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "value=./gradlew -p deployment installDist" >> $GITHUB_OUTPUT
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
-          REF_NAME: ${{ github.ref_name }}
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
@@ -769,7 +764,7 @@ jobs:
         run: |
           VERSION=$NPM_TAG
           if [ "$VERSION" == "" ]; then
-            VERSION=$(grep openremoteVersion gradle.properties | sed -E 's/.*=[ ]*//g' )
+            VERSION=$(grep version manager/src/main/resources/version.properties | sed -E 's/.*=[ ]*//g' )
           fi
 
           QUALIFIER=$(sed -E 's/.+-([A-Z]+).*/\1/g' <<< $VERSION)
