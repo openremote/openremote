@@ -103,13 +103,12 @@ export class FlowNode extends SelectableElement {
         return html`
         ${title}
         ${this.node.inputs!.length > 0 ? inputSide : spacer}
-        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 300px; padding: 0 10px 10px 10px; gap: 8px">
+        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 190px; padding: 10px; gap: 8px; height: fit-content;">
             ${this.node.internals!.map((i) => {
                 const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
                 const style = isNewLine ? "flex-basis: 100%;" : "";
                 return html`
                     <div class="internal-item" style="${style};">
-                        <p class="internal-title">${Utilities.humanLike(i.name)}</p>
                         <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
                             this.forceUpdate();
                             await this.updateComplete;

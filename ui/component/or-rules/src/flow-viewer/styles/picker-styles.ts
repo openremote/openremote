@@ -3,6 +3,7 @@ import { css } from "lit";
 export const PickerStyle = css`
 input{
     border: 0;
+    height: max-content;
 }
 textarea{
     min-width: 150px;

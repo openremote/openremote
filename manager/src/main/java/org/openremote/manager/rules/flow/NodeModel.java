@@ -181,7 +181,7 @@ public enum NodeModel {
     }),
             info -> ValueUtil.convert(info.getInternals()[0].getValue(), Double.class)),
 
-    ADD_OPERATOR(new Node(NodeType.PROCESSOR, "+", new NodeInternal[0], new NodeSocket[]{
+    ADD_OPERATOR(new Node(NodeType.PROCESSOR, 1, "+", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),
             new NodeSocket("b", NodeDataType.NUMBER),
     }, new NodeSocket[]{
@@ -192,15 +192,72 @@ public enum NodeModel {
                 Number b = (Number) info.getValueFromInput(1);
                 return a != null && b != null ? a.doubleValue() + b.doubleValue() : null;
             }),
-    SUM_PROCESSOR(new Node(NodeType.PROCESSOR, "Σ", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
-    }, new NodeSocket[]{
+
+	SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, 2, "-", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER),
             new NodeSocket("b", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("c", NodeDataType.NUMBER),
     }),
-    info -> {
-	        Object[] a = info.getValuesFromInput(info.getInputs());
-            return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
-        }
+            info -> {
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
+            }),
+
+	MULTIPLY_OPERATOR(new Node(NodeType.PROCESSOR, 3, "×", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER),
+            new NodeSocket("b", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("c", NodeDataType.NUMBER),
+    }),
+            info -> {
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+                return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
+            }),
+
+	DIVIDE_OPERATOR(new Node(NodeType.PROCESSOR,4, "÷", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.NUMBER),
+            new NodeSocket("b", NodeDataType.NUMBER),
+    }, new NodeSocket[]{
+            new NodeSocket("c", NodeDataType.NUMBER),
+    }),
+            info -> {
+                Number a = (Number) info.getValueFromInput(0);
+                Number b = (Number) info.getValueFromInput(1);
+
+                if (a == null || b == null) {
+                    return null;
+                }
+
+                if (b.doubleValue() == 0d)
+                    return 0d;
+
+                return a.doubleValue() / b.doubleValue();
+            }),
+
+	EQUALS_COMPARATOR(new Node(NodeType.PROCESSOR, "=", new NodeInternal[0], new NodeSocket[]{
+            new NodeSocket("a", NodeDataType.ANY),
+            new NodeSocket("b", NodeDataType.ANY),
+    }, new NodeSocket[]{
+            new NodeSocket("c", NodeDataType.BOOLEAN),
+    }),
+            info -> {
+                Object a = info.getValueFromInput(0);
+                Object b = info.getValueFromInput(1);
+                return a != null && b != null && Objects.equals(a, b);
+            }),
+
+	SUM_PROCESSOR(new Node(NodeType.PROCESSOR,5, "Σ", new NodeInternal[0], new NodeSocket[]{
+			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
+	}, new NodeSocket[]{
+			new NodeSocket("b", NodeDataType.NUMBER),
+	}),
+			info -> {
+				Object[] a = info.getValuesFromInput(info.getInputs());
+				return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
+			}
 	),
 	MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
 			new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
@@ -249,64 +306,7 @@ public enum NodeModel {
 				}
 			}
 	),
-
-    SUBTRACT_OPERATOR(new Node(NodeType.PROCESSOR, "-", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() - b.doubleValue() : null;
-            }),
-
-    MULTIPLY_OPERATOR(new Node(NodeType.PROCESSOR, "×", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-                return a != null && b != null ? a.doubleValue() * b.doubleValue() : null;
-            }),
-
-    DIVIDE_OPERATOR(new Node(NodeType.PROCESSOR, "÷", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.NUMBER),
-            new NodeSocket("b", NodeDataType.NUMBER),
-    }, new NodeSocket[]{
-            new NodeSocket("c", NodeDataType.NUMBER),
-    }),
-            info -> {
-                Number a = (Number) info.getValueFromInput(0);
-                Number b = (Number) info.getValueFromInput(1);
-
-                if (a == null || b == null) {
-                    return null;
-                }
-
-                if (b.doubleValue() == 0d)
-                    return 0d;
-
-                return a.doubleValue() / b.doubleValue();
-            }),
-
-    EQUALS_COMPARATOR(new Node(NodeType.PROCESSOR, "=", new NodeInternal[0], new NodeSocket[]{
-            new NodeSocket("a", NodeDataType.ANY),
-            new NodeSocket("b", NodeDataType.ANY),
-    }, new NodeSocket[]{
-            new NodeSocket("c", NodeDataType.BOOLEAN),
-    }),
-            info -> {
-                Object a = info.getValueFromInput(0);
-                Object b = info.getValueFromInput(1);
-                return a != null && b != null && Objects.equals(a, b);
-            }),
-
-    GREATER_THAN(new Node(NodeType.PROCESSOR, ">", new NodeInternal[0], new NodeSocket[]{
+	GREATER_THAN(new Node(NodeType.PROCESSOR, ">", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),
             new NodeSocket("b", NodeDataType.NUMBER),
     }, new NodeSocket[]{
@@ -318,7 +318,7 @@ public enum NodeModel {
                 return a != null && b != null && a.doubleValue() > b.doubleValue();
             }),
 
-    LESS_THAN(new Node(NodeType.PROCESSOR, "<", new NodeInternal[0], new NodeSocket[]{
+	LESS_THAN(new Node(NodeType.PROCESSOR, "<", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER),
             new NodeSocket("b", NodeDataType.NUMBER),
     }, new NodeSocket[]{
@@ -330,7 +330,7 @@ public enum NodeModel {
                 return a != null && b != null && a.doubleValue() < b.doubleValue();
             }),
 
-    ROUND_NODE(new Node(NodeType.PROCESSOR, new NodeInternal[]{
+	ROUND_NODE(new Node(NodeType.PROCESSOR, new NodeInternal[]{
             new NodeInternal("Rounding method", new Picker(PickerType.DROPDOWN, new Option[]{
                     new Option("Round", "round"),
                     new Option("Ceiling", "ceil"),
@@ -356,7 +356,7 @@ public enum NodeModel {
                 };
             }),
 
-    ABS_OPERATOR(new Node(NodeType.PROCESSOR, "|x|", new NodeInternal[0], new NodeSocket[]{
+	ABS_OPERATOR(new Node(NodeType.PROCESSOR, "|x|", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("value", NodeDataType.NUMBER),
     }, new NodeSocket[]{
             new NodeSocket("absolute", NodeDataType.NUMBER),
@@ -544,7 +544,10 @@ public enum NodeModel {
 			dict.put(TimeUnit.HOURS, dict.get(TimeUnit.MINUTES)*24);
 			dict.put(TimeUnit.DAYS, dict.get(TimeUnit.HOURS)*30);
 			dict.put(TimeUnit.MONTHS, dict.get(TimeUnit.DAYS)*12);
-			return dict.entrySet().stream().map(e -> new Option(e.getKey().getLabel(), e.getValue())).toArray(Option[]::new);
+			return dict.entrySet().stream()
+					.sorted(Map.Entry.comparingByValue())
+					.map(e -> new Option(e.getKey().getLabel(), e.getValue()))
+					.toArray(Option[]::new);
 		}
 	}
 
