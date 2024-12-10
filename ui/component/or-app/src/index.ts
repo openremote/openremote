@@ -464,7 +464,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         setTimeout(() => {
             if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
-        }, this.appConfig?.offlineTimeout || 10000)
+        }, this.appConfig?.offlineTimeout || 20000)
 
         this._offlineFallbackDeferred = deferred;
     }
