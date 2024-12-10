@@ -753,9 +753,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
 
 
-        // RuleSet: IF light has been on for 3 minutes AND notes has been TurnOff for 5 minutes AND brightness has been higher than 0 for 10 minutes AND thingAsset notes is Test THEN set brightness to 0 and turn off the light
+        // RuleSet: IF light onOff true for 3 minutes AND notes equals TurnOff for 5 minutes AND brightness higher than 0 for 10 minutes AND thingAsset notes is Test THEN set brightness to 0 and turn off the light
         // OR IF light has brightness higher than 0 for 10 minutes THEN set brightness to 0 and turn off the light
-        // OR IF thingAsset notes is TestNow for 1 minute then turn off the light
         when: "a ruleset with a duration map has been added"
         def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonAttributeDurationRule.json").text
         def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
