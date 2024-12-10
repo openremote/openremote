@@ -106,7 +106,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
         if (query.attributes != null) {
             // TODO: LogicGroup AND doesn't make much sense when applying to a single asset state
-            Set<AttributeInfo> matches = asAttributeMatcher(timerService::getCurrentTimeMillis, query.attributes, null).apply(Collections.singleton(assetState));
+            Set<AttributeInfo> matches = asAttributeMatcher(timerService::getCurrentTimeMillis, query.attributes).apply(Collections.singleton(assetState));
             if (matches == null) {
                 return false;
             }
@@ -184,6 +184,16 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
      * {@link LogicGroup.Operator#AND} to be applied.
+     * @return The matched asset states or null if there is no match
+     */
+    public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
+        return asAttributeMatcher(currentMillisProducer, condition, null);
+    }
+
+    /**
+     * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
+     * {@link LogicGroup.Operator#AND} to be applied.
+     * {@link AttributeConditionTimeState} can be provided to restrict the match to a certain time duration based
      * @return The matched asset states or null if there is no match
      */
     @SuppressWarnings("unchecked")
