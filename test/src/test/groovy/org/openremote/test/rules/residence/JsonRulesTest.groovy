@@ -734,10 +734,28 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("onOff").get().getValue().orElse(false) == true
         }
 
+        when: "a thing asset is added to the building realm"
+        def thingId = UniqueIdentifierGenerator.generateId("TestThing")
+        def thingAsset = new ThingAsset("TestThing")
+                .setId(thingId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+                .setNotes("Test")
+        thingAsset.getAttributes().get("notes").get().addMeta(ruleState)
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        then: "the thing asset should be present, notes should be Test"
+        conditions.eventually {
+            def thing = assetStorageService.find(thingId)
+            assert thing != null
+            assert thing.getAttribute("notes").get().getValue().orElse("") == "Test"
+        }
 
 
-        // RuleSet: IF light has been on for 3 minutes AND notes has been TurnOff for 5 minutes AND brightness has been higher than 0 for 10 minutes THEN set brightness to 0 and turn off the light
+
+        // RuleSet: IF light has been on for 3 minutes AND notes has been TurnOff for 5 minutes AND brightness has been higher than 0 for 10 minutes AND thingAsset notes is Test THEN set brightness to 0 and turn off the light
         // OR IF light has brightness higher than 0 for 10 minutes THEN set brightness to 0 and turn off the light
+        // OR IF thingAsset notes is TestNow for 1 minute then turn off the light
         when: "a ruleset with a duration map has been added"
         def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonAttributeDurationRule.json").text
         def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
@@ -754,7 +772,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
             assert realmBuildingEngine != null
             assert realmBuildingEngine.isRunning()
-            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 3 // + 3 for the rule states we added
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 4 // 4 additional rule states
             assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
@@ -874,10 +892,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
 
-        when: "time advances another 5 minutes"
-        advancePseudoClock(5, TimeUnit.MINUTES, container)
+        when: "time advances another 10 minutes"
+        advancePseudoClock(10, TimeUnit.MINUTES, container)
 
-        then: "the brightness value still be 100"
+        then: "the brightness value should still be 100"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
@@ -887,8 +905,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        when: "time advances another 25 minutes"
-        advancePseudoClock(25, TimeUnit.MINUTES, container)
+        when: "time advances another 20 minutes"
+        advancePseudoClock(20, TimeUnit.MINUTES, container)
 
         then: "the brightness value should be 0 and the light asset should be turned off since the OR condition of brightness above 0 for 30 minutes has been met"
         conditions.eventually {
@@ -898,7 +916,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
-
 
     }
 

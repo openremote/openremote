@@ -74,6 +74,33 @@
                                         ]
                                     }
                                 }
+                            },
+                            {
+                                "duration": {
+                                    "0": "PT5M"
+                                },
+                                "assets": {
+                                    "types": [
+                                        "ThingAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "notes"
+                                                },
+                                                "value": {
+                                                    "predicateType": "string",
+                                                    "negate": false,
+                                                    "match": "EXACT",
+                                                    "value": "Test"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
                             }
                         ]
                     },
