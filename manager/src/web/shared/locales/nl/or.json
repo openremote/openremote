@@ -614,6 +614,7 @@
   "createUserFailed": "Aanmaken gebruiker mislukt",
   "saveUserFailed": "Opslaan gebruiker mislukt",
   "saveUserSucceeded": "Gebruiker succesvol opgeslagen!",
+  "savePasswordFailed": "Kon wachtwoord niet bijwerken.",
   "userAlreadyExists": "Fout opgetreden! Deze gebruiker bestaat al!",
   "invalidUsername": "De gebruikersnaam mag 3-255 numerieke tekens bevatten",
   "invalidEmail": "Ongeldig emailadres",
