@@ -194,6 +194,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                             LOG.log(INFO, "Unsupported user principal type: " + principal);
                         }
 
+                        // Set an idle timeout value
+                        webSocketChannel.setIdleTimeout(30000);
+
                         // Push auth and realm into channel for future use
                         webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
                         webSocketChannel.setAttribute(Constants.REALM_PARAM_NAME, realm);
