@@ -12,8 +12,46 @@
                         "items": [
                             {
                                 "duration": {
-                                    "0": "PT45S",
-                                    "1": "PT90S"
+                                    "0": "PT3M",
+                                    "1": "PT5M"
+                                },
+                                "assets": {
+                                    "types": [
+                                        "LightAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "onOff"
+                                                },
+                                                "value": {
+                                                    "predicateType": "boolean",
+                                                    "value": true
+                                                }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "notes"
+                                                },
+                                                "value": {
+                                                    "predicateType": "string",
+                                                    "negate": false,
+                                                    "match": "EXACT",
+                                                    "value": "TurnOff"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "duration": {
+                                    "0": "PT10M"
                                 },
                                 "assets": {
                                     "types": [
@@ -29,20 +67,8 @@
                                                 },
                                                 "value": {
                                                     "predicateType": "number",
-                                                    "operator": "GREATER_EQUALS",
-                                                    "value": 90
-                                                }
-                                            },
-                                            {
-                                                "name": {
-                                                    "predicateType": "string",
-                                                    "match": "EXACT",
-                                                    "value": "brightness"
-                                                },
-                                                "value": {
-                                                    "predicateType": "number",
                                                     "operator": "GREATER_THAN",
-                                                    "value": 80
+                                                    "value": 0
                                                 }
                                             }
                                         ]
@@ -56,7 +82,7 @@
                         "items": [
                             {
                                 "duration": {
-                                    "0": "PT5M"
+                                    "0": "PT30M"
                                 },
                                 "assets": {
                                     "types": [
@@ -72,7 +98,7 @@
                                                 },
                                                 "value": {
                                                     "predicateType": "number",
-                                                    "operator": "EQUALS",
+                                                    "operator": "GREATER_THAN",
                                                     "value": 0
                                                 }
                                             }
@@ -94,8 +120,20 @@
                             ]
                         }
                     },
-                    "value": 55,
+                    "value": 0,
                     "attributeName": "brightness"
+                },
+                {
+                    "action": "write-attribute",
+                    "target": {
+                        "matchedAssets": {
+                            "types": [
+                                "LightAsset"
+                            ]
+                        }
+                    },
+                    "value": false,
+                    "attributeName": "onOff"
                 }
             ],
             "name": "Duration Rule"

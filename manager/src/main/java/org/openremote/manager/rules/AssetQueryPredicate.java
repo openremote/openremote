@@ -21,7 +21,6 @@ package org.openremote.manager.rules;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.JsonRulesBuilder.RuleConditionState.AttributeConditionTimeState;
@@ -236,9 +235,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
 
         List<Predicate<AttributeInfo>> combinedAttributePredicates = new ArrayList<>();
-        attributePredicates.values().forEach(predicates -> {
-            combinedAttributePredicates.addAll(predicates);
-        });
+        attributePredicates.values().forEach(combinedAttributePredicates::addAll);
 
         if (operator == LogicGroup.Operator.AND) {
             assetStateMatchers.add(assetStates -> {
