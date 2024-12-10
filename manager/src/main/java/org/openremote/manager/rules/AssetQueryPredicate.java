@@ -271,7 +271,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
                             if (currentMillisProducer.get() - attributeConditionTimeState.matchStartTimes().get(i) < durationMillis) {
                                 durationsMet = false; 
-                                break;
                             }  
                         } else {
                             attributeConditionTimeState.matchStartTimes().remove(i);

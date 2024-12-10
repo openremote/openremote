@@ -716,6 +716,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 .setId(lightId)
                 .setRealm(keycloakTestSetup.realmBuilding.name)
                 .setLocation(new GeoJSONPoint(0, 0))
+                .setBrightness(91)
 
 
         //  new MetaItem<>(MetaItemType.RULE_STATE) to brightness        
@@ -723,11 +724,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
         lightAsset = assetStorageService.merge(lightAsset)
 
-        then: "the light asset should be present"
+        then: "the light asset should be present and brightness should be 91"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light != null
-            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 91
         }
 
         when: "a ruleset with a duration map is added"
@@ -741,7 +742,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         ruleset = rulesetStorageService.merge(ruleset)
         def lastFireTimestamp = 0
 
-
         then: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
             realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
@@ -752,23 +752,25 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        when: "the light asset is updated"
-        lightAsset.getAttribute("brightness").get().setValue(91)
-        lightAsset = assetStorageService.merge(lightAsset)
+        when: "time advances 1 minute"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
 
-        advancePseudoClock(3, TimeUnit.SECONDS, container)
-        then: "the brightness should be 91"
+        then: "the brightness value should not have changed and the rule engine should have fired"
         conditions.eventually {
-            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 91
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 91
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        when: "time advances 5 minutes"
-        advancePseudoClock(5, TimeUnit.MINUTES, container)
+        when: "time advances 2 minutes"
+        advancePseudoClock(2, TimeUnit.MINUTES, container)
 
-        then: "the brightness should be 55 because of the rule action"
+        then: "the brightness value should be 55 because it has been greater than 90 for 90 seconds"
         conditions.eventually {
+            def light = assetStorageService.find(lightId)
             assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
-            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 55
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 55
         }
 
 
