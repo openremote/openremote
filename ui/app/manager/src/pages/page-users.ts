@@ -376,7 +376,7 @@ export class PageUsers extends Page<AppStateKeyed> {
             if (user.password) {
                 const credentials = {value: user.password} as Credential;
                 manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(() => {
-                    showSnackbar(undefined, "reset password failed");
+                    showSnackbar(undefined, "savePasswordFailed");
                 });
             }
 
