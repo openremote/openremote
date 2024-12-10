@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.rules.JsonRulesBuilder.RuleConditionState.AttributeConditionTimeState;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
@@ -32,6 +31,7 @@ import org.openremote.model.query.filter.*;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.NameValueHolder;
+import org.openremote.manager.rules.JsonRulesBuilder.AttributeConditionTimeState;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -181,9 +181,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             && valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
     }
 
-
-
-  
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
      * {@link LogicGroup.Operator#AND} to be applied.
@@ -192,7 +189,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     @SuppressWarnings("unchecked")
     public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(
             Supplier<Long> currentMillisProducer, 
-            LogicGroup<AttributePredicate> condition, 
+            LogicGroup<AttributePredicate> condition,
             AttributeConditionTimeState attributeConditionTimeState) {
 
         if (groupIsEmpty(condition)) {
@@ -232,8 +229,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             });
         }
 
-
-
         List<Predicate<AttributeInfo>> combinedAttributePredicates = new ArrayList<>();
         attributePredicates.values().forEach(combinedAttributePredicates::addAll);
 
@@ -244,7 +239,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
                 if (attributeConditionTimeState != null) {
                     for (int i = 0; i < attributePredicates.size(); i++) {
-                        String duration = attributeConditionTimeState.durationMap().get(i);
+                        String duration = attributeConditionTimeState.getDurationMap().get(i);
         
                         if (duration == null) {
                             continue; // skip to the next iteration if there is no duration for the predicate group
@@ -261,16 +256,16 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
                         // if the predicate is a match then set the match start time
                         if (predicateMatch) {
-                            if (attributeConditionTimeState.matchStartTimes().get(i) == null) { // set the match start time if it is not already set
+                            if (attributeConditionTimeState.getMatchStartTimes().get(i) == null) { // set the match start time if it is not already set
                                 long currentTime = currentMillisProducer.get();
-                                attributeConditionTimeState.matchStartTimes().put(i, currentTime);
+                                attributeConditionTimeState.getMatchStartTimes().put(i, currentTime);
                             }
 
-                            if (currentMillisProducer.get() - attributeConditionTimeState.matchStartTimes().get(i) < durationMillis) {
+                            if (currentMillisProducer.get() - attributeConditionTimeState.getMatchStartTimes().get(i) < durationMillis) {
                                 durationsMet = false; 
                             }  
                         } else {
-                            attributeConditionTimeState.matchStartTimes().remove(i);
+                            attributeConditionTimeState.getMatchStartTimes().remove(i);
                         }
                     }   
                 }

@@ -96,7 +96,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
         // Used to store the duration times for the conditions
-        record AttributeConditionTimeState(Map<Integer, String> durationMap, Map<Integer, Long> matchStartTimes) {}
         AttributeConditionTimeState attributeConditionTimeState;
 
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
@@ -171,12 +170,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return false;
                 };
             } else if (ruleCondition.assets != null) {
-
                 // Pull out order, limit and attribute predicates so they can be applied at required times
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
-               
 
                 if (attributePredicates != null && attributePredicates.items != null) {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
@@ -193,8 +190,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
                 ruleCondition.assets.attributes = null;
-                
-      
             } else {
                 throw new IllegalStateException("Invalid rule condition either timer or asset query must be set");
             }
@@ -284,11 +279,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
                     Set<AttributeInfo> matches = assetPredicate.apply(states);
-
-                    if (attributeConditionTimeState != null) {
-                        log(Level.FINE, "Attribute condition time state match start times: " + attributeConditionTimeState.matchStartTimes());
-                        log(Level.FINE, "Attribute condition time state duration map: " + attributeConditionTimeState.durationMap());
-                    }
                 
                     if (matches != null) {
                         matched.addAll(matches);
@@ -308,7 +298,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // Filter out previous un-matches to avoid re-triggering
                     unmatchedAssetStates.removeIf(previouslyUnmatchedAssetStates::contains);
-
                 }
             }
 
@@ -415,6 +404,29 @@ public class JsonRulesBuilder extends RulesBuilder {
                     ", matchedAssetIds=" + matchedAssetIds.size() +
                     ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
                     '}';
+        }
+    }
+
+
+
+    /**
+     * Stores and tracks the durations and start times of attribute condition matches.
+     */
+    public static class AttributeConditionTimeState {
+        private final Map<Integer, String> durationMap;
+        private final Map<Integer, Long> matchStartTimes;
+    
+        public AttributeConditionTimeState(Map<Integer, String> durationMap, Map<Integer, Long> matchStartTimes) {
+            this.durationMap = durationMap;
+            this.matchStartTimes = matchStartTimes;
+        }
+    
+        public Map<Integer, String> getDurationMap() {
+            return durationMap;
+        }
+    
+        public Map<Integer, Long> getMatchStartTimes() {
+            return matchStartTimes;
         }
     }
 

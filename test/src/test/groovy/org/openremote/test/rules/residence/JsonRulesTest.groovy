@@ -693,7 +693,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
     }
 
-    def "Trigger actions based on the duration of an attribute predicate"() {
+    def "Execute actions when attribute conditions match for specified durations"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 0.2)
