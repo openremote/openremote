@@ -11,9 +11,9 @@
                         "operator": "AND",
                         "items": [
                             {
-                                "duration": { 
-                                    "0": "PT15S",
-                                    "1": "PT30S"
+                                "duration": {
+                                    "0": "PT45S",
+                                    "1": "PT90S"
                                 },
                                 "assets": {
                                     "types": [
@@ -42,7 +42,51 @@
                                                 "value": {
                                                     "predicateType": "number",
                                                     "operator": "GREATER_THAN",
-                                                    "value": 90
+                                                    "value": 80
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "operator": "AND",
+                        "items": [
+                            {
+                                "duration": {
+                                    "0": "PT30S",
+                                    "1": "PT60S"
+                                },
+                                "assets": {
+                                    "types": [
+                                        "LightAsset"
+                                    ],
+                                    "attributes": {
+                                        "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "LESS_THAN",
+                                                    "value": 30
+                                                }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 10
                                                 }
                                             }
                                         ]
@@ -67,7 +111,7 @@
                     "attributeName": "brightness"
                 }
             ],
-            "name": "Light Brightness Rule"
+            "name": "Duration Rule"
         }
     ]
 }

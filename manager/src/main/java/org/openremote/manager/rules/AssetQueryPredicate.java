@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.rules.JsonRulesBuilder.RuleConditionState.AttributeConditionTimeState;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
@@ -31,11 +32,9 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,8 +49,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
     final protected List<String> resolvedAssetTypes;
-
-    private static final System.Logger LOG = System.getLogger(AssetQueryPredicate.class.getName() + "." + "AssetQueryPredicate");
 
     public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, AssetQuery query) {
         this.timerService = timerService;
@@ -187,8 +184,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
 
 
-    private static Map<Integer, Long> attributeDurationStartTimes = new ConcurrentHashMap<>();
-
+  
     /**
      * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
      * {@link LogicGroup.Operator#AND} to be applied.
@@ -198,7 +194,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(
             Supplier<Long> currentMillisProducer, 
             LogicGroup<AttributePredicate> condition, 
-            Map<Integer, String> durationMap) {
+            AttributeConditionTimeState attributeConditionTimeState) {
 
         if (groupIsEmpty(condition)) {
             return as -> Collections.emptySet();
@@ -206,16 +202,16 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
         List<Function<Collection<AttributeInfo>, Set<AttributeInfo>>> assetStateMatchers = new ArrayList<>();
-        List<Predicate<AttributeInfo>> attributePredicates = new ArrayList<>();
+        Map<Integer, List<Predicate<AttributeInfo>>> attributePredicates = new HashMap<>();
 
         if (!condition.getItems().isEmpty()) {
             condition.getItems().stream().forEach(p -> {
-         
-                attributePredicates.add((Predicate<AttributeInfo>) (Predicate) asPredicate(currentMillisProducer, p));
+                int index = condition.getItems().indexOf(p);
+                attributePredicates.put(index, new ArrayList<>());
+                attributePredicates.get(index).add((Predicate<AttributeInfo>) (Predicate) asPredicate(currentMillisProducer, p));
 
                 AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                 AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
-                AtomicReference<Predicate<AttributeInfo>> durationPredicate = new AtomicReference<>(assetState -> true);
 
                 if (p.meta != null) {
                     final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
@@ -226,59 +222,77 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                         MetaMap metaItems = (assetState).getMeta();
                         return metaItems.stream().anyMatch(metaItem -> innerMetaPredicate.test(assetState));
                     });
-                    attributePredicates.add(metaPredicate.get());
+                    attributePredicates.get(index).add(metaPredicate.get());
                 }
 
                 if (p.previousValue != null) {
                     Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
                     oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
-                    attributePredicates.add(oldValuePredicate.get());
-                }
-
-
-                int index = condition.getItems().indexOf(p);
-
-                if (durationMap != null && durationMap.containsKey(index)) {
-                    String duration = durationMap.get(index);
-                    long durationMillis = TimeUtil.parseTimeDuration(duration);
-                    durationPredicate.set(assetState -> {
-                        Long startTime = attributeDurationStartTimes.get(index);
-                        if (startTime == null) {
-                            attributeDurationStartTimes.put(index, currentMillisProducer.get());
-                            return false;
-                        }
-
-                        boolean anyOtherPredicateIsFalse = attributePredicates.stream().filter(attributePredicate -> attributePredicate != durationPredicate.get()).anyMatch(attributePredicate -> !attributePredicate.test(assetState));
-                        if (anyOtherPredicateIsFalse) {
-                            attributeDurationStartTimes.remove(index);
-                        }
-
-                        return (currentMillisProducer.get() - startTime) >= durationMillis;
-                    });
-
-                    attributePredicates.add(durationPredicate.get());
+                    attributePredicates.get(index).add(oldValuePredicate.get());
                 }
             });
         }
 
+
+
+        List<Predicate<AttributeInfo>> combinedAttributePredicates = new ArrayList<>();
+        attributePredicates.values().forEach(predicates -> {
+            combinedAttributePredicates.addAll(predicates);
+        });
+
         if (operator == LogicGroup.Operator.AND) {
-            // All predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
                 Set<AttributeInfo> matchedAssetStates = new HashSet<>();
-                boolean allPredicatesMatch = attributePredicates.stream().allMatch(attributePredicate -> {
+                boolean durationsMet = true; 
+
+                if (attributeConditionTimeState != null) {
+                    for (int i = 0; i < attributePredicates.size(); i++) {
+                        String duration = attributeConditionTimeState.durationMap().get(i);
+        
+                        if (duration == null) {
+                            continue; // skip to the next iteration if there is no duration for the predicate group
+                        }
+                        Long durationMillis = TimeUtil.parseTimeDuration(duration);
+
+                        // check whether the predicates are all a match
+                        boolean predicateMatch = attributePredicates.get(i).stream().allMatch(attributePredicate -> {
+                            return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
+                                matchedAssetStates.add(matchedAssetState);
+                                return true;
+                            }).orElse(false);
+                        });
+
+                        // if the predicate is a match then set the match start time
+                        if (predicateMatch) {
+                            if (attributeConditionTimeState.matchStartTimes().get(i) == null) { // set the match start time if it is not already set
+                                long currentTime = currentMillisProducer.get();
+                                attributeConditionTimeState.matchStartTimes().put(i, currentTime);
+                            }
+
+                            if (currentMillisProducer.get() - attributeConditionTimeState.matchStartTimes().get(i) < durationMillis) {
+                                durationsMet = false; 
+                                break;
+                            }  
+                        } else {
+                            attributeConditionTimeState.matchStartTimes().remove(i);
+                        }
+                    }   
+                }
+   
+                boolean allPredicatesMatch = combinedAttributePredicates.stream().allMatch(attributePredicate -> {
                     // Find the first match as an attribute predicate shouldn't match more than one asset state
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
                         matchedAssetStates.add(matchedAssetState);
                         return true;
                     }).orElse(false);
                 });
-                return allPredicatesMatch ? matchedAssetStates : null;
+
+                return  allPredicatesMatch && durationsMet ? matchedAssetStates : null;
             });
         } else {
-            // Any of the predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
                 AtomicReference<AttributeInfo> firstMatch = new AtomicReference<>();
-                boolean anyPredicateMatch = attributePredicates.stream().anyMatch(attributePredicate -> {
+                boolean anyPredicateMatch = combinedAttributePredicates.stream().anyMatch(attributePredicate -> {
                     // Find the first match as an attribute predicate shouldn't match more than one asset state
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
                         firstMatch.set(matchedAssetState);
@@ -292,7 +306,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
         if (condition.groups != null && condition.groups.size() > 0) {
             assetStateMatchers.addAll(
                 condition.groups.stream()
-                    .map(c -> asAttributeMatcher(currentMillisProducer, c, durationMap)).toList()
+                    .map(c -> asAttributeMatcher(currentMillisProducer, c, attributeConditionTimeState)).toList()
             );
         }
 

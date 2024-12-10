@@ -40,7 +40,6 @@ import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.webhook.Webhook;
@@ -96,6 +95,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
+        // Used to store the duration times for the conditions
+        record AttributeConditionTimeState(Map<Integer, String> durationMap, Map<Integer, Long> matchStartTimes) {}
+        AttributeConditionTimeState attributeConditionTimeState;
+
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
@@ -179,7 +182,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
+
+                    // Setup the duration times if the duration map is present
+                    if (ruleCondition.duration != null && !ruleCondition.duration.isEmpty()) {
+                        attributeConditionTimeState = new AttributeConditionTimeState(ruleCondition.duration, new ConcurrentHashMap<>());
+                    }
+
+                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, attributeConditionTimeState);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -274,8 +283,12 @@ public class JsonRulesBuilder extends RulesBuilder {
                 results.put(false, unmatched);
 
                 unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
-                    LOG.info("Applying asset predicate to " + states.size() + " asset states");
                     Set<AttributeInfo> matches = assetPredicate.apply(states);
+
+                    if (attributeConditionTimeState != null) {
+                        log(Level.FINE, "Attribute condition time state match start times: " + attributeConditionTimeState.matchStartTimes());
+                        log(Level.FINE, "Attribute condition time state duration map: " + attributeConditionTimeState.durationMap());
+                    }
                 
                     if (matches != null) {
                         matched.addAll(matches);

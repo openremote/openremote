@@ -765,9 +765,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "time advances 5 minutes"
         advancePseudoClock(5, TimeUnit.MINUTES, container)
 
-        then: "the brightness should be 91"
+        then: "the brightness should be 55 because of the rule action"
         conditions.eventually {
-            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 91
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            assert lightAsset.getAttribute("brightness").get().getValue().orElse(0) == 55
         }
 
 
