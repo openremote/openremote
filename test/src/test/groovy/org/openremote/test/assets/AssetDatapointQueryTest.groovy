@@ -381,7 +381,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
         /* ------------------------- */
 
-        when: "the OR_DATA_POINTS_MAX_QUERY_POINTS environment variable is updated to 2"
+        when: "the OR_DATA_POINTS_QUERY_LIMIT environment variable is updated to 2"
         assetDatapointService.maxAmountOfQueryPoints = 2
 
         and: "the same datapoints are being requested"

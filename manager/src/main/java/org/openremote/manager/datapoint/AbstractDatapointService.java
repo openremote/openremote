@@ -62,7 +62,7 @@ import static org.openremote.container.util.MapAccess.getInteger;
  */
 public abstract class AbstractDatapointService<T extends Datapoint> implements ContainerService {
 
-    public static final String OR_DATA_POINTS_MAX_QUERY_POINTS = "OR_DATA_POINTS_MAX_QUERY_POINTS";
+    public static final String OR_DATA_POINTS_QUERY_LIMIT = "OR_DATA_POINTS_QUERY_LIMIT";
     public static final int PRIORITY = AssetStorageService.PRIORITY + 100;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -82,7 +82,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         scheduledExecutorService = container.getScheduledExecutor();
-        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_QUERY_POINTS, 0);
+        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 0);
     }
 
     @Override
