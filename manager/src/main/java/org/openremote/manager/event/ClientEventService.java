@@ -104,7 +104,7 @@ import static org.openremote.model.Constants.*;
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
+    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000&keepAlive=false"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
@@ -193,6 +193,9 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                         } else if (principal != null) {
                             LOG.log(INFO, "Unsupported user principal type: " + principal);
                         }
+
+                        // Set an idle timeout value
+                        webSocketChannel.setIdleTimeout(30000);
 
                         // Push auth and realm into channel for future use
                         webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
