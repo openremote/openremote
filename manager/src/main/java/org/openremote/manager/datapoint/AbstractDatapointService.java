@@ -227,7 +227,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 return ((Number) countQuery.getSingleResult()).intValue();
             });
             if (amount > maxAmountOfQueryPoints) {
-                throw new IllegalStateException("Could not query data points for " + assetId + ". It exceeds the data limit.");
+                throw new IllegalStateException("Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.");
             }
         }
 
