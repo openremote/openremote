@@ -21,7 +21,7 @@ BEGIN
             RAISE EXCEPTION 'Circular reference. Tried to set parent to % for row %, but % is already in parent path %',
                 NEW.parent_id, NEW.id, NEW.id, ppath;
         ELSEIF ppath IS NULL AND NEW.parent_id IS NULL THEN
-           NEW.path = NULL;
+           NEW.path = cnode;
         ELSEIF ppath IS NULL THEN
             RAISE EXCEPTION 'Invalid parent_id %', NEW.parent_id;
         ELSE
