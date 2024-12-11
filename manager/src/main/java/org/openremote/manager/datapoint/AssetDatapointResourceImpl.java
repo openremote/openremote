@@ -133,7 +133,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName)).toArray(ValueDatapoint[]::new);
-        } catch (IllegalStateException ex) {
+        } catch (IllegalStateException | IllegalArgumentException ex) {
             throw new BadRequestException(ex);
         } catch (UnsupportedOperationException ex) {
             throw new NotSupportedException(ex);

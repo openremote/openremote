@@ -28,9 +28,9 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         if (isNumber) {
-            return "select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
+            return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), cast(value as double precision), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
         } else if (isBoolean) {
-            return "select * from public.unnest((select public.lttb(timestamp::timestamptz, (case when VALUE::text::boolean is true then 1 else 0 end), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
+            return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), (case when cast(cast(value as text) as boolean) is true then 1 else 0 end), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
         } else {
             throw new IllegalStateException("Query of type LTTB requires either a number or a boolean attribute.");
         }
