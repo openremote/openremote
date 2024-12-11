@@ -3,6 +3,7 @@ import { css } from "lit";
 export const PickerStyle = css`
 input{
     border: 0;
+    height: max-content;
 }
 textarea{
     min-width: 150px;
@@ -12,7 +13,7 @@ textarea, input[type=text], input[type=number], select{
     font-family: inherit;
     padding: 10px;
     border-radius: var(--roundness);    
-    width: auto;
+    width: fit-content;
     border: none;
 }
 .attribute-label{

@@ -171,6 +171,14 @@ public class RulesDemoSetup extends ManagerSetup {
             realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
+	    try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/SumValues.flow")) {
+		    String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+		    Ruleset ruleset = new RealmRuleset(
+				    keycloakDemoSetup.realmCity.getName(), "Sum Values Test", Ruleset.Lang.FLOW, rules
+		    );
+		    realmSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
+	    }
+
         /// Manufacturer rules
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/manufacturer/FlowPerMeter.flow")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
