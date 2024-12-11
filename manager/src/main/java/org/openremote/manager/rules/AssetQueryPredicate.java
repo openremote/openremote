@@ -235,11 +235,12 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
         if (!condition.getItems().isEmpty()) {
             condition.getItems().stream().forEach(p -> {
-                Long duration = null;
                 int index = condition.getItems().indexOf(p);
-                if (conditionDuration != null) {
-                    duration = TimeUtil.parseTimeDuration(conditionDuration.get(index));
-                }
+                Long duration =  Optional.ofNullable(conditionDuration)
+                        .map(durations -> durations.get(index))
+                        .map(TimeUtil::parseTimeDuration)
+                        .orElse(null);;
+
                 attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p, duration));
 
                 AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
