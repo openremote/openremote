@@ -30,6 +30,7 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
@@ -690,6 +691,234 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), emailNotificationHandler)
             notificationService.notificationHandlerMap.put(pushNotificationHandler.getTypeName(), pushNotificationHandler)
         }
+    }
+
+    def "Trigger actions when attribute conditions match for specified durations"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def timerService = container.getService(TimerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "the pseudo clock is stopped"
+        stopPseudoClock()
+
+        when: "a light asset is added to the building realm"
+        def lightId = UniqueIdentifierGenerator.generateId("TestLight")
+        def lightAsset = new LightAsset("TestLight")
+                .setId(lightId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+                .setBrightness(100)
+                .setNotes("TurnOff")
+                .setOnOff(true)
+
+     
+        def ruleState = new MetaItem<>(MetaItemType.RULE_STATE)
+        lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
+        lightAsset.getAttributes().get("onOff").get().addMeta(ruleState)
+        lightAsset.getAttributes().get("notes").get().addMeta(ruleState)
+        assetStorageService.merge(lightAsset)
+
+        then: "the light asset should be present, brightness should be 100, notes should be TurnOff and onOff should be true"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light != null
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert light.getAttribute("notes").get().getValue().orElse("") == "TurnOff"
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == true
+        }
+
+        when: "a thing asset is added to the building realm"
+        def thingId = UniqueIdentifierGenerator.generateId("TestThing")
+        def thingAsset = new ThingAsset("TestThing")
+                .setId(thingId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+                .setNotes("Test")
+        thingAsset.getAttributes().get("notes").get().addMeta(ruleState)
+        thingAsset = assetStorageService.merge(thingAsset)
+
+        then: "the thing asset should be present, notes should be Test"
+        conditions.eventually {
+            def thing = assetStorageService.find(thingId)
+            assert thing != null
+            assert thing.getAttribute("notes").get().getValue().orElse("") == "Test"
+        }
+
+
+
+        // RuleSet: IF light onOff true for 3 minutes AND notes equals TurnOff for 5 minutes AND brightness higher than 0 for 10 minutes AND thingAsset notes is Test THEN set brightness to 0 and turn off the light
+        // OR IF light has brightness higher than 0 for 10 minutes THEN set brightness to 0 and turn off the light
+        when: "a ruleset with a duration map has been added"
+        def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonAttributeDurationRule.json").text
+        def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Duration Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        def lastFireTimestamp = 0
+
+        then: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 4 // 4 additional rule states
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances 1 minute"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should be 100 since not all durations have been met"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+
+        when: "time advances for 5 minutes"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should still be 100 since it hasn't been higher than 0 for 10 minutes"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "the brightness gets changed to 0 to cause the durations starting time to be reset"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(0)
+        assetStorageService.merge(lightAsset)
+
+        then: "the brightness value should be 0"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+        }
+
+        //advance by 3 seconds to make sure the rule engine has fired (causing the start time to be updated for brightness greater than 0)
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+
+        when: "brightness gets set to 100 again"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(100)
+        assetStorageService.merge(lightAsset)
+
+        then: "the brightness value should be 100"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+        }
+
+        when: "time advances for 5 minutes and brightness gets updated to 99"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(99)
+        assetStorageService.merge(lightAsset)
+
+        then: "the brightness value should be 99"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 99
+        }
+
+        when: "time advances for 6 minutes"
+        advancePseudoClock(6, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should be 0 and since the conditions are met and brightness was above 0 for 10 minutes"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == false
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+
+        when: "time advances for 10 minutes"
+        advancePseudoClock(10, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should still be 0 and the light should still be off"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == false
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+
+        when: "light gets turned on again with 100 brightness and notes has been set to empty"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(100)
+        lightAsset.getAttribute("notes").get().setValue("")
+        lightAsset.getAttribute("onOff").get().setValue(true)
+        assetStorageService.merge(lightAsset)
+
+
+        then: "the light asset should be present, brightness should be 100, notes should be empty and onOff should be true"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light != null
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == true
+        }
+
+        
+        when: "time advances for 5 minutes"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should be 100"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == true
+            assert light.getAttribute("notes").get().getValue().orElse(null) == ""
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+
+        when: "time advances another 10 minutes"
+        advancePseudoClock(10, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should still be 100"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == true
+            assert light.getAttribute("notes").get().getValue().orElse(null) == ""
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "time advances another 20 minutes"
+        advancePseudoClock(20, TimeUnit.MINUTES, container)
+
+        then: "the brightness value should be 0 and the light asset should be turned off since the OR condition of brightness above 0 for 30 minutes has been met"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            assert light.getAttribute("onOff").get().getValue().orElse(false) == false
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
     }
 
     def "Trigger actions based on the position of the sun"() {

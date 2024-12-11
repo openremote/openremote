@@ -40,7 +40,6 @@ import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.webhook.Webhook;
@@ -95,6 +94,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
+
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
@@ -109,24 +109,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-            if (!TextUtil.isNullOrEmpty(ruleCondition.duration)) {
-                try {
-                    final long duration = TimeUtil.parseTimeDuration(ruleCondition.duration);
-                    AtomicLong nextExecuteMillis = new AtomicLong(timerService.getCurrentTimeMillis());
-
-                    timePredicate = (time) -> {
-                        long nextExecute = nextExecuteMillis.get();
-                        if (time >= nextExecute) {
-                            nextExecuteMillis.set(nextExecute + duration);
-                            return true;
-                        }
-                        return false;
-                    };
-                } catch (Exception e) {
-                    log(Level.SEVERE, "Failed to parse rule condition duration expression: " + ruleCondition.duration, e);
-                    throw e;
-                }
-            } else if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
+             if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
                 try {
                     CronExpression timerExpression = new CronExpression(ruleCondition.cron);
                     timerExpression.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -184,7 +167,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                     return false;
                 };
             } else if (ruleCondition.assets != null) {
-
                 // Pull out order, limit and attribute predicates so they can be applied at required times
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
@@ -194,7 +176,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -288,6 +270,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
                     Set<AttributeInfo> matches = assetPredicate.apply(states);
+                
                     if (matches != null) {
                         matched.addAll(matches);
                         unmatched.addAll(states.stream().filter(matches::contains).collect(Collectors.toSet()));
@@ -306,7 +289,6 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // Filter out previous un-matches to avoid re-triggering
                     unmatchedAssetStates.removeIf(previouslyUnmatchedAssetStates::contains);
-
                 }
             }
 
