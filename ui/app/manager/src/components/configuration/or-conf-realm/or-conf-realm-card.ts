@@ -38,6 +38,8 @@ import { DialogAction, OrMwcDialog, showDialog } from "@openremote/or-mwc-compon
 import {when} from 'lit/directives/when.js';
 import ISO6391 from 'iso-639-1';
 
+declare const MANAGER_URL: string
+
 @customElement("or-conf-realm-card")
 export class OrConfRealmCard extends LitElement {
 
@@ -215,7 +217,7 @@ export class OrConfRealmCard extends LitElement {
     protected _getImagePath(file:File, fileName: string){
         if (file.type.startsWith("image/")){
             const extension = file.name.slice(file.name.lastIndexOf('.'), file.name.length);
-            return "/images/" + this.name + "/" + fileName + extension
+            return this.name + "/" + fileName + extension
         }
         return null
     }
@@ -225,15 +227,16 @@ export class OrConfRealmCard extends LitElement {
     protected async _setImageForUpload(file: File, fileName: string) {
         const path = this._getImagePath(file, fileName)
         if (path){
-            this.files[path] = {
+            this.files[fileName] = {
+                name: fileName,
                 path: path,
                 contents: await Util.blobToBase64(file),
             } as FileInfo;
             this.realm[fileName] = path
-            this[fileName] = this.files[path].contents
+            this[fileName] = this.files[fileName].contents
             this.requestUpdate()
             this.notifyConfigChange(this.realm);
-            return this.files[path].contents;
+            return this.files[fileName].contents;
         }
     }
 
@@ -287,6 +290,7 @@ export class OrConfRealmCard extends LitElement {
     render() {
         const colors = this._getColors();
         const app = this;
+        const managerUrl = (MANAGER_URL || "");
 
         // On an empty search; return the common language as set in DEFAULT_LANGUAGES
         // If searching, compare strings using lowercase. (with no maximum)
@@ -320,13 +324,13 @@ export class OrConfRealmCard extends LitElement {
                         <div class="d-inline-flex">
                             <or-file-uploader .title="${i18next.t('configuration.logo')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logo")}"
-                                              .src="${app.logo ? app.logo : app.realm.logo}"></or-file-uploader>
+                                              .src="${app.logo ? app.logo : app.realm.logo}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${i18next.t('configuration.logoMobile')}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "logoMobile")}"
-                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}"></or-file-uploader>
+                                              .src="${app.logoMobile ? app.logoMobile : app.realm.logoMobile}" .managerUrl="${managerUrl}"></or-file-uploader>
                             <or-file-uploader .title="${html`Favicon`}"
                                               @change="${async (e: CustomEvent) => await app._setImageForUpload(e.detail.value[0], "favicon")}"
-                                              .src="${app.favicon ? app.favicon : app.realm.favicon}"></or-file-uploader>
+                                              .src="${app.favicon ? app.favicon : app.realm.favicon}" .managerUrl="${managerUrl}"></or-file-uploader>
                         </div>
                     </div>
                     <div class="color-group">
