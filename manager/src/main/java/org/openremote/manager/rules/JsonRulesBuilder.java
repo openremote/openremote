@@ -398,10 +398,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
     }
 
-
-
-
-
     /**
      * Stores the state of the overall rule and each {@link RuleCondition}.
      */
