@@ -824,19 +824,22 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
         }
 
-        when: "time advances for 5 minutes"
+        when: "time advances for 5 minutes and brightness gets updated to 99"
         advancePseudoClock(5, TimeUnit.MINUTES, container)
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(99)
+        assetStorageService.merge(lightAsset)
 
-        then: "the brightness value should be 100 since brightness attribute match starting time was reset"
+        then: "the brightness value should be 99"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
-            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 99
         }
 
         when: "time advances for 6 minutes"
         advancePseudoClock(6, TimeUnit.MINUTES, container)
 
-        then: "the brightness value should be 0 and the light should be off since the conditions are met"
+        then: "the brightness value should be 0 and since the conditions are met and brightness was above 0 for 10 minutes"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 0

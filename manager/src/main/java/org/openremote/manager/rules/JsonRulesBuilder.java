@@ -98,7 +98,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
-        AttributeConditionTimeState attributeConditionTimeState;
 
         @SuppressWarnings("ConstantConditions")
         public RuleConditionState(RuleCondition ruleCondition, boolean trackUnmatched, TimerService timerService) throws Exception {
@@ -177,13 +176,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-
-                    // Setup the duration times if the duration map is present
-                    if (ruleCondition.duration != null && !ruleCondition.duration.isEmpty()) {
-                        attributeConditionTimeState = new AttributeConditionTimeState(ruleCondition.duration, new ConcurrentHashMap<>());
-                    }
-
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, attributeConditionTimeState);
+                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -407,26 +400,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
 
 
-    /**
-     * Stores and tracks the durations and start times of attribute condition matches.
-     */
-    public static class AttributeConditionTimeState {
-        private final Map<Integer, String> durationMap;
-        private final Map<Integer, Long> matchStartTimes;
-    
-        public AttributeConditionTimeState(Map<Integer, String> durationMap, Map<Integer, Long> matchStartTimes) {
-            this.durationMap = durationMap;
-            this.matchStartTimes = matchStartTimes;
-        }
-    
-        public Map<Integer, String> getDurationMap() {
-            return durationMap;
-        }
-    
-        public Map<Integer, Long> getMatchStartTimes() {
-            return matchStartTimes;
-        }
-    }
+
 
     /**
      * Stores the state of the overall rule and each {@link RuleCondition}.
