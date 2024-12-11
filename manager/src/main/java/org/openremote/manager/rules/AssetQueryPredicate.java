@@ -264,13 +264,10 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                 }
             });
         }
-
  
         if (operator == LogicGroup.Operator.AND) {
             assetStateMatchers.add(assetStates -> {
                 Set<AttributeInfo> matchedAssetStates = new HashSet<>();
-
-
                 boolean allPredicatesMatch = attributePredicates.stream().allMatch(attributePredicate -> {
                     // Find the first match as an attribute predicate shouldn't match more than one asset state
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
@@ -278,7 +275,6 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                         return true;
                     }).orElse(false);
                 });
-
                 return  allPredicatesMatch ? matchedAssetStates : null;
             });
         } else {
