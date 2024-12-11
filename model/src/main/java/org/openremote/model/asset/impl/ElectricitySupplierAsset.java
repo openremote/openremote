@@ -21,12 +21,10 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AbstractNameValueHolder;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import jakarta.persistence.Entity;
+
 import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
@@ -67,6 +65,7 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
             .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
 
+    public static final AttributeDescriptor<String> CONTRACT_EAN = new AttributeDescriptor<>("contractEAN", ValueType.TEXT);
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
@@ -147,5 +146,9 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public ElectricitySupplierAsset setEnergyAutarky(Double value) {
         getAttributes().getOrCreate(ENERGY_AUTARKY).setValue(value);
         return this;
+    }
+
+    public Optional<String> getContractEan() {
+        return getAttribute(CONTRACT_EAN).flatMap(AbstractNameValueHolder::getValue);
     }
 }

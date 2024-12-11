@@ -59,6 +59,8 @@ dependencies {
     implementation "io.prometheus:simpleclient_httpserver:$prometheusVersion"
 
     implementation "com.github.mwiede:jsch:$jSchVersion"
+
+    implementation "org.lfenergy.shapeshifter:shapeshifter-core:$shapeshifterVersion"
 }
 
 jar {
