@@ -7,7 +7,7 @@ dependencies {
 
     api resolveProject(":model")
 
-    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    api "org.apache.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
 
     // SLF4J JUL provider
@@ -15,10 +15,10 @@ dependencies {
     // Log4J redirect to SLF4J
     api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "io.undertow:undertow-servlet:$undertowVersion"
+    api "jakarta.servlet:jakarta.servlet-api:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
-        exclude group: "io.undertow",  module: "undertow-servlet-jakarta"
+        exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
     }
     api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
     api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
