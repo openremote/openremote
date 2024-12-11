@@ -393,5 +393,8 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
 
         then: "no points should be returned"
         thrown(IllegalStateException)
+
+        cleanup: "Remove the limit on datapoint querying"
+        assetDatapointService.maxAmountOfQueryPoints = 0
     }
 }
