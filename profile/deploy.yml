@@ -336,7 +336,7 @@ services:
       # OR_DATA_POINTS_MAX_AGE_DAYS: 30
 
       # Configure the limit of data points that can be queried. Disabled by default.
-      OR_DATA_POINTS_QUERY_LIMIT: 3
+      # OR_DATA_POINTS_QUERY_LIMIT: 1000000
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
