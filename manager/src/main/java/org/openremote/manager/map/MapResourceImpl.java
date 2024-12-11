@@ -68,7 +68,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
         if (tile != null) {
             return tile;
         } else {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
     }
 }
