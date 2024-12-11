@@ -28,6 +28,7 @@ import org.openremote.agent.protocol.mail.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.OutdatedAttributeEvent
 import org.openremote.manager.event.ClientEventService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.Agent
@@ -106,7 +107,11 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         Consumer<AttributeEvent> eventConsumer = it -> {
             attributeEvents.add(it)
         }
+        Consumer<OutdatedAttributeEvent> outdatedEventConsumer = it -> {
+            attributeEvents.add(it.event)
+        }
         clientEventService.addSubscription(AttributeEvent.class,  null, eventConsumer)
+        clientEventService.addSubscription(OutdatedAttributeEvent.class, null, outdatedEventConsumer)
 
         and: "some mail messages exist"
         sendMessage("from@localhost")
@@ -237,6 +242,7 @@ class MailClientProtocolTest extends Specification implements ManagerContainerTr
         cleanup: "the event subscription is removed"
         if (clientEventService != null) {
             clientEventService.removeSubscription(eventConsumer)
+            clientEventService.removeSubscription {outdatedEventConsumer}
         }
         if (asset != null) {
             assetStorageService.delete([agent.id, asset.id])
