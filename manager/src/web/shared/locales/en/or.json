@@ -781,7 +781,14 @@
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
-    "addMapCustomization" : "Add map settings"
+    "addMapCustomization" : "Add map settings",
+    "global": {
+      "mapServer": "Custom Map Server",
+      "mapServerDescription": "Configure a map server. The URL must specify the tile coordinates using {z}, {x} and {y}. To configure an API key in the url include {secret}.",
+      "mapServerPlaceholder": "Map Server URL",
+      "apiKey": "API Key",
+      "apiKeyDescription": "Set an API key for the map server."
+    }
   },
   "mqttSessions": "MQTT sessions",
   "address": "Address",

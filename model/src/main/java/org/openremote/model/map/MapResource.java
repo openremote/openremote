@@ -23,9 +23,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.manager.MapRealmConfig;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.Map;
@@ -41,7 +45,7 @@ public interface MapResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(operationId = "saveSettings", summary = "Update map settings")
-    Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig);
+    Object saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
      * Returns style used to initialise Mapbox GL
@@ -70,4 +74,13 @@ public interface MapResource {
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+    /**
+     * Gets vector tile data for Mapbox GL from external tile server
+     */
+    @GET
+    @Produces("application/vnd.mapbox-vector-tile")
+    @Path("external/tile/{zoom}/{column}/{row}")
+    @Operation(operationId = "getExternalTile", summary = "Retrieve the vector tile data for Mapbox GL")
+    void getExternalTile(@Context HttpServletRequest request, @Context HttpServletResponse response, @PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
 }
