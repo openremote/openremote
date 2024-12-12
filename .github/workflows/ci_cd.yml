@@ -59,15 +59,11 @@ on:
   push:
     branches:
       - 'master'
-    tags-ignore:
-      - '*.*'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
   # PR
   pull_request:
-
-  # When a release is published
-  release:
-    types: [published]
 
   # Manual trigger
   workflow_dispatch:
@@ -93,7 +89,7 @@ on:
       secrets:
         SECRETS:
           required: false
-  
+
 jobs:
 
   build:
@@ -113,17 +109,17 @@ jobs:
         run: |
           import os
           import json
-          
+
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
-          eventName = os.getenv("EVENT_NAME")
+          eventName = os.getenv("GITHUB_EVENT_NAME")
 
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
           if secrets is not None and secrets != '':
-            secrets = json.loads(secrets)          
+            secrets = json.loads(secrets)
           if eventName == 'workflow_call' and callerInputs is not None and callerInputs != 'null':
             os.system(f"echo 'Processing caller inputs'")
             inputs = json.loads(callerInputs)
@@ -136,7 +132,7 @@ jobs:
             secrets = json.loads(secrets['SECRETS'])
 
           # Iterate over secrets then inputs and assign them as outputs on this step
-          
+
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
               os.system(f"echo 'Outputting secret: {key}'")
@@ -159,7 +155,6 @@ jobs:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
           SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
-          EVENT_NAME: ${{ github.event_name }}
 
       - name: Public IP
         id: ip-address
@@ -168,8 +163,8 @@ jobs:
           set -e
           PUBLIC_IPV4=$(curl -sf v4.ident.me 2>/dev/null || true)
           PUBLIC_IPV6=$(curl -sf v6.ident.me 2>/dev/null || true)
-          echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT 
-          echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT 
+          echo "ipv4=$PUBLIC_IPV4" >> $GITHUB_OUTPUT
+          echo "ipv6=$PUBLIC_IPV6" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -227,11 +222,9 @@ jobs:
       - name: Check if main repo
         id: is_main_repo
         run: |
-          if [ $REPO_NAME == 'openremote/openremote' ]; then
+          if [ $GITHUB_REPOSITORY == 'openremote/openremote' ]; then
             echo "value=true" >> $GITHUB_OUTPUT
           fi
-        env:
-          REPO_NAME: ${{ github.repository }}
 
       - name: Check deployment build.gradle
         id: check_deployment_gradle
@@ -277,8 +270,8 @@ jobs:
           import json
           import os
 
-          eventName = os.getenv('EVENT_NAME')
-          refName = os.getenv('REF_NAME')
+          eventName = os.getenv('GITHUB_EVENT_NAME')
+          refName = os.getenv('GITHUB_REF_NAME')
           pushTag = None
           deployTag = None
           deployEnvironment = None
@@ -298,9 +291,6 @@ jobs:
                   os.system(f"docker buildx imagetools inspect --raw openremote/manager:{key} > ~/manager-tags-new/{key}")
               os.system("echo 'Tag manifests generated:'")
               os.system("find ~/manager-tags-new")
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
 
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
@@ -314,15 +304,16 @@ jobs:
             ${{ runner.os }}-manager-tags---
 
       - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
         id: ci-cd-output
         shell: python
         run: |
           import json
           import os
 
-          eventName = os.getenv('EVENT_NAME')
-          refName = os.getenv('REF_NAME')
+          eventName = os.getenv('GITHUB_EVENT_NAME')
+          refName = os.getenv('GITHUB_REF_NAME')
+          refType = os.getenv('GITHUB_REF_TYPE')
           isMainRepo = os.getenv('IS_MAIN_REPO')
           deploys = None
           dockerPublishTags = None
@@ -336,6 +327,8 @@ jobs:
 
           if eventName == "schedule":
             eventName = "managerDockerPush"
+          elif refType == "tag":
+            eventName = "release"
 
           if data is not None and eventName in data:
             eventConfig = data[eventName]
@@ -371,8 +364,7 @@ jobs:
                 else:
                   os.system(f"echo 'Manager docker tag has not changed: {key}'")
 
-            elif eventName == "push" and refName in eventConfig:
-
+            elif eventName == "push" and refType == "branch" and refName in eventConfig:
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
                 deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
@@ -434,8 +426,6 @@ jobs:
             os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
 
       - name: Copy new tag cache to old
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
@@ -448,7 +438,7 @@ jobs:
         run: |
           deployments=$DEPLOYMENTS
 
-          if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
+          if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
               tag='#ref'
@@ -457,7 +447,6 @@ jobs:
           fi
           echo "value=$deployments" >> $GITHUB_OUTPUT
         env:
-          EVENT_NAME: ${{ github.event_name }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
           INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
@@ -503,7 +492,7 @@ jobs:
 
       - name: Define maven publish command
         id: maven-publish-command
-        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.event_name != 'release' && github.event_name != 'pull_request') }}
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.ref_type != 'tag' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
           command="./gradlew publishToSonatype closeSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
@@ -887,24 +876,24 @@ jobs:
                       os.system(f"echo '{value}'\"'\"'' >> {envFile}")
                   else:
                       os.system(f"echo '{key}='\"'\"'{value}'\"'\"'' >> {envFile}")
-            
+
             # Output new line
             os.system(f"echo '\n' >> {envFile}")
-          
+
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
               os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
               os.system("cat .ci_cd/env/.env >> temp/env")
               # Output new line
               os.system(f"echo '\n' >> {envFile}")
-          
+
             # Output environment specific env file if exists
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
-              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")          
+              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
               # Output new line
               os.system(f"echo '\n' >> {envFile}")
-          
+
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
               os.putenv("CIDR", ipv4 + '/32')
@@ -927,7 +916,6 @@ jobs:
             sys.exit(1)
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
-          REPO_NAME: ${{ github.repository }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
