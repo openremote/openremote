@@ -1,7 +1,12 @@
 /*
+ * Drop existing function and trigger
+ */
+DROP FUNCTION update_asset_parent_info cascade;
+
+/*
  * Fix update_asset_parent_info so descendant paths are updated when an asset is re-parented
  */
-CREATE OR REPLACE FUNCTION update_asset_parent_info() RETURNS TRIGGER AS $$
+CREATE FUNCTION update_asset_parent_info() RETURNS TRIGGER AS $$
 DECLARE
     ppath ltree;
     cnode ltree;
@@ -50,3 +55,10 @@ $$ LANGUAGE 'sql' STRICT IMMUTABLE;
  * Update all existing asset paths to ensure they are accurate
  */
 UPDATE ASSET SET PATH = text2ltree(array_to_string(array_reverse(GET_ASSET_TREE_PATH(id)), '.'));
+
+/*
+ * Reinsert function
+ */
+CREATE TRIGGER asset_parent_info_tgr
+    BEFORE INSERT OR UPDATE ON ASSET
+                         FOR EACH ROW EXECUTE PROCEDURE update_asset_parent_info();
