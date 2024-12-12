@@ -31,7 +31,7 @@ import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
 import { ifDefined } from "lit/directives/if-defined.js";
 import {when} from 'lit/directives/when.js';
-import {getWhenTypesMenu} from "./or-rule-condition";
+import moment from "moment";
 
 // language=CSS
 const style = css`
@@ -275,6 +275,32 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected attributeDurationTemplate(durationMap: Map<number, string | undefined>, index: number, onAdd: (index: number) => void, onChange: (index: number, duration: string | undefined) => void) {
+        if(durationMap.has(index)) {
+            const isoDuration = durationMap.get(index);
+            const duration = isoDuration ? moment.duration(isoDuration) : undefined;
+            return html`
+                <or-mwc-input type="${InputType.NUMBER}" min="0" .readonly="${this.readonly || false}"
+                              .value="${duration?.asMinutes()}" label="${i18next.t("rulesEditorDuration")}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                  const newDuration = moment.duration(ev.detail.value, "minutes");
+                                  if(newDuration.asMinutes() > 0) {
+                                      onChange(index, newDuration.toISOString());
+                                  } else {
+                                      onChange(index, undefined);
+                                  }
+                              }}"
+                ></or-mwc-input>
+            `;
+        } else {
+            return html`
+                <or-mwc-input type="${InputType.BUTTON}" .readonly="${this.readonly || false}" icon="clock-plus-outline"
+                              @or-mwc-input-changed="${() => onAdd(index)}"
+                ></or-mwc-input>
+            `;
+        }
+    }
+
     static get styles() {
         return style;
     }
@@ -290,6 +316,30 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
     protected get query() {
         return this.condition.assets!;
+    }
+
+    /**
+     * Returns a Map<number, string> with all configured durations of a {@link RuleCondition}.
+     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+     */
+    protected get duration(): Map<number, string | undefined> {
+        if(this.condition?.duration) {
+            return new Map(Object.entries(this.condition.duration).map(([key, value]) => [Number(key), value as string]));
+        } else {
+            return new Map<number, string | undefined>();
+        }
+    }
+
+    /**
+     * Updates the duration property in {@link condition}, based on the {@link durationMap} parameter.
+     * The number represents an index of the attribute array, and the string an ISO8601 duration expression.
+     */
+    protected set duration(durationMap: Map<number, string | undefined>) {
+        if(durationMap.size > 0) {
+            this.condition.duration = Object.fromEntries(durationMap);
+        } else {
+            this.condition.duration = undefined;
+        }
     }
 
     protected render() {
@@ -361,6 +411,17 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
                     const showAddAttribute = !this.readonly && (!this.config || !this.config.controls || this.config.controls.hideWhenAddAttribute !== true);
                     
+                    const onDurationAdd = (index: number) => {
+                        this.duration = this.duration.set(index, undefined);
+                        this.requestUpdate();
+                    };
+                    const onDurationChange = (index: number, duration: string | undefined) => {
+                        console.debug("Updating duration of rule condition to ", duration);
+                        this.duration = this.duration.set(index, duration);
+                        this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                        this.requestUpdate();
+                    };
+                    
                     return html`
                         <or-mwc-input id="idSelect" class="min-width filledSelect" type="${InputType.SELECT}" .readonly="${this.readonly || false}" .label="${i18next.t("asset")}" 
                                       .options="${idOptions}" .value="${idValue}" .searchProvider="${searchProvider}"
@@ -372,7 +433,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                                     ${index > 0 ? html`<or-icon class="small" icon="ampersand"></or-icon>` : ``}
                                     <div class="attribute">
                                         <div>
-                                    ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributePredicateEditorTemplate(assetTypeInfo, idValue !== "*" ? this._assets!.find((asset) => asset.id === idValue) : undefined, attributePredicate)}
+                                            ${this.attributeDurationTemplate(this.duration, index, onDurationAdd, onDurationChange)}
                                         </div>
                                     ${showRemoveAttribute ? html`
                                         <button class="button-clear" @click="${() => this.removeAttributePredicate(this.query!.attributes!, attributePredicate)}"><or-icon icon="close-circle"></or-icon></input>
