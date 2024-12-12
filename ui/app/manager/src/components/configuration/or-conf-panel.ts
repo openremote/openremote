@@ -41,7 +41,9 @@ export class OrConfPanel extends LitElement {
 
     protected isMapConfig(object: unknown): boolean {
         const keys = Object.keys(object);
-        return this.realmOptions.filter((o) => keys.includes(o.name)).length === keys.length;
+        // Instead of looking for the exact same entries, ensure that at least one of them can be mapped.
+        // This also shows realm configs that don't have parent realms, but are still existing in the mapsettings.json
+        return this.realmOptions.filter((o) => keys.includes(o.name)).length > 0;
     }
 
     protected isManagerConfig(object: any): object is ManagerAppConfig {
