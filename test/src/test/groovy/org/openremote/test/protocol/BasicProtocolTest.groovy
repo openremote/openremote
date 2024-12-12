@@ -288,7 +288,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         and: "the protocol instance and agent should be removed"
         conditions.eventually {
             assert agentService.getProtocolInstance(mockAgent2.id) == null
-            assert (MockProtocol)agentService.getProtocolInstance(mockAgent2.id) == null
         }
 
         when: "the mock protocol tries to update the plain readonly attribute"
