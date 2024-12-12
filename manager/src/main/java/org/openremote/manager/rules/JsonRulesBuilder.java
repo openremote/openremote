@@ -185,7 +185,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     attributePredicates.groups = null;
                     if (attributePredicateHasDurationCondition) {
                         durations = ruleCondition.duration;
-                        assetDurationPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems(), ruleCondition.duration);
+                        assetDurationPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems());
                     } else {
                         assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
                     }
@@ -1483,14 +1483,12 @@ public class JsonRulesBuilder extends RulesBuilder {
      * Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR}
      */
     @SuppressWarnings("unchecked")
-    public static Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates, Map<Integer, String> durations) {
+    public static Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates) {
         if (attributePredicates == null || attributePredicates.isEmpty()) {
             return as -> Collections.EMPTY_SET;
         }
 
-        LogicGroup.Operator operator = LogicGroup.Operator.AND;
         List<Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>>> assetStateMatchers = new ArrayList<>();
-
         // to keep track of the predicates for each index so we can determine the duration of the predicate at a later stage
         Map<Integer, List<Predicate<AttributeInfo>>> predicateMap = new HashMap<>();
 
@@ -1523,29 +1521,26 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
         }
 
-        if (operator == LogicGroup.Operator.AND) {
-            assetStateMatchers.add(assetStates -> {
-                Set<Pair<AttributeInfo, Integer>> matchedAssetStates = new HashSet<>();
-                
-                for (int i = 0; i < predicateMap.size(); i++) {
-                    final int index = i;
-                    List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
-                    
-                    boolean predicateMatch = predicates.stream().allMatch(attributePredicate -> {
-                        return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
-                            matchedAssetStates.add(new Pair<>(matchedAssetState, index));
-                            return true;
-                        }).orElse(false);
-                    });
+        assetStateMatchers.add(assetStates -> {
+            Set<Pair<AttributeInfo, Integer>> matchedAssetStates = new HashSet<>();
+            for (int i = 0; i < predicateMap.size(); i++) {
+                final int index = i;
+                List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
 
-                    if (!predicateMatch) {
-                        return null;
-                    }
+                boolean predicateMatch = predicates.stream().allMatch(attributePredicate -> {
+                    return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
+                        matchedAssetStates.add(new Pair<>(matchedAssetState, index));
+                        return true;
+                    }).orElse(false);
+                });
+
+                if (!predicateMatch) {
+                    return null;
                 }
+            }
 
-                return matchedAssetStates;
-            });
-        }
+            return matchedAssetStates;
+        });
 
         return assetStates -> {
             Set<Pair<AttributeInfo, Integer>> matchedStates = new HashSet<>();
