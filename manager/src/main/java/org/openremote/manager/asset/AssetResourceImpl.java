@@ -415,7 +415,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
-        return writeAttributeValue(requestParams, assetId, attributeName, 0L, value);
+        return writeAttributeValue(requestParams, assetId, attributeName, null, value);
     }
 
     @Override
