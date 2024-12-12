@@ -751,8 +751,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert thing.getAttribute("notes").get().getValue().orElse("") == "Test"
         }
 
-
-
         // RuleSet: IF light onOff true for 3 minutes AND notes equals TurnOff for 5 minutes AND brightness higher than 0 for 10 minutes AND thingAsset notes is Test THEN set brightness to 0 and turn off the light
         // OR IF light has brightness higher than 0 for 10 minutes THEN set brightness to 0 and turn off the light
         when: "a ruleset with a duration map has been added"
@@ -810,8 +808,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
         }
 
-        //advance by 3 seconds to make sure the rule engine has fired (causing the start time to be updated for brightness greater than 0)
-        advancePseudoClock(3, TimeUnit.SECONDS, container)
+        //advance by 6 seconds to make sure the rule engine has fired (causing the start time to be updated for brightness greater than 0)
+        advancePseudoClock(6, TimeUnit.SECONDS, container)
 
         when: "brightness gets set to 100 again"
         lightAsset = assetStorageService.find(lightId)
@@ -836,8 +834,18 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 99
         }
 
-        when: "time advances for 6 minutes"
-        advancePseudoClock(6, TimeUnit.MINUTES, container)
+
+        when: "time advances for 2 minutes"
+        advancePseudoClock(2, TimeUnit.MINUTES, container)
+
+        then: "the brightness should still be 99 since it hasn't been above 0 for 10 minutes."
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 99
+        }
+
+        when: "time advances for 5 minutes"
+        advancePseudoClock(5, TimeUnit.MINUTES, container)
 
         then: "the brightness value should be 0 and since the conditions are met and brightness was above 0 for 10 minutes"
         conditions.eventually {

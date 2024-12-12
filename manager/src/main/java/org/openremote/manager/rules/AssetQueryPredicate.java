@@ -27,8 +27,8 @@ import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 
 import java.util.*;
@@ -133,10 +133,7 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
     }
 
     public static Predicate<NameValueHolder<?>> asPredicate(Supplier<Long> currentMillisSupplier, NameValuePredicate predicate) {
-        return asPredicate(currentMillisSupplier, predicate, null);
-    }
 
-    public static Predicate<NameValueHolder<?>> asPredicate(Supplier<Long> currentMillisSupplier, NameValuePredicate predicate, Long conditionDuration) {
         Predicate<Object> namePredicate = predicate.name != null
             ? predicate.name.asPredicate(currentMillisSupplier) : str -> true;
 
@@ -178,28 +175,8 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             });
         }
 
-        AtomicReference<Map<String, Long>> matchTimestamps = new AtomicReference<>(new HashMap<>());
-
-        return nameValueHolder -> {
-            boolean isMatch = namePredicate.test(nameValueHolder.getName()) &&
-                              valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
-
-            if (conditionDuration == null) {
-                return isMatch; 
-            }
-
-            long currentTime = currentMillisSupplier.get();
-            String key = nameValueHolder.getName();
-     
-            if (isMatch) {
-                matchTimestamps.get().putIfAbsent(key, currentTime);
-                return currentTime - matchTimestamps.get().get(key) >= conditionDuration;
-            } else if (matchTimestamps.get().containsKey(key)) {
-                matchTimestamps.get().remove(key);
-                return false;
-            }
-            return false;
-        };
+        return nameValueHolder -> namePredicate.test(nameValueHolder.getName())
+            && valuePredicate.test(valueExtractor.get().apply(nameValueHolder));
     }
 
     /**
@@ -209,64 +186,47 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
      */
     @SuppressWarnings("unchecked")
     public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, LogicGroup<AttributePredicate> condition) {
-        return asAttributeMatcher(currentMillisProducer, condition, null);
-    }
-
-
-    /**
-     * A function for matching {@link AttributeInfo}s of an asset; the infos must be related to the same asset to allow
-     * {@link LogicGroup.Operator#AND} to be applied.
-     * @return The matched asset states or null if there is no match
-     */
-    @SuppressWarnings("unchecked")
-    public static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(
-            Supplier<Long> currentMillisProducer, 
-            LogicGroup<AttributePredicate> condition,
-            Map<Integer, String> conditionDuration) {
-
         if (groupIsEmpty(condition)) {
-            return as -> Collections.emptySet();
+            return as -> Collections.EMPTY_SET;
         }
 
         LogicGroup.Operator operator = condition.operator == null ? LogicGroup.Operator.AND : condition.operator;
         List<Function<Collection<AttributeInfo>, Set<AttributeInfo>>> assetStateMatchers = new ArrayList<>();
-        
         List<Predicate<AttributeInfo>> attributePredicates = new ArrayList<>();
 
-        if (!condition.getItems().isEmpty()) {
-            condition.getItems().stream().forEach(p -> {
-                int index = condition.getItems().indexOf(p);
-                Long duration =  Optional.ofNullable(conditionDuration)
-                        .map(durations -> durations.get(index))
-                        .map(TimeUtil::parseTimeDuration)
-                        .orElse(null);;
+        if (condition.getItems().size() > 0) {
 
-                attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p, duration));
+            condition.getItems().stream()
+                .forEach(p -> {
+                    attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p));
 
-                AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
-                AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
+                    AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
+                    AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
 
-                if (p.meta != null) {
-                    final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
+                    if (p.meta != null) {
+                        final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
                             .map(metaPred -> asPredicate(currentMillisProducer, metaPred))
-                            .reduce(x -> true, Predicate::and);
+                            .reduce(x->true, Predicate::and);
 
-                    metaPredicate.set(assetState -> {
-                        MetaMap metaItems = (assetState).getMeta();
-                        return metaItems.stream().anyMatch(metaItem -> innerMetaPredicate.test(assetState));
-                    });
-                    attributePredicates.add(metaPredicate.get());
-                }
+                        metaPredicate.set(assetState -> {
+                            MetaMap metaItems = ((MetaHolder)assetState).getMeta();
+                            return metaItems.stream().anyMatch(metaItem ->
+                                innerMetaPredicate.test(assetState)
+                            );
+                        });
+                        attributePredicates.add(metaPredicate.get());
+                    }
 
-                if (p.previousValue != null) {
-                    Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
-                    oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
-                    attributePredicates.add(oldValuePredicate.get());
-                }
-            });
+                    if (p.previousValue != null) {
+                        Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
+                        oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
+                        attributePredicates.add(oldValuePredicate.get());
+                    }
+                });
         }
- 
+
         if (operator == LogicGroup.Operator.AND) {
+            // All predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
                 Set<AttributeInfo> matchedAssetStates = new HashSet<>();
                 boolean allPredicatesMatch = attributePredicates.stream().allMatch(attributePredicate -> {
@@ -276,9 +236,10 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                         return true;
                     }).orElse(false);
                 });
-                return  allPredicatesMatch ? matchedAssetStates : null;
+                return allPredicatesMatch ? matchedAssetStates : null;
             });
         } else {
+            // Any of the predicates must match at least one of the asset's state
             assetStateMatchers.add(assetStates -> {
                 AtomicReference<AttributeInfo> firstMatch = new AtomicReference<>();
                 boolean anyPredicateMatch = attributePredicates.stream().anyMatch(attributePredicate -> {
@@ -292,14 +253,16 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             });
         }
 
+
+
         if (condition.groups != null && condition.groups.size() > 0) {
             assetStateMatchers.addAll(
                 condition.groups.stream()
-                    .map(c -> asAttributeMatcher(currentMillisProducer, c, conditionDuration)).toList()
+                    .map(c -> asAttributeMatcher(currentMillisProducer, c)).toList()
             );
         }
 
-        return assetStates -> {
+        return assetStates ->  {
             Set<AttributeInfo> matchedStates = new HashSet<>();
 
             for (Function<Collection<AttributeInfo>, Set<AttributeInfo>> matcher : assetStateMatchers) {

@@ -51,7 +51,7 @@
                             },
                             {
                                 "duration": {
-                                    "0": "PT10M"
+                                    "1": "PT10M"
                                 },
                                 "assets": {
                                     "types": [
@@ -59,6 +59,18 @@
                                     ],
                                     "attributes": {
                                         "items": [
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 0
+                                                }
+                                            },
                                             {
                                                 "name": {
                                                     "predicateType": "string",
@@ -128,7 +140,20 @@
                                                     "operator": "GREATER_THAN",
                                                     "value": 0
                                                 }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 10
+                                                }
                                             }
+
                                         ]
                                     }
                                 }

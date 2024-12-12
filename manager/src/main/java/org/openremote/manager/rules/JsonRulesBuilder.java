@@ -30,6 +30,7 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.notification.*;
 import org.openremote.model.query.AssetQuery;
@@ -39,9 +40,13 @@ import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.EnumUtil;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.NameValueHolder;
 import org.openremote.model.webhook.Webhook;
 import org.quartz.CronExpression;
 import org.shredzone.commons.suncalc.SunTimes;
@@ -78,7 +83,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
     }
 
-
     /**
      * Stores all state for a given {@link RuleCondition} and calculates which {@link AttributeInfo}s match and don't
      * match the condition.
@@ -91,10 +95,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
+        Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> assetDurationPredicate = null;
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
+        Map<Integer, String> durations = null;
+        Map<Pair<AttributeRef, Integer>, Long> durationMatchTimes = new HashMap<>();
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
-
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
@@ -171,12 +177,18 @@ public class JsonRulesBuilder extends RulesBuilder {
                 orderBy = ruleCondition.assets.orderBy;
                 limit = ruleCondition.assets.limit;
                 attributePredicates = ruleCondition.assets.attributes;
+                boolean attributePredicateHasDurationCondition = ruleCondition.duration != null && !ruleCondition.duration.isEmpty();
 
                 if (attributePredicates != null && attributePredicates.items != null) {
                     // Only supports a single level or logic group for attributes (i.e. cannot nest groups in the UI so
                     // don't support it here either)
                     attributePredicates.groups = null;
-                    assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates, ruleCondition.duration);
+                    if (attributePredicateHasDurationCondition) {
+                        durations = ruleCondition.duration;
+                        assetDurationPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems(), ruleCondition.duration);
+                    } else {
+                        assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
+                    }
                 }
                 ruleCondition.assets.orderBy = null;
                 ruleCondition.assets.limit = 0;
@@ -205,7 +217,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 unfilteredAssetStates.add(event.assetState);
                             }
                         }
-                        case DELETE -> unfilteredAssetStates.remove(event.assetState);
+                        case DELETE -> {
+                            unfilteredAssetStates.remove(event.assetState);
+                            if (durations != null) {
+                                durations.keySet().forEach(durationIdx -> 
+                                    durationMatchTimes.remove(new Pair<>(event.assetState.getRef(), durationIdx)));
+                            }
+                        }
                     }
                 }
 
@@ -268,16 +286,85 @@ public class JsonRulesBuilder extends RulesBuilder {
                 results.put(true, matched);
                 results.put(false, unmatched);
 
-                unfilteredAssetStates.stream().collect(Collectors.groupingBy(AttributeInfo::getId)).forEach((id, states) -> {
-                    Set<AttributeInfo> matches = assetPredicate.apply(states);
-                
-                    if (matches != null) {
-                        matched.addAll(matches);
-                        unmatched.addAll(states.stream().filter(matches::contains).collect(Collectors.toSet()));
-                    } else {
-                        unmatched.addAll(states);
-                    }
-                });
+                unfilteredAssetStates.stream()
+                    .collect(Collectors.groupingBy(AttributeInfo::getId))
+                    .forEach((id, states) -> {
+
+                        // If the assetDurationPredicate is set then we use that to to match the asset states
+                        if (assetDurationPredicate != null) {
+                            // Pair of the attribute info that match and the index of the duration map
+                            Set<Pair<AttributeInfo, Integer>> matches = assetDurationPredicate.apply(states);
+                            
+                            if (matches != null) {
+                                long currentTime = timerService.getCurrentTimeMillis();
+                                
+                                matches.forEach(pair -> {
+                                    AttributeInfo matchedState = pair.getKey();
+                                    Pair<AttributeRef, Integer> matchedStateRef = new Pair<>(matchedState.getRef(), pair.getValue());
+
+                                    // Check if all predicates for this state have their durations satisfied
+                                    boolean allDurationsSatisfied = matches.stream()
+                                        .allMatch(matchPair -> {
+                                            String matchDuration = durations.get(matchPair.getValue());
+
+                                            // if no duration is set then we don't need to check the duration
+                                            if (matchDuration == null) {
+                                                return true;
+                                            }
+                                            
+                                            Pair<AttributeRef, Integer> matchRef = new Pair<>(matchPair.getKey().getRef(), matchPair.getValue());
+                                            Long matchStartTime = durationMatchTimes.get(matchRef);
+                                            
+                                            // If we don't have a start time yet, store current time and return false
+                                            if (matchStartTime == null) {
+                                                durationMatchTimes.put(matchRef, currentTime);
+                                                return false;
+                                            }
+                                            
+                                            return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
+                                        });
+
+                                    if (allDurationsSatisfied) {
+                                        matched.add(matchedState);
+                                        log(Level.FINE, "source: " + this.hashCode() + " All durations satisfied, adding to matched: " + matchedStateRef);
+                                    }
+                                });
+                                
+                                Set<AttributeInfo> matchedInfos = matches.stream()
+                                    .map(Pair::getKey)
+                                    .collect(Collectors.toSet());
+ 
+                                    states.stream()
+                                    .filter(state -> !matchedInfos.contains(state))
+                                    .forEach(state -> {
+                                        unmatched.add(state);
+
+                                        // if an unmatching state was found we need to remove all duration match times for this state
+                                        durations.keySet().forEach(durationIdx -> {
+                                            if (durationMatchTimes.containsKey(new Pair<>(state.getRef(), durationIdx))) {
+                                                durationMatchTimes.remove(new Pair<>(state.getRef(), durationIdx));
+                                            }
+
+                                        });
+                                    });
+
+                            } else {
+                                unmatched.addAll(states);
+                                log(Level.FINE, "source: " + this.hashCode() + " Unmatched asset states: " + states + ", clearing durationMatchTimes");
+                                durationMatchTimes.clear();
+                            }
+                        } else {
+                            Set<AttributeInfo> matches = assetPredicate.apply(states);
+                            if (matches != null) {
+                                matched.addAll(matches);
+                                unmatched.addAll(states.stream()
+                                    .filter(state -> !matches.contains(state))
+                                    .collect(Collectors.toSet()));
+                            } else {
+                                unmatched.addAll(states);
+                            }
+                        }
+                    });
 
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
                 unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
@@ -1388,5 +1475,90 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         return sunCalculator;
+    }
+
+
+     /**
+     * Custom function that mimics the logic of {@link AssetQueryPredicate.asAttributeMatcher} but returns a {@link Pair} of {@link AttributeInfo} and {@link Integer}
+     * Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR}
+     */
+    @SuppressWarnings("unchecked")
+    public static Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates, Map<Integer, String> durations) {
+        if (attributePredicates == null || attributePredicates.isEmpty()) {
+            return as -> Collections.EMPTY_SET;
+        }
+
+        LogicGroup.Operator operator = LogicGroup.Operator.AND;
+        List<Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>>> assetStateMatchers = new ArrayList<>();
+
+        // to keep track of the predicates for each index so we can determine the duration of the predicate at a later stage
+        Map<Integer, List<Predicate<AttributeInfo>>> predicateMap = new HashMap<>();
+
+        if (attributePredicates.size() > 0) {
+            for (int i = 0; i < attributePredicates.size(); i++) {
+                AttributePredicate p = attributePredicates.get(i);
+                List<Predicate<AttributeInfo>> predicates = new ArrayList<>();
+                
+                predicates.add((Predicate<AttributeInfo>)(Predicate)AssetQueryPredicate.asPredicate(currentMillisProducer, p));
+
+                if (p.meta != null) {
+                    final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
+                        .map(metaPred -> AssetQueryPredicate.asPredicate(currentMillisProducer, metaPred))
+                        .reduce(x->true, Predicate::and);
+
+                    predicates.add(assetState -> {
+                        MetaMap metaItems = ((MetaHolder)assetState).getMeta();
+                        return metaItems.stream().anyMatch(metaItem ->
+                            innerMetaPredicate.test(assetState)
+                        );
+                    });
+                }
+
+                if (p.previousValue != null) {
+                    Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
+                    predicates.add(nameValueHolder -> innerOldValuePredicate.test(((AttributeInfo)nameValueHolder).getOldValue()));
+                }
+
+                predicateMap.put(i, predicates);
+            }
+        }
+
+        if (operator == LogicGroup.Operator.AND) {
+            assetStateMatchers.add(assetStates -> {
+                Set<Pair<AttributeInfo, Integer>> matchedAssetStates = new HashSet<>();
+                
+                for (int i = 0; i < predicateMap.size(); i++) {
+                    final int index = i;
+                    List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
+                    
+                    boolean predicateMatch = predicates.stream().allMatch(attributePredicate -> {
+                        return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
+                            matchedAssetStates.add(new Pair<>(matchedAssetState, index));
+                            return true;
+                        }).orElse(false);
+                    });
+
+                    if (!predicateMatch) {
+                        return null;
+                    }
+                }
+
+                return matchedAssetStates;
+            });
+        }
+
+        return assetStates -> {
+            Set<Pair<AttributeInfo, Integer>> matchedStates = new HashSet<>();
+
+            for (Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> matcher : assetStateMatchers) {
+                Set<Pair<AttributeInfo, Integer>> matcherMatchedStates = matcher.apply(assetStates);
+
+                if (matcherMatchedStates != null) {
+                    matchedStates.addAll(matcherMatchedStates);
+                }
+            }
+
+            return matchedStates;
+        };
     }
 }
