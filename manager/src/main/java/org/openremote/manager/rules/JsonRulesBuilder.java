@@ -290,67 +290,67 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .collect(Collectors.groupingBy(AttributeInfo::getId))
                     .forEach((id, states) -> {
 
-                        // If the assetDurationPredicate is set then we use that to to match the asset states
+                        // when assetDurationPredicate is provided then we use that to to match the asset states
                         if (assetDurationPredicate != null) {
-                            // Pair of the attribute info that match and the index of the duration map
+
+                            // Matches are a set of pairs containing the attribute info and the index of the duration map
                             Set<Pair<AttributeInfo, Integer>> matches = assetDurationPredicate.apply(states);
                             
                             if (matches != null) {
                                 long currentTime = timerService.getCurrentTimeMillis();
                                 
-                                matches.forEach(pair -> {
-                                    AttributeInfo matchedState = pair.getKey();
-                                    Pair<AttributeRef, Integer> matchedStateRef = new Pair<>(matchedState.getRef(), pair.getValue());
+                                Set<AttributeInfo> matchedStates = matches.stream()
+                                    .map(attributeInfoAndMatchedPredicateIndex -> {
+                                        AttributeInfo matchedState = attributeInfoAndMatchedPredicateIndex.getKey();
+                                        
+                                        // Check if all predicates for this state have their durations satisfied
+                                        boolean allDurationsSatisfied = matches.stream()
+                                            .allMatch(predicateMatch -> {
+                                                String matchDuration = durations.get(predicateMatch.getValue());
+                                                
+                                                // If no duration set, this predicate is satisfied
+                                                if (matchDuration == null) {
+                                                    return true;
+                                                }
+                                                
+                                                Pair<AttributeRef, Integer> matchRef = new Pair<>(predicateMatch.getKey().getRef(), predicateMatch.getValue());
+                                                Long matchStartTime = durationMatchTimes.get(matchRef);
+                                                
+                                                // Store start time and return false if first occurrence
+                                                if (matchStartTime == null) {
+                                                    durationMatchTimes.put(matchRef, currentTime);
+                                                    return false;
+                                                }
+                                                
+                                                return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
+                                            });
 
-                                    // Check if all predicates for this state have their durations satisfied
-                                    boolean allDurationsSatisfied = matches.stream()
-                                        .allMatch(matchPair -> {
-                                            String matchDuration = durations.get(matchPair.getValue());
+                                        // Return the state if all durations satisfied, otherwise null
+                                        return allDurationsSatisfied ? matchedState : null;
+                                    })
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toSet());
 
-                                            // if no duration is set then we don't need to check the duration
-                                            if (matchDuration == null) {
-                                                return true;
-                                            }
-                                            
-                                            Pair<AttributeRef, Integer> matchRef = new Pair<>(matchPair.getKey().getRef(), matchPair.getValue());
-                                            Long matchStartTime = durationMatchTimes.get(matchRef);
-                                            
-                                            // If we don't have a start time yet, store current time and return false
-                                            if (matchStartTime == null) {
-                                                durationMatchTimes.put(matchRef, currentTime);
-                                                return false;
-                                            }
-                                            
-                                            return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
-                                        });
+                                matched.addAll(matchedStates);
 
-                                    if (allDurationsSatisfied) {
-                                        matched.add(matchedState);
-                                        log(Level.FINE, "source: " + this.hashCode() + " All durations satisfied, adding to matched: " + matchedStateRef);
-                                    }
-                                });
-                                
+                                // Handle unmatched states
                                 Set<AttributeInfo> matchedInfos = matches.stream()
                                     .map(Pair::getKey)
                                     .collect(Collectors.toSet());
- 
-                                    states.stream()
+
+                                states.stream()
                                     .filter(state -> !matchedInfos.contains(state))
                                     .forEach(state -> {
                                         unmatched.add(state);
-
-                                        // if an unmatching state was found we need to remove all duration match times for this state
+                                        // Clear duration times for unmatched states
                                         durations.keySet().forEach(durationIdx -> {
-                                            if (durationMatchTimes.containsKey(new Pair<>(state.getRef(), durationIdx))) {
-                                                durationMatchTimes.remove(new Pair<>(state.getRef(), durationIdx));
-                                            }
-
+                                            Pair<AttributeRef, Integer> key = new Pair<>(state.getRef(), durationIdx);
+                                            durationMatchTimes.remove(key);
                                         });
                                     });
 
                             } else {
                                 unmatched.addAll(states);
-                                log(Level.FINE, "source: " + this.hashCode() + " Unmatched asset states: " + states + ", clearing durationMatchTimes");
                                 durationMatchTimes.clear();
                             }
                         } else {
@@ -1479,7 +1479,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
 
      /**
-     * Custom function that mimics the logic of {@link AssetQueryPredicate.asAttributeMatcher} but returns a {@link Pair} of {@link AttributeInfo} and {@link Integer}
+     * Custom function that mimics the logic of {@link AssetQueryPredicate.asAttributeMatcher} but returns a {@link Pair} of {@link AttributeInfo} and {@link Integer}, the integer is used to determine the duration of the predicate at a later stage
      * Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR}
      */
     @SuppressWarnings("unchecked")
