@@ -788,6 +788,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 if(ex.message.includes("timeout")) {
                     this._error = "noAttributeDataTimeout";
                     return;
+                } else if(ex.response?.status === 413) {
+                    this._error = "datapointRequestTooLarge";
+                    return;
                 }
             }
             this._error = "errorOccurred";
