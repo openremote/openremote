@@ -12,7 +12,7 @@ on:
           - Major
           - Minor
           - Patch
-        required: true
+        required: false
       VERSION_OVERRIDE:
         description: 'Version override (when not incrementing the previous version)'
         type: string
