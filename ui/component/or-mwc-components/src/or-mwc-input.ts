@@ -225,7 +225,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                     inputType = InputType.CHECKBOX;
                 }
 
-                if (format && format.asMomentary) {
+                if (format && format.asMomentary || WellknownMetaItems.MOMENTARY ) {
                     inputType = InputType.BUTTON_MOMENTARY;
                 }
                 break;
