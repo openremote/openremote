@@ -351,7 +351,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                                     });
 
 
-                                // Clear the matched states if the number of matches does not equal the number of expected attribute predicate matches 
+                                // Clear the matched list if the number of matched states does not equal the number of expected attribute predicate matches
                                 if (matchedStates.size() != attributePredicates.getItems().size()) {
                                     matched.clear();
                                 }
