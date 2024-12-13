@@ -1184,6 +1184,10 @@ export class OrMwcInput extends LitElement {
 
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
+                    // If no action, label or icons are given, show as a knob.
+                    if (isIconButton && !this.iconTrailing && !this.icon ) {
+                        this.icon= "knob"
+                        };
                     let classes = {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
