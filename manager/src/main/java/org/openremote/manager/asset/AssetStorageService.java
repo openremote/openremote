@@ -1351,6 +1351,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newAttribute.getTimestamp().orElse(0L),
                             newAttribute.getValue().orElse(null),
                             newAttribute.getTimestamp().orElse(0L))
+                                .setSource(getClass().getSimpleName())
                     ));
             }
             case UPDATE -> {
@@ -1376,6 +1377,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         .forEach(obsoleteAttribute ->
                             clientEventService.publishEvent(
                                 new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                                    .setSource(getClass().getSimpleName())
                                     .setDeleted(true)
                             ));
                 }
@@ -1401,7 +1403,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             newOrModifiedAttribute.getTimestamp().orElse(0L),
                             oldAttribute.flatMap(Attribute::getValue).orElse(null),
                             oldAttribute.flatMap(Attribute::getTimestamp).orElse(0L)
-                        ));
+                        ).setSource(getClass().getSimpleName()));
                     });
             }
             case DELETE -> {
@@ -1419,6 +1421,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 deletedAttributes.forEach(obsoleteAttribute ->
                     clientEventService.publishEvent(
                         new AttributeEvent(asset, obsoleteAttribute, getClass().getSimpleName(), null, timerService.getCurrentTimeMillis(), null, 0L)
+                            .setSource(getClass().getSimpleName())
                             .setDeleted(true)
                     ));
             }
