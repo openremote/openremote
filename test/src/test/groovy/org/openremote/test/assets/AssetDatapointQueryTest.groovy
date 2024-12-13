@@ -9,6 +9,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetDatapoint
+import org.openremote.model.datapoint.DatapointQueryTooLargeException
 import org.openremote.model.datapoint.ValueDatapoint
 import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
@@ -392,7 +393,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         )
 
         then: "no points should be returned"
-        thrown(IllegalStateException)
+        thrown(DatapointQueryTooLargeException)
 
         cleanup: "Remove the limit on datapoint querying"
         assetDatapointService.maxAmountOfQueryPoints = 0
