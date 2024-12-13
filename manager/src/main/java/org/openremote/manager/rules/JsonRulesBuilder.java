@@ -98,7 +98,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> assetDurationPredicate = null;
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
         Map<Integer, String> durations = null;
-        Map<Pair<AttributeRef, Integer>, Long> durationMatchTimes = new HashMap<>();
+        Map<Pair<AttributeInfo, Integer>, Long> durationMatchTimes = new HashMap<>();
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyUnmatchedAssetStates;
@@ -289,7 +289,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                 unfilteredAssetStates.stream()
                     .collect(Collectors.groupingBy(AttributeInfo::getId))
                     .forEach((id, states) -> {
-
                         // when assetDurationPredicate is provided then we use that to to match the asset states
                         if (assetDurationPredicate != null) {
 
@@ -313,16 +312,16 @@ public class JsonRulesBuilder extends RulesBuilder {
                                                     return true;
                                                 }
                                                 
-                                                Pair<AttributeRef, Integer> matchRef = new Pair<>(predicateMatch.getKey().getRef(), predicateMatch.getValue());
-                                                Long matchStartTime = durationMatchTimes.get(matchRef);
+                                                Pair<AttributeInfo, Integer> matchKey = new Pair<>(predicateMatch.getKey(), predicateMatch.getValue());
+                                                Long matchStartTime = durationMatchTimes.get(matchKey);
                                                 
                                                 // Store start time and return false if first occurrence
                                                 if (matchStartTime == null) {
-                                                    durationMatchTimes.put(matchRef, currentTime);
+                                                    durationMatchTimes.put(matchKey, currentTime);
                                                     return false;
                                                 }
-                                                
-                                                return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
+
+                                                return  currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
                                             });
 
                                         // Return the state if all durations satisfied, otherwise null
@@ -344,10 +343,18 @@ public class JsonRulesBuilder extends RulesBuilder {
                                         unmatched.add(state);
                                         // Clear duration times for unmatched states
                                         durations.keySet().forEach(durationIdx -> {
-                                            Pair<AttributeRef, Integer> key = new Pair<>(state.getRef(), durationIdx);
-                                            durationMatchTimes.remove(key);
+                                            Pair<AttributeInfo, Integer> key = new Pair<>(state, durationIdx);
+                                            if (durationMatchTimes.containsKey(key)) {
+                                                durationMatchTimes.remove(key);
+                                            }
                                         });
                                     });
+
+
+                                // Clear the matched states if the number of matches does not equal the number of expected attribute predicate matches 
+                                if (matchedStates.size() != attributePredicates.getItems().size()) {
+                                    matched.clear();
+                                }
 
                             } else {
                                 unmatched.addAll(states);
@@ -1479,8 +1486,13 @@ public class JsonRulesBuilder extends RulesBuilder {
 
 
      /**
-     * Custom function that mimics the logic of {@link AssetQueryPredicate.asAttributeMatcher} but returns a {@link Pair} of {@link AttributeInfo} and {@link Integer}, the integer is used to determine the duration of the predicate at a later stage
-     * Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR}
+     * Creates a function that matches attributes similar to {@link AssetQueryPredicate.asAttributeMatcher}, 
+     * but with the following differences:
+     * <ul>
+     * <li>Returns a Set of Pairs containing both the matched {@link AttributeInfo} and an {@link Integer index}. The index is used to look up the duration requirement for that match</li>
+     * <li>Pairs are returned when one or more {@link AttributePredicate}s match</li>    
+     * <li>Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR} operators</li>
+     * </ul>
      */
     @SuppressWarnings("unchecked")
     public static Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates) {
@@ -1527,16 +1539,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                 final int index = i;
                 List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
 
-                boolean predicateMatch = predicates.stream().allMatch(attributePredicate -> {
+                predicates.stream().allMatch(attributePredicate -> {
                     return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
                         matchedAssetStates.add(new Pair<>(matchedAssetState, index));
                         return true;
                     }).orElse(false);
                 });
-
-                if (!predicateMatch) {
-                    return null;
-                }
+        
             }
 
             return matchedAssetStates;

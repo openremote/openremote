@@ -11,10 +11,6 @@
                         "operator": "AND",
                         "items": [
                             {
-                                "duration": {
-                                    "0": "PT3M",
-                                    "1": "PT5M"
-                                },
                                 "assets": {
                                     "types": [
                                         "LightAsset"
@@ -36,61 +32,22 @@
                                                 "name": {
                                                     "predicateType": "string",
                                                     "match": "EXACT",
-                                                    "value": "notes"
-                                                },
-                                                "value": {
-                                                    "predicateType": "string",
-                                                    "negate": false,
-                                                    "match": "EXACT",
-                                                    "value": "TurnOff"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                "duration": {
-                                    "1": "PT10M"
-                                },
-                                "assets": {
-                                    "types": [
-                                        "LightAsset"
-                                    ],
-                                    "attributes": {
-                                        "items": [
-                                            {
-                                                "name": {
-                                                    "predicateType": "string",
-                                                    "match": "EXACT",
                                                     "value": "brightness"
                                                 },
                                                 "value": {
                                                     "predicateType": "number",
                                                     "operator": "GREATER_THAN",
-                                                    "value": 0
-                                                }
-                                            },
-                                            {
-                                                "name": {
-                                                    "predicateType": "string",
-                                                    "match": "EXACT",
-                                                    "value": "brightness"
-                                                },
-                                                "value": {
-                                                    "predicateType": "number",
-                                                    "operator": "GREATER_THAN",
-                                                    "value": 0
+                                                    "value": 50
                                                 }
                                             }
                                         ]
                                     }
+                                },
+                                "duration": {
+                                    "1": "PT5M"
                                 }
                             },
                             {
-                                "duration": {
-                                    "0": "PT5M"
-                                },
                                 "assets": {
                                     "types": [
                                         "ThingAsset"
@@ -120,9 +77,6 @@
                         "operator": "AND",
                         "items": [
                             {
-                                "duration": {
-                                    "0": "PT30M"
-                                },
                                 "assets": {
                                     "types": [
                                         "LightAsset"
@@ -133,29 +87,20 @@
                                                 "name": {
                                                     "predicateType": "string",
                                                     "match": "EXACT",
-                                                    "value": "brightness"
+                                                    "value": "notes"
                                                 },
                                                 "value": {
-                                                    "predicateType": "number",
-                                                    "operator": "GREATER_THAN",
-                                                    "value": 0
-                                                }
-                                            },
-                                            {
-                                                "name": {
                                                     "predicateType": "string",
+                                                    "negate": false,
                                                     "match": "EXACT",
-                                                    "value": "brightness"
-                                                },
-                                                "value": {
-                                                    "predicateType": "number",
-                                                    "operator": "GREATER_THAN",
-                                                    "value": 10
+                                                    "value": "TriggerDuration"
                                                 }
                                             }
-
                                         ]
                                     }
+                                },
+                                "duration": {
+                                    "0": "PT10M"
                                 }
                             }
                         ]
@@ -172,20 +117,8 @@
                             ]
                         }
                     },
-                    "value": 0,
-                    "attributeName": "brightness"
-                },
-                {
-                    "action": "write-attribute",
-                    "target": {
-                        "matchedAssets": {
-                            "types": [
-                                "LightAsset"
-                            ]
-                        }
-                    },
-                    "value": false,
-                    "attributeName": "onOff"
+                    "value": "Triggered",
+                    "attributeName": "notes"
                 }
             ],
             "name": "Duration Rule"
