@@ -198,6 +198,7 @@
   "noAttributeConnected": "Geen atribuut verbonden",
   "noAttributesConnected": "Geen attributen verbonden",
   "noAttributeDataTimeout": "Dataverzoek verlopen",
+  "datapointRequestTooLarge": "Teveel data opgevraagd",
   "noDatapointsOrRuleStateAttributes": "Geen attributen met 'rule state', 'store data points', of 'agent link' configuratie item gevonden",
   "copy": "Kopiëren",
   "paste": "Plakken",
