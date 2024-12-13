@@ -1,8 +1,25 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
@@ -22,8 +39,10 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     @property()
     protected _validity?: CalendarEvent;
+
     @property()
     protected _rrule?: RRule;
+
     protected _dialog?: OrMwcDialog;
 
     constructor() {
@@ -34,7 +53,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         super.updated(changedProps);
 
         if (changedProps.has("ruleset") && this.ruleset) {
-            this._validity = this.ruleset.meta ? this.ruleset.meta["validity"] as CalendarEvent : undefined;
+            this._validity = this.ruleset.meta ? this.ruleset.meta.validity as CalendarEvent : undefined;
 
             if (this._validity && this._validity.recurrence) {
                 this._rrule = RRule.fromString(this._validity.recurrence);
@@ -186,7 +205,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
         switch (value) {
             case "validityAlways":
-                delete this.ruleset.meta["validity"];
+                delete this.ruleset.meta.validity;
                 this._validity = undefined;
                 this._rrule = undefined;
                 break;
@@ -273,12 +292,12 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     action: () => {
                         if (this.ruleset && this.ruleset.meta) {
                             if (this.getValidityType() === "validityAlways") {
-                                delete this.ruleset.meta["validity"];
+                                delete this.ruleset.meta.validity;
                             } else {
                                 if (this.getValidityType() === "validityRecurrence") {
                                     this._validity!.recurrence = this._rrule!.toString().split("RRULE:")[1];
                                 }
-                                this.ruleset.meta["validity"] = this._validity;
+                                this.ruleset.meta.validity = this._validity;
                             }
                             this.dispatchEvent(new OrRulesRuleChangedEvent(true));
                             this._dialog = undefined;

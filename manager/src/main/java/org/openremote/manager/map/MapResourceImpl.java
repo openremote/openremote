@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,10 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.map;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
@@ -29,46 +31,40 @@ import org.openremote.model.map.MapResource;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.util.Map;
-
 public class MapResourceImpl extends WebResource implements MapResource {
 
-    protected final MapService mapService;
-    protected final ManagerIdentityService identityService;
+  protected final MapService mapService;
+  protected final ManagerIdentityService identityService;
 
-    public MapResourceImpl(MapService mapService, ManagerIdentityService identityService) {
-        this.mapService = mapService;
-        this.identityService = identityService;
-    }
+  public MapResourceImpl(MapService mapService, ManagerIdentityService identityService) {
+    this.mapService = mapService;
+    this.identityService = identityService;
+  }
 
-    @Override
-    public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) {
-        return mapService.saveMapConfig(mapConfig);
-    }
+  @Override
+  public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) {
+    return mapService.saveMapConfig(mapConfig);
+  }
 
-    @Override
-    public ObjectNode getSettings(RequestParams requestParams) {
-        return mapService.getMapSettings(
-            getRequestRealmName(),
-            requestParams.getExternalSchemeHostAndPort()
-        );
-    }
+  @Override
+  public ObjectNode getSettings(RequestParams requestParams) {
+    return mapService.getMapSettings(
+        getRequestRealmName(), requestParams.getExternalSchemeHostAndPort());
+  }
 
-    @Override
-    public ObjectNode getSettingsJs(RequestParams requestParams) {
-        return mapService.getMapSettingsJs(
-            getAuthenticatedRealmName(),
-            requestParams.getExternalSchemeHostAndPort()
-        );
-    }
+  @Override
+  public ObjectNode getSettingsJs(RequestParams requestParams) {
+    return mapService.getMapSettingsJs(
+        getAuthenticatedRealmName(), requestParams.getExternalSchemeHostAndPort());
+  }
 
-    @Override
-    public byte[] getTile(int zoom, int column, int row) {
-        byte[] tile = mapService.getMapTile(zoom, column, row);
-        if (tile != null) {
-            return tile;
-        } else {
-            throw new WebApplicationException(Response.Status.NO_CONTENT);
-        }
+  @Override
+  public byte[] getTile(int zoom, int column, int row) {
+    byte[] tile = mapService.getMapTile(zoom, column, row);
+    if (tile != null) {
+      return tile;
+    } else {
+      throw new WebApplicationException(Response.Status.NO_CONTENT);
     }
+  }
 }

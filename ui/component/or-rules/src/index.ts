@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import manager, {
@@ -31,14 +49,11 @@ import {
     AssetQueryOrderBy$Property,
     AssetQueryMatch
 } from "@openremote/model";
-import "@openremote/or-translate";
-import "@openremote/or-mwc-components/or-mwc-drawer";
 import {translate} from "@openremote/or-translate";
-import "./or-rule-list";
-import "./or-rule-viewer";
-import "./flow-viewer/flow-viewer";
+import "@openremote/or-mwc-components/or-mwc-drawer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
+import "./flow-viewer/flow-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -402,7 +417,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
     const assetDescriptors: AssetDescriptor[] = AssetModelUtil.getAssetDescriptors();
 
     return getAssetTypes().then(availibleAssetTypes => {
-        let allowedAssetTypes: string[] = availibleAssetTypes ? availibleAssetTypes : [];
+        let allowedAssetTypes: string[] = availibleAssetTypes || [];
         let excludedAssetTypes: string[] = [];
         if (!config || !config.descriptors) {
             return assetDescriptors.map((ad) => AssetModelUtil.getAssetTypeInfo(ad)!);
@@ -437,7 +452,7 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
         }).map((ad) => {
 
-            let typeInfo = AssetModelUtil.getAssetTypeInfo(ad)!;
+            const typeInfo = AssetModelUtil.getAssetTypeInfo(ad)!;
 
             // Amalgamate matching descriptor from config if defined
             const configDescriptor = getAssetDescriptorFromSection(ad.name!, config, useActionConfig);

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { html, LitElement } from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {
@@ -9,7 +27,6 @@ import {
 import {
     getAssetTypeFromQuery,
 } from "../../index";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
@@ -17,7 +34,6 @@ import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
-import "@openremote/or-map";
 import {LngLatLike} from "maplibre-gl";
 
 @customElement("or-rule-radial-modal")
@@ -118,7 +134,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         const attributeName = this.getAttributeName(this.attributePredicate);
         const assetType = getAssetTypeFromQuery(this.query);
         // @ts-ignore
-        const value:RadialGeofencePredicate = valuePredicate ? valuePredicate : undefined;
+        const value:RadialGeofencePredicate = valuePredicate || undefined;
 
         const radiusPickerModalActions: DialogAction[] = [
             {

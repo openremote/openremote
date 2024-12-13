@@ -1,9 +1,6 @@
 /*
  * Copyright 2022, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,26 +13,25 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import {css, html, TemplateResult, PropertyValues, unsafeCSS} from "lit";
 import {customElement, state, query} from "lit/decorators.js";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {when} from "lit/directives/when.js"
 import "@openremote/or-components/or-collapsible-panel";
-import "@openremote/or-mwc-components/or-mwc-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
-import "../components/configuration/or-conf-panel";
+import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
-import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
-import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultAppConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -161,7 +157,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected realms?: Realm[];
 
     @state()
-    protected loading: boolean = false;
+    protected loading = false;
 
     @state()
     protected managerConfigurationChanged = false;
