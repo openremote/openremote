@@ -77,7 +77,19 @@ const style = css`
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-    }    
+    }
+    .attribute > div > or-rule-radial-modal {
+        min-width: auto;
+    }
+    .attribute > div > or-mwc-input[type="button"] {
+        min-width: auto;
+    }
+    .attribute > div > or-mwc-input:not([type="button"]) {
+        width: 200px;
+    }
+    .attribute > div > or-attribute-input {
+        width: 200px;
+    }
     .attribute > div > * {
         min-width: 200px;
     }
