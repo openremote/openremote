@@ -1148,6 +1148,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                 if(ex.message.includes("timeout")) {
                     this._latestError = "noAttributeDataTimeout";
                     return;
+                } else if(ex.response?.status === 413) {
+                    this._latestError = "datapointRequestTooLarge";
+                    return;
                 }
             }
             this._latestError = "errorOccurred";

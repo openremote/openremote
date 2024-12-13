@@ -35,6 +35,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.util.ValueUtil;
@@ -209,7 +210,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
             }
 
             return Collections.emptyList();
-        } catch (IllegalStateException | IllegalArgumentException ex) {
+        } catch (IllegalStateException | IllegalArgumentException | DatapointQueryTooLargeException ex) {
             getLogger().log(Level.WARNING, ex.getMessage());
             throw ex;
         }
@@ -227,7 +228,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                 return ((Number) countQuery.getSingleResult()).intValue();
             });
             if (amount > maxAmountOfQueryPoints) {
-                throw new IllegalStateException("Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.");
+                throw new DatapointQueryTooLargeException("Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.");
             }
         }
 
