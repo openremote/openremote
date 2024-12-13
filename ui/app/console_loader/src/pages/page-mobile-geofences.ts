@@ -1,3 +1,21 @@
+/*
+ * Copyright 2024, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
@@ -187,7 +205,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     @property({type: String})
-    view =  QUERY_VIEW ? QUERY_VIEW : "map";
+    view =  QUERY_VIEW || "map";
 
     @property({type: Array})
     mapItems = [];
@@ -314,7 +332,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
             };
             if (response && response.data) {
                 response.data.forEach((rulesSet) => {
-                    let parsedRules = JSON.parse(rulesSet.rules);
+                    const parsedRules = JSON.parse(rulesSet.rules);
                     // TODO enable this when custom validity en meta items are availible
                     // const datetime = rulesSet.meta.validity;
                     // if(this.checkPeriode(datetime) === false || rulesSet.enabled === false) {

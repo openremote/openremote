@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,25 +13,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.manager.map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import jakarta.ws.rs.core.UriBuilder;
-import org.openremote.container.web.WebService;
-import org.openremote.manager.app.ConfigurationService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.ValueUtil;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -47,379 +34,458 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.manager.web.ManagerWebService.API_PATH;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.openremote.container.web.WebService;
+import org.openremote.manager.app.ConfigurationService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
+
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class MapService implements ContainerService {
 
-    public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
-    public static final String OR_MAP_TILESERVER_HOST = "OR_MAP_TILESERVER_HOST";
-    public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
-    public static final String OR_MAP_TILESERVER_PORT = "OR_MAP_TILESERVER_PORT";
-    public static final int OR_MAP_TILESERVER_PORT_DEFAULT = 8082;
-    public static final String RASTER_MAP_TILE_PATH = "/raster_map/tile";
-    public static final String TILESERVER_TILE_PATH = "/styles/standard";
-    public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
-    public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
-    private static final Logger LOG = Logger.getLogger(MapService.class.getName());
-    private static ConfigurationService configurationService;
-    // Shared SQL connection is fine concurrently in SQLite
-    protected Connection connection;
-    protected Metadata metadata;
-    protected ObjectNode mapConfig;
-    protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
-    protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
+  public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
+  public static final String OR_MAP_TILESERVER_HOST = "OR_MAP_TILESERVER_HOST";
+  public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
+  public static final String OR_MAP_TILESERVER_PORT = "OR_MAP_TILESERVER_PORT";
+  public static final int OR_MAP_TILESERVER_PORT_DEFAULT = 8082;
+  public static final String RASTER_MAP_TILE_PATH = "/raster_map/tile";
+  public static final String TILESERVER_TILE_PATH = "/styles/standard";
+  public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT =
+      "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
+  public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
+  private static final Logger LOG = Logger.getLogger(MapService.class.getName());
+  private static ConfigurationService configurationService;
+  // Shared SQL connection is fine concurrently in SQLite
+  protected Connection connection;
+  protected Metadata metadata;
+  protected ObjectNode mapConfig;
+  protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
+  protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
-        if (mapConfig == null) {
-            mapConfig = ValueUtil.JSON.createObjectNode();
-        }
-        mapConfig.putPOJO("options", mapConfiguration);
-        configurationService.saveMapConfig(mapConfig);
-        mapSettings.clear();
-        return mapConfig;
+  public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration)
+      throws RuntimeException {
+    if (mapConfig == null) {
+      mapConfig = ValueUtil.JSON.createObjectNode();
+    }
+    mapConfig.putPOJO("options", mapConfiguration);
+    configurationService.saveMapConfig(mapConfig);
+    mapSettings.clear();
+    return mapConfig;
+  }
+
+  protected static Metadata getMetadata(Connection connection) {
+
+    PreparedStatement query = null;
+    ResultSet result = null;
+    Metadata metadata = null;
+
+    try {
+      query = connection.prepareStatement("select NAME, VALUE from METADATA");
+      result = query.executeQuery();
+
+      Map<String, String> resultMap = new HashMap<>();
+      while (result.next()) {
+        resultMap.put(result.getString(1), result.getString(2));
+      }
+
+      if (resultMap.isEmpty()) {
+        return new Metadata();
+      }
+
+      String attribution = resultMap.get("attribution");
+      int maxZoom = Integer.parseInt(resultMap.get("maxzoom"));
+      int minZoom = Integer.parseInt(resultMap.get("minzoom"));
+
+      ArrayNode vectorLayer =
+          resultMap.containsKey("json")
+              ? (ArrayNode) ValueUtil.JSON.readTree(resultMap.get("json")).get("vector_layers")
+              : null;
+      ArrayNode center =
+          resultMap.containsKey("center")
+              ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("center") + "]")
+              : null;
+      ArrayNode bounds =
+          resultMap.containsKey("bounds")
+              ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("bounds") + "]")
+              : null;
+
+      if (!TextUtil.isNullOrEmpty(attribution)
+          && vectorLayer != null
+          && !vectorLayer.isEmpty()
+          && maxZoom > 0) {
+        metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
+      }
+    } catch (Exception ex) {
+      metadata = new Metadata();
+      LOG.log(Level.SEVERE, "Failed to get metadata from mbtiles DB", ex);
+    } finally {
+      closeQuietly(query, result);
     }
 
-    protected static Metadata getMetadata(Connection connection) {
+    return metadata;
+  }
 
-        PreparedStatement query = null;
-        ResultSet result = null;
-        Metadata metadata = null;
+  protected static void closeQuietly(PreparedStatement query, ResultSet result) {
+    try {
+      if (result != null) {
+        result.close();
+      }
+      if (query != null) {
+        query.close();
+      }
+    } catch (Exception ex) {
+      LOG.warning("Error closing query/result: " + ex);
+    }
+  }
 
-        try {
-            query = connection.prepareStatement("select NAME, VALUE from METADATA");
-            result = query.executeQuery();
+  @Override
+  public void init(Container container) throws Exception {
 
-            Map<String, String> resultMap = new HashMap<>();
-            while (result.next()) {
-                resultMap.put(result.getString(1), result.getString(2));
-            }
+    configurationService = container.getService(ConfigurationService.class);
 
-            if (resultMap.isEmpty()) {
-                return new Metadata();
-            }
+    container
+        .getService(ManagerWebService.class)
+        .addApiSingleton(
+            new MapResourceImpl(this, container.getService(ManagerIdentityService.class)));
 
-            String attribution = resultMap.get("attribution");
-            int maxZoom = Integer.parseInt(resultMap.get("maxzoom"));
-            int minZoom = Integer.parseInt(resultMap.get("minzoom"));
+    String tileServerHost =
+        getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
+    int tileServerPort =
+        getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
 
-            ArrayNode vectorLayer = resultMap.containsKey("json") ? (ArrayNode) ValueUtil.JSON.readTree(resultMap.get("json")).get("vector_layers") : null;
-            ArrayNode center = resultMap.containsKey("center") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("center") + "]") : null;
-            ArrayNode bounds = resultMap.containsKey("bounds") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("bounds") + "]") : null;
+    if (!TextUtil.isNullOrEmpty(tileServerHost)) {
 
-            if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
-                metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
-            }
-        } catch (Exception ex) {
-            metadata = new Metadata();
-            LOG.log(Level.SEVERE, "Failed to get metadata from mbtiles DB", ex);
-        } finally {
-            closeQuietly(query, result);
-        }
+      WebService webService = container.getService(WebService.class);
 
-        return metadata;
+      UriBuilder tileServerUri =
+          UriBuilder.fromPath("/").scheme("http").host(tileServerHost).port(tileServerPort);
+
+      @SuppressWarnings("deprecation")
+      ProxyHandler proxyHandler =
+          new ProxyHandler(
+                  new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(
+                      tileServerUri.build()),
+                  getInteger(
+                      container.getConfig(),
+                      OR_MAP_TILESERVER_REQUEST_TIMEOUT,
+                      OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
+                  ResponseCodeHandler.HANDLE_404)
+              .setReuseXForwarded(true);
+
+      HttpHandler proxyWrapper =
+          exchange -> {
+            // Change request path to match what the tile server expects
+            String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
+
+            exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
+            exchange.setRequestPath(TILESERVER_TILE_PATH + path);
+            exchange.setRelativePath(TILESERVER_TILE_PATH + path);
+            proxyHandler.handleRequest(exchange);
+          };
+
+      webService
+          .getRequestHandlers()
+          .add(
+              0,
+              pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
+    }
+  }
+
+  @Override
+  public void start(Container container) throws Exception {
+    setData();
+  }
+
+  public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
+    Path mapTilesPath = configurationService.getMapTilesPath();
+    if (mapTilesPath == null) {
+      return;
+    }
+    mapTilesPath = mapTilesPath.toAbsolutePath();
+    if (!mapTilesPath.toFile().exists()) {
+      return;
+    }
+    Class.forName(org.sqlite.JDBC.class.getName());
+    connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
+    metadata = getMetadata(connection);
+
+    if (metadata.isValid()) {
+      mapConfig = configurationService.getMapConfig();
+      if (mapConfig == null) {
+        return;
+      }
+    } else {
+      LOG.warning("Map meta data could not be loaded, map functionality will not work");
+      return;
     }
 
-    protected static void closeQuietly(PreparedStatement query, ResultSet result) {
-        try {
-            if (result != null) {
-                result.close();
-            }
-            if (query != null) {
-                query.close();
-            }
-        } catch (Exception ex) {
-            LOG.warning("Error closing query/result: " + ex);
-        }
+    ObjectNode options =
+        Optional.ofNullable((ObjectNode) mapConfig.get("options")).orElse(mapConfig.objectNode());
+    ObjectNode defaultOptions =
+        Optional.ofNullable((ObjectNode) options.get("default")).orElse(mapConfig.objectNode());
+    options.replace("default", defaultOptions);
+    mapConfig.replace("options", options);
+
+    if (!defaultOptions.has("maxZoom")) {
+      defaultOptions.put("maxZoom", metadata.maxZoom);
+    }
+    if (!defaultOptions.has("minZoom")) {
+      defaultOptions.put("minZoom", metadata.minZoom);
     }
 
-    @Override
-    public void init(Container container) throws Exception {
-
-        configurationService = container.getService(ConfigurationService.class);
-
-        container.getService(ManagerWebService.class).addApiSingleton(
-                new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
-        );
-
-        String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
-        int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
-
-        if (!TextUtil.isNullOrEmpty(tileServerHost)) {
-
-            WebService webService = container.getService(WebService.class);
-
-            UriBuilder tileServerUri = UriBuilder.fromPath("/")
-                    .scheme("http")
-                    .host(tileServerHost)
-                    .port(tileServerPort);
-
-            @SuppressWarnings("deprecation")
-            ProxyHandler proxyHandler = new ProxyHandler(
-                    new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
-                    getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
-                    ResponseCodeHandler.HANDLE_404
-            ).setReuseXForwarded(true);
-
-            HttpHandler proxyWrapper = exchange -> {
-                // Change request path to match what the tile server expects
-                String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
-
-                exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
-                exchange.setRequestPath(TILESERVER_TILE_PATH + path);
-                exchange.setRelativePath(TILESERVER_TILE_PATH + path);
-                proxyHandler.handleRequest(exchange);
-            };
-
-            webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
-        }
+    if (metadata.getCenter() != null) {
+      if (!defaultOptions.has("center")) {
+        ArrayNode center = metadata.getCenter().deepCopy();
+        center.remove(2);
+        defaultOptions.set("center", center);
+      }
+      if (!defaultOptions.has("zoom")) {
+        defaultOptions.put("zoom", metadata.getCenter().get(2).asDouble(13d));
+      }
     }
 
-    @Override
-    public void start(Container container) throws Exception {
-        setData();
+    if (!defaultOptions.has("bounds") && metadata.getBounds() != null) {
+      defaultOptions.set("bounds", metadata.getBounds());
+    }
+  }
+
+  @Override
+  public void stop(Container container) throws Exception {
+    if (connection != null) {
+      connection.close();
+    }
+  }
+
+  /** Dynamically build Mapbox GL settings based on mapsettings.json */
+  public ObjectNode getMapSettings(String realm, URI host) {
+    String realmUriKey = realm + host.toString();
+    if (mapSettings.containsKey(realmUriKey)) {
+      return mapSettings.get(realmUriKey);
     }
 
-    public void setData() throws ClassNotFoundException, SQLException, NullPointerException {
-        Path mapTilesPath = configurationService.getMapTilesPath();
-        if (mapTilesPath == null) {
-            return;
-        }
-        mapTilesPath = mapTilesPath.toAbsolutePath();
-        if (!mapTilesPath.toFile().exists()) {
-            return;
-        }
-        Class.forName(org.sqlite.JDBC.class.getName());
-        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
-        metadata = getMetadata(connection);
-
-        if (metadata.isValid()) {
-            mapConfig = configurationService.getMapConfig();
-            if (mapConfig == null) {
-                return;
-            }
-        } else {
-            LOG.warning("Map meta data could not be loaded, map functionality will not work");
-            return;
-        }
-
-        ObjectNode options = Optional.ofNullable((ObjectNode)mapConfig.get("options")).orElse(mapConfig.objectNode());
-        ObjectNode defaultOptions = Optional.ofNullable((ObjectNode)options.get("default")).orElse(mapConfig.objectNode());
-        options.replace("default", defaultOptions);
-        mapConfig.replace("options", options);
-
-        if (!defaultOptions.has("maxZoom")) {
-            defaultOptions.put("maxZoom", metadata.maxZoom);
-        }
-        if (!defaultOptions.has("minZoom")) {
-            defaultOptions.put("minZoom", metadata.minZoom);
-        }
-
-        if (metadata.getCenter() != null) {
-            if (!defaultOptions.has("center")) {
-                ArrayNode center = metadata.getCenter().deepCopy();
-                center.remove(2);
-                defaultOptions.set("center", center);
-            }
-            if (!defaultOptions.has("zoom")) {
-                defaultOptions.put("zoom", metadata.getCenter().get(2).asDouble(13d));
-            }
-        }
-
-        if (!defaultOptions.has("bounds") && metadata.getBounds() != null) {
-            defaultOptions.set("bounds", metadata.getBounds());
-        }
+    if (mapConfig == null) {
+      return null;
     }
 
-    @Override
-    public void stop(Container container) throws Exception {
-        if (connection != null) {
-            connection.close();
-        }
-    }
-
-    /**
-     * Dynamically build Mapbox GL settings based on mapsettings.json
-     */
-    public ObjectNode getMapSettings(String realm, URI host) {
-        String realmUriKey = realm + host.toString();
-        if (mapSettings.containsKey(realmUriKey)) {
-            return mapSettings.get(realmUriKey);
-        }
-
-        if (mapConfig == null) {
-            return null;
-        }
-
-        final ObjectNode settings = mapSettings.computeIfAbsent(realmUriKey, r -> {
-            if (metadata.isValid() && !mapConfig.isEmpty()) {
+    final ObjectNode settings =
+        mapSettings.computeIfAbsent(
+            realmUriKey,
+            r -> {
+              if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
                 return mapConfig.deepCopy();
-            }
-            return mapConfig.objectNode();
-        });
+              }
+              return mapConfig.objectNode();
+            });
 
-        if (!metadata.isValid() || mapConfig.isEmpty()) {
-            return settings;
-        }
-
-        // Set vector_tiles URL to MapResource getSource endpoint
-        Optional.ofNullable(settings.get("sources"))
-                .map(s -> s.get("vector_tiles"))
-                .filter(JsonNode::isObject)
-                .ifPresent(vectorTilesNode -> {
-                    ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    vectorTilesObj.remove("url");
-
-                    vectorTilesObj.put("attribution", metadata.attribution);
-                    vectorTilesObj.put("maxzoom", metadata.maxZoom);
-                    vectorTilesObj.put("minzoom", metadata.minZoom);
-                    vectorTilesObj.replace("vector_layers", metadata.vectorLayers);
-
-                    Optional.ofNullable(mapConfig.get("center")).ifPresent(center ->
-                            Optional.ofNullable(mapConfig.has("zoom") && mapConfig.get("zoom").isInt() ? mapConfig.get("zoom") : null).ifPresent(zoom -> {
-                                ArrayNode centerArray = center.deepCopy();
-                                centerArray.add(zoom);
-                                vectorTilesObj.replace("center", centerArray);
-                            }));
-
-                    ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-                    tilesArray.insert(0, tileUrl);
-                    vectorTilesObj.replace("tiles", tilesArray);
-                });
-
-        // Set sprite URL to shared folder
-        Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
-            String spriteUri =
-                    UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
-                            .path(sprite)
-                            .build().toString();
-            settings.put("sprite", spriteUri);
-        });
-
-        // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
-        Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
-            String glyphsUri =
-                    UriBuilder.fromUri(host)
-                            .replacePath(MAP_SHARED_DATA_BASE_URI)
-                            .build().toString() + "/fonts/" + glyphs;
-            settings.put("glyphs", glyphsUri);
-        });
-
-        return settings;
+    if (!metadata.isValid() || mapConfig.isEmpty()) {
+      return settings;
     }
 
-    /**
-     * Dynamically build Mapbox JS settings based on mapsettings.json
-     */
-    public ObjectNode getMapSettingsJs(String realm, URI host) {
-        String realmUriKey = realm + host.toString();
-        if (mapSettingsJs.containsKey(realmUriKey)) {
-            return mapSettingsJs.get(realmUriKey);
-        }
+    // Set vector_tiles URL to MapResource getSource endpoint
+    Optional.ofNullable(settings.get("sources"))
+        .map(s -> s.get("vector_tiles"))
+        .filter(JsonNode::isObject)
+        .ifPresent(
+            vectorTilesNode -> {
+              ObjectNode vectorTilesObj = (ObjectNode) vectorTilesNode;
+              vectorTilesObj.remove("url");
 
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
+              vectorTilesObj.put("attribution", metadata.attribution);
+              vectorTilesObj.put("maxzoom", metadata.maxZoom);
+              vectorTilesObj.put("minzoom", metadata.minZoom);
+              vectorTilesObj.replace("vector_layers", metadata.vectorLayers);
 
-        if (!metadata.isValid() || mapConfig.isEmpty()) {
-            return settings;
-        }
+              Optional.ofNullable(mapConfig.get("center"))
+                  .ifPresent(
+                      center ->
+                          Optional.ofNullable(
+                                  mapConfig.has("zoom") && mapConfig.get("zoom").isInt()
+                                      ? mapConfig.get("zoom")
+                                      : null)
+                              .ifPresent(
+                                  zoom -> {
+                                    ArrayNode centerArray = center.deepCopy();
+                                    centerArray.add(zoom);
+                                    vectorTilesObj.replace("center", centerArray);
+                                  }));
 
-        ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
-        String tileUrl = UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
-        tilesArray.insert(0, tileUrl);
+              ArrayNode tilesArray = mapConfig.arrayNode();
+              String tileUrl =
+                  UriBuilder.fromUri(host)
+                          .replacePath(API_PATH)
+                          .path(realm)
+                          .path("map/tile")
+                          .build()
+                          .toString()
+                      + "/{z}/{x}/{y}";
+              tilesArray.insert(0, tileUrl);
+              vectorTilesObj.replace("tiles", tilesArray);
+            });
 
-        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
+    // Set sprite URL to shared folder
+    Optional.ofNullable(
+            settings.has("sprite") && settings.get("sprite").isTextual()
+                ? settings.get("sprite").asText()
+                : null)
+        .ifPresent(
+            sprite -> {
+              String spriteUri =
+                  UriBuilder.fromUri(host)
+                      .replacePath(MAP_SHARED_DATA_BASE_URI)
+                      .path(sprite)
+                      .build()
+                      .toString();
+              settings.put("sprite", spriteUri);
+            });
 
-        settings.put("attribution", metadata.attribution);
-        settings.put("format", "png");
-        settings.put("type", "baselayer");
-        settings.replace("tiles", tilesArray);
+    // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so
+    // add /fonts here
+    Optional.ofNullable(
+            settings.has("glyphs") && settings.get("glyphs").isTextual()
+                ? settings.get("glyphs").asText()
+                : null)
+        .ifPresent(
+            glyphs -> {
+              String glyphsUri =
+                  UriBuilder.fromUri(host).replacePath(MAP_SHARED_DATA_BASE_URI).build().toString()
+                      + "/fonts/"
+                      + glyphs;
+              settings.put("glyphs", glyphsUri);
+            });
 
-        return settings;
+    return settings;
+  }
+
+  /** Dynamically build Mapbox JS settings based on mapsettings.json */
+  public ObjectNode getMapSettingsJs(String realm, URI host) {
+    String realmUriKey = realm + host.toString();
+    if (mapSettingsJs.containsKey(realmUriKey)) {
+      return mapSettingsJs.get(realmUriKey);
     }
 
-    public byte[] getMapTile(int zoom, int column, int row) {
-        // Flip y, oh why
-        row = Double.valueOf(Math.pow(2, zoom) - 1 - row).intValue();
+    final ObjectNode settings =
+        mapSettingsJs.computeIfAbsent(realmUriKey, r -> ValueUtil.JSON.createObjectNode());
 
-        PreparedStatement query = null;
-        ResultSet result = null;
-        try {
-            query = connection.prepareStatement(
-                "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
-            );
-
-            int index = 0;
-            query.setInt(++index, zoom);
-            query.setInt(++index, column);
-            query.setInt(++index, row);
-
-            result = query.executeQuery();
-
-            if (result.next()) {
-                return result.getBytes(1);
-            } else {
-                return null;
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        } finally {
-            closeQuietly(query, result);
-        }
+    if (!metadata.isValid() || mapConfig.isEmpty()) {
+      return settings;
     }
 
-    protected static final class Metadata {
-        protected String attribution;
-        protected ArrayNode vectorLayers;
-        protected int maxZoom;
-        protected int minZoom;
-        protected ArrayNode bounds;
-        protected ArrayNode center;
-        protected boolean valid;
+    ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
+    String tileUrl =
+        UriBuilder.fromUri(host).replacePath(RASTER_MAP_TILE_PATH).build().toString()
+            + "/{z}/{x}/{y}.png";
+    tilesArray.insert(0, tileUrl);
 
-        public Metadata(String attribution, ArrayNode vectorLayers, ArrayNode bounds, ArrayNode center, int maxZoom, int minZoom) {
-            this.attribution = attribution;
-            this.vectorLayers = vectorLayers;
-            this.bounds = bounds;
-            this.center = center;
-            this.maxZoom = maxZoom;
-            this.minZoom = minZoom;
-            valid = true;
-        }
+    settings.replace(
+        "options",
+        mapConfig.has("options") && mapConfig.get("options").isObject()
+            ? (ObjectNode) mapConfig.get("options")
+            : null);
 
-        public Metadata() {
-        }
+    settings.put("attribution", metadata.attribution);
+    settings.put("format", "png");
+    settings.put("type", "baselayer");
+    settings.replace("tiles", tilesArray);
 
-        public String getAttribution() {
-            return attribution;
-        }
+    return settings;
+  }
 
-        public ArrayNode getVectorLayers() {
-            return vectorLayers;
-        }
+  public byte[] getMapTile(int zoom, int column, int row) {
+    // Flip y, oh why
+    row = Double.valueOf(Math.pow(2, zoom) - 1 - row).intValue();
 
-        public ArrayNode getBounds() {
-            return bounds;
-        }
+    PreparedStatement query = null;
+    ResultSet result = null;
+    try {
+      query =
+          connection.prepareStatement(
+              "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?");
 
-        public ArrayNode getCenter() {
-            return center;
-        }
+      int index = 0;
+      query.setInt(++index, zoom);
+      query.setInt(++index, column);
+      query.setInt(++index, row);
 
-        public int getMaxZoom() {
-            return maxZoom;
-        }
+      result = query.executeQuery();
 
-        public int getMinZoom() {
-            return minZoom;
-        }
-
-        public boolean isValid() {
-            return valid;
-        }
+      if (result.next()) {
+        return result.getBytes(1);
+      } else {
+        return null;
+      }
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    } finally {
+      closeQuietly(query, result);
     }
+  }
+
+  protected static final class Metadata {
+    protected String attribution;
+    protected ArrayNode vectorLayers;
+    protected int maxZoom;
+    protected int minZoom;
+    protected ArrayNode bounds;
+    protected ArrayNode center;
+    protected boolean valid;
+
+    public Metadata(
+        String attribution,
+        ArrayNode vectorLayers,
+        ArrayNode bounds,
+        ArrayNode center,
+        int maxZoom,
+        int minZoom) {
+      this.attribution = attribution;
+      this.vectorLayers = vectorLayers;
+      this.bounds = bounds;
+      this.center = center;
+      this.maxZoom = maxZoom;
+      this.minZoom = minZoom;
+      valid = true;
+    }
+
+    public Metadata() {}
+
+    public String getAttribution() {
+      return attribution;
+    }
+
+    public ArrayNode getVectorLayers() {
+      return vectorLayers;
+    }
+
+    public ArrayNode getBounds() {
+      return bounds;
+    }
+
+    public ArrayNode getCenter() {
+      return center;
+    }
+
+    public int getMaxZoom() {
+      return maxZoom;
+    }
+
+    public int getMinZoom() {
+      return minZoom;
+    }
+
+    public boolean isValid() {
+      return valid;
+    }
+  }
 }

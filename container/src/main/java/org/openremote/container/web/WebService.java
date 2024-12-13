@@ -1,9 +1,6 @@
 /*
  * Copyright 2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -16,8 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 package org.openremote.container.web;
+
+import static java.lang.System.Logger.Level.*;
+import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
+
+import java.net.Inet4Address;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.jboss.resteasy.core.ResteasyDeploymentImpl;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
+import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.openremote.container.json.JacksonConfig;
+import org.openremote.container.security.CORSFilter;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
+import org.xnio.Options;
 
 import io.undertow.Undertow;
 import io.undertow.security.api.SecurityContext;
@@ -35,350 +58,378 @@ import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.core.ResteasyDeploymentImpl;
-import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
-import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.json.JacksonConfig;
-import org.openremote.container.security.CORSFilter;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.util.TextUtil;
-import org.xnio.Options;
-
-import java.net.Inet4Address;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static java.lang.System.Logger.Level.*;
-import static org.openremote.container.util.MapAccess.*;
-import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
-import static org.openremote.model.Constants.OR_HOSTNAME;
 
 public abstract class WebService implements ContainerService {
 
-    public static class RequestHandler {
-        protected String name;
-        protected Predicate<HttpServerExchange> handlePredicate;
-        protected HttpHandler handler;
+  public static class RequestHandler {
+    protected String name;
+    protected Predicate<HttpServerExchange> handlePredicate;
+    protected HttpHandler handler;
 
-        public RequestHandler(String name, Predicate<HttpServerExchange> handlePredicate, HttpHandler handler) {
-            this.name = name;
-            this.handlePredicate = handlePredicate;
-            this.handler = handler;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Predicate<HttpServerExchange> getHandlePredicate() {
-            return handlePredicate;
-        }
-
-        public io.undertow.server.HttpHandler getHandler() {
-            return handler;
-        }
+    public RequestHandler(
+        String name, Predicate<HttpServerExchange> handlePredicate, HttpHandler handler) {
+      this.name = name;
+      this.handlePredicate = handlePredicate;
+      this.handler = handler;
     }
 
-    // Change this to 0.0.0.0 to bind on all interfaces, enabling
-    // access of the manager service from other devices in your LAN
-    public static final String OR_WEBSERVER_LISTEN_HOST = "OR_WEBSERVER_LISTEN_HOST";
-    public static final String OR_WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
-    public static final String OR_WEBSERVER_LISTEN_PORT = "OR_WEBSERVER_LISTEN_PORT";
-    public static final int OR_WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
-    public static final String OR_WEBSERVER_DUMP_REQUESTS = "OR_WEBSERVER_DUMP_REQUESTS";
-    public static final boolean OR_WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
-    public static final String OR_WEBSERVER_ALLOWED_ORIGINS = "OR_WEBSERVER_ALLOWED_ORIGINS";
-    public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
-    public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-    public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
-    public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
-    private static final System.Logger LOG = System.getLogger(WebService.class.getName());
-    protected static AtomicReference<CORSFilter> corsFilterRef;
-    protected boolean devMode;
-    protected String host;
-    protected int port;
-    protected Undertow undertow;
-    protected List<RequestHandler> httpHandlers = new ArrayList<>();
-    protected URI containerHostUri;
-
-    protected static String getLocalIpAddress() throws Exception {
-        return Inet4Address.getLocalHost().getHostAddress();
+    public String getName() {
+      return name;
     }
 
-    public static RequestHandler pathStartsWithHandler(String name, String path, HttpHandler handler) {
-        return new RequestHandler(name, exchange -> exchange.getRequestPath().startsWith(path), handler);
+    public Predicate<HttpServerExchange> getHandlePredicate() {
+      return handlePredicate;
     }
 
-    @Override
-    public int getPriority() {
-        return LOW_PRIORITY;
+    public io.undertow.server.HttpHandler getHandler() {
+      return handler;
     }
+  }
 
-    @Override
-    public void init(Container container) throws Exception {
-        devMode = container.isDevMode();
-        host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
-        port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
-        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
-                ? getLocalIpAddress()
-                : host;
+  // Change this to 0.0.0.0 to bind on all interfaces, enabling
+  // access of the manager service from other devices in your LAN
+  public static final String OR_WEBSERVER_LISTEN_HOST = "OR_WEBSERVER_LISTEN_HOST";
+  public static final String OR_WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
+  public static final String OR_WEBSERVER_LISTEN_PORT = "OR_WEBSERVER_LISTEN_PORT";
+  public static final int OR_WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
+  public static final String OR_WEBSERVER_DUMP_REQUESTS = "OR_WEBSERVER_DUMP_REQUESTS";
+  public static final boolean OR_WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
+  public static final String OR_WEBSERVER_ALLOWED_ORIGINS = "OR_WEBSERVER_ALLOWED_ORIGINS";
+  public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
+  public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT =
+      Math.max(Runtime.getRuntime().availableProcessors(), 2);
+  public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
+  public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT =
+      Math.max(Runtime.getRuntime().availableProcessors(), 10);
+  private static final System.Logger LOG = System.getLogger(WebService.class.getName());
+  protected static AtomicReference<CORSFilter> corsFilterRef;
+  protected boolean devMode;
+  protected String host;
+  protected int port;
+  protected Undertow undertow;
+  protected List<RequestHandler> httpHandlers = new ArrayList<>();
+  protected URI containerHostUri;
 
-        containerHostUri =
-                UriBuilder.fromPath("/")
-                        .scheme("http")
-                        .host(containerHost)
-                        .port(port).build();
+  protected static String getLocalIpAddress() throws Exception {
+    return Inet4Address.getLocalHost().getHostAddress();
+  }
 
-        undertow = build(
+  public static RequestHandler pathStartsWithHandler(
+      String name, String path, HttpHandler handler) {
+    return new RequestHandler(
+        name, exchange -> exchange.getRequestPath().startsWith(path), handler);
+  }
+
+  @Override
+  public int getPriority() {
+    return LOW_PRIORITY;
+  }
+
+  @Override
+  public void init(Container container) throws Exception {
+    devMode = container.isDevMode();
+    host =
+        getString(
+            container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
+    port =
+        getInteger(
+            container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
+    String containerHost =
+        host.equalsIgnoreCase("localhost")
+                || host.indexOf("127") == 0
+                || host.indexOf("0.0.0.0") == 0
+            ? getLocalIpAddress()
+            : host;
+
+    containerHostUri =
+        UriBuilder.fromPath("/").scheme("http").host(containerHost).port(port).build();
+
+    undertow =
+        build(
                 container,
                 Undertow.builder()
-                        .addHttpListener(port, host)
-                        .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
-                        .setWorkerOption(Options.WORKER_NAME, "WebService")
-                        .setWorkerOption(Options.THREAD_DAEMON, true)
-        ).build();
+                    .addHttpListener(port, host)
+                    .setIoThreads(
+                        getInteger(
+                            container.getConfig(),
+                            OR_WEBSERVER_IO_THREADS_MAX,
+                            OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                    .setWorkerThreads(
+                        getInteger(
+                            container.getConfig(),
+                            OR_WEBSERVER_WORKER_THREADS_MAX,
+                            WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                    .setWorkerOption(Options.WORKER_NAME, "WebService")
+                    .setWorkerOption(Options.THREAD_DAEMON, true))
+            .build();
 
-        // We have to set system properties for websocket timeouts
-        System.setProperty(WebSocketChannel.WEB_SOCKETS_READ_TIMEOUT, "30000");
-        System.setProperty(WebSocketChannel.WEB_SOCKETS_WRITE_TIMEOUT, "30000");
+    // We have to set system properties for websocket timeouts
+    System.setProperty(WebSocketChannel.WEB_SOCKETS_READ_TIMEOUT, "30000");
+    System.setProperty(WebSocketChannel.WEB_SOCKETS_WRITE_TIMEOUT, "30000");
+  }
+
+  @Override
+  public void start(Container container) throws Exception {
+    if (undertow != null) {
+      undertow.start();
+      LOG.log(INFO, "Webserver ready on http://" + host + ":" + port);
     }
+  }
 
-    @Override
-    public void start(Container container) throws Exception {
-        if (undertow != null) {
-            undertow.start();
-            LOG.log(INFO, "Webserver ready on http://" + host + ":" + port);
-        }
+  @Override
+  public void stop(Container container) throws Exception {
+    if (undertow != null) {
+      undertow.stop();
+      undertow = null;
     }
+  }
 
-    @Override
-    public void stop(Container container) throws Exception {
-        if (undertow != null) {
-            undertow.stop();
-            undertow = null;
-        }
+  /** Adds a deployment to the default servlet container and returns the started handler. */
+  public static HttpHandler addServletDeployment(
+      Container container, DeploymentInfo deploymentInfo, boolean secure) {
+
+    IdentityService identityService = container.getService(IdentityService.class);
+    boolean devMode = container.isDevMode();
+
+    try {
+      if (secure) {
+        if (identityService == null)
+          throw new IllegalStateException(
+              "No identity service found, make sure "
+                  + IdentityService.class.getName()
+                  + " is added before this service");
+        identityService.secureDeployment(deploymentInfo);
+      } else {
+        LOG.log(INFO, "Deploying insecure web context: " + deploymentInfo.getContextPath());
+      }
+
+      // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the
+      // wrong time"
+      deploymentInfo.setExceptionHandler(
+          new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+
+      // Add CORS filter that works for any servlet deployment
+      FilterInfo corsFilterInfo = getCorsFilterInfo(container);
+
+      if (corsFilterInfo != null) {
+        deploymentInfo.addFilter(corsFilterInfo);
+        deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.REQUEST);
+        deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.FORWARD);
+      }
+
+      DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
+      manager.deploy();
+      return manager.start();
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
+  }
 
-    /**
-     * Adds a deployment to the default servlet container and returns the started handler.
-     */
-    public static HttpHandler addServletDeployment(Container container, DeploymentInfo deploymentInfo, boolean secure) {
-
-        IdentityService identityService = container.getService(IdentityService.class);
-        boolean devMode = container.isDevMode();
-
-        try {
-            if (secure) {
-                if (identityService == null)
-                    throw new IllegalStateException(
-                            "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
-                    );
-                identityService.secureDeployment(deploymentInfo);
-            } else {
-                LOG.log(INFO, "Deploying insecure web context: " + deploymentInfo.getContextPath());
-            }
-
-            // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
-            deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
-
-            // Add CORS filter that works for any servlet deployment
-            FilterInfo corsFilterInfo = getCorsFilterInfo(container);
-
-            if (corsFilterInfo != null) {
-                deploymentInfo.addFilter(corsFilterInfo);
-                deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.REQUEST);
-                deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.FORWARD);
-            }
-
-            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
-            manager.deploy();
-            return manager.start();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+  public void removeServletDeployment(DeploymentInfo deploymentInfo) {
+    try {
+      DeploymentManager manager =
+          Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
+      manager.stop();
+      manager.undeploy();
+      Servlets.defaultContainer().removeDeployment(deploymentInfo);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
+  }
 
-    public void removeServletDeployment(DeploymentInfo deploymentInfo) {
-        try {
-            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
-            manager.stop();
-            manager.undeploy();
-            Servlets.defaultContainer().removeDeployment(deploymentInfo);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+  /**
+   * When a request comes in the handlers are called in order until a handler returns a non null
+   * value; when this happens the returned {@link RequestHandler} is invoked.
+   */
+  public List<RequestHandler> getRequestHandlers() {
+    return this.httpHandlers;
+  }
 
-    /**
-     * When a request comes in the handlers are called in order until a handler returns a non null value; when this
-     * happens the returned {@link RequestHandler} is invoked.
-     */
-    public List<RequestHandler> getRequestHandlers() {
-        return this.httpHandlers;
-    }
+  /**
+   * Provides the LAN IPv4 address the container is bound to so it can be used in the context
+   * provider callbacks; if CB is on the other side of some sort of NAT then this won't work also
+   * assumes HTTP
+   */
+  public URI getHostUri() {
+    return containerHostUri;
+  }
 
-    /**
-     * Provides the LAN IPv4 address the container is bound to so it can be
-     * used in the context provider callbacks; if CB is on the other side of some sort
-     * of NAT then this won't work also assumes HTTP
-     */
-    public URI getHostUri() {
-        return containerHostUri;
-    }
+  protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-    protected Undertow.Builder build(Container container, Undertow.Builder builder) {
+    LOG.log(
+        INFO,
+        () ->
+            "Building web routing with handler(s): "
+                + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
 
-        LOG.log(INFO, () -> "Building web routing with handler(s): " + getRequestHandlers().stream().map(h -> h.name).collect(Collectors.joining("\n")));
-
-        HttpHandler handler = exchange -> {
-
-            RequestLogger.REQUEST_LOG.log(DEBUG, () -> {
+    HttpHandler handler =
+        exchange -> {
+          RequestLogger.REQUEST_LOG.log(
+              DEBUG,
+              () -> {
                 String requestPath = exchange.getRequestURI();
                 String address = exchange.getSourceAddress().toString();
                 HeaderMap headers = exchange.getRequestHeaders();
                 String forwardedAddress = headers.getFirst("X-Forwarded-For");
                 String responseType = headers.getFirst(HttpHeaders.ACCEPT);
                 SecurityContext securityContext = exchange.getSecurityContext();
-                Account account = securityContext != null ? securityContext.getAuthenticatedAccount() : null;
-                String userAndRealm
-                    = account != null
-                    ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
-                    : null;
+                Account account =
+                    securityContext != null ? securityContext.getAuthenticatedAccount() : null;
+                String userAndRealm =
+                    account != null
+                        ? KeycloakIdentityProvider.getSubjectNameAndRealm(account.getPrincipal())
+                        : null;
 
-                return "Client request '" + requestPath +" (responseType=" + responseType +")': user=" + userAndRealm  + ", origin=" +
-                    address +", forwarded-for=" + forwardedAddress;
-            });
+                return "Client request '"
+                    + requestPath
+                    + " (responseType="
+                    + responseType
+                    + ")': user="
+                    + userAndRealm
+                    + ", origin="
+                    + address
+                    + ", forwarded-for="
+                    + forwardedAddress;
+              });
 
-            boolean handled = false;
-            for (RequestHandler requestHandler : getRequestHandlers()) {
-                if (requestHandler.handlePredicate.test(exchange)) {
-                    LOG.log(TRACE, () -> "Handling '" + exchange.getRequestURI() + "' with handler: " + requestHandler.name);
-                    requestHandler.handler.handleRequest(exchange);
-                    handled = true;
-                    break;
-                }
+          boolean handled = false;
+          for (RequestHandler requestHandler : getRequestHandlers()) {
+            if (requestHandler.handlePredicate.test(exchange)) {
+              LOG.log(
+                  TRACE,
+                  () ->
+                      "Handling '"
+                          + exchange.getRequestURI()
+                          + "' with handler: "
+                          + requestHandler.name);
+              requestHandler.handler.handleRequest(exchange);
+              handled = true;
+              break;
             }
+          }
 
-            if (!handled) {
-                LOG.log(WARNING, "No handler found for request: " + exchange.getRequestURI());
-            }
+          if (!handled) {
+            LOG.log(WARNING, "No handler found for request: " + exchange.getRequestURI());
+          }
         };
 
-        handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
+    handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
 
-        if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
-            handler = new RequestDumpingHandler(handler);
-        }
-
-        builder.setHandler(handler);
-
-        return builder;
+    if (getBoolean(
+        container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
+      handler = new RequestDumpingHandler(handler);
     }
 
-    protected ResteasyDeployment createResteasyDeployment(Container container, Collection<Class<?>> apiClasses, Collection<Object> apiSingletons, boolean secure) {
-        if (apiClasses == null && apiSingletons == null)
-            return null;
-        WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
-        ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
-        resteasyDeployment.setApplication(webApplication);
+    builder.setHandler(handler);
 
-        // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getProviders().add(new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode));
-        resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
-        resteasyDeployment.getProviders().add(new JacksonConfig());
+    return builder;
+  }
 
-        if (!container.isDevMode()) {
-            resteasyDeployment.getProviders().add(GZIPEncodingInterceptor.class);
+  protected ResteasyDeployment createResteasyDeployment(
+      Container container,
+      Collection<Class<?>> apiClasses,
+      Collection<Object> apiSingletons,
+      boolean secure) {
+    if (apiClasses == null && apiSingletons == null) return null;
+    WebApplication webApplication = new WebApplication(container, apiClasses, apiSingletons);
+    ResteasyDeployment resteasyDeployment = new ResteasyDeploymentImpl();
+    resteasyDeployment.setApplication(webApplication);
+
+    // Custom providers (these only apply to server applications, not client calls)
+    resteasyDeployment
+        .getProviders()
+        .add(new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode));
+    resteasyDeployment
+        .getProviders()
+        .add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
+    resteasyDeployment.getProviders().add(new JacksonConfig());
+
+    if (!container.isDevMode()) {
+      resteasyDeployment.getProviders().add(GZIPEncodingInterceptor.class);
+    }
+    resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
+    resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
+    // resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
+
+    resteasyDeployment.setSecurityEnabled(secure);
+
+    return resteasyDeployment;
+  }
+
+  public Undertow getUndertow() {
+    return undertow;
+  }
+
+  public static synchronized FilterInfo getCorsFilterInfo(Container container) {
+
+    if (corsFilterRef == null) {
+      CORSFilter corsFilter = null;
+
+      if (!container.isDevMode()) {
+        Set<String> allowedOrigins = getAllowedOrigins(container);
+
+        if (!allowedOrigins.isEmpty()) {
+          corsFilter = new CORSFilter();
+          corsFilter.setAllowCredentials(true);
+          corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+          corsFilter.setExposedHeaders("*");
+          corsFilter.setCorsMaxAge(1209600);
+          corsFilter.getAllowedOrigins().addAll(allowedOrigins);
         }
-        resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
-        resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
-        //resteasyDeployment.getActualProviderClasses().add(RequestLogger.class);
+      } else {
+        corsFilter = new CORSFilter();
+        corsFilter.getAllowedOrigins().add("*");
+        corsFilter.setAllowCredentials(true);
+        corsFilter.setExposedHeaders("*");
+        corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        corsFilter.setCorsMaxAge(1209600);
+      }
 
-        resteasyDeployment.setSecurityEnabled(secure);
-
-        return resteasyDeployment;
+      corsFilterRef = new AtomicReference<>(corsFilter);
     }
 
-    public Undertow getUndertow() {
-        return undertow;
+    if (corsFilterRef.get() != null) {
+      CORSFilter finalCorsFilter = corsFilterRef.get();
+      return Servlets.filter(
+              "CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
+          .setAsyncSupported(true);
     }
 
-    public static synchronized FilterInfo getCorsFilterInfo(Container container) {
+    return null;
+  }
 
-        if (corsFilterRef == null) {
-            CORSFilter corsFilter = null;
+  public static List<String> getExternalHostnames(Container container) {
 
-            if (!container.isDevMode()) {
-                Set<String> allowedOrigins = getAllowedOrigins(container);
+    // Get list of external hostnames
+    String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
+    String additionalHostnamesStr = getString(container.getConfig(), OR_ADDITIONAL_HOSTNAMES, null);
 
-                if (!allowedOrigins.isEmpty()) {
-                    corsFilter = new CORSFilter();
-                    corsFilter.setAllowCredentials(true);
-                    corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-                    corsFilter.setExposedHeaders("*");
-                    corsFilter.setCorsMaxAge(1209600);
-                    corsFilter.getAllowedOrigins().addAll(allowedOrigins);
-                }
-            } else {
-                corsFilter = new CORSFilter();
-                corsFilter.getAllowedOrigins().add("*");
-                corsFilter.setAllowCredentials(true);
-                corsFilter.setExposedHeaders("*");
-                corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-                corsFilter.setCorsMaxAge(1209600);
-            }
+    List<String> externalHostnames = new ArrayList<>();
 
-            corsFilterRef = new AtomicReference<>(corsFilter);
-        }
-
-        if (corsFilterRef.get() != null) {
-            CORSFilter finalCorsFilter = corsFilterRef.get();
-            return Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
-                .setAsyncSupported(true);
-        }
-
-        return null;
+    if (!TextUtil.isNullOrEmpty(additionalHostnamesStr)) {
+      externalHostnames.addAll(Arrays.stream(additionalHostnamesStr.split(",")).toList());
     }
 
-    public static List<String> getExternalHostnames(Container container) {
+    if (!TextUtil.isNullOrEmpty(defaultHostname) && !externalHostnames.contains(defaultHostname)) {
+      externalHostnames.add(defaultHostname);
+    }
 
-        // Get list of external hostnames
-        String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
-        String additionalHostnamesStr = getString(container.getConfig(), OR_ADDITIONAL_HOSTNAMES, null);
+    return externalHostnames;
+  }
 
-        List<String> externalHostnames = new ArrayList<>();
-
-        if (!TextUtil.isNullOrEmpty(additionalHostnamesStr)) {
-            externalHostnames.addAll(Arrays.stream(additionalHostnamesStr.split(","))
+  public static Set<String> getAllowedOrigins(Container container) {
+    // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
+    Set<String> allowedOrigins =
+        new HashSet<>(
+            getExternalHostnames(container).stream()
+                .map(hostname -> "https://" + hostname)
                 .toList());
-        }
+    String allowedOriginsStr = getString(container.getConfig(), OR_WEBSERVER_ALLOWED_ORIGINS, null);
 
-        if (!TextUtil.isNullOrEmpty(defaultHostname) && !externalHostnames.contains(defaultHostname)) {
-            externalHostnames.add(defaultHostname);
-        }
-
-        return externalHostnames;
+    if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
+      allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
     }
 
-    public static Set<String> getAllowedOrigins(Container container) {
-        // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
-        Set<String> allowedOrigins = new HashSet<>(
-            getExternalHostnames(container)
-                .stream().map(hostname -> "https://" + hostname).toList()
-        );
-        String allowedOriginsStr = getString(container.getConfig(), OR_WEBSERVER_ALLOWED_ORIGINS, null);
-
-        if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
-            allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
-        }
-
-        return allowedOrigins;
-    }
+    return allowedOrigins;
+  }
 }
