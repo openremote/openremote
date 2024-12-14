@@ -39,6 +39,18 @@
                                                     "operator": "GREATER_THAN",
                                                     "value": 50
                                                 }
+                                            },
+                                            {
+                                                "name": {
+                                                    "predicateType": "string",
+                                                    "match": "EXACT",
+                                                    "value": "brightness"
+                                                },
+                                                "value": {
+                                                    "predicateType": "number",
+                                                    "operator": "GREATER_THAN",
+                                                    "value": 10
+                                                }
                                             }
                                         ]
                                     }

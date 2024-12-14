@@ -825,7 +825,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("notes").get().getValue().orElse("") == ""
         }
 
-        when: "time advances for 5 minutes"
+        when: "time advances for 6 minutes"
         advancePseudoClock(5, TimeUnit.MINUTES, container)
 
         then: "the rule engine should have fired"
@@ -834,7 +834,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        and: "the light asset should have its notes attribute be empty"
+        and: "the light asset should have its notes attribute be empty" // because onOff is still false
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("notes").get().getValue().orElse("") == ""
@@ -860,7 +860,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        and: "the light asset should have its notes attribute set to Triggered"
+        and: "the light asset should have its notes attribute set to Triggered" // because onOff was set to true, and brightness was above 50 for 5 minutes and the thing asset notes was set to Test
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("notes").get().getValue().orElse("") == "Triggered"
@@ -930,7 +930,180 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
         }
 
-        and: "the light asset should have its notes attribute be Triggered"
+        and: "the light asset should have its notes attribute be Triggered" // because the OR condition was satisfied (thing asset notes was set to Test for 10 minutes)
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == "Triggered"
+        }
+
+        when: "the light asset notes and brightness are updated and thing asset notes is updated to empty"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("notes").get().setValue("")
+        lightAsset.getAttribute("brightness").get().setValue(0)
+        thingAsset = assetStorageService.find(thingId)
+        thingAsset.getAttribute("notes").get().setValue("")
+        assetStorageService.merge(lightAsset)
+        assetStorageService.merge(thingAsset)
+
+        then: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            def thing = assetStorageService.find(thingId)
+            assert thing.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "time advances for 1 minute"
+        advancePseudoClock(1, TimeUnit.MINUTES, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes empty abd brightness set to 0 and thing asset notes set to empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+            def thing = assetStorageService.find(thingId)
+            assert thing.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "time advances for 6 seconds"
+        advancePseudoClock(6, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired and"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "light asset brightness is updated to 100 and thing asset notes is updated to Test"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(100)
+        thingAsset = assetStorageService.find(thingId)
+        thingAsset.getAttribute("notes").get().setValue("Test")
+        assetStorageService.merge(lightAsset)
+        assetStorageService.merge(thingAsset)
+
+        then: "the light asset should have its brightness set to 100"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+            def thing = assetStorageService.find(thingId)
+            assert thing.getAttribute("notes").get().getValue().orElse("") == "Test"
+        }
+
+        when: "time advances for 6 seconds"
+        advancePseudoClock(6, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "time advances for 3 minutes"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "brightness is updated to 0"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(0)
+        assetStorageService.merge(lightAsset)
+
+        then: "the light asset should have its brightness set to 0" // this is done to reset the duration of the matched state
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 0
+        }
+
+        when: "time advances for 6 seconds"
+        advancePseudoClock(6, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "brightness is updated to 100"
+        lightAsset = assetStorageService.find(lightId)
+        lightAsset.getAttribute("brightness").get().setValue(100)
+        assetStorageService.merge(lightAsset)
+
+        then: "the light asset should have its brightness set to 100" // set to 100 to start the duration of the matched state
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+        }
+
+        when: "time advances for 6 seconds"
+        advancePseudoClock(6, TimeUnit.SECONDS, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "time advances for 4 minutes"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty" // because brightness was set to 0 in between so the timer was reset for that attribute match
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "time advances for 3 minutes"
+        advancePseudoClock(3, TimeUnit.MINUTES, container)
+
+        then: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be Triggered" // because brightness has been above 50 for 5 minutes.
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("notes").get().getValue().orElse("") == "Triggered"

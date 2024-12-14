@@ -298,7 +298,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             if (matches != null) {
                                 long currentTime = timerService.getCurrentTimeMillis();
                                 
-                                Set<AttributeInfo> matchedStates = matches.stream()
+                                List<AttributeInfo> matchedStates = matches.stream()
                                     .map(attributeInfoAndMatchedPredicateIndex -> {
                                         AttributeInfo matchedState = attributeInfoAndMatchedPredicateIndex.getKey();
                                         
@@ -321,21 +321,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                                                     return false;
                                                 }
 
-                                                return  currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
+                                                return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
                                             });
 
                                         // Return the state if all durations satisfied, otherwise null
                                         return allDurationsSatisfied ? matchedState : null;
                                     })
                                     .filter(Objects::nonNull)
-                                    .collect(Collectors.toSet());
+                                    .collect(Collectors.toList());
 
                                 matched.addAll(matchedStates);
 
                                 // Handle unmatched states
-                                Set<AttributeInfo> matchedInfos = matches.stream()
+                                List<AttributeInfo> matchedInfos = matches.stream()
                                     .map(Pair::getKey)
-                                    .collect(Collectors.toSet());
+                                    .collect(Collectors.toList());
 
                                 states.stream()
                                     .filter(state -> !matchedInfos.contains(state))
