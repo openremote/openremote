@@ -2,7 +2,7 @@ import {html, LitElement, TemplateResult} from "lit";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {customElement, property} from "lit/decorators.js";
 import {when} from 'lit/directives/when.js';
-import {ManagerAppConfig} from "@openremote/model";
+import {ManagerAppConfig, MapConfig} from "@openremote/model";
 import {DialogAction, OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
@@ -15,7 +15,7 @@ import {OrConfMapCard} from "./or-conf-map/or-conf-map-card";
 export class OrConfPanel extends LitElement {
 
     @property()
-    public config?: {[id: string]: any} | ManagerAppConfig = {};
+    public config?: MapConfig | ManagerAppConfig = {};
 
     @property()
     public realmOptions: { name: string, displayName: string, canDelete: boolean }[] = [];
@@ -34,23 +34,26 @@ export class OrConfPanel extends LitElement {
         if(this.isManagerConfig(config)) {
             return config.realms;
         } else if(this.isMapConfig(config)) {
-            return config;
+            return config.options;
         }
         return undefined;
     }
 
-    protected isMapConfig(object: unknown): boolean {
-        const keys = Object.keys(object);
-        // Instead of looking for the exact same entries, ensure that at least one of them can be mapped.
-        // This also shows realm configs that don't have parent realms, but are still existing in the mapsettings.json
-        return this.realmOptions.filter((o) => keys.includes(o.name)).length > 0;
+    protected isMapConfig(object: unknown): object is MapConfig {
+        if (typeof object == 'object' && 'options' in object) {
+            const keys = Object.keys(object.options);
+            // Instead of looking for the exact same entries, ensure that at least one of them can be mapped.
+            // This also shows realm configs that don't have parent realms, but are still existing in the mapsettings.json
+            return this.realmOptions.filter((o) => keys.includes(o.name)).length > 0;
+        }
+        return false;
     }
 
     protected isManagerConfig(object: any): object is ManagerAppConfig {
         return 'realms' in object;
     }
 
-    protected notifyConfigChange(config: {[id: string]: any} | ManagerAppConfig) {
+    protected notifyConfigChange(config: MapConfig | ManagerAppConfig) {
         this.dispatchEvent(new CustomEvent("change", { detail: config }));
     }
 
@@ -118,7 +121,7 @@ export class OrConfPanel extends LitElement {
 
     // Filter the list of realms that are not present in the config.
     // Most used for the "add realm" dialog, to hide the realms that are already present.
-    protected getAvailableRealms(config?: ManagerAppConfig | {[id: string]: any}, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
+    protected getAvailableRealms(config?: ManagerAppConfig | MapConfig, realmOptions?: { name: string, displayName: string, canDelete: boolean }[]): { name: string, displayName: string, canDelete: boolean }[] {
         const realms = this.getRealmsProperty(config);
         if(realms) {
             return realmOptions.filter((r) => {

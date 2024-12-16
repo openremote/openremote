@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -32,7 +34,8 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
+import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -64,6 +67,7 @@ public class MapService implements ContainerService {
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
     public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
+    private static final String DEFAULT_VECTOR_TILES_URL = "mbtiles://mapdata.mbtiles";
     private static ConfigurationService configurationService;
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
@@ -72,13 +76,28 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
+    public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
-        mapConfig.putPOJO("options", mapConfiguration);
+
+        ObjectNode vector_tiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
+        if (vector_tiles.hasNonNull("url")) {
+            if (!vector_tiles.get("url").textValue().contains("/{z}/{x}/{y}")) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+        } else {
+            vector_tiles.put("url", DEFAULT_VECTOR_TILES_URL);
+            mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vector_tiles, MapSourceConfig.class));
+        }
+
+        mapConfig.putPOJO("options", mapConfiguration.options);
+        mapConfig.putPOJO("sources", mapConfiguration.sources);
+
         configurationService.saveMapConfig(mapConfig);
+        mapConfig = configurationService.getMapConfig();
         mapSettings.clear();
+
         return mapConfig;
     }
 
@@ -271,7 +290,7 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    vectorTilesObj.remove("url");
+                    String url = vectorTilesObj.remove("url").textValue();
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -286,7 +305,14 @@ public class MapService implements ContainerService {
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    String tileUrl = !url.contentEquals(DEFAULT_VECTOR_TILES_URL)
+                        ? url
+                        : UriBuilder.fromUri(host)
+                            .replacePath(API_PATH)
+                            .path(realm)
+                            .path("map/tile")
+                            .build()
+                            .toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
                 });
