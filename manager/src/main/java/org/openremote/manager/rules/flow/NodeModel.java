@@ -1,11 +1,11 @@
 package org.openremote.manager.rules.flow;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.openremote.manager.rules.RulesBuilder;
-import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery;
+import org.openremote.model.datapoint.query.AssetDatapointNearestQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
@@ -76,8 +76,13 @@ public enum NodeModel {
 
 				Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
-				final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointLTTBQuery(pastInstant.toEpochMilli(), pastInstant.toEpochMilli(), 1));
-				return valueDatapoints.length > 0 ? valueDatapoints[0] : null;
+				final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
+				try {
+					System.out.println("DATAPOINTS: " + ValueUtil.JSON.writeValueAsString(valueDatapoints));
+				} catch (JsonProcessingException e) {
+					throw new RuntimeException(e);
+				}
+				return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
 			},
 			params -> {
 				AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);

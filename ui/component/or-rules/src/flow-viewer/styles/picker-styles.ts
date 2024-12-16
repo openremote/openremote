@@ -5,9 +5,12 @@ input{
     border: 0;
     height: max-content;
 }
-textarea{
+textarea {
     min-width: 150px;
     min-height: 37px;
+} 
+input[type=number] {
+    padding: 11px 10px;
 }
 textarea, input[type=text], input[type=number], select{
     font-family: inherit;

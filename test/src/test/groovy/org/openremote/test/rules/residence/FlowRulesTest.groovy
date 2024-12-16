@@ -1,20 +1,30 @@
 package org.openremote.test.rules.residence
 
-
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.setup.integration.ManagerTestSetup
+import org.openremote.model.Constants
+import org.openremote.model.asset.impl.ShipAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.flow.NodeCollection
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.MetaItemType
+import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+
+import java.time.temporal.ChronoUnit
 
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
@@ -73,5 +83,83 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
 
+    }
+
+    def "Test HISTORIC_VALUE and SUM blocks"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        and: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class);
+        def timerService = container.getService(TimerService.class);
+        def startTemperature = 25
+        def assetId = UniqueIdentifierGenerator.generateId("flow_ship")
+
+
+        when: "An asset is created"
+        def asset = new ShipAsset("Flow ship")
+                .setRealm(Constants.MASTER_REALM)
+                .addOrReplaceAttributes(
+                        new Attribute<Object>(ShipAsset.SPEED, null, timerService.getNow().minus(10, ChronoUnit.HOURS).toEpochMilli()).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("historicOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("sumOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true))
+                )
+        asset = assetStorageService.merge(asset);
+
+        and: "Some datapoints are added to the living room"
+        List<AttributeEvent> datapointList = new LinkedList()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 30D, timerService.getNow().minus(30, ChronoUnit.MINUTES).toEpochMilli()));
+        sleep(100)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 20D, timerService.getNow().minus(20, ChronoUnit.MINUTES).toEpochMilli()));
+        sleep(100)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 10D, timerService.getNow().minus(10, ChronoUnit.MINUTES).toEpochMilli()));
+        sleep(100)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 1D, timerService.getNow().toEpochMilli()));
+        sleep(100)
+
+        then: "They are queryable"
+        conditions.eventually {
+            def dps = assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), ShipAsset.SPEED.name));
+            assert dps.size() == 4
+            dps.forEach {e ->
+                LOG.error(e.toString())
+            }
+        }
+
+        when: "I make a HISTORIC_VALUE and SUM blocks"
+        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndSumTest.flow").text
+        json = json.replaceAll("%ASSETID%", asset.getId())
+        json = json.replaceAll("%HISTORIC_ATTRIBUTE%", ShipAsset.SPEED.name)
+        json = json.replaceAll("%HISTORIC_VALUE_OUTPUT%", "historicOutput")
+        json = json.replaceAll("%SUM_ATTRIBUTE_OUTPUT%", "sumOutput")
+        json = json.replaceAll("%SUM_READ_ATTRIBUTE%", ShipAsset.SPEED.name)
+        NodeCollection realCollection = ValueUtil.JSON.readValue(json, NodeCollection.class)
+        def ruleset = (new GlobalRuleset(
+                "HistoricValueAndSum",
+                Ruleset.Lang.FLOW,
+                json
+        ))
+        rulesetStorageService.merge(ruleset)
+
+        then: "The rule compiles successfully"
+        conditions.eventually {
+            assert rulesService.globalEngine.get() != null
+            assert rulesService.globalEngine.get().isRunning()
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "HistoricValueAndSum" && it.status == DEPLOYED})
+        }
+
+        and: "After the rule runs, the value the attribute had at that timestamp is written to the output attribute"
+        conditions.eventually {
+            asset = assetStorageService.find(asset.getId(), ShipAsset.class);
+            assert asset.getAttribute("historicOutput").get().getValue().get() == 20;
+            assert asset.getAttribute("sumOutput").get().getValue().get() ==
+                    asset.getAttribute(ShipAsset.SPEED).get().getValue().get() + 2 + 3 + 4
+        }
     }
 }
