@@ -419,7 +419,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
 
                 if (noLongerMatches) {
-                    log(Level.FINE, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
+                    log(Level.FINEST, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
                 }
 
                 return noLongerMatches;
@@ -457,7 +457,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
-            log(Level.FINE, "Rule evaluation result: " + lastEvaluationResult);
+            log(Level.FINEST, "Rule evaluation result: " + lastEvaluationResult);
         }
 
         Collection<String> getMatchedAssetIds() {
