@@ -24,13 +24,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-
-import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")
@@ -44,7 +42,7 @@ public interface MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "saveSettings", summary = "Update map settings")
-    Object saveSettings(@BeanParam RequestParams requestParams, Map<String, MapRealmConfig> mapConfig);
+    Object saveSettings(@BeanParam RequestParams requestParams, MapConfig mapConfig);
 
     /**
      * Returns style used to initialise Mapbox GL
