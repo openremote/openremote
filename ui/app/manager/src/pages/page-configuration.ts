@@ -324,7 +324,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <div class="subheader">${i18next.t("configuration.global.tileServer")}</div>
                                         <span>${i18next.t("configuration.global.tileServerDescription")}</span>
                                         <or-mwc-input class="input" outlined
-                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0]}" 
+                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}" 
                                             .type="${InputType.URL}"
                                             .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
                                             placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
