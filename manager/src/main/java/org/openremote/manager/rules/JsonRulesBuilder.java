@@ -221,7 +221,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             unfilteredAssetStates.remove(event.assetState);
                             if (durations != null) {
                                 durations.keySet().forEach(durationIdx -> 
-                                    durationMatchTimes.remove(new Pair<>(event.assetState.getRef(), durationIdx)));
+                                    durationMatchTimes.remove(new Pair<>(event.assetState, durationIdx)));
                             }
                         }
                     }
