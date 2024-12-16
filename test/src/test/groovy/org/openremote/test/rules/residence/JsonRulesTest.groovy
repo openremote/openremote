@@ -825,7 +825,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert light.getAttribute("notes").get().getValue().orElse("") == ""
         }
 
-        when: "time advances for 6 minutes"
+        when: "time advances for 5 minutes"
         advancePseudoClock(5, TimeUnit.MINUTES, container)
 
         then: "the rule engine should have fired"

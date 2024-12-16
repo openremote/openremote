@@ -20,7 +20,6 @@
 package org.openremote.manager.rules;
 
 import jakarta.ws.rs.core.MediaType;
-
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.PersistenceEvent;
@@ -39,12 +38,7 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
-import org.openremote.model.util.ValueUtil;
-import org.openremote.model.value.MetaHolder;
+import org.openremote.model.util.*;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.NameValueHolder;
 import org.openremote.model.webhook.Webhook;
@@ -55,6 +49,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,6 +60,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
@@ -95,9 +91,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
-        Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> assetDurationPredicate = null;
         Function<Collection<AttributeInfo>, Set<AttributeInfo>> assetPredicate = null;
-        Map<Integer, String> durations = null;
         Map<Pair<AttributeInfo, Integer>, Long> durationMatchTimes = new HashMap<>();
         Set<AttributeInfo> unfilteredAssetStates = new HashSet<>();
         Set<AttributeInfo> previouslyMatchedAssetStates = new HashSet<>();
@@ -115,7 +109,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 previouslyUnmatchedAssetStates = new HashSet<>();
             }
 
-             if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
+            if (!TextUtil.isNullOrEmpty(ruleCondition.cron)) {
                 try {
                     CronExpression timerExpression = new CronExpression(ruleCondition.cron);
                     timerExpression.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -184,8 +178,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     // don't support it here either)
                     attributePredicates.groups = null;
                     if (attributePredicateHasDurationCondition) {
-                        durations = ruleCondition.duration;
-                        assetDurationPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems());
+                        assetPredicate = asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates.getItems(), ruleCondition.duration, durationMatchTimes);
                     } else {
                         assetPredicate = AssetQueryPredicate.asAttributeMatcher(timerService::getCurrentTimeMillis, attributePredicates);
                     }
@@ -219,9 +212,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                         }
                         case DELETE -> {
                             unfilteredAssetStates.remove(event.assetState);
-                            if (durations != null) {
-                                durations.keySet().forEach(durationIdx -> 
-                                    durationMatchTimes.remove(new Pair<>(event.assetState, durationIdx)));
+                            if (durationMatchTimes != null) {
+                                durationMatchTimes.keySet().removeIf(attributeRefPredicateIndex -> attributeRefPredicateIndex.getKey().getRef().equals(event.assetState.getRef()));
                             }
                         }
                     }
@@ -289,104 +281,16 @@ public class JsonRulesBuilder extends RulesBuilder {
                 unfilteredAssetStates.stream()
                     .collect(Collectors.groupingBy(AttributeInfo::getId))
                     .forEach((id, states) -> {
-
-                        // Handle duration based attribute predicates
-                        if (assetDurationPredicate != null) {
-                
-                            // Pair of Attribute Info and the corresponding index of the duration map for the attribute predicate
-                            Set<Pair<AttributeInfo, Integer>> matches = assetDurationPredicate.apply(states);
-                            
-                            if (matches != null) {
-                                long currentTime = timerService.getCurrentTimeMillis();
-                                
-                                // Process each match independently
-                                matches.forEach(match -> {
-                                    String duration = durations.get(match.getValue());
-                                    if (duration != null) {
-                                        Pair<AttributeInfo, Integer> durationKey = new Pair<>(match.getKey(), match.getValue());
-                                        if (!durationMatchTimes.containsKey(durationKey)) {
-                                            durationMatchTimes.put(durationKey, currentTime);
-                                        }
-                                    }
-                                });
-
-                                // Then check if all durations are satisfied
-                                List<AttributeInfo> statesWithSatisfiedDurations = matches.stream()
-                                    .map(match -> {
-                                        AttributeInfo state = match.getKey();
-                                        boolean allDurationsSatisfied = matches.stream()
-                                            .allMatch(pm -> {
-                                                String duration = durations.get(pm.getValue());
-                                                if (duration == null) {
-                                                    return true; // No duration specified so it's always satisfied
-                                                }
-                                                
-                                                Pair<AttributeInfo, Integer> durationKey = new Pair<>(pm.getKey(), pm.getValue());
-                                                Long startTime = durationMatchTimes.get(durationKey);
-                                                
-                                                if (startTime == null) {
-                                                    return false;
-                                                }
-
-                                                long remainingTime = TimeUtil.parseTimeDuration(duration) - (currentTime - startTime);
-                                                boolean satisfied = remainingTime <= 0;
-                                                return satisfied;
-                                            });
-                                        return allDurationsSatisfied ? state : null;
-                                    })
-                                    .filter(Objects::nonNull)
-                                    .collect(Collectors.toList());
-
-                                matched.addAll(statesWithSatisfiedDurations);
-
-                                // Handle unmatched states
-                                List<AttributeInfo> matchedInfos = matches.stream()
-                                    .map(Pair::getKey)
-                                    .collect(Collectors.toList());
-
-                                states.stream()
-                                    .filter(state -> !matchedInfos.contains(state))
-                                    .forEach(state -> {
-                                        unmatched.add(state);
-                                        // Clear duration times for unmatched states
-                                        durations.keySet().forEach(durationIdx -> {
-                                            Pair<AttributeInfo, Integer> key = new Pair<>(state, durationIdx);
-                                            if (durationMatchTimes.containsKey(key)) {
-                                                durationMatchTimes.remove(key);
-                                            }
-                                        });
-                                    });
-                            } else {
-                                unmatched.addAll(states);
-                                durationMatchTimes.clear();
-                            }
+                        Set<AttributeInfo> matches = assetPredicate.apply(states);
+                        if (matches != null) {
+                            matched.addAll(matches);
+                            unmatched.addAll(states.stream()
+                                .filter(state -> !matches.contains(state))
+                                .collect(Collectors.toSet()));
                         } else {
-                            Set<AttributeInfo> matches = assetPredicate.apply(states);
-                            if (matches != null) {
-                                matched.addAll(matches);
-                                unmatched.addAll(states.stream()
-                                    .filter(state -> !matches.contains(state))
-                                    .collect(Collectors.toSet()));
-                            } else {
-                                unmatched.addAll(states);
-                            }
+                            unmatched.addAll(states);
                         }
                     });
-
-
-            // Ensure all attribute predicates are satisfied per asset when using duration predicates
-            // Otherwise clear matches to prevent partial duration satisfaction from triggering the rule (since the RuleEngine expects a match per asset state)
-            if (assetDurationPredicate != null) {
-                Map<String, Long> matchCountByAssetId = matched.stream()
-                    .collect(Collectors.groupingBy(AttributeInfo::getId, Collectors.counting()));
-                
-                // For each asset, verify it matches the expected number of predicates
-                matchCountByAssetId.forEach((assetId, count) -> {
-                    if (count != attributePredicates.getItems().size()) {
-                            matched.removeIf(m -> m.getId().equals(assetId));
-                        }
-                    });
-                } 
 
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
                 unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
@@ -451,9 +355,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Filter out unmatched asset ids that are in the matched list
                 unmatchedAssetIds = unmatchedAssetStateStream
-                        .map(AttributeInfo::getId)
-                        .filter(id -> !matchedAssetIds.contains(id))
-                        .collect(Collectors.toList());
+                    .map(AttributeInfo::getId)
+                    .filter(id -> !matchedAssetIds.contains(id))
+                    .collect(Collectors.toList());
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
@@ -498,12 +402,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         @Override
         public String toString() {
             return RuleConditionEvaluationResult.class.getSimpleName() + "{" +
-                    "matches=" + matches +
-                    ", matchedAssetStates=" + matchedAssetStates.size() +
-                    ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
-                    ", matchedAssetIds=" + matchedAssetIds.size() +
-                    ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
-                    '}';
+                "matches=" + matches +
+                ", matchedAssetStates=" + matchedAssetStates.size() +
+                ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
+                ", matchedAssetIds=" + matchedAssetIds.size() +
+                ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
+                '}';
         }
     }
 
@@ -722,10 +626,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         add().name(rule.name)
-                .description(rule.description)
-                .priority(rule.priority)
-                .when(condition)
-                .then(action);
+            .description(rule.description)
+            .priority(rule.priority)
+            .when(condition)
+            .then(action);
 
         return this;
     }
@@ -895,7 +799,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             action.setUrl(newUrl);
                             pushMsg.setAction(action);
                         }
-                        
+
                         if (pushMsg.getBody() != null) {
                             String newBody = replaceAssetIdPlaceholder(pushMsg.getBody(), ruleState, useUnmatched, "notification body", false);
                             pushMsg.setBody(newBody);
@@ -969,7 +873,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Check if the body containers the PLACEHOLDER_TRIGGER_ASSETS
             if(isLocalized) {
                 bodyContainsTriggeredAssetInfo = localizedBodies.values().stream().anyMatch(
-                        text -> !TextUtil.isNullOrEmpty(text) && text.contains(PLACEHOLDER_TRIGGER_ASSETS));
+                    text -> !TextUtil.isNullOrEmpty(text) && text.contains(PLACEHOLDER_TRIGGER_ASSETS));
             } else {
                 bodyContainsTriggeredAssetInfo = !TextUtil.isNullOrEmpty(body) && body.contains(PLACEHOLDER_TRIGGER_ASSETS);
             }
@@ -1029,7 +933,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         customNotifications.forEach(customNotification -> {
                             log(Level.FINE, "Sending custom user notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index + " [Targets=" + (customNotification.getTargets() != null ? customNotification.getTargets().stream().map(Object::toString).collect(Collectors.joining(",")) : "null") + "]");
                             notificationsFacade.send(customNotification);
-                    }), 0);
+                        }), 0);
                 }
             } else {
                 targetIds = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
@@ -1145,8 +1049,8 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             log(Level.FINE, "Writing attribute '" + attributeAction.attributeName + "' for " + ids.size() + " asset(s) for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
             return new RuleActionExecution(() ->
-                    ids.forEach(id ->
-                            assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
+                ids.forEach(id ->
+                    assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
         }
 
         if (ruleAction instanceof RuleActionWait) {
@@ -1193,12 +1097,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             List<AttributeInfo> matchingAssetStates = matchingAssetIds
                 .stream()
                 .map(assetId ->
-                        facts.getAssetStates()
-                                .stream()
-                                .filter(state -> state.getId().equals(assetId) && state.getName().equals(attributeUpdateAction.attributeName))
-                                .findFirst().orElseGet(() -> {
-                                    log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
-                                    return null;
+                    facts.getAssetStates()
+                        .stream()
+                        .filter(state -> state.getId().equals(assetId) && state.getName().equals(attributeUpdateAction.attributeName))
+                        .findFirst().orElseGet(() -> {
+                            log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
+                            return null;
                         }))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -1278,7 +1182,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         assetsFacade.dispatch(assetState.getId(), attributeUpdateAction.attributeName, value);
                     }
                 }),
-            0);
+                0);
         }
 
         log(Level.FINE, "Unsupported rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -1330,23 +1234,23 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (TextUtil.isNullOrEmpty(text) || !text.contains(PLACEHOLDER_ASSET_ID)) {
             return text;
         }
-        
+
         Set<String> matchedIds = useUnmatched ? ruleState.otherwiseMatchedAssetIds : ruleState.thenMatchedAssetIds;
 
         if (matchedIds != null && !matchedIds.isEmpty()) {
             String replacement = firstOnly ? matchedIds.iterator().next() : String.join(",", matchedIds);
-            
+
 
             String result = text.replace(PLACEHOLDER_ASSET_ID, replacement);
             log(Level.FINEST, "Replaced asset ID(s) in " + context + ": " + result);
-            return result; 
+            return result;
         } else {
             log(Level.WARNING, "Asset ID placeholder used but no matched assets found for " + context);
             return text;
         }
     }
-    
-    
+
+
     protected String insertTriggeredAssetInfo(String sourceText, Map<String, Set<AttributeInfo>> assetStates, boolean isHtml, boolean isJson) {
 
         StringBuilder sb = new StringBuilder();
@@ -1444,12 +1348,12 @@ public class JsonRulesBuilder extends RulesBuilder {
         if (conditionStateMap != null) {
             if (!useUnmatched) {
                 return conditionStateMap.values().stream().flatMap(triggerState ->
-                        triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
+                    triggerState != null ? triggerState.getMatchedAssetIds().stream() : Stream.empty()
                 ).distinct().collect(Collectors.toList());
             }
 
             return conditionStateMap.values().stream().flatMap(triggerState ->
-                    triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
+                triggerState != null ? triggerState.getUnmatchedAssetIds().stream() : Stream.empty()
             ).distinct().collect(Collectors.toList());
         }
 
@@ -1488,9 +1392,9 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         SunTimes.Parameters sunCalculator = SunTimes.compute()
-                .on(timerService.getNow())
-                .utc()
-                .at(location.getX(), location.getY());
+            .on(timerService.getNow())
+            .utc()
+            .at(location.getX(), location.getY());
 
         if (twilight != null) {
             sunCalculator.twilight(twilight);
@@ -1500,93 +1404,97 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
 
-     /**
-     * Creates a function that matches attributes similar to {@link AssetQueryPredicate.asAttributeMatcher}, 
-     * but with the following differences:
-     * <ul>
-     * <li>Returns a Set of Pairs containing both the matched {@link AttributeInfo} and an {@link Integer index}. The index is used to look up the duration requirement for that match</li>
-     * <li>Pairs are returned when one or more {@link AttributePredicate}s match</li>    
-     * <li>Does not support nesting via {@link LogicGroup}s nor {@link LogicGroup.Operator#OR} operators</li>
-     * </ul>
+    /**
+     * Creates a function that matches attributes similar to {@link AssetQueryPredicate#asAttributeMatcher},
+     * but with duration logic applied per {@link AttributePredicate} and only supports a single list of predicates.
      */
     @SuppressWarnings("unchecked")
-    public static Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates) {
+    protected static Function<Collection<AttributeInfo>, Set<AttributeInfo>> asAttributeMatcher(Supplier<Long> currentMillisProducer, List<AttributePredicate> attributePredicates, Map<Integer, String> predicateDurationStrings, Map<Pair<AttributeInfo, Integer>, Long> durationMatchTimes) {
         if (attributePredicates == null || attributePredicates.isEmpty()) {
             return as -> Collections.EMPTY_SET;
         }
 
-        List<Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>>> assetStateMatchers = new ArrayList<>();
-        // to keep track of the predicates for each index so we can determine the duration of the predicate at a later stage
-        Map<Integer, List<Predicate<AttributeInfo>>> predicateMap = new HashMap<>();
+        List<Pair<Predicate<AttributeInfo>, Long>> attributePredicatesAndDurations = IntStream.range(0, attributePredicates.size()).mapToObj(i -> {
+            AttributePredicate p = attributePredicates.get(i);
+            Long predicateDuration = null;
 
-        if (attributePredicates.size() > 0) {
-            for (int i = 0; i < attributePredicates.size(); i++) {
-                AttributePredicate p = attributePredicates.get(i);
-                List<Predicate<AttributeInfo>> predicates = new ArrayList<>();
-                
-                predicates.add((Predicate<AttributeInfo>)(Predicate)AssetQueryPredicate.asPredicate(currentMillisProducer, p));
-
-                if (p.meta != null) {
-                    final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
-                        .map(metaPred -> AssetQueryPredicate.asPredicate(currentMillisProducer, metaPred))
-                        .reduce(x->true, Predicate::and);
-
-                    predicates.add(assetState -> {
-                        MetaMap metaItems = ((MetaHolder)assetState).getMeta();
-                        return metaItems.stream().anyMatch(metaItem ->
-                            innerMetaPredicate.test(assetState)
-                        );
-                    });
-                }
-
-                if (p.previousValue != null) {
-                    Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
-                    predicates.add(nameValueHolder -> innerOldValuePredicate.test(((AttributeInfo)nameValueHolder).getOldValue()));
-                }
-
-                predicateMap.put(i, predicates);
+            // Parse duration string only once during build not each time during eval for each asset state as this is computationally expensive
+            if (predicateDurationStrings != null && predicateDurationStrings.get(i) != null) {
+                String durationStr = predicateDurationStrings.get(i);
+                predicateDuration = TimeUtil.parseTimeDuration(durationStr);
             }
-        }
 
-        assetStateMatchers.add(assetStates -> {
-            Set<Pair<AttributeInfo, Integer>> matchedAssetStates = new HashSet<>();
-            for (int i = 0; i < predicateMap.size(); i++) {
-                final int index = i;
-                List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
+            Predicate<AttributeInfo> predicate = (Predicate<AttributeInfo>) (Predicate) AssetQueryPredicate.asPredicate(currentMillisProducer, p);
 
-                predicates.stream().allMatch(attributePredicate -> {
-                    List<AttributeInfo> matches = assetStates.stream()
-                        .filter(attributePredicate)
-                        .collect(Collectors.toList());
-                
-                    if (matches.isEmpty()) {
-                        return false;
-                    }
-                    
-                    // Add all matching states
-                    matches.forEach(matchedAssetState -> 
-                        matchedAssetStates.add(new Pair<>(matchedAssetState, index))
-                    ); 
-                    return true;
+            if (p.meta != null) {
+                final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
+                    .map(metaPred -> AssetQueryPredicate.asPredicate(currentMillisProducer, metaPred))
+                    .reduce(x -> true, Predicate::and);
+
+                predicate = predicate.and(assetState -> {
+                    MetaMap metaItems = assetState.getMeta();
+                    return metaItems.stream().anyMatch(metaItem ->
+                        innerMetaPredicate.test(assetState)
+                    );
                 });
-        
             }
 
-            return matchedAssetStates;
-        });
+            if (p.previousValue != null) {
+                Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
+                predicate = predicate.and(nameValueHolder -> innerOldValuePredicate.test(nameValueHolder.getOldValue()));
+            }
+
+            return new Pair<>(predicate, predicateDuration);
+        }).toList();
+
 
         return assetStates -> {
-            Set<Pair<AttributeInfo, Integer>> matchedStates = new HashSet<>();
+            Set<AttributeInfo> matchedAssetStates = new HashSet<>();
+            // Can't just fail on first nonmatch as we need to keep duration times up to date for each predicate
+            boolean allPredicatesMatch = IntStream.range(0, attributePredicatesAndDurations.size()).mapToObj(i -> {
+                Pair<Predicate<AttributeInfo>, Long> predicateAndDuration = attributePredicatesAndDurations.get(i);
+                Long duration = predicateAndDuration.getValue();
 
-            for (Function<Collection<AttributeInfo>, Set<Pair<AttributeInfo, Integer>>> matcher : assetStateMatchers) {
-                Set<Pair<AttributeInfo, Integer>> matcherMatchedStates = matcher.apply(assetStates);
+                if (duration == null) {
+                    // Find the first match as an attribute predicate shouldn't match more than one asset state
+                    return assetStates.stream().filter(predicateAndDuration.getKey()).findFirst().map(matchedAssetState -> {
+                        matchedAssetStates.add(matchedAssetState);
+                        return true;
+                    }).orElse(false);
+                } else {
+                    AtomicBoolean matchFound = new AtomicBoolean();
+                    // Need to clear any duration timer for each asset state that doesn't match
+                    assetStates.forEach(assetState -> {
+                        if (predicateAndDuration.getKey().test(assetState)) {
+                            boolean durationMatches = false;
 
-                if (matcherMatchedStates != null) {
-                    matchedStates.addAll(matcherMatchedStates);
+                            Pair<AttributeInfo, Integer> assetStatePredicateIndex = new Pair<>(assetState, i);
+                            // Look for existing duration end time
+                            Long previousMatchTime = durationMatchTimes.get(assetStatePredicateIndex);
+
+                            if (previousMatchTime != null) {
+                                // Check if previous match time is longer than duration millis ago
+                                durationMatches = previousMatchTime + duration <= currentMillisProducer.get();
+                            } else {
+                                // Insert the current time for this asset state and predicate index
+                                durationMatchTimes.put(assetStatePredicateIndex, currentMillisProducer.get());
+                            }
+
+                            // Store first match
+                            if (durationMatches && !matchFound.get()) {
+                                matchFound.set(true);
+                                matchedAssetStates.add(assetState);
+                            }
+                        } else {
+                            durationMatchTimes.remove(new Pair<>(assetState, i));
+                        }
+                    });
+
+                    return matchFound.get();
                 }
-            }
-
-            return matchedStates;
+            }).filter(predicateMatches -> predicateMatches.equals(true))
+                .count() == attributePredicatesAndDurations.size();
+            return allPredicatesMatch ? matchedAssetStates : null;
         };
     }
 }
