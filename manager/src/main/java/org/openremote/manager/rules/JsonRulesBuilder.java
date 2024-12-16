@@ -482,9 +482,21 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (!ruleConditionGroup.getItems().isEmpty()) {
 
                 if (operator == LogicGroup.Operator.AND) {
+                    // get whether any condition state has matches, 
+                    // used to allow re-trigger of a rule when other conditions have previously matched and a new match has been found
+                    boolean hasNewMatchesForAnyCondition = ruleConditionGroup.getItems().stream()
+                        .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                        .anyMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
-                        .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+                        .allMatch(ruleConditionState -> {
+                            boolean matches = ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches;
+                            boolean matchesPreviously = !ruleConditionState.previouslyMatchedAssetStates.isEmpty();
+
+                            // return matches OR whether the match has previously been matched and any new matches have been found
+                            return matches || (matchesPreviously && hasNewMatchesForAnyCondition);
+                        });
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
