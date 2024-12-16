@@ -483,7 +483,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 if (operator == LogicGroup.Operator.AND) {
                     // get whether any condition state has matches, 
-                    // used to allow re-trigger of a rule when other conditions have previously matched and a new match has been found
+                    // used to allow re-triggering of a rule when other conditions have previously matched and a new match has been found
                     boolean hasNewMatchesForAnyCondition = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .anyMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
