@@ -289,48 +289,55 @@ public class JsonRulesBuilder extends RulesBuilder {
                 unfilteredAssetStates.stream()
                     .collect(Collectors.groupingBy(AttributeInfo::getId))
                     .forEach((id, states) -> {
-                        // when assetDurationPredicate is provided then we use that to to match the asset states
-                        if (assetDurationPredicate != null) {
 
-                            // Matches are a set of pairs containing the attribute info and the index of the duration map
+                        // Handle duration based attribute predicates
+                        if (assetDurationPredicate != null) {
+                
+                            // Pair of Attribute Info and the corresponding index of the duration map for the attribute predicate
                             Set<Pair<AttributeInfo, Integer>> matches = assetDurationPredicate.apply(states);
                             
                             if (matches != null) {
                                 long currentTime = timerService.getCurrentTimeMillis();
                                 
-                                List<AttributeInfo> matchedStates = matches.stream()
-                                    .map(attributeInfoAndMatchedPredicateIndex -> {
-                                        AttributeInfo matchedState = attributeInfoAndMatchedPredicateIndex.getKey();
-                                        
-                                        // Check if all predicates for this state have their durations satisfied
+                                // Process each match independently
+                                matches.forEach(match -> {
+                                    String duration = durations.get(match.getValue());
+                                    if (duration != null) {
+                                        Pair<AttributeInfo, Integer> durationKey = new Pair<>(match.getKey(), match.getValue());
+                                        if (!durationMatchTimes.containsKey(durationKey)) {
+                                            durationMatchTimes.put(durationKey, currentTime);
+                                        }
+                                    }
+                                });
+
+                                // Then check if all durations are satisfied
+                                List<AttributeInfo> statesWithSatisfiedDurations = matches.stream()
+                                    .map(match -> {
+                                        AttributeInfo state = match.getKey();
                                         boolean allDurationsSatisfied = matches.stream()
-                                            .allMatch(predicateMatch -> {
-                                                String matchDuration = durations.get(predicateMatch.getValue());
-                                                
-                                                // If no duration set, this predicate is satisfied
-                                                if (matchDuration == null) {
-                                                    return true;
+                                            .allMatch(pm -> {
+                                                String duration = durations.get(pm.getValue());
+                                                if (duration == null) {
+                                                    return true; // No duration specified so it's always satisfied
                                                 }
                                                 
-                                                Pair<AttributeInfo, Integer> matchKey = new Pair<>(predicateMatch.getKey(), predicateMatch.getValue());
-                                                Long matchStartTime = durationMatchTimes.get(matchKey);
+                                                Pair<AttributeInfo, Integer> durationKey = new Pair<>(pm.getKey(), pm.getValue());
+                                                Long startTime = durationMatchTimes.get(durationKey);
                                                 
-                                                // Store start time and return false if first occurrence
-                                                if (matchStartTime == null) {
-                                                    durationMatchTimes.put(matchKey, currentTime);
+                                                if (startTime == null) {
                                                     return false;
                                                 }
 
-                                                return currentTime - matchStartTime >= TimeUtil.parseTimeDuration(matchDuration);
+                                                long remainingTime = TimeUtil.parseTimeDuration(duration) - (currentTime - startTime);
+                                                boolean satisfied = remainingTime <= 0;
+                                                return satisfied;
                                             });
-
-                                        // Return the state if all durations satisfied, otherwise null
-                                        return allDurationsSatisfied ? matchedState : null;
+                                        return allDurationsSatisfied ? state : null;
                                     })
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.toList());
 
-                                matched.addAll(matchedStates);
+                                matched.addAll(statesWithSatisfiedDurations);
 
                                 // Handle unmatched states
                                 List<AttributeInfo> matchedInfos = matches.stream()
@@ -349,13 +356,6 @@ public class JsonRulesBuilder extends RulesBuilder {
                                             }
                                         });
                                     });
-
-
-                                // Clear the matched list if the number of matched states does not equal the number of expected attribute predicate matches
-                                if (matchedStates.size() != attributePredicates.getItems().size()) {
-                                    matched.clear();
-                                }
-
                             } else {
                                 unmatched.addAll(states);
                                 durationMatchTimes.clear();
@@ -372,6 +372,21 @@ public class JsonRulesBuilder extends RulesBuilder {
                             }
                         }
                     });
+
+
+            // Ensure all attribute predicates are satisfied per asset when using duration predicates
+            // Otherwise clear matches to prevent partial duration satisfaction from triggering the rule (since the RuleEngine expects a match per asset state)
+            if (assetDurationPredicate != null) {
+                Map<String, Long> matchCountByAssetId = matched.stream()
+                    .collect(Collectors.groupingBy(AttributeInfo::getId, Collectors.counting()));
+                
+                // For each asset, verify it matches the expected number of predicates
+                matchCountByAssetId.forEach((assetId, count) -> {
+                    if (count != attributePredicates.getItems().size()) {
+                            matched.removeIf(m -> m.getId().equals(assetId));
+                        }
+                    });
+                } 
 
                 matchedAssetStates = results.getOrDefault(true, Collections.emptyList());
                 unmatchedAssetStates = results.getOrDefault(false, Collections.emptyList());
@@ -404,7 +419,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 }
 
                 if (noLongerMatches) {
-                    log(Level.FINEST, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
+                    log(Level.FINE, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
                 }
 
                 return noLongerMatches;
@@ -442,7 +457,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             lastEvaluationResult = new RuleConditionEvaluationResult((!matchedAssetIds.isEmpty() || (trackUnmatched && !unmatchedAssetIds.isEmpty())), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
-            log(Level.FINEST, "Rule evaluation result: " + lastEvaluationResult);
+            log(Level.FINE, "Rule evaluation result: " + lastEvaluationResult);
         }
 
         Collection<String> getMatchedAssetIds() {
@@ -1540,10 +1555,19 @@ public class JsonRulesBuilder extends RulesBuilder {
                 List<Predicate<AttributeInfo>> predicates = predicateMap.get(i);
 
                 predicates.stream().allMatch(attributePredicate -> {
-                    return assetStates.stream().filter(attributePredicate).findFirst().map(matchedAssetState -> {
-                        matchedAssetStates.add(new Pair<>(matchedAssetState, index));
-                        return true;
-                    }).orElse(false);
+                    List<AttributeInfo> matches = assetStates.stream()
+                        .filter(attributePredicate)
+                        .collect(Collectors.toList());
+                
+                    if (matches.isEmpty()) {
+                        return false;
+                    }
+                    
+                    // Add all matching states
+                    matches.forEach(matchedAssetState -> 
+                        matchedAssetStates.add(new Pair<>(matchedAssetState, index))
+                    ); 
+                    return true;
                 });
         
             }
