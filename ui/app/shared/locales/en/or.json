@@ -803,7 +803,12 @@
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
-    "addMapCustomization" : "Add map settings"
+    "addMapCustomization" : "Add map settings",
+    "global": {
+      "tileServer": "Custom Tile Server",
+      "tileServerDescription": "Configure a tile server. The URL must specify the tile coordinates using the /{z}/{x}/{y} scheme.",
+      "tileServerPlaceholder": "Map Server URL"
+    }
   },
   "mqttSessions": "MQTT sessions",
   "address": "Address",
