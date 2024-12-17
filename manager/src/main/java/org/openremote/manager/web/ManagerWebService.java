@@ -85,7 +85,7 @@ public class ManagerWebService extends WebService {
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";
-    public static final String OR_APP_DOCROOT_DEFAULT = "manager/src/web";
+    public static final String OR_APP_DOCROOT_DEFAULT = "ui/app";
     public static final String OR_CUSTOM_APP_DOCROOT = "OR_CUSTOM_APP_DOCROOT";
     public static final String OR_CUSTOM_APP_DOCROOT_DEFAULT = "deployment/manager/app";
     public static final String OR_ROOT_REDIRECT_PATH = "OR_ROOT_REDIRECT_PATH";

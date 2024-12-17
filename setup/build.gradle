@@ -17,14 +17,16 @@ dependencies {
     implementation project(":manager")
 }
 
-task demoJar(type: Jar) {
-    archivesBaseName = "openremote-demo-${project.name}"
-    from sourceSets.demo.output
-}
-
-task load1Jar(type: Jar) {
+task (load1Jar, type: Jar) {
     archivesBaseName = "openremote-load1-${project.name}"
     from sourceSets.load1.output
+}
+
+// Order of JAR tasks affects the name of the final jar but not the contents which is odd
+// So putting demo last
+task (demoJar, type: Jar) {
+    archivesBaseName = "openremote-demo-${project.name}"
+    from sourceSets.demo.output
 }
 
 // Use demo setup sourceset by default for jar
