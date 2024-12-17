@@ -450,7 +450,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
-        return writeAttributeValues(requestParams,
+        return writeAttributeEvents(requestParams,
                 Arrays.stream(attributeStates)
                         .map(AttributeEvent::new)
                         .toArray(AttributeEvent[]::new)
@@ -458,7 +458,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeEvent[] attributeEvents) {
+    public AttributeWriteResult[] writeAttributeEvents(RequestParams requestParams, AttributeEvent[] attributeEvents) {
         // Process asynchronously but block for a little while waiting for the result
         return Arrays.stream(attributeEvents).map(event -> {
             if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {

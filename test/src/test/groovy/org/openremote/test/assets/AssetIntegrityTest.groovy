@@ -286,7 +286,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 123456), timestamp-3000));
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 123456), timestamp-3000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
+        assetResource.writeAttributeEvents(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
@@ -305,7 +305,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 1234567), timestamp-2000));
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 1234567), timestamp-2000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
+        assetResource.writeAttributeEvents(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
@@ -322,7 +322,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.AREA.getName(), 12345678), timestamp-4000));
         states.add(new AttributeEvent(new AttributeState(testAsset.getId(), testAsset.ROOM_NUMBER.getName(), 12345678), timestamp-4000));
 
-        assetResource.writeAttributeValues(null, states.toArray() as AttributeEvent[])
+        assetResource.writeAttributeEvents(null, states.toArray() as AttributeEvent[])
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
