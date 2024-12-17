@@ -275,7 +275,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes/timestamp")
-    @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
+    @Operation(operationId = "writeAttributeValuesWithTimestamps", summary = "Update attribute values with timestamps")
     AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeEvent[] attributeStates);
 
     /**
