@@ -823,6 +823,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const index = group.items!.indexOf(attributePredicate);
         if (index >= 0) {
             group.items!.splice(index, 1);
+
+            if(this.duration.has(index)) {
+                const newEntries = Array.from(this.duration.entries())
+                    .filter(([k, v]) => k !== index)
+                    .map(([k, v], i) => [i, v] as [number, string | undefined]);
+
+                this.duration = new Map<number, string | undefined>(newEntries);
+            }
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
