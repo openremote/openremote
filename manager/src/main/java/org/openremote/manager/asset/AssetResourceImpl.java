@@ -415,14 +415,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
+        return writeAttributeValue(requestParams, assetId, attributeName, null, value);
+    }
 
+    @Override
+    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Long timestamp, Object value) {
         Response.Status status = Response.Status.OK;
 
         if (value instanceof NullNode) {
             value = null;
         }
 
-        AttributeEvent event = new AttributeEvent(assetId, attributeName, value);
+        AttributeEvent event = new AttributeEvent(assetId, attributeName, value, timestamp);
 
         // Check authorisation
         if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
@@ -446,10 +450,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
+        return writeAttributeValues(requestParams,
+                Arrays.stream(attributeStates)
+                        .map(AttributeEvent::new)
+                        .toArray(AttributeEvent[]::new)
+        );
+    }
 
+    @Override
+    public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeEvent[] attributeEvents) {
         // Process asynchronously but block for a little while waiting for the result
-        return Arrays.stream(attributeStates).map(attributeState -> {
-            AttributeEvent event = new AttributeEvent(attributeState);
+        return Arrays.stream(attributeEvents).map(event -> {
             if (!clientEventService.authorizeEventWrite(getRequestRealmName(), getAuthContext(), event)) {
                 return new AttributeWriteResult(event.getRef(), AttributeWriteFailure.INSUFFICIENT_ACCESS);
             }
