@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      VERSION_INCREMENT:
+        description: 'The version number part to increment (major.minor.patch)'
+        default: Minor
+        type: choice
+        options:
+          - Major
+          - Minor
+          - Patch
+        required: false
+      VERSION_OVERRIDE:
+        description: 'Version override (when not incrementing the previous version)'
+        type: string
+        required: false
+
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+
+  build:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 and gradle cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Run release
+        id: release
+        run: |
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            gradle release -Prelease.forceVersion=${VERSION_OVERRIDE}
+          else
+            gradle release -Prelease.versionIncrementer=increment${VERSION_INCREMENT}
+          fi
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
+
+      # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
+      # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+      - name: Create release
+        run: |
+          git push --follow-tags
+          gh workflow run ci_cd.yml --ref $RELEASED_VERSION
+          gh release create $RELEASED_VERSION --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASED_VERSION: ${{ steps.release.outputs.released-version }}
