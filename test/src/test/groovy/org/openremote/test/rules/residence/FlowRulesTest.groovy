@@ -91,16 +91,12 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), defaultServices())
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class);
         def timerService = container.getService(TimerService.class);
-        def startTemperature = 25
-        def assetId = UniqueIdentifierGenerator.generateId("flow_ship")
-
 
         when: "An asset is created"
         def asset = new ShipAsset("Flow ship")
@@ -113,7 +109,6 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.merge(asset);
 
         and: "Some datapoints are added to the living room"
-        List<AttributeEvent> datapointList = new LinkedList()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 30D, timerService.getNow().minus(30, ChronoUnit.MINUTES).toEpochMilli()));
         sleep(100)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 20D, timerService.getNow().minus(20, ChronoUnit.MINUTES).toEpochMilli()));
@@ -127,9 +122,6 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def dps = assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), ShipAsset.SPEED.name));
             assert dps.size() == 4
-            dps.forEach {e ->
-                LOG.error(e.toString())
-            }
         }
 
         when: "I make a HISTORIC_VALUE and SUM blocks"
@@ -139,7 +131,6 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         json = json.replaceAll("%HISTORIC_VALUE_OUTPUT%", "historicOutput")
         json = json.replaceAll("%SUM_ATTRIBUTE_OUTPUT%", "sumOutput")
         json = json.replaceAll("%SUM_READ_ATTRIBUTE%", ShipAsset.SPEED.name)
-        NodeCollection realCollection = ValueUtil.JSON.readValue(json, NodeCollection.class)
         def ruleset = (new GlobalRuleset(
                 "HistoricValueAndSum",
                 Ruleset.Lang.FLOW,

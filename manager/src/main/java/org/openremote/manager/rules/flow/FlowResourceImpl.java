@@ -1,6 +1,8 @@
 package org.openremote.manager.rules.flow;
 
+import org.openremote.model.Container;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.MapAccess;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
@@ -13,21 +15,30 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
 
     private static final Logger LOG = Logger.getLogger(FlowResourceImpl.class.getName());
 
-    public FlowResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+	private Node[] nodes;
+
+    public FlowResourceImpl(TimerService timerService, ManagerIdentityService identityService, Container container) {
         super(timerService, identityService);
         for (Node node : Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new)) {
             LOG.finest("Node found: " + node.getName());
         }
+
+		// If OR_DEV_MODE, then include the DEBUG_TO_CONSOLE block.
+		if(MapAccess.getBoolean(container.getConfig(), "OR_DEV_MODE",false)){
+			nodes = Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
+		}else{
+			nodes = Arrays.stream(NodeModel.values()).filter(e -> e != NodeModel.DEBUG_TO_CONSOLE).map(NodeModel::getDefinition).toArray(Node[]::new);
+		}
     }
 
     @Override
     public Node[] getAllNodeDefinitions(RequestParams requestParams) {
-        return Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
+        return nodes;
     }
 
     @Override
     public Node[] getAllNodeDefinitionsByType(RequestParams requestParams, NodeType type) {
-        return Arrays.stream(NodeModel.values()).filter((n) -> n.getDefinition().getType().equals(type)).map(NodeModel::getDefinition).toArray(Node[]::new);
+        return Arrays.stream(nodes).filter(n -> n.getType() == type).toArray(Node[]::new);
     }
 
     @Override

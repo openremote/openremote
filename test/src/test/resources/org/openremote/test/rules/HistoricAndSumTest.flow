@@ -48,7 +48,7 @@
                         "type": "NUMBER"
                     },
                     "breakType": "SPACER",
-                    "value": 10
+                    "value": 15
                 },
                 {
                     "name": "time_unit",
