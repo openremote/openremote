@@ -15,20 +15,20 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
 
     private static final Logger LOG = Logger.getLogger(FlowResourceImpl.class.getName());
 
-	private Node[] nodes;
+    private final Node[] nodes;
 
     public FlowResourceImpl(TimerService timerService, ManagerIdentityService identityService, Container container) {
         super(timerService, identityService);
-        for (Node node : Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new)) {
-            LOG.finest("Node found: " + node.getName());
-        }
+        Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).forEach(n -> {
+            LOG.finest("Node found: " + n.getName());
+        });
 
-		// If OR_DEV_MODE, then include the DEBUG_TO_CONSOLE block.
-		if(MapAccess.getBoolean(container.getConfig(), "OR_DEV_MODE",false)){
-			nodes = Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
-		}else{
-			nodes = Arrays.stream(NodeModel.values()).filter(e -> e != NodeModel.DEBUG_TO_CONSOLE).map(NodeModel::getDefinition).toArray(Node[]::new);
-		}
+        // If OR_DEV_MODE, then include the DEBUG_TO_CONSOLE block.
+        if(MapAccess.getBoolean(container.getConfig(), "OR_DEV_MODE",false)){
+            nodes = Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
+        }else{
+            nodes = Arrays.stream(NodeModel.values()).filter(e -> e != NodeModel.DEBUG_TO_CONSOLE).map(NodeModel::getDefinition).toArray(Node[]::new);
+        }
     }
 
     @Override

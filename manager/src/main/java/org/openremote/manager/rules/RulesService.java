@@ -227,7 +227,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
             new FlowResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
-		        container
+                container
             )
         );
 
