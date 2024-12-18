@@ -235,18 +235,25 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                                                   long toTimestamp) {
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000))
-                .append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")))
-                .append(")) to '/storage/")
-                .append(EXPORT_STORAGE_DIR_NAME)
-                .append("/")
-                .append(fileName)
-                .append("' delimiter ',' CSV HEADER;");
+            StringBuilder sb = new StringBuilder(String.format(
+                    "copy (select * from crosstab( " +
+                     "'select ad.timestamp, a.name, ad.attribute_name, ad.value " +
+                     "from asset_datapoint ad " + "join asset a on ad.entity_id = a.id " +
+                     "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                     "order by ad.timestamp, a.name', " + "'select distinct attribute_name from asset_datapoint order by attribute_name') " +
+                     "as ct(timestamp timestamp, name text, %s) " + ") to '/storage/" +
+                      EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;", fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs) ));
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
             // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
+    }
+    private static String getAttributeColumns(AttributeRef[] attributeRefs) {
+        // Return a string like "attr1 text, attr2 text, attr3 text, ..."
+        return Arrays.stream(attributeRefs)
+                .map(attr -> attr.getName() + " text")
+                .collect(Collectors.joining(", "));
     }
 }
