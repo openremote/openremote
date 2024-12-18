@@ -275,8 +275,8 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("attributes/timestamp")
-    @Operation(operationId = "writeAttributeValues", summary = "Update attribute values")
-    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeEvent[] attributeStates);
+    @Operation(operationId = "writeAttributeEvents", summary = "Update attribute values with timestamps")
+    AttributeWriteResult[] writeAttributeEvents(@BeanParam RequestParams requestParams, AttributeEvent[] attributeEvents);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,
