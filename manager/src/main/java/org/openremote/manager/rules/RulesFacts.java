@@ -489,10 +489,6 @@ public class RulesFacts extends Facts implements RuleListener {
         }
         return haveLog;
     }
-	public void logVars(Logger logger, Level level, String string) {
-		logger.log(level, string);
-	}
-
 
     public RulesClock getClock() {
         return timerService;
