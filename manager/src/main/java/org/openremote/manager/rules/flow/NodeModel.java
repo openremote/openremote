@@ -5,7 +5,7 @@ import org.openremote.manager.rules.RulesBuilder;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointNearestQuery;
+import org.openremote.model.datapoint.query.AssetDatapointTimestampQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
@@ -76,7 +76,7 @@ public enum NodeModel {
 
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
-                final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
+                final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointTimestampQuery(pastInstant.toEpochMilli()));
                 try {
                     System.out.println("DATAPOINTS: " + ValueUtil.JSON.writeValueAsString(valueDatapoints));
                 } catch (JsonProcessingException e) {

@@ -2,16 +2,19 @@ package org.openremote.model.datapoint.query;
 
 import org.openremote.model.attribute.AttributeRef;
 
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.HashMap;
 
-public class AssetDatapointNearestQuery extends AssetDatapointQuery {
+/**
+ * This `AssetDatapointQuery` retrieves the value of a datapoint
+ * associated with a specific `AttributeRef` at a specified timestamp. It is designed to find the
+ * closest datapoint that precedes the requested timestamp.
+ */
+public class AssetDatapointTimestampQuery extends AssetDatapointQuery {
 
-    public AssetDatapointNearestQuery() {
+    public AssetDatapointTimestampQuery() {
     }
 
-    public AssetDatapointNearestQuery(long timestamp) {
+    public AssetDatapointTimestampQuery(long timestamp) {
         // Convert to seconds from millis
         this.fromTimestamp = timestamp/1000;
     }
