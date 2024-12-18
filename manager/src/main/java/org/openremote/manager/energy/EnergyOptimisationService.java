@@ -100,7 +100,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected GatewayService gatewayService;
     protected ExecutorService executorService;
     protected ScheduledExecutorService scheduledExecutorService;
+    protected GoPacsHandler.Factory goPacsHandlerFactory;
     protected final Map<String, OptimisationInstance> assetOptimisationInstanceMap = new HashMap<>();
+    protected final Map<String, GoPacsHandler> goPacsHandlerMap = new HashMap<>();
     protected List<String> forceChargeAssetIds = new ArrayList<>();
 
     @Override
@@ -114,6 +116,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         gatewayService = container.getService(GatewayService.class);
         executorService = container.getExecutor();
         scheduledExecutorService = container.getScheduledExecutor();
+        goPacsHandlerFactory = new GoPacsHandler.Factory(container);
     }
 
     @Override
@@ -293,6 +296,24 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             // Execute first optimisation at the period that started previous to now
             LOG.finest(getLogPrefix(optimisationAsset.getId()) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
+
+            //GOPACS logic
+            List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
+                            new AssetQuery()
+                                    .types(ElectricitySupplierAsset.class)
+                                    .recursive(true)
+                                    .parents(optimisationAsset.getId())
+                    ).stream()
+                    .filter(asset -> asset.getAttribute(ElectricitySupplierAsset.CONTRACT_EAN).isPresent())
+                    .map(asset -> (ElectricitySupplierAsset) asset).toList();
+            for (ElectricitySupplierAsset supplierAsset : supplierAssets) {
+                String contractedEan = supplierAsset.getContractEan().get();
+                GoPacsHandler existing = goPacsHandlerMap.get(contractedEan);
+                if (existing != null) {
+                    existing.undeploy();
+                }
+                goPacsHandlerMap.put(contractedEan, goPacsHandlerFactory.createHandler(contractedEan, supplierAsset.getRealm(), supplierAsset.getId()));
+            }
 
             executorService.execute(() -> {
                 try {

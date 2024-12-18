@@ -252,7 +252,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     /**
      * Get standard JAX-RS providers that are used in the deployment.
      */
-    protected List<Object> getStandardProviders() {
+    public static List<Object> getStandardProviders() {
         return Lists.newArrayList(
             defaultResteasyExceptionMapper,
             forbiddenResteasyExceptionMapper,
@@ -262,7 +262,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
         );
     }
 
-    protected void configureDeploymentInfo(DeploymentInfo deploymentInfo) {
+    public static void configureDeploymentInfo(DeploymentInfo deploymentInfo) {
         // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
         deploymentInfo.setExceptionHandler(undertowExceptionHandler);
     }
