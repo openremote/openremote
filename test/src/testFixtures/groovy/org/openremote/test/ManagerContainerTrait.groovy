@@ -68,6 +68,10 @@ trait ManagerContainerTrait extends ContainerTrait {
         container.getService(TimerService.class).getNow()
     }
 
+    void advancePseudoClock(long amount, TimeUnit unit) {
+        advancePseudoClock(amount, unit, container)
+    }
+
     void advancePseudoClock(long amount, TimeUnit unit, Container container) {
         withClockOf(container) { it.advanceTime(amount, unit) }
     }

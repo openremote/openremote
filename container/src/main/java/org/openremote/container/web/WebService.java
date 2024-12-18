@@ -31,6 +31,7 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.util.HeaderMap;
+import io.undertow.websockets.core.WebSocketChannel;
 import jakarta.servlet.DispatcherType;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
@@ -143,6 +144,10 @@ public abstract class WebService implements ContainerService {
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
         ).build();
+
+        // We have to set system properties for websocket timeouts
+        System.setProperty(WebSocketChannel.WEB_SOCKETS_READ_TIMEOUT, "30000");
+        System.setProperty(WebSocketChannel.WEB_SOCKETS_WRITE_TIMEOUT, "30000");
     }
 
     @Override
