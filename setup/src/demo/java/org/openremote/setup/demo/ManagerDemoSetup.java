@@ -225,10 +225,6 @@ public class ManagerDemoSetup extends ManagerSetup {
         storage1Asset.setManufacturer("Super-B");
         storage1Asset.setModel("Nomia");
         storage1Asset.setId(UniqueIdentifierGenerator.generateId(storage1Asset.getName()));
- 	    storage1Asset.addOrReplaceAttributes(new Attribute<>(ElectricityStorageAsset.EFFICIENCY_EXPORT, 1).addMeta(new MetaItem<>(RULE_STATE)));
-	    storage1Asset.addOrReplaceAttributes(new Attribute<>(ElectricityStorageAsset.EFFICIENCY_IMPORT, 2).addMeta(new MetaItem<>(RULE_STATE)));
-	    storage1Asset.addOrReplaceAttributes(new Attribute<>(ElectricityStorageAsset.ENERGY_CAPACITY).addMeta(new MetaItem<>(RULE_STATE)));
-		storage1Asset.addOrReplaceAttributes(new Attribute<>(ElectricityStorageAsset.ENERGY_EXPORT_TOTAL).addMeta(new MetaItem<>(RULE_STATE)));
         storage1Asset = assetStorageService.merge(storage1Asset);
 
         ElectricityConsumerAsset consumption1Asset = createDemoElectricityConsumerAsset("Consumption De Rotterdam", building1Asset, new GeoJSONPoint(4.487519, 51.906544));
