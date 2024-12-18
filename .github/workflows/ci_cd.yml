@@ -495,7 +495,7 @@ jobs:
         if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.ref_type != 'tag' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
-          command="./gradlew publishToSonatype closeSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
+          command="./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
