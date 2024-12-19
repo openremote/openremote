@@ -226,7 +226,26 @@ jobs:
             echo "value=true" >> $GITHUB_OUTPUT
           else
             echo "value=false" >> $GITHUB_OUTPUT
+            echo "repository=$(sed -E 's#(.+)/(.+)#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
+
+            version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+ =(.+)#\1#' | xargs)
+            if [ $(grep -E '.+SNAPSHOT$' <<< "$version") ]; then
+              echo "ref="master" >> $GITHUB_OUTPUT
+            else
+              echo "ref=$version" >> $GITHUB_OUTPUT
+            fi
           fi
+
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        if: ${{ steps.is_main_repo.outputs.value == 'false' }}
+        with:
+          repository: ${{ steps.is_main_repo.outputs.repository }}
+          path: openremote
+          ref: ${{ steps.is_main_repo.outputs.ref }}
+          sparse-checkout: |
+            .ci_cd
+            profile
 
       - name: Check deployment build.gradle
         id: check_deployment_gradle
