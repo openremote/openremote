@@ -253,23 +253,23 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
-            // The same path must resolve in both the PostgreSQL container and the manager container
+            // The same path must resolve in both the postgresql container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
     }
 
-    private static String getAttributeColumns(AttributeRef[] attributeRefs) {
+    private String getAttributeColumns(AttributeRef[] attributeRefs) {
         // Create a set to keep track of unique headers
         Set<String> headers = new HashSet<>();
 
-        // Build unique headers in the format "Asset:AttributeName"
+        // Build unique headers in the format "AssetName: AttributeName"
         Arrays.stream(attributeRefs).forEach(attr -> {
-            String asset = attr.getId(); // ASSET ID, MUST BE CONVERTED TO NAME STILL
+            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("[[,]]","");
             String attributeName = attr.getName();
-            headers.add(asset + " : " + attributeName);
+            headers.add(assetName + " : " + attributeName);
         });
 
-        // Return as a single string in the required format
+        // Return as a single string with the assembled header.
         return headers.stream()
                 .map(header -> "\"" + header + "\" text")
                 .collect(Collectors.joining(", "));
