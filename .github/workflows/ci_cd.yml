@@ -225,6 +225,11 @@ jobs:
           if [ $(grep -E '.+/openremote$' <<< "$GITHUB_REPOSITORY") ]; then
             echo "value=true" >> $GITHUB_OUTPUT
           else
+            if [ -e 'openremote' ]; then
+              echo "::error::Custom project should not have an 'openremote' file or directory!"
+              exit 1
+            fi
+
             echo "value=false" >> $GITHUB_OUTPUT
             echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
