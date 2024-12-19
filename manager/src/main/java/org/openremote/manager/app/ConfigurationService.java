@@ -29,6 +29,9 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.manager.ManagerAppConfig;
+import org.openremote.model.manager.ManagerAppRealmConfig;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.File;
@@ -37,10 +40,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -66,6 +67,7 @@ public class ConfigurationService implements ContainerService {
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
     protected Path managerConfigPath;
+    protected AtomicReference<ManagerAppConfig> managerAppConfig;
 
     @Override
     public void init(Container container) throws Exception {
@@ -162,31 +164,40 @@ public class ConfigurationService implements ContainerService {
         return mapTilesPath;
     }
 
-    public ObjectNode getManagerConfig() {
+    public ManagerAppConfig getManagerConfig() {
+        if (managerAppConfig != null) {
+            return managerAppConfig.get();
+        }
         if (managerConfigPath == null) {
             return null;
         }
         try {
-            return (ObjectNode) ValueUtil.JSON.readTree(managerConfigPath.toFile());
+            String managerConfigStr = Files.readString(managerConfigPath, StandardCharsets.UTF_8);
+            return ValueUtil.parse(managerConfigStr, ManagerAppConfig.class).orElse(null);
         } catch (Exception e) {
             LOG.severe("Could not read manager_config.json from " + managerConfigPath);
             return null;
         }
     }
 
-    public void saveManagerConfig(ObjectNode managerConfiguration) throws Exception {
+    public void saveManagerConfig(ManagerAppConfig managerAppConfig) throws Exception {
         LOG.log(Level.INFO, "Saving manager_config.json to: " + getPersistedManagerConfigPath());
 
         try {
             // Check references to images
-            managerConfiguration = checkAndFixImageReferences(managerConfiguration);
+            managerAppConfig = checkAndFixImageReferences(managerAppConfig);
             Path p = getPersistedManagerConfigPath();
             File file = p.toAbsolutePath().toFile();
             if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
 
-            Files.writeString(p, ValueUtil.JSON.writeValueAsString(managerConfiguration), StandardCharsets.UTF_8);
+            Files.writeString(p, ValueUtil.JSON.writeValueAsString(managerAppConfig), StandardCharsets.UTF_8);
             // Ensure managerConfigPath is now pointing to persistence path
             managerConfigPath = p;
+            if (this.managerAppConfig == null) {
+                this.managerAppConfig = new AtomicReference<>(managerAppConfig);
+            } else {
+                this.managerAppConfig.set(managerAppConfig);
+            }
         } catch (Exception exception) {
             String msg = "Error saving manager_config.json: msg=" + exception.getMessage();
             LOG.log(Level.WARNING, msg);
@@ -256,41 +267,49 @@ public class ConfigurationService implements ContainerService {
         return this.persistenceService.resolvePath("manager").resolve("images");
     }
 
-    protected ObjectNode checkAndFixImageReferences(ObjectNode managerConfig) {
+    protected ManagerAppConfig checkAndFixImageReferences(ManagerAppConfig managerAppConfig) {
 
-        List<String> imageTypes = List.of("logo", "logoMobile", "favicon");
         if (!getPersistedManagerConfigImagePath().toFile().exists()) getPersistedManagerConfigImagePath().toFile().mkdirs();
-        for (Iterator<Map.Entry<String, JsonNode>> it = managerConfig.get("realms").fields(); it.hasNext(); ) {
-            Map.Entry<String, JsonNode> kvp = it.next();
-            String realmName = kvp.getKey();
-            JsonNode realm = kvp.getValue();
-            for (String type : imageTypes) {
-                String image = realm.get(type) != null ? realm.get(type).asText() : "";
-                if (!image.isBlank()) {
-                    image = image.replace("/api/master/configuration/manager/image/", "");
-                    image = image.replace("images/", "");
-                    image = image.charAt(0) == '/' ? image.substring(1) : image;
-                    Path imagePath = Path.of(image);
-                    Path persistedImagePath = getPersistedManagerConfigImagePath().resolve(imagePath).toAbsolutePath();
-                    Path path = pathPublicRoot.resolve("images").resolve(imagePath).toAbsolutePath();
+        if (managerAppConfig.getRealms() != null && !managerAppConfig.getRealms().isEmpty()) {
+            managerAppConfig.getRealms().values().forEach(managerAppRealmConfig -> {
+                if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getLogo())) {
+                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogo()));
+                }
+                if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getLogoMobile())) {
+                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogoMobile()));
+                }
+                if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getFavicon())) {
+                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getFavicon()));
+                }
+            });
+        }
+        return managerAppConfig;
+    }
 
-                    if (!Files.isRegularFile(persistedImagePath)) {
-                        if (Files.isRegularFile(path)) {
-                            try {
-                                // Image doesn't exist in persisted path but does exist in doc root so copy it
-                                Files.copy(path, persistedImagePath);
-                                // Change the reference in the config to the typical API-like reference:
-                                ((ObjectNode) managerConfig.get("realms").get(realmName)).put(type, "/api/master/configuration/manager/image/" + imagePath);
-                            } catch (Exception e) {
-                                LOG.warning("Error occurred whilst copying manager config image to persisted path: " + imagePath);
-                            }
-                        } else {
-                            LOG.warning("manager_config.json image reference doesn't exist: " + imagePath);
-                        }
+    protected String fixImageRef(String image) {
+        if (!image.isBlank()) {
+            image = image.replace("/api/master/configuration/manager/image/", "");
+            image = image.replace("images/", "");
+            image = image.charAt(0) == '/' ? image.substring(1) : image;
+            Path imagePath = Path.of(image);
+            Path persistedImagePath = getPersistedManagerConfigImagePath().resolve(imagePath).toAbsolutePath();
+            Path path = pathPublicRoot.resolve("images").resolve(imagePath).toAbsolutePath();
+
+            if (!Files.isRegularFile(persistedImagePath)) {
+                if (Files.isRegularFile(path)) {
+                    try {
+                        // Image doesn't exist in persisted path but does exist in doc root so copy it
+                        Files.copy(path, persistedImagePath);
+                        // Change the reference in the config to the typical API-like reference:
+                        image = "/api/master/configuration/manager/image/" + imagePath;
+                    } catch (Exception e) {
+                        LOG.warning("Error occurred whilst copying manager config image to persisted path: " + imagePath);
                     }
+                } else {
+                    LOG.warning("manager_config.json image reference doesn't exist: " + imagePath);
                 }
             }
         }
-        return managerConfig;
+        return image;
     }
 }

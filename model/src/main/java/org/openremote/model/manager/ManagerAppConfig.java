@@ -19,13 +19,60 @@
  */
 package org.openremote.model.manager;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.io.Serializable;
 import java.util.Map;
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ManagerAppConfig implements Serializable {
     protected boolean loadLocales;
     protected Map<String, String> languages;
     protected Map<String, ManagerAppRealmConfig> realms;
     protected Map<String, Object> pages;
     protected ManagerConfig manager;
+
+    public boolean isLoadLocales() {
+        return loadLocales;
+    }
+
+    public ManagerAppConfig setLoadLocales(boolean loadLocales) {
+        this.loadLocales = loadLocales;
+        return this;
+    }
+
+    public Map<String, String> getLanguages() {
+        return languages;
+    }
+
+    public ManagerAppConfig setLanguages(Map<String, String> languages) {
+        this.languages = languages;
+        return this;
+    }
+
+    public Map<String, ManagerAppRealmConfig> getRealms() {
+        return realms;
+    }
+
+    public ManagerAppConfig setRealms(Map<String, ManagerAppRealmConfig> realms) {
+        this.realms = realms;
+        return this;
+    }
+
+    public Map<String, Object> getPages() {
+        return pages;
+    }
+
+    public ManagerAppConfig setPages(Map<String, Object> pages) {
+        this.pages = pages;
+        return this;
+    }
+
+    public ManagerConfig getManager() {
+        return manager;
+    }
+
+    public ManagerAppConfig setManager(ManagerConfig manager) {
+        this.manager = manager;
+        return this;
+    }
 }

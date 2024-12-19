@@ -43,20 +43,26 @@ public class StatusResourceImpl implements StatusResource {
         this.healthStatusProviderList = healthStatusProviderList;
         Properties versionProps = new Properties();
         String authServerUrl = "";
+        String version = null;
 
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         if (identityService != null && identityService.getIdentityProvider().getFrontendURI() != null) {
             authServerUrl = identityService.getIdentityProvider().getFrontendURI();
         }
 
-        try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
-            versionProps.load(resourceStream);
-        } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Failed to load manager version properties file: version.properties");
-            throw new IllegalStateException("Missing manager version.properties file");
+        try (InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (resourceStream != null) {
+                versionProps.load(resourceStream);
+                version = versionProps.getProperty("version");
+            }
+        } catch (IOException ignored) {
         }
 
-        String version = versionProps.getProperty("version");
+        if (version == null) {
+            LOG.log(Level.WARNING, "Failed to load manager version properties file: version.properties");
+            version = "0.0.0";
+        }
+
         serverInfo = Map.of(
             "version", version,
             "authServerUrl", authServerUrl

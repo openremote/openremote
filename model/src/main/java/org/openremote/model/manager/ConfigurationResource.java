@@ -41,7 +41,7 @@ public interface ConfigurationResource {
     @Path("manager")
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
     @Operation(operationId = "updateConfiguration", summary = "Update manager configuration")
-    ObjectNode update(@BeanParam RequestParams requestParams, ObjectNode managerConfiguration);
+    ManagerAppConfig update(@BeanParam RequestParams requestParams, ManagerAppConfig managerConfiguration);
 
     @POST
     @Consumes(APPLICATION_JSON)
@@ -60,7 +60,7 @@ public interface ConfigurationResource {
     @Produces(APPLICATION_JSON)
     @Path("manager")
     @Operation(operationId = "getManagerConfig", summary = "Retrieve the manager configuration JSON")
-    ObjectNode getManagerConfig();
+    ManagerAppConfig getManagerConfig();
 
     @GET
     @Path("manager/image/{filename: .+}")
