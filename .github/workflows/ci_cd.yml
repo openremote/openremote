@@ -240,9 +240,12 @@ jobs:
 
       - name: Check custom project
         id: check_custom_project
-        uses: andstor/file-existence-action@v3
-        with:
-          files: ".gitmodules"
+        run: |
+          if [ $(grep -E '.+/openremote$' <<< "$GITHUB_REPOSITORY") ]; then
+            echo "value=false" >> $GITHUB_OUTPUT
+          else
+            echo "value=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check ci_cd existence
         id: check_cicd_json
@@ -258,7 +261,7 @@ jobs:
             exit 1
           fi
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
 
       # For scheduled execution from custom projects we need to be able to determine if the manager docker image has
       # changed since the last execution, we do this using a cache
@@ -487,7 +490,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
           TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
 
       - name: Define maven publish command
@@ -595,7 +598,7 @@ jobs:
           echo "************************************************************"
           echo 'Trigger event: ${{ github.event_name }}'
           echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
-          echo 'Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}'
+          echo 'Is custom project repo: ${{ steps.check_custom_project.outputs.value == 'true' }}'
           echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
           echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
@@ -632,7 +635,7 @@ jobs:
           # Pull the images
           docker compose -f $composeProfile pull
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
           TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
 
       # Use docker layer caching to speed up image building
@@ -665,7 +668,7 @@ jobs:
           # Run the tests
           ${{ steps.test-backend-command.outputs.value }}
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
         timeout-minutes: 20
         #continue-on-error: true
 
@@ -743,7 +746,7 @@ jobs:
           # Run the tests
           ${{ steps.test-ui-command.outputs.value }}
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         timeout-minutes: 20
         continue-on-error: true
@@ -915,7 +918,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
