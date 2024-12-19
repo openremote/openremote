@@ -313,8 +313,11 @@ export class MapWidget {
                 container: this._mapContainer,
                 style: settings as StyleSpecification,
                 transformRequest: (url, resourceType) => {
+                    // Cross-domain tile servers usually have the following headers specified "access-control-allow-methods	GET", "access-control-allow-origin *", "allow GET,HEAD". The "Access-Control-Request-Headers: Authorization" may not be set e.g. with Mapbox tile servers. The CORS preflight request (OPTION) will in this case fail if the "authorization" header is being requested cross-domain. The only headers allowed are so called "simple request" headers, see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#simple_requests.
+                    const headers = new URL(window.origin).hostname === new URL(url).hostname 
+                        ? {Authorization: manager.getAuthorizationHeader()} : {}
                     return {
-                        headers: {Authorization: manager.getAuthorizationHeader()},
+                        headers,
                         url
                     };
                 }
