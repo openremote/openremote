@@ -29,13 +29,12 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
 import "../components/configuration/or-conf-panel";
-import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
+import {ManagerAppConfig, MapConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
-import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {DefaultAppConfig} from "../index";
 
 declare const CONFIG_URL_PREFIX: string;
@@ -144,6 +143,50 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                     display: none;
                 }
             }
+
+            /* Global map settings */
+
+            .subheader {
+                padding: 10px 0 4px;
+                font-weight: bolder;
+            }
+
+            .global-settings-container {
+                display: flex;
+            }
+
+            .custom-server-group {
+                width: 50%;
+            }
+
+            .custom-tile-group {
+                width: 50%;
+                padding-left: 12px;
+            }
+
+            @media screen and (max-width: 768px) {
+                .custom-tile-group, .custom-server-group {
+                    width: 100%;
+                    padding: unset;
+                }
+                .global-settings-container {
+                    display: block;
+                }
+            }
+
+            .input {
+                width: 100%;
+                max-width: 800px;
+                padding: 10px 0;
+            }
+
+            .input or-mwc-input:not([icon]) {
+                width: 80%;
+            }
+
+            .d-inline-flex {
+                display: inline-flex;
+            }
         `;
     }
 
@@ -155,7 +198,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     public managerConfiguration?: ManagerAppConfig;
 
     @state()
-    public mapConfig?: {[id: string]: any};
+    public mapConfig?: MapConfig;
 
     @state()
     protected realms?: Realm[];
@@ -169,8 +212,13 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfigChanged = false;
 
+    @state()
+    protected isMapCustom: boolean = false;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
+
+    protected tilesForUpload: File;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -178,6 +226,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------------------------ */
 
     public stateChanged(state: AppStateKeyed) {
+    }
+
+    public async firstUpdated() {
+        const response = await manager.rest.api.MapResource.isMapCustom();
+        this.isMapCustom = response.data["map-custom"]
     }
 
     // On every update..
@@ -274,6 +327,44 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
                             ${when(this.mapConfig, () => html`
+                                <div class="global-settings-container">
+                                    <div class="custom-server-group">
+                                        <div class="subheader">${i18next.t("configuration.global.tileServer")}</div>
+                                        <span>${i18next.t("configuration.global.tileServerDescription")}</span>
+                                        <or-mwc-input class="input" outlined
+                                            .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}" 
+                                            .type="${InputType.URL}"
+                                            .label="${i18next.t("configuration.global.tileServerPlaceholder")}"
+                                            placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
+                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                    this.mapConfig.sources["vector_tiles"] = {
+                                                        type: "vector",
+                                                        url: e.detail.value || null
+                                                    }
+                                                    this.requestUpdate("mapConfig");
+                                                    this.mapConfigChanged = true;
+                                                }}"
+                                        ></or-mwc-input>
+                                    </div>
+
+                                    <div class="custom-tile-group">
+                                        <div class="subheader">${i18next.t("configuration.global.mapTiles")}</div>
+                                        <span>${i18next.t("configuration.global.uploadMapTiles")}</span>
+                                        <div class="input d-inline-flex">
+                                            <or-file-uploader 
+                                                .label=${i18next.t("configuration.global.uploadMapTiles")}"
+                                                .accept="application/vnd.sqlite3"
+                                                @change="${(e) => this.uploadCustomMap(e)}"></or-file-uploader>
+                                            ${when(this.isMapCustom, () => html`
+                                                    <or-mwc-input type="${InputType.BUTTON}" iconColor="black" icon="delete" 
+                                                        @or-mwc-input-changed="${async () => await this.deleteCustomMap()}" 
+                                                    />
+                                            `)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
+                                
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
@@ -299,33 +390,52 @@ export class PageConfiguration extends Page<AppStateKeyed> {
 
     // FETCH METHODS
 
+    protected async uploadCustomMap(e: CustomEvent) {
+        const file = e.detail.value[0] as File;
+        this.tilesForUpload = file;
+        this.requestUpdate()
+        this.mapConfigChanged = true;
+    }
+
+    protected async deleteCustomMap() {
+        const response = await manager.rest.api.MapResource.deleteMap();
+
+        if (response.status !== 204) {
+            console.error("Map delete failed")
+            return
+        }
+
+        window.location.reload();
+    }
+
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         const response = await manager.rest.api.ConfigurationResource.getManagerConfig();
         return response.status === 200 ? response.data as ManagerAppConfig : DefaultAppConfig;
     }
 
-    protected async getMapConfig(): Promise<{[id: string]: any}> {
+    protected async getMapConfig(): Promise<MapConfig> {
         const response = await manager.rest.api.MapResource.getSettings();
-        return (response.data.options as {[id: string]: any});
+        const { options, sources } = response.data;
+        return { options, sources };
     }
 
     protected async getAccessibleRealms(): Promise<Realm[]> {
         return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
-    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
+    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: MapConfig) {
         this.loading = true;
         let managerPromise;
 
         // Save the images to the server that have been uploaded by the user.
         // TODO: Optimize code so it only saves images that have been changed.
-        const imagePromises = [];
+        const filePromises = [];
         if(this.realmConfigPanel !== undefined) {
             const elems = this.realmConfigPanel.getCardElements() as OrConfRealmCard[];
             elems.forEach((elem, index) => {
                 const files = elem?.getFiles();
                 Object.entries(files).forEach(async ([x, y]) => {
-                    imagePromises.push(
+                    filePromises.push(
                         manager.rest.api.ConfigurationResource.fileUpload(y, {path: (y as any).path}).then(file =>{
                             config.realms[elem.name][x] = file.data;
                         })
@@ -346,11 +456,17 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
+        if (this.tilesForUpload) {
+            filePromises.push(manager.rest.api.MapResource.uploadMap({
+                data: this.tilesForUpload,
+                headers: {'Content-Type': 'application/octet-stream'}
+            }));
+        }
 
-        // We first wait for the imagePromises to finish, so that
+        // We first wait for the filePromises to finish, so that
         // we can use the path returned from the backend to store to the
         // manager_config.
-        Promise.all(imagePromises).then((arr:string[]) => {
+        Promise.all(filePromises).then((arr:string[]) => {
             // Wait for all requests to complete, then finish loading.
             const promises = [
                 this.managerConfigurationChanged ? manager.rest.api.ConfigurationResource.update(config) : null,

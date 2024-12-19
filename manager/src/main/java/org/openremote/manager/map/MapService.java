@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.app.ConfigurationService;
@@ -32,16 +34,21 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
+import org.openremote.model.manager.MapSourceConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -54,6 +61,7 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
 
+    public static final String OR_MAP_TILES_CUSTOM_PATH = "manager/src/map/mapdata-custom.mbtiles";
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String OR_MAP_TILESERVER_HOST = "OR_MAP_TILESERVER_HOST";
     public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
@@ -64,6 +72,7 @@ public class MapService implements ContainerService {
     public static final String OR_MAP_TILESERVER_REQUEST_TIMEOUT = "OR_MAP_TILESERVER_REQUEST_TIMEOUT";
     public static final int OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT = 10000;
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
+    private static final String DEFAULT_VECTOR_TILES_URL = "mbtiles://mapdata.mbtiles";
     private static ConfigurationService configurationService;
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
@@ -72,13 +81,28 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
+    public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
-        mapConfig.putPOJO("options", mapConfiguration);
+
+        ObjectNode vector_tiles = ValueUtil.JSON.valueToTree(mapConfiguration.sources.get("vector_tiles"));
+        if (vector_tiles.hasNonNull("url")) {
+            if (!vector_tiles.get("url").textValue().contains("/{z}/{x}/{y}")) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+        } else {
+            vector_tiles.put("url", DEFAULT_VECTOR_TILES_URL);
+            mapConfiguration.sources.put("vector_tiles", ValueUtil.JSON.convertValue(vector_tiles, MapSourceConfig.class));
+        }
+
+        mapConfig.putPOJO("options", mapConfiguration.options);
+        mapConfig.putPOJO("sources", mapConfiguration.sources);
+
         configurationService.saveMapConfig(mapConfig);
+        mapConfig = configurationService.getMapConfig();
         mapSettings.clear();
+
         return mapConfig;
     }
 
@@ -191,6 +215,16 @@ public class MapService implements ContainerService {
         if (!mapTilesPath.toFile().exists()) {
             return;
         }
+        File parentDir = mapTilesPath.getParent().toFile();
+        if (parentDir.isDirectory()) {
+            String fileExtension = ".mbtiles";
+            File[] matchingFiles = parentDir.listFiles((dir, name) -> !Objects.equals(name, "mapdata.mbtiles") && name.endsWith(fileExtension));
+
+            if (matchingFiles != null && matchingFiles.length != 0) {
+                mapTilesPath = matchingFiles[0].toPath().toAbsolutePath();
+            }
+        }
+
         Class.forName(org.sqlite.JDBC.class.getName());
         connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath);
         metadata = getMetadata(connection);
@@ -271,7 +305,7 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    vectorTilesObj.remove("url");
+                    String url = vectorTilesObj.remove("url").textValue();
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -286,7 +320,14 @@ public class MapService implements ContainerService {
                             }));
 
                     ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    String tileUrl = !url.contentEquals(DEFAULT_VECTOR_TILES_URL)
+                        ? url
+                        : UriBuilder.fromUri(host)
+                            .replacePath(API_PATH)
+                            .path(realm)
+                            .path("map/tile")
+                            .build()
+                            .toString() + "/{z}/{x}/{y}";
                     tilesArray.insert(0, tileUrl);
                     vectorTilesObj.replace("tiles", tilesArray);
                 });
@@ -370,6 +411,49 @@ public class MapService implements ContainerService {
         } finally {
             closeQuietly(query, result);
         }
+    }
+
+    public boolean saveUploadedFile(InputStream fileInputStream) {
+        // TODO: Specify target directory for uploaded file
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+
+        try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
+            this.setData();
+            return true;
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
+            return false;
+        } catch (SQLException | ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Failed to load uploaded file", e);
+            return false;
+        }
+    }
+
+    public boolean isCustomUploadedFile() {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        return Files.exists(destinationPath);
+    }
+
+    public boolean deleteUploadedFile() {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        boolean deleted = destinationPath.toFile().delete();
+        if (deleted) {
+            LOG.info("File deleted successfully");
+        } else {
+            LOG.severe("Failed to delete file");
+        }
+        try {
+            this.setData();
+        } catch (SQLException | ClassNotFoundException e) {
+            LOG.log(Level.SEVERE, "Failed to load default file", e);
+        }
+        return deleted;
     }
 
     protected static final class Metadata {
