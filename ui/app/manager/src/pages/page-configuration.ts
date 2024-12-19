@@ -456,10 +456,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                 });
         }
 
-        filePromises.push(manager.rest.api.MapResource.uploadMap({
-            data: this.tilesForUpload,
-            headers: {'Content-Type': 'application/octet-stream'}
-        }));
+        if (this.tilesForUpload) {
+            filePromises.push(manager.rest.api.MapResource.uploadMap({
+                data: this.tilesForUpload,
+                headers: {'Content-Type': 'application/octet-stream'}
+            }));
+        }
 
         // We first wait for the filePromises to finish, so that
         // we can use the path returned from the backend to store to the
