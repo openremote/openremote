@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-sourceSets.main.resources.srcDirs += layout.buildDirectory.dir("classes/main")
+sourceSets.main.resources.srcDirs += layout.buildDirectory.dir('classes/main')
 
 jar {
     archivesBaseName = "openremote-${project.name}"
@@ -20,8 +20,8 @@ publishing {
             artifactId = "openremote-${project.name}"
             from components.java
             pom {
-                name = 'OpenRemote Manager UI'
-                description = 'Provides the UI for the OpenRemote Manager'
+                name = 'OpenRemote Shared UI Files'
+                description = 'Provides the files shared between OpenRemote UIs'
                 url = 'https://github.com/openremote/openremote'
                 licenses {
                     license {
@@ -69,32 +69,21 @@ signing {
     }
 }
 
-tasks.register('cleanDist') {
-    dependsOn npmClean
-}
-
 tasks.register('generateSources', Copy) {
-    dependsOn npmBuild
-    from layout.projectDirectory.dir("dist")
+    from fileTree(projectDir) {
+        exclude 'build.gradle'
+        exclude 'build/**'
+    }
     into layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
 }
 
-tasks.register('prepareUi') {
-    dependsOn clean, npmPrepare
-}
-
-tasks.register('publishUi') {
-    dependsOn clean, npmPublish
-}
-
 tasks.register('installDist', Copy) {
-    dependsOn(npmBuild)
-    mustRunAfter(resolveTask(":manager:installDist"))
-    from layout.projectDirectory.dir("dist")
+    dependsOn generateSources
+    mustRunAfter resolveTask(":manager:installDist")
+    from layout.buildDirectory.dir("classes/main/org/openremote/web/${project.name}")
     into project(':manager').layout.buildDirectory.dir("install/manager/web/${project.name}")
 }
 
-clean.dependsOn(cleanDist)
 jar.dependsOn(generateSources)
 processResources.dependsOn(generateSources)
 sourcesJar.dependsOn(generateSources)
