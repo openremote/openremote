@@ -228,7 +228,7 @@ jobs:
             echo "value=false" >> $GITHUB_OUTPUT
             echo "repository=$(sed -E 's#(.+)/.+#\1/openremote#' <<< $GITHUB_REPOSITORY)" >> $GITHUB_OUTPUT
 
-            version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+ =(.+)#\1#' | xargs)
+            version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
             if [ $(grep -E '.+SNAPSHOT$' <<< "$version") ]; then
               echo "ref="master" >> $GITHUB_OUTPUT
             else
