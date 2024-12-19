@@ -261,12 +261,12 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     private String getAttributeColumns(AttributeRef[] attributeRefs) {
         // Create a set to keep track of unique headers
         Set<String> headers = new HashSet<>();
-
+        
         // Build unique headers in the format "AssetName: AttributeName"
         Arrays.stream(attributeRefs).forEach(attr -> {
-            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("[[,]]","");
+            String assetName = assetStorageService.findNames(attr.getId()).toString().replaceAll("(^\\[|\\]$)", "");
             String attributeName = attr.getName();
-            headers.add(assetName + " : " + attributeName);
+            headers.add(assetName + ": " + attributeName);
         });
 
         // Return as a single string with the assembled header.
