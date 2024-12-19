@@ -230,7 +230,7 @@ jobs:
 
             version=$(cat gradle.properties | grep openremoteVersion | sed -E 's#.+=(.+)#\1#' | xargs)
             if [ $(grep -E '.+SNAPSHOT$' <<< "$version") ]; then
-              echo "ref="master" >> $GITHUB_OUTPUT
+              echo "ref=master" >> $GITHUB_OUTPUT
             else
               echo "ref=$version" >> $GITHUB_OUTPUT
             fi
