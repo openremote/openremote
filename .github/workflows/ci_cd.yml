@@ -507,7 +507,7 @@ jobs:
 
       - name: Define maven publish command
         id: maven-publish-command
-        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value && github.ref_type != 'tag' && github.event_name != 'pull_request') }}
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value == 'true' && github.ref_type != 'tag' && github.event_name != 'pull_request') }}
         shell: bash
         run: |
           command="./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
