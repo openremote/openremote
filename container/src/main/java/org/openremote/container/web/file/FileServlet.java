@@ -22,11 +22,13 @@ package org.openremote.container.web.file;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.undertow.server.handlers.resource.ResourceManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.REALM_PARAM_NAME;
@@ -39,17 +41,15 @@ public class FileServlet extends AbstractFileServlet {
     public static final long EXPIRES_SECONDS_CACHE_JS = 60 * 60 * 24 * 14; // 14 days
 
     final protected boolean devMode;
-    final protected File base;
-    final protected File unsecuredIndex;
+    final protected ResourceManager resourceManager;
     final protected String[] requiredRoles;
     final protected Map<String, String> mimeTypes;
     final protected Map<String, Integer> mimeTypesExpireSeconds;
     final protected String[] alreadyZippedExtensions;
 
-    public FileServlet(boolean devMode, File base, String[] requiredRoles, Map<String, String> mimeTypes, Map<String, Integer> mimeTypesExpireSeconds, String[] alreadyZippedExtensions) {
+    public FileServlet(boolean devMode, ResourceManager resourceManager, String[] requiredRoles, Map<String, String> mimeTypes, Map<String, Integer> mimeTypesExpireSeconds, String[] alreadyZippedExtensions) {
         this.devMode = devMode;
-        this.base = base;
-        this.unsecuredIndex = new File(base, "index.html");
+        this.resourceManager = resourceManager;
         this.requiredRoles = requiredRoles;
         this.mimeTypes = mimeTypes;
         this.mimeTypesExpireSeconds = mimeTypesExpireSeconds;
@@ -85,7 +85,7 @@ public class FileServlet extends AbstractFileServlet {
     }
 
     @Override
-    protected File getFile(HttpServletRequest request) throws RedirectException {
+    protected Resource getResource(HttpServletRequest request) throws RedirectException {
         String relativePath = request.getPathInfo();
         if (relativePath == null || relativePath.isEmpty()) {
             relativePath = "";
@@ -93,7 +93,7 @@ public class FileServlet extends AbstractFileServlet {
         while (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
 
-        File actualBase = base;
+        String actualBase = "";
 
         // If secured, serve files from a sub-directory that represents the authenticated realm
         if (isSecured()) {
@@ -101,38 +101,51 @@ public class FileServlet extends AbstractFileServlet {
             String realm = request.getHeader(REALM_PARAM_NAME);
 
             // If we are missing the auth realm header, ignore...
-            if (realm == null || realm.length() ==0) {
+            if (realm == null || realm.isEmpty()) {
                 LOG.fine("Ignoring request, secured service needs request header: " + REALM_PARAM_NAME);
                 return null;
             }
 
-            actualBase = new File(base, realm);
+            actualBase = realm;
 
-            if (!actualBase.isDirectory()) {
-                LOG.fine("Ignoring request, missing realm content directory: " + actualBase.getAbsolutePath());
+            Resource resource = getResource(actualBase);
+            if (resource.getURL() == null) {
+                LOG.fine("Ignoring request, missing realm content directory: " + actualBase);
                 return null;
             }
         }
 
-        File file = new File(actualBase, relativePath);
+        Resource resource = getResource(actualBase, relativePath);
 
         // Handle index.html and redirect /directory to /directory/
-        if (file.isDirectory()) {
+        if (resource.getURL() == null) {
             if (request.getPathInfo() == null || !request.getPathInfo().endsWith("/")) {
                 throw new RedirectException(request.getRequestURI() + "/");
             }
-            file = new File(actualBase, relativePath + "/index.html");
+
+            resource = getResource(actualBase, relativePath + "index.html");
         }
 
-        LOG.fine("Serving file: " + file.getAbsolutePath());
-        return file;
+        LOG.fine(resource.getURL() == null ? "Not serving file" : "Serving: " + resource.getURL());
+        return resource;
+    }
+
+    private Resource getResource(String... path) {
+        String resourcePath = String.join("/", path);
+        io.undertow.server.handlers.resource.Resource resource = null;
+        try {
+            resource = resourceManager.getResource(resourcePath);
+        } catch (IOException e) {
+            LOG.log(Level.FINEST, "Failed to get resource: " + resourcePath, e);
+        }
+        return new ResourceImpl(resource);
     }
 
     @Override
-    protected long getExpireTime(HttpServletRequest request, File file) {
+    protected long getExpireTime(HttpServletRequest request, String fileName) {
         long expireTime = DEFAULT_EXPIRE_SECONDS;
 
-        String contentType = getContentType(request, file);
+        String contentType = getContentType(request, fileName);
         if (mimeTypesExpireSeconds.containsKey(contentType))
             expireTime = mimeTypesExpireSeconds.get(contentType);
 
@@ -143,13 +156,13 @@ public class FileServlet extends AbstractFileServlet {
     }
 
     @Override
-    protected String getContentType(HttpServletRequest request, File file) {
-        return coalesce(coalesce(request.getServletContext().getMimeType(file.getName()),
-            mimeTypes.get(getExtension(file.getName()))), "application/octet-stream");
+    protected String getContentType(HttpServletRequest request, String fileName) {
+        return coalesce(coalesce(request.getServletContext().getMimeType(fileName),
+            mimeTypes.get(getExtension(fileName))), "application/octet-stream");
     }
 
     @Override
-    protected String setContentHeaders(HttpServletRequest request, HttpServletResponse response, AbstractFileServlet.Resource resource, List<Range> ranges) {
+    protected String setContentHeaders(HttpServletRequest request, HttpServletResponse response, Resource resource, List<Range> ranges) {
         String result = super.setContentHeaders(request, response, resource, ranges);
 
         // If a file is already zipped, we need to set the header (yes, it's stupid, but
