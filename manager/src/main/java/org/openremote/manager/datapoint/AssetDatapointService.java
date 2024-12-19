@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
@@ -230,30 +232,47 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
      * Exports datapoints as CSV using SQL; the export path used in the SQL query must also be mapped into the manager
      * container so it can be accessed by this process.
      */
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
-                                                  long fromTimestamp,
-                                                  long toTimestamp) {
+    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs, long fromTimestamp, long toTimestamp) {
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
             StringBuilder sb = new StringBuilder(String.format(
                     "copy (select * from crosstab( " +
-                     "'select ad.timestamp, a.name, ad.attribute_name, ad.value " +
-                     "from asset_datapoint ad " + "join asset a on ad.entity_id = a.id " +
-                     "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
-                     "order by ad.timestamp, a.name', " + "'select distinct attribute_name from asset_datapoint order by attribute_name') " +
-                     "as ct(timestamp timestamp, name text, %s) " + ") to '/storage/" +
-                      EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;", fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs) ));
+                            "'select ad.timestamp, a.name || '' \\: '' || ad.attribute_name as header, ad.value " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "where ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) " +
+                            "order by ad.timestamp, header', " +
+                            "'select distinct a.name || '' \\: '' || ad.attribute_name as header " +
+                            "from asset_datapoint ad " +
+                            "join asset a on ad.entity_id = a.id " +
+                            "order by header') " +
+                            "as ct(timestamp timestamp, %s) " +
+                            ") to '/storage/" + EXPORT_STORAGE_DIR_NAME + "/" + fileName + "' delimiter ',' CSV HEADER;",
+                    fromTimestamp / 1000, toTimestamp / 1000, getAttributeColumns(attributeRefs)
+            ));
 
             persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
-            // The same path must resolve in both the postgresql container and the manager container
+            // The same path must resolve in both the PostgreSQL container and the manager container
             return exportPath.resolve(fileName).toFile();
         }, 0, TimeUnit.MILLISECONDS);
     }
+
     private static String getAttributeColumns(AttributeRef[] attributeRefs) {
-        // Return a string like "attr1 text, attr2 text, attr3 text, ..."
-        return Arrays.stream(attributeRefs)
-                .map(attr -> attr.getName() + " text")
+        // Create a set to keep track of unique headers
+        Set<String> headers = new HashSet<>();
+
+        // Build unique headers in the format "Asset:AttributeName"
+        Arrays.stream(attributeRefs).forEach(attr -> {
+            String asset = attr.getId(); // ASSET ID, MUST BE CONVERTED TO NAME STILL
+            String attributeName = attr.getName();
+            headers.add(asset + " : " + attributeName);
+        });
+
+        // Return as a single string in the required format
+        return headers.stream()
+                .map(header -> "\"" + header + "\" text")
                 .collect(Collectors.joining(", "));
     }
+
 }
