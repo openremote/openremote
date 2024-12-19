@@ -251,6 +251,7 @@ jobs:
           sparse-checkout: |
             .ci_cd
             profile
+          sparse-checkout-cone-mode: false
 
       - name: Check deployment build.gradle
         id: check_deployment_gradle
