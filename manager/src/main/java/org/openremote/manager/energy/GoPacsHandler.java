@@ -28,15 +28,11 @@ import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageServi
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.energy.gopacs.GopacsClientResource;
+import org.openremote.manager.energy.gopacs.*;
 import org.openremote.model.Container;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.energy.gopacs.GopacsServerResource;
-import org.openremote.manager.energy.gopacs.GopacsServerResourceImpl;
-import org.openremote.manager.energy.gopacs.PayloadHandler;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.impl.ElectricitySupplierAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -62,9 +58,12 @@ public class GoPacsHandler implements UftpParticipantService {
     protected String contractedEan;
     protected String electricitySupplierAssetId;
     protected String realm;
+    protected double powerImportMax;
+    protected double powerExportMax;
     protected DeploymentInfo deploymentInfo;
     protected ResteasyClient client;
     protected GopacsClientResource goPacsClient;
+    protected GOPACSAddressBookResource goPacsAddressBookResource;
     protected UftpValidationService uftpValidationService;
     protected UftpPayloadHandler uftpPayloadHandler;
     protected UftpReceivedMessageService uftpReceivedMessageService;
@@ -86,8 +85,8 @@ public class GoPacsHandler implements UftpParticipantService {
             this.container = container;
         }
 
-        public GoPacsHandler createHandler(String contractedEan, String realm, String electricitySupplierAssetId) {
-            return new GoPacsHandler(contractedEan, realm, electricitySupplierAssetId, container);
+        public GoPacsHandler createHandler(String contractedEan, String realm, String electricitySupplierAssetId, double powerImportMax, double powerExportMax) {
+            return new GoPacsHandler(contractedEan, realm, electricitySupplierAssetId, powerImportMax, powerExportMax, container);
         }
     }
 
@@ -144,12 +143,15 @@ public class GoPacsHandler implements UftpParticipantService {
         }
     }
 
-    protected GoPacsHandler(String contractedEan, String realm, String electricitySupplierAssetId, Container container) {
+    protected GoPacsHandler(String contractedEan, String realm, String electricitySupplierAssetId, double powerImportMax, double powerExportMax, Container container) {
         this.contractedEan = contractedEan;
         this.realm = realm;
+        this.powerImportMax = powerImportMax;
+        this.powerExportMax = powerExportMax;
         this.electricitySupplierAssetId = electricitySupplierAssetId;
         this.client = createClient(org.openremote.container.Container.EXECUTOR);
         this.goPacsClient = client.target("https://clc-message-broker.acc.gopacs-services.eu/shapeshifter/api/v3/").proxy(GopacsClientResource.class);
+        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu/v2/").proxy(GOPACSAddressBookResource.class);
         this.uftpValidationService = new UftpValidationService(new ArrayList<>());
         this.uftpPayloadHandler = new PayloadHandler(this::handleFlexMessage, this::sendFlexResponse);
         this.uftpReceivedMessageService = new UftpReceivedMessageService(uftpValidationService, uftpPayloadHandler);
@@ -191,7 +193,7 @@ public class GoPacsHandler implements UftpParticipantService {
 
     private void createDeploymentInfo(ResteasyDeployment resteasyDeployment) {
         String deploymentName = "GoPacs=" + contractedEan;
-        String deploymentPath = "/shapeshifter/api/v3/message";
+        String deploymentPath =  "/shapeshifter/api/v3/message";
 
         ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
                 .setAsyncSupported(true)
@@ -280,20 +282,24 @@ public class GoPacsHandler implements UftpParticipantService {
             LocalTime start = FlexRequestISPTypeHelper.getISPStart(flexRequestISPType.getStart(), year, month, day, flexRequest.getTimeZone());
             // Watts to Kilo watts
             // Export is a positive value and min power will be negative if not zero
-            schedulePowerUpdates(start, flexRequestISPType.getMaxPower() / 1000, Math.abs(flexRequestISPType.getMinPower()) / 1000);
+            double importMax = flexRequestISPType.getMaxPower() == 0L ? this.powerImportMax : (double) flexRequestISPType.getMaxPower() / 1000;
+            double exportMax = flexRequestISPType.getMinPower() == 0L ? this.powerExportMax : (double) Math.abs(flexRequestISPType.getMinPower()) / 1000;
+
+            schedulePowerUpdates(start, importMax, exportMax);
         }
+        LOG.fine("Finished processing Flex Request: " + flexRequest);
     }
 
-    protected void schedulePowerUpdates(LocalTime start, long maxPower, long minPower) {
+    protected void schedulePowerUpdates(LocalTime start, double maxPower, double minPower) {
         long currentTimeMillis = timerService.getCurrentTimeMillis();
         long ispStartMillis = start.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long delay = ispStartMillis - currentTimeMillis;
         scheduledExecutorService.schedule(() -> updatePowerValues(maxPower, minPower), delay, TimeUnit.MILLISECONDS);
     }
 
-    protected void updatePowerValues(long maxPower, long minPower) {
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerImportMaxGopacs", (double) maxPower), getClass().getSimpleName());
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerExportMaxGopacs", (double) minPower), getClass().getSimpleName());
+    protected void updatePowerValues(double maxPower, double minPower) {
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerImportMaxGopacs", maxPower), getClass().getSimpleName());
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerExportMaxGopacs", minPower), getClass().getSimpleName());
     }
 
     protected void sendFlexResponse(UftpParticipant participant, FlexRequestResponse flexRequestResponse) {
@@ -307,7 +313,7 @@ public class GoPacsHandler implements UftpParticipantService {
         if (participants.containsKey(domain)) {
             return Optional.of(participants.get(domain));
         } else {
-            try (Response response = goPacsClient
+            try (Response response = goPacsAddressBookResource
                     .fetchParticipants(contractedEan)) {
                 if (response != null && response.getStatus() == 200) {
                     List<UftpParticipantInformation> participants = response.readEntity(new GenericType<List<UftpParticipantInformation>>() {

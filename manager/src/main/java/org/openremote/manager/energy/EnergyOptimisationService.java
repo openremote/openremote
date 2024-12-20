@@ -312,7 +312,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 if (existing != null) {
                     existing.undeploy();
                 }
-                goPacsHandlerMap.put(contractedEan, goPacsHandlerFactory.createHandler(contractedEan, supplierAsset.getRealm(), supplierAsset.getId()));
+                goPacsHandlerMap.put(contractedEan, goPacsHandlerFactory.createHandler(contractedEan, supplierAsset.getRealm(), supplierAsset.getId(), supplierAsset.getPowerImportMax().orElse(0.0), supplierAsset.getPowerExportMax().orElse(0.0)));
             }
 
             executorService.execute(() -> {
