@@ -28,12 +28,14 @@ import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageServi
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.energy.gopacs.*;
 import org.openremote.model.Container;
 import org.openremote.container.web.WebApplication;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.io.IOException;
@@ -44,6 +46,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.http.AbstractHTTPServerProtocol.configureDeploymentInfo;
 import static org.openremote.agent.protocol.http.AbstractHTTPServerProtocol.getStandardProviders;
@@ -70,6 +73,7 @@ public class GoPacsHandler implements UftpParticipantService {
     protected GopacsServerResource goPacsServer;
     protected WebService webService;
     protected AssetProcessingService assetProcessingService;
+    protected AssetPredictedDatapointService assetPredictedDatapointService;
     protected ScheduledExecutorService scheduledExecutorService;
     protected TimerService timerService;
 
@@ -161,6 +165,7 @@ public class GoPacsHandler implements UftpParticipantService {
 
         this.webService = container.getService(WebService.class);
         this.assetProcessingService = container.getService(AssetProcessingService.class);
+        this.assetPredictedDatapointService = container.getService( AssetPredictedDatapointService.class);
         Application application = createApplication(container);
         ResteasyDeployment resteasyDeployment = createDeployment(application);
         createDeploymentInfo(resteasyDeployment);
@@ -276,6 +281,8 @@ public class GoPacsHandler implements UftpParticipantService {
         int year = flexRequest.getPeriod().getYear();
         int month = flexRequest.getPeriod().getMonthValue();
         int day = flexRequest.getPeriod().getDayOfMonth();
+        List<ValueDatapoint<?>> powerImportMaxGopacsDatapoints = new ArrayList<>();
+        List<ValueDatapoint<?>> powerExportMaxGopacsDatapoints = new ArrayList<>();
 
         for (int i = 0; i < flexRequest.getISPS().size(); i++) {
             FlexRequestISPType flexRequestISPType = flexRequest.getISPS().get(i);
@@ -286,7 +293,13 @@ public class GoPacsHandler implements UftpParticipantService {
             double exportMax = flexRequestISPType.getMinPower() == 0L ? this.powerExportMax : (double) Math.abs(flexRequestISPType.getMinPower()) / 1000;
 
             schedulePowerUpdates(start, importMax, exportMax);
+            
+            powerImportMaxGopacsDatapoints.add(new ValueDatapoint<Double>(flexRequest.getPeriod().atTime(start).atOffset(ZoneOffset.of(flexRequest.getTimeZone())).toInstant().toEpochMilli(), importMax));
+            powerExportMaxGopacsDatapoints.add(new ValueDatapoint<Double>(flexRequest.getPeriod().atTime(start).atOffset(ZoneOffset.of(flexRequest.getTimeZone())).toInstant().toEpochMilli(), exportMax));
         }
+
+        setPredictedDataPoints("powerImportMaxGopacs", powerImportMaxGopacsDatapoints);
+        setPredictedDataPoints("powerExportMaxGopacs", powerExportMaxGopacsDatapoints);
         LOG.fine("Finished processing Flex Request: " + flexRequest);
     }
 
@@ -305,6 +318,10 @@ public class GoPacsHandler implements UftpParticipantService {
     protected void sendFlexResponse(UftpParticipant participant, FlexRequestResponse flexRequestResponse) {
         OutgoingUftpMessage<FlexRequestResponse> outgoingUftpMessage = OutgoingUftpMessage.create(participant, flexRequestResponse);
         goPacsClient.outMessage(outgoingUftpMessage);
+    }
+
+    protected void setPredictedDataPoints(String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
+        assetPredictedDatapointService.updateValues(electricitySupplierAssetId, attributeName, valuesAndTimestamps);
     }
 
 
