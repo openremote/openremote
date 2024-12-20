@@ -572,6 +572,7 @@
   "attributeName": "Attribuut naam",
   "oldestDatapoint": "Oudste datapunt",
   "latestDatapoint": "Laatste datapunt",
+  "exportTooLargeError": "Kon data niet exporteren: er is te veel data geselecteerd.",
   "arrayDimensions": "Array dimensies",
   "addParameter": "Voeg parameter toe",
   "addItem": "Voeg item toe",
