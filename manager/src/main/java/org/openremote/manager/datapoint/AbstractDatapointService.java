@@ -84,7 +84,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         scheduledExecutorService = container.getScheduledExecutor();
-        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 0);
+        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 100000);
     }
 
     @Override
