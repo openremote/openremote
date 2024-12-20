@@ -35,6 +35,7 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -61,6 +62,21 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         this.managerIdentityService = managerIdentityService;
     }
 
+    @Override
+    public SentNotification[] getAllNotifications(RequestParams requestParams) {
+        try {
+            return notificationService.getNotifications(null, 
+            null, 
+            null, 
+            null, 
+            null, 
+            null, 
+            null).toArray(new SentNotification[0]);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notifications:", e);
+        }
+    }
+    
     @Override
     public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
         try {
@@ -235,6 +251,32 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                     }
                     break;
             }
+        }
+    }
+
+    // notification source is set to internal to sidestep the local fcm config issue I'm facing rn
+    @Override
+    public void createNotificationInDB (RequestParams requestParams, Notification notification) {
+        if (notification == null) {
+            throw new WebApplicationException("Missing notification", BAD_REQUEST);
+        }
+
+        try {
+            SentNotification sentNotification = new SentNotification()
+            .setName(notification.getName())
+            .setType(notification.getMessage().getType())
+            .setSource(Notification.Source.INTERNAL)
+            .setSourceId("")
+            .setTarget(notification.getTargets().get(0).getType())
+            .setTargetId(notification.getTargets().get(0).getId())
+            .setMessage(notification.getMessage())
+            .setSentOn(new Date());
+
+            notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
+            });
+        } catch (Exception e) {
+            LOG.warning("Failed to create notification in DB:" + e.getMessage());
+            throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -5,7 +5,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {ClientRole, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery, UserSession} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -15,6 +15,7 @@ import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@open
 import {getNewUserRoute, getUsersRoute} from "../routes";
 import {when} from 'lit/directives/when.js';
 import {until} from 'lit/directives/until.js';
+import {map} from 'lit/directives/map.js';
 import {OrMwcTableRowClickEvent, TableColumn, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -208,6 +209,8 @@ export class PageUsers extends Page<AppStateKeyed> {
     @state()
     protected _serviceUserFilter = this.getDefaultUserFilter(true);
     @state()
+    protected _passwordPolicy: string[] = []
+    @state()
     protected _roles: Role[] = [];
     @state()
     protected _realmRoles: Role[] = [];
@@ -321,6 +324,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
         this._registrationEmailAsUsername = realmResponse.data.registrationEmailAsUsername;
         this._realmRoles = (realmResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
+        this._passwordPolicy = realmResponse.data.passwordPolicy;
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
     }
@@ -348,11 +352,6 @@ export class PageUsers extends Page<AppStateKeyed> {
             // Ensure user ID is set
             user.id = response.data.id;
 
-            if (user.password) {
-                const credentials = {value: user.password}
-                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
-            }
-
             await this._updateRoles(user, false);
             await this._updateRoles(user, true);
             await this._updateUserAssetLinks(user);
@@ -371,6 +370,16 @@ export class PageUsers extends Page<AppStateKeyed> {
 
         } finally {
             await this.loadData();
+
+            // After updating the user, reset the password if it has changed.
+            // This is handled asynchronously, so it will not 'wait' before the request has succeeded.
+            if (user.password) {
+                const credentials = {value: user.password} as Credential;
+                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(() => {
+                    showSnackbar(undefined, "savePasswordFailed");
+                });
+            }
+
             return result;
         }
     }
@@ -924,11 +933,13 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       helperPersistent ?readonly="${readonly}"
                                       .label="${i18next.t("repeatPassword")}"
                                       .type="${InputType.PASSWORD}" min="1"
+                                      style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
+                        ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                     `}
                 </div>
 
@@ -1069,6 +1080,66 @@ export class PageUsers extends Page<AppStateKeyed> {
                     </div>
                 </div>
             `)}
+        `;
+    }
+
+    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+        const policyMap = new Map(passwordPolicy.map(policyStr => {
+            const name = policyStr.split("(")[0];
+            const value = policyStr.split("(")[1].split(")")[0];
+            return [name, value];
+        }));
+        const policies = Array.from(policyMap.keys());
+        const policyTexts: TemplateResult[] = [];
+
+        // Minimum / maximum length warning
+        if(policies.includes("length") && policies.includes("maxLength")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length" .options="${{ 0: policyMap.get("length"), 1: policyMap.get("maxLength") }}"></or-translate>`);
+        } else if(policies.includes("length")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-short" .options="${{ 0: policyMap.get("length") }}"></or-translate>`);
+        } else if(policies.includes("maxLength")) {
+            policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-long" .options="${{ 0: policyMap.get("maxLength") }}"></or-translate>`);
+        }
+
+        // Special characters
+        if(policies.includes("specialChars")) {
+            const value = policyMap.get("specialChars");
+            const translation = value == "1" ? "password-policy-special-chars-single" : "password-policy-special-chars";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Digits/numbers
+        if(policies.includes("digits")) {
+            const value = policyMap.get("digits");
+            const translation = value == "1" ? "password-policy-digits-single" : "password-policy-digits";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Uppercase / lowercase letters
+        if(policies.includes("upperCase")) {
+            const value = policyMap.get("upperCase");
+            const translation = value == "1" ? "password-policy-uppercase-single" : "password-policy-uppercase";
+            policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+        }
+
+        // Warn for recently used passwords
+        if(policies.includes("passwordHistory")) {
+            policyTexts.push(html`<or-translate value="password-policy-recently-used"></or-translate>`);
+        }
+
+        // Cannot be username and/or email
+        if(policies.includes("notUsername") && policies.includes("notEmail")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-email-username"></or-translate>`);
+        } else if(policies.includes("notUsername")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-username"></or-translate>`);
+        } else if(policies.includes("notEmail")) {
+            policyTexts.push(html`<or-translate value="password-policy-not-email"></or-translate>`);
+        }
+
+        return html`
+            <ul>
+                ${map(policyTexts, text => html`<li>${text}</li>`)}
+            </ul>
         `;
     }
 

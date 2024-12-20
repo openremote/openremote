@@ -15,8 +15,9 @@ import {
 } from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import i18next from "i18next";
+import {when} from "lit/directives/when.js";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, isAxiosError} from "@openremote/rest";
+import {GenericAxiosResponse, isAxiosError, AxiosError} from "@openremote/rest";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
@@ -29,7 +30,6 @@ import {
     OrMwcTableRowSelectEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
 // import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
-
 
 export class NotificationService {
     
@@ -51,7 +51,8 @@ export class NotificationService {
             });
 
             return response.data;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as AxiosError; //typecast
             console.error('Failed to fetch notifications:', error);
             if (isAxiosError(error)) {
                 console.error('API Error details:', {
@@ -117,7 +118,8 @@ export class NotificationService {
             
             console.log("Response received:", response);
             return response.status === 200;
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as AxiosError;
             console.error('Failed to send notification: ', error);
             if (isAxiosError(error)) {
                 console.error('Full error object:', {
@@ -384,6 +386,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
     @state()
     protected _targetInput?: OrMwcInput;
 
+    @state()
+    protected notification?: Notification;
+
+    @state()
+    protected creationState?: {
+        notificationModel: Notification;
+    }
+
     protected _loading: boolean = false;
     protected notificationService: NotificationService; 
 
@@ -418,7 +428,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
         try {
             this._data = await this.notificationService.getNotifications(this.realm);
             this.requestUpdate();
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as AxiosError
             console.error("Notification load failed with error:", error);
         if (error.response) {
             console.error("Error response:", {
@@ -490,7 +501,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             showSnackbar(undefined, i18next.t("Creating notification success."));
             dialog.close();
-        } catch (error) {
+        } catch (err: unknown) {
+            const error = err as AxiosError;
             console.error("Error creating notification:", error);
             if (error.response) {
                 console.error("Error response:", {
@@ -556,14 +568,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return notification;
     }
 
-    // dont remove this
     get name(): string {
         return "notification.notification_plural"
     }
 
     protected reset(): void {
+        this.notification = undefined;
+        this.creationState = undefined;
         this._data = undefined;
-        // TODO: add proper refresh logic
         this.requestUpdate();
     }
 
@@ -593,7 +605,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected async _showCreateDialog() {
         await customElements.whenDefined('notification-form');
 
-        const dialog = showDialog(
+        // declare type first
+        let dialogInstance: OrMwcDialog;
+
+        dialogInstance = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Create notification"))
             .setContent(this._getDialogHTML())
@@ -602,14 +617,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         actionName: "cancel",
                         content: i18next.t("cancel"),
                         action: () => {
-                            dialog.close();
+                            dialogInstance.close();
                             this._loadData(); // reload after cancel
                         }
                     },
                     {
                         actionName: "create",
                         content: i18next.t("create"),
-                        action: async () => this._handleCreateNotification(dialog)
+                        action: async () => this._handleCreateNotification(dialogInstance)
                         // note! _loadData is already called in _handleCreateNotification
                     }
                 ])
@@ -673,12 +688,52 @@ export class PageNotifications extends Page<AppStateKeyed> {
         ])
     }
 
+    protected getNewNotificationModel(): Notification {
+        return {
+            name: "",
+            message: {
+                type: "push",
+                title: "",
+                body: "",
+                data: {}
+            } as PushNotificationMessage,
+            targets: [],
+        };
+    }
+
     protected render() {
         if (!manager.authenticated) {
             return html`<or-translate value="notAuthenticated"/>`;
         }
 
         const writeNotifications = manager.hasRole("write:admin")
+
+        return html`
+        <div id="wrapper">
+            <div id="title" class="${this.creationState || this.notification ? "hidden" : ""}">
+                <div style="display: flex; align-items: center;">
+                    <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
+                    <span><or-translate value="${i18next.t("notifications")}"/></span>
+                </div>
+                
+                ${writeNotifications ? html`
+                    <or-mwc-input 
+                        type="${InputType.BUTTON}"
+                        icon="plus"
+                        label="${i18next.t("add")}"
+                        @or-mwc-input-changed="${() => this.creationState = {notificationModel: this.getNewNotificationModel()}}"
+                    ></or-mwc-input>
+                ` : ``}
+            </div>
+
+            ${when(this.notification || this.creationState,
+                () => this._showCreateDialog(),
+                () => html`
+                    ${this.getNotificationsTable()}
+                `
+            )}
+        </div>
+    `;
 
         return html`
             <div id="wrapper">
