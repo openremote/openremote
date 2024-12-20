@@ -28,4 +28,76 @@ public class ManagerAppRealmConfig {
     protected String language;
     protected String[] headers;
     protected ManagerAppRealmNotificationConfig notifications;
+
+    public String getAppTitle() {
+        return appTitle;
+    }
+
+    public ManagerAppRealmConfig setAppTitle(String appTitle) {
+        this.appTitle = appTitle;
+        return this;
+    }
+
+    public String getStyles() {
+        return styles;
+    }
+
+    public ManagerAppRealmConfig setStyles(String styles) {
+        this.styles = styles;
+        return this;
+    }
+
+    public String getLogo() {
+        return logo;
+    }
+
+    public ManagerAppRealmConfig setLogo(String logo) {
+        this.logo = logo;
+        return this;
+    }
+
+    public String getLogoMobile() {
+        return logoMobile;
+    }
+
+    public ManagerAppRealmConfig setLogoMobile(String logoMobile) {
+        this.logoMobile = logoMobile;
+        return this;
+    }
+
+    public String getFavicon() {
+        return favicon;
+    }
+
+    public ManagerAppRealmConfig setFavicon(String favicon) {
+        this.favicon = favicon;
+        return this;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public ManagerAppRealmConfig setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    public String[] getHeaders() {
+        return headers;
+    }
+
+    public ManagerAppRealmConfig setHeaders(String[] headers) {
+        this.headers = headers;
+        return this;
+    }
+
+    public ManagerAppRealmNotificationConfig getNotifications() {
+        return notifications;
+    }
+
+    public ManagerAppRealmConfig setNotifications(ManagerAppRealmNotificationConfig notifications) {
+        this.notifications = notifications;
+        return this;
+    }
 }
