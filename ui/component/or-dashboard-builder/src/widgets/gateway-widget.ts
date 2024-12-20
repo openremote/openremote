@@ -62,6 +62,8 @@ export class GatewayWidget extends OrWidget {
     @state()
     protected _activeTunnel?: GatewayTunnelInfo;
 
+    protected _isOnline = false;
+
     protected _startedByUser = false;
 
     protected _refreshTimer?: number = undefined;
@@ -135,7 +137,9 @@ export class GatewayWidget extends OrWidget {
     }
 
     protected render(): TemplateResult {
-        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig);
+        const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
+        this._getGatewayOnline(tunnelInfo)
+        const disabled = this.getEditMode?.() || !this._isConfigComplete(this.widgetConfig) || !this._isOnline;
         return html`
             <div id="gateway-widget-wrapper">
                 <div id="gateway-widget-container">
@@ -165,9 +169,12 @@ export class GatewayWidget extends OrWidget {
                             `;
                         } else {
                             return html`
+                                <div>
                                 <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
+                                </div>
+                                <div><or-translate value="Gateway Status"></or-translate>: ${this._isOnline}</div>
                             `;
                         }
                     })}
@@ -322,6 +329,20 @@ export class GatewayWidget extends OrWidget {
             return response.data;
         }
     }
+
+    /**
+     * Internal function that requests the Manager API for the gatewayStatus based on the gatewayId in {@link GatewayTunnelInfo}.
+     * Returns true only if 'CONNECTED', as this is the only valid connectionStatus to start a tunnel.
+     */
+   protected async _getGatewayOnline(info: GatewayTunnelInfo): Promise<void> {
+        const response =  await manager.rest.api.AssetResource.get(info.gatewayId)
+        if (response.status === 200 && response.data && response.data.attributes && response.data.attributes.gatewayStatus) {
+            const statusString = response.data.attributes.gatewayStatus.value!;
+            this._isOnline = (statusString == "CONNECTED")
+        } else {
+            this._isOnline = false }
+    }
+
 
     /**
      * Function that tries to destroy the currently active tunnel.
