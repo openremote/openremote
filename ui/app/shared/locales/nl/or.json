@@ -100,6 +100,7 @@
   "rulesEditorAddAttribute": "Voeg attribute toe",
   "rulesEditorAddGroup": "Groep",
   "rulesEditorAddAction": "Voeg actie toe",
+  "rulesEditorDuration": "Tijdsduur (min)",
   "sortBy": "Sorteren op",
   "assetType": "Asset type",
   "creationDate": "Aangemaakt op",
