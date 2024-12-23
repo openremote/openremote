@@ -358,7 +358,8 @@
     "createNew": "Add new Gateway tunnel",
     "selectAsset": "Select gateway asset",
     "closeSuccessful": "Closed tunnel successfully",
-    "closesAt": "Closes at"
+    "closesAt": "Closes at",
+    "offline": "Offline"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",

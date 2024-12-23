@@ -170,7 +170,7 @@ export class GatewayWidget extends OrWidget {
                         } else {
                             return html`
                                 <div>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="${i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
+                                <or-mwc-input .type="${InputType.BUTTON}" label="${disabled ? i18next.t('gatewayTunnels.offline') : i18next.t('gatewayTunnels.start')}" outlined .disabled="${disabled}"
                                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onStartTunnelClick(ev)}"
                                 ></or-mwc-input>
                                 </div>
