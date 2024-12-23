@@ -7,10 +7,11 @@ import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {when} from "lit/directives/when.js";
 import {until} from "lit/directives/until.js";
+import {map} from 'lit/directives/map.js';
 import {guard} from "lit/directives/guard.js";
 import {i18next} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {ClientRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
+import {ClientRole, Credential, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
@@ -148,6 +149,9 @@ export class PageAccount extends Page<AppStateKeyed>  {
     @state()
     protected _invalid = false;
 
+    @state()
+    protected _passwordPolicy: string[] = []
+
     @query("#password")
     protected _passwordElem?: OrMwcInput;
 
@@ -180,6 +184,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
         }
 
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
+        this._getPasswordPolicy();
 
         return html`
             <div id="wrapper">
@@ -314,8 +319,10 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                       onchange?.(user, changed, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
+                    ${when(this._passwordPolicy, () => until(this._getPasswordPolicyTemplate(user, this._passwordPolicy)))}
                 </div>
             </div>
+
         `;
     }
 
@@ -430,15 +437,83 @@ export class PageAccount extends Page<AppStateKeyed>  {
     protected async _updateUser(user: UserModel): Promise<void> {
         await manager.rest.api.UserResource.update(manager.getRealm(), user).then(() => {
             if(user.password) {
-                const credentials = {value: user.password};
-                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials);
+                const credentials = {value: user.password} as Credential;
+                manager.rest.api.UserResource.resetPassword(manager.getRealm(), user.id, credentials)
+                    .then(() => {
+                        showSnackbar(undefined, "saveUserSucceeded");
+                        })
+                    .catch(() => {
+                        showSnackbar(undefined, "saveUserFailed");
+                    });
+                this._dirty = false;
             }
-            this._dirty = false;
-            showSnackbar(undefined, "saveUserSucceeded");
-
-        }).catch(e => {
-            console.error(e);
-            showSnackbar(undefined, "saveUserFailed");
-        });
+        })
     }
+
+    protected async _getPasswordPolicy(): Promise<void> {
+        const realmResponse = await manager.rest.api.RealmResource.get(manager.getRealm());
+        this._passwordPolicy = realmResponse.data.passwordPolicy;
+
+        }
+
+   protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
+       const policyMap = new Map(passwordPolicy.map(policyStr => {
+           const name = policyStr.split("(")[0];
+           const value = policyStr.split("(")[1].split(")")[0];
+           return [name, value];
+       }));
+   const policies = Array.from(policyMap.keys());
+       const policyTexts: TemplateResult[] = [];
+
+       // Minimum / maximum length warning
+       if(policies.includes("length") && policies.includes("maxLength")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length" .options="${{ 0: policyMap.get("length"), 1: policyMap.get("maxLength") }}"></or-translate>`);
+       } else if(policies.includes("length")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-short" .options="${{ 0: policyMap.get("length") }}"></or-translate>`);
+       } else if(policies.includes("maxLength")) {
+           policyTexts.push(html`<or-translate value="password-policy-invalid-length-too-long" .options="${{ 0: policyMap.get("maxLength") }}"></or-translate>`);
+       }
+
+       // Special characters
+       if(policies.includes("specialChars")) {
+           const value = policyMap.get("specialChars");
+           const translation = value == "1" ? "password-policy-special-chars-single" : "password-policy-special-chars";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Digits/numbers
+       if(policies.includes("digits")) {
+           const value = policyMap.get("digits");
+           const translation = value == "1" ? "password-policy-digits-single" : "password-policy-digits";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Uppercase / lowercase letters
+       if(policies.includes("upperCase")) {
+           const value = policyMap.get("upperCase");
+           const translation = value == "1" ? "password-policy-uppercase-single" : "password-policy-uppercase";
+           policyTexts.push(html`<or-translate value="${translation}" .options="${{ 0: value }}"></or-translate>`);
+       }
+
+       // Warn for recently used passwords
+       if(policies.includes("passwordHistory")) {
+           policyTexts.push(html`<or-translate value="password-policy-recently-used"></or-translate>`);
+       }
+
+       // Cannot be username and/or email
+       if(policies.includes("notUsername") && policies.includes("notEmail")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-email-username"></or-translate>`);
+       } else if(policies.includes("notUsername")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-username"></or-translate>`);
+       } else if(policies.includes("notEmail")) {
+           policyTexts.push(html`<or-translate value="password-policy-not-email"></or-translate>`);
+       }
+
+       return html`
+           <ul>
+               ${map(policyTexts, text => html`<li>${text}</li>`)}
+           </ul>
+       `;
+   }
+
 }
