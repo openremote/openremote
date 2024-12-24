@@ -856,7 +856,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
                                   pattern="[A-Za-z0-9\\-_]+"
-                                  .value="${user.username}"
+                                  .value="${user.username}" autocomplete="false"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
@@ -868,7 +868,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
-                                  .value="${user.email}"
+                                  .value="${user.email}" autocomplete="false"
                                   ?required="${!isServiceUser && this._registrationEmailAsUsername}"
                                   pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
@@ -884,7 +884,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.firstName}"
+                                  .value="${user.firstName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.firstName = e.detail.value;
                                       this.onUserChanged(suffix)
@@ -893,7 +893,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}" minLength="1"
-                                  .value="${user.lastName}"
+                                  .value="${user.lastName}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.lastName = e.detail.value;
                                       this.onUserChanged(suffix)
@@ -923,7 +923,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       ?readonly="${readonly}"
                                       class = "validate"
                                       .label="${i18next.t("password")}"
-                                      .type="${InputType.PASSWORD}" min="1"
+                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
                                           this.onUserChanged(suffix);
@@ -932,7 +932,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                         <or-mwc-input id="repeatPassword-${suffix}"
                                       helperPersistent ?readonly="${readonly}"
                                       .label="${i18next.t("repeatPassword")}"
-                                      .type="${InputType.PASSWORD}" min="1"
+                                      .type="${InputType.PASSWORD}" min="1" autocomplete="false"
                                       style="${this._passwordPolicy ? 'margin-bottom: 0' : undefined}"
                                       @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                           this._onPasswordChanged(user, suffix);
