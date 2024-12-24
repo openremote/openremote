@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.util.CompatibilityHints;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.util.Pair;
 
