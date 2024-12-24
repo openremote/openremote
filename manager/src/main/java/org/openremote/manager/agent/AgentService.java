@@ -414,7 +414,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 LOG.fine("Starting protocol instance: " + protocol);
                 protocol.start(container);
                 protocolInstanceMap.put(agent.getId(), protocol);
-                LOG.fine("Started protocol instance:" + protocol);
+                LOG.fine("Started protocol instance: " + protocol);
 
                 LOG.finest("Linking attributes to protocol instance: " + protocol);
 
@@ -447,7 +447,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     }
                 }
                 protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol '" + protocol + "': " + agent, e);
+                LOG.log(Level.SEVERE, "Failed to start protocol '" + protocol + "': " + agent + " msg=" + e.getMessage());
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         }
@@ -499,7 +499,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                         protocol.linkAttribute(assetId, attribute);
                     }
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Failed to link attribute '" + attributeRef + "' to protocol: " + protocol, ex);
+                    LOG.log(Level.SEVERE, "Failed to link attribute '" + attributeRef + "' to protocol: " + protocol + " msg=" + ex.getMessage());
                 }
             });
         }
@@ -598,6 +598,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 .orElse(true);
 
             if (eventOutdated) {
+                return;
+            }
+
+            // Ignore events that have come from the AssetStorageService (i.e. Asset merges as these are handled separately)
+            if (AssetStorageService.class.getSimpleName().equals(event.getSource())) {
                 return;
             }
 
