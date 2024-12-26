@@ -850,7 +850,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <div class="column">
                     <h5>${i18next.t("details")}</h5>
                     <!-- user details -->
-                    <or-mwc-input id="username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
+                    <or-mwc-input id="new-username-${suffix}" ?readonly="${!!user.id || readonly}" .disabled="${!!user.id || (!isServiceUser && this._registrationEmailAsUsername)}"
                                   class = "validate"
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
@@ -863,7 +863,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
+                    <or-mwc-input id="new-email" ?readonly="${(!!user.id && this._registrationEmailAsUsername) || readonly}"
                                   .disabled="${!!user.id && this._registrationEmailAsUsername}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("email")}"
@@ -880,7 +880,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       this.onUserChanged(suffix);
                                       this.requestUpdate(); // in case of username update, we trigger a state change
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input id="new-firstName" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}" minLength="1"
@@ -889,7 +889,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                       user.firstName = e.detail.value;
                                       this.onUserChanged(suffix)
                                   }}"></or-mwc-input>
-                    <or-mwc-input ?readonly="${readonly}"
+                    <or-mwc-input id="new-surname" ?readonly="${readonly}"
                                   class="${isServiceUser ? "hidden" : "validate"}"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}" minLength="1"
@@ -903,7 +903,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                     <h5>${i18next.t("password")}</h5>
                     ${isServiceUser ? html`
                         ${when(user.secret, () => html`
-                            <or-mwc-input id="password-${suffix}" readonly
+                            <or-mwc-input id="new-password-${suffix}" readonly
                                           class = "validate"
                                           .label="${i18next.t("secret")}"
                                           .value="${user.secret}"
@@ -919,7 +919,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                             <span>${i18next.t("generateSecretInfo")}</span>
                         `)}
                     ` : html`
-                        <or-mwc-input id="password-${suffix}"
+                        <or-mwc-input id="new-password-${suffix}"
                                       ?readonly="${readonly}"
                                       class = "validate"
                                       .label="${i18next.t("password")}"
@@ -929,7 +929,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                           this.onUserChanged(suffix);
                                       }}"
                         ></or-mwc-input>
-                        <or-mwc-input id="repeatPassword-${suffix}"
+                        <or-mwc-input id="new-repeatPassword-${suffix}"
                                       helperPersistent ?readonly="${readonly}"
                                       .label="${i18next.t("repeatPassword")}"
                                       .type="${InputType.PASSWORD}" min="1" autocomplete="false"
