@@ -62,13 +62,32 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         this.managerIdentityService = managerIdentityService;
     }
 
+    //API endpoint added for development purposes
     @Override
-    public SentNotification[] getAllNotifications(RequestParams requestParams) {
+    public SentNotification[] getAllNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp) {
         try {
-            return notificationService.getNotifications(null, 
+            return notificationService.getNotifications(
             null, 
             null, 
+            fromTimestamp,
+            toTimestamp, 
             null, 
+            null, 
+            null).toArray(new SentNotification[0]);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notifications:", e);
+        }
+    }
+
+    //API endpoint added for development purposes
+    @Override
+    public SentNotification[] getFilteredNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String source) {
+        try {
+            return notificationService.getNotifications(
+            null, 
+            null, 
+            fromTimestamp,
+            toTimestamp, 
             null, 
             null, 
             null).toArray(new SentNotification[0]);
@@ -254,6 +273,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         }
     }
 
+    // API endpoint added for development purposes 
     // notification source is set to internal to sidestep the local fcm config issue I'm facing rn
     @Override
     public void createNotificationInDB (RequestParams requestParams, Notification notification) {

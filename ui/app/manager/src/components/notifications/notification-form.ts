@@ -1,8 +1,8 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { OrMwcInput, InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import manager from "@openremote/core";
+import manager, { DefaultColor3 } from "@openremote/core";
 import { User, Asset } from "@openremote/model";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { live } from "lit/directives/live.js";
@@ -54,6 +54,40 @@ export class NotificationForm extends LitElement {
             font-size: 14px;
             color: #666;
         }
+
+        /* Grid styles */
+
+        .formGridContainer {
+            display: grid; 
+            grid-template-columns: 2fr 1fr; 
+            grid-template-rows: 1fr 1fr 1fr 1fr; 
+            gap: 8px 8px;  
+            grid-template-areas: 
+                "targetContainer actionButtonContainer"
+                "messageContentContainer actionButtonContainer"
+                "messageContentContainer propContainer"
+                "messageContentContainer propContainer"; 
+            }
+
+        .targetContainer { grid-area: targetContainer; }
+        .messageContentContainer { grid-area: messageContentContainer; }
+        .actionButtonContainer { grid-area: actionButtonContainer; }
+        .propContainer { grid-area: propContainer; }
+
+        .panel-title {
+            text-transform: uppercase;
+            font-weight: bolder;
+            color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+            line-height: 1em;
+            /*margin-bottom: 10px;*/
+            margin-top: 0;
+            flex: 0 0 auto;
+            letter-spacing: 0.025em;
+            display: flex;
+            align-items: center;
+            min-height: 36px;
+            
+            }
     `;
 
     constructor() {
@@ -145,15 +179,10 @@ export class NotificationForm extends LitElement {
     }
 
     protected async _onTargetSelected(e: OrInputChangedEvent) {
-        console.log('Target selection event:', e.detail);
-        console.log('Previous selected target:', this._selectedTarget);
-        const select = e.detail.value;
-        console.log('New selected value:', select);
-        if (!select) return;
+        if (!e.detail || !e.detail.value) return;
 
-        this._selectedTarget = select;
-        console.log('Update selected target:', this._selectedTarget);
-        
+        this._selectedTarget = e.detail.value;
+        console.log('Selected target updated:', this._selectedTarget);
         await this.requestUpdate();
     }
     
@@ -227,101 +256,97 @@ export class NotificationForm extends LitElement {
         };
     }
 
+    protected _getField(label, inputType, isDisabled, id, rows, isRequired) {
+        return html`
+            <or-mwc-input 
+                    label="${i18next.t(label)}"
+                    type="${inputType}"
+                    rows="${rows}"
+                    style="width: 100%;"
+                    ?disabled="${isDisabled}"
+                    ?required="${isRequired}"
+                    id="${id}">
+                </or-mwc-input>
+        `;
+    }
+
     protected render() {
         console.log('Render state:', {
             targetOptions: this._targetOptions,
             selectedTarget: this._selectedTarget,
             mappedOptions: this._targetOptions.map(o => [o.value, o.text])
         });
+        const readonly = true;
         return html`
             <div class="form-container">
-                <or-mwc-input 
-                    label="${i18next.t("Name")}"
-                    type="${InputType.TEXT}"
-                    style="width: 100%;"
-                    ?disabled="${this.disabled}"
-                    required
-                    id="notificationName">
-                </or-mwc-input>
-                
-                <or-mwc-input 
-                    label="${i18next.t("Title")}"
-                    type="${InputType.TEXT}"
-                    style="width: 100%;"
-                    ?disabled="${this.disabled}"
-                    required
-                    id="notificationTitle">
-                </or-mwc-input>
-                
-                <or-mwc-input 
-                    label="${i18next.t("Body")}"
-                    type="${InputType.TEXTAREA}"
-                    rows="4"
-                    style="width: 100%;"
-                    ?disabled="${this.disabled}"
-                    required
-                    id="notificationBody">
-                </or-mwc-input>
 
-                <or-mwc-input 
-                    label="${i18next.t("Priority")}"
-                    type="${InputType.SELECT}"
-                    .options="${["NORMAL", "HIGH"]}"
-                    ?disabled="${this.disabled}"
-                    required
-                    style="width: 100%;"
-                    id="notificationPriority">
-                </or-mwc-input>
+                <div class="formGridContainer">
+                    <div class="targetContainer">
+                        <div class="section-title">${i18next.t("Target")}</div>
+                         <or-mwc-input 
+                            label="${i18next.t("Target type")}"
+                            type="${InputType.SELECT}"
+                            .options="${["USER", "ASSET", "REALM"]}"
+                            ?disabled="${this.disabled}"
+                            required
+                            style="width: 100%;"
+                            id="targetType"
+                            .value="${this._selectedTargetType}"
+                            @or-mwc-input-changed="${this._onTargetTypeChanged}">
+                        </or-mwc-input>
 
-                <or-mwc-input 
-                    label="${i18next.t("Target type")}"
-                    type="${InputType.SELECT}"
-                    .options="${["USER", "ASSET", "REALM"]}"
-                    ?disabled="${this.disabled}"
-                    required
-                    style="width: 100%;"
-                    id="targetType"
-                    .value="${this._selectedTargetType}"
-                    @or-mwc-input-changed="${this._onTargetTypeChanged}">
-                </or-mwc-input>
+                        <or-mwc-input 
+                            label="${i18next.t("Target")}"
+                            type="${InputType.SELECT}"
+                            
+                            style="width: 100%;"
+                            ?disabled="${this.disabled || !this._targetOptions}"
+                            required
+                            id="target"
+                            .value="${this._selectedTarget}"
+                            .options="${this._targetOptions.map(o => [o.value, o.text])}"
+                            .searchProvider="${(search?: string) => {
+                            // Filter options based on search text
+                            if (!search) return Promise.resolve(this._targetOptions.map(o => [o.value, o.text]));
+                            return Promise.resolve(
+                                this._targetOptions
+                                    .filter(o => o.text.toLowerCase().includes(search.toLowerCase()))
+                                    .map(o => [o.value, o.text])
+                            );
+                        }}"
+                        searchLabel="Search targets"
+                            @or-mwc-input-changed="${this._onTargetSelected}">
+                        </or-mwc-input>
 
-                <!-- <or-mwc-input 
-                    label="${i18next.t("Target")}"
-                    type="${InputType.SELECT}"
-                    style="width: 100%;"
-                    ?disabled="${this.disabled || !this._targetOptions}"
-                    required
-                    id="target"
-                    .value="${this._selectedTarget ?? ''}"
-                    .options="${this._targetOptions.map(o => [o.value, o.text])}"
-                    @or-mwc-input-changed="${this._onTargetSelected}">
-                </or-mwc-input> -->
-
-                <div class="select-container">
-                    <label for="target">${i18next.t("Target")}</label>
-                    <select
-                        id="target"
-                        style="width: 100%;"
-                        ?disabled="${this.disabled || !this._targetOptions}"
+                    </div>
+               
+                <div class="messageContentContainer">
+                <div class="section-title">${i18next.t("Content")}</div>
+                    ${this._getField("Name", InputType.TEXT, this.disabled, "notificationName", 1, true)}
+                    ${this._getField("Title", InputType.TEXT, this.disabled, "notificationTitle", 1, true)}
+                    ${this._getField("Body", InputType.TEXTAREA, this.disabled, "notificationBody", 4, true)}
+                </div>
+                  
+                <div class="actionButtonContainer">
+                <div class="section-title">${i18next.t("Actions")}</div>
+                    ${this._getField("Website to be opened", InputType.TEXT, this.disabled, "notificationName", 1, false)}
+                    ${this._getField("Text for action button", InputType.TEXT, this.disabled, "notificationTitle", 1, false)}
+                    ${this._getField("Text for decline button", InputType.TEXT, this.disabled, "notificationTitle", 1, false)}
+                </div>
+               
+                <div class="propContainer">
+                <div class="section-title">${i18next.t("Props")}</div>
+                    <or-mwc-input 
+                        label="${i18next.t("Priority")}"
+                        type="${InputType.SELECT}"
+                        .options="${["NORMAL", "HIGH"]}"
+                        ?disabled="${this.disabled}"
                         required
-                        @change="${(e: Event) => {
-                            const select = e.target as HTMLSelectElement;
-                            this._onTargetSelected({
-                                detail: { value: select.value }
-                            } as OrInputChangedEvent);
-                        }}">
-                        <option value="" disabled selected=${!this._selectedTarget}>
-                            ${i18next.t("Select a target")}
-                        </option>
-                        ${this._targetOptions.map(option => html`
-                            <option 
-                                value="${option.value}"
-                                ?selected="${this._selectedTarget === option.value}">
-                                ${option.text}
-                            </option>
-                        `)}
-                    </select>
-                </div>  
+                        style="width: 100%;"
+                        id="notificationPriority">
+                    </or-mwc-input> 
+                </div>
+                </div>
             </div>
         `;
     }

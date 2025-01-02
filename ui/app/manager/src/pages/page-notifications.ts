@@ -33,12 +33,16 @@ import {
 
 export class NotificationService {
     
-    async getNotifications(realm: string): Promise<SentNotification[]> {
+    async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
         try {
-            console.log("Fetching notifications for realm:", realm);
-
-            // call the notifications endpoint with minimal filtering
-            const response = await manager.rest.api.NotificationResource.getAllNotifications({});
+            console.log("Fetching notifications with filters:", realm, fromDate, toDate);
+            //TODO: 
+            // add dates
+            // switch realmID
+            const response = await manager.rest.api.NotificationResource.getAllNotifications({
+                from: fromDate,
+                to: toDate
+            });
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -64,45 +68,6 @@ export class NotificationService {
             throw error;
         }
     }
-
-
-
-    // async getNotifications(realm: string): Promise<SentNotification[]> {
-    //     try {
-            
-    //         // get todays start (midnight) and end (23:59)
-    //         const today = new Date();
-    //         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-    //         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23,59,59,599).getTime();
-
-    //         console.log("Making API request for realm:", realm);
-    //         const response = await manager.rest.api.NotificationResource.getNotifications({
-    //             realmId: realm,
-    //             from: startOfDay,
-    //             to: endOfDay
-    //         });
-
-    //         // Log the raw response
-    //         console.log("Raw API response:", response);
-    //         console.log("Response data length:", response.data?.length || 0);
-
-
-    //         if (response.status !== 200) {
-    //             throw new Error("Failed to load notifications");
-    //         }
-
-    //         console.log("All notifications:", response.data);
-    //         const filtered = response.data.filter(notification => notification.message.type === "push");
-    //         console.log("Filtered notifications:", filtered);
-    //         return filtered; 
-    //     } catch (error) {
-    //         console.error('Failed to load notifications: ', error);
-    //         if (isAxiosError(error)) {
-    //             console.error('Error details:', error.response?.data);
-    //         }
-    //         throw error;
-    //     }
-    // }
 
     async sendNotification(notification: Notification): Promise<boolean> {
         try {
@@ -131,6 +96,16 @@ export class NotificationService {
         }
     }
 
+    public getLastDayTimeRange(): {fromDate: number, toDate: number} {
+        const now = new Date();
+        const yesterday = new Date(now.getDate() - 1);
+
+        return {
+            fromDate: yesterday.getTime(),
+            toDate: now.getTime()
+        }
+    }
+
 }
 
 export interface PageNotificationsConfig {
@@ -155,197 +130,37 @@ export class PageNotifications extends Page<AppStateKeyed> {
     static get styles() {
         return [
             css`
-                :host {
-                    flex: 1;
-                    width: 100%;
-                }
-
-                #wrapper {
-                    height: 100%;
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: auto;
-                }
-
-                #title {
-                    padding: 0 20px;
-                    font-size: 18px;
-                    font-weight: bold;
-                    margin: 10px 0;
-                    display: flex;
-                    align-items: center;
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                    justify-content: space-between;
-                }
-
-                #title-alarm {
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-start;
-                    width: calc(100% - 52px);
-                    max-width: 1000px;
-                    margin: 20px auto;
-                    font-size: 18px;
-                    font-weight: bold;
-                }
-
-                .breadcrumb-container {
-                    width: calc(100% - 52px);
-                    max-width: 1000px;
-                    margin: 10px 20px 0 34px;
-                    display: flex;
-                    align-items: center;
-                }
-
-                .breadcrumb-clickable {
-                    cursor: pointer;
-                    color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
-                }
-
-                .breadcrumb-arrow {
-                    margin: 0 5px -3px 5px;
-                    --or-icon-width: 16px;
-                    --or-icon-height: 16px;
-                }
-
-                .panel {
-                    width: calc(100% - 100px);
-                    max-width: 1000px;
-                    background-color: white;
-                    border: 1px solid #e5e5e5;
-                    border-radius: 5px;
-                    position: relative;
-                    margin: auto;
-                    padding: 12px 24px 24px;
-                }
-
-                .panel-title {
-                    text-transform: uppercase;
-                    font-weight: bolder;
-                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                    line-height: 1em;
-                    /*margin-bottom: 10px;*/
-                    margin-top: 0;
-                    flex: 0 0 auto;
-                    letter-spacing: 0.025em;
-                    display: flex;
-                    align-items: center;
-                    min-height: 36px;
-                }
-
-                .alarm-input {
-                    margin-bottom: 12px;
-                }
-
-                #status-select, #severity-select {
-                    width: 180px;
-                }
-
-                #controls {
-                    flex: 0;
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .controls-left {
-                    display: flex;
-                    align-items: center;
-                    width: 100%;
-                }
-
-                .controls-left > * {
-                    padding-right: 20px;
-                }
-
-                h5 {
-                    margin-top: 12px;
-                    margin-bottom: 6px;
-                }
-
-                or-icon {
-                    vertical-align: middle;
-                    --or-icon-width: 20px;
-                    --or-icon-height: 20px;
-                }
-
-                #table-container {
-                    margin-left: 20px;
-                    margin-right: 20px;
-                }
-
-                .row {
-                    display: flex;
-                    flex-direction: row;
-                    flex-wrap: wrap;
-                    margin: auto;
-                    flex: 1 1 0;
-                    gap: 16px;
-                    width: 100%;
-                }
-
-                .column {
-                    display: flex;
-                    flex-direction: column;
-                    margin: 0px;
-                    flex: 1 1 0;
-                }
-
-                #details-panel {
-                    min-width: 66%;
-                    height: max-content;
-                }
-
-                #prop-panel {
-                    min-width: 32%;
-                    height: fit-content;
-                }
-
-                .hidden {
-                    display: none;
-                    margin: 0 !important;
-                }
-
-                #title.hidden {
-                    display: none;
-                    margin: 0 !important;
-                }
-                
-                // additional table styling
-
-                .table {
-                width: calc(100% - 40px);
-                margin: 20px;
-                overflow-x: auto;
-            }
-
-            table {
+            :host {
+                flex: 1;
                 width: 100%;
-                border-collapse: collapse;
-                background-color: white;
-                border-radius: 4px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
             }
 
-            th {
-                background-color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
-                color: white;
-                text-align: left;
-                padding: 12px 16px;
-                font-weight: 500;
+            #wrapper {
+                height: 100%;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                overflow: auto;
             }
 
-            td {
-                padding: 12px 16px;
-                border-top: 1px solid #e0e0e0;
+            #title {
+                padding: 0 20px;
+                font-size: 18px;
+                font-weight: bold;
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                justify-content: space-between;
             }
 
-            tbody tr:hover {
-                background-color: rgba(0,0,0,0.04);
+            or-icon {
+                vertical-align: middle;
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
             }
             
+            // Dialog and form specific styles
             .dialog-content {
                 display: flex;
                 flex-direction: column;
@@ -356,8 +171,70 @@ export class PageNotifications extends Page<AppStateKeyed> {
             .dialog-content or-mwc-input {
                 margin-bottom: 16px;
             }
-                
-            `];
+
+            .section {
+                border-radius: 4px;
+                padding: 20px;
+                margin-bottom: 24px;
+            }
+
+            .section:last-child {
+                margin-bottom: 0;
+            }
+
+            .section-title {
+                color: var(--or-app-color3);
+                font-size: 14px;
+                font-weight: 500;
+                margin-bottom: 16px;
+            }
+
+            .form-preview {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 24px;
+                padding: 20px;
+                width: 100%;
+            }
+
+            .right-column {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+
+            .section {
+                background: white;
+                border-radius: 4px;
+                padding: 20px;
+            }
+
+            .field-group {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                width: 100%;  // Add this to ensure full width
+            }
+
+            or-mwc-input[readonly] {
+                --mdc-text-field-fill-color: #f5f5f5;
+                --mdc-text-field-disabled-line-color: #e0e0e0;
+            }
+
+            .filter-section {
+                gap: 16px;
+                padding: 16px;
+                background: white;
+                border-radius: 4px;
+                margin: 0 20px 20px 20px;
+                margin-left: auto;
+                order: 2;
+            }
+            
+            .create-btn {
+                order: 3;
+            }
+        `];
     }
 
     @property()
@@ -387,19 +264,44 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _targetInput?: OrMwcInput;
 
     @state()
-    protected notification?: Notification;
+    protected notification?: SentNotification;
+
+    @state()
+    protected _fromDate?: number;
+
+    @state()
+    protected _toDate?: number;
+
+    @state()
+    protected _selectedSource?: string;
 
     @state()
     protected creationState?: {
         notificationModel: Notification;
     }
 
+    @state()
+    protected _isFiltered: boolean = false;
+
     protected _loading: boolean = false;
-    protected notificationService: NotificationService; 
+    protected notificationService: NotificationService;
+    protected _sourceOptions = [
+        { value: "", text: i18next.t("All sources") },
+        { value: "CLIENT", text: i18next.t("CLIENT") },
+        { value: "INTERNAL", text: i18next.t("INTERNAL") },
+        { value: "GLOBAL_RULESET", text: i18next.t("GLOBAL_RULESET") },
+        { value: "REALM_RULESET", text: i18next.t("REALM_RULESET") },
+        { value: "ASSET_RULESET", text: i18next.t("ASSET_RULESET") },
+    ]
 
     constructor(store: Store<AppStateKeyed>) {
         super(store);
         this.notificationService = new NotificationService();
+
+        // set initial date range
+        const {fromDate, toDate} = this.notificationService.getLastDayTimeRange();
+        this._fromDate = fromDate;
+        this._toDate = toDate;
     }
 
     public stateChanged(state: AppStateKeyed): void {
@@ -418,15 +320,15 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
 
         this._loading = true;
-        console.log("Starting notification load with:", {
-            realm: this.realm,
-            authenticated: manager.authenticated,
-            hasReadAdminRole: manager.hasRole("read:admin"),
-            baseUrl: manager.rest.api.NotificationResource.getNotifications()
-        });
 
         try {
-            this._data = await this.notificationService.getNotifications(this.realm);
+            const fromDate = this._isFiltered ? this._fromDate : undefined;
+            const toDate = this._isFiltered ? this._toDate : undefined;
+            this._data = await this.notificationService.getNotifications(
+                this.realm, 
+                fromDate, 
+                toDate
+            );
             this.requestUpdate();
         } catch (err: unknown) {
             const error = err as AxiosError
@@ -474,8 +376,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             return;
         }
 
-        console.log("Raw form data:", formData);
-
         try {
             // create a basic notification first
             const message: PushNotificationMessage = {
@@ -486,7 +386,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             };
 
             const notification: Notification = {
-                name: formData.name,
+                name: formData.title,
                 message: message,
                 targets: [{
                     type: formData.targetType as NotificationTargetType,
@@ -501,8 +401,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
             showSnackbar(undefined, i18next.t("Creating notification success."));
             dialog.close();
-        } catch (err: unknown) {
-            const error = err as AxiosError;
+        } catch (error) {
             console.error("Error creating notification:", error);
             if (error.response) {
                 console.error("Error response:", {
@@ -515,6 +414,20 @@ export class PageNotifications extends Page<AppStateKeyed> {
         } finally {
             await this._loadData();
         }
+    }
+
+    protected _getFilteredNotifications(): SentNotification[] {
+        if (!this._data) return [];
+        if (this._selectedSource == "") {
+            return this._data;
+        }
+
+        return this._data.filter(notification => {
+            if (this._selectedSource && notification.source !== this._selectedSource) {
+                return false;
+            }
+            return true;
+        });
     }
 
     protected isValidTargetType(type: string): boolean {
@@ -568,17 +481,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return notification;
     }
 
-    get name(): string {
-        return "notification.notification_plural"
-    }
-
     protected reset(): void {
-        this.notification = undefined;
-        this.creationState = undefined;
         this._data = undefined;
         this.requestUpdate();
     }
-
     public shouldUpdate(changedProperties: PropertyValues): boolean {
         console.log(changedProperties);
 
@@ -589,26 +495,32 @@ export class PageNotifications extends Page<AppStateKeyed> {
     public connectedCallback(): void {
         super.connectedCallback();
         this.realm = this.getState().app.realm;
+
+        // load data if not already there
+        if (!this._data) {
+            this._loadData();
+        }
+    }
+
+    get name(): string {
+        return "notification.notification_plural"
     }
 
     protected _getDialogHTML() {
         return html`
-        <div class="dialog-content">
-            <notification-form
-                id="notificationForm"
-                ?disabled="${false}">
-            </notification-form>
-        </div>
-        `;
+            <div class="dialog-content">
+                <notification-form
+                    id="notificationForm"
+                    ?disabled="${false}">
+                </notification-form>
+            </div>
+        `
     }
 
     protected async _showCreateDialog() {
         await customElements.whenDefined('notification-form');
 
-        // declare type first
-        let dialogInstance: OrMwcDialog;
-
-        dialogInstance = showDialog(
+        const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Create notification"))
             .setContent(this._getDialogHTML())
@@ -617,14 +529,14 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         actionName: "cancel",
                         content: i18next.t("cancel"),
                         action: () => {
-                            dialogInstance.close();
+                            dialog.close();
                             this._loadData(); // reload after cancel
                         }
                     },
                     {
                         actionName: "create",
                         content: i18next.t("create"),
-                        action: async () => this._handleCreateNotification(dialogInstance)
+                        action: async () => this._handleCreateNotification(dialog)
                         // note! _loadData is already called in _handleCreateNotification
                     }
                 ])
@@ -633,9 +545,76 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected getNotificationsTable() {
         return html`
-            <or-notifications-table .notifications=${this._data || []}
+            <or-notifications-table 
+                .notifications=${this._getFilteredNotifications() || []}
                 @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
+        `;
+    }
+
+    protected _getDetailField(label, value, inputType) {
+        return html`
+            <or-mwc-input 
+                            label="${i18next.t(label)}"
+                            type="${inputType}"
+                            .value="${value || ''}"
+                            readonly>
+            </or-mwc-input>
+        `;
+    }
+
+    // rework this to call the existing form component
+    protected _getNotificationDetailsContent(notification: SentNotification) {
+        const message = notification.message as PushNotificationMessage;
+        // props
+        var url = (message.action?.data as any)?.url ?? '-';
+        var deliveredOn = notification.deliveredOn ? new Date(notification.deliveredOn).toLocaleString() : '-';
+        var sentOn = notification.sentOn ? new Date(notification.sentOn).toLocaleString() : '-';
+        var status = notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending");
+        var source = notification.source + (notification.sourceId ? `, ${notification.sourceId}` : '');
+        var target = notification.target + (notification.targetId ? `, ${notification.targetId}` : '');
+        var openButton = 'View';
+        var closeButton = 'Dismiss';
+        var assets = "Console 123";
+        return html`
+        <div class="form-preview">
+            <!-- Left column - details -->
+            <div class="section">
+                <div class="section-title">${i18next.t("Details")}</div>
+                <div class="field-group">
+                    ${this._getDetailField('Name', notification.name, InputType.TEXT)}
+                    ${this._getDetailField('Title', message.title, InputType.TEXT)}
+                    ${this._getDetailField('Assets', assets, InputType.TEXT)}
+                    ${this._getDetailField('Body', message.body, InputType.TEXTAREA)}
+                </div>
+            </div>
+
+            <!-- Right column -->
+             <div class="right-column">
+                <!-- Action Buttons Section -->
+                <div class="section">
+                    <div class="section-title">${i18next.t("Action buttons")}</div>
+                    <div class="field-group">
+                        ${this._getDetailField('URL to visit', url, InputType.TEXT)}
+                        ${this._getDetailField('Open button text', openButton, InputType.TEXT)}
+                        ${this._getDetailField('Close button text', closeButton, InputType.TEXT)}
+                    </div>
+                </div>
+
+                <!-- Properties Section -->
+                <div class="section">
+                    <div class="section-title">${i18next.t("Properties")}</div>
+                    <div class="field-group">
+                        <!-- ... properties fields ... -->
+                        ${this._getDetailField('Source', source, InputType.TEXT)}
+                        ${this._getDetailField('Target', target, InputType.TEXT)}
+                        ${this._getDetailField('Status', status, InputType.TEXT)}
+                        ${this._getDetailField('Sent', sentOn, InputType.TEXT)}
+                        ${this._getDetailField('Delivered', deliveredOn, InputType.TEXT)}
+                    </div>
+                </div>
+             </div>
+        </div>
         `;
     }
 
@@ -666,19 +645,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Notification details"))
-            .setContent(html`
-                    <div style="padding: 20px;">
-                        <h3>${notification.name || ''}</h3>
-                        <p><strong>${i18next.t("Id")}:</strong> ${notification.id}</p>
-                        <p><strong>${i18next.t("Title")}:</strong> ${pushMessage.title}</p>
-                        <p><strong>${i18next.t("Message")}:</strong> ${pushMessage.body}</p>
-                        <p><strong>${i18next.t("Source")}:</strong> ${notification.source + ", " + notification.sourceId}</p>
-                        <p><strong>${i18next.t("Target")}:</strong> ${notification.target + ", " + notification.targetId}</p>
-                        <p><strong>${i18next.t("Sent")}:</strong> ${notification.sentOn ? new Date(notification.sentOn).toLocaleString() : '-'}</p>
-                        <p><strong>${i18next.t("Delivered")}:</strong> ${notification.deliveredOn ? new Date(notification.deliveredOn).toLocaleString() : '-'}</p>
-                        <p><strong>${i18next.t("Status")}:</strong> ${notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending")}</p>
-                    </div>
-                `)
+            .setContent(this._getNotificationDetailsContent(notification))
         ).setActions([
             {
                 actionName: "close",
@@ -686,19 +653,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 action: () => dialog.close()
             }
         ])
-    }
-
-    protected getNewNotificationModel(): Notification {
-        return {
-            name: "",
-            message: {
-                type: "push",
-                title: "",
-                body: "",
-                data: {}
-            } as PushNotificationMessage,
-            targets: [],
-        };
     }
 
     protected render() {
@@ -709,40 +663,76 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const writeNotifications = manager.hasRole("write:admin")
 
         return html`
-        <div id="wrapper">
-            <div id="title" class="${this.creationState || this.notification ? "hidden" : ""}">
-                <div style="display: flex; align-items: center;">
-                    <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                    <span><or-translate value="${i18next.t("notifications")}"/></span>
-                </div>
-                
-                ${writeNotifications ? html`
-                    <or-mwc-input 
-                        type="${InputType.BUTTON}"
-                        icon="plus"
-                        label="${i18next.t("add")}"
-                        @or-mwc-input-changed="${() => this.creationState = {notificationModel: this.getNewNotificationModel()}}"
-                    ></or-mwc-input>
-                ` : ``}
-            </div>
-
-            ${when(this.notification || this.creationState,
-                () => this._showCreateDialog(),
-                () => html`
-                    ${this.getNotificationsTable()}
-                `
-            )}
-        </div>
-    `;
-
-        return html`
             <div id="wrapper">
                 <div id="title">
                     <div style="display: flex; align-items: center;">
                         <or-icon icon="message-outline" style="padding: 0 10px 0 4px;"></or-icon>
-                        <span><or-translate value="${i18next.t("notifications")}"/></span>
+                        <span><or-translate value="${i18next.t("Notifications")}"/></span>
+                    </div>
+
+                     <div class="filter-section">
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            label="${i18next.t('Source')}"
+                            .options="${this._sourceOptions.map(o => [o.value, o.text])}"
+                            .value="${this._selectedSource}"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                this._selectedSource = e.detail.value;
+                                this.requestUpdate();
+                            }}"
+                        ></or-mwc-input>
+
+                        <or-mwc-input
+                        type="${InputType.CHECKBOX}"
+                        label="${i18next.t('Enable time filtering')}"
+                        .checked="${this._isFiltered}"
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                            this._isFiltered = e.detail.value;
+                            if (!this._isFiltered) {
+                                // Clear date filters when disabling
+                                this._fromDate = undefined;
+                                this._toDate = undefined;
+                            }
+                            this._loadData();
+                        }}"
+                        ></or-mwc-input>
+
+
+                        ${when(this._isFiltered, () => html`
+                            <or-mwc-input
+                                type="${InputType.DATETIME}"
+                                label="${i18next.t('From')}"
+                                .value="${this._fromDate}"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    this._fromDate = e.detail.value;
+                                    this._loadData();
+                                }}"
+                            ></or-mwc-input>
+    
+                            <or-mwc-input
+                                type="${InputType.DATETIME}"
+                                label="${i18next.t('To')}"
+                                .value="${this._toDate}"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                    this._toDate = e.detail.value;
+                                    this._loadData();
+                                }}"
+                            ></or-mwc-input>
+    
+                            <or-mwc-input 
+                                type="${InputType.BUTTON}"
+                                label="${i18next.t('Last 24 hours')}"
+                                @or-mwc-input-changed="${() => {
+                                    const {fromDate, toDate} = this.notificationService.getLastDayTimeRange();
+                                    this._fromDate = fromDate;
+                                    this._toDate = toDate;
+                                    this._loadData();
+                                }}"
+                            ></or-mwc-input>
+                        `)}
                     </div>
                     
+                    <div class="create-btn">
                     ${writeNotifications ? html`
                         <or-mwc-input 
                             type="${InputType.BUTTON}"
@@ -751,6 +741,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             @or-mwc-input-changed="${() => this._showCreateDialog()}"
                         ></or-mwc-input>
                     ` : ``}
+                    </div>
                 </div>
 
                 ${this.getNotificationsTable()}

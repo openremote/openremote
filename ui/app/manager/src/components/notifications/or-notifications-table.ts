@@ -100,7 +100,7 @@ export class OrNotificationsTable extends OrMwcTable {
         pagination: {
             enable: true
         },
-        multiSelect: !this.readonly
+        multiSelect: false
     }
 
     protected sortIndex = 4; // sort by sent date by default

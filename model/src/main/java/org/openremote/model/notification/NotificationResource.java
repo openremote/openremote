@@ -153,7 +153,22 @@ public interface NotificationResource {
     @Path("all")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getAllNotifications", summary = "Retrieve all notifications (development only)")
-    SentNotification[] getAllNotifications(@BeanParam RequestParams requestParams);
+    SentNotification[] getAllNotifications(@BeanParam RequestParams requestParams, 
+                                            @QueryParam("from") Long fromTimestamp,
+                                            @QueryParam("to") Long toTimestamp);
+
+    /**
+     * Development use only: Getting notifications based on filter
+     */
+    @GET
+    @Path("filtered")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "getAllNotifications", summary = "Retrieve filtered notifications (development only)")
+    SentNotification[] getFilteredNotifications(@BeanParam RequestParams requestParams, 
+                                            @QueryParam("from") Long fromTimestamp,
+                                            @QueryParam("to") Long toTimestamp,
+                                            @QueryParam("source") String source);
+    
 
     /**
      * Development use only: Sending notification to the database directly for testing purposes
