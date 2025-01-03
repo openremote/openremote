@@ -477,21 +477,28 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (!ruleConditionGroup.getItems().isEmpty()) {
 
                 if (operator == LogicGroup.Operator.AND) {
-                    // get whether any condition state has matches, 
-                    // used to allow re-triggering of a rule when other conditions have previously matched and a new match has been found
-                    boolean hasNewMatchesForAnyCondition = ruleConditionGroup.getItems().stream()
-                        .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
-                        .anyMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
-
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
-                        .allMatch(ruleConditionState -> {
-                            boolean matches = ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches;
-                            boolean matchesPreviously = !ruleConditionState.previouslyMatchedAssetStates.isEmpty();
+                        .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+                    
+                    // Reset previously matched states (of the group items) if the group doesn't match and has multiple items
+                    // This ensures that rule conditions can re-evaluate correctly, preventing stale matches from blocking rule re-triggering.
+                    if (!groupMatches && ruleConditionGroup.items.size() > 1) {
 
-                            // return matches OR whether the match has previously been matched and any new matches have been found
-                            return matches || (matchesPreviously && hasNewMatchesForAnyCondition);
-                        });
+                        boolean previouslyMatched = ruleConditionGroup.getItems().stream()
+                            .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                            .allMatch(ruleConditionState -> !ruleConditionState.previouslyMatchedAssetStates.isEmpty());
+
+                        // Clear previously matched states if not all rule conditions have them to prevent direct re-triggering
+                        if (!previouslyMatched) {
+                            ruleConditionGroup.getItems().forEach(ruleCondition -> {
+                                RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
+                                if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
+                                    conditionState.previouslyMatchedAssetStates.clear();
+                                }
+                            });      
+                        }   
+                    }
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
