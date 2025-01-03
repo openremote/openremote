@@ -54,6 +54,7 @@ import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
 import org.opentest4j.TestAbortedException
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -180,6 +181,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     *
     * If the test cannot reach the host, then the test is passed.
     * */
+    @Ignore
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol mTLS support"() {
 

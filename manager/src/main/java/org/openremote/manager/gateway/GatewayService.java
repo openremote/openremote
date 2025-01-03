@@ -805,9 +805,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         try {
             User gatewayUser = identityProvider.getUserByUsername(gateway.getRealm(), User.SERVICE_ACCOUNT_PREFIX + clientId);
             boolean userExists = gatewayUser != null;
+            boolean createUpdateGatewayUser = gatewayUser == null
+                || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false)
+                || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null));
 
-            if (gatewayUser == null || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false) || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null))) {
-
+            if (createUpdateGatewayUser) {
                 gatewayUser = identityProvider.createUpdateUser(gateway.getRealm(), new User()
                     .setServiceAccount(true)
                     .setSystemAccount(true)
@@ -817,7 +819,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
             if (!userExists && gatewayUser != null) {
                 // Configure roles for this gateway user
-                identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), Constants.KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
+                identityProvider.updateUserRoles(
+                    gateway.getRealm(),
+                    gatewayUser.getId(),
+                    Constants.KEYCLOAK_CLIENT_ID,
+                    ClientRole.READ_ASSETS.getValue(),
+                    ClientRole.WRITE_ASSETS.getValue(),
+                    ClientRole.WRITE_ATTRIBUTES.getValue());
             }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
