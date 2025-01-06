@@ -1,12 +1,12 @@
 apply plugin: "java-library"
 
 dependencies {
-    api resolveProject(":setup")
+    api project(":setup")
 }
 
 task license {
     doLast {
-        def toConcatenate = isCustomProject() ? files("${project(":openremote").projectDir}/LICENSE.txt", "${rootDir}/LICENSE.txt") : files("${rootDir}/LICENSE.txt")
+        def toConcatenate = files("${rootDir}/LICENSE.txt")
         def outputFileName = "${buildDir}/image/manager/app/LICENSE.txt"
         def output = new File(outputFileName)
         if (output.exists()) {

@@ -66,6 +66,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -91,6 +92,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/keycloak-credentials.json";
     public static final String OR_KEYCLOAK_PUBLIC_URI = "OR_KEYCLOAK_PUBLIC_URI";
     public static final String OR_KEYCLOAK_PUBLIC_URI_DEFAULT = "/auth";
+    public static final String OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT = "OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT";
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
@@ -102,6 +104,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected Container container;
     protected String frontendURI;
     protected List<String> validRedirectUris;
+    protected Map<String, Realm> realmCache = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container) {
@@ -250,6 +253,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User getUserByUsername(String realm, String username) {
+        if (username.length() > 255) {
+            // Keycloak has a 255 character limit on clientId
+            username = username.substring(0, 254);
+        }
+        username = username.toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
         return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
@@ -260,6 +268,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // Force lowercase username
             if (user.getUsername() != null) {
                 user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
+            }
+            if (user.getUsername().length() > 255) {
+                // Keycloak has a 255 character limit on clientId which affects service users
+                user.setUsername(user.getUsername().substring(0, 254));
             }
 
             if (!user.isServiceAccount() && allowUpdate) {
@@ -803,17 +815,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public Realm getRealm(String realm) {
-        try {
-            return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
-        } catch (Exception ex) {
-            LOG.log(Level.INFO, "Failed to get realm by name: " + realm, ex);
-        }
-        return null;
+        // This gets hit a lot for event authorisation so caching added
+        return realmCache.computeIfAbsent(realm, (name) -> {
+            try {
+                return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
+            } catch (Exception ex) {
+                LOG.log(Level.INFO, "Failed to get realm by name: " + realm, ex);
+            }
+            return null;
+        });
     }
 
     @Override
     public void updateRealm(Realm realm) {
         LOG.fine("Update realm: " + realm);
+        realmCache.remove(realm.getName());
         getRealms(realmsResource -> {
 
             if (TextUtil.isNullOrEmpty(realm.getId())) {
@@ -848,6 +864,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmRepresentation.setEnabled(realm.getEnabled());
             realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
             realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
+            realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
             realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
@@ -935,6 +952,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
+        realmCache.remove(realmName);
         persistenceService.doTransaction(entityManager -> {
 
             // Delete gateway connections
@@ -976,11 +994,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         client.setName("OpenRemote");
         client.setPublicClient(true);
 
-        if (container.isDevMode()) {
-            // We need direct access for integration tests
+        boolean enableDirectAccessGrant = getBoolean(container.getConfig(), OR_KEYCLOAK_ENABLE_DIRECT_ACCESS_GRANT, container.isDevMode());
+
+        if (enableDirectAccessGrant) {
+            // We need direct access for integration/load tests
             LOG.info("### Allowing direct access grants for client id '" + client.getClientId() + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
+        }
 
+        if (container.isDevMode()) {
             // Allow any web origin (this will add CORS headers to token requests etc.)
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
@@ -1052,7 +1074,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 clientResource.remove();
                 return null;
             }, () -> {
-                throw new NotFoundException("Delete client failed as client not found: " + clientId);
+                // Do nothing as could have been deleted by cleanup of previous test
+                return null;
             });
         });
     }

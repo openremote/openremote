@@ -14,4 +14,8 @@ public class OutdatedAttributeEvent extends Event {
         super(event.getTimestamp());
         this.event = event;
     }
+
+    public AttributeEvent getEvent() {
+        return event;
+    }
 }

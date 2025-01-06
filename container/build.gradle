@@ -5,7 +5,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":model")
+    api project(":model")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
@@ -32,6 +32,7 @@ dependencies {
 
     api "org.postgresql:postgresql:$postgresJdbcVersion"
     api "org.flywaydb:flyway-core:$flywaydbVersion"
+    implementation "org.flywaydb:flyway-database-postgresql:$flywaydbVersion"
     api "org.hibernate.orm:hibernate-core:$hibernateVersion"
     api "org.hibernate.orm:hibernate-hikaricp:$hibernateVersion"
     api "org.hibernate.validator:hibernate-validator:$hibernateValidatorVersion"
@@ -45,7 +46,6 @@ dependencies {
     api "org.apache.camel:camel-snmp:$camelVersion"
     api "org.apache.camel:camel-health:$camelVersion"
     api "org.apache.camel:camel-management:$camelVersion"
-    api "org.apache.camel:camel-micrometer:$camelVersion"
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
@@ -112,6 +112,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }

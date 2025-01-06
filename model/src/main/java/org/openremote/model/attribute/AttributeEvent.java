@@ -58,7 +58,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
     protected Object value;
     protected boolean deleted;
     @JsonIgnore
-    protected Object source;
+    protected String source;
     protected String realm;
     @JsonView(Enhanced.class)
     protected String parentId;
@@ -125,7 +125,7 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         }
     }
 
-    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, Object source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
+    public AttributeEvent(AssetInfo asset, Attribute<?> attribute, String source, Object value, Long valueTimestamp, Object oldValue, Long oldValueTimestamp) {
         this(new AttributeRef(asset.getId(), attribute.getName()),value, valueTimestamp);
 
         this.oldValue = oldValue;
@@ -186,11 +186,11 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
         return this;
     }
 
-    public Object getSource() {
+    public String getSource() {
         return source;
     }
 
-    public AttributeEvent setSource(Object source) {
+    public AttributeEvent setSource(String source) {
         this.source = source;
         return this;
     }
@@ -331,20 +331,23 @@ public class AttributeEvent extends SharedEvent implements AttributeInfo {
 
     @Override
     public String toString() {
-        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + (timestamp != null ? timestamp.toInstant() : "null") +
             ", ref=" + ref +
             ", realm=" + realm +
-            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
+            ", source=" + source +
+            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
             "}";
     }
 
-    public String toStringWithValueType() {
+    public String toStringWithValue() {
+        String valueStr = Objects.toString(value);
         return getClass().getSimpleName() + "{" +
             "timestamp=" + timestamp.toInstant() +
             ", ref=" + ref +
-            ", valueType=" + (value != null ? value.getClass().getName() : "null") +
+            ", realm=" + realm +
+            ", source=" + source +
+            ", value=" + (valueStr.length() > 100 ? valueStr.substring(0, 100) + "..." : valueStr) +
             "}";
     }
 }

@@ -87,6 +87,9 @@ export class ChartWidget extends OrAssetWidget {
     @state()
     protected datapointQuery!: AssetDatapointQueryUnion;
 
+    @state()
+    protected _loading = false;
+
     // Override of widgetConfig with extended type
     protected widgetConfig!: ChartWidgetConfig;
 
@@ -141,39 +144,53 @@ export class ChartWidget extends OrAssetWidget {
 
         if(changedProps.has('widgetConfig') && this.widgetConfig) {
             this.datapointQuery = this.widgetConfig.datapointQuery;
+
+            const attributeRefs = this.widgetConfig.attributeRefs;
+            if(attributeRefs.length === 0) {
+                this._error = "noAttributesConnected";
+            } else {
+                const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
+                if (missingAssets.length > 0) {
+                    this.loadAssets(attributeRefs);
+                }
+            }
         }
 
         return super.willUpdate(changedProps);
     }
 
-    // WebComponent lifecycle method, that occurs AFTER every state update
-    protected updated(changedProps: Map<string, any>) {
-        super.updated(changedProps);
-
-        // If widgetConfig, and the attributeRefs of them have changed...
-        if(changedProps.has("widgetConfig") && this.widgetConfig) {
-            const attributeRefs = this.widgetConfig.attributeRefs;
-            const missingAssets = attributeRefs?.filter((attrRef: AttributeRef) => !this.isAttributeRefLoaded(attrRef));
-            if (missingAssets.length > 0) {
-
-                // Fetch the new list of assets
-                this.fetchAssets(attributeRefs).then((assets) => {
-                    this.loadedAssets = assets;
-                    this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                        const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                        return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                });
-
-            }
+    protected loadAssets(attributeRefs: AttributeRef[]): void {
+        if(attributeRefs.length === 0) {
+            this._error = "noAttributesConnected";
+            return;
         }
-        return super.updated(changedProps);
+        this._loading = true;
+        this._error = undefined;
+        this.fetchAssets(attributeRefs).then((assets) => {
+            this.loadedAssets = assets;
+            this.assetAttributes = attributeRefs?.map((attrRef: AttributeRef) => {
+                const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                const foundAsset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                return foundAsset && foundAsset.attributes ? [assetIndex, foundAsset.attributes[attrRef.name!]] : undefined;
+            }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+        }).catch(e => {
+            this._error = e.message;
+        }).finally(() => {
+            this._loading = false;
+        });
     }
 
     protected render(): TemplateResult {
         return html`
-            ${when(this.loadedAssets && this.assetAttributes && this.loadedAssets.length > 0 && this.assetAttributes.length > 0, () => {
+            ${when(this._loading, () => html`
+                <or-loading-indicator></or-loading-indicator>
+                
+            `, () => when(this._error, () => html`
+                <div style="height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">
+                    <span><or-translate .value="${this._error}"></or-translate></span>
+                </div>
+                
+            `, () => {
                 return html`
                     <or-chart .assets="${this.loadedAssets}" .assetAttributes="${this.assetAttributes}" .rightAxisAttributes="${this.widgetConfig.rightAxisAttributes}"
                               .showLegend="${(this.widgetConfig?.showLegend != null) ? this.widgetConfig?.showLegend : true}"
@@ -183,13 +200,7 @@ export class ChartWidget extends OrAssetWidget {
                               style="height: 100%"
                     ></or-chart>
                 `;
-            }, () => {
-                return html`
-                    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                        <span><or-translate value="noAttributesConnected"></or-translate></span>
-                    </div>
-                `
-            })}
+            }))}
         `;
     }
 

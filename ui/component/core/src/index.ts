@@ -59,6 +59,7 @@ export enum OREvent {
 
 export interface LoginOptions {
     redirectUrl?: string;
+    action?: string;
     credentials?: UsernamePassword;
 }
 
@@ -237,9 +238,11 @@ export class Manager implements EventProviderFactory {
     }
 
     set language(lang: string) {
+        console.debug(`Changing language to ${lang}.`);
         if (lang) {
             i18next.changeLanguage(lang);
             this.console.storeData("LANGUAGE", lang);
+            this.updateKeycloakUserLanguage(lang).catch(e => console.error(e));
         }
     }
 
@@ -471,9 +474,8 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
-            lng: !language || language === "null" ? this.config.defaultLanguage || "en" : language, // somehow language is "null" sometimes
+            lng: await this.getConsolePreferredLanguage() || await this.getUserPreferredLanguage() || this.config.defaultLanguage || "en",
             fallbackLng: "en",
             defaultNS: "app",
             fallbackNS: "or",
@@ -576,7 +578,7 @@ export class Manager implements EventProviderFactory {
     }
 
     protected doRestApiInit(): boolean {
-        rest.setTimeout(10000);
+        rest.setTimeout(20000);
         rest.initialise(this.getApiBaseUrl());
         return true;
     }
@@ -661,6 +663,46 @@ export class Manager implements EventProviderFactory {
         }
     }
 
+    /**
+     * Checks the native console to gather the preferred language of the device.
+     */
+    public async getConsolePreferredLanguage(orConsole = this.console): Promise<string | undefined> {
+        return orConsole.retrieveData("LANGUAGE");
+    }
+
+    /**
+     * Checks the keycloak access token to gather the preferred language of a user.
+     */
+    public async getUserPreferredLanguage(keycloak = this._keycloak): Promise<string | undefined> {
+
+        if(keycloak) {
+            const profile: Keycloak.KeycloakProfile | undefined = keycloak?.profile || await keycloak?.loadUserProfile();
+            if(profile?.attributes) {
+                const attributes = new Map(Object.entries(profile.attributes));
+                if(attributes.has("locale")) {
+                    const attr = attributes.get("locale") as any[];
+                    if(typeof attr[0] === "string") {
+                        return attr[0];
+                    }
+                }
+                console.warn("Could not get user language from keycloak: no user attributes were found.");
+            } else {
+                console.warn("Could not get user language from keycloak: no valid keycloak user profile was found.");
+            }
+        }
+    }
+
+    protected async updateKeycloakUserLanguage(lang: string, keycloak = this._keycloak, rest = this.rest): Promise<void> {
+        if(!keycloak) {
+            return;
+        }
+        if(!rest) {
+            console.warn("Tried updating user language in keycloak, but the REST API is not initialized yet.");
+            return;
+        }
+        await rest.api.UserResource.updateCurrentUserLocale(lang, { headers: { "Content-Type": "application/json" } });
+    }
+
     public logout(redirectUrl?: string) {
         if (!this._authenticated) {
             return;
@@ -699,6 +741,9 @@ export class Manager implements EventProviderFactory {
                     const keycloakOptions: any = {};
                     if (options && options.redirectUrl && options.redirectUrl !== "") {
                         keycloakOptions.redirectUri = options.redirectUrl;
+                    }
+                    if(options?.action && options.action !== "") {
+                        keycloakOptions.action = options.action;
                     }
                     if (this.isMobile()) {
                         keycloakOptions.scope = "offline_access";
@@ -892,8 +937,13 @@ export class Manager implements EventProviderFactory {
             });
 
             if (!authenticated && offlineToken) {
-                this._keycloak.refreshToken = offlineToken;
-                authenticated  = await this._updateKeycloakAccessToken();
+                try {
+                    console.error("SETTING OFFLINE TOKEN");
+                    this._keycloak.refreshToken = offlineToken;
+                    authenticated = await this._updateKeycloakAccessToken();
+                } catch (e) {
+                    console.error("Failed to authenticate using offline token");
+                }
             }
 
             if (authenticated) {

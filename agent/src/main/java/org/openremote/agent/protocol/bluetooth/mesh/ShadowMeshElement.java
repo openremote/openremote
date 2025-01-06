@@ -27,19 +27,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
 
 public class ShadowMeshElement {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ShadowMeshElement.class.getName());
 
-    private final ScheduledExecutorService executorService;
+    private final ExecutorService executorService;
     private final BluetoothMeshNetwork meshNetwork;
     private final int address;
     private final Map<Integer, ShadowMeshModel> modelMap = new HashMap<>();
 
-    public ShadowMeshElement(ScheduledExecutorService executorService, BluetoothMeshNetwork network, int address) {
+    public ShadowMeshElement(ExecutorService executorService, BluetoothMeshNetwork network, int address) {
         this.executorService = executorService;
         this.meshNetwork = network;
         this.address = address;

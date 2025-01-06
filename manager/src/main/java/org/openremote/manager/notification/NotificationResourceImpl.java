@@ -35,6 +35,7 @@ import org.openremote.model.util.ValueUtil;
 
 import jakarta.ws.rs.WebApplicationException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -61,6 +62,40 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         this.managerIdentityService = managerIdentityService;
     }
 
+    //API endpoint added for development purposes
+    @Override
+    public SentNotification[] getAllNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp) {
+        try {
+            return notificationService.getNotifications(
+            null, 
+            null, 
+            fromTimestamp,
+            toTimestamp, 
+            null, 
+            null, 
+            null).toArray(new SentNotification[0]);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notifications:", e);
+        }
+    }
+
+    //API endpoint added for development purposes
+    @Override
+    public SentNotification[] getFilteredNotifications(RequestParams requestParams, Long fromTimestamp, Long toTimestamp, String source) {
+        try {
+            return notificationService.getNotifications(
+            null, 
+            null, 
+            fromTimestamp,
+            toTimestamp, 
+            null, 
+            null, 
+            null).toArray(new SentNotification[0]);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Error retrieving notifications:", e);
+        }
+    }
+    
     @Override
     public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
         try {
@@ -77,6 +112,25 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
+
+    // @Override
+    // public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
+    //     try {
+    //         NotificationQuery query = new NotificationQuery.Builder()
+    //             .id(id)
+    //             .type(type)
+    //             .fromTimestamp(fromTimestamp)
+    //             .toTimestamp(toTimestamp)
+    //             .realmId(realmId)
+    //             .userId(userId)
+    //             .assetId(assetId)
+    //             .build();
+            
+    //         return notificationService.getNotifications(query)
+    //     } catch (IllegalArgumentException e) {
+    //         throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
+    //     }
+    // }
 
     @Override
     public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String realmId, String userId, String assetId) {
@@ -143,7 +197,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
         SentNotification sentNotification = notificationService.getSentNotification(notificationId);
         verifyAccess(sentNotification, targetId);
-        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : ValueUtil.asJSON(acknowledgement).orElse(null));
+        notificationService.setNotificationAcknowledged(notificationId, acknowledgement == null ? null : ValueUtil.asJSON(acknowledgement).orElse(null));
     }
 
     protected void verifyAccess(SentNotification sentNotification, String targetId) {
@@ -216,6 +270,33 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                     }
                     break;
             }
+        }
+    }
+
+    // API endpoint added for development purposes 
+    // notification source is set to internal to sidestep the local fcm config issue I'm facing rn
+    @Override
+    public void createNotificationInDB (RequestParams requestParams, Notification notification) {
+        if (notification == null) {
+            throw new WebApplicationException("Missing notification", BAD_REQUEST);
+        }
+
+        try {
+            SentNotification sentNotification = new SentNotification()
+            .setName(notification.getName())
+            .setType(notification.getMessage().getType())
+            .setSource(Notification.Source.INTERNAL)
+            .setSourceId("")
+            .setTarget(notification.getTargets().get(0).getType())
+            .setTargetId(notification.getTargets().get(0).getId())
+            .setMessage(notification.getMessage())
+            .setSentOn(new Date());
+
+            notificationService.persistenceService.doTransaction(em -> {em.merge(sentNotification);
+            });
+        } catch (Exception e) {
+            LOG.warning("Failed to create notification in DB:" + e.getMessage());
+            throw new WebApplicationException("Failed to create notification", INTERNAL_SERVER_ERROR);
         }
     }
 }

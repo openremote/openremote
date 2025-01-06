@@ -28,9 +28,9 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
         boolean isNumber = Number.class.isAssignableFrom(attributeType);
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         if (isNumber) {
-            return "select * from public.unnest((select public.lttb(timestamp::timestamptz, value::double precision, ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
+            return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), cast(value as double precision), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
         } else if (isBoolean) {
-            return "select * from public.unnest((select public.lttb(timestamp::timestamptz, (case when VALUE::text::boolean is true then 1 else 0 end), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
+            return "select * from public.unnest((select public.lttb(cast(timestamp as timestamptz), (case when cast(cast(value as text) as boolean) is true then 1 else 0 end), ?) from " + tableName + " where ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ?))";
         } else {
             throw new IllegalStateException("Query of type LTTB requires either a number or a boolean attribute.");
         }
@@ -38,8 +38,8 @@ public final class AssetDatapointLTTBQuery extends AssetDatapointQuery {
 
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
-        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.fromTimestamp), ZoneId.systemDefault());
-        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : LocalDateTime.ofInstant(Instant.ofEpochMilli(super.toTimestamp), ZoneId.systemDefault());
+        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : Instant.ofEpochMilli(this.fromTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : Instant.ofEpochMilli(this.toTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
         HashMap<Integer, Object> parameters = new HashMap<>();
         parameters.put(1, this.amountOfPoints);
         parameters.put(2, attributeRef.getId());

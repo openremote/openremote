@@ -30,12 +30,14 @@ import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.alarm.AlarmEvent;
 
 /**
  * An event that can be serialized and shared between client and server.
  */
 @JsonSubTypes({
     // Events used on client and server (serializable)
+    @JsonSubTypes.Type(value = AlarmEvent.class, name = "alarm"),
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
@@ -54,9 +56,7 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = GatewayTunnelStartRequestEvent.class, name = "gateway-tunnel-start-request"),
     @JsonSubTypes.Type(value = GatewayTunnelStartResponseEvent.class, name = "gateway-tunnel-start-response"),
     @JsonSubTypes.Type(value = GatewayTunnelStopRequestEvent.class, name = "gateway-tunnel-stop-request"),
-    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response"),
-    @JsonSubTypes.Type(value = DeleteAssetsRequestEvent.class, name = "delete-assets-request"),
-    @JsonSubTypes.Type(value = DeleteAssetsResponseEvent.class, name = "delete-assets-response")
+    @JsonSubTypes.Type(value = GatewayTunnelStopResponseEvent.class, name = "gateway-tunnel-stop-response")
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

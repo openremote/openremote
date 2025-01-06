@@ -33,9 +33,9 @@ import org.openremote.model.mail.MailMessage;
 import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -45,7 +45,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>, U extends AbstractMailProtocol<T, U, V>, V extends AgentLink<V>> extends AbstractProtocol<T, V> {
     protected MailClient mailClient;
-    protected ConcurrentMap<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
+    protected Map<AttributeRef, Function<MailMessage, String>> attributeMessageProcessorMap = new ConcurrentHashMap<>();
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMailProtocol.class);
     protected static int INITIAL_CHECK_DELAY_SECONDS = 10;
 
@@ -61,9 +61,11 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
         Path persistenceDir = storageDir.resolve("protocol").resolve("mail");
         Optional<OAuthGrant> oAuthGrant = getAgent().getOAuthGrant();
         UsernamePassword userPassword = getAgent().getUsernamePassword().orElseThrow();
+        Optional<Boolean> startTLS = getAgent().getStartTLS();
 
         MailClientBuilder clientBuilder = new MailClientBuilder(
-            container.getExecutorService(),
+            container.getExecutor(),
+            container.getScheduledExecutor(),
             getAgent().getProtocol().orElseThrow(),
             getAgent().getHost().orElseThrow(),
             getAgent().getPort().orElseThrow()
@@ -83,6 +85,8 @@ public abstract class AbstractMailProtocol<T extends AbstractMailAgent<T, U, V>,
 
         oAuthGrant.map(oAuth -> clientBuilder.setOAuth(userPassword.getUsername(), oAuth)).orElseGet(() ->
             clientBuilder.setBasicAuth(userPassword.getUsername(), userPassword.getPassword()));
+
+        startTLS.map(clientBuilder::setStartTls);
 
         mailClient = clientBuilder.build();
         mailClient.addConnectionListener(this::onConnectionEvent);

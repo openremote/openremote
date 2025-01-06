@@ -151,8 +151,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     new EventSubscription(
                         AttributeEvent.class,
                         new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
-                        "1",
-                        null)).orElse(null)),
+                        "1")).orElse(null)),
                 new WebsocketHTTPSubscription()
                     .contentType(MediaType.APPLICATION_JSON)
                     .method(WebsocketHTTPSubscription.Method.POST)
@@ -195,7 +194,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     "targetTemperature",
                                     0.12345))
                                     .orElse(ValueUtil.NULL_LITERAL)
-                                        .replace("0.12345", Constants.DYNAMIC_VALUE_PLACEHOLDER)
+                                        .replace("0.12345", "%VALUE%")
                             )
                         .setMessageMatchFilters(
                             [

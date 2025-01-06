@@ -38,21 +38,23 @@ import org.openremote.model.util.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.openremote.model.protocol.ProtocolUtil.hasDynamicWriteValue;
+import static org.openremote.model.protocol.ProtocolUtil.hasDynamicPlaceholders;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends AgentLink<?>> implements Protocol<T> {
 
-    private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getSimpleName() + "." + PROTOCOL.name());
+    private static final System.Logger LOG = System.getLogger(AbstractProtocol.class.getName() + "." + PROTOCOL.name());
     protected final Map<AttributeRef, Attribute<?>> linkedAttributes = new ConcurrentHashMap<>();
     protected final Set<AttributeRef> dynamicAttributes = Collections.synchronizedSet(new HashSet<>());
     protected DefaultCamelContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
-    protected ScheduledExecutorService executorService;
+    protected ExecutorService executorService;
+    protected ScheduledExecutorService scheduledExecutorService;
     protected ProtocolAssetService assetService;
     protected ProtocolPredictedDatapointService predictedDatapointService;
     protected ProtocolDatapointService datapointService;
@@ -71,7 +73,8 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     @Override
     public void start(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
-        executorService = container.getExecutorService();
+        executorService = container.getExecutor();
+        scheduledExecutorService = container.getScheduledExecutor();
         predictedDatapointService = container.getService(ProtocolPredictedDatapointService.class);
         datapointService = container.getService(ProtocolDatapointService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
@@ -105,9 +108,9 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         // linking process and without entry in the map any update would be blocked
         linkedAttributes.put(attributeRef, attribute);
 
-        // Check for dynamic value placeholder
+        // Check for dynamic placeholders
 
-        if (hasDynamicWriteValue(agent.getAgentLink(attribute))) {
+        if (hasDynamicPlaceholders(agent.getAgentLink(attribute))) {
             dynamicAttributes.add(attributeRef);
         }
 
@@ -145,11 +148,11 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
             AgentLink<?> agentLink = agent.getAgentLink(event);
 
             Pair<Boolean, Object> ignoreAndConverted = ProtocolUtil.doOutboundValueProcessing(
-                event.getId(),
-                event,
+                event.getRef(),
                 agentLink,
                 event.getValue().orElse(null),
-                dynamicAttributes.contains(event.getRef()));
+                dynamicAttributes.contains(event.getRef()),
+                timerService.getNow());
 
             if (ignoreAndConverted.key) {
                 LOG.log(System.Logger.Level.DEBUG, "Value conversion returned ignore so attribute will not write to protocol: " + event.getRef());

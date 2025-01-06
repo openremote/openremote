@@ -106,7 +106,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment != null
             assert deployment.ruleset.version == globalRuleset.version
         }
@@ -121,13 +121,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         globalRuleset.id == rulesetId
         globalRuleset.version > 0
         globalRuleset.createdOn.time < System.currentTimeMillis()
-        globalRuleset.lastModified.time >= lastModified.time
+        globalRuleset.lastModified.time > lastModified.time
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 
         and: "the ruleset should reach the engine"
         conditions.eventually {
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment != null
             assert deployment.ruleset.version == globalRuleset.version
         }
@@ -142,8 +142,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         and: "the ruleset should be removed from the engine"
         conditions.eventually {
-            assert rulesService.globalEngine != null
-            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            assert rulesService.globalEngine.get() != null
+            def deployment = rulesService.globalEngine.get().deployments.get(rulesetId)
             assert deployment == null
         }
 
@@ -187,7 +187,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
         realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.lastModified.time > lastModified.time
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -293,7 +293,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
         assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.lastModified.time > lastModified.time
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -484,7 +484,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         realmRuleset.id == rulesetId
         realmRuleset.version == 1
         realmRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        realmRuleset.lastModified.time > lastModified.time
         realmRuleset.name == "Renamed test realm definition"
         realmRuleset.rules == "SomeRulesCodeModified"
         realmRuleset.realm == keycloakTestSetup.realmMaster.name
@@ -583,7 +583,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
         assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.lastModified.time > lastModified.time
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
@@ -942,7 +942,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.id == rulesetId
         assetRuleset.version == 1
         assetRuleset.createdOn.time < System.currentTimeMillis()
-        lastModified.time < System.currentTimeMillis()
+        assetRuleset.lastModified.time > lastModified.time
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.apartment1Id

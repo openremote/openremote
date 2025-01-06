@@ -28,7 +28,7 @@ import org.openremote.model.map.MapResource;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
+
 import java.util.Map;
 
 public class MapResourceImpl extends WebResource implements MapResource {
@@ -68,7 +68,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
         if (tile != null) {
             return tile;
         } else {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            throw new WebApplicationException(Response.Status.NO_CONTENT);
         }
     }
 }

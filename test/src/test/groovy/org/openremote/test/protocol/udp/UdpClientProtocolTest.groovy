@@ -47,6 +47,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.CopyOnWriteArrayList
+
 import static org.openremote.model.value.MetaItemType.*
 import static org.openremote.model.value.ValueType.*
 
@@ -71,7 +73,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         def clientActualPort = null
         def lastCommand = null
         def lastSend = null
-        def receivedMessages = []
+        def receivedMessages = new CopyOnWriteArrayList()
         echoServer.addMessageConsumer({
             message, channel, sender ->
                 clientActualPort = sender.port
@@ -122,7 +124,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
             new Attribute<>("echoHello", TEXT)
                 .addMeta(
                     new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
-                        .setWriteValue('Hello {$value};'))
+                        .setWriteValue('Hello %VALUE%;'))
                 ),
             new Attribute<>("echoWorld", TEXT)
                 .addMeta(

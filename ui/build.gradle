@@ -10,6 +10,10 @@ afterEvaluate {
     rootProject.getTasksByName('npmBuild', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
+
+    rootProject.getTasksByName("npmTest", true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
 }
 
 task modelWatch {

@@ -22,15 +22,13 @@ package org.openremote.model.rules.json;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import java.util.List;
-import java.util.function.Function;
-
 @JsonSubTypes({
         @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
         @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),
         @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification"),
         @JsonSubTypes.Type(value = RuleActionUpdateAttribute.class, name = "update-attribute"),
-        @JsonSubTypes.Type(value = RuleActionWebhook.class, name = "webhook")
+        @JsonSubTypes.Type(value = RuleActionWebhook.class, name = "webhook"),
+        @JsonSubTypes.Type(value = RuleActionAlarm.class, name = "alarm")
 })
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,

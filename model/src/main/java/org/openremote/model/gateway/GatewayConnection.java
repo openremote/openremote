@@ -20,7 +20,6 @@
 package org.openremote.model.gateway;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -211,7 +210,7 @@ public class GatewayConnection {
             ", port=" + port +
             ", realm='" + realm + '\'' +
             ", secured=" + secured +
-            ", attributeFilters=" + attributeFilters +
+            ", attributeFilters=" + (attributeFilters != null && !attributeFilters.isEmpty()) +
             ", disabled=" + disabled +
             '}';
     }
