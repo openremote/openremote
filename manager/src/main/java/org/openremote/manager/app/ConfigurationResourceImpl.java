@@ -48,7 +48,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public ManagerAppConfig update(RequestParams requestParams, ManagerAppConfig managerConfiguration) {
+    public ObjectNode update(RequestParams requestParams, ObjectNode managerConfiguration) {
         try {
             this.configurationService.saveManagerConfig(managerConfiguration);
         } catch (Exception e) {
@@ -77,7 +77,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public ManagerAppConfig getManagerConfig() {
+    public ObjectNode getManagerConfig() {
         return configurationService.getManagerConfig();
     }
 
