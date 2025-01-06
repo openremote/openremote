@@ -17,8 +17,6 @@ Metadata:
           default: OpenRemote Configuration
         Parameters:
           - Password
-          - MapTiles
-          - MapSettings
       - Label:
           default: E-mail Configuration
         Parameters:
@@ -65,12 +63,6 @@ Parameters:
       AllowedPattern: ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^0-9a-zA-Z])(?=\S+$).{8,}$
       ConstraintDescription: Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters. Password must contain 1 or more special characters. Password must be 8 or more characters in length.
       NoEcho: true
-    MapTiles:
-      Description: Put a link where the system can download your (custom) maptiles
-      Type: String
-    MapSettings:
-      Description: Put a link where the system can download your mapsettings.json file
-      Type: String
     SMTPHost:
       Description: Fill in the SMTP Hostname for sending e-mails
       Type: String
@@ -311,25 +303,12 @@ Resources:
                 export OR_EMAIL_PROTOCOL=${SMTPProtocol}
 
                 docker-compose -f /openremote/docker-compose.yml -p openremote up -d --no-start
-              
-            05_install_map:
-              command: !Sub |
-                if [[ -z "${MapTiles}" || -z "${MapSettings}" ]]; then
-                  echo "No MapTiles and MapSettings provided, using the default one"
-                  exit 0
-                fi
-
-                sudo mkdir map
-                sudo wget -O /map/mapdata.mbtiles "${MapTiles}"
-                sudo wget -O /map/mapsettings.json "${MapSettings}"
-                sudo docker cp /map/mapdata.mbtiles openremote-manager-1:/opt/map/mapdata.mbtiles
-                sudo docker cp /map/mapsettings.json openremote-manager-1:/opt/map/mapsettings.json
-          
-            06_start_instance:
+                        
+            05_start_instance:
               command: |
                 sudo docker-compose -f /openremote/docker-compose.yml start
 
-            07_create_systemd_service:
+            06_create_systemd_service:
               command: |
                 sudo systemctl enable docker
                 sudo systemctl start docker
