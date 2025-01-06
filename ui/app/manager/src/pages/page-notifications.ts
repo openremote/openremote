@@ -36,13 +36,15 @@ export class NotificationService {
     async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
         try {
             console.log("Fetching notifications with filters:", realm, fromDate, toDate);
-            //TODO: 
-            // add dates
-            // switch realmID
-            const response = await manager.rest.api.NotificationResource.getAllNotifications({
+            const response = await manager.rest.api.NotificationResource.getNotifications({
+                realmId: realm,
                 from: fromDate,
                 to: toDate
             });
+            // const response = await manager.rest.api.NotificationResource.getAllNotifications({
+            //     from: fromDate,
+            //     to: toDate
+            // });
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -73,14 +75,12 @@ export class NotificationService {
         try {
             console.log("About to send notification:", notification);
     
-            // const response = await manager.rest.api.NotificationResource.sendNotification(
-            //     notification
-            // );
-
-            const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+            const response = await manager.rest.api.NotificationResource.sendNotification(
                 notification
             );
-            
+            // const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+            //     notification
+            // );
             console.log("Response received:", response);
             return response.status === 200;
         } catch (err: unknown) {
@@ -286,7 +286,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
     protected _loading: boolean = false;
     protected notificationService: NotificationService;
     protected _sourceOptions = [
-        { value: "", text: i18next.t("All sources") },
+        { value: " ", text: i18next.t("All sources") },
         { value: "CLIENT", text: i18next.t("CLIENT") },
         { value: "INTERNAL", text: i18next.t("INTERNAL") },
         { value: "GLOBAL_RULESET", text: i18next.t("GLOBAL_RULESET") },
@@ -377,12 +377,30 @@ export class PageNotifications extends Page<AppStateKeyed> {
         }
 
         try {
-            // create a basic notification first
+            const buttons = [];
+            if (formData.openButtonText) {
+                buttons.push({
+                    title: formData.openButtonText,
+                    action: {
+                        url: formData.actionUrl,
+                        openInBrowser: true
+                    }
+                });
+            }
+            if (formData.closeButtonText) {
+                buttons.push({title: formData.closeButtonText});
+            }
+
             const message: PushNotificationMessage = {
                 type: "push" as const,
                 title: formData.title,
                 body: formData.body,
-                data: {}  // keep it simple
+                data: {},
+                action: formData.actionUrl ? {
+                    url: formData.actionUrl,
+                    openInBrowser: true
+                } : undefined,
+                buttons: buttons.length > 0 ? buttons : undefined
             };
 
             const notification: Notification = {
@@ -393,8 +411,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     id: formData.target
                 }]
             };
-
-            console.log("Sending simplified notification:", notification);
 
             const response = await this.notificationService.sendNotification(notification);
             console.log("Server response:", response);
@@ -418,7 +434,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     protected _getFilteredNotifications(): SentNotification[] {
         if (!this._data) return [];
-        if (this._selectedSource == "") {
+        if (this._selectedSource == " ") {
             return this._data;
         }
 
@@ -437,54 +453,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
             type === NotificationTargetType.CUSTOM;
     }
 
-    protected _createNotificationFromFormData(formData: any): Notification {
-        // validate if target type is one of the allowed values 
-        if (!this.isValidTargetType(formData.targetType)) {
-            throw new Error(`Invalid target type: ${formData.targetType}`)
-        }
-
-        // extend it with PushNotification specific fields
-        const pushMessage: PushNotificationMessage = {
-            type: "push",
-            title: formData.title,
-            body: formData.body, 
-            priority: PushNotificationMessageMessagePriority.NORMAL,
-            targetType: PushNotificationMessageTargetType.DEVICE,
-            target: formData.target,
-            data: {}
-        };
-
-        // create the target that matches the API schema
-        const target = {
-            type: formData.targetType as NotificationTargetType,
-            id: formData.target,
-            data: {} 
-        };
-        
-
-        // create notification matching the schema
-        const notification: Notification = {
-            name: formData.name,
-            message: pushMessage,
-            targets: [target],
-            repeatFrequency: RepeatFrequency.ONCE
-            // repeatInterval is optional according to schema
-        };
-    
-        // add validation logging
-        console.log("Sending notification with types:", {
-            messageTargetType: pushMessage.targetType,
-            notificationTargetType: target.type,
-            fullPayload: notification
-        });
-    
-        return notification;
-    }
-
     protected reset(): void {
         this._data = undefined;
         this.requestUpdate();
     }
+
     public shouldUpdate(changedProperties: PropertyValues): boolean {
         console.log(changedProperties);
 
@@ -504,155 +477,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
 
     get name(): string {
         return "notification.notification_plural"
-    }
-
-    protected _getDialogHTML() {
-        return html`
-            <div class="dialog-content">
-                <notification-form
-                    id="notificationForm"
-                    ?disabled="${false}">
-                </notification-form>
-            </div>
-        `
-    }
-
-    protected async _showCreateDialog() {
-        await customElements.whenDefined('notification-form');
-
-        const dialog = showDialog(
-            new OrMwcDialog()
-            .setHeading(i18next.t("Create notification"))
-            .setContent(this._getDialogHTML())
-                .setActions([
-                    {
-                        actionName: "cancel",
-                        content: i18next.t("cancel"),
-                        action: () => {
-                            dialog.close();
-                            this._loadData(); // reload after cancel
-                        }
-                    },
-                    {
-                        actionName: "create",
-                        content: i18next.t("create"),
-                        action: async () => this._handleCreateNotification(dialog)
-                        // note! _loadData is already called in _handleCreateNotification
-                    }
-                ])
-        )
-    }
-
-    protected getNotificationsTable() {
-        return html`
-            <or-notifications-table 
-                .notifications=${this._getFilteredNotifications() || []}
-                @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
-            ></or-notifications-table>
-        `;
-    }
-
-    protected _getDetailField(label, value, inputType) {
-        return html`
-            <or-mwc-input 
-                            label="${i18next.t(label)}"
-                            type="${inputType}"
-                            .value="${value || ''}"
-                            readonly>
-            </or-mwc-input>
-        `;
-    }
-
-    // rework this to call the existing form component
-    protected _getNotificationDetailsContent(notification: SentNotification) {
-        const message = notification.message as PushNotificationMessage;
-        // props
-        var url = (message.action?.data as any)?.url ?? '-';
-        var deliveredOn = notification.deliveredOn ? new Date(notification.deliveredOn).toLocaleString() : '-';
-        var sentOn = notification.sentOn ? new Date(notification.sentOn).toLocaleString() : '-';
-        var status = notification.deliveredOn ? i18next.t("delivered") : i18next.t("pending");
-        var source = notification.source + (notification.sourceId ? `, ${notification.sourceId}` : '');
-        var target = notification.target + (notification.targetId ? `, ${notification.targetId}` : '');
-        var openButton = 'View';
-        var closeButton = 'Dismiss';
-        var assets = "Console 123";
-        return html`
-        <div class="form-preview">
-            <!-- Left column - details -->
-            <div class="section">
-                <div class="section-title">${i18next.t("Details")}</div>
-                <div class="field-group">
-                    ${this._getDetailField('Name', notification.name, InputType.TEXT)}
-                    ${this._getDetailField('Title', message.title, InputType.TEXT)}
-                    ${this._getDetailField('Assets', assets, InputType.TEXT)}
-                    ${this._getDetailField('Body', message.body, InputType.TEXTAREA)}
-                </div>
-            </div>
-
-            <!-- Right column -->
-             <div class="right-column">
-                <!-- Action Buttons Section -->
-                <div class="section">
-                    <div class="section-title">${i18next.t("Action buttons")}</div>
-                    <div class="field-group">
-                        ${this._getDetailField('URL to visit', url, InputType.TEXT)}
-                        ${this._getDetailField('Open button text', openButton, InputType.TEXT)}
-                        ${this._getDetailField('Close button text', closeButton, InputType.TEXT)}
-                    </div>
-                </div>
-
-                <!-- Properties Section -->
-                <div class="section">
-                    <div class="section-title">${i18next.t("Properties")}</div>
-                    <div class="field-group">
-                        <!-- ... properties fields ... -->
-                        ${this._getDetailField('Source', source, InputType.TEXT)}
-                        ${this._getDetailField('Target', target, InputType.TEXT)}
-                        ${this._getDetailField('Status', status, InputType.TEXT)}
-                        ${this._getDetailField('Sent', sentOn, InputType.TEXT)}
-                        ${this._getDetailField('Delivered', deliveredOn, InputType.TEXT)}
-                    </div>
-                </div>
-             </div>
-        </div>
-        `;
-    }
-
-    private _onRowClick(e: OrMwcTableRowClickEvent) {
-        // prevent handling if no notificiation data
-        if (!this._data || !e.detail) {
-            console.warn("No data available.");
-            return;
-        }
-
-        // get notification by index
-        const index = e.detail.index;
-        const notification = this._data[index];
-
-        // if no notif. return
-        if (!notification) {
-            console.warn(`No notification found at index ${index}`);
-            return;
-        }
-
-        // cast the message to PushNotificationMessage (to access the content)
-        const pushMessage = notification.message as PushNotificationMessage;
-
-        // log selection
-        console.log("Clicked notification:", notification);
-        
-        // show notification details in dialog
-        const dialog = showDialog(
-            new OrMwcDialog()
-            .setHeading(i18next.t("Notification details"))
-            .setContent(this._getNotificationDetailsContent(notification))
-        ).setActions([
-            {
-                actionName: "close",
-                content: i18next.t("close"),
-                action: () => dialog.close()
-            }
-        ])
     }
 
     protected render() {
@@ -748,6 +572,94 @@ export class PageNotifications extends Page<AppStateKeyed> {
             </div>
         `;
     }
+
+    protected getNotificationsTable() {
+        return html`
+            <or-notifications-table 
+                .notifications=${this._getFilteredNotifications() || []}
+                @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
+            ></or-notifications-table>
+        `;
+    }
+
+    protected _getCreateDialogHTML() {
+        return html`
+            <div class="dialog-content">
+                <notification-form
+                    id="notificationForm"
+                    ?disabled="${false}">
+                </notification-form>
+            </div>
+        `
+    }
+
+    protected _getNotificationDetailsContent(notification: SentNotification) {
+        return html`
+        <div class="form-preview">
+            <notification-form
+                    .notification=${notification}
+                    ?readonly=${true}
+                ></notification-form>
+        </div>
+        `;
+    }
+
+    protected async _showCreateDialog() {
+        await customElements.whenDefined('notification-form');
+
+        const dialog = showDialog(
+            new OrMwcDialog()
+            .setHeading(i18next.t("Create notification"))
+            .setContent(this._getCreateDialogHTML())
+                .setActions([
+                    {
+                        actionName: "cancel",
+                        content: i18next.t("cancel"),
+                        action: () => {
+                            dialog.close();
+                            this._loadData(); // reload after cancel
+                        }
+                    },
+                    {
+                        actionName: "create",
+                        content: i18next.t("create"),
+                        action: async () => this._handleCreateNotification(dialog)
+                        // note: _loadData is already called in _handleCreateNotification
+                    }
+                ])
+        )
+    }
+
+    private _onRowClick(e: OrMwcTableRowClickEvent) {
+        // prevent handling if no notificiation data
+        if (!this._data || !e.detail) {
+            console.warn("No data available.");
+            return;
+        }
+
+        const index = e.detail.index;
+        const notification = this._data[index];
+
+        // if no notif. return
+        if (!notification) {
+            console.warn(`No notification found at index ${index}`);
+            return;
+        }
+        
+        // show notification details in dialog
+        const dialog = showDialog(
+            new OrMwcDialog()
+            .setHeading(i18next.t("Notification details"))
+            .setContent(this._getNotificationDetailsContent(notification))
+        ).setActions([
+            {
+                actionName: "close",
+                content: i18next.t("close"),
+                action: () => dialog.close()
+            }
+        ])
+    }
+
 
 }
 
