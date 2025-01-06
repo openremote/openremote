@@ -935,6 +935,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
+          IS_CUSTOM_PROJECT: ${{ steps.is_main_repo.outputs.value == 'false' }}
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
