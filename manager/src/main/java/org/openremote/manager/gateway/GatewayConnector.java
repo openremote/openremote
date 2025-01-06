@@ -65,7 +65,6 @@ public class GatewayConnector {
     protected final ScheduledExecutorService scheduledExecutorService;
     protected final AssetProcessingService assetProcessingService;
     protected final GatewayService gatewayService;
-    protected final Map<String, Asset<?>> pendingAssetMerges = new HashMap<>();
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
     protected Consumer<Object> gatewayMessageConsumer;
@@ -182,7 +181,6 @@ public class GatewayConnector {
         }
 
         initialSyncInProgress = false;
-        pendingAssetMerges.clear();
         publishAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED));
     }
 
@@ -653,20 +651,10 @@ public class GatewayConnector {
 
         switch (e.getCause()) {
             case CREATE, READ, UPDATE -> {
-                String assetId = e.getId();
-                Asset<?> mergedAsset = saveAssetLocally(e.getAsset());
-                synchronized (pendingAssetMerges) {
-                    if (pendingAssetMerges.containsKey(assetId)) {
-                        @SuppressWarnings("OptionalGetWithoutIsPresent")
-                        Map.Entry<String, Asset<?>> pendingAssetMergeEntry = pendingAssetMerges.entrySet().stream().filter(entry -> entry.getKey().equals(assetId)).findFirst().get();
-                        String id = pendingAssetMergeEntry.getKey();
-                        pendingAssetMergeEntry.setValue(mergedAsset);
-
-                        synchronized (id) {
-                            // Notify the waiting merge thread
-                            id.notify();
-                        }
-                    }
+                try {
+                    saveAssetLocally(e.getAsset());
+                } catch (Exception ex) {
+                    LOG.log(Level.SEVERE, "Updating/creating asset failed: " + e.getId() + ": " + this, ex);
                 }
             }
             case DELETE -> {
