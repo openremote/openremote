@@ -17,7 +17,7 @@ import manager, {DefaultColor3, DefaultColor4} from "@openremote/core";
 import i18next from "i18next";
 import {when} from "lit/directives/when.js";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, isAxiosError, AxiosError} from "@openremote/rest";
+import {isAxiosError, AxiosError} from "@openremote/rest";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
@@ -25,9 +25,7 @@ import "../components/notifications/notification-form";
 import { OrNotificationsTable } from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 import {
-    OrMwcTable,
-    OrMwcTableRowClickEvent,
-    OrMwcTableRowSelectEvent
+    OrMwcTableRowClickEvent
 } from "@openremote/or-mwc-components/or-mwc-table";
 // import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
 
@@ -35,11 +33,19 @@ export class NotificationService {
     
     async getNotifications(realm: string, fromDate?: number, toDate?: number): Promise<SentNotification[]> {
         try {
-            console.log("Fetching notifications with filters:", realm, fromDate, toDate);
+            const timeRange = fromDate && toDate ? 
+            {fromDate, toDate} :
+            this.getDefaultTimeRange();
+            console.log("Fetching notifications with filters:", {
+                realm, 
+                fromDate: new Date(timeRange.fromDate),
+                toDate: new Date(timeRange.toDate)
+            })
+
             const response = await manager.rest.api.NotificationResource.getNotifications({
                 realmId: realm,
-                from: fromDate,
-                to: toDate
+                from: Math.floor(timeRange.fromDate),
+                to: Math.floor(timeRange.toDate)
             });
             // const response = await manager.rest.api.NotificationResource.getAllNotifications({
             //     from: fromDate,
@@ -58,15 +64,8 @@ export class NotificationService {
 
             return response.data;
         } catch (err: unknown) {
-            const error = err as AxiosError; //typecast
+            const error = err as AxiosError;
             console.error('Failed to fetch notifications:', error);
-            if (isAxiosError(error)) {
-                console.error('API Error details:', {
-                    status: error.response?.status,
-                    statusText: error.response?.statusText,
-                    data: error.response?.data
-                });
-            }
             throw error;
         }
     }
@@ -103,6 +102,22 @@ export class NotificationService {
         return {
             fromDate: yesterday.getTime(),
             toDate: now.getTime()
+        }
+    }
+
+    public getDefaultTimeRange(): {fromDate: number, toDate: number} {
+        const now = new Date();
+        const toDate = new Date(now);
+        toDate.setHours(23, 59, 59, 999);
+
+        // start date is set to 30 days ago, beginning of the day
+        const fromDate = new Date(now);
+        fromDate.setDate(fromDate.getDate() - 30);
+        fromDate.setHours(0, 0, 0, 0);
+
+        return {
+            fromDate: fromDate.getTime(),
+            toDate: toDate.getTime()
         }
     }
 
@@ -322,13 +337,33 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this._loading = true;
 
         try {
+            // this is where that undefined comes from jfc 
             const fromDate = this._isFiltered ? this._fromDate : undefined;
             const toDate = this._isFiltered ? this._toDate : undefined;
+
+            //if filtering is enabled, use selected dates
+            // otherwise default to range (last 30 days)
+
+            const timeRange = this._isFiltered && this._fromDate && this._toDate ?
+            {
+                fromDate: this._fromDate,
+                toDate: this._toDate
+            } :
+            this.notificationService.getDefaultTimeRange();
+
+            if (!this._isFiltered) {
+                this._fromDate = timeRange.fromDate;
+                this._toDate = timeRange.toDate;
+            }
+
+            console.log("getNotifications called for time range:", this._fromDate, this._toDate)
+
             this._data = await this.notificationService.getNotifications(
                 this.realm, 
                 fromDate, 
                 toDate
             );
+
             this.requestUpdate();
         } catch (err: unknown) {
             const error = err as AxiosError
