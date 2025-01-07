@@ -137,7 +137,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
         } catch (IllegalStateException | IllegalArgumentException ex) {
             throw new BadRequestException(ex);
         } catch (DatapointQueryTooLargeException dqex) {
-            throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+            throw new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE);
         } catch (UnsupportedOperationException ex) {
             throw new NotSupportedException(ex);
         }
@@ -240,6 +240,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
+        } catch (DatapointQueryTooLargeException dqex) {
+            asyncResponse.resume(new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE));
         }
     }
 }
