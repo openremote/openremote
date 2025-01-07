@@ -119,7 +119,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected ManagerIdentityService identityService;
     protected GatewayService gatewayService;
     protected boolean started;
-    protected Consumer<Exchange> websocketInterceptor;
+    protected Consumer<Exchange> gatewayInterceptor;
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
@@ -249,8 +249,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
 
                 // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
+                if (gatewayInterceptor != null) {
+                    gatewayInterceptor.accept(exchange);
                 }
             })
             .stop()
@@ -281,8 +281,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
 
                 // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
+                if (gatewayInterceptor != null) {
+                    gatewayInterceptor.accept(exchange);
                 }
             })
             .process(exchange -> {
@@ -485,8 +485,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .asyncSend();
     }
 
-    public void setWebsocketInterceptor(Consumer<Exchange> consumer) {
-        this.websocketInterceptor = consumer;
+    /**
+     * This allows gateway connectors to intercept exchanges from gateway clients; it by-passes the standard processing
+     * including authorization so the interceptor provides its own authorization checks.
+     */
+    public void setGatewayInterceptor(Consumer<Exchange> consumer) {
+        this.gatewayInterceptor = consumer;
     }
 
     protected void onWebsocketSubscriptionTriggered(String sessionKey, EventSubscription<?> subscription, SharedEvent event) {
