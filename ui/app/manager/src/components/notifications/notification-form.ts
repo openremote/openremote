@@ -413,6 +413,7 @@ export class NotificationForm extends LitElement {
                         label="${i18next.t('Title')}"
                         type="${InputType.TEXT}"
                         ?disabled="${inputDisabled}"
+                        id="notificationTitle"
                         required
                         .value="${live(this._formDataFields.title || '')}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => 
@@ -426,6 +427,7 @@ export class NotificationForm extends LitElement {
                         type="${InputType.TEXTAREA}"
                         rows="4"
                         ?disabled="${inputDisabled}"
+                        id="notificationBody"
                         required
                         .value="${live(this._formDataFields.body || '')}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => 
@@ -475,6 +477,7 @@ export class NotificationForm extends LitElement {
                         type="${InputType.SELECT}"
                         .options="${['NORMAL', 'HIGH']}"
                         ?disabled="${inputDisabled}"
+                        id="notificationPriority"
                         .value="${live(this._formDataFields.priority || 'NORMAL')}"
                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => 
                             this._onFieldChanged('priority', e.detail.value)}"
