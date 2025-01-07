@@ -29,6 +29,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.manager.ConfigurationResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.manager.ManagerAppConfig;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -47,7 +48,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public ObjectNode update(RequestParams requestParams, ObjectNode managerConfiguration) {
+    public ManagerAppConfig update(RequestParams requestParams, ManagerAppConfig managerConfiguration) {
         try {
             this.configurationService.saveManagerConfig(managerConfiguration);
         } catch (Exception e) {
@@ -76,7 +77,7 @@ public class ConfigurationResourceImpl extends ManagerWebResource implements Con
     }
 
     @Override
-    public ObjectNode getManagerConfig() {
+    public ManagerAppConfig getManagerConfig() {
         return configurationService.getManagerConfig();
     }
 
