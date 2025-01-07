@@ -267,7 +267,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return scheduledExecutorService.schedule(() -> {
             String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
-            StringBuilder sb = new StringBuilder(String.format("copy ("))
+            StringBuilder sb = new StringBuilder("copy (")
                     .append(getSelectExportQuery(attributeRefs, fromTimestamp, toTimestamp))
                     .append(") to '/storage/")
                     .append(EXPORT_STORAGE_DIR_NAME)
