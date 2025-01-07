@@ -459,7 +459,7 @@ jobs:
         run: |
           deployments=$DEPLOYMENTS
 
-          if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]; then
+          if [ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ] && [ "$GITHUB_REF_TYPE" != 'tag' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
               tag='#ref'
