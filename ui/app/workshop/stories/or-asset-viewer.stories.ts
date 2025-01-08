@@ -14,11 +14,11 @@ const meta: Meta<OrAssetViewer> = {
     args,
     argTypes: {
         ...argTypes,
-        ids: {
+        /*ids: {
             control: {
                 type: 'object'
             }
-        }
+        }*/
     },
     parameters: {
         actions: {
@@ -108,8 +108,8 @@ async function loadOrAssetViewer(args: any): Promise<HTMLElement | undefined> {
     )));
 
     const orAssetViewer = Object.assign(new OrAssetViewer(), newArgs) as OrAssetViewer;
-    if(!orAssetViewer.ids) {
-        orAssetViewer.ids = assetIds;
+    if(!orAssetViewer.id) {
+        orAssetViewer.id = assetIds[0];
     }
 
     return orAssetViewer;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2024, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -22,7 +22,6 @@ package org.openremote.model.protocol;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.query.filter.ValuePredicate;
@@ -33,6 +32,7 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +42,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.DYNAMIC_VALUE_PLACEHOLDER;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
 import static org.openremote.model.util.ValueUtil.applyValueFilters;
@@ -61,7 +60,7 @@ public final class ProtocolUtil {
      * searched on every single write request (for performance reasons), instead this should be recorded when the
      * attribute is first linked.
      */
-    public static Pair<Boolean, Object> doOutboundValueProcessing(String assetId, AttributeInfo attribute, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder) {
+    public static Pair<Boolean, Object> doOutboundValueProcessing(AttributeRef attributeRef, AgentLink<?> agentLink, Object value, boolean containsDynamicPlaceholder, Instant instant) {
 
         String writeValue = agentLink.getWriteValue().orElse(null);
 
@@ -70,7 +69,7 @@ public final class ProtocolUtil {
         // value conversion
         Object finalValue = value;
         ignoreAndConvertedValue = agentLink.getWriteValueConverter().map(converter -> {
-            LOG.finest("Applying attribute write value converter to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
+            LOG.finest("Applying attribute write value converter to attribute: " + attributeRef);
             return applyValueConverter(finalValue, converter);
         }).orElse(new Pair<>(false, finalValue));
 
@@ -80,14 +79,14 @@ public final class ProtocolUtil {
 
         value = ignoreAndConvertedValue.value;
 
-        // dynamic value insertion
+        // dynamic placeholder insertion
 
         boolean hasWriteValue = !TextUtil.isNullOrEmpty(writeValue);
 
         if (hasWriteValue) {
             if (containsDynamicPlaceholder) {
-                String valueStr = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
-                writeValue = writeValue.replaceAll(Constants.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
+                writeValue = ValueUtil.doDynamicValueReplace(writeValue, value);
+                writeValue = ValueUtil.doDynamicTimeReplace(writeValue, instant);
             }
 
             value = writeValue;
@@ -96,8 +95,8 @@ public final class ProtocolUtil {
         return new Pair<>(false, value);
     }
 
-    public static boolean hasDynamicWriteValue(AgentLink<?> agentLink) {
-        return agentLink.getWriteValue().map(str -> str.contains(DYNAMIC_VALUE_PLACEHOLDER)).orElse(false);
+    public static boolean hasDynamicPlaceholders(AgentLink<?> agentLink) {
+        return agentLink.getWriteValue().map(str -> Constants.containsDynamicValuePlaceholder(str) || Constants.containsDynamicTimePlaceholder(str)).orElse(false);
     }
 
     /**
@@ -112,7 +111,7 @@ public final class ProtocolUtil {
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
             LOG.finest("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
-            Object o = ValueUtil.applyValueFilters(value, valueFilters);
+            Object o = applyValueFilters(value, valueFilters);
             if (o == null) {
                 LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             }
@@ -207,7 +206,7 @@ public final class ProtocolUtil {
                 Object messageFiltered = applyValueFilters(message, matchFilters);
                 if (messageFiltered != null) {
                     if (matchPredicate.asPredicate(currentMillisSupplier).test(messageFiltered)) {
-                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: asssetId=" + assetId + ", attribute=" + attribute.getName());
+                        LOG.finest("Inbound message meets attribute matching meta so writing state to state consumer for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
                         stateConsumer.accept(new AttributeRef(assetId, attribute.getName()), message);
                     }
                 }

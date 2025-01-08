@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.bluetooth.mesh.transport;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.openremote.agent.protocol.bluetooth.mesh.transport.ConfigStatusMessage.StatusCodeNames.fromStatusCode;
 
@@ -54,26 +55,26 @@ public abstract class ConfigStatusMessage extends MeshMessage {
         return mParameters;
     }
 
-    protected ArrayList<Integer> decode(final int dataSize, final int offset) {
-        final ArrayList<Integer> arrayList = new ArrayList<>();
+    protected List<Integer> decode(final int dataSize, final int offset) {
+        final List<Integer> list = new ArrayList<>();
         final int size = dataSize - offset;
         if (size == 0) {
-            return arrayList;
+            return list;
         }
         if (size == 2) {
             final byte[] netKeyIndex = new byte[]{(byte) (mParameters[offset + 1] & 0x0F), mParameters[offset]};
             final int keyIndex = encode(netKeyIndex);
-            arrayList.add(keyIndex);
+            list.add(keyIndex);
         } else {
             final int firstKeyIndex = encode(new byte[]{(byte) (mParameters[offset + 1] & 0x0F), mParameters[offset]});
             final int secondNetKeyIndex = encode(new byte[]{
                 (byte) ((mParameters[offset + 2] & 0xF0) >> 4),
                 (byte) (mParameters[offset + 2] << 4 | ((mParameters[offset + 1] & 0xF0) >> 4))});
-            arrayList.add(firstKeyIndex);
-            arrayList.add(secondNetKeyIndex);
-            arrayList.addAll(decode(dataSize, offset + 3));
+            list.add(firstKeyIndex);
+            list.add(secondNetKeyIndex);
+            list.addAll(decode(dataSize, offset + 3));
         }
-        return arrayList;
+        return list;
     }
 
     private static int encode(final byte[] netKeyIndex) {

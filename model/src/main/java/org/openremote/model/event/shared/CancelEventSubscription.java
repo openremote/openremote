@@ -55,7 +55,7 @@ public class CancelEventSubscription {
     }
 
     public String getEventType() {
-        return eventType;
+        return eventType == null ? "" : eventType;
     }
 
     public void setEventType(String eventType) {
@@ -63,7 +63,7 @@ public class CancelEventSubscription {
     }
 
     public String getSubscriptionId() {
-        return subscriptionId;
+        return subscriptionId == null ? "" : subscriptionId;
     }
 
     @Override

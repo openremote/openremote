@@ -22,7 +22,7 @@ package org.openremote.container.xml;
 import org.xml.sax.SAXParseException;
 
 /**
- * Unified exception thrown by the <tt>DOMParser</tt> and <tt>SAXParser</tt>.
+ * Unified exception thrown by the {@code DOMParser} and {@code SAXParser}.
  */
 public class ParserException extends Exception {
 

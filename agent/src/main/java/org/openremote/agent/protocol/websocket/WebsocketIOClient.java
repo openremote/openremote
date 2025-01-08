@@ -30,8 +30,7 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketCl
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.util.CharsetUtil;
-import jakarta.ws.rs.ProcessingException;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
@@ -40,8 +39,8 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
+import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebTargetBuilder.CONNECTION_TIMEOUT_MILLISECONDS;
@@ -63,88 +61,23 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAddress> {
 
-    /**
-     * Extracts the text from the {@link WebSocketFrame} and sends it to the next handler in the pipeline
-     */
-    protected class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
-
-        private final WebSocketClientHandshaker handshaker;
-        private ChannelPromise handshakeFuture;
-
-        public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
-            this.handshaker = handshaker;
-        }
-
-        @Override
-        public void handlerAdded(ChannelHandlerContext ctx) {
-            handshakeFuture = ctx.newPromise();
-        }
-
-        @Override
-        public void channelActive(ChannelHandlerContext ctx) {
-            handshaker.handshake(ctx.channel());
-        }
-
-        @Override
-        public void channelRead0(ChannelHandlerContext ctx, Object msg) {
-            Channel ch = ctx.channel();
-
-            if (!handshaker.isHandshakeComplete()) {
-                try {
-                    handshaker.finishHandshake(ch, (FullHttpResponse) msg);
-                    handshakeFuture.setSuccess();
-                } catch (WebSocketHandshakeException e) {
-                    handshakeFuture.setFailure(e);
-                }
-                return;
-            }
-
-            if (msg instanceof FullHttpResponse) {
-                FullHttpResponse response = (FullHttpResponse) msg;
-                LOG.severe("Websocket client unexpected FullHttpResponse (getStatus=" + response.status() +
-                    ", content=" + response.content().toString(CharsetUtil.UTF_8) + "):" + getClientUri());
-            }
-
-            WebSocketFrame frame = (WebSocketFrame) msg;
-            if (frame instanceof TextWebSocketFrame) {
-                TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-                String str = textFrame.text();
-                ctx.fireChannelRead(str);
-            } else if (frame instanceof PongWebSocketFrame) {
-                LOG.finest("Received PONG: " + getClientUri());
-                if (pingCounter != null) {
-                    pingCounter.set(0);
-                }
-            } else if (frame instanceof CloseWebSocketFrame) {
-                ch.close();
-            }
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (!handshakeFuture.isDone()) {
-                handshakeFuture.setFailure(cause);
-                ctx.close();
-            }
-            WebsocketIOClient.this.onDecodeException(ctx, cause);
-        }
-    }
-
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketIOClient.class);
     protected static ResteasyClient client;
-    public static final long PING_MILLIS = 60000;
+    // How long since the last read before a PING is sent
+    public static final long PING_MILLIS = 10000;
+    // How long to wait for a ping response (i.e. pong)
+    public static final long PING_TIMEOUT_MILLIS = 10000;
     protected ScheduledFuture<?> pingFuture;
-    protected AtomicInteger pingCounter;
     protected boolean useSsl;
     protected URI uri;
-    protected SslContext sslCtx;
-    protected WebSocketClientHandler handler;
+    protected static SslContext sslCtx;
+    protected WebSocketClientProtocolHandler handler;
     protected Map<String, List<String>> headers;
     protected OAuthGrant oAuthGrant;
-    protected String authHeaderValue;
     protected String host;
     protected int port;
     protected boolean pingDisabled;
+    protected CompletableFuture<Void> handshakeFuture;
 
     public WebsocketIOClient(URI uri, Map<String, List<String>> headers, OAuthGrant oAuthGrant) {
         this(uri, headers, oAuthGrant, false);
@@ -203,68 +136,63 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
     }
 
     @Override
-    protected ChannelFuture startChannel() {
-        return bootstrap.connect(new InetSocketAddress(host, port));
+    protected Future<Void> startChannel() {
+        handshakeFuture = new CompletableFuture<>();
+        CompletableFuture<Void> channelFuture;
+        try {
+            channelFuture = toCompletableFuture(bootstrap.connect(new InetSocketAddress(host, port)));
+        } catch (Exception e) {
+            channelFuture = CompletableFuture.failedFuture(e);
+        }
+        return CompletableFuture.allOf(
+            channelFuture,
+            handshakeFuture
+        );
     }
 
     @Override
-    protected void initChannel(Channel channel) throws Exception {
-        if (useSsl) {
-            sslCtx = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
-        } else {
-            sslCtx = null;
-        }
-
+    protected void addEncodersDecoders(Channel channel) throws Exception {
         HttpHeaders hdrs = new DefaultHttpHeaders();
 
         if (this.headers != null) {
             this.headers.forEach(hdrs::add);
         }
 
+        String authHeaderValue = getAuthHeader();
         if (authHeaderValue != null) {
             hdrs.set(HttpHeaderNames.AUTHORIZATION, authHeaderValue);
         }
 
-        // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
-        // If you change it to V00, ping is not supported and remember to change
-        // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
-        handler =
-            new WebSocketClientHandler(
-                WebSocketClientHandshakerFactory.newHandshaker(
-                    uri, WebSocketVersion.V13, null, true, hdrs));
+        handler = new WebSocketClientProtocolHandler(
+            WebSocketClientHandshakerFactory.newHandshaker(
+                uri, WebSocketVersion.V13, null, true, hdrs)) {
 
-
-        super.initChannel(channel);
-    }
-
-    protected void onHandshakeComplete() {
-        // Start ping task
-        if (!pingDisabled) {
-            LOG.fine("Starting PING task: " + getClientUri());
-            pingCounter = new AtomicInteger();
-            pingFuture = executorService.scheduleWithFixedDelay(() -> {
-                try {
-                    if (pingCounter.get() > 2) {
-                        LOG.info("No PING response so reconnecting: " + this);
-                        doDisconnect();
-                        scheduleDoConnect(1000);
-                        return;
+            @Override
+            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                super.userEventTriggered(ctx, evt);
+                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent handshakeStateEvent) {
+                    if (handshakeStateEvent == ClientHandshakeStateEvent.HANDSHAKE_COMPLETE) {
+                        onHandshakeDone();
                     }
-                    LOG.finest("Sending PING: " + getClientUri());
-                    channel.writeAndFlush(new PingWebSocketFrame());
-                    pingCounter.incrementAndGet();
-                } catch (Exception ignored) {
                 }
-            }, PING_MILLIS, PING_MILLIS, TimeUnit.MILLISECONDS);
-        }
-    }
+            }
 
-    @Override
-    protected void addEncodersDecoders(Channel channel) {
+            @Override
+            protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
+                if (frame instanceof PongWebSocketFrame) {
+                    onPong(ctx);
+                }
+                super.decode(ctx, frame, out);
+            }
+        };
 
-        if (sslCtx != null) {
-            channel.pipeline().addLast(sslCtx.newHandler(channel.alloc(), host, port));
+        if (!pingDisabled) {
+            channel.pipeline().addFirst(new ReadTimeoutHandler(PING_MILLIS, TimeUnit.MILLISECONDS) {
+                @Override
+                protected void readTimedOut(ChannelHandlerContext ctx) throws Exception {
+                    doPing(ctx);
+                }
+            });
         }
 
         channel.pipeline().addLast(
@@ -273,46 +201,69 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
             WebSocketClientCompressionHandler.INSTANCE,
             handler);
 
-        channel.pipeline().addLast(new MessageToMessageEncoder<ByteBuf>() {
+        channel.pipeline().addLast(new io.netty.handler.codec.MessageToMessageDecoder<WebSocketFrame>() {
             @Override
-            protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) {
-                out.add(new TextWebSocketFrame(msg));
+            protected void decode(ChannelHandlerContext ctx, WebSocketFrame msg, List<Object> out) throws Exception {
+                if (msg instanceof TextWebSocketFrame textWebSocketFrame) {
+                    out.add(textWebSocketFrame.text());
+                } else if (msg instanceof BinaryWebSocketFrame) {
+                    out.add(msg.content().retain());
+                }
             }
         });
 
         super.addEncodersDecoders(channel);
 
-        // Put string encoder first (encoders are called in reverse to decoders)
+        // Put SSL handler first
+        if (useSsl) {
+            channel.pipeline().addFirst(getSSLContext().newHandler(channel.alloc(), host, port));
+        }
+
+        // Put string and bytebuf encoders first (encoders are called in reverse to decoders)
         channel.pipeline().addLast(new MessageToMessageEncoder<String>() {
             @Override
             protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) {
                 out.add(new TextWebSocketFrame(msg));
             }
         });
+        channel.pipeline().addLast(new io.netty.handler.codec.MessageToMessageEncoder<ByteBuf>() {
+            @Override
+            protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+                out.add(new BinaryWebSocketFrame(msg.retain()));
+            }
+        });
     }
 
-    @Override
-    protected Future<Void> doConnect() {
-
-        if (oAuthGrant != null) {
-            LOG.fine("Retrieving OAuth access token: "  + getClientUri());
-
-            try {
-                OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
-                authHeaderValue = oAuthFilter.getAuthHeader();
-                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
-                    throw new RuntimeException("Returned access token is null");
-                }
-                LOG.fine("Retrieved access token via OAuth: " + getClientUri());
-
-            } catch (SocketException | ProcessingException e) {
-                return CompletableFuture.failedFuture(new RuntimeException("Failed to retrieve OAuth access token for '" + getClientUri() + "': Connection error"));
-            } catch (Exception e) {
-                return CompletableFuture.failedFuture(new RuntimeException("Failed to retrieve OAuth access token '" + getClientUri() + "': " + e.getMessage()));
-            }
+    protected void onHandshakeDone() {
+        if (handshakeFuture != null) {
+            handshakeFuture.complete(null);
+            handshakeFuture = null;
         }
+    }
 
-        return super.doConnect();
+    protected synchronized SslContext getSSLContext() throws SSLException {
+        if (sslCtx == null) {
+            sslCtx = SslContextBuilder.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .sessionTimeout(getConnectTimeoutMillis())
+                    .build();
+        }
+        return sslCtx;
+    }
+
+    private void doPing(ChannelHandlerContext ctx) {
+        LOG.finest("Sending PING: " + getClientUri());
+        pingFuture = scheduledExecutorService.schedule(() -> {
+            ctx.fireExceptionCaught(new Exception("PING failed"));
+        }, PING_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        ctx.channel().writeAndFlush(new PingWebSocketFrame());
+    }
+
+    private void onPong(ChannelHandlerContext ctx) {
+        LOG.finest("Received PONG: " + getClientUri());
+        if (pingFuture != null) {
+            pingFuture.cancel(false);
+        }
     }
 
     @Override
@@ -325,16 +276,24 @@ public class WebsocketIOClient<T> extends AbstractNettyIOClient<T, InetSocketAdd
         super.doDisconnect();
     }
 
-    @Override
-    protected CompletableFuture<Void> createConnectedFuture(final ChannelFuture channelStartFuture) {
-        CompletableFuture<Void> connectedFuture = super.createConnectedFuture(channelStartFuture);
-        return connectedFuture.thenRunAsync(() -> {
-            ChannelPromise handshakeFuture = handler.handshakeFuture;
-            handshakeFuture.awaitUninterruptibly();
+    public String getAuthHeader() throws Exception {
+        String authHeaderValue = null;
 
-            if (handshakeFuture.isSuccess()) {
-                onHandshakeComplete();
+        if (oAuthGrant != null) {
+            LOG.finest("Retrieving OAuth access token: "  + getClientUri());
+
+            try {
+                OAuthFilter oAuthFilter = new OAuthFilter(getClient(), oAuthGrant);
+                authHeaderValue = oAuthFilter.getAuthHeader();
+                if (TextUtil.isNullOrEmpty(authHeaderValue)) {
+                    throw new RuntimeException("Returned access token is null");
+                }
+                LOG.finest("Retrieved access token via OAuth: " + getClientUri());
+            } catch (Exception e) {
+                throw new Exception("Error retrieving OAuth access token for '" + getClientUri() + "': " + e.getMessage());
             }
-        });
+        }
+
+        return authHeaderValue;
     }
 }

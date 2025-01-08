@@ -19,7 +19,9 @@
  */
 package org.openremote.container.web;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -40,6 +42,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -65,9 +68,8 @@ public class WebTargetBuilder {
     protected OAuthGrant oAuthGrant;
     protected URI baseUri;
     protected List<Integer> failureResponses = new ArrayList<>();
-    protected Map<String, List<String>> injectHeaders;
-    protected Map<String, List<String>> injectQueryParameters;
     protected boolean followRedirects = false;
+    private Map<String, List<String>> overrideResponseHeaders;
 
     public WebTargetBuilder(ResteasyClient client, URI baseUri) {
         this.client = client;
@@ -93,13 +95,8 @@ public class WebTargetBuilder {
         return this;
     }
 
-    public WebTargetBuilder setInjectHeaders(Map<String, List<String>> injectHeaders) {
-        this.injectHeaders = injectHeaders;
-        return this;
-    }
-
-    public WebTargetBuilder setInjectQueryParameters(Map<String, List<String>> injectQueryParameters) {
-        this.injectQueryParameters = injectQueryParameters;
+    public WebTargetBuilder setOverrideResponseHeaders(Map<String, List<String>> overrideResponseHeaders) {
+        this.overrideResponseHeaders = overrideResponseHeaders;
         return this;
     }
 
@@ -146,7 +143,8 @@ public class WebTargetBuilder {
 
     public ResteasyWebTarget build() {
         ResteasyWebTarget target = client.target(baseUri);
-        target.register(QueryParameterInjectorFilter.class);
+        target.register(DynamicTimeInjectorFilter.class);
+        target.register(DynamicValueInjectorFilter.class);
 
         if (!failureResponses.isEmpty()) {
             // Put a filter with max priority in the filter chain
@@ -160,16 +158,12 @@ public class WebTargetBuilder {
             target.register(basicAuthentication, Priorities.AUTHENTICATION);
         }
 
-        if (injectHeaders != null) {
-            target.register(new HeaderInjectorFilter(injectHeaders));
-        }
-
-        if (injectQueryParameters != null) {
-            target.property(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY, mapToMultivaluedMap(injectQueryParameters, new MultivaluedHashMap<>()));
-        }
-
         if (followRedirects) {
             target.register(new FollowRedirectFilter());
+        }
+
+        if (overrideResponseHeaders != null) {
+            target.register(new ResponseHeaderUpdateFilter(overrideResponseHeaders));
         }
 
         return target;
@@ -212,11 +206,28 @@ public class WebTargetBuilder {
         return clientBuilder.build();
     }
 
-    public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map, MultivaluedMap<K, V> multivaluedMap) {
+    public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map) {
+        MultivaluedMap<K, V> multivaluedMap = new MultivaluedHashMap<>();
         for (Map.Entry<K, List<W>> e : map.entrySet()) {
             multivaluedMap.put(e.getKey(), e.getValue() == null ? null : new ArrayList<>(e.getValue()));
         }
-
         return multivaluedMap;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends WebTarget, V> T addQueryParams(@NotNull T webTarget, @NotNull Map<String, List<V>> multivaluedMap) {
+        AtomicReference<T> result = new AtomicReference<>(webTarget);
+        multivaluedMap.forEach((name, values) -> {
+            result.set((T) result.get().queryParam(name, values.toArray()));
+        });
+        return result.get();
+    }
+
+    public static <V> Invocation.Builder addHeaders(@NotNull Invocation.Builder requestBuilder, @NotNull Map<String, List<V>> multiivaluedMap) {
+        AtomicReference<Invocation.Builder> result = new AtomicReference<>(requestBuilder);
+        multiivaluedMap.forEach((name, values) -> values.forEach(v -> {
+            result.set(result.get().header(name, v));
+        }));
+        return result.get();
     }
 }

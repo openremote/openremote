@@ -1,10 +1,9 @@
 {
   "name": "@openremote/manager",
-  "version": "1.0.4",
+  "version": "1.2.0-snapshot",
   "description": "OpenRemote Manager",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
-  "private": true,
   "exports": {
     ".": "./lib/index.js",
     "./*": "./lib/*.js"
@@ -16,23 +15,26 @@
       ]
     }
   },
+  "types": "lib/index.d.ts",
   "scripts": {
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production && npx tsc -b",
-    "serve": "npx tsc -b --clean && npx shx rm -rf dist && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
+    "serve": "npx tsc -b --clean && npx shx rm -rf dist lib && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepack": "npx tsc -b"
   },
   "dependencies": {
-    "@openremote/or-app": "^1.1.0",
-    "@openremote/or-chart": "workspace:*",
-    "@openremote/or-icon": "workspace:*",
-    "@openremote/or-mobile-app": "workspace:*"
+    "@openremote/or-app": "workspace:*",
+    "iso-639-1": "^3.1.3"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*",
     "webpack-bundle-analyzer": "^4.10.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

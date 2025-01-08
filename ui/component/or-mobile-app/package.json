@@ -12,16 +12,20 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
-    "clean": "npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepack": "npx tsc -b"
   },
   "dependencies": {
     "@openremote/or-app": "workspace:*"
   },
   "devDependencies": {
     "@openremote/util": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

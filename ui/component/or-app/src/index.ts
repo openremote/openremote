@@ -28,8 +28,8 @@ export * from "./or-header";
 export * from "./types";
 
 // Declare MANAGER_URL and KEYCLOAK_URL - Global var injected by webpack
-declare var MANAGER_URL: string | undefined;
-declare var KEYCLOAK_URL: string | undefined;
+declare const MANAGER_URL: string | undefined;
+declare const KEYCLOAK_URL: string | undefined;
 
 export {HeaderConfig, DEFAULT_LANGUAGES};
 
@@ -38,8 +38,8 @@ export function getDefaultManagerConfig() {
 }
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
-    managerUrl: MANAGER_URL,
-    keycloakUrl: KEYCLOAK_URL,
+    managerUrl: (MANAGER_URL || ""),
+    keycloakUrl: (KEYCLOAK_URL || ""),
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: undefined,
@@ -98,8 +98,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _activeMenu?: string;
 
-    protected _onEventBind?: any;
-    protected _onVisibilityBind?: any;
+    protected _onEvent = (ev: OREvent) => this._handleEvent(ev);
+    protected _onVisibilityChanged = (ev: Event) => this._handleVisibilityChange(ev);
     protected _realms!: Realm[];
     protected _offlineFallbackDeferred?: Util.Deferred<void>;
     protected _store: Store<S, AnyAction>;
@@ -174,30 +174,35 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     // Using HTML 'visibilitychange' listener to see whether the Manager is visible for the user.
     // TODO; Add an ConsoleProvider that listens to background/foreground changes, and dispatch the respective OREvent. This will improve responsiveness of logic attached to it.
     // For example used for triggering reconnecting logic once the UI becomes visible again.
-    protected onVisibilityChange(ev: Event) {
+    protected _handleVisibilityChange(ev: Event) {
+
         if(document.visibilityState === "visible") {
-            this._onEvent(OREvent.CONSOLE_VISIBLE);
+            this._store.dispatch((setVisibility(true)));
+
+            // When the manager appears on Mobile devices, but the connection is OFFLINE,
+            // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
+            // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
+            if(manager.console?.isMobile && this._offline) {
+                this._startOfflineFallbackTimer(true);
+            }
+            // Always try reconnecting (just in case we are disconnected)
+            manager.reconnect();
         } else {
-            this._onEvent(OREvent.CONSOLE_HIDDEN);
+            this._store.dispatch((setVisibility(false)));
         }
     }
 
     connectedCallback() {
         super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
-        this._onVisibilityBind = this.onVisibilityChange.bind(this);
-        document.addEventListener("visibilitychange", this._onVisibilityBind);
+        document.addEventListener("visibilitychange", this._onVisibilityChanged);
         this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-        if(this._onVisibilityBind) {
-            document.removeEventListener("visibilityChange", this._onVisibilityBind);
-        }
-        if(this._onEventBind) {
-            manager.removeListener(this._onEventBind);
-        }
+        document.removeEventListener("visibilityChange", this._onVisibilityChanged);
+        manager.removeListener(this._onEvent);
         super.disconnectedCallback();
     }
 
@@ -273,8 +278,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 this._initialised = true;
 
                 // Register listener to change global state based on certain events
-                this._onEventBind = this._onEvent.bind(this);
-                manager.addListener(this._onEventBind);
+                manager.addListener(this._onEvent);
 
                 // Create route listener to set header active item (this must be done before any routes added)
                 const headerUpdater = (activeMenu: string | undefined) => {
@@ -383,12 +387,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
             if (!this._config.logo) {
                 this._config.logo = DefaultLogo;
+            }else{
+                this._config.logo = (MANAGER_URL || "")+this._config.logo
             }
             if (!this._config.logoMobile) {
                 this._config.logoMobile = DefaultMobileLogo;
+            }else{
+                this._config.logoMobile = (MANAGER_URL || "")+this._config.logoMobile
             }
 
-            const favIcon = this._config && this._config.favicon ? this._config.favicon : DefaultFavIcon;
+            const favIcon = this._config && this._config.favicon ? (MANAGER_URL || "")+this._config.favicon : DefaultFavIcon;
 
             let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 
@@ -436,34 +444,18 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._offline = state.app!.offline;
     }
 
-    protected _onEvent(event: OREvent) {
+    protected _handleEvent(event: OREvent) {
         if(event === OREvent.OFFLINE) {
             if(!this._offline) {
                 this._store.dispatch((setOffline(true)))
             }
+            this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
         } else if(event === OREvent.ONLINE) {
             if(this._offline) {
                 this._showOfflineFallback = false;
                 this._completeOfflineFallbackTimer(); // complete fallback timer
                 this._store.dispatch((setOffline(false)));
             }
-        } else if(event === OREvent.RECONNECT_FAILED) {
-            this._startOfflineFallbackTimer(); // start fallback timer (if not done yet)
-
-        } else if(event === OREvent.CONSOLE_VISIBLE) {
-            this._store.dispatch((setVisibility(true)));
-
-            // When the manager appears on Mobile devices, but the connection is OFFLINE,
-            // we reset the timer to the {appConfig.offlineTimeout} seconds. This is because we saw issues with reopening the app,
-            // and seeing a connection interval of 30+ seconds. We now give the user the benefit of the doubt, by resetting the timer.
-            if(manager.console?.isMobile && this._offline) {
-                this._startOfflineFallbackTimer(true);
-            }
-            // Always try reconnecting (if necessary)
-            manager.reconnect(true);
-
-        } else if(event === OREvent.CONSOLE_HIDDEN) {
-            this._store.dispatch((setVisibility(false)));
         }
     }
 
@@ -492,7 +484,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         setTimeout(() => {
             if(!finished) { deferred.resolve(); }  // resolve THIS timer if not done yet.
-        }, this.appConfig?.offlineTimeout || 10000)
+        }, this.appConfig?.offlineTimeout || 20000)
 
         this._offlineFallbackDeferred = deferred;
     }

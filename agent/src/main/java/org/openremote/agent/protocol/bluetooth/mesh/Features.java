@@ -21,9 +21,6 @@ package org.openremote.agent.protocol.bluetooth.mesh;
 
 import org.openremote.agent.protocol.bluetooth.mesh.transport.ProvisionedMeshNode;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 /**
  * Defines the features supported by a {@link ProvisionedMeshNode}
  */

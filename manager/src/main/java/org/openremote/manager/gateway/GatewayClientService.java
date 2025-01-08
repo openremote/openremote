@@ -22,37 +22,41 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.model.Constants;
-import org.openremote.model.Container;
-import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
-import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.shared.EventRequestResponseWrapper;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -76,15 +80,17 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
     protected TimerService timerService;
-    protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, GatewayIOClient> clientRealmMap = new HashMap<>();
     protected GatewayTunnelFactory gatewayTunnelFactory;
+    protected Map<String, Map<AttributeRef, Long>> clientAttributeTimestamps = new ConcurrentHashMap<>();
+    protected Consumer<AssetEvent> realmAssetEventConsumer;
+    protected Consumer<AttributeEvent> realmAttributeEventConsumer;
+
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getExecutorService();
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         persistenceService = container.getService(PersistenceService.class);
@@ -147,6 +153,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         connectionRealmMap.forEach((realm, connection) -> {
             if (!connection.isDisabled()) {
                 clientRealmMap.put(realm, createGatewayClient(connection));
+                clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
             }
         });
     }
@@ -160,6 +167,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         });
         clientRealmMap.clear();
         connectionRealmMap.clear();
+        clientAttributeTimestamps.clear();
     }
 
     @Override
@@ -185,6 +193,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
                 case UPDATE:
                     GatewayIOClient client = clientRealmMap.remove(connection.getLocalRealm());
+                    clientAttributeTimestamps.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
@@ -192,10 +201,12 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     connectionRealmMap.put(connection.getLocalRealm(), connection);
                     if (!connection.isDisabled()) {
                         clientRealmMap.put(connection.getLocalRealm(), createGatewayClient(connection));
+                        clientAttributeTimestamps.put(connection.getLocalRealm(), new ConcurrentHashMap<>());
                     }
                     break;
                 case DELETE:
                     connectionRealmMap.remove(connection.getLocalRealm());
+                    clientAttributeTimestamps.remove(connection.getLocalRealm());
                     client = clientRealmMap.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
@@ -245,20 +256,22 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
+            realmAssetEventConsumer = assetEvent ->
+                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent));
+
             // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
-            clientEventService.addInternalSubscription(
-                getClientSessionKey(connection)+"Asset",
+            clientEventService.addSubscription(
                 AssetEvent.class,
                 new AssetFilter<AssetEvent>().setRealm(connection.getLocalRealm()),
-                assetEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, assetEvent)));
+                realmAssetEventConsumer);
 
-            clientEventService.addInternalSubscription(
-                getClientSessionKey(connection)+"Attribute",
+            realmAttributeEventConsumer = attributeEvent ->
+                sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent));
+
+            clientEventService.addSubscription(
                 AttributeEvent.class,
-                new AssetFilter<AttributeEvent>().setRealm(connection.getLocalRealm()),
-                attributeEvent ->
-                    sendCentralManagerMessage(connection.getLocalRealm(), messageToString(SharedEvent.MESSAGE_PREFIX, attributeEvent)));
+                getOutboundAttribueEventFilter(connection),
+                realmAttributeEventConsumer);
 
             client.connect();
             return client;
@@ -272,6 +285,89 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return null;
     }
 
+    protected EventFilter<AttributeEvent> getOutboundAttribueEventFilter(GatewayConnection gatewayConnection) {
+
+        // Convert filters to predicates for efficiency
+        List<Pair<AssetQueryPredicate, GatewayAttributeFilter>> predicatesWithFilters;
+        if (gatewayConnection.getAttributeFilters() != null && !gatewayConnection.getAttributeFilters().isEmpty()) {
+            predicatesWithFilters = gatewayConnection.getAttributeFilters()
+                .stream()
+                .map(filter -> {
+                    AssetQueryPredicate predicate = filter.getMatcher() != null ? new AssetQueryPredicate(timerService, assetStorageService, filter.getMatcher()) : null;
+                    return new Pair<>(predicate, filter);
+                })
+                .toList();
+        } else {
+            predicatesWithFilters = Collections.emptyList();
+        }
+
+        return ev -> {
+            if (!gatewayConnection.getLocalRealm().equals(ev.getRealm())) {
+                return null;
+            }
+
+            // Allow attribute events that came from the central manager to be returned
+            if (getClass().getSimpleName().equals(ev.getSource())) {
+                return ev;
+            }
+
+            boolean allowEvent = predicatesWithFilters.stream()
+                .filter(predicateWithFilter -> {
+                    if (predicateWithFilter.key == null) {
+                        // Match all
+                        return true;
+                    }
+                    return predicateWithFilter.key.test(ev);
+                })
+                .findFirst()
+                .map(predicatesWithFilter -> {
+                    GatewayAttributeFilter filter = predicatesWithFilter.value;
+                    if (filter.isAllow()) {
+                        return true;
+                    }
+                    if (filter.getSkipAlways() != null && filter.getSkipAlways()) {
+                        return false;
+                    }
+                    if (filter.getValueChange() != null && filter.getValueChange()) {
+                        if (!Objects.equals(ev.getValue(), ev.getOldValue())) {
+                            LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' value change has allowed attribute event: " + ev.getRef());
+                            return true;
+                        }
+                    }
+                    if (filter.getDelta() != null) {
+                        if (Number.class.isAssignableFrom(ev.getTypeClass())) {
+                            double delta = filter.getDelta();
+                            double value = ev.getValue(Double.class).orElse(0d);
+                            double oldValue = ev.getOldValue(Double.class).orElse(0d);
+                            if (Math.abs(value - oldValue) > Math.abs(delta)) {
+                                LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' delta setting has allowed attribute event: " + ev.getRef());
+                                return true;
+                            }
+                        }
+                    }
+                    if (filter.getDurationParsed().isPresent()) {
+                        boolean allow = filter.getDurationParsed().map(durationMillis -> {
+                            Map<AttributeRef, Long> attributeTimestamps = clientAttributeTimestamps.get(gatewayConnection.getLocalRealm());
+                            Long lastSendMillis = attributeTimestamps.get(ev.getRef());
+                            if (lastSendMillis == null || timerService.getCurrentTimeMillis() - lastSendMillis > durationMillis) {
+                                LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' duration setting has allowed attribute event: " + ev.getRef());
+                                attributeTimestamps.put(ev.getRef(), timerService.getCurrentTimeMillis());
+                                return true;
+                            }
+                            LOG.finest(() -> "Gateway client for '" + gatewayConnection.getLocalRealm() + "' duration setting has blocked attribute event: " + ev.getRef());
+                            return false;
+                        }).orElse(true);
+
+                        return allow;
+                    }
+
+                    return false;
+                }).orElse(true);
+
+            return allowEvent ? ev : null;
+        };
+    }
+
     protected void destroyGatewayClient(GatewayConnection connection, GatewayIOClient client) {
         if (client == null) {
             return;
@@ -281,13 +377,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             client.disconnect();
             client.removeAllConnectionStatusConsumers();
             client.removeAllMessageConsumers();
+            client.setEncoderDecoderProvider(null);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "An exception occurred whilst trying to disconnect the gateway IO client", e);
         }
 
         if (connection != null) {
-            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Asset");
-            clientEventService.cancelInternalSubscription(getClientSessionKey(connection)+"Attribute");
+            clientEventService.removeSubscription(realmAttributeEventConsumer);
+            clientEventService.removeSubscription(realmAssetEventConsumer);
         }
     }
 
@@ -297,19 +394,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
-        String messageId = null;
-        SharedEvent event = null;
-
-        if (message.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)) {
-            EventRequestResponseWrapper<?> wrapper = messageFromString(
-                message,
-                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                EventRequestResponseWrapper.class);
-            messageId = wrapper.getMessageId();
-            event = wrapper.getEvent();
-        } else if (message.startsWith(SharedEvent.MESSAGE_PREFIX)) {
-            event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
-        }
+        SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {
             if (event instanceof GatewayDisconnectEvent) {
@@ -320,15 +405,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 }
             } else if (event instanceof GatewayCapabilitiesRequestEvent) {
                 LOG.fine("Central manager requested specifications / capabilities of the gateway.");
+                GatewayCapabilitiesResponseEvent responseEvent = new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayCapabilitiesResponseEvent(gatewayTunnelFactory != null)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
             } else if (event instanceof GatewayTunnelStartRequestEvent gatewayTunnelStartRequestEvent) {
                 LOG.info("Start tunnel request received: " + gatewayTunnelStartRequestEvent);
@@ -339,16 +420,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
-
+                GatewayTunnelStartResponseEvent responseEvent = new GatewayTunnelStartResponseEvent(error);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayTunnelStartResponseEvent(error)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
 
             } else if (event instanceof GatewayTunnelStopRequestEvent stopRequestEvent) {
@@ -360,22 +436,16 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
-
+                GatewayTunnelStopResponseEvent responseEvent = new GatewayTunnelStopResponseEvent(error);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                         connection.getLocalRealm(),
-                        messageToString(
-                                EventRequestResponseWrapper.MESSAGE_PREFIX,
-                                new EventRequestResponseWrapper<>(
-                                        messageId,
-                                        new GatewayTunnelStopResponseEvent(error)
-                                )
-                        )
+                        messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent)
                 );
 
             } else if (event instanceof AttributeEvent) {
-                assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getName());
-            } else if (event instanceof AssetEvent) {
-                AssetEvent assetEvent = (AssetEvent)event;
+                assetProcessingService.sendAttributeEvent((AttributeEvent)event, getClass().getSimpleName());
+            } else if (event instanceof AssetEvent assetEvent) {
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();
                     asset.setRealm(connection.getLocalRealm());
@@ -386,40 +456,16 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
                 }
-            } else if (event instanceof DeleteAssetsRequestEvent) {
-                DeleteAssetsRequestEvent deleteRequest = (DeleteAssetsRequestEvent)event;
-                LOG.finest("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
-                boolean success = false;
-                try {
-                    success = assetStorageService.delete(deleteRequest.getAssetIds());
-                } catch (Exception e) {
-                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
-                } finally {
-                    sendCentralManagerMessage(
-                        connection.getLocalRealm(),
-                        messageToString(
-                            EventRequestResponseWrapper.MESSAGE_PREFIX,
-                            new EventRequestResponseWrapper<>(
-                                messageId,
-                                new DeleteAssetsResponseEvent(success, deleteRequest.getAssetIds())
-                            )
-                    ));
-                }
-            } else if (event instanceof ReadAssetsEvent) {
-                ReadAssetsEvent readAssets = (ReadAssetsEvent)event;
+            } else if (event instanceof ReadAssetsEvent readAssets) {
                 AssetQuery query = readAssets.getAssetQuery();
                 // Force realm to be the one that this client is associated with
                 query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
-
+                AssetsEvent responseEvent = new AssetsEvent(assets);
+                responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                     connection.getLocalRealm(),
-                    messageToString(
-                        EventRequestResponseWrapper.MESSAGE_PREFIX,
-                        new EventRequestResponseWrapper<>(
-                            messageId,
-                            new AssetsEvent(assets)
-                        )));
+                    messageToString(SharedEvent.MESSAGE_PREFIX, responseEvent));
             }
         }
     }

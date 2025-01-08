@@ -53,8 +53,11 @@ export const enum ConditionType {
 
 export const enum ActionType {
     WAIT = "wait",
+    ALARM = "alarm",
     EMAIL = "email",
+    EMAIL_LOCALIZED = "email_localized",
     PUSH_NOTIFICATION = "push",
+    PUSH_LOCALIZED = "push_localized",
     ATTRIBUTE = "attribute",
     WEBHOOK = "webhook"
 }
@@ -136,6 +139,12 @@ export interface RulesConfig {
         then?: RuleActionUnion;
         otherwise?: RuleActionUnion;
     };
+    notifications?: {
+        [realm: string]: {
+            defaultLanguage?: string;
+            languages?: string[];
+        }
+    }
 }
 
 export interface RulesDescriptorSection {

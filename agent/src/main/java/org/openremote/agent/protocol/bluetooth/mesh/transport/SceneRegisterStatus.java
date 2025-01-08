@@ -25,6 +25,7 @@ import org.openremote.agent.protocol.bluetooth.mesh.utils.MeshAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -36,7 +37,7 @@ public final class SceneRegisterStatus extends GenericStatusMessage implements S
     private static final int OP_CODE = ApplicationMessageOpCodes.SCENE_REGISTER_STATUS;
     private int mStatus;
     private int mCurrentScene;
-    private final ArrayList<Integer> mSceneList = new ArrayList<>();
+    private final List<Integer> mSceneList = new ArrayList<>();
 
     /**
      * Constructs the GenericOnOffStatus mMessage.
@@ -78,7 +79,7 @@ public final class SceneRegisterStatus extends GenericStatusMessage implements S
      *
      * @return true if on and false other wise
      */
-    public final int getStatus() {
+    public int getStatus() {
         return mStatus;
     }
 
@@ -91,7 +92,7 @@ public final class SceneRegisterStatus extends GenericStatusMessage implements S
      *
      * @return true if on and false other wise
      */
-    public final int getCurrentScene() {
+    public int getCurrentScene() {
         return mCurrentScene;
     }
 
@@ -100,7 +101,7 @@ public final class SceneRegisterStatus extends GenericStatusMessage implements S
      *
      * @return scene list
      */
-    public ArrayList<Integer> getSceneList() {
+    public List<Integer> getSceneList() {
         return mSceneList;
     }
 }

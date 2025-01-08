@@ -1,3 +1,4 @@
+/*
 import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {AnyAction, Store, configureStore, combineReducers} from "@reduxjs/toolkit";
 import {OrMobileApp} from "@openremote/or-mobile-app";
@@ -88,9 +89,9 @@ export function getManagerAppConfig(orApp: OrApp<any>, store: Store<any, AnyActi
 }
 
 
-/**
+/!**
  * Initialises {@link OrApp}, awaits its first update, and returns the HTML object.
- */
+ *!/
 export async function loadOrApp(args: any, getConfig?: (orApp: OrApp<any>) => Promise<AppConfig<any>>, getStore: () => Store<any, AnyAction> = () => DefaultStore): Promise<OrApp<any>> {
     console.debug("Loading OrApp...");
     const app = Object.assign(new OrApp(getStore()), args) as OrApp<any>;
@@ -114,4 +115,4 @@ export async function loadOrMobileApp(args: any, getConfig?: (orApp: OrApp<any>)
     await new Promise((r) => setTimeout(r, 1000));
     console.debug("OrMobileApp loaded");
     return app;
-}
+}*/

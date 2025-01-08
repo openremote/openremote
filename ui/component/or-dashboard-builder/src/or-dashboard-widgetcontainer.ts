@@ -1,4 +1,3 @@
-import {i18next} from "@openremote/or-translate";
 import {html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {when} from "lit/directives/when.js";
@@ -8,6 +7,7 @@ import {DashboardWidget} from "@openremote/model";
 import {OrWidget, WidgetManifest} from "./util/or-widget";
 import {WidgetService} from "./service/widget-service";
 import {WidgetConfig} from "./util/widget-config";
+import {Util} from "@openremote/core";
 
 /* ------------------------------------ */
 
@@ -20,6 +20,9 @@ export class OrDashboardWidgetContainer extends LitElement {
 
     @property()
     protected readonly widget!: DashboardWidget;
+
+    @property() // Optional property, that overrides widget.widgetConfig. Useful for view-only mode.
+    protected widgetConfig?: WidgetConfig;
 
     @property()
     protected readonly editMode!: boolean;
@@ -49,7 +52,7 @@ export class OrDashboardWidgetContainer extends LitElement {
         this.resizeObserver?.disconnect();
     }
 
-    shouldUpdate(changedProps: Map<PropertyKey, unknown>): boolean {
+    shouldUpdate(changedProps: PropertyValues): boolean {
         const changed = changedProps;
 
         // Update config if some values in the spec are not set.
@@ -57,7 +60,11 @@ export class OrDashboardWidgetContainer extends LitElement {
         if (this.widget) {
             const manifest = WidgetService.getManifest(this.widget.widgetTypeId!);
             if (manifest) {
-                this.widget.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);
+                if(this.editMode) {
+                    this.widget.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);
+                } else {
+                    this.widgetConfig = WidgetService.correctToConfigSpec(manifest, this.widget.widgetConfig);
+                }
             }
         }
 
@@ -67,7 +74,7 @@ export class OrDashboardWidgetContainer extends LitElement {
             const oldVal = changedProps.get('widget') as DashboardWidget | undefined;
             const idChanged = oldVal?.id !== this.widget?.id;
             const nameChanged = oldVal?.displayName !== this.widget?.displayName;
-            const configChanged = JSON.stringify(oldVal?.widgetConfig) !== JSON.stringify(this.widget?.widgetConfig);
+            const configChanged = !Util.objectsEqual(oldVal?.widgetConfig, this.getWidgetConfig());
             if (!(idChanged || nameChanged || configChanged)) {
                 changed.delete('widget');
             }
@@ -76,7 +83,7 @@ export class OrDashboardWidgetContainer extends LitElement {
         return (changed.size === 0 ? false : super.shouldUpdate(changedProps));
     }
 
-    willUpdate(changedProps: Map<string, any>) {
+    willUpdate(changedProps: PropertyValues) {
         super.willUpdate(changedProps);
 
         if (!this.manifest && this.widget) {
@@ -85,7 +92,7 @@ export class OrDashboardWidgetContainer extends LitElement {
 
         // Create widget
         if (changedProps.has("widget") && this.widget) {
-            this.initializeWidgetElem(this.manifest!, this.widget.widgetConfig);
+            this.initializeWidgetElem(this.manifest!, this.getWidgetConfig()!);
         }
     }
 
@@ -151,5 +158,9 @@ export class OrDashboardWidgetContainer extends LitElement {
 
     public refreshContent(force: boolean) {
         this.orWidget?.refreshContent(force);
+    }
+
+    public getWidgetConfig(): WidgetConfig | undefined {
+        return this.widgetConfig || this.widget?.widgetConfig;
     }
 }

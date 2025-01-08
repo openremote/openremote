@@ -63,7 +63,7 @@ public class AttributeLinkingService implements ContainerService {
         agentService = container.getService(AgentService.class);
         gatewayService = container.getService(GatewayService.class);
         ClientEventService clientEventService = container.getService(ClientEventService.class);
-        clientEventService.addInternalSubscription(AttributeEvent.class, null, this::onAttributeEvent);
+        clientEventService.addSubscription(AttributeEvent.class, null, this::onAttributeEvent);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class AttributeLinkingService implements ContainerService {
     }
 
     public void onAttributeEvent(AttributeEvent event) {
-        if (getClass().getName().equals(event.getSource())) {
+        if (getClass().getSimpleName().equals(event.getSource())) {
             LOG.finest("Attribute update came from this service so ignoring to avoid infinite loops: ref=" + event.getRef());
             return;
         }
@@ -88,7 +88,7 @@ public class AttributeLinkingService implements ContainerService {
 
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
         LOG.finest("Sending attribute event for linked attribute: " + attributeEvent);
-        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getName());
+        assetProcessingService.sendAttributeEvent(attributeEvent, getClass().getSimpleName());
     }
 
     protected void processLinkedAttributeUpdate(AttributeInfo attributeInfo, AttributeLink attributeLink) {
@@ -122,8 +122,7 @@ public class AttributeLinkingService implements ContainerService {
                     Object val = ValueUtil.convert(value[0], attr.getTypeClass());
 
                     if (val == null) {
-                        LOG.warning("Failed to convert value: " + value[0].getClass() + " -> " + attr.getTypeClass());
-                        LOG.warning("Cannot send linked attribute update");
+                        LOG.warning("Failed to convert value into attribute value type (" + value[0].getClass() + " -> " + attr.getTypeClass() + "): " + attributeInfo.getRef());
                         return;
                     }
                     value[0] = val;

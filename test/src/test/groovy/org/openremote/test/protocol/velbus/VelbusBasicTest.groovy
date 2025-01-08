@@ -31,6 +31,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 import org.openremote.setup.integration.protocol.velbus.MockVelbusClient
 
+import java.util.concurrent.Executors
+
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
 class VelbusBasicTest extends Specification {
@@ -811,8 +813,8 @@ class VelbusBasicTest extends Specification {
 //        def client = new VelbusSerialMessageProcessor("COM6", 38400);
 //        VelbusNetwork.DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100;
 
-        def scheduledTasksExecutor = new ContainerScheduledExecutor("Scheduled task", Container.OR_SCHEDULED_TASKS_THREADS_MAX_DEFAULT)
-        network = new VelbusNetwork(messageProcessor,  scheduledTasksExecutor, null)
+        def scheduledTasksExecutor = Executors.newScheduledThreadPool(1)
+        network = new VelbusNetwork(messageProcessor, scheduledTasksExecutor, null)
 
         loadDevicePackets(VelbusBasicTest.messageProcessor)
     }
