@@ -303,7 +303,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
     def "Create invalid users"() {
 
         when: "a regular user is created"
-        String username1 = "openremoteuser"/*'!@#$%^&*()'*/
+        String username1 = "openremoteuser"
         User user1 = new User().setUsername(username1)
         adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
 
