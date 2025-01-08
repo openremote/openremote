@@ -67,6 +67,18 @@ base {
     archivesName = "openremote-${project.name}"
 }
 
+configurations {
+    runtime {
+        canBeConsumed = true
+        canBeResolved = false
+        extendsFrom implementation, runtimeOnly
+    }
+}
+
+artifacts {
+    runtime(jar)
+}
+
 afterEvaluate {
     // Change the working directory for the run task
     tasks.run.workingDir = rootProject.projectDir
