@@ -37,15 +37,13 @@ export class NotificationService {
             {fromDate, toDate} :
             this.getDefaultTimeRange();
             console.log("Fetching notifications with filters:", {
-                realm, 
-                fromDate: new Date(timeRange.fromDate),
-                toDate: new Date(timeRange.toDate)
+                fromDate: timeRange.fromDate,
+                toDate: timeRange.toDate
             })
 
             const response = await manager.rest.api.NotificationResource.getNotifications({
-                realmId: realm,
-                from: Math.floor(timeRange.fromDate),
-                to: Math.floor(timeRange.toDate)
+                from: timeRange.fromDate,
+                to: timeRange.toDate
             });
             // const response = await manager.rest.api.NotificationResource.getAllNotifications({
             //     from: fromDate,
@@ -115,9 +113,17 @@ export class NotificationService {
         fromDate.setDate(fromDate.getDate() - 30);
         fromDate.setHours(0, 0, 0, 0);
 
+        const fromTimestamp = fromDate.getTime();
+        const toTimestamp = toDate.getTime();
+
+        if (!Number.isInteger(fromTimestamp) || !Number.isInteger(toTimestamp)) {
+            console.error("Invalid timestamp generation:", {fromTimestamp, toTimestamp});
+            throw new Error("Invalid timestamp generation")
+        }
+
         return {
-            fromDate: fromDate.getTime(),
-            toDate: toDate.getTime()
+            fromDate: fromTimestamp,
+            toDate: toTimestamp
         }
     }
 
