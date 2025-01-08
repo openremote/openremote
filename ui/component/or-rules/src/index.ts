@@ -174,6 +174,11 @@ export interface RulesetNode {
     selected: boolean;
 }
 
+export interface GroupNode {
+    name: string;
+    childNodes: RulesetNode[]
+}
+
 export interface RequestEventDetail<T> {
     allow: boolean;
     detail: T;

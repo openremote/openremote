@@ -39,6 +39,7 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -165,6 +166,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
                     ruleset.setError(rulesetDeployment.getErrorMessage());
                 })
         );
+
+        // TODO: Temporary change for local testing, remove this before merging
+        result.forEach(ruleset -> {
+            if(new Random().nextBoolean()) {
+                ruleset.setGroupId("test" + (new Random().nextInt(3 - 1 + 1) + 1));
+            }
+        });
 
         return result.toArray(new RealmRuleset[0]);
     }

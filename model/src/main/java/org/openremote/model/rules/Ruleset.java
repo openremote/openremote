@@ -56,6 +56,7 @@ public abstract class Ruleset {
     public static final String CONTINUE_ON_ERROR = "continueOnError";
     public static final String VALIDITY = "validity";
     public static final String TRIGGER_ON_PREDICTED_DATA = "triggerOnPredictedData";
+    public static final String GROUP_ID = "groupId";
 
     public enum Lang {
         JAVASCRIPT,
@@ -269,6 +270,15 @@ public abstract class Ruleset {
 
     public Ruleset setShowOnList(boolean showOn) {
         getMeta().put(SHOW_ON_LIST, showOn);
+        return this;
+    }
+
+    public String getGroupId() {
+        return Optional.ofNullable(getMeta().get(GROUP_ID)).flatMap(ValueUtil::getString).orElse(null);
+    }
+
+    public Ruleset setGroupId(String groupId) {
+        getMeta().put(GROUP_ID, groupId);
         return this;
     }
 

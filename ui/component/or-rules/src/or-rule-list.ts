@@ -7,6 +7,7 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
+    GroupNode,
     OrRules,
     OrRulesAddEvent,
     OrRulesRequestAddEvent,
@@ -23,6 +24,8 @@ import {translate} from "@openremote/or-translate";
 import i18next from "i18next";
 import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {GenericAxiosResponse} from "@openremote/rest";
+import { when } from "lit/directives/when.js";
+import { ifDefined } from "lit/directives/if-defined.js";
 
 // language=CSS
 const style = css`
@@ -48,7 +51,6 @@ const style = css`
 
     .node-container {
         align-items: center;
-        padding-left: 10px;
     }
     
     .header-ruleset-type {
@@ -122,7 +124,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     @property({type: Boolean})
     protected _globalRulesets: boolean = false;
 
-    protected _selectedNodes: RulesetNode[] = [];
+    protected _expandedNodes: GroupNode[] = [];
+    protected _selectedNodes: (RulesetNode | GroupNode)[] = [];
     protected _rulesetPromises: Map<string, Promise<any[]>> = new Map<string, Promise<any[]>>();
     protected _ready = false;
 
@@ -277,9 +280,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         <span id="loading"><or-translate value="loading"></or-translate></span>`
                 : html`
                         <div id="list-container">
-                            <ol id="list">
-                                ${this._nodes.map((treeNode) => this._nodeTemplate(treeNode))}
-                            </ol>
+                            ${this._nodeListTemplate(this._nodes, this._expandedNodes.map(v => v.name))}
                         </div>
                     `
             }
@@ -295,7 +296,59 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
-    protected _nodeTemplate(node: RulesetNode): TemplateResult | string {
+    protected _nodeListTemplate(nodes: RulesetNode[], expanded: string[]): TemplateResult {
+
+        const groupNodes: GroupNode[] = [];
+        const ungroupedNodes: RulesetNode[] = [];
+
+        // Loop through nodes, and populate the groupNodes array if they are placed in a group.
+        nodes.forEach(rulesetNode => {
+            const groupId = rulesetNode.ruleset?.meta?.groupId;
+            if(groupId) {
+                const group = groupNodes.find(g => g.name === groupId);
+                if(group) {
+                    group.childNodes.push(rulesetNode);
+                } else {
+                    groupNodes.push({ name: groupId, childNodes: [rulesetNode] });
+                }
+            } else {
+                ungroupedNodes.push(rulesetNode);
+            }
+        });
+
+        // Sort the ruleset nodes placed in a group
+        groupNodes.forEach(groupNode => {
+            groupNode.childNodes.sort(this._getSortFunction());
+        });
+
+        // Sort the list of GroupNodes alphabetically based on their name
+        groupNodes.sort((a, b) => a.name.localeCompare(b.name));
+
+        return html`
+            <ol id="list">
+                ${groupNodes?.map(groupNode => this._groupTemplate(groupNode, expanded.includes(groupNode.name)))}
+                ${ungroupedNodes?.map(node => this._nodeTemplate(node))}
+            </ol>
+        `;
+    }
+
+    protected _groupTemplate(group: GroupNode, expanded = false): TemplateResult | string {
+        return html`
+            <li ?data-expanded="${ifDefined(expanded)}">
+                <div class="node-container" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, group)}">
+                    <div class="expander" data-expandable></div>
+                    <or-icon style="--or-icon-width: 18px; margin-right: 8px;" icon="folder" title="${group.name}"
+                    ></or-icon>
+                    <span class="node-name">${group.name}</span>
+                </div>
+                <ol>
+                    ${group.childNodes.map(node => this._nodeTemplate(node, true))}
+                </ol>
+            </li>
+        `;
+    }
+
+    protected _nodeTemplate(node: RulesetNode, nested = false): TemplateResult | string {
 
         let statusIcon: string = "help";
         let statusClass: string = "iconfill-gray";
@@ -362,6 +415,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         return html`
             <li ?data-selected="${node.selected}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, node)}">
                 <div class="node-container">
+                    <div class="expander"></div>
+                    ${when(nested, () => html`<div class="expander"></div>`)}
                     <or-icon style="--or-icon-width: 18px; margin-right: 8px;" icon="${nodeIcon}" title="${i18next.t(nodeTitle)}"></or-icon>
                     <span class="node-name">${node.ruleset.name}</span>
                     <or-icon class="node-status ${statusClass}" title="${i18next.t("rulesetStatus." + (node.ruleset.status ? node.ruleset.status : "NOSTATUS"))}" icon="${statusIcon}"></or-icon>
@@ -416,8 +471,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         const oldSelection = this._selectedNodes;
         this._selectedNodes = selectedNodes;
         this.dispatchEvent(new OrRulesSelectionEvent({
-            oldNodes: oldSelection,
-            newNodes: selectedNodes
+            oldNodes: oldSelection.filter(n => (n as any).ruleset) as RulesetNode[],
+            newNodes: selectedNodes.filter(n => (n as any).ruleset) as RulesetNode[],
         }));
     }
 
@@ -429,14 +484,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         nodes.sort(sortFunction);
     }
 
-    protected _onNodeClicked(evt: MouseEvent, node: RulesetNode) {
+    protected _onNodeClicked(evt: MouseEvent, node: GroupNode | RulesetNode) {
         if (evt.defaultPrevented) {
             return;
         }
 
         evt.preventDefault();
 
-        let selectedNodes: RulesetNode[] = [];
+        let selectedNodes: (RulesetNode | GroupNode)[] = [];
         const index = this._selectedNodes.indexOf(node);
         let select = true;
         let deselectOthers = true;
@@ -462,8 +517,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         Util.dispatchCancellableEvent(this, new OrRulesRequestSelectionEvent({
-            oldNodes: this._selectedNodes,
-            newNodes: selectedNodes
+            oldNodes: this._selectedNodes.filter(n => (n as any).ruleset) as RulesetNode[],
+            newNodes: selectedNodes.filter(n => (n as any).ruleset) as RulesetNode[]
         })).then((detail) => {
             if (detail.allow) {
                 this.selectedIds = detail.detail.newNodes.map((node) => node.ruleset.id!);
@@ -475,8 +530,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (this._selectedNodes.length !== 1) {
             return;
         }
+        // Prevent GroupNode to be copied
+        if (!(this._selectedNodes[0] as any)?.ruleset) {
+            return;
+        }
 
-        const node = this._selectedNodes[0];
+        const node = this._selectedNodes[0] as RulesetNode;
         const ruleset = JSON.parse(JSON.stringify(node.ruleset)) as RulesetUnion;
         delete ruleset.lastModified;
         delete ruleset.createdOn;
@@ -540,8 +599,10 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _onDeleteClicked() {
-        if (this._selectedNodes.length > 0) {
-            Util.dispatchCancellableEvent(this, new OrRulesRequestDeleteEvent(this._selectedNodes))
+
+        const realmNodes = this._selectedNodes.filter(n => (n as any).ruleset) as RulesetNode[];
+        if (realmNodes.length > 0) {
+            Util.dispatchCancellableEvent(this, new OrRulesRequestDeleteEvent(realmNodes))
                 .then((detail) => {
                     if (detail.allow) {
                         this._doDelete();
@@ -556,7 +617,9 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             return;
         }
 
-        const rulesetsToDelete = this._selectedNodes.map((rulesetNode) => rulesetNode.ruleset);
+        const rulesetsToDelete = this._selectedNodes
+            .filter(node => (node as any).ruleset !== undefined)
+            .map(rulesetNode => (rulesetNode as RulesetNode).ruleset);
         const rulesetNamesToDelete = rulesetsToDelete.map(ruleset => "\n- " + ruleset.name);
 
         const doDelete = async () => {
