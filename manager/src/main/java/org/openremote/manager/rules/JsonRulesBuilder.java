@@ -482,15 +482,15 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
                     
                     // Reset previously matched states (of the group items) if the group doesn't match and has multiple items
-                    // This ensures that rule conditions can re-evaluate correctly, preventing stale matches from blocking rule re-triggering.
+                    // Ensures that rule conditions can re-evaluate correctly, preventing stale matches from blocking rule re-triggering.
                     if (!groupMatches && ruleConditionGroup.items.size() > 1) {
 
-                        boolean previouslyMatched = ruleConditionGroup.getItems().stream()
+                        boolean allPreviouslyMatched = ruleConditionGroup.getItems().stream()
                             .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                             .allMatch(ruleConditionState -> !ruleConditionState.previouslyMatchedAssetStates.isEmpty());
 
                         // Clear previously matched states if not all rule conditions have them to prevent direct re-triggering
-                        if (!previouslyMatched) {
+                        if (!allPreviouslyMatched) {
                             ruleConditionGroup.getItems().forEach(ruleCondition -> {
                                 RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
                                 if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
