@@ -395,8 +395,10 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     // Allow dependencyInsight checks across all projects
     task allDependencyInsight(type: DependencyInsightReportTask) {}
 
-    // JAR/ZIP base name is the fully qualified subproject name
-    archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
+    base {
+        // JAR/ZIP base name is the fully qualified subproject name
+        archivesName = "${rootProject.name}${path.replaceAll(":", "-")}"
+    }
 }
 
 // POM generator
