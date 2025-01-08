@@ -362,7 +362,6 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         then: "user5 is created correctly"
         User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
         assert users5.size() == (3 + 3)
-        System.out.println(username5)
         assert users5.any { it.username == username5 }
     }
 }
