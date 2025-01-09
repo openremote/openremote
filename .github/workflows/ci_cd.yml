@@ -520,10 +520,10 @@ jobs:
           echo "value=$command" >> $GITHUB_OUTPUT
         env:
           MAVEN_TAG: ${{ steps.ci-cd-output.outputs.mavenTag }}
-          MAVEN_SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_PASSWORD || steps.inputs-and-secrets.outputs.MAVEN_SIGNING_PASSWORD }}
-          MAVEN_SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_KEY || steps.inputs-and-secrets.outputs.MAVEN_SIGNING_KEY }}
-          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME || steps.inputs-and-secrets.outputs.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD || steps.inputs-and-secrets.outputs.MAVEN_PASSWORD }}
+          MAVEN_SIGNING_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_PASSWORD }}
+          MAVEN_SIGNING_KEY: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_SIGNING_KEY }}
+          MAVEN_USERNAME: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ steps.inputs-and-secrets.outputs._TEMP_MAVEN_PASSWORD }}
 
       - name: Define deployment docker build command
         id: deployment-docker-command
@@ -568,8 +568,8 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
-          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
+          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER }}
+          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD }}
 
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
@@ -806,7 +806,7 @@ jobs:
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
           NPM_TAG: ${{ steps.ci-cd-output.outputs.npmTag }}
-          NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN || steps.inputs-and-secrets.outputs.NPM_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN }}
 
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
@@ -935,7 +935,6 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          IS_CUSTOM_PROJECT: ${{ steps.is_main_repo.outputs.value == 'false' }}
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
