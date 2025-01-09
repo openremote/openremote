@@ -375,8 +375,10 @@ export class PageUsers extends Page<AppStateKeyed> {
             // This is handled asynchronously, so it will not 'wait' before the request has succeeded.
             if (user.password) {
                 const credentials = {value: user.password} as Credential;
-                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(() => {
-                    showSnackbar(undefined, "savePasswordFailed");
+                manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials).catch(e => {
+                    if(isAxiosError(e) && e.response.status !== 404) {
+                        showSnackbar(undefined, "savePasswordFailed");
+                    }
                 });
             }
 
@@ -855,7 +857,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
-                                  pattern="[A-Za-z0-9\\-_]+"
+                                  pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
                                   .value="${user.username}"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
