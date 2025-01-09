@@ -35,7 +35,6 @@ import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
@@ -49,7 +48,6 @@ import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.gateway.GatewayTunnelInfo;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
@@ -201,20 +199,7 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
             container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-            clientEventService.setWebsocketInterceptor(this::onMessageIntercept);
-
-            // Gateways can send AssetsEvents into this central manager so we need to authorize those
-            clientEventService.addEventAuthorizer((requestRealm, authContext, event) -> {
-
-                if (authContext == null) {
-                    return false;
-                }
-
-                String clientId = authContext.getClientId();
-
-                // TODO: Introduce gateway realm role
-                return isGatewayClientId(clientId);
-            });
+            clientEventService.setGatewayInterceptor(this::onGatewayMessageIntercept);
 
             assetProcessingService.addEventInterceptor(new AttributeEventInterceptor() {
                 @Override
@@ -341,7 +326,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         }
     }
 
-    protected void onMessageIntercept(Exchange exchange) {
+    /**
+     * This method by-passes the standard client event authorization so all consumers within the GatewayConnector
+     * must handle authorization and/or ensure operations can only be conducted on gateway descendants.
+     */
+    protected void onGatewayMessageIntercept(Exchange exchange) {
         String clientId = ClientEventService.getClientId(exchange);
 
         if (!isGatewayClientId(clientId)) {
@@ -805,9 +794,11 @@ public class GatewayService extends RouteBuilder implements ContainerService {
         try {
             User gatewayUser = identityProvider.getUserByUsername(gateway.getRealm(), User.SERVICE_ACCOUNT_PREFIX + clientId);
             boolean userExists = gatewayUser != null;
+            boolean createUpdateGatewayUser = gatewayUser == null
+                || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false)
+                || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null));
 
-            if (gatewayUser == null || gatewayUser.getEnabled() == gateway.getDisabled().orElse(false) || Objects.equals(gatewayUser.getSecret(), gateway.getClientSecret().orElse(null))) {
-
+            if (createUpdateGatewayUser) {
                 gatewayUser = identityProvider.createUpdateUser(gateway.getRealm(), new User()
                     .setServiceAccount(true)
                     .setSystemAccount(true)
@@ -816,8 +807,13 @@ public class GatewayService extends RouteBuilder implements ContainerService {
             }
 
             if (!userExists && gatewayUser != null) {
-                // Configure roles for this gateway user
-                identityProvider.updateUserRoles(gateway.getRealm(), gatewayUser.getId(), Constants.KEYCLOAK_CLIENT_ID, ClientRole.WRITE.getValue());
+                // Make the user restricted with no permissions
+                // Gateway events are handled directly by the GatewayConnector
+                identityProvider.updateUserRealmRoles(
+                        gateway.getRealm(),
+                        gatewayUser.getId(),
+                        identityProvider
+                            .addRealmRoles(gateway.getRealm(), gatewayUser.getId(), RESTRICTED_USER_REALM_ROLE));
             }
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
