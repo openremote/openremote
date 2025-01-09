@@ -489,15 +489,15 @@ jobs:
           if [ $IS_MAIN_REPO == 'true' ]; then
             buildPath="manager/build/install/manager"
             commitSha=$(git rev-parse HEAD)
-            commitShaShort=$(git rev-parse --short HEAD)
 
             if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
-
               if [ -n "$MANAGER_TAGS" ]; then
                 command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
                 echo "pushRequired=true" >> $GITHUB_OUTPUT
+                echo "managerDockerImage=openremote/manager:$FIRST_MANAGER_TAG" >> $GITHUB_OUTPUT
               else
                 command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
+                echo "managerDockerImage=openremote/manager:$commitShaShort" >> $GITHUB_OUTPUT
               fi
               echo "value=$command" >> $GITHUB_OUTPUT
             fi
@@ -623,6 +623,7 @@ jobs:
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
           echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
+          echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
           echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
           echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
@@ -742,6 +743,29 @@ jobs:
         if: steps.manager-docker-command.outputs.value != ''
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
+
+      - name: Scan manager docker image
+        if: steps.manager-docker-command.outputs.value != ''
+        uses: anchore/scan-action@v3
+        id: manager-anchore-scan
+        with:
+          image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}
+          fail-build: false
+          severity-cutoff: critical
+
+      - name: Upload Anchore scan SARIF report
+        if: |
+          !cancelled() &&
+          steps.manager-docker-command.outputs.value != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
+
+      - name: Inspect Anchore scan SARIF report
+        if: |
+          !cancelled() &&
+          steps.manager-docker-command.outputs.value != ''
+        run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Run maven publish command
         if: steps.maven-publish-command.outputs.value != ''
