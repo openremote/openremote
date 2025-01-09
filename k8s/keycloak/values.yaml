@@ -1,0 +1,24 @@
+ingress: 
+  enabled: false
+proxy: edge
+#image:
+#  repository: openremote/keycloak
+#  tag: latest
+#global: 
+#  security: 
+#    allowInsecureImages: true
+externalDatabase:
+  host: "or-postgresql-cluster.default.svc.cluster.local"
+  port: 5432
+  user: "postgres"
+  password: "set on command line"
+  database: "openremote"
+postgresql:
+  enabled: false
+extraEnvVars:
+- name: PROXY_ADDRESS_FORWARDING
+  value: "true"
+- name: KEYCLOAK_HOSTNAME
+  value: "localhost"
+- name: KC_HTTP_RELATIVE_PATH
+  value: "/auth"
