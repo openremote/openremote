@@ -191,20 +191,21 @@ def getYarnInstallTask() {
 
 // Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
 // extensions directory
-def getDeploymentJars(Project project = project) {
-    if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
+def getDeploymentJars(Project project = project, String excludeConfigName = 'managerRuntime') {
+    if (project.configurations.find { it.name == excludeConfigName } == null) {
         return []
     }
 
     // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
     // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
-    def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+    def excludeDependencies = project.configurations.getByName(excludeConfigName).resolvedConfiguration.resolvedArtifacts
 
-    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll {
-        dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect {
-        println "CopyLibs Artifact: ${it.file.path}"
-        return it.file
-    }
+    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+        .findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }
+        .collect {
+            println "CopyLibs Artifact: ${it.file.path}"
+            return it.file
+        }
 }
 
 /**
@@ -395,8 +396,10 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     // Allow dependencyInsight checks across all projects
     task allDependencyInsight(type: DependencyInsightReportTask) {}
 
-    // JAR/ZIP base name is the fully qualified subproject name
-    archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
+    base {
+        // JAR/ZIP base name is the fully qualified subproject name
+        archivesName = "${rootProject.name}${path.replaceAll(":", "-")}"
+    }
 }
 
 // POM generator

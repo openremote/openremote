@@ -4,8 +4,8 @@ apply plugin: "signing"
 
 sourceSets.main.resources.srcDirs += layout.buildDirectory.dir("classes/main")
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 java {

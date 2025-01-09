@@ -37,9 +37,12 @@ dependencies {
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
 }
 
+base {
+    archivesName = "openremote-${project.name}"
+}
+
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
 }
 
 javadoc {
