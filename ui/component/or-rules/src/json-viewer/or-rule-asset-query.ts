@@ -142,7 +142,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.WITHIN_RECTANGLE,
             AssetQueryOperator.OUTSIDE_RECTANGLE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["string"] = [
             AssetQueryOperator.EQUALS,
@@ -154,7 +155,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.ENDS_WITH,
             AssetQueryOperator.NOT_ENDS_WITH,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["number"] = [
             AssetQueryOperator.EQUALS,
@@ -166,13 +168,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.BETWEEN,
             AssetQueryOperator.NOT_BETWEEN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["boolean"] = [
             AssetQueryOperator.IS_TRUE,
             AssetQueryOperator.IS_FALSE,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["array"] = [
             AssetQueryOperator.CONTAINS,
@@ -184,13 +188,15 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             AssetQueryOperator.LENGTH_LESS_THAN,
             AssetQueryOperator.LENGTH_GREATER_THAN,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
         this._queryOperatorsMap["object"] = [
             AssetQueryOperator.CONTAINS_KEY,
             AssetQueryOperator.NOT_CONTAINS_KEY,
             AssetQueryOperator.VALUE_EMPTY,
-            AssetQueryOperator.VALUE_NOT_EMPTY
+            AssetQueryOperator.VALUE_NOT_EMPTY,
+            AssetQueryOperator.NOT_UPDATED_FOR
         ];
     }
 
@@ -238,6 +244,24 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected attributePredicateValueEditorTemplate(assetDescriptor: AssetDescriptor, asset: Asset | undefined, attributePredicate: AttributePredicate) {
+        const operator = this.getOperator(attributePredicate);
+
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            const duration = attributePredicate.timestampOlderThan ? 
+                moment.duration(attributePredicate.timestampOlderThan).asMinutes() : 0;
+            return html`
+                <or-mwc-input type="${InputType.NUMBER}" 
+                              min="0"
+                              .value="${duration}"
+                              label="${i18next.t("minutes")}"
+                              @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                  const minutes = ev.detail.value;
+                                  attributePredicate.timestampOlderThan = minutes > 0 ? 
+                                      `PT${minutes}M` : undefined;
+                                  this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
+                              }}">
+                </or-mwc-input>`;
+        }
 
         const valuePredicate = attributePredicate.value;
 
@@ -249,7 +273,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const assetType = getAssetTypeFromQuery(this.query);
         const attribute = asset && asset.attributes && attributeName ? asset.attributes[attributeName] : undefined;
         const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, attributeName, attribute);
-
 
         // @ts-ignore
         const value = valuePredicate ? valuePredicate.value : undefined;
@@ -529,8 +552,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected getOperator(attributePredicate: AttributePredicate): string | undefined {
+        if (!attributePredicate) {
+            return;
+        }
 
-        if (!attributePredicate || !attributePredicate.value) {
+        // Check for timestampOlderThan, it's independent of value predicate
+        if (attributePredicate.timestampOlderThan !== undefined) {
+            return AssetQueryOperator.NOT_UPDATED_FOR;
+        }
+
+        if (!attributePredicate.value) {
             return;
         }
 

@@ -61,6 +61,7 @@
   "notEndsWith": "Does not end with",
   "containsKey": "Contains key",
   "notContainsKey": "Does not contain key",
+  "notUpdatedFor": "Not updated for",
   "true": "Is true",
   "false": "Is false",
   "radiusMin": "Radius (min. 100m)",

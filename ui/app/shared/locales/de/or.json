@@ -58,6 +58,7 @@
   "notEndsWith": "Endet nicht mit",
   "containsKey": "Enthält Schlüssel",
   "notContainsKey": "Enthält nicht den Schlüssel",
+  "notUpdatedFor": "Nicht aktualisiert für",
   "true": "Wahr",
   "false": "Falsch",
   "radiusMin": "Radius (min. 100m)",

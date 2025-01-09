@@ -61,6 +61,7 @@
   "notEndsWith": "Eindigt niet met",
   "containsKey": "Bevat key",
   "notContainsKey": "Bevat geen keys",
+  "notUpdatedFor": "Niet bijgewerkt voor",
   "true": "Waar",
   "false": "Niet waar",
   "radiusMin": "Straal (min. 100m)",
