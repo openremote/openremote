@@ -1,0 +1,23 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: or-postgresql-cluster
+spec:
+  teamId: "or"
+  volume:
+    size: 1Gi
+  numberOfInstances: 2
+
+  preparedDatabases:
+    openremote:
+      defaultUsers: false
+      schemas:
+        public:
+          defaultRoles: false
+      extensions:
+        timescaledb: public
+        timescaledb_toolkit: public
+  postgresql:
+    version: "16"
+  dockerImage: "openremote/k8s-postgresql:1.0"
+
