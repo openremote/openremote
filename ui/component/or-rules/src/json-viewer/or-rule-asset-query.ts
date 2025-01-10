@@ -311,6 +311,14 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
     }
 
     protected attributeDurationTemplate(durationMap: Map<number, string | undefined>, index: number, onAdd: (index: number) => void, onChange: (index: number, duration: string | undefined) => void) {
+        const attributePredicate = this.query.attributes?.items?.[index];
+        const operator = attributePredicate ? this.getOperator(attributePredicate) : undefined;
+        
+        // Don't show duration button if NOT_UPDATED_FOR is selected
+        if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
+            return html``;
+        }
+
         if(durationMap.has(index)) {
             const isoDuration = durationMap.get(index);
             const duration = isoDuration ? moment.duration(isoDuration) : undefined;
@@ -825,6 +833,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                     match: AssetQueryMatch.CONTAINS
                 };
             }
+            // operator without value predicate - since timestamp is being used rather than attribute value
+            case AssetQueryOperator.NOT_UPDATED_FOR:
+                attributePredicate.timestampOlderThan = "PT0M";
+                break;
         }
 
         attributePredicate.value = predicate;
