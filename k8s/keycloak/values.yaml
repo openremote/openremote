@@ -7,6 +7,9 @@ proxy: edge
 #global: 
 #  security: 
 #    allowInsecureImages: true
+auth:
+  adminUser: admin
+  adminPassword: secret
 externalDatabase:
   host: "or-postgresql-cluster.default.svc.cluster.local"
   port: 5432
@@ -22,3 +25,5 @@ extraEnvVars:
   value: "localhost"
 - name: KC_HTTP_RELATIVE_PATH
   value: "/auth"
+- name: KC_FEATURES
+  value: "token-exchange"
