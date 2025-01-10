@@ -265,7 +265,6 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected _onRuleChanged(e: OrRulesRuleChangedEvent) {
         this.modified = true;
         this._ruleValid = e.detail;
-        console.log("rule changed", e.detail);
     }
 
     protected _onSaveClicked() {
