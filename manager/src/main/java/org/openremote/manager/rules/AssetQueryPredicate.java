@@ -201,13 +201,16 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
                 .forEach(p -> {         
                     AtomicReference<Predicate<AttributeInfo>> predicate = new AtomicReference<>();
                     
-                    // timestampOlderThan is set then we use this as a predicate
+                    // If timestampOlderThan is set then we use this as a predicate
                     if (p.timestampOlderThan != null) {
                         long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
-                        Predicate<AttributeInfo> timestampPredicate = assetState -> assetState.getTimestamp() < currentMillisProducer.get() - durationMillis;
+                        Predicate<AttributeInfo> timestampPredicate = assetState -> {
+                            long currentTime = currentMillisProducer.get();
+                            return assetState.getTimestamp() < currentTime - durationMillis;
+                        };
                         predicate.set(timestampPredicate);
                     } else {
-                        // otherwise we use the value predicate (regular predicate)
+                        // Otherwise we use the normal predicate
                         Predicate<AttributeInfo> attributePredicate = (Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p);
                         predicate.set(attributePredicate);
                     }

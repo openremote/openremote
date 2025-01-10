@@ -248,16 +248,17 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         if (operator === AssetQueryOperator.NOT_UPDATED_FOR) {
             const duration = attributePredicate.timestampOlderThan ? 
-                moment.duration(attributePredicate.timestampOlderThan).asMinutes() : 0;
+                moment.duration(attributePredicate.timestampOlderThan) : undefined;
             return html`
                 <or-mwc-input type="${InputType.NUMBER}" 
                               min="0"
-                              .value="${duration}"
+                              .value="${duration?.asMinutes()}"
                               label="${i18next.t("minutes")}"
                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                   const minutes = ev.detail.value;
+                                  const newDuration = moment.duration(minutes, "minutes");
                                   attributePredicate.timestampOlderThan = minutes > 0 ? 
-                                      `PT${minutes}M` : undefined;
+                                      newDuration.toISOString() : undefined;
                                   this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
                               }}">
                 </or-mwc-input>`;
@@ -655,6 +656,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             this.requestUpdate();
             return;
         }
+
+        attributePredicate.timestampOlderThan = undefined;
 
         const valueDescriptor = descriptors[1];
         let predicate: ValuePredicateUnion | undefined;
