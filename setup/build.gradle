@@ -18,14 +18,18 @@ dependencies {
 }
 
 task (load1Jar, type: Jar) {
-    archivesBaseName = "openremote-load1-${project.name}"
+    base {
+        archivesName = "openremote-load1-${project.name}"
+    }
     from sourceSets.load1.output
 }
 
 // Order of JAR tasks affects the name of the final jar but not the contents which is odd
 // So putting demo last
 task (demoJar, type: Jar) {
-    archivesBaseName = "openremote-demo-${project.name}"
+    base {
+        archivesName = "openremote-demo-${project.name}"
+    }
     from sourceSets.demo.output
 }
 

@@ -40,8 +40,8 @@ dependencies {
     implementation "org.jdom:jdom2:$jdomVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 javadoc {

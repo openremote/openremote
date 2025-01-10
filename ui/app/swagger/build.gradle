@@ -12,8 +12,8 @@ dependencies {
     sources "org.webjars:swagger-ui:$swaggeruiVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 java {
