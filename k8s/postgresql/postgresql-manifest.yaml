@@ -14,9 +14,15 @@ spec:
       schemas:
         public:
           defaultRoles: false
+        openremote:
+          defaultRoles: false
+        topology:
+          defaultRoles: false
       extensions:
-        timescaledb: public
-        timescaledb_toolkit: public
+        timescaledb: openremote
+        timescaledb_toolkit: openremote
+        postgis: openremote
+        postgis_topology: topology
   postgresql:
     version: "16"
   dockerImage: "openremote/k8s-postgresql:1.0"

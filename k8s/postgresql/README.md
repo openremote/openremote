@@ -8,6 +8,15 @@ helm install postgres-operator postgres-operator-charts/postgres-operator
 This uses a specific base image (spilo: high availability image that includes PostgreSQL and Patroni).
 We thus need to base our own image on that instead of the timescaledb one (this spilo image also includes timescaledb).
 
+However the splio image present in GitHub Container Registry did not contain the timescale_toolkit extension.
+So I rebuilt a spio base image and used that as the base for our own image.
+Clone the repo https://github.com/zalando/spilo.git and execute
+```
+docker build . --build-arg TIMESCALEDB_APACHE_ONLY=false -t spilo-test
+```
+
+TODO: double-check license limitations or not
+
 The Dockerfile in this folder is currently a very limited version of the original OR postgresql Dockerfile.  
 It will need to be updated for the final version but is enough for current testing.
 
