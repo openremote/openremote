@@ -481,16 +481,16 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
                     
-                    // Reset previously matched states (of the group items) if the group doesn't match and has multiple items
-                    // Ensures that rule conditions can re-evaluate correctly, preventing stale matches from blocking rule re-triggering.
-                    if (!groupMatches && ruleConditionGroup.items.size() > 1) {
+             
+                    // Prevent stale matches from blocking rule re-triggering for multi LHS condition groups
+                    if (!groupMatches && ruleConditionGroup.getItems().size() > 1) {
 
-                        boolean allPreviouslyMatched = ruleConditionGroup.getItems().stream()
+                        boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
                             .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
-                            .allMatch(ruleConditionState -> !ruleConditionState.previouslyMatchedAssetStates.isEmpty());
+                            .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
 
-                        // Clear previously matched states if not all rule conditions have them to prevent direct re-triggering
-                        if (!allPreviouslyMatched) {
+                        // Clear previously matched asset states, so they can be re-matched and trigger the rule when the group matches again
+                        if (anyConditionHasNoPreviousMatches) {
                             ruleConditionGroup.getItems().forEach(ruleCondition -> {
                                 RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
                                 if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
