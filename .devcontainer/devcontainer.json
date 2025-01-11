@@ -1,0 +1,29 @@
+{
+  "name": "Dev Container (All Services + Main App)",
+
+  "dockerComposeFile": [
+    "./docker-compose.yml"
+  ],
+
+  "service": "devcontainer",
+
+  "runServices": [
+    "keycloak",
+    "postgresql",
+    "devcontainer"
+  ],
+
+  "workspaceFolder": "/workspace",
+
+  "containerEnv": {
+    "OR_HOSTNAME": "localhost"
+  },
+
+  "mounts": [
+    "type=bind,source=${localWorkspaceFolder},target=/workspace"
+  ],
+
+  "updateContentCommand": "/workspace/gradlew clean installDist",
+
+  "shutdownAction": "stopCompose"
+}

@@ -4,22 +4,27 @@ import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
 // Configure version based on Git tags
-apply plugin: 'pl.allegro.tech.build.axion-release'
-scmVersion {
-    releaseOnlyOnReleaseBranches = true
-    releaseBranchNames = ['main', 'master']
-    unshallowRepoOnCI.set(true)
-    versionCreator('simple')
-    versionIncrementer('incrementMinor')
-    repository {
-        remote.set('origin')
+try {
+    // Configure version based on Git tags
+    apply plugin: 'pl.allegro.tech.build.axion-release'
+    scmVersion {
+        releaseOnlyOnReleaseBranches = true
+        releaseBranchNames = ['main', 'master']
+        unshallowRepoOnCI.set(true)
+        versionCreator('simple')
+        versionIncrementer('incrementMinor')
+        repository {
+            remote.set('origin')
+        }
+        tag {
+            prefix.set('')
+            // This deserializer prevents errors when tags exist that cannot be deserialized
+            deserializer({config, position, tagName -> tagName ==~ /^[0-9]+\.[0-9]+\.[0-9]+$/ ? tagName : "1.1.0" })
+            initialVersion({config, position -> '1.2.0'})
+        }
     }
-    tag {
-        prefix.set('')
-        // This deserializer prevents errors when tags exist that cannot be deserialized
-        deserializer({config, position, tagName -> tagName ==~ /^[0-9]+\.[0-9]+\.[0-9]+$/ ? tagName : "1.1.0" })
-        initialVersion({config, position -> '1.2.0'})
-    }
+} catch (Exception ignored) {
+    version = '0.0.1'
 }
 
 allprojects {

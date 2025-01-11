@@ -1,0 +1,55 @@
+# OpenRemote v3
+#
+# Profile for doing IDE development work and running build tests.
+#
+# Please see profile/../profile/deploy.yml for configuration details for each service.
+#
+volumes:
+  postgresql-data:
+services:
+
+  keycloak:
+    extends:
+      file: ../profile/deploy.yml
+      service: keycloak
+    # volumes:
+    #   Map custom themes
+    #  - ../deployment:/deployment
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      # Prevent theme caching during dev
+      KEYCLOAK_START_OPTS: --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+
+  postgresql:
+    extends:
+      file: ../profile/deploy.yml
+      service: postgresql
+    volumes:
+      - ../tmp:/storage
+      - postgresql-data:/var/lib/postgresql/data
+    # Access directly if needed on localhost
+    ports:
+      - "5432:5432"
+
+
+
+  devcontainer:
+    image: devcontainer
+    environment:
+      OR_HOSTNAME: localhost
+    build:
+      context: .
+    depends_on:
+      keycloak:
+        condition: service_started
+      postgresql:
+        condition: service_started
+    ports:
+      - "1883:1883"
+      - "8080:8080"
