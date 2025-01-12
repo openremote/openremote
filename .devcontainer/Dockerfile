@@ -1,15 +1,16 @@
-# Base image for Java 17
-FROM mcr.microsoft.com/devcontainers/java:1-17
+# Use a base image that already has a JDK installed (for Gradle)
+FROM gradle:8-jdk17
 
-# Install Node.js and Yarn
-RUN curl -fsSL https://deb.nodesource.com/setup_21.x | bash - && \
-    apt-get update && \
-    apt-get install -y nodejs
+# Install Node.js (and optionally yarn if you prefer)
+USER root
+RUN apt-get update && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install nodejs -y && \
+    npm install --global yarn && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Verify installations
-RUN java -version && \
-    node --version && \
-    yarn --version
-
-# Set up the working directory
+# Optionally, set a default workdir
 WORKDIR /workspace
+
+CMD ["tail", "-f", "/dev/null"]
