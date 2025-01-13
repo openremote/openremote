@@ -6,7 +6,9 @@ apply plugin: "distribution"
 apply plugin: "maven-publish"
 apply plugin: "signing"
 
-mainClassName = "org.openremote.manager.Main"
+application {
+    mainClass = "org.openremote.manager.Main"
+}
 
 dependencies {
 
@@ -61,8 +63,20 @@ dependencies {
     implementation "com.github.mwiede:jsch:$jSchVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
+}
+
+configurations {
+    runtime {
+        canBeConsumed = true
+        canBeResolved = false
+        extendsFrom implementation, runtimeOnly
+    }
+}
+
+artifacts {
+    runtime(jar)
 }
 
 afterEvaluate {
@@ -165,7 +179,7 @@ signing {
 
 // Output version.properties file
 tasks.register('setVersionProperties', WriteProperties) {
-    outputFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
+    destinationFile = Paths.get(projectDir.path, "src", "main", "resources", "version.properties").toFile()
     property 'version', project.version
 }
 
