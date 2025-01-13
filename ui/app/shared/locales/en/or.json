@@ -575,6 +575,7 @@
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",
   "latestDatapoint": "Latest datapoint",
+  "exportTooLargeError": "Could not export data: you've selected too much data!",
   "arrayDimensions": "Array dimensions",
   "addParameter": "Add parameter",
   "addItem": "Add item",

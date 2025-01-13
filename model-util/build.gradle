@@ -15,9 +15,12 @@ dependencies {
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
+base {
+    archivesName = "openremote-${project.name}"
+}
+
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
 }
 
 javadoc {
