@@ -253,7 +253,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 <or-mwc-input type="${InputType.NUMBER}" 
                               min="0"
                               .value="${duration?.asMinutes()}"
-                              label="${i18next.t("minutes")}"
+                              label="${i18next.t("rulesEditorDuration")}"
                               @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
                                   const minutes = ev.detail.value;
                                   const newDuration = moment.duration(minutes, "minutes");
