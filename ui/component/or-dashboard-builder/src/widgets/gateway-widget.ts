@@ -117,6 +117,7 @@ export class GatewayWidget extends OrWidget {
     protected firstUpdated(changedProps: PropertyValues) {
         if(this.widgetConfig) {
 
+            const tunnelInfo = this._getTunnelInfoByConfig(this.widgetConfig);
             this._readyCheck(this.widgetConfig);
             // Apply a timeout of 500 millis, so the tunnel has time to close upon disconnectedCallback() of a different widget.
             setTimeout(() => {
