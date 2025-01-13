@@ -150,7 +150,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
     protected _invalid = false;
 
     @state()
-    protected _passwordPolicy: string[] = []
+    protected _passwordPolicy: string[] = [];
 
     @query("#password")
     protected _passwordElem?: OrMwcInput;
@@ -169,6 +169,11 @@ export class PageAccount extends Page<AppStateKeyed>  {
     public stateChanged(_state: AppStateKeyed) {
     }
 
+    public connectedCallback() {
+        super.connectedCallback();
+        this._getPasswordPolicy();
+        }
+
     protected render(): TemplateResult | void {
 
         if (!manager.authenticated) {
@@ -184,7 +189,6 @@ export class PageAccount extends Page<AppStateKeyed>  {
         }
 
         const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
-        this._getPasswordPolicy();
 
         return html`
             <div id="wrapper">
@@ -450,12 +454,18 @@ export class PageAccount extends Page<AppStateKeyed>  {
         })
     }
 
+    /**
+     * Function that formats the password policy from the currently authenticated realm.
+     */
     protected async _getPasswordPolicy(): Promise<void> {
-        const realmResponse = await manager.rest.api.RealmResource.get(manager.getRealm());
-        this._passwordPolicy = realmResponse.data.passwordPolicy;
-
+        await manager.rest.api.RealmResource.get(manager.getRealm()).then((response) => {
+            this._passwordPolicy = response.data.passwordPolicy ?? this._passwordPolicy;
+            })
         }
 
+   /**
+    * Function that formats the password policy into a displayable html format.
+    */
    protected async _getPasswordPolicyTemplate(user: UserModel, passwordPolicy = this._passwordPolicy): Promise<TemplateResult> {
        const policyMap = new Map(passwordPolicy.map(policyStr => {
            const name = policyStr.split("(")[0];
