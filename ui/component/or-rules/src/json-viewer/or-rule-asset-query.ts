@@ -838,7 +838,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             }
             // operator without value predicate - since timestamp is being used rather than attribute value
             case AssetQueryOperator.NOT_UPDATED_FOR:
-                attributePredicate.timestampOlderThan = "PT0M";
+                attributePredicate.timestampOlderThan = "";
                 break;
         }
 
