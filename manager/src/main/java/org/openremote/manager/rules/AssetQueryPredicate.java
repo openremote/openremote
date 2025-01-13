@@ -199,26 +199,21 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
             condition.getItems().stream()
                 .forEach(p -> {         
-                    AtomicReference<Predicate<AttributeInfo>> predicate = new AtomicReference<>();
-                    
-                    // If timestampOlderThan is set then we use this as a predicate
+                    attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p));
+
+                    AtomicReference<Predicate<AttributeInfo>> olderThanPredicate = new AtomicReference<>();
+                    AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
+                    AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
+
                     if (p.timestampOlderThan != null) {
                         long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
                         Predicate<AttributeInfo> timestampPredicate = assetState -> {
                             long currentTime = currentMillisProducer.get();
                             return assetState.getTimestamp() < currentTime - durationMillis;
                         };
-                        predicate.set(timestampPredicate);
-                    } else {
-                        // Otherwise we use the normal predicate
-                        Predicate<AttributeInfo> attributePredicate = (Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p);
-                        predicate.set(attributePredicate);
+                        olderThanPredicate.set(timestampPredicate);
+                        attributePredicates.add(olderThanPredicate.get());
                     }
-
-                    attributePredicates.add(predicate.get());
-
-                    AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
-                    AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
 
                     if (p.meta != null) {
                         final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)
