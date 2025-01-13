@@ -1,1 +1,0 @@
-{"version":3,"file":"identity.assigner.js","sourceRoot":"","sources":["identity.assigner.ts"],"names":[],"mappings":"AAAA,OAAO,OAAO,MAAM,SAAS,CAAC;AAG9B,MAAM,OAAO,gBAAgB;IAElB,MAAM,CAAC,gBAAgB;QAC1B,OAAO,OAAO,CAAC,QAAQ,EAAE,CAAC;IAC9B,CAAC;IAEM,MAAM,CAAC,wBAAwB,CAAC,MAAkB;QACrD,OAAO,MAAM,CAAC,EAAE,CAAC;IACrB,CAAC;CACJ"}
