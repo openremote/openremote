@@ -90,7 +90,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             }
 
             AssetTypeInfo assetTypeInfo = (AssetTypeInfo) ctxt.getAttribute(Asset.AssetDeserializer.ASSET_TYPE_INFO_ATTRIBUTE);
-            String attributeName = jp.getCurrentName();
+            String attributeName = jp.currentName();
             AttributeDescriptor<?> attributeDescriptor = assetTypeInfo != null ? assetTypeInfo.getAttributeDescriptors().get(attributeName) : null;
             Attribute<?> attribute;
 
