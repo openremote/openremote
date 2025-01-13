@@ -3921,17 +3921,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openremote/core@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/core@npm:1.2.1"
+  dependencies:
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    i18next: "npm:^21.5.3"
+    i18next-http-backend: "npm:^1.3.1"
+    keycloak-js: "npm:^25.0.1"
+    moment: "npm:^2.29.4"
+    platform: "npm:^1.3.6"
+    qs: "npm:^6.8.0"
+    url-search-params-polyfill: "npm:^8.1.0"
+  checksum: 10c0/5a49ea02457143f9eab28ff82674224c54549a6b45d049ea3386dcc2621e4c292e4668ab27dd2165918ba536d2d395b3b73e6d9e8fdcc14d6d5134afc6ecd092
+  languageName: node
+  linkType: hard
+
 "@openremote/core@workspace:*, @openremote/core@workspace:ui/component/core":
   version: 0.0.0-use.local
   resolution: "@openremote/core@workspace:ui/component/core"
   dependencies:
-    "@openremote/or-icon": "npm:^1.1.0"
+    "@openremote/or-icon": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/qs": "npm:^6.9.7"
     i18next: "npm:^21.5.3"
     i18next-http-backend: "npm:^1.3.1"
-    keycloak-js: "npm:^23.0.6"
+    keycloak-js: "npm:^25.0.1"
     moment: "npm:^2.29.4"
     platform: "npm:^1.3.6"
     qs: "npm:^6.8.0"
@@ -3941,13 +3958,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/demo-core@npm:^1.0.4, @openremote/demo-core@workspace:ui/demo/demo-core":
+"@openremote/demo-core@workspace:*, @openremote/demo-core@workspace:ui/demo/demo-core":
   version: 0.0.0-use.local
   resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     i18next: "npm:^21.5.3"
     lit: "npm:^2.0.2"
@@ -3962,8 +3979,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/demo-or-asset-tree@workspace:ui/demo/demo-or-asset-tree"
   dependencies:
-    "@openremote/demo-core": "npm:^1.0.4"
-    "@openremote/or-asset-tree": "npm:^1.1.0"
+    "@openremote/demo-core": "workspace:*"
+    "@openremote/or-asset-tree": "workspace:*"
     "@openremote/util": "workspace:*"
     typescript: "npm:^5.3.3"
     webpack: "npm:^5.90.1"
@@ -3976,8 +3993,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/demo-or-map@workspace:ui/demo/demo-or-map"
   dependencies:
-    "@openremote/demo-core": "npm:^1.0.4"
-    "@openremote/or-map": "npm:^1.1.0"
+    "@openremote/demo-core": "workspace:*"
+    "@openremote/or-map": "workspace:*"
     "@openremote/util": "workspace:*"
     typescript: "npm:^5.3.3"
     webpack: "npm:^5.90.1"
@@ -3990,7 +4007,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/demo-or-thermostat@workspace:ui/demo/demo-or-thermostat"
   dependencies:
-    "@openremote/or-thermostat": "npm:^1.1.0"
+    "@openremote/or-thermostat": "workspace:*"
     "@openremote/util": "workspace:*"
     source-map-loader: "npm:^3.0.0"
     typescript: "npm:^5.3.3"
@@ -4029,7 +4046,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/insights@workspace:ui/app/insights"
   dependencies:
-    "@openremote/or-app": "npm:^1.1.0"
+    "@openremote/or-app": "workspace:*"
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -4038,14 +4055,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/manager@workspace:ui/app/manager"
   dependencies:
-    "@openremote/or-app": "npm:^1.1.0"
-    "@openremote/or-chart": "workspace:*"
-    "@openremote/or-icon": "workspace:*"
-    "@openremote/or-mobile-app": "workspace:*"
+    "@openremote/or-app": "workspace:*"
     "@openremote/util": "workspace:*"
+    iso-639-1: "npm:^3.1.3"
     webpack-bundle-analyzer: "npm:^4.10.2"
   languageName: unknown
   linkType: soft
+
+"@openremote/model@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/model@npm:1.2.1"
+  checksum: 10c0/467d5b1bd69bd212e705778306dc236d9024c03c19dc4d9ed0f24641299939c8803990baa598211c6045719080d44be3665a420a0c4622e51caec0621a2588e0
+  languageName: node
+  linkType: hard
 
 "@openremote/model@workspace:*, @openremote/model@workspace:ui/component/model":
   version: 0.0.0-use.local
@@ -4055,24 +4077,53 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-app@npm:^1.1.0, @openremote/or-app@workspace:*, @openremote/or-app@workspace:ui/component/or-app":
+"@openremote/or-app@npm:^1.1.0":
+  version: 1.2.1
+  resolution: "@openremote/or-app@npm:1.2.1"
+  dependencies:
+    "@lit/task": "npm:^1.0.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-asset-tree": "npm:1.2.1"
+    "@openremote/or-asset-viewer": "npm:1.2.1"
+    "@openremote/or-attribute-input": "npm:1.2.1"
+    "@openremote/or-attribute-picker": "npm:1.2.1"
+    "@openremote/or-chart": "npm:1.2.1"
+    "@openremote/or-dashboard-builder": "npm:1.2.1"
+    "@openremote/or-gauge": "npm:1.2.1"
+    "@openremote/or-map": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-rules": "npm:1.2.1"
+    "@openremote/or-smart-notify": "npm:1.2.1"
+    "@openremote/or-timeline": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    "@reduxjs/toolkit": "npm:^1.8.1"
+    "@webcomponents/webcomponentsjs": "npm:^2.6.0"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+    navigo: "npm:^8.11.1"
+    pwa-helpers: "npm:^0.9.0"
+  checksum: 10c0/887d9ad8b35d5eb613be4a64d70b557a6ee9a99ac77d21f4181d3b1cc2f555f82406d1832ae847e2dee7e4a668259d216e9b552af0e7372eb52062cf88697365
+  languageName: node
+  linkType: hard
+
+"@openremote/or-app@workspace:*, @openremote/or-app@workspace:ui/component/or-app":
   version: 0.0.0-use.local
   resolution: "@openremote/or-app@workspace:ui/component/or-app"
   dependencies:
     "@lit/task": "npm:^1.0.0"
     "@openremote/core": "workspace:*"
-    "@openremote/or-asset-tree": "npm:^1.1.0"
-    "@openremote/or-asset-viewer": "npm:^1.1.0"
-    "@openremote/or-attribute-input": "npm:^1.1.0"
-    "@openremote/or-attribute-picker": "npm:^1.1.0"
-    "@openremote/or-chart": "npm:^1.1.0"
-    "@openremote/or-dashboard-builder": "npm:^1.0.0"
-    "@openremote/or-gauge": "npm:^1.0.0"
-    "@openremote/or-map": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-rules": "npm:^1.1.0"
-    "@openremote/or-smart-notify": "npm:^1.1.0"
-    "@openremote/or-timeline": "npm:^1.1.0"
+    "@openremote/or-asset-tree": "workspace:*"
+    "@openremote/or-asset-viewer": "workspace:*"
+    "@openremote/or-attribute-input": "workspace:*"
+    "@openremote/or-attribute-picker": "workspace:*"
+    "@openremote/or-chart": "workspace:*"
+    "@openremote/or-dashboard-builder": "workspace:*"
+    "@openremote/or-gauge": "workspace:*"
+    "@openremote/or-map": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-rules": "workspace:*"
+    "@openremote/or-smart-notify": "workspace:*"
+    "@openremote/or-timeline": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@reduxjs/toolkit": "npm:^1.8.1"
@@ -4084,16 +4135,33 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-asset-tree@npm:^1.1.0, @openremote/or-asset-tree@workspace:ui/component/or-asset-tree":
+"@openremote/or-asset-tree@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-asset-tree@npm:1.2.1"
+  dependencies:
+    "@mdi/js": "npm:^5.9.55"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  checksum: 10c0/96467c1429776b688c17a2c5fc55caf0457d61144155c0bf5c734e86d4445b99bbda802391dae172653e5b3b1fa0c46ac815aac2c9975cc4474272b497cad23c
+  languageName: node
+  linkType: hard
+
+"@openremote/or-asset-tree@workspace:*, @openremote/or-asset-tree@workspace:ui/component/or-asset-tree":
   version: 0.0.0-use.local
   resolution: "@openremote/or-asset-tree@workspace:ui/component/or-asset-tree"
   dependencies:
     "@mdi/js": "npm:^5.9.55"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
@@ -4101,53 +4169,92 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-asset-viewer@npm:^1.1.0, @openremote/or-asset-viewer@workspace:ui/component/or-asset-viewer":
+"@openremote/or-asset-viewer@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-asset-viewer@npm:1.2.1"
+  dependencies:
+    "@material/data-table": "npm:^9.0.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-attribute-history": "npm:1.2.1"
+    "@openremote/or-attribute-input": "npm:1.2.1"
+    "@openremote/or-chart": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-json-forms": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-survey": "npm:1.2.1"
+    "@openremote/or-survey-results": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/e1e062c7ab07af53b216e509edc2a1acfd3b78da4088f8f13532968340f084cbd0d636a380f163556a2fe41d2730445409b77daa87068e7567cb33dbab8d5e3a
+  languageName: node
+  linkType: hard
+
+"@openremote/or-asset-viewer@workspace:*, @openremote/or-asset-viewer@workspace:ui/component/or-asset-viewer":
   version: 0.0.0-use.local
   resolution: "@openremote/or-asset-viewer@workspace:ui/component/or-asset-viewer"
   dependencies:
     "@material/data-table": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-attribute-history": "npm:^1.1.0"
-    "@openremote/or-attribute-input": "npm:^1.1.0"
-    "@openremote/or-chart": "npm:^1.1.0"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-json-forms": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-survey": "npm:^1.1.0"
-    "@openremote/or-survey-results": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-attribute-history": "workspace:*"
+    "@openremote/or-attribute-input": "workspace:*"
+    "@openremote/or-chart": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-json-forms": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-survey": "workspace:*"
+    "@openremote/or-survey-results": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-attribute-card@npm:^1.1.0, @openremote/or-attribute-card@workspace:ui/component/or-attribute-card":
+"@openremote/or-attribute-card@workspace:*, @openremote/or-attribute-card@workspace:ui/component/or-attribute-card":
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-card@workspace:ui/component/or-attribute-card"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-attribute-picker": "npm:^1.1.0"
-    "@openremote/or-chart": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
+    "@openremote/or-attribute-picker": "workspace:*"
+    "@openremote/or-chart": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-attribute-history@npm:^1.1.0, @openremote/or-attribute-history@workspace:ui/component/or-attribute-history":
+"@openremote/or-attribute-history@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-attribute-history@npm:1.2.1"
+  dependencies:
+    "@material/data-table": "npm:^9.0.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-chart": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    jsonpath-plus: "npm:^6.0.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/8f2516e3703e8d38381d9e8f840c8f964ab0dd26da3ee554f1aa99e4495fa7fe89a11a4774c8e95dc60c616e7a89ebd76d210b1ec01f58d8f950dba555f71f16
+  languageName: node
+  linkType: hard
+
+"@openremote/or-attribute-history@workspace:*, @openremote/or-attribute-history@workspace:ui/component/or-attribute-history":
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-history@workspace:ui/component/or-attribute-history"
   dependencies:
     "@material/data-table": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
-    "@openremote/or-chart": "npm:^1.1.0"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-chart": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/chart.js": "npm:^2.9.34"
     jsonpath-plus: "npm:^6.0.1"
@@ -4155,29 +4262,57 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-attribute-input@npm:^1.1.0, @openremote/or-attribute-input@workspace:ui/component/or-attribute-input":
+"@openremote/or-attribute-input@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-attribute-input@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-json-forms": "npm:1.2.1"
+    "@openremote/or-map": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/5d5734dac0430e870808f4aaadb3f8e9d6a2f4a6d062856f2003f0adf854a3e903098a3a938bf749ef5d43b73eca89697dda8e057ae9221793eed649c904d0b5
+  languageName: node
+  linkType: hard
+
+"@openremote/or-attribute-input@workspace:*, @openremote/or-attribute-input@workspace:ui/component/or-attribute-input":
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-input@workspace:ui/component/or-attribute-input"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-json-forms": "npm:^1.1.0"
-    "@openremote/or-map": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-json-forms": "workspace:*"
+    "@openremote/or-map": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-attribute-picker@npm:^1.1.0, @openremote/or-attribute-picker@workspace:ui/component/or-attribute-picker":
+"@openremote/or-attribute-picker@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-attribute-picker@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-asset-tree": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/7ffe716c5a1af0cd99486725a9bff315e06ab196312b5c832e4fbf30347c56d9843afbbe7b725289d402ceb38074f873688cdd51f558b603b679f6f22a03c4bd
+  languageName: node
+  linkType: hard
+
+"@openremote/or-attribute-picker@workspace:*, @openremote/or-attribute-picker@workspace:ui/component/or-attribute-picker":
   version: 0.0.0-use.local
   resolution: "@openremote/or-attribute-picker@workspace:ui/component/or-attribute-picker"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-asset-tree": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-asset-tree": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
@@ -4192,19 +4327,42 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-chart@npm:^1.1.0, @openremote/or-chart@workspace:*, @openremote/or-chart@workspace:ui/component/or-chart":
+"@openremote/or-chart@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-chart@npm:1.2.1"
+  dependencies:
+    "@material/data-table": "npm:^9.0.0"
+    "@material/dialog": "npm:^9.0.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-asset-tree": "npm:1.2.1"
+    "@openremote/or-attribute-picker": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    chart.js: "npm:^3.6.0"
+    chartjs-adapter-moment: "npm:^1.0.0"
+    chartjs-plugin-annotation: "npm:^1.1.0"
+    jsonpath-plus: "npm:^6.0.1"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  checksum: 10c0/78612c53b8511a75060cf2ba9c08205c884fb8234bf9376af25866a8b2393c8d99529f9eeb322bbd5e7c446cf92545201806e0d4aaabb6ba9195b156d1703317
+  languageName: node
+  linkType: hard
+
+"@openremote/or-chart@workspace:*, @openremote/or-chart@workspace:ui/component/or-chart":
   version: 0.0.0-use.local
   resolution: "@openremote/or-chart@workspace:ui/component/or-chart"
   dependencies:
     "@material/data-table": "npm:^9.0.0"
     "@material/dialog": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
-    "@openremote/or-asset-tree": "npm:^1.1.0"
-    "@openremote/or-attribute-picker": "npm:^1.1.0"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-asset-tree": "workspace:*"
+    "@openremote/or-attribute-picker": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/chart.js": "npm:^2.9.34"
     "@types/offscreencanvas": "npm:^2019.6.4"
@@ -4217,7 +4375,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-components@npm:^1.1.0, @openremote/or-components@workspace:ui/component/or-components":
+"@openremote/or-components@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-components@npm:1.2.1"
+  dependencies:
+    "@material/elevation": "npm:^9.0.0"
+    "@openremote/core": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+    simplebar: "npm:^5.3.6"
+  checksum: 10c0/92409ac1d0650c2f2865b7b747a6b6064cb34b86e99d5d15ad7c2e0715e0ac73422bf15a41dae81390cac1c6929733bc28852d1d924913e9867081355498eb6b
+  languageName: node
+  linkType: hard
+
+"@openremote/or-components@workspace:*, @openremote/or-components@workspace:ui/component/or-components":
   version: 0.0.0-use.local
   resolution: "@openremote/or-components@workspace:ui/component/or-components"
   dependencies:
@@ -4229,13 +4399,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-dashboard-builder@npm:^1.0.0, @openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
+"@openremote/or-dashboard-builder@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-dashboard-builder@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-chart": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    gridstack: "npm:^7.2.0"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/8cdae94310016c5952b4d203f79f27bdd4b3f65b9c052ca0cea4813b3264a52c720e57ce111965f3bcffe1df0ac891f962ef311a8c1ca0ec38810b38bbc70200
+  languageName: node
+  linkType: hard
+
+"@openremote/or-dashboard-builder@workspace:*, @openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
   version: 0.0.0-use.local
   resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-chart": "npm:^1.1.0"
+    "@openremote/or-chart": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     gridstack: "npm:^7.2.0"
@@ -4249,37 +4433,62 @@ __metadata:
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-attribute-card": "npm:^1.1.0"
-    "@openremote/or-attribute-history": "npm:^1.1.0"
-    "@openremote/or-attribute-input": "npm:^1.1.0"
-    "@openremote/or-chart": "npm:^1.1.0"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-map": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-attribute-card": "workspace:*"
+    "@openremote/or-attribute-history": "workspace:*"
+    "@openremote/or-attribute-input": "workspace:*"
+    "@openremote/or-chart": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-map": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-gauge@npm:^1.0.0, @openremote/or-gauge@workspace:ui/component/or-gauge":
+"@openremote/or-gauge@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-gauge@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    gaugeJS: "npm:^1.3.7"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/c8183d6f3a3f3a15de75fb5c78a558f514d2d26b9519ba3e898f7e5b9341ab49e0bed7fd77d8f1d3b53225121b90e53d64491cc507f460e7580bfd898a03e73c
+  languageName: node
+  linkType: hard
+
+"@openremote/or-gauge@workspace:*, @openremote/or-gauge@workspace:ui/component/or-gauge":
   version: 0.0.0-use.local
   resolution: "@openremote/or-gauge@workspace:ui/component/or-gauge"
   dependencies:
     "@openremote/core": "workspace:*"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     gaugeJS: "npm:^1.3.7"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-icon@npm:^1.1.0, @openremote/or-icon@workspace:*, @openremote/or-icon@workspace:ui/component/or-icon":
+"@openremote/or-icon@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-icon@npm:1.2.1"
+  dependencies:
+    "@mdi/font": "npm:latest"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/e366d15d3cede8ba234e94ed2bc6a4f4fad080680374c9c25643afb5748d98db39e4cfdebf55081d5a6620c357396d1285031ef3d5dd947cc818ba790422a3f9
+  languageName: node
+  linkType: hard
+
+"@openremote/or-icon@workspace:*, @openremote/or-icon@workspace:ui/component/or-icon":
   version: 0.0.0-use.local
   resolution: "@openremote/or-icon@workspace:ui/component/or-icon"
   dependencies:
@@ -4292,13 +4501,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-json-forms@npm:^1.1.0, @openremote/or-json-forms@workspace:ui/component/or-json-forms":
+"@openremote/or-json-forms@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-json-forms@npm:1.2.1"
+  dependencies:
+    "@jsonforms/core": "npm:3.0.0-beta.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@polymer/polymer": "npm:^3.3.1"
+    ajv: "npm:^8.8.2"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/a77c378b353b5043c5ef3e29c4ee9d6ce06cd309f53825d75b090bafd3fe846e8a73bb2b2dfb9494e8f9980e447fbc829a0d6abd663fc03d76698b7089e00dbf
+  languageName: node
+  linkType: hard
+
+"@openremote/or-json-forms@workspace:*, @openremote/or-json-forms@workspace:ui/component/or-json-forms":
   version: 0.0.0-use.local
   resolution: "@openremote/or-json-forms@workspace:ui/component/or-json-forms"
   dependencies:
     "@jsonforms/core": "npm:3.0.0-beta.1"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
     "@polymer/polymer": "npm:^3.3.1"
     ajv: "npm:^8.8.2"
@@ -4312,25 +4535,45 @@ __metadata:
   dependencies:
     "@material/data-table": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
+    "@openremote/or-mwc-components": "workspace:*"
     "@openremote/util": "workspace:*"
+    http-link-header: "npm:^1.1.3"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
-    parse-link-header: "npm:^2.0.0"
     url: "npm:^0.11.0"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-map@npm:^1.1.0, @openremote/or-map@workspace:ui/component/or-map":
+"@openremote/or-map@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-map@npm:1.2.1"
+  dependencies:
+    "@maplibre/maplibre-gl-geocoder": "npm:^1.5.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    "@polymer/polymer": "npm:^3.3.1"
+    "@types/mapbox": "npm:^1.6.42"
+    lit: "npm:^2.0.2"
+    mapbox.js: "npm:^3.3.1"
+    maplibre-gl: "npm:^4.1.2"
+  checksum: 10c0/08fbebc6800679b009fb302fa4ff5d57c735185dc511c98105017a303e55448ebaef175d9baf39a461f4239c100eb3e0e792bc9d93afa6c2350168a648f13f9f
+  languageName: node
+  linkType: hard
+
+"@openremote/or-map@workspace:*, @openremote/or-map@workspace:ui/component/or-map":
   version: 0.0.0-use.local
   resolution: "@openremote/or-map@workspace:ui/component/or-map"
   dependencies:
     "@maplibre/maplibre-gl-geocoder": "npm:^1.5.0"
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@polymer/polymer": "npm:^3.3.1"
@@ -4342,7 +4585,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-mobile-app@workspace:*, @openremote/or-mobile-app@workspace:ui/component/or-mobile-app":
+"@openremote/or-mobile-app@workspace:ui/component/or-mobile-app":
   version: 0.0.0-use.local
   resolution: "@openremote/or-mobile-app@workspace:ui/component/or-mobile-app"
   dependencies:
@@ -4351,7 +4594,38 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-mwc-components@npm:^1.1.0, @openremote/or-mwc-components@workspace:ui/component/or-mwc-components":
+"@openremote/or-mwc-components@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-mwc-components@npm:1.2.1"
+  dependencies:
+    "@material/button": "npm:^9.0.0"
+    "@material/checkbox": "npm:^9.0.0"
+    "@material/data-table": "npm:^9.0.0"
+    "@material/dialog": "npm:^9.0.0"
+    "@material/drawer": "npm:^9.0.0"
+    "@material/fab": "npm:^9.0.0"
+    "@material/floating-label": "npm:^9.0.0"
+    "@material/form-field": "npm:^9.0.0"
+    "@material/icon-button": "npm:^9.0.0"
+    "@material/line-ripple": "npm:^9.0.0"
+    "@material/menu": "npm:^9.0.0"
+    "@material/radio": "npm:^9.0.0"
+    "@material/ripple": "npm:^9.0.0"
+    "@material/select": "npm:^9.0.0"
+    "@material/slider": "npm:^9.0.0"
+    "@material/snackbar": "npm:^9.0.0"
+    "@material/switch": "npm:^9.0.0"
+    "@material/tab-bar": "npm:^9.0.0"
+    "@material/textfield": "npm:^9.0.0"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/b9d2999df807851e60ada143d482bdaefdb5fe38ebb60eaf19e69b3389a9c2b29389d639c818ff4e19722a688504419cc4767176d8f4ea3d442d854fb473ef48
+  languageName: node
+  linkType: hard
+
+"@openremote/or-mwc-components@workspace:*, @openremote/or-mwc-components@workspace:ui/component/or-mwc-components":
   version: 0.0.0-use.local
   resolution: "@openremote/or-mwc-components@workspace:ui/component/or-mwc-components"
   dependencies:
@@ -4375,28 +4649,53 @@ __metadata:
     "@material/tab-bar": "npm:^9.0.0"
     "@material/textfield": "npm:^9.0.0"
     "@openremote/core": "workspace:*"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-rules@npm:^1.1.0, @openremote/or-rules@workspace:ui/component/or-rules":
+"@openremote/or-rules@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-rules@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-attribute-input": "npm:1.2.1"
+    "@openremote/or-components": "npm:1.2.1"
+    "@openremote/or-icon": "npm:1.2.1"
+    "@openremote/or-mwc-components": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    ace-builds: "npm:^1.4.13"
+    iso-639-1: "npm:^3.1.3"
+    linqts: "npm:^1.12.6"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+    resize-observer: "npm:^1.0.3"
+    rrule: "npm:^2.6.4"
+    shortid: "npm:^2.2.15"
+  checksum: 10c0/f2136b29a2170f3357e498fb9a419ed527221111012198bedb01ec69f1d5b864e03bd6ce6fabd8db477531ea18328c4da5863c479f08a1d53824b932cb575fd7
+  languageName: node
+  linkType: hard
+
+"@openremote/or-rules@workspace:*, @openremote/or-rules@workspace:ui/component/or-rules":
   version: 0.0.0-use.local
   resolution: "@openremote/or-rules@workspace:ui/component/or-rules"
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-attribute-input": "npm:^1.1.0"
-    "@openremote/or-components": "npm:^1.1.0"
-    "@openremote/or-icon": "npm:^1.1.0"
-    "@openremote/or-mwc-components": "npm:^1.1.0"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-attribute-input": "workspace:*"
+    "@openremote/or-components": "workspace:*"
+    "@openremote/or-icon": "workspace:*"
+    "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/shortid": "npm:^0.0.29"
     ace-builds: "npm:^1.4.13"
+    iso-639-1: "npm:^3.1.3"
     linqts: "npm:^1.12.6"
     lit: "npm:^2.0.2"
     moment: "npm:^2.29.4"
@@ -4406,7 +4705,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-smart-notify@npm:^1.1.0, @openremote/or-smart-notify@workspace:ui/component/or-smart-notify":
+"@openremote/or-smart-notify@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-smart-notify@npm:1.2.1"
+  dependencies:
+    "@fortawesome/fontawesome-svg-core": "npm:^1.2.12"
+    "@fortawesome/free-regular-svg-icons": "npm:^5.6.3"
+    "@fortawesome/free-solid-svg-icons": "npm:^5.6.3"
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/rest": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  checksum: 10c0/ca4ca09548353a43eca8b79ed9e46fad2c3a2f79d9f7515c4df858f50b88ea68fb0e38480339ceea7fc824c6013cf0ae7693e0d3f9e516f2e62c681ecfab1f70
+  languageName: node
+  linkType: hard
+
+"@openremote/or-smart-notify@workspace:*, @openremote/or-smart-notify@workspace:ui/component/or-smart-notify":
   version: 0.0.0-use.local
   resolution: "@openremote/or-smart-notify@workspace:ui/component/or-smart-notify"
   dependencies:
@@ -4422,7 +4737,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-survey-results@npm:^1.1.0, @openremote/or-survey-results@workspace:ui/component/or-survey-results":
+"@openremote/or-survey-results@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-survey-results@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/f3f12c453faa71c08f3ff69edbb7257c2c4bd1439a757b4075a0a517b858dc8de08a20b7b2c98e73fe9a64bb002fb12d1d970dd9edd31c93f167322c39178750
+  languageName: node
+  linkType: hard
+
+"@openremote/or-survey-results@workspace:*, @openremote/or-survey-results@workspace:ui/component/or-survey-results":
   version: 0.0.0-use.local
   resolution: "@openremote/or-survey-results@workspace:ui/component/or-survey-results"
   dependencies:
@@ -4433,13 +4759,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-survey@npm:^1.1.0, @openremote/or-survey@workspace:ui/component/or-survey":
+"@openremote/or-survey@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-survey@npm:1.2.1"
+  dependencies:
+    "@openremote/core": "npm:1.2.1"
+    "@openremote/model": "npm:1.2.1"
+    "@openremote/or-translate": "npm:1.2.1"
+    "@types/lodash-es": "npm:^4.17.5"
+    lit: "npm:^2.0.2"
+    lodash-es: "npm:^4.17.15"
+    moment: "npm:2.29.4"
+  checksum: 10c0/50acf6e98209e16027cdfbd32c2b7fc5b926ddae0a8549d1f07d6ffe7d3c4559c48a9ea00a6f2569137e282ce82d18f75374cd3847ebae066e11fe72c58de84f
+  languageName: node
+  linkType: hard
+
+"@openremote/or-survey@workspace:*, @openremote/or-survey@workspace:ui/component/or-survey":
   version: 0.0.0-use.local
   resolution: "@openremote/or-survey@workspace:ui/component/or-survey"
   dependencies:
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
-    "@openremote/or-translate": "npm:^1.1.0"
+    "@openremote/or-translate": "workspace:*"
     "@openremote/util": "workspace:*"
     "@types/lodash-es": "npm:^4.17.5"
     lit: "npm:^2.0.2"
@@ -4448,16 +4789,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-thermostat@npm:^1.1.0, @openremote/or-thermostat@workspace:ui/component/or-thermostat":
+"@openremote/or-thermostat@workspace:*, @openremote/or-thermostat@workspace:ui/component/or-thermostat":
   version: 0.0.0-use.local
   resolution: "@openremote/or-thermostat@workspace:ui/component/or-thermostat"
   dependencies:
+    "@openremote/model": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
 
-"@openremote/or-timeline@npm:^1.1.0, @openremote/or-timeline@workspace:ui/component/or-timeline":
+"@openremote/or-timeline@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-timeline@npm:1.2.1"
+  dependencies:
+    lit: "npm:^2.0.2"
+    moment: "npm:^2.29.4"
+  checksum: 10c0/202a28c1f8906a035f1c7532eb2b989563fe7c39be9deecf8aba441079d6916dd276d94eb972d4e81e482bb835cad19bb78a1b749439787da4cfdece9a18104a
+  languageName: node
+  linkType: hard
+
+"@openremote/or-timeline@workspace:*, @openremote/or-timeline@workspace:ui/component/or-timeline":
   version: 0.0.0-use.local
   resolution: "@openremote/or-timeline@workspace:ui/component/or-timeline"
   dependencies:
@@ -4467,7 +4819,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-translate@npm:^1.1.0, @openremote/or-translate@workspace:ui/component/or-translate":
+"@openremote/or-translate@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/or-translate@npm:1.2.1"
+  dependencies:
+    i18next: "npm:^21.5.3"
+    lit: "npm:^2.0.2"
+  checksum: 10c0/910d858e6f5aa165a236c8662c32423b23eaae115d034da39c81ae8c753b6816d819d5209e84af95130694a14b745606a8883bf552eef763c64c33a47e3fede3
+  languageName: node
+  linkType: hard
+
+"@openremote/or-translate@workspace:*, @openremote/or-translate@workspace:ui/component/or-translate":
   version: 0.0.0-use.local
   resolution: "@openremote/or-translate@workspace:ui/component/or-translate"
   dependencies:
@@ -4476,6 +4838,17 @@ __metadata:
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
+
+"@openremote/rest@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@openremote/rest@npm:1.2.1"
+  dependencies:
+    "@openremote/model": "npm:1.2.1"
+    axios: "npm:0.24.0"
+    qs: "npm:^6.8.0"
+  checksum: 10c0/b2530e05133e021a55e83399f428b8945d50b64f84dbf6d05c56806766862c9825726603b344127b7706833027fc5f6b6b27509f8e381a299ea177c84f1564c2
+  languageName: node
+  linkType: hard
 
 "@openremote/rest@workspace:*, @openremote/rest@workspace:ui/component/rest":
   version: 0.0.0-use.local
@@ -7453,7 +7826,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
+"base64-js@npm:^1.3.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: 10c0/f23823513b63173a001030fae4f2dabe283b99a9d324ade3ad3d148e218134676f1ee8568c877cd79ec1c53158dcf2d2ba527a97c606618928ba99dd930102bf
@@ -8225,7 +8598,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "console_loader@workspace:ui/app/console_loader"
   dependencies:
-    "@openremote/or-app": "npm:^1.1.0"
+    "@openremote/or-app": "workspace:*"
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -10908,6 +11281,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"http-link-header@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "http-link-header@npm:1.1.3"
+  checksum: 10c0/56698a9d3aee4d5319d1cdfe62ef5d7179f179ec1e6432d23c9e6a0c896be642ba47a4985a45419cff91008032aef920aca9df94ff9e763e646c83bf54b7243d
+  languageName: node
+  linkType: hard
+
 "http-parser-js@npm:>=0.5.1":
   version: 0.5.8
   resolution: "http-parser-js@npm:0.5.8"
@@ -11614,6 +11994,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"iso-639-1@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "iso-639-1@npm:3.1.3"
+  checksum: 10c0/416112e3df8b00efd4dabda33b581d3323e77c217a05b4c262dffacff89ee17b73debff2673a1ea0c7a36bd7dfb4f6d234249b1addacf36aa7bb70481a462cc0
+  languageName: node
+  linkType: hard
+
 "isobject@npm:^3.0.1":
   version: 3.0.1
   resolution: "isobject@npm:3.0.1"
@@ -11672,10 +12059,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-sha256@npm:^0.10.1":
-  version: 0.10.1
-  resolution: "js-sha256@npm:0.10.1"
-  checksum: 10c0/c63119f7c7f8afc24bfa24c1a6b51147c3b562316b6341a375a1cef88569340ec0dbf2cda429ecf472cabfbae47a0b93a0cb82b8730883de066593c3f816c53b
+"js-sha256@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "js-sha256@npm:0.11.0"
+  checksum: 10c0/90980fe01ca01fbd166751fb16c4caa09c1ab997e8bf77c0764cc05c772c6044946f4c1b3bad266ce78357280d2131d3dc0cf2dd7646e78272996bd4d590aa4f
   languageName: node
   linkType: hard
 
@@ -11853,14 +12240,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keycloak-js@npm:^23.0.6":
-  version: 23.0.6
-  resolution: "keycloak-js@npm:23.0.6"
+"keycloak-js@npm:^25.0.1":
+  version: 25.0.6
+  resolution: "keycloak-js@npm:25.0.6"
   dependencies:
-    base64-js: "npm:^1.5.1"
-    js-sha256: "npm:^0.10.1"
+    js-sha256: "npm:^0.11.0"
     jwt-decode: "npm:^4.0.0"
-  checksum: 10c0/2201d7c8cbd9bf556b212895afc1bf68fa4fed47e8f1ac64f96dbfff56e29d182e89d6729f5097ee41910ea8e6284192735483cd274deeb2da7e41d7164c4af1
+  checksum: 10c0/56d4cc7b463096da20da3389af60b5dd889dad260fd8474d4ed912c25070fcb43559bd6a335b23462075a2e59e36a8a104f2a200317d3ff46ded4d801391bab2
   languageName: node
   linkType: hard
 
@@ -13596,15 +13982,6 @@ __metadata:
     json-parse-even-better-errors: "npm:^2.3.0"
     lines-and-columns: "npm:^1.1.6"
   checksum: 10c0/77947f2253005be7a12d858aedbafa09c9ae39eb4863adf330f7b416ca4f4a08132e453e08de2db46459256fb66afaac5ee758b44fe6541b7cdaf9d252e59585
-  languageName: node
-  linkType: hard
-
-"parse-link-header@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "parse-link-header@npm:2.0.0"
-  dependencies:
-    xtend: "npm:~4.0.1"
-  checksum: 10c0/7771922c4faeda9a00261cad3be5f25d4c2f940e21300c8f5ddf3b012d1a7bd82625cd08b926ff826905b9cb1e03056f222b550a4ba7d9e19404ad51fe52f68d
   languageName: node
   linkType: hard
 
