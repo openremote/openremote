@@ -636,9 +636,6 @@ const style = css`
 `;
 
 /**
- * # Material Input
- * ### `<or-mwc-input>` - `OrMwcInput`
- *
  * Web Component for control elements using the Material Design specification. <br />
  * Includes input fields, buttons, switches, and more.
  *

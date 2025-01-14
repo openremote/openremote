@@ -1,0 +1,34 @@
+import {Markdown} from "@storybook/blocks";
+
+export function getNPMVersionBadge(packageJson) {
+    return <a href={`https://npmjs.com/package/${packageJson.name}`}>
+        <img alt="NPM version" src={`https://badgen.net/badge/npm/v${packageJson.version}?scale=1.2&color=orange`}></img>
+    </a>
+}
+
+export function getLicenseBadge(packageJson) {
+    return <a href={packageJson.repository}>
+        <img alt="License" src={`https://badgen.net/badge/license/${packageJson.license}?scale=1.2&color=blue`}></img>
+    </a>
+}
+
+export function CustomDescription(props) {
+    return props.docs.description ? <Markdown id="description">{props.docs.description}</Markdown> : <p id="description"><i>The description for {props.docs.tagName || "this component"} could not be found.</i></p>
+}
+
+export function CollapsibleElement(index, title, titleSuffix, content) {
+    return <div className="details-item">
+        <input type="checkbox" id={"details-" + index} />
+        <label htmlFor={"details-" + index}>
+            <span>{title}</span>
+            {titleSuffix}
+        </label>
+        <div className="details-content">
+            {content}
+        </div>
+    </div>
+}
+
+export function BundleReportCollapsible() {
+    return CollapsibleElement(props.index, "Bundle report", props.badge, props.content)
+}

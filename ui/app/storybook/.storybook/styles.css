@@ -1,0 +1,132 @@
+* { box-sizing: border-box; }
+
+.sbdocs-wrapper > * > div {
+    width: auto;
+}
+
+.sbdocs-content {
+    margin-bottom: 40vh;
+}
+
+.toc-list {
+    margin: 4px 0;
+}
+
+.node-name--H2 {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.toc-list-item:has(> .node-name--H2) {
+    margin: 8px 0;
+}
+
+.badge-section {
+    display: flex;
+    align-items: start;
+    gap: 4px;
+}
+
+.details-container {
+    margin: 16px 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.details-item {
+    position: relative;
+    border: 1px solid rgba(38, 85, 115, 0.15);
+    border-radius: 4px;
+    box-shadow: rgba(0, 0, 0, 0.10) 0 1px 3px 0;
+    font-family: "Nunito Sans",-apple-system,".SFNSText-Regular","San Francisco",BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.details-item > input[type="checkbox"] {
+    display: none;
+}
+
+.details-item > label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2E3438;
+    cursor: pointer;
+    padding: 16px 32px 16px 32px;
+}
+
+/* Add the icon using a pseudo-element */
+.details-item > label::before {
+    content: '';
+    border: solid #2E3438;
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    padding: 4px;
+    margin-right: 16px;
+    transform: rotate(-45deg) translateY(-1px); /* Slight adjustment to center vertically */
+    transition: transform 0.2s ease;
+}
+
+.details-item input[type="checkbox"]:checked + label::before {
+    transform: rotate(45deg) translateY(-1px); /* Ensure it stays vertically centered */
+}
+
+.details-item > .details-content {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 32px;
+    transition: max-height 0.2s ease-out;
+}
+
+.details-item input[type="checkbox"]:checked ~ .details-content {
+    max-height: 1000px; /* Adjust as needed */
+    transition: max-height 0.4s ease-in;
+}
+
+.details-item > .details-content > * {
+    width: 100%;
+    aspect-ratio: 3/1;
+    margin: 8px 0 16px 0;
+}
+
+.details-item > label > ui-badge {
+    margin-left: 8px;
+}
+
+
+
+/* Style the tab */
+#installation-tabs {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons that are used to open the tab content */
+#installation-tabs button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+#installation-tabs button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+#installation-tabs button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tab-content {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}

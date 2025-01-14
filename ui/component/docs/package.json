@@ -23,9 +23,9 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@custom-elements-manifest/analyzer": "^0.10.3",
+    "@custom-elements-manifest/analyzer": "^0.10.4",
     "@openremote/util": "workspace:*",
-    "cem-plugin-expanded-types": "^1.3.2",
+    "cem-plugin-expanded-types": "^1.3.3",
     "lit": "^2.0.2"
   },
   "publishConfig": {

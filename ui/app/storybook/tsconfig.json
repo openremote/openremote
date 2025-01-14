@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": ".",
+    "strict": false,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../../component/or-app" }
+  ]
+}

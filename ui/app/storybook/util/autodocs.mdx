@@ -1,0 +1,84 @@
+import {
+    CustomDescription,
+    BundleReportCollapsible,
+    getLicenseBadge,
+    getNPMVersionBadge
+} from "./utils.mdx";
+import {Title, Subtitle, Canvas, Markdown, ArgTypes} from "@storybook/blocks";
+import {getComponentDocs, getPackageTotalSizeKb, switchInstallationTab} from "./util";
+
+export function UiAutoDocs(props) {
+
+    // Process the MDX element props/attributes
+    const story = props?.story;
+    const options = props?.options;
+
+    const componentDocs = getComponentDocs(props?.story?.default?.component);
+    console.log(componentDocs);
+
+    const examples = story.examples?.slice(1);
+    return <div>
+
+        <Title>{options.displayName || componentDocs.tagName || "Title"}</Title>
+        <Subtitle of={story}></Subtitle>
+
+        {/* List of badges */}
+        <div className="badge-section">
+            {story.packageJson && !options.hideNpm ? getNPMVersionBadge(story.packageJson) : null}
+            {story.packageJson && !options.hideLicense ? getLicenseBadge(story.packageJson) : null}
+        </div>
+
+        {/* Description of the component / story */}
+        {componentDocs ? <CustomDescription docs={componentDocs}></CustomDescription> : null}
+
+        {/* Primary example / sandbox */}
+        <Canvas of={story.Primary}/>
+
+        {/* Examples section */}
+        {examples?.length ? <div id="examples-section">
+            <Markdown>## Examples</Markdown>
+            {examples.map((s, index) => <div key={("Example" + index)}>
+                <Markdown>{"### " + (s.title || ("Example " + index))}</Markdown>
+                {s.summary ? <Markdown>{s.summary}</Markdown> : null}
+                <Canvas of={s}></Canvas>
+            </div>)}
+
+        </div> : null}
+
+        {/* Installation section */}
+        <Markdown>## Installation</Markdown>
+        <div id="installation-tabs">
+            <button className="tab-item" onClick={() => switchInstallationTab("npm")}>London</button>
+            <button className="tab-item" onClick={() => switchInstallationTab("yarn")}>Paris</button>
+        </div>
+        <div id="installation-npm" className="tab-content">
+            <h3>London</h3>
+            <p>London is the capital city of England.</p>
+        </div>
+
+        <div id="installation-yarn" className="tab-content">
+            <h3>Paris</h3>
+            <p>Paris is the capital of France.</p>
+        </div>
+
+        <br/>
+
+        {/* Documentation section */}
+        {!options.hideDocs ? <div id="documentation-section">
+            <Markdown>## Documentation</Markdown>
+            {story.reportJson && story.reportHtml ? <div className="details-container">
+                <BundleReportCollapsible index={1}
+                                            badge={<span style={{paddingLeft: "16px", color: "gray"}}>{getPackageTotalSizeKb(story.reportJson) + " KB"}</span>}
+                                            content={<iframe className="details-content" loading={"lazy"} srcDoc={story.reportHtml}></iframe>}
+                ></BundleReportCollapsible>
+            </div> : null}
+        </div> : null}
+
+        <br/>
+
+        {/* Attributes & Properties section */}
+        <Markdown>## API Specification</Markdown>
+        <ArgTypes of={story}/>
+
+    </div>
+}
