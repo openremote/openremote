@@ -23,7 +23,7 @@ export interface TableWidgetConfig extends WidgetConfig {
 function getDefaultConfig(): TableWidgetConfig {
     return {
         assetType: undefined,
-        allOfType: false,
+        allOfType: true,
         assetIds: [],
         attributeNames: [],
         tableSize: 10,
