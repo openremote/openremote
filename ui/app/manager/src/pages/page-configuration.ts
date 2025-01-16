@@ -215,10 +215,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected isMapCustom: boolean = false;
 
+    @state()
+    protected tilesForUpload: File;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
-
-    protected tilesForUpload: File;
 
     private readonly urlPrefix: string = (CONFIG_URL_PREFIX || "")
 
@@ -285,13 +286,18 @@ export class PageConfiguration extends Page<AppStateKeyed> {
             `, () => {
                 const realmHeading = html`
                     <div id="heading" style="justify-content: space-between;">
-                        <span style="margin: 0;">${i18next.t("configuration.realmStyling").toUpperCase()}</span>
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.realmStyling"></or-translate></span>
                         <or-conf-json .managerConfig="${this.managerConfiguration}" class="hide-mobile"
                                       @saveLocalManagerConfig="${(ev: CustomEvent) => {
                                           this.managerConfiguration = ev.detail.value as ManagerAppConfig;
                                           this.managerConfigurationChanged = true;
                                       }}"
                         ></or-conf-json>
+                    </div>
+                `;
+                const mapHeading = html`
+                    <div id="heading" style="justify-content: space-between;">
+                        <span style="margin: 0;"><or-translate style="text-transform: uppercase;" value="configuration.mapSettings"></or-translate></span>
                     </div>
                 `;
                 const realmOptions = this.realms?.map((r) => ({name: r.name, displayName: r.displayName, canDelete: true}));
@@ -301,7 +307,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         <div id="header-wrapper">
                             <div id="header-title">
                                 <or-icon icon="palette-outline"></or-icon>
-                                ${i18next.t("appearance")}
+                                <or-translate value="appearance"></or-translate>
                             </div>
                             <div id="header-actions">
                                 <or-mwc-input id="save-btn" .disabled="${!this.managerConfigurationChanged && !this.mapConfigChanged}" raised type="button" label="save"
@@ -316,7 +322,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ></or-conf-panel>
                             `, () => html`
                                 <div class="notFound-container">
-                                    <span>${i18next.t('configuration.managerConfigNotFound')}</span>
+                                    <span><or-translate value="configuration.managerConfigNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getManagerConfig().then(val => {
                                                       this.managerConfiguration = val;
@@ -325,12 +331,12 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 </div>
                             `)}
                         </or-panel>
-                        <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
+                        <or-panel .heading="${mapHeading}">
                             ${when(this.mapConfig, () => html`
                                 <div class="global-settings-container">
                                     <div class="custom-server-group">
-                                        <div class="subheader">${i18next.t("configuration.global.tileServer")}</div>
-                                        <span>${i18next.t("configuration.global.tileServerDescription")}</span>
+                                        <div class="subheader"><or-translate value="configuration.global.tileServer"></or-translate></div>
+                                        <span><or-translate value="configuration.global.tileServerDescription"></or-translate></span>
                                         <or-mwc-input class="input" outlined
                                             .value="${this.mapConfig.sources?.['vector_tiles']?.tiles?.[0] || this.mapConfig.sources?.['vector_tiles']?.url}" 
                                             .type="${InputType.URL}"
@@ -341,15 +347,14 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                         type: "vector",
                                                         url: e.detail.value || null
                                                     }
-                                                    this.requestUpdate("mapConfig");
                                                     this.mapConfigChanged = true;
                                                 }}"
                                         ></or-mwc-input>
                                     </div>
 
                                     <div class="custom-tile-group">
-                                        <div class="subheader">${i18next.t("configuration.global.mapTiles")}</div>
-                                        <span>${i18next.t("configuration.global.uploadMapTiles")}</span>
+                                        <div class="subheader"><or-translate value="configuration.global.mapTiles"></or-translate></div>
+                                        <span><or-translate value="configuration.global.uploadMapTiles"></or-translate></span>
                                         <div class="input d-inline-flex">
                                             <or-file-uploader 
                                                 .label=${i18next.t("configuration.global.uploadMapTiles")}"
@@ -370,7 +375,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                 ></or-conf-panel>
                             `, () => html`
                                 <div class="notFound-container">
-                                    <span>${i18next.t('configuration.mapSettingsNotFound')}</span>
+                                    <span><or-translate value="configuration.mapSettingsNotFound"></or-translate></span>
                                     <or-mwc-input type="${InputType.BUTTON}" label="configuration.tryAgain"
                                                   @or-mwc-input-changed="${() => this.getMapConfig().then(val => {
                                                       this.mapConfig = val;
@@ -393,7 +398,6 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     protected async uploadCustomMap(e: CustomEvent) {
         const file = e.detail.value[0] as File;
         this.tilesForUpload = file;
-        this.requestUpdate()
         this.mapConfigChanged = true;
     }
 
