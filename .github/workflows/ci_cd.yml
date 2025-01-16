@@ -489,6 +489,7 @@ jobs:
           if [ $IS_MAIN_REPO == 'true' ]; then
             buildPath="manager/build/install/manager"
             commitSha=$(git rev-parse HEAD)
+            commitShaShort=$(git rev-parse --short HEAD)
 
             if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
               if [ -n "$MANAGER_TAGS" ]; then
