@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, OpenRemote Inc.
+ * Copyright 2025, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -77,6 +77,4 @@ public class MapSourceConfig {
 	 * @implSpec Optional string.
 	 */
 	protected String attribution;
-	// protected String promoteId;
-	// protected boolean volatile;
 }
