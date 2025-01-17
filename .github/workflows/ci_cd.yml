@@ -762,7 +762,7 @@ jobs:
           ${{ steps.manager-docker-command.outputs.value }}
 
       - name: Scan manager docker image
-        if: steps.manager-docker-command.outputs.value != ''
+        if: steps.manager-docker-command.outputs.pushRequired == 'true'
         uses: anchore/scan-action@v3
         id: manager-anchore-scan
         with:
@@ -773,7 +773,7 @@ jobs:
       - name: Upload Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.value != ''
+          steps.manager-docker-command.outputs.pushRequired == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.manager-anchore-scan.outputs.sarif }}
@@ -781,7 +781,7 @@ jobs:
       - name: Inspect Anchore scan SARIF report
         if: |
           !cancelled() &&
-          steps.manager-docker-command.outputs.value != ''
+          steps.manager-docker-command.outputs.pushRequired == 'true'
         run: cat ${{ steps.manager-anchore-scan.outputs.sarif }}
 
       - name: Run maven publish command
