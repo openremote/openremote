@@ -38,6 +38,7 @@ import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
@@ -83,7 +84,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         scheduledExecutorService = container.getScheduledExecutor();
-        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 0);
+        maxAmountOfQueryPoints = getInteger(container.getConfig(), OR_DATA_POINTS_QUERY_LIMIT, 100000);
     }
 
     @Override
@@ -203,32 +204,41 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
         // Verify the query is 'legal' and can be executed
         try {
-            if(canQueryDatapoints(assetId, attribute, query, parameters)) {
+            if(canQueryDatapoints(query, parameters, maxAmountOfQueryPoints)) {
                 getLogger().finest("Querying datapoints for: " + attributeRef);
 
                 return doQueryDatapoints(assetId, attribute, query, parameters);
             }
 
             return Collections.emptyList();
-        } catch (IllegalStateException | IllegalArgumentException | DatapointQueryTooLargeException ex) {
+        } catch (DatapointQueryTooLargeException dex) {
+            String msg = "Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.";
+            getLogger().log(Level.WARNING, msg, dex);
+            throw dex;
+        } catch (IllegalStateException | IllegalArgumentException ex) {
             getLogger().log(Level.WARNING, ex.getMessage());
             throw ex;
         }
     }
 
-    protected boolean canQueryDatapoints(String assetId, Attribute<?> attribute, String query, Map<Integer, Object> parameters) {
+    protected boolean canQueryDatapoints(String query, Map<Integer, Object> parameters, int datapointLimit) {
+        if(TextUtil.isNullOrEmpty(query)) {
+            throw new IllegalArgumentException("Query is null or empty");
+        }
 
         // If only a maximum amount of data points is allowed,
         // use SQL COUNT() to verify if the query does not exceed the maximum.
-        if(maxAmountOfQueryPoints > 0) {
+        if(datapointLimit > 0) {
             String countQueryStr = "SELECT COUNT(*) FROM (" + query + ") AS count_query";
             int amount = persistenceService.doReturningTransaction(entityManager -> {
                 Query countQuery = entityManager.createNativeQuery(countQueryStr);
-                parameters.forEach(countQuery::setParameter);
+                if(parameters != null) {
+                    parameters.forEach(countQuery::setParameter);
+                }
                 return ((Number) countQuery.getSingleResult()).intValue();
             });
-            if (amount > maxAmountOfQueryPoints) {
-                throw new DatapointQueryTooLargeException("Could not query data points for " + assetId + ". It exceeds the data limit of " + maxAmountOfQueryPoints + " data points.");
+            if (amount > datapointLimit) {
+                throw new DatapointQueryTooLargeException();
             }
         }
 

@@ -30,11 +30,11 @@ class OrThermostat extends LitElement {
         let callback: (event: AttributeEvent) => void = (event) => {
             console.log("Event Received:" + JSON.stringify(event, null, 2));
             if (event
-                && event.ref!.attributeName === "targetTemperature") {
+                && event.ref!.name === "targetTemperature") {
                 this.targetTemperature = event.value;
             }
             if (event
-                && event.ref!.attributeName === "currentTemperature") {
+                && event.ref!.name === "currentTemperature") {
                 this.currentTemperature = event.value;
             }
         };

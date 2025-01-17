@@ -80,7 +80,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
                 continue;
             }
 
-            String metaItemName = jp.getCurrentName();
+            String metaItemName = jp.currentName();
             MetaItemDescriptor<?> metaItemDescriptor = metaDescriptorProvider.apply(metaItemName);
 
             MetaItem metaItem;

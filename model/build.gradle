@@ -37,9 +37,12 @@ dependencies {
     api "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
 }
 
+base {
+    archivesName = "openremote-${project.name}"
+}
+
 jar {
     from sourceSets.main.allJava
-    archivesBaseName = "openremote-${project.name}"
 }
 
 javadoc {
@@ -101,6 +104,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }
