@@ -49,8 +49,8 @@ dependencies {
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 javadoc {
