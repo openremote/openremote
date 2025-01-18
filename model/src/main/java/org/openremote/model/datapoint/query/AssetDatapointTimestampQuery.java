@@ -29,7 +29,7 @@ public class AssetDatapointTimestampQuery extends AssetDatapointQuery {
                 "    ORDER BY timestamp DESC " +
                 "    LIMIT 1 " +
                 ") " +
-                "select timestamp as X, value::text::numeric as Y FROM nearest_row;";
+                "select timestamp as X, cast(value as numeric) as Y FROM nearest_row";
     }
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
