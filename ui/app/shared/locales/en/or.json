@@ -191,6 +191,8 @@
   "areYouSure": "Are you sure?",
   "flowEditor": "Flow editor",
   "flow": {
+    "DERIVATIVE":  "Derivative",
+    "INTEGRAL": "Integral",
     "EQUALS_COMPARATOR": "Equals",
     "GREATER_THAN": "Greater than",
     "LESS_THAN": "Less than",

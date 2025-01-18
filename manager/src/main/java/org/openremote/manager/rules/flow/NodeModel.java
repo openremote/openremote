@@ -49,6 +49,108 @@ public enum NodeModel {
                 });
             }
     ),
+
+    DERIVATIVE(
+            new Node(NodeType.INPUT, new NodeInternal[]{
+                    new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
+            },
+                    new NodeSocket[0], new NodeSocket[]{
+                    new NodeSocket("value", NodeDataType.NUMBER)
+            }),
+            info -> {
+                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
+                String assetId = assetAttributePair.getAssetId();
+                String attributeName = assetAttributePair.getAttributeName();
+                System.out.println(new AttributeRef(assetId, attributeName));
+                Optional<AttributeInfo> attr = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
+                if (attr.isPresent()) {
+                    AttributeInfo attributeInfo = attr.get();
+                    Optional<Object> currentValueOpt = attributeInfo.getValue();
+                    Optional<Object> oldValueOpt = attributeInfo.getOldValue();
+                    long currentTimestamp = attributeInfo.getTimestamp();
+                    long oldTimestamp = attributeInfo.getOldValueTimestamp();
+
+                    if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
+                        double currentValue = ((Number) currentValueOpt.get()).doubleValue();
+                        double oldValue = ((Number) oldValueOpt.get()).doubleValue();
+                        double timeDifference = (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
+
+                        if (timeDifference != 0) {
+                            return (currentValue - oldValue) / timeDifference; // Δx formula
+                        }
+                    }
+                }
+
+                return null;
+            },
+            params -> {
+                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+                String assetId = internal.getAssetId();
+                String attributeName = internal.getAttributeName();
+                Optional<AttributeInfo> x = params.getFacts().getAssetStates().stream()
+                        .filter(assetState ->
+                                Objects.equals(assetState.getId(), assetId)
+                                && Objects.equals(assetState.getName(), attributeName))
+                        .findFirst();
+
+                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
+                ).toList();
+
+                return allAssets.stream().anyMatch(state -> {
+                    long timestamp = state.getTimestamp();
+                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                    if (triggerStamp == -1L) return true; //The flow has never been executed
+                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+                });
+            }
+    ),
+    INTEGRAL(
+            new Node(NodeType.INPUT, new NodeInternal[]{
+                    new NodeInternal("Attribute", new Picker(PickerType.ASSET_ATTRIBUTE))
+            },
+                    new NodeSocket[0], new NodeSocket[]{
+                    new NodeSocket("value", NodeDataType.NUMBER)
+            }),
+            info -> {
+                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
+                String assetId = assetAttributePair.getAssetId();
+                String attributeName = assetAttributePair.getAttributeName();
+                System.out.println(new AttributeRef(assetId, attributeName));
+                Optional<AttributeInfo> attr = info.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).findFirst();
+
+                double integral = 0.0;
+                if (attr.isPresent()) {
+                    AttributeInfo attributeInfo = attr.get();
+                    Optional<Object> currentValueOpt = attributeInfo.getValue();
+                    Optional<Object> oldValueOpt = attributeInfo.getOldValue();
+                    long currentTimestamp = attributeInfo.getTimestamp();
+                    long oldTimestamp = attributeInfo.getOldValueTimestamp();
+
+                    if (currentValueOpt.isPresent() && oldValueOpt.isPresent()) {
+                        double currentValue = ((Number) currentValueOpt.get()).doubleValue();
+                        double previousValue = ((Number) oldValueOpt.get()).doubleValue();
+                        double timeDifference = (currentTimestamp - oldTimestamp) / 1000.0; // Convert milliseconds to seconds
+
+                        integral += ((currentValue + previousValue) * timeDifference)  / 2;
+                    }
+                }
+
+                return integral;
+            },
+            params -> {
+                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+                String assetId = internal.getAssetId();
+                String attributeName = internal.getAttributeName();
+                List<AttributeInfo> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).toList();
+
+                return allAssets.stream().anyMatch(state -> {
+                    long timestamp = state.getTimestamp();
+                    long triggerStamp = params.getBuilder().getTriggerMap().getOrDefault(params.getRuleName(), -1L);
+                    if (triggerStamp == -1L) return true; // The flow has never been executed
+                    return timestamp > triggerStamp && !Objects.equals(state.getValue().orElse(null), state.getOldValue().orElse(null));
+                });
+            }
+    ),
     HISTORIC_VALUE(
             new Node(NodeType.INPUT, new NodeInternal[]
                     {
