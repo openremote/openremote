@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import {html, LitElement, PropertyValues} from "lit";
+import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {
     RuleActionAlarm,
@@ -62,8 +62,27 @@ const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
         }
     }
 }
+
+// language=CSS
+const style = css`
+    :host {
+        display: flex;
+        align-items: center;
+    }
+    :host > * {
+        margin: 0 3px 6px;
+    }
+    .min-width {
+        min-width: 200px;
+    }
+`;
+
 @customElement("or-rule-alarm-modal")
 export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
+
+  static get styles() {
+    return style;
+  }
 
     @property({type: Object, attribute: false})
     public action!: RuleActionAlarm;
@@ -147,7 +166,7 @@ export class OrRuleAlarmModal extends translate(i18next)(LitElement) {
         };
 
         return html`
-            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .value="${this.action.alarm?.severity}" .label="${i18next.t("alarm.severity")}" .options="${[AlarmSeverity.LOW, AlarmSeverity.MEDIUM, AlarmSeverity.HIGH]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
+            <or-mwc-input style="width: 200px" .type="${InputType.SELECT}" .value="${this.action.alarm?.severity}" .label="${i18next.t("alarm.severity")}" .options="${[[AlarmSeverity.LOW, i18next.t("alarm.severity_LOW")], [AlarmSeverity.MEDIUM, i18next.t("alarm.severity_MEDIUM")], [AlarmSeverity.HIGH, i18next.t("alarm.severity_HIGH")]]}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAlarmSeverity(e.detail.value)}"></or-mwc-input>
             <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("settings")}" @or-mwc-input-changed="${alarmPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="alarm-modal" heading="${this.title}" .actions="${alarmPickerModalActions}"></or-mwc-dialog>
             <slot class="alarm-form-slot"></slot>

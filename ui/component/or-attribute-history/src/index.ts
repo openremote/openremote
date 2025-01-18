@@ -24,7 +24,9 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
+import {isAxiosError} from "@openremote/rest";
 import {styleMap} from "lit/directives/style-map.js";
+import { when } from "lit/directives/when.js";
 
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 
@@ -126,6 +128,7 @@ const style = css`
     }
     
     #container {
+        position: relative;
         display: flex;
         min-width: 0;
         width: 100%;
@@ -188,6 +191,7 @@ const style = css`
         
     #table-container {
         height: 100%;
+        min-height: 250px;
     }
     
     #table {
@@ -257,11 +261,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _chart?: Chart<"line", ScatterDataPoint[]>;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
+    protected _error?: string;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
     protected _timeUnits?: TimeUnit;
     protected _stepSize?: number;
     protected _updateTimestampTimer?: number;
+    protected _dataAbortController?: AbortController;
 
     protected _dataFirstLoaded: boolean = false;
 
@@ -287,6 +293,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return false;
         }
 
+        if(_changedProperties.has("attribute")) {
+            this._cleanup();
+        }
+
         if (!this._type && this.attribute) {
             this._type = AssetModelUtil.getValueDescriptor(this.attribute.type) || {};
         }
@@ -303,7 +313,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     render() {
 
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
-        const disabled = this._loading || !this._type;
+        const disabled = !this._type;
 
         return html`
             <div id="container">
@@ -317,19 +327,31 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     </div>
                 </div>
                 
-                ${!this._type ? html`
+                ${when(!this._type, () => html`
                     <div id="msg">
                         <or-translate value="invalidAttribute"></or-translate>
                     </div>
-                ` : isChart ? html`
-                        <div id="chart-container">
-                            <canvas id="chart"></canvas>
-                        </div>
-                    ` : html`
-                        <div id="table-container">
-                            ${this._tableTemplate || ``}
-                        </div>
-                    `}                
+                `, () => when(this._error, () => html`
+                    <div id="msg">
+                        <or-translate .value="${this._error}"></or-translate>
+                    </div>
+                `, () => when(isChart, () => html`
+                    
+                    ${when(this._loading, () => html`
+                        <or-loading-indicator style="position: absolute; top: 50%; left: 50%;"></or-loading-indicator>
+                    `)}
+                    <div id="chart-container" style="${this._loading ? 'opacity: 0.2' : undefined}">
+                        <canvas id="chart"></canvas>
+                    </div>
+                    
+                `, () => html`
+
+                    <div id="table-container">
+                        ${when(this._loading, () => html`
+                            <or-loading-indicator></or-loading-indicator>
+                        `, () => this._tableTemplate)}
+                    </div>
+                `)))}
             </div>
         `;
     }
@@ -639,106 +661,142 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.toTimestamp) {
+        if (this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.toTimestamp) {
             return;
         }
 
+        // If a new requests comes in, we override it with this one using AbortController.
+        if(this._loading) {
+            if(this._dataAbortController) {
+                this._dataAbortController.abort("Data request overridden");
+                delete this._dataAbortController;
+            } else {
+                return;
+            }
+        }
+
+        this._error = undefined;
         this._loading = true;
+
         const assetId = this.assetId!;
         const attributeName = this.attribute ? this.attribute.name! : this.attributeRef!.name!;
+        this._dataAbortController = new AbortController();
 
-        if (!this._type) {
-            let attr = this.attribute;
+        try {
+            if (!this._type) {
+                let attr = this.attribute;
 
-            if (!attr) {
-                const response = await manager.rest.api.AssetResource.queryAssets({
-                    ids: [assetId],
-                    select: {
-                        attributes: [
-                            attributeName
-                        ]
+                if (!attr) {
+                    const response = await manager.rest.api.AssetResource.queryAssets({
+                        ids: [assetId],
+                        select: {
+                            attributes: [
+                                attributeName
+                            ]
+                        }
+                    }, { signal: this._dataAbortController.signal });
+                    if (response.status === 200 && response.data.length > 0) {
+                        attr = response.data[0].attributes ? response.data[0].attributes[attributeName] : undefined;
                     }
-                });
-                if (response.status === 200 && response.data.length > 0) {
-                    attr = response.data[0].attributes ? response.data[0].attributes[attributeName] : undefined;
+                }
+
+                if (attr) {
+                    this._type = AssetModelUtil.getValueDescriptor(attr.type) || {};
                 }
             }
 
-            if (attr) {
-                this._type = AssetModelUtil.getValueDescriptor(attr.type) || {};
+            if (!this._type || !this._type.name) {
+                this._loading = false;
+                return;
             }
-        }
 
-        if (!this._type || !this._type.name) {
+
+            let interval: DatapointInterval = DatapointInterval.HOUR;
+            let stepSize = 1;
+
+            switch (this.period) {
+                case "hour":
+                    interval = DatapointInterval.MINUTE;
+                    stepSize = 5;
+                    break;
+                case "day":
+                    interval = DatapointInterval.HOUR;
+                    stepSize = 1;
+                    break;
+                case "week":
+                    interval = DatapointInterval.HOUR;
+                    stepSize = 6;
+                    break;
+                case "month":
+                    interval = DatapointInterval.DAY;
+                    stepSize = 1;
+                    break;
+                case "year":
+                    interval = DatapointInterval.MONTH;
+                    stepSize = 1;
+                    break;
+            }
+
+            const lowerCaseInterval = interval.toLowerCase();
+            this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+            this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+            this._timeUnits =  lowerCaseInterval as TimeUnit;
+            this._stepSize = stepSize;
+
+            const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
+            let response;
+            if(isChart) {
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                    assetId,
+                    attributeName,
+                    {
+                        type: "lttb",
+                        fromTimestamp: this._startOfPeriod,
+                        toTimestamp: this._endOfPeriod,
+                        amountOfPoints: 100
+                    },
+                    { signal: this._dataAbortController.signal }
+                );
+            } else {
+                response = await manager.rest.api.AssetDatapointResource.getDatapoints(
+                    assetId,
+                    attributeName,
+                    {
+                        type: "all",
+                        fromTimestamp: this._startOfPeriod,
+                        toTimestamp: this._endOfPeriod
+                    },
+                    { signal: this._dataAbortController.signal }
+                );
+            }
+
             this._loading = false;
-            return;
-        }
 
+            if (response.status === 200) {
+                this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
+                this._dataFirstLoaded = true;
+            }
 
-        let interval: DatapointInterval = DatapointInterval.HOUR;
-        let stepSize = 1;
+        } catch (ex) {
+            console.error(ex);
+            if((ex as Error)?.message === "canceled") {
+                return; // If request has been canceled (using AbortController); return, and prevent _loading is set to false.
+            }
+            this._loading = false;
 
-        switch (this.period) {
-            case "hour":
-                interval = DatapointInterval.MINUTE;
-                stepSize = 5;
-                break;
-            case "day":
-                interval = DatapointInterval.HOUR;
-                stepSize = 1;
-                break;
-            case "week":
-                interval = DatapointInterval.HOUR;
-                stepSize = 6;
-                break;
-            case "month":
-                interval = DatapointInterval.DAY;
-                stepSize = 1;
-                break;
-            case "year":
-                interval = DatapointInterval.MONTH;
-                stepSize = 1;
-                break;
-        }
-
-        const lowerCaseInterval = interval.toLowerCase();
-        this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-        this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
-        this._timeUnits =  lowerCaseInterval as TimeUnit;
-        this._stepSize = stepSize;
-
-        const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
-        let response;
-        if(isChart) {
-            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-                assetId,
-                attributeName,
-                {
-                    type: "lttb",
-                    fromTimestamp: this._startOfPeriod,
-                    toTimestamp: this._endOfPeriod,
-                    amountOfPoints: 100
+            if(isAxiosError(ex)) {
+                if(ex.message.includes("timeout")) {
+                    this._error = "noAttributeDataTimeout";
+                    return;
+                } else if(ex.response?.status === 413) {
+                    this._error = "datapointRequestTooLarge";
+                    return;
                 }
-            )
-        } else {
-            response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-                assetId,
-                attributeName,
-                {
-                    type: "all",
-                    fromTimestamp: this._startOfPeriod,
-                    toTimestamp: this._endOfPeriod
-                }
-            );
-        }
-
-        this._loading = false;
-
-        if (response.status === 200) {
-            this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
-            this._dataFirstLoaded = true;
+            }
+            this._error = "errorOccurred";
         }
     }
+
     protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {
 
         if (this._updateTimestampTimer) {

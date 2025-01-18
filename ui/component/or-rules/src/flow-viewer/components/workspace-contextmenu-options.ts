@@ -53,7 +53,7 @@ export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEve
         },
         {
             type: "button",
-            label: i18next.t("output", "Ouput"),
+            label: i18next.t("output", "Output"),
             icon: "arrow-expand-right",
             action: () => { ContextMenu.open(e.pageX, e.pageY, workspace, createNodeButtons(NodeType.OUTPUT)); }
         },

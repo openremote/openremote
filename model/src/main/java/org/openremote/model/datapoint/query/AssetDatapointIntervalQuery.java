@@ -42,9 +42,9 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
         boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
         String function = (gapFill ? "public.time_bucket_gapfill" : "public.time_bucket");
         if (isNumber) {
-            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(value::text::numeric) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC;";
+            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(cast(value as numeric)) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
         } else if (isBoolean) {
-            return "select " + function + "(?::interval, timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when VALUE::text::boolean is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC;";
+            return "select " + function + "(cast(? as interval), timestamp) AS x, " + this.formula.toString().toLowerCase() + "(case when cast(cast(value as text) as boolean) is true then 1 else 0 end) FROM " + tableName + " WHERE ENTITY_ID = ? and ATTRIBUTE_NAME = ? and TIMESTAMP >= ? and TIMESTAMP <= ? GROUP BY x ORDER by x ASC";
         } else {
             throw new IllegalStateException("Query of type Interval requires either a number or a boolean attribute.");
         }
@@ -53,8 +53,8 @@ public class AssetDatapointIntervalQuery extends AssetDatapointQuery {
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
         HashMap<Integer, Object> parameters = new HashMap<>();
-        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime :  LocalDateTime.ofInstant(Instant.ofEpochMilli(super.fromTimestamp), ZoneId.systemDefault());
-        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime :  LocalDateTime.ofInstant(Instant.ofEpochMilli(super.toTimestamp), ZoneId.systemDefault());
+        LocalDateTime fromTimestamp = (this.fromTime != null) ? this.fromTime : Instant.ofEpochMilli(this.fromTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime toTimestamp = (this.toTime != null) ? this.toTime : Instant.ofEpochMilli(this.toTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
         parameters.put(1, this.interval);
         parameters.put(2, attributeRef.getId());
         parameters.put(3, attributeRef.getName());

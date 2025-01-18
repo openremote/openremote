@@ -58,13 +58,14 @@ export class PageGateway extends Page<AppStateKeyed>  {
             }
 
             #title {
-                margin: 20px auto 0;
-                max-width: 1360px;
-                width: 100%;
                 display: flex;
-                justify-content: space-between;
+                width: calc(100% - 40px);
+                max-width: 1360px;
+                padding: 0px 20px;
+                flex-direction: row;
                 align-items: center;
-                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                justify-content: space-between;
+                margin: 8px auto;
             }
             
             #title div {
@@ -78,15 +79,17 @@ export class PageGateway extends Page<AppStateKeyed>  {
             }
 
             #title > div > or-icon {
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
                 margin-right: 10px;
                 margin-left: 14px;
             }
 
             or-panel {
                 position: relative;
+                width: calc(100% - 40px);
                 max-width: 1360px;
-                width: 100%;
-                margin: 20px auto;
+                margin: 0 auto 16px;
             }
 
             .gateway-status-header {

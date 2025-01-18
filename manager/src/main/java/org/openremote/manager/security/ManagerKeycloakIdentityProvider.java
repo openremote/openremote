@@ -66,6 +66,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -103,6 +104,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected Container container;
     protected String frontendURI;
     protected List<String> validRedirectUris;
+    protected Map<String, Realm> realmCache = new ConcurrentHashMap<>();
 
     @Override
     public void init(Container container) {
@@ -813,17 +815,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public Realm getRealm(String realm) {
-        try {
-            return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
-        } catch (Exception ex) {
-            LOG.log(Level.INFO, "Failed to get realm by name: " + realm, ex);
-        }
-        return null;
+        // This gets hit a lot for event authorisation so caching added
+        return realmCache.computeIfAbsent(realm, (name) -> {
+            try {
+                return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
+            } catch (Exception ex) {
+                LOG.log(Level.INFO, "Failed to get realm by name: " + realm, ex);
+            }
+            return null;
+        });
     }
 
     @Override
     public void updateRealm(Realm realm) {
         LOG.fine("Update realm: " + realm);
+        realmCache.remove(realm.getName());
         getRealms(realmsResource -> {
 
             if (TextUtil.isNullOrEmpty(realm.getId())) {
@@ -858,6 +864,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmRepresentation.setEnabled(realm.getEnabled());
             realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
             realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
+            realmRepresentation.setPasswordPolicy(realm.getPasswordPolicyString());
             realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
@@ -945,6 +952,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             throw new NotFoundException("Realm does not exist: " + realmName);
         }
 
+        realmCache.remove(realmName);
         persistenceService.doTransaction(entityManager -> {
 
             // Delete gateway connections
@@ -1066,7 +1074,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 clientResource.remove();
                 return null;
             }, () -> {
-                throw new NotFoundException("Delete client failed as client not found: " + clientId);
+                // Do nothing as could have been deleted by cleanup of previous test
+                return null;
             });
         });
     }

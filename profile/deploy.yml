@@ -19,8 +19,6 @@
 # OR_EMAIL_ADMIN
 # OR_IDENTITY_PROVIDER
 #
-version: '2.4'
-
 volumes:
 #  postgresql-data: # Needed if you want to persist postgres data outside of container
   manager-data: # A storage volume for file persistence in the manager (can be used by services and protocols)
@@ -279,12 +277,14 @@ services:
       # to embedded logging.properties or logging-dev.properties (if OR_DEV_MODE=true)
       OR_LOGGING_CONFIG_FILE:
 
-      # The number of threads and therefore background tasks that can be executed at the same
-      # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
-      # polling a remote service at regular interval, or the internal checks for expired client
-      # subscriptions on the event bus (default depends on detected CPU cores). Also used by
-      # the rules engine.
-      OR_SCHEDULED_TASKS_THREADS_MAX: ${OR_SCHEDULED_TASKS_THREADS_MAX:-4}
+      # The number of threads to be used for the scheduled executor service which can be used for scheduling
+      # non-blocking, short-lived tasks in a standard way; defaults to number of CPU cores.
+      OR_SCHEDULED_EXECUTOR_THREADS:
+
+      # The number of threads (min and max) to be used for the executor service which can be used for executing
+      # tasks in a standard way; defaults to number of CPU cores and number of CPU cores x 10 respectively.
+      OR_EXECUTOR_THREADS_MIN:
+      OR_EXECUTOR_THREADS_MAX:
 
       # The minimum number of threads that will be used to process incoming auto provisioning messages
       OR_AUTO_PROVISIONING_THREADS_MIN:
@@ -334,6 +334,13 @@ services:
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS: 30
+
+      # Configure the limit of data points that can be queried.
+      # Defaults to 100.000. When set to 0, it disables the limit.
+      # OR_DATA_POINTS_QUERY_LIMIT: 100000
+
+      # Configure the limit of data points that can be exported to CSV. Defaults to 1 million data points.
+      # OR_DATA_POINTS_EXPORT_LIMIT: 10000000
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID

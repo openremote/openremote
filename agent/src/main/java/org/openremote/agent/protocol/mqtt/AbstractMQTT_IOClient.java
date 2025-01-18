@@ -90,7 +90,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         this.cleanSession = cleanSession;
         this.usernamePassword = usernamePassword;
         this.websocketURI = websocketURI;
-        this.executorService = Container.EXECUTOR_SERVICE;
+        this.executorService = Container.SCHEDULED_EXECUTOR;
 
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()

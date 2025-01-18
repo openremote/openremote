@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
@@ -10,12 +9,15 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.datapoint.AssetDatapoint
+import org.openremote.model.datapoint.DatapointQueryTooLargeException
 import org.openremote.model.datapoint.ValueDatapoint
+import org.openremote.model.datapoint.query.AssetDatapointAllQuery
 import org.openremote.model.datapoint.query.AssetDatapointIntervalQuery
 import org.openremote.model.datapoint.query.AssetDatapointLTTBQuery
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.RealmPredicate
+import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.ValueType
 import org.openremote.setup.integration.KeycloakTestSetup
@@ -24,6 +26,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 import static java.util.concurrent.TimeUnit.HOURS
 
@@ -39,6 +42,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.maxAmountOfQueryPoints = 1000
 
 
         when: "requesting the first light asset in City realm"
@@ -69,11 +73,11 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         when: "datapoints are added to the asset"
         assetDatapointService.upsertValues(asset.getId(), attributeName,
             [
-                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 50d),
-                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 40d),
-                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 30d),
-                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 20d),
-                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 10d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 50d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 40d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 30d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
+                    new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
             ]
         )
 
@@ -124,12 +128,12 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         assetDatapointService.upsertValues(asset.getId(), attributeName,
             [
                 // placing them in a random order to verify order that is returned with the query
-                new ValueDatapoint<>(dateTime.minusMinutes(10).toDate(), 25d),
-                new ValueDatapoint<>(dateTime.minusMinutes(5).toDate(), 30d),
-                new ValueDatapoint<>(dateTime.minusMinutes(30).toDate(), 10d),
-                new ValueDatapoint<>(dateTime.minusMinutes(20).toDate(), 90d),
-                new ValueDatapoint<>(dateTime.minusMinutes(25).toDate(), 15d),
-                new ValueDatapoint<>(dateTime.minusMinutes(15).toDate(), 20d),
+                new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 25d),
+                new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 30d),
+                new ValueDatapoint<>(dateTime.minusMinutes(30).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
+                new ValueDatapoint<>(dateTime.minusMinutes(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 90d),
+                new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 15d),
+                new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
             ]
         )
 
@@ -167,6 +171,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.maxAmountOfQueryPoints = 1000
 
         when: "a thing asset is added to the building realm"
         def thingId = UniqueIdentifierGenerator.generateId("TestThing")
@@ -228,6 +233,7 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.maxAmountOfQueryPoints = 1000
 
 
         when: "requesting the first light asset in City realm"
@@ -307,5 +313,89 @@ class AssetDatapointQueryTest extends Specification implements ManagerContainerT
             index2++
         }}
 
+    }
+
+    def "All query should return the correct data when the maximum is respected"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+
+        and: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetDatapointService = container.getService(AssetDatapointService.class)
+        assetDatapointService.maxAmountOfQueryPoints = 1000
+
+        when: "requesting the first light asset in City realm"
+        def asset = assetStorageService.find(
+                new AssetQuery()
+                        .types(LightAsset.class)
+                        .realm(new RealmPredicate(keycloakTestSetup.realmCity.name))
+                        .names("Light 1")
+        )
+
+        then: "asset should exist and be correct"
+        def assetName = "Light 1"
+        def attributeName = "brightness"
+        def dateTime = LocalDateTime.now()
+        assert asset != null // light 1, 2 and 3
+        assert asset.name == assetName
+        assert asset.attributes.has(attributeName)
+
+        and: "no datapoints should exist"
+        conditions.eventually {
+            def datapoints = assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), attributeName))
+            assert datapoints.isEmpty()
+        }
+
+
+        /* ------------------------- */
+
+        when: "datapoints are added to the asset"
+        assetDatapointService.upsertValues(asset.getId(), attributeName,
+                [
+                        new ValueDatapoint<>(dateTime.minusMinutes(25).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 50d),
+                        new ValueDatapoint<>(dateTime.minusMinutes(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 40d),
+                        new ValueDatapoint<>(dateTime.minusMinutes(15).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 30d),
+                        new ValueDatapoint<>(dateTime.minusMinutes(10).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 20d),
+                        new ValueDatapoint<>(dateTime.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), 10d),
+                ]
+        )
+
+        then: "datapoints should exist"
+        def allDatapoints = new ArrayList<ValueDatapoint>()
+        conditions.eventually {
+            allDatapoints = assetDatapointService.getDatapoints(new AttributeRef(asset.getId(), attributeName))
+            assert allDatapoints.size() == 5
+        }
+
+        /* ------------------------- */
+
+        and: "requesting 5 datapoints should return 5 values"
+        def allDatapoints1 = assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointAllQuery(dateTime.minusMinutes(30), dateTime)
+        )
+        assert allDatapoints1.size() == 5
+
+        /* ------------------------- */
+
+        when: "the OR_DATA_POINTS_QUERY_LIMIT environment variable is updated to 2"
+        assetDatapointService.maxAmountOfQueryPoints = 2
+
+        and: "the same datapoints are being requested"
+        assetDatapointService.queryDatapoints(
+                asset.getId(),
+                asset.getAttribute(attributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
+                new AssetDatapointAllQuery(dateTime.minusMinutes(30), dateTime)
+        )
+
+        then: "no points should be returned"
+        thrown(DatapointQueryTooLargeException)
+
+        cleanup: "Remove the limit on datapoint querying"
+        assetDatapointService.maxAmountOfQueryPoints = 0
     }
 }

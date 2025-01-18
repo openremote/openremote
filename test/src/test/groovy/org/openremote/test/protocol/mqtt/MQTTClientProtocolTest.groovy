@@ -29,7 +29,6 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
 import org.bouncycastle.util.io.pem.PemObject
 import org.bouncycastle.util.io.pem.PemWriter
-import org.junit.AssumptionViolatedException
 import org.openremote.agent.protocol.mqtt.MQTTAgent
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink
 import org.openremote.agent.protocol.mqtt.MQTTProtocol
@@ -54,6 +53,8 @@ import org.openremote.model.util.UniqueIdentifierGenerator
 import org.openremote.setup.integration.KeycloakTestSetup
 import org.openremote.setup.integration.ManagerTestSetup
 import org.openremote.test.ManagerContainerTrait
+import org.opentest4j.TestAbortedException
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -86,6 +87,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def brokerService = container.getService(MQTTBrokerService.class)
+        def defaultMQTTHandler = brokerService.getCustomHandlers().find{it instanceof DefaultMQTTHandler} as DefaultMQTTHandler
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def clientEventService = container.getService(ClientEventService.class)
@@ -132,7 +134,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             assert !(agentService.getProtocolInstance(agent.id) as MQTTProtocol).protocolMessageConsumers.isEmpty()
             def connection = brokerService.getConnectionFromClientID(clientId)
             assert connection != null
-            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(getConnectionIDString(connection))
+            assert defaultMQTTHandler.sessionSubscriptionConsumers.containsKey(getConnectionIDString(connection))
         }
 
         when: "the attribute referenced in the agent link is updated"
@@ -179,19 +181,28 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
     *
     * If the test cannot reach the host, then the test is passed.
     * */
+    @Ignore
     @SuppressWarnings("GroovyAccessibility")
     def "Check MQTT client protocol mTLS support"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 100, delay: 0.2)
 
-        and: "External connectivity has been assured"
-        try {
-            assert new Socket("test.mosquitto.org", 8884) != null
-            assert new Socket("test.mosquitto.org", 443) != null
-        } catch (Exception e) {
-            throw new AssumptionViolatedException("No connectivity to external hosts, skip test");
-        }
+        when:
+        Socket webSocket = new Socket("test.mosquitto.org", 443)
+        Socket mqttSocket = new Socket("test.mosquitto.org", 8884)
+        HttpClient testClient = HttpClient.newHttpClient()
+        HttpRequest testRequest = HttpRequest.newBuilder()
+                .GET()
+                .uri(new URI("https://test.mosquitto.org/ssl/index.php"))
+                .build()
+
+        HttpResponse<String> testResponse = testClient.send(testRequest, HttpResponse.BodyHandlers.ofString())
+
+        then:
+        if(webSocket == null) throw new TestAbortedException("Mosquitto web server unavailable");
+        if(mqttSocket == null) throw new TestAbortedException("Mosquitto MQTT broker unavailable");
+        if(testResponse.statusCode() != 200) throw new TestAbortedException("Mosquitto signing service unavailable");
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -207,7 +218,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         def aliasName = "testalias"
         def keyAlias = Constants.MASTER_REALM + "." + aliasName
 
-
+        when:
         KeyStore clientKeystore = keyStoreService.getKeyStore()
         KeyStore clientTruststore = keyStoreService.getTrustStore()
 
@@ -244,7 +255,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
         keyStoreService.storeKeyStore(clientKeystore)
         keyStoreService.storeTrustStore(clientTruststore)
 
-        when: "an MQTT client agent is created to connect to this tests manager"
+        and: "an MQTT client agent is created to connect to this tests manager"
         def clientId = UniqueIdentifierGenerator.generateId()
         def agent = new MQTTAgent("Test agent")
                 .setRealm(Constants.MASTER_REALM)
