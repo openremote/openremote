@@ -600,6 +600,7 @@ function getPanelContent(id: string, assetInfo: AssetInfo, hostElement: LitEleme
                    flex: 0;
                    margin: 0 0 10px 0;
                    position: unset;
+                   z-index: 1;
                }
                
                #attribute-picker > or-mwc-input {
