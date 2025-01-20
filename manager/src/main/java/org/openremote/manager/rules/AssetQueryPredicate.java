@@ -199,21 +199,24 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
 
             condition.getItems().stream()
                 .forEach(p -> {         
-                    attributePredicates.add((Predicate<AttributeInfo>)(Predicate)asPredicate(currentMillisProducer, p));
-
-                    AtomicReference<Predicate<AttributeInfo>> olderThanPredicate = new AtomicReference<>();
+                    Predicate<AttributeInfo> wrappedPredicate = attributeInfo -> {
+                        Predicate<NameValueHolder<?>> basePredicates = asPredicate(currentMillisProducer, p);
+                        
+                        // Include older than timestamp check if timestampOlderThan is provided
+                        if (p.timestampOlderThan != null) {
+                            long currentTime = currentMillisProducer.get();
+                            long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
+                            if (!(attributeInfo.getTimestamp() < currentTime - durationMillis)) {
+                                return false;
+                            }
+                        }
+                        
+                        return basePredicates.test(attributeInfo);
+                    };
+                    attributePredicates.add(wrappedPredicate);
+          
                     AtomicReference<Predicate<AttributeInfo>> metaPredicate = new AtomicReference<>(nameValueHolder -> true);
                     AtomicReference<Predicate<AttributeInfo>> oldValuePredicate = new AtomicReference<>(value -> true);
-
-                    if (p.timestampOlderThan != null) {
-                        long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
-                        Predicate<AttributeInfo> timestampPredicate = assetState -> {
-                            long currentTime = currentMillisProducer.get();
-                            return assetState.getTimestamp() < currentTime - durationMillis;
-                        };
-                        olderThanPredicate.set(timestampPredicate);
-                        attributePredicates.add(olderThanPredicate.get());
-                    }
 
                     if (p.meta != null) {
                         final Predicate<NameValueHolder<?>> innerMetaPredicate = Arrays.stream(p.meta)

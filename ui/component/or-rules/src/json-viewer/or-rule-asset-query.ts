@@ -631,6 +631,20 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         }
     }
 
+    protected updateDurationMap(index: number): void {
+        if (this.duration) {
+            // re-assign durations by filtering out the index and adjusting remaining indices
+            const newDurationEntries = Array.from(this.duration.entries())
+                .filter(([k, _]) => k !== index)
+                .map(([k, v]) => {
+                    const newIndex = k > index ? k - 1 : k;
+                    return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
+                });
+
+            this.duration = new Map<number, string | undefined>(newDurationEntries);
+        }
+    }
+
     protected setOperator(assetDescriptor: AssetDescriptor, attribute: Attribute<any> | undefined, attributeName: string, attributePredicate: AttributePredicate, operator: string | undefined) {
 
         if (!this.query
@@ -839,6 +853,9 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             // operator without value predicate - since timestamp is being used rather than attribute value
             case AssetQueryOperator.NOT_UPDATED_FOR:
                 attributePredicate.timestampOlderThan = "";
+
+                const index = this.query.attributes.items.indexOf(attributePredicate);
+                this.updateDurationMap(index);
                 break;
         }
 
@@ -869,18 +886,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         const index = group.items!.indexOf(attributePredicate);
         if (index >= 0) {
             group.items!.splice(index, 1);
-
-            if (this.duration) {
-                // re-assign durations
-                const newDurationEntries = Array.from(this.duration.entries())
-                    .filter(([k, _]) => k !== index)  // filter out the index
-                    .map(([k, v]) => {
-                        const newIndex = k > index ? k - 1 : k;
-                        return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
-                    })
-
-                this.duration = new Map<number, string | undefined>(newDurationEntries);
-            }
+            this.updateDurationMap(index);
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());
         this.requestUpdate();
