@@ -108,11 +108,11 @@ public final class ValueType {
 
     public static final ValueDescriptor<Long> TIMESTAMP = new ValueDescriptor<>("timestamp", Long.class,
         new ValueConstraint.Min(0)
-    );
+    ).withFormat(new ValueFormat().setAsDate(true).setMomentJsFormat("DD-MMM-YYYY hh:mm A"));
 
     public static final ValueDescriptor<String> TIMESTAMP_ISO8601 = new ValueDescriptor<>("timestampISO8601", String.class,
         new ValueConstraint.Pattern(Constants.ISO8601_DATETIME_REGEXP)
-    );
+    ).withFormat(new ValueFormat().setAsDate(true).setMomentJsFormat("DD-MMM-YYYY hh:mm A"));
 
     public static final ValueDescriptor<Date> DATE_AND_TIME = new ValueDescriptor<>("dateAndTime", Date.class);
 
