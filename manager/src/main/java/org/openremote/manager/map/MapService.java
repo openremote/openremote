@@ -61,7 +61,6 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
 
-    public static final String OR_MAP_TILES_CUSTOM_PATH = "manager/src/map/mapdata-custom.mbtiles";
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String OR_MAP_TILESERVER_HOST = "OR_MAP_TILESERVER_HOST";
     public static final String OR_MAP_TILESERVER_HOST_DEFAULT = null;
@@ -414,8 +413,7 @@ public class MapService implements ContainerService {
     }
 
     public boolean saveUploadedFile(InputStream fileInputStream) {
-        // TODO: Specify target directory for uploaded file
-        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        Path destinationPath = configurationService.getCustomMapTilesPath();
 
         try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
             byte[] buffer = new byte[4096];
@@ -436,12 +434,15 @@ public class MapService implements ContainerService {
     }
 
     public boolean isCustomUploadedFile() {
-        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        Path destinationPath = configurationService.getCustomMapTilesPath();
+        if (destinationPath == null) {
+            return false;
+        }
         return Files.exists(destinationPath);
     }
 
     public boolean deleteUploadedFile() {
-        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+        Path destinationPath = configurationService.getCustomMapTilesPath();
         boolean deleted = destinationPath.toFile().delete();
         if (deleted) {
             LOG.info("File deleted successfully");
