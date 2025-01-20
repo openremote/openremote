@@ -858,7 +858,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                   .type="${InputType.TEXT}" minLength="3" maxLength="255" 
                                   ?required="${isServiceUser || !this._registrationEmailAsUsername}"
                                   pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
-                                  .value="${user.username}"
+                                  .value="${user.username}" autocomplete="false"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
