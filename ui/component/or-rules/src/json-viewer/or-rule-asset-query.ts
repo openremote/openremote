@@ -824,12 +824,16 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
         if (index >= 0) {
             group.items!.splice(index, 1);
 
-            if(this.duration.has(index)) {
-                const newEntries = Array.from(this.duration.entries())
-                    .filter(([k, v]) => k !== index)
-                    .map(([k, v], i) => [i, v] as [number, string | undefined]);
+            if (this.duration) {
+                // re-assign durations
+                const newDurationEntries = Array.from(this.duration.entries())
+                    .filter(([k, _]) => k !== index)  // filter out the index
+                    .map(([k, v]) => {
+                        const newIndex = k > index ? k - 1 : k;
+                        return [newIndex, v] as [number, string | undefined]; // adjust indices after the removed index
+                    })
 
-                this.duration = new Map<number, string | undefined>(newEntries);
+                this.duration = new Map<number, string | undefined>(newDurationEntries);
             }
         }
         this.dispatchEvent(new OrRulesJsonRuleChangedEvent());

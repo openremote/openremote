@@ -236,21 +236,21 @@ export class PageAccount extends Page<AppStateKeyed>  {
                 <div class="column">
                     <!-- user details -->
                     <h5>${i18next.t("details")}</h5>
-                    <or-mwc-input id="username" class="validate"
+                    <or-mwc-input id="new-username" class="validate"
                                   .label="${i18next.t("username")}"
                                   .type="${InputType.TEXT}"
                                   ?required="${!registrationEmailAsUsername}"
                                   .disabled="${true}"
-                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_]+"
+                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
                                   .validationMessage="${i18next.t("invalidUsername")}"
-                                  .value="${user?.username}"
+                                  .value="${user?.username}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.username = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
                     <!-- if identity provider is set to use email as username, make it required -->
-                    <or-mwc-input id="email" class="validate"
+                    <or-mwc-input id="new-email" class="validate"
                                   .label="${i18next.t("email")}"
                                   .type="${InputType.EMAIL}"
                                   ?required="${registrationEmailAsUsername}"
@@ -258,30 +258,30 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .disabled="${!user || (!!user?.id && registrationEmailAsUsername)}"
                                   pattern="^[\\w\\.\\-]+@([\\w\\-]+\\.)+[\\w]{2,4}$"
                                   .validationMessage="${i18next.t("invalidEmail")}"
-                                  .value="${user?.email}"
+                                  .value="${user?.email}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.email = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="firstName" class="validate"
+                    <or-mwc-input id="new-firstName" class="validate"
                                   .label="${i18next.t("firstName")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  minLength="5"
+                                  minLength="5" autocomplete="false"
                                   .value="${user?.firstName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.firstName = e.detail.value;
                                       onchange?.(user, true, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="surname" class="validate"
+                    <or-mwc-input id="new-surname" class="validate"
                                   .label="${i18next.t("surname")}"
                                   .type="${InputType.TEXT}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  minLength="1"
+                                  minLength="1" autocomplete="false"
                                   .value="${user?.lastName}"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                       user.lastName = e.detail.value;
@@ -291,24 +291,24 @@ export class PageAccount extends Page<AppStateKeyed>  {
                 </div>
                 <div class="column">
                     <h5>${i18next.t("password")}</h5>
-                    <or-mwc-input id="password" class="validate"
+                    <or-mwc-input id="new-password" class="validate"
                                   .label="${i18next.t("password")}"
                                   .type="${InputType.PASSWORD}"
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  min="1"
+                                  min="1" autocomplete="false"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
                                       const changed = this._onPasswordChanged(user);
                                       onchange?.(user, changed, this._isInvalid());
                                   }}"
                     ></or-mwc-input>
-                    <or-mwc-input id="repeatPassword"
+                    <or-mwc-input id="new-repeatPassword"
                                   .label="${i18next.t("repeatPassword")}"
                                   .type="${InputType.PASSWORD}"
                                   helperPersistent
                                   ?readonly="${readonly}"
                                   .disabled="${!user}"
-                                  min="1"
+                                  min="1" autocomplete="false"
                                   @or-mwc-input-changed="${(_e: OrInputChangedEvent) => {
                                       const changed = this._onPasswordChanged(user);
                                       onchange?.(user, changed, this._isInvalid());
