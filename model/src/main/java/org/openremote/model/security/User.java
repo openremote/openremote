@@ -50,6 +50,7 @@ public class User {
     public static final String EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE = "emailNotificationsDisabled";
     public static final String PUSH_NOTIFICATIONS_DISABLED_ATTRIBUTE = "pushNotificationsDisabled";
     public static final String LOCALE_ATTRIBUTE = "locale";
+    public static final String USERNAME_PATTERN = "^(?=[\\p{IsLatin}|\\p{IsCommon}]+$)(?=[^<>&\"'\\s\\v\\h$%!#?§,;:*~/\\\\|^=\\[\\]{}()`\\p{Cntrl}]+$).*$"; // Based on Keycloak username validation
     protected static Field[] propertyFields;
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
@@ -120,7 +121,7 @@ public class User {
     }
 
     @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = "[A-Za-z0-9\\-_@.]+", message = "{User.username.Pattern}")
+    @Pattern(regexp = USERNAME_PATTERN, message = "{User.username.Pattern}")
     @JsonProperty
     public String getUsername() {
         return username == null ? null : username.replace(SERVICE_ACCOUNT_PREFIX, "");
