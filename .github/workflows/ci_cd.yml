@@ -281,6 +281,21 @@ jobs:
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
 
+      - name: Get version details
+        id: get-version-details
+        run: |
+          ./gradlew currentVersion | tee /tmp/currentVersion
+          versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
+          version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
+          isRelease=false
+          if [ "$version" == "$versionWithQualifier" ]; then
+            isRelease=true
+          fi
+
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
+          echo "is_release=$isRelease" >> $GITHUB_OUTPUT
+
       # For scheduled execution from custom projects we need to be able to determine if the manager docker image has
       # changed since the last execution, we do this using a cache
       - name: Get docker tags to monitor
@@ -335,7 +350,9 @@ jobs:
           eventName = os.getenv('GITHUB_EVENT_NAME')
           refName = os.getenv('GITHUB_REF_NAME')
           refType = os.getenv('GITHUB_REF_TYPE')
-          isMainRepo = os.getenv('IS_MAIN_REPO')
+          isMainRepo = os.getenv('IS_MAIN_REPO') == 'true'
+          isRelease = os.getenv('IS_RELEASE') == 'true'
+          version = os.getenv('VERSION')
           deploys = None
           dockerPublishTags = None
           mavenPublishTag = None
@@ -387,39 +404,36 @@ jobs:
 
             elif eventName == "push" and refType == "branch" and refName in eventConfig:
               eventConfig = eventConfig[refName]
-              if eventConfig is not None:
-                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
-                if 'distribute' in eventConfig and 'docker' in eventConfig['distribute']:
-                  dockerPublishTags = eventConfig['distribute']['docker']
 
-            elif eventName == "release":
-              if eventConfig is not None:
-                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
-                if 'distribute' in eventConfig:
-                  if 'docker' in eventConfig['distribute']:
-                     dockerPublishTags = eventConfig['distribute']['docker']
-                  if 'maven' in eventConfig['distribute']:
-                     mavenPublishTag = eventConfig['distribute']['maven']
-                  if 'npm' in eventConfig['distribute']:
-                     npmPublishTag = eventConfig['distribute']['npm']
+          if eventConfig is not None:
+            deploys = eventConfig['deploy'] if 'deploy' in eventConfig else None
+            if 'distribute' in eventConfig:
+              if 'docker' in eventConfig['distribute']:
+                 dockerPublishTags = eventConfig['distribute']['docker']
+              if 'maven' in eventConfig['distribute']:
+                 mavenPublishTag = eventConfig['distribute']['maven']
+              if 'npm' in eventConfig['distribute']:
+                 npmPublishTag = eventConfig['distribute']['npm']
 
-          if dockerPublishTags is not None and isMainRepo == 'true':
-            dockerPublishTags = dockerPublishTags.replace("$version", refName)
-            firstDockerTag = dockerPublishTags.split(",")[0]
-            os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
-            os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
-            dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
-            os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
+          if isMainRepo and ((eventName == "release" and isRelease) or (eventName != "release" and not isRelease)):
 
-          if mavenPublishTag is not None and isMainRepo == 'true':
-            mavenPublishTag = mavenPublishTag.replace("$version", refName)
-            os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
-            os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
+            if dockerPublishTags is not None:
+              dockerPublishTags = dockerPublishTags.replace("$version", version)
+              firstDockerTag = dockerPublishTags.split(",")[0]
+              os.system(f"echo 'firstDockerTag={firstDockerTag}' >> $GITHUB_OUTPUT")
+              os.system(f" echo 'Manager tags to push to docker: {dockerPublishTags}'")
+              dockerPublishTags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", dockerPublishTags.split(",")))
+              os.system(f"echo 'dockerTags={dockerPublishTags}' >> $GITHUB_OUTPUT")
 
-          if npmPublishTag is not None and isMainRepo == 'true':
-            npmPublishTag = npmPublishTag.replace("$version", refName)
-            os.system(f" echo 'npm publish version: {npmPublishTag}'")
-            os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
+            if mavenPublishTag is not None:
+              mavenPublishTag = mavenPublishTag.replace("$version", version)
+              os.system(f" echo 'Maven publish version: {mavenPublishTag}'")
+              os.system(f"echo 'mavenTag={mavenPublishTag}' >> $GITHUB_OUTPUT")
+
+            if npmPublishTag is not None:
+              npmPublishTag = npmPublishTag.replace("$version", version)
+              os.system(f" echo 'npm publish version: {npmPublishTag}'")
+              os.system(f"echo 'npmTag={npmPublishTag}' >> $GITHUB_OUTPUT")
 
           deployStr = None
           if deploys is not None:
@@ -447,6 +461,8 @@ jobs:
             os.system(f"echo 'deploys={deployStr}' >> $GITHUB_OUTPUT")
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+          IS_RELEASE: ${{ steps.get-version-details.outputs.is_release }}
+          VERSION: ${{ steps.get-version-details.outputs.version }}
 
       - name: Copy new tag cache to old
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
@@ -514,7 +530,7 @@ jobs:
 
       - name: Define maven publish command
         id: maven-publish-command
-        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' || (steps.is_main_repo.outputs.value == 'true' && github.ref_type != 'tag' && github.event_name != 'pull_request') }}
+        if: ${{ steps.ci-cd-output.outputs.mavenTag != '' }}
         shell: bash
         run: |
           command="./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository --no-parallel -PsigningKey=$MAVEN_SIGNING_KEY -PsigningPassword=$MAVEN_SIGNING_PASSWORD -PpublishUsername=$MAVEN_USERNAME -PpublishPassword=$MAVEN_PASSWORD"
@@ -782,7 +798,7 @@ jobs:
             composeProfile="openremote/$composeProfile"
           fi
 
-          # Start the stack          
+          # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
           # Run the tests
@@ -794,14 +810,9 @@ jobs:
         continue-on-error: true
 
       - name: Run npm publish command
-        if: ${{ steps.is_main_repo.outputs.value == 'true' && github.event_name != 'pull_request' }}
+        if: ${{ steps.ci-cd-output.outputs.npmTag != '' }}
         run: |
-          VERSION=$NPM_TAG
-          if [ "$VERSION" == "" ]; then
-            VERSION=$(grep version manager/src/main/resources/version.properties | sed -E 's/.*=[ ]*//g' )
-          fi
-
-          QUALIFIER=$(sed -E 's/.+-([A-Z]+).*/\1/g' <<< $VERSION)
+          QUALIFIER=$(sed -E 's/.+-([A-Za-z]+).*/\1/g' <<< $VERSION)
           if [ "$QUALIFIER" == "$VERSION" ]; then
             QUALIFIER=""
           fi
@@ -810,7 +821,7 @@ jobs:
             VERSION="$VERSION"
             TAG="latest"
           else
-            if [ "$QUALIFIER" == "SNAPSHOT" ]; then
+            if [ "$QUALIFIER" == "snapshot" ]; then
               # Add a timestamp to snapshot versions
               VERSION="$VERSION.$(date +'%Y%m%d%H%M%S')"
             else
@@ -830,7 +841,7 @@ jobs:
 
           yarn workspaces foreach --all --no-private --topological npm publish --tag $TAG
         env:
-          NPM_TAG: ${{ steps.ci-cd-output.outputs.npmTag }}
+          VERSION: ${{ steps.ci-cd-output.outputs.npmTag }}
           NPM_AUTH_TOKEN: ${{ steps.inputs-and-secrets.outputs._TEMP_NPM_AUTH_TOKEN }}
 
       - name: Run deployment docker command
@@ -851,7 +862,7 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          isMainRepo = os.getenv("IS_MAIN_REPO")
+          isMainRepo = os.getenv("IS_MAIN_REPO") == 'true'
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
           ipv4 = os.getenv("IPV4")
           ipv6 = os.getenv("IPV6")
@@ -861,7 +872,7 @@ jobs:
           # Determine deploy script to use
           deployScript = ".ci_cd/deploy.sh"
 
-          if not os.path.exists(deployScript) and isMainRepo == 'false':
+          if not os.path.exists(deployScript) and not isMainRepo:
             deployScript = "openremote/.ci_cd/deploy.sh"
 
           if not os.path.exists(deployScript):
