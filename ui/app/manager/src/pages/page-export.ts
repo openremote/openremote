@@ -12,6 +12,8 @@ import { AttributeRef } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules";
 import {createSelector} from "reselect";
+import {isAxiosError} from "@openremote/rest";
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -389,6 +391,13 @@ export class PageExport extends Page<AppStateKeyed> {
             link.setAttribute("download", "dataexport.zip");
             document.body.appendChild(link);
             link.click();
+
+        }).catch(ex => {
+            if(isAxiosError(ex)) {
+                if(ex.response?.status === 413) {
+                    showSnackbar(undefined, "exportTooLargeError");
+                }
+            }
         });
     }
     

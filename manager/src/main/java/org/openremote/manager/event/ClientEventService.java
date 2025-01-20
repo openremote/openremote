@@ -44,6 +44,7 @@ import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.*;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.Pair;
 
@@ -104,7 +105,7 @@ import static org.openremote.model.Constants.*;
  */
 public class ClientEventService extends RouteBuilder implements ContainerService {
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000&keepAlive=false"; // Host is not used as existing undertow instance is utilised
+    public static final String WEBSOCKET_URI = "undertow://ws://0.0.0.0/websocket/events?fireWebSocketChannelEvents=true&sendTimeout=15000"; // Host is not used as existing undertow instance is utilised
     protected static final System.Logger LOG = System.getLogger(ClientEventService.class.getName());
     protected static final String PUBLISH_QUEUE = "direct://ClientPublishQueue";
 
@@ -119,7 +120,7 @@ public class ClientEventService extends RouteBuilder implements ContainerService
     protected ManagerIdentityService identityService;
     protected GatewayService gatewayService;
     protected boolean started;
-    protected Consumer<Exchange> websocketInterceptor;
+    protected Consumer<Exchange> gatewayInterceptor;
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(UndertowConstants.CONNECTION_KEY, String.class);
@@ -194,8 +195,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                             LOG.log(INFO, "Unsupported user principal type: " + principal);
                         }
 
-                        // Set an idle timeout value
-                        webSocketChannel.setIdleTimeout(30000);
+                        // Set an idle timeout value for service account connections; browsers don't reliably support
+                        // ping/pong frames so we can't be too aggressive with those connections but other clients
+                        // should implement ping/pong
+                        if (authContext != null && authContext.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX)) {
+                            webSocketChannel.setIdleTimeout(30000);
+                        }
 
                         // Push auth and realm into channel for future use
                         webSocketChannel.setAttribute(Constants.AUTH_CONTEXT, authContext);
@@ -249,8 +254,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
 
                 // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
+                if (gatewayInterceptor != null) {
+                    gatewayInterceptor.accept(exchange);
                 }
             })
             .stop()
@@ -281,8 +286,8 @@ public class ClientEventService extends RouteBuilder implements ContainerService
                 }
 
                 // Pass to gateway
-                if (websocketInterceptor != null) {
-                    websocketInterceptor.accept(exchange);
+                if (gatewayInterceptor != null) {
+                    gatewayInterceptor.accept(exchange);
                 }
             })
             .process(exchange -> {
@@ -485,8 +490,12 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .asyncSend();
     }
 
-    public void setWebsocketInterceptor(Consumer<Exchange> consumer) {
-        this.websocketInterceptor = consumer;
+    /**
+     * This allows gateway connectors to intercept exchanges from gateway clients; it by-passes the standard processing
+     * including authorization so the interceptor provides its own authorization checks.
+     */
+    public void setGatewayInterceptor(Consumer<Exchange> consumer) {
+        this.gatewayInterceptor = consumer;
     }
 
     protected void onWebsocketSubscriptionTriggered(String sessionKey, EventSubscription<?> subscription, SharedEvent event) {

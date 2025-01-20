@@ -335,8 +335,12 @@ services:
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # OR_DATA_POINTS_MAX_AGE_DAYS: 30
 
-      # Configure the limit of data points that can be queried. Disabled by default.
-      # OR_DATA_POINTS_QUERY_LIMIT: 1000000
+      # Configure the limit of data points that can be queried.
+      # Defaults to 100.000. When set to 0, it disables the limit.
+      # OR_DATA_POINTS_QUERY_LIMIT: 100000
+
+      # Configure the limit of data points that can be exported to CSV. Defaults to 1 million data points.
+      # OR_DATA_POINTS_EXPORT_LIMIT: 10000000
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID

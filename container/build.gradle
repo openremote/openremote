@@ -5,7 +5,7 @@ apply plugin: "signing"
 
 dependencies {
 
-    api resolveProject(":model")
+    api project(":model")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
     api "org.craftercms:groovy-sandbox:$groovySandboxVersion"
@@ -49,8 +49,8 @@ dependencies {
     api "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
 }
 
-jar {
-    archivesBaseName = "openremote-${project.name}"
+base {
+    archivesName = "openremote-${project.name}"
 }
 
 javadoc {
@@ -112,6 +112,8 @@ publishing {
 signing {
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign publishing.publications.maven
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.maven
+    }
 }
