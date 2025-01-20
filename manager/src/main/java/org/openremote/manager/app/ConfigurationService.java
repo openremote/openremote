@@ -58,6 +58,9 @@ public class ConfigurationService implements ContainerService {
     public static final String OR_MAP_TILES_PATH = "OR_MAP_TILES_PATH";
     public static final String OR_MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
 
+    public static final String OR_CUSTOM_MAP_TILES_PATH = "OR_CUSTOM_MAP_TILES_PATH";
+    public static final String OR_CUSTOM_MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata-custom.mbtiles";
+
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
     protected Path pathPublicRoot;
@@ -65,6 +68,7 @@ public class ConfigurationService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(ConfigurationService.class.getName());
 
     protected Path mapTilesPath;
+    protected Path customMapTilesPath;
     protected Path mapSettingsPath;
     protected Path managerConfigPath;
     protected AtomicReference<ManagerAppConfig> managerAppConfig;
@@ -96,6 +100,10 @@ public class ConfigurationService implements ContainerService {
                 .filter(Files::isRegularFile)
                 .findFirst().orElse(null);
 
+        customMapTilesPath = Stream.of(getString(container.getConfig(), OR_CUSTOM_MAP_TILES_PATH, OR_CUSTOM_MAP_TILES_PATH_DEFAULT), "/deployment/map/mapdata-custom.mbtiles", "/opt/map/mapdata-custom.mbtiles", OR_CUSTOM_MAP_TILES_PATH_DEFAULT)
+                .map(Path::of)
+                .map(Path::toAbsolutePath).findFirst().orElse(null);
+
         managerConfigPath = Stream.of(getPersistedManagerConfigPath(), pathPublicRoot.resolve("manager_config.json"))
                 .map(Path::toAbsolutePath)
                 .filter(Files::isRegularFile)
@@ -110,6 +118,7 @@ public class ConfigurationService implements ContainerService {
         LOG.info("\t- manager_config.json: " + managerConfigPath);
         LOG.info("\t- mapsettings.json: " + mapSettingsPath);
         LOG.info("\t- mapdata.mbtiles: " + mapTilesPath);
+        LOG.info("\t- mapdata-custom.mbtiles: " + customMapTilesPath);
     }
 
     @Override
@@ -125,6 +134,7 @@ public class ConfigurationService implements ContainerService {
     public String toString() {
         return "ConfigurationService{" +
                 "mapTilesPath=" + mapTilesPath +
+                ", customMapTilesPath=" + customMapTilesPath +
                 ", mapSettingsPath=" + mapSettingsPath +
                 ", managerConfigPath=" + managerConfigPath +
                 '}';
@@ -162,6 +172,10 @@ public class ConfigurationService implements ContainerService {
 
     public Path getMapTilesPath() {
         return mapTilesPath;
+    }
+
+    public Path getCustomMapTilesPath() {
+        return customMapTilesPath;
     }
 
     public ManagerAppConfig getManagerConfig() {
