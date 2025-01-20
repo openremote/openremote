@@ -30,7 +30,6 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                System.out.println(new AttributeRef(assetId, attributeName));
                 Optional<AttributeInfo> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
                 return readValue.flatMap(ValueHolder::getValue).orElse(null);
             },
@@ -61,7 +60,6 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                System.out.println(new AttributeRef(assetId, attributeName));
                 Optional<AttributeInfo> attr = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
                 if (attr.isPresent()) {
                     AttributeInfo attributeInfo = attr.get();
@@ -115,7 +113,6 @@ public enum NodeModel {
                 AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
-                System.out.println(new AttributeRef(assetId, attributeName));
                 Optional<AttributeInfo> attr = info.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)).findFirst();
 
                 double integral = 0.0;
@@ -179,11 +176,6 @@ public enum NodeModel {
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
                 final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointTimestampQuery(pastInstant.toEpochMilli()));
-                try {
-                    System.out.println("DATAPOINTS: " + ValueUtil.JSON.writeValueAsString(valueDatapoints));
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
                 return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
             },
             params -> {
@@ -208,7 +200,7 @@ public enum NodeModel {
             info -> ((RulesBuilder.Action) facts -> {
                 info.setFacts(facts);
                 Object obj = info.getValueFromInput(0);
-                Logger.getLogger("NodeModel.DEBUG_TO_CONSOLE").log(Level.FINEST, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+                facts.getLogger().log(Level.FINEST, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
             })),
 
     WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{

@@ -218,10 +218,10 @@
     "NUMBER_SWITCH": "Number switch",
     "TEXT_SWITCH": "Text switch",
     "ROUND_NODE": "Round",
-    "max" : "max",
-    "min": "min",
-    "avg": "avg",
-    "med": "med"
+    "max": "Max",
+    "min": "Min",
+    "avg": "Avg",
+    "med": "Med"
   },
   "else": "else",
   "english": "English",

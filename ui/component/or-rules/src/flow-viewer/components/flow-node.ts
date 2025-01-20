@@ -94,7 +94,7 @@ export class FlowNode extends SelectableElement {
         this.style.boxShadow = this.selected ? "var(--highlight) 0 0 0 3px" : "";
 
         const title = this.minimal ?
-            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${String(i18next.t("flow."+this.node.displayCharacter!, this.node.displayCharacter!))}</div>` :
+            html`<div class="title minimal" ?singlechar="${this.node.displayCharacter!.length === 1}">${i18next.t("flow."+this.node.displayCharacter!, this.node.displayCharacter!)}</div>` :
             html`<div class="title ${this.node.type!.toLowerCase()}" @mousedown="${this.startDrag}">${i18next.t("flow."+this.node.name!) || "invalid"}</div>`;
 
         const inputSide = html`<div class="socket-side inputs">${this.node.inputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="input"></flow-node-socket>`)}</div>`;

@@ -489,14 +489,12 @@ public class RulesFacts extends Facts implements RuleListener {
         }
         return haveLog;
     }
-	public void logVars(Logger logger, Level level, String string) {
-		logger.log(level, string);
-	}
-
 
     public RulesClock getClock() {
         return timerService;
     }
+
+    public Logger getLogger(){return LOG;}
 
     public static Comparator<AttributeInfo> asComparator(AssetQuery.OrderBy orderBy) {
 
