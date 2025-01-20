@@ -7,8 +7,8 @@ Metadata:
         Label:
           default: Instance Configuration
         Parameters:
-          - Name
-          - Instance
+          - InstanceName
+          - InstanceType
           - Hostname
           - Keypair
           - SSHLocation
@@ -18,7 +18,7 @@ Metadata:
         Parameters:
           - Password
       - Label:
-          default: E-mail Configuration
+          default: E-mail Configuration (Optional)
         Parameters:
           - SMTPHost
           - SMTPUser
@@ -29,11 +29,11 @@ Metadata:
           - SMTPProtocol
 
 Parameters:
-    Name:
+    InstanceName:
       Description: The name for this EC2 Instance on the EC2 Overview page
       Type: String
       Default: OpenRemote
-    Instance:
+    InstanceType:
       Description: Choose a instance based on your monthly budget
       Type: String
       Default: Medium
@@ -57,24 +57,24 @@ Parameters:
       AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
       ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
     Password:
-      Description: Create an (admin) password for your OpenRemote instance
+      Description: Create an (admin) password for your OpenRemote instance. Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters, 1 or more special characters and must be 8 or more characters in length.
       Type: String
       MinLength: 8
       AllowedPattern: ^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^0-9a-zA-Z])(?=\S+$).{8,}$
-      ConstraintDescription: Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters. Password must contain 1 or more special characters. Password must be 8 or more characters in length.
+      ConstraintDescription: Password must contain 1 or more uppercase characters. Password must contain 1 or more digit characters, 1 or more special characters and must be 8 or more characters in length.
       NoEcho: true
     SMTPHost:
-      Description: Fill in the SMTP Hostname for sending e-mails
+      Description: (Optional) Fill in the SMTP Hostname for sending e-mails
       Type: String
     SMTPUser:
-      Description: Fill in the SMTP username for sending e-mails
+      Description: (Optional) Fill in the SMTP username for sending e-mails
       Type: String
     SMTPPassword:
-      Description: Fill in the SMTP password for sending e-mails
+      Description: (Optional) Fill in the SMTP password for sending e-mails
       Type: String
       NoEcho: true
     SMTPPort:
-      Description: Fill in the SMTP port for sending e-mails
+      Description: Fill in the SMTP port for sending e-mails. If not using SMTP leave as '587'
       Type: Number
       Default: 587
     SMTPTLS:
@@ -85,7 +85,7 @@ Parameters:
         - false
       Default: true
     SMTPFrom:
-      Description: Fill in the From e-mail address you want to use for sending e-mails
+      Description: (Optional) Fill in the From e-mail address you want to use for sending e-mails
       Type: String
     SMTPProtocol:
       Description: Select the SMTP protocol you want to use for sending e-mails (smtps = SSL)
@@ -268,50 +268,97 @@ Resources:
           commands:
             01_install_docker:
               command: |
-                sudo yum install -y docker
-                sudo service docker start
+                yum install -y docker wget
+                service docker enable
+                service docker start
 
             02_install_docker_compose:
               command: |
-                sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
+                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+                chmod +x /usr/local/bin/docker-compose
               
-            03_download_config:
+            03_download_openremote_compose:
               command: |
-                sudo mkdir openremote
-                sudo wget https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml -P /openremote
-
-            04_create_instance:
+                mkdir openremote
+                wget https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml -P /openremote
+            
+            04_create_containers:
               command: !Sub |
-                PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
-
-                if [ -z "${Hostname}" ]; then
-                  export OR_HOSTNAME=$PUBLIC_IPV4
-                  echo "No Hostname provided, using the public IP address"
-                else
-                  export OR_HOSTNAME=${Hostname}
-                  echo "Using the provided Hostname"
-                fi
-
-                export OR_ADMIN_PASSWORD=${Password}
-                export OR_EMAIL_HOST=${SMTPHost}
-                export OR_EMAIL_USER=${SMTPUser}
-                export OR_EMAIL_PASSWORD=${SMTPPassword}
-                export OR_EMAIL_PORT=${SMTPPort}
-                export OR_EMAIL_TLS=${SMTPTLS}
-                export OR_EMAIL_FROM=${SMTPFrom}
-                export OR_EMAIL_PROTOCOL=${SMTPProtocol}
-
                 docker-compose -f /openremote/docker-compose.yml -p openremote up -d --no-start
-                        
-            05_start_instance:
+
+            05_create_startup_service:
               command: |
-                sudo docker-compose -f /openremote/docker-compose.yml start
+                # Create parameter fetch script
+                cat << 'EOF' > /usr/local/bin/fetch-env.sh
+                #!/bin/bash
+
+                MAX_ATTEMPTS=30
+                ATTEMPT=0
+
+                while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                    echo "Attempt $ATTEMPT to fetch parameters..."
+                    
+                    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+                    INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+                    
+                    PARAMS=$(aws ssm get-parameter --name "/openremote/$INSTANCE_ID/config" --query Parameter.Value --output text 2>/dev/null)
+                    if [ $? -eq 0 ]; then
+                        echo "Successfully fetched parameters"
+                        
+                        # Write parameters to .env file
+                        echo "$PARAMS" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > /openremote/.env
+
+                        # Check and set OR_HOSTNAME if not set or empty
+                        if ! grep -q "OR_HOSTNAME=" /openremote/.env || grep -q "OR_HOSTNAME=$" /openremote/.env; then
+                            PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
+                            echo "No Hostname provided, using the public IP address: $PUBLIC_IP"
+                            sed -i "s/OR_HOSTNAME=/OR_HOSTNAME=$PUBLIC_IP/" /openremote/.env
+                        fi
+                        exit 0
+                    fi
+                    
+                    echo "Attempt: $ATTEMPT - Parameters not available yet, trying again..."
+                    sleep 10
+                    ATTEMPT=$((ATTEMPT + 1))
+                done
+
+                echo "Failed to fetch parameters after $MAX_ATTEMPTS attempts"
+                exit 1
+                EOF
+
+                chmod +x /usr/local/bin/fetch-env.sh
 
             06_create_systemd_service:
               command: |
-                sudo systemctl enable docker
-                sudo systemctl start docker
+                # Create systemd service
+                cat << 'EOF' > /etc/systemd/system/openremote.service
+                [Unit]
+                Description=OpenRemote Manager
+                After=docker.service network-online.target
+                Wants=network-online.target
+                Requires=docker.service
+
+                [Service]
+                Type=oneshot
+                RemainAfterExit=yes
+                WorkingDirectory=/openremote
+                ExecStartPre=/usr/local/bin/fetch-env.sh
+                ExecStart=/usr/local/bin/docker-compose --env-file /openremote/.env -f /openremote/docker-compose.yml up -d
+                ExecStartPost=/bin/rm -f /openremote/.env
+                ExecStop=/usr/local/bin/docker-compose -f /openremote/docker-compose.yml down
+                Restart=on-failure
+                RestartSec=10
+
+                [Install]
+                WantedBy=multi-user.target
+
+            07_start_enable_services:
+              command: |
+
+                systemctl daemon-reload
+                systemctl enable openremote.service
+                systemctl start openremote.service
+
 
     Properties:
       ImageId: !FindInMap
@@ -351,7 +398,7 @@ Resources:
         - Key: Name
           Value: !Ref Name 
 
-  # IAM Role for retriving required data to recreate the .env file while updating the Docker images in UpdateDockerImagesDocument
+  # IAM Role for retriving required data to recreate the .env file
   SSMRole:
     Type: AWS::IAM::Role
     Properties: 
@@ -383,7 +430,7 @@ Resources:
       Roles:
         - !Ref SSMRole
 
-  # SSM Parameter to store values required to recreate the .env file while updating the Docker images in UpdateDockerImagesDocument
+  # SSM Parameter to store values required to recreate the .env file
   OpenRemoteParameters:
     Type: AWS::SSM::Parameter
     Properties:
@@ -401,7 +448,7 @@ Resources:
           "OR_EMAIL_FROM": "${SMTPFrom}",
           "OR_EMAIL_PROTOCOL": "${SMTPProtocol}"
         }
-    DependsOn: InstanceOR
+    DependsOn: StaticIP
 
 # SSM document to update Docker images
   UpdateDockerImagesDocument:
@@ -473,7 +520,7 @@ Resources:
       DocumentType: Command
       Content:
         schemaVersion: '2.2'
-        description: "Update system packages and Docker"
+        description: "Update system packages and Docker (DOCKER AND OPENREMOTE WILL BE RESTARTED ONCE COMPLETE)"
         mainSteps:
           - action: aws:runShellScript
             name: updatePackages
@@ -492,6 +539,61 @@ Resources:
                     exit 1
                   fi
                 - 'echo "System packages and Docker updated successfully!"'
+
+  # New SSM document to update the Amazon Linux OS
+  UpdateAWSLinuxOSDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      Content:
+        schemaVersion: '2.2'
+        description: "Update the system OS (EC2 INSTANCE WILL REBOOT AUTOMATICALLY ONCE COMPLETE)"
+        mainSteps:
+          - action: aws:runShellScript
+            name: updateAWSLinux
+            inputs:
+              runCommand:
+                - 'echo "Starting Amazon Linux OS update..."'
+                - |
+                  if ! sudo dnf upgrade --releasever=latest -y --quiet 2>/dev/null; then
+                    echo "Error: Update failed. Full error log:"
+                    sudo dnf upgrade --releasever=latest -y
+                    exit 1
+                  fi
+                - 'sudo dnf clean all --quiet'
+                - 'echo "Rebooting EC2 instance"'
+                - "sudo reboot now"
+                - 'echo "Amazon Linux OS update completed successfully"'
+
+# SSM document to clear the proxy data volume
+  ClearProxyDataDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      Content:
+        schemaVersion: '2.2'
+        description: "Delete the proxy data volume using systemd service"
+        mainSteps:
+          - action: aws:runShellScript
+            name: clearProxyData
+            inputs:
+              runCommand:
+                # Verify service exists
+                - 'if ! systemctl status openremote.service > /dev/null; then echo "OpenRemote service not found"; exit 1; fi'
+                # Stop service (which runs docker-compose down)
+                - 'echo "Stopping openremote.service..."'
+                - 'systemctl stop openremote.service || { echo "Failed to stop service"; exit 1; }'
+                # Wait for containers to stop
+                - 'sleep 5'
+                # Remove volume
+                - 'echo "Removing proxy volume..."'
+                - 'docker volume rm openremote_proxy-data || { echo "Failed to remove volume"; exit 1; }'
+                # Start service (which runs docker-compose up)
+                - 'echo "Starting openremote.service..."'
+                - 'systemctl start openremote.service || { echo "Failed to start service"; exit 1; }'
+                # Verify service is running
+                - 'systemctl is-active --quiet openremote.service || { echo "Service failed to start"; exit 1; }'
+                - 'echo "Service restarted successfully"'
 
 Outputs:
   PublicIP:
