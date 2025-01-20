@@ -2,7 +2,9 @@
 	"push": {
 		"master": {
 			"distribute": {
-				"docker": "develop"
+				"docker": "develop",
+				"maven": "$version-SNAPSHOT",
+				"npm": "$version-snapshot"
 			},
 			"deploy": {
 				"managerTag": "develop",
