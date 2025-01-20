@@ -19,7 +19,7 @@
  */
 package org.openremote.test.users
 
-
+import jakarta.ws.rs.BadRequestException
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.model.query.UserQuery
@@ -298,5 +298,70 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         user.attributes.size() == 2
         user.attributes.any {it.name == EMAIL_NOTIFICATIONS_DISABLED_ATTRIBUTE && it.value == "true"}
         user.attributes.any {it.name == "test" && it.value == "testvalue"}
+    }
+
+    def "Create invalid users"() {
+
+        when: "a regular user is created"
+        String username1 = "openremoteuser"
+        User user1 = new User().setUsername(username1)
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
+
+        then: "user1 is fetched correctly"
+        User[] users = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+        assert users.size() == (3 + 1)
+        assert users.any { it.username == username1 }
+
+        /* ---------- */
+
+        when: "the same user is created again"
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user1)
+
+        then: "an exception is thrown, because it already exists"
+        thrown(ForbiddenException)
+
+        /* ---------- */
+
+        when: "a user with only special characters is created"
+        String username2 = '#$%^&*()' // only includes illegal characters
+        User user2 = new User().setUsername(username2)
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user2)
+
+        then: "the invalid character-only username causes an exception to be thrown"
+        thrown(BadRequestException)
+
+        /* ---------- */
+
+        when: "a user with a few special characters is created"
+        String username3 = "openremoteuser!"
+        User user3 = new User().setUsername(username3)
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user3)
+
+        then: "the single exclamation mark should cause an exception to be thrown"
+        thrown(BadRequestException)
+
+        /* ---------- */
+
+        when: "a user is created with their email address as username"
+        String username4 = "developers@openremote.io"
+        User user4 = new User().setUsername(username4)
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user4)
+
+        then: "user4 is created correctly"
+        User[] users4 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+        assert users4.size() == (3 + 2)
+        assert users4.any { it.username == username4 }
+
+        /* ---------- */
+
+        when: "a user is created with a special email address as their username"
+        String username5 = "dev_dev-dev.dev+dev++dev__ßçʊ@openremote.io" // all special characters should be valid
+        User user5 = new User().setUsername(username5)
+        adminUserResource.create(null, keycloakTestSetup.realmMaster.name, user5)
+
+        then: "user5 is created correctly"
+        User[] users5 = adminUserResource.query(null, new UserQuery().realm(new RealmPredicate(keycloakTestSetup.realmMaster.name)))
+        assert users5.size() == (3 + 3)
+        assert users5.any { it.username == username5 }
     }
 }
