@@ -241,7 +241,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
                                   .type="${InputType.TEXT}"
                                   ?required="${!registrationEmailAsUsername}"
                                   .disabled="${true}"
-                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\\-_]+"
+                                  minLength="3" maxLength="255" pattern="[A-Za-z0-9\-_+@.ßçʊ]+"
                                   .validationMessage="${i18next.t("invalidUsername")}"
                                   .value="${user?.username}" autocomplete="false"
                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
