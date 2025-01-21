@@ -494,8 +494,6 @@ public class RulesFacts extends Facts implements RuleListener {
         return timerService;
     }
 
-    public Logger getLogger(){return LOG;}
-
     public static Comparator<AttributeInfo> asComparator(AssetQuery.OrderBy orderBy) {
 
         Function<AttributeInfo, String> keyExtractor = AttributeInfo::getAssetName;

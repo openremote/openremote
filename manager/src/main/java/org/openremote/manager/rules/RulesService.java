@@ -226,8 +226,7 @@ public class RulesService extends RouteBuilder implements ContainerService {
         container.getService(ManagerWebService.class).addApiSingleton(
             new FlowResourceImpl(
                 container.getService(TimerService.class),
-                container.getService(ManagerIdentityService.class),
-                container
+                container.getService(ManagerIdentityService.class)
             )
         );
 

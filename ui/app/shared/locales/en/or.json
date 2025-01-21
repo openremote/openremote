@@ -218,6 +218,7 @@
     "NUMBER_SWITCH": "Number switch",
     "TEXT_SWITCH": "Text switch",
     "ROUND_NODE": "Round",
+    "DEBUG_TO_CONSOLE": "Log to console",
     "max": "Max",
     "min": "Min",
     "avg": "Avg",

@@ -1,6 +1,5 @@
 package org.openremote.manager.rules.flow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.openremote.manager.rules.RulesBuilder;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
@@ -16,7 +15,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public enum NodeModel {
     READ_ATTRIBUTE(
@@ -152,7 +150,7 @@ public enum NodeModel {
             new Node(NodeType.INPUT, new NodeInternal[]
                     {
                         new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
-                        new NodeInternal("time_period", new Picker(PickerType.NUMBER),  NodeInternal.BreakType.SPACER),
+                        new NodeInternal("time_period", new Picker(PickerType.DATE),  NodeInternal.BreakType.SPACER),
                         new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN, TimeUnit.getHistoricValueOptions()), NodeInternal.BreakType.SPACER)
                     },
                     new NodeSocket[0],
@@ -200,7 +198,7 @@ public enum NodeModel {
             info -> ((RulesBuilder.Action) facts -> {
                 info.setFacts(facts);
                 Object obj = info.getValueFromInput(0);
-                facts.getLogger().log(Level.FINEST, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+                info.getLog().log(Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
             })),
 
     WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{

@@ -14,7 +14,7 @@ import { Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import { ifDefined } from "lit/directives/if-defined.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -108,8 +108,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 return this.dropdownInput;
             case PickerType.MULTILINE:
                 return this.multilineInput;
-            case PickerType.NUMBER:
+            case PickerType.DATE:
                 return this.getNumberInput(0, 365);
+            case PickerType.NUMBER:
+                return this.getNumberInput(undefined, undefined);
             case PickerType.TEXT:
                 return this.textInput;
             default:
