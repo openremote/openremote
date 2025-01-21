@@ -97,10 +97,14 @@ Parameters:
 
 Mappings:
   InstanceType:
-    default:
-      Small: t4g.small
-      Medium: t4g.medium
-      Large: t4g.large
+    Small:
+      InstanceSize: t4g.small
+    Medium:
+      InstanceSize: t4g.medium
+    Large:
+      InstanceSize: t4g.large
+
+  # Region-specific AMI mapping
   RegionMap: 
     us-east-1: 
         ImageId: ami-00b777c899f47763b
@@ -173,14 +177,14 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: !Ref Name
+          Value: !Ref InstanceName
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags: 
         - Key: Name
-          Value: !Ref Name
+          Value: !Ref InstanceName
   
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -197,14 +201,14 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Ref Name
+          Value: !Ref InstanceName
   
   RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags: 
         - Key: Name
-          Value: !Ref Name
+          Value: !Ref InstanceName
       VpcId: !Ref VPC
   
   Route:
@@ -224,7 +228,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: OpenRemote Security Group
-      GroupName: !Ref Name
+      GroupName: !Ref InstanceName
       VpcId: !Ref VPC
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
@@ -365,17 +369,14 @@ Resources:
         - RegionMap
         - us-east-1
         - ImageId
-      InstanceType: !FindInMap
-        - InstanceType
-        - default
-        - !Ref Instance
+      InstanceType: !FindInMap [InstanceType, !Ref InstanceType, InstanceSize]
       KeyName: !Ref Keypair
       SubnetId: !Ref Subnet
       SecurityGroupIds:
       -  !Ref SecurityGroup
       Tags:
         - Key: Name
-          Value: !Ref Name
+          Value: !Ref InstanceName
       BlockDeviceMappings:
        - DeviceName: /dev/xvda
          Ebs:
@@ -396,7 +397,7 @@ Resources:
       InstanceId: !Ref InstanceOR
       Tags:
         - Key: Name
-          Value: !Ref Name 
+          Value: !Ref InstanceName
 
   # IAM Role for retriving required data to recreate the .env file
   SSMRole:
