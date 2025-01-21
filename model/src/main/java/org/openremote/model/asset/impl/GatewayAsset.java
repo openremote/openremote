@@ -38,6 +38,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
     public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("gatewayStatus", ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("disabled", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> TUNNELING_SUPPORTED = new AttributeDescriptor<>("tunnelingSupported", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<String[]> META_ITEM_RESTRICTIONS = new AttributeDescriptor<>("metaItemRestrictions", ValueType.TEXT.asArray());
     public static final AssetDescriptor<GatewayAsset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", null, GatewayAsset.class);
 
     /**
@@ -90,6 +91,13 @@ public class GatewayAsset extends Asset<GatewayAsset> {
 
     public GatewayAsset setTunnelingSupported(Boolean supported) {
         getAttributes().getOrCreate(TUNNELING_SUPPORTED).setValue(supported);
+        return this;
+    }
+
+    public Optional<String[]> getMetaItemRestrictions() { return getAttributes().getValue(META_ITEM_RESTRICTIONS); }
+
+    public GatewayAsset setMetaItemRestrictions(String[] restrictions) {
+        getAttributes().getOrCreate(META_ITEM_RESTRICTIONS).setValue(restrictions);
         return this;
     }
 }

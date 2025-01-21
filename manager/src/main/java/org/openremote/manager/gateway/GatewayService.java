@@ -69,6 +69,7 @@ import static org.openremote.container.persistence.PersistenceService.PERSISTENC
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.manager.gateway.GatewayConnector.META_ITEM_RESTRICTIONS_LIST;
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
@@ -254,6 +255,12 @@ public class GatewayService extends RouteBuilder implements ContainerService {
                 }
 
                 // Create connector
+
+                if(gateway.getMetaItemRestrictions().isEmpty()){
+                    gateway.setMetaItemRestrictions(GatewayConnector.META_ITEM_RESTRICTIONS_LIST);
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.META_ITEM_RESTRICTIONS, META_ITEM_RESTRICTIONS_LIST));
+                }
+
                 GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, scheduledExecutorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
 
@@ -417,6 +424,9 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
                 // Update the event value with the potentially newly generated secret
                 event.setValue(newSecret);
+            }else if(GatewayAsset.META_ITEM_RESTRICTIONS.getName().equals(event.getName())){
+                GatewayAsset gatewayAsset = assetStorageService.find(event.getId(), GatewayAsset.class);
+                connector.setGatewayAsset(gatewayAsset);
             }
 
             return false;
@@ -695,6 +705,16 @@ public class GatewayService extends RouteBuilder implements ContainerService {
 
             case CREATE -> {
                 createUpdateGatewayServiceUser(gateway);
+                String[] metaItemRestrictions = new String[] {
+                        MetaItemType.AGENT_LINK.getName(),
+                        MetaItemType.ATTRIBUTE_LINKS.getName(),
+                        MetaItemType.ACCESS_PUBLIC_READ.getName(),
+                        MetaItemType.ACCESS_PUBLIC_WRITE.getName(),
+                        MetaItemType.ACCESS_RESTRICTED_READ.getName(),
+                        MetaItemType.ACCESS_RESTRICTED_WRITE.getName()
+                };
+                gateway.setMetaItemRestrictions(metaItemRestrictions);
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.META_ITEM_RESTRICTIONS, metaItemRestrictions));
                 GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, scheduledExecutorService, this, gateway);
                 gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
             }

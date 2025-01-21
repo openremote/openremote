@@ -24,12 +24,13 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.impl.GatewayAsset;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.*;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.*;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.MetaItemType;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -75,6 +76,16 @@ public class GatewayConnector {
     protected ScheduledFuture<?> syncProcessorFuture;
     protected Future<?> capabilitiesFuture;
     List<String> syncAssetIds;
+    protected GatewayAsset gatewayAsset;
+
+    public static String[] META_ITEM_RESTRICTIONS_LIST = new String[] {
+        MetaItemType.AGENT_LINK.getName(),
+                MetaItemType.ATTRIBUTE_LINKS.getName(),
+                MetaItemType.ACCESS_PUBLIC_READ.getName(),
+                MetaItemType.ACCESS_PUBLIC_WRITE.getName(),
+                MetaItemType.ACCESS_RESTRICTED_READ.getName(),
+                MetaItemType.ACCESS_RESTRICTED_WRITE.getName()
+    };
     int syncIndex;
     int syncErrors;
     String expectedSyncResponseName;
@@ -111,6 +122,7 @@ public class GatewayConnector {
         this.disabled = gateway.getDisabled().orElse(false);
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
+        this.gatewayAsset = gateway;
 
         // Setup static inbound event handling
         synchronized(eventConsumerMap) {
@@ -376,6 +388,10 @@ public class GatewayConnector {
 
     protected String getSessionId() {
         return sessionId.get();
+    }
+
+    public void setGatewayAsset(GatewayAsset gatewayAsset) {
+        this.gatewayAsset = gatewayAsset;
     }
 
     protected void publishAttributeEvent(AttributeEvent event) {
@@ -677,6 +693,17 @@ public class GatewayConnector {
         asset.setId(mapAssetId(gatewayId, assetId, false));
         asset.setParentId(asset.getParentId() != null ? mapAssetId(gatewayId, asset.getParentId(), false) : gatewayId);
         asset.setRealm(realm);
+        AttributeMap attrs = new AttributeMap(asset.getAttributes().stream().map(attr -> {
+            attr.setMeta(attr.getMeta().stream()
+                    //TODO: Not sure why getMetaItemRestrictions() could be null here.
+                    .filter(metaItem -> !Arrays.asList(gatewayAsset.getMetaItemRestrictions().orElse(META_ITEM_RESTRICTIONS_LIST)).contains(metaItem.getName()))
+                    .collect(Collectors.toMap(MetaItem::getName, Function.identity(), (a, b) -> b, MetaMap::new))
+            );
+            return attr;
+        }).toList());
+
+        asset.setAttributes(attrs);
+
         LOG.fine("Creating/updating gateway asset: Asset ID=" + assetId + ", Asset ID Mapped=" + asset.getId() + ": " + this);
         return assetStorageService.merge(asset, true, true, null);
     }
