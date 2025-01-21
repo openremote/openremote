@@ -22,12 +22,11 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { NotificationForm, NotificationFormData } from "../components/notifications/notification-form";
 import "../components/notifications/notification-form";
-import { OrNotificationsTable } from "../components/notifications/or-notifications-table";
+import { OrNotificationsTable, NotificationTableClickEvent } from "../components/notifications/or-notifications-table";
 import "../components/notifications/or-notifications-table";
 import {
-    OrMwcTableRowClickEvent
+    OrMwcTableRowClickEvent,
 } from "@openremote/or-mwc-components/or-mwc-table";
-// import { Input } from "@openremote/or-rules/src/flow-viewer/services/input";
 
 export class NotificationService {
     
@@ -36,19 +35,15 @@ export class NotificationService {
             const timeRange = fromDate && toDate ? 
             {fromDate, toDate} :
             this.getDefaultTimeRange();
-            console.log("Fetching notifications with filters:", {
-                fromDate: timeRange.fromDate,
-                toDate: timeRange.toDate
-            })
 
-            const response = await manager.rest.api.NotificationResource.getNotifications({
+            // const response = await manager.rest.api.NotificationResource.getNotifications({
+            //     from: timeRange.fromDate,
+            //     to: timeRange.toDate
+            // });
+            const response = await manager.rest.api.NotificationResource.getAllNotifications({
                 from: timeRange.fromDate,
                 to: timeRange.toDate
             });
-            // const response = await manager.rest.api.NotificationResource.getAllNotifications({
-            //     from: fromDate,
-            //     to: toDate
-            // });
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -69,15 +64,13 @@ export class NotificationService {
     }
 
     async sendNotification(notification: Notification): Promise<boolean> {
-        try {
-            console.log("About to send notification:", notification);
-    
-            const response = await manager.rest.api.NotificationResource.sendNotification(
-                notification
-            );
-            // const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+        try {    
+            // const response = await manager.rest.api.NotificationResource.sendNotification(
             //     notification
             // );
+            const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+                notification
+            );
             console.log("Response received:", response);
             return response.status === 200;
         } catch (err: unknown) {
@@ -618,7 +611,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return html`
             <or-notifications-table 
                 .notifications=${this._getFilteredNotifications() || []}
-                @or-mwc-table-row-click="${(e: OrMwcTableRowClickEvent) => this._onRowClick(e)}"
+                @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
         `;
     }
@@ -671,34 +664,35 @@ export class PageNotifications extends Page<AppStateKeyed> {
         )
     }
 
-    private _onRowClick(e: OrMwcTableRowClickEvent) {
-        // prevent handling if no notificiation data
+    private _onRowClick(e: NotificationTableClickEvent) {
         if (!this._data || !e.detail) {
             console.warn("No data available.");
             return;
         }
+        const notificationId = e.detail.notificationId;
+        console.log("EVENT RECEIVED BY NOTIFICATIONS:", e);
+        console.log("Clicked notification from notifications page with index:", notificationId);
 
-        const index = e.detail.index;
-        const notification = this._data[index];
-
+        const notification = this._data.find(n=> n.id === notificationId);
         // if no notif. return
         if (!notification) {
-            console.warn(`No notification found at index ${index}`);
+            console.warn(`No notification found with id ${notificationId}`);
             return;
         }
+        console.log("Clicked notification from notifications page:", notification);
         
-        // show notification details in dialog
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Notification details"))
-            .setContent(this._getNotificationDetailsContent(notification))
-        ).setActions([
+            .setContent(this._getNotificationDetailsContent(notification))   
+            .setActions([
             {
                 actionName: "close",
                 content: i18next.t("close"),
                 action: () => dialog.close()
             }
         ])
+        );
     }
 
 
