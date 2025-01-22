@@ -80,11 +80,11 @@ public class GatewayConnector {
 
     public static String[] META_ITEM_RESTRICTIONS_LIST = new String[] {
         MetaItemType.AGENT_LINK.getName(),
-                MetaItemType.ATTRIBUTE_LINKS.getName(),
-                MetaItemType.ACCESS_PUBLIC_READ.getName(),
-                MetaItemType.ACCESS_PUBLIC_WRITE.getName(),
-                MetaItemType.ACCESS_RESTRICTED_READ.getName(),
-                MetaItemType.ACCESS_RESTRICTED_WRITE.getName()
+        MetaItemType.ATTRIBUTE_LINKS.getName(),
+        MetaItemType.ACCESS_PUBLIC_READ.getName(),
+        MetaItemType.ACCESS_PUBLIC_WRITE.getName(),
+        MetaItemType.ACCESS_RESTRICTED_READ.getName(),
+        MetaItemType.ACCESS_RESTRICTED_WRITE.getName()
     };
     int syncIndex;
     int syncErrors;

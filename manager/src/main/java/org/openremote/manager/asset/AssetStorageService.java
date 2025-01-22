@@ -63,6 +63,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
+import org.w3c.dom.Attr;
 
 import java.sql.*;
 import java.util.*;
@@ -77,6 +78,7 @@ import java.util.stream.Stream;
 
 import static java.util.logging.Level.*;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
@@ -665,7 +667,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         throw new IllegalStateException("Cannot move an asset into a GatewayAsset");
                     }
 
-                    if(asset.getAttributes().stream().count() != existingAsset.getAttributes().stream().count()){
+                    if(asset.getAttributes().size() != existingAsset.getAttributes().size()){
                         throw new IllegalStateException("Attributes were created/deleted");
                     }
 
@@ -673,11 +675,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             existingAsset.getAttribute(it.getName()).orElse(null)
                     )).toList();
 
-                    List<? extends Attribute<?>> allowedChanges = changedAttrs.stream().map(it -> {
-                        it.setMeta(
+                    List<? extends Attribute<?>> allowedChanges = changedAttrs.stream().map( it -> {
+                        return existingAsset.getAttribute(it.getName()).orElseThrow().setMeta(
                                 new MetaMap(it.getMeta().stream().filter(meta -> !restrictedMetaItems.contains(meta.getName())).toList())
-                        );
-                        return it;
+                        ).setTimestamp(it.getTimestamp().orElse(0L));
                     }).toList();
 
                     asset.addOrReplaceAttributes(allowedChanges.toArray(Attribute[]::new));
@@ -893,7 +894,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     List<Asset<?>> assets = em
                         .createQuery("select a from Asset a where not exists(select child.id from Asset child where child.parentId = a.id and not child.id in :ids) and a.id in :ids", Asset.class)
                         .setParameter("ids", ids)
-                        .getResultList().stream().map(asset -> (Asset<?>) asset).collect(Collectors.toList());
+                        .getResultList().stream().map(asset -> (Asset<?>) asset).collect(toList());
 
                     if (ids.size() != assets.size()) {
                         throw new IllegalArgumentException("Cannot delete one or more requested assets as they either have children or don't exist");
