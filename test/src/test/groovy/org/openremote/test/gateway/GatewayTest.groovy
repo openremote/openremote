@@ -1461,7 +1461,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         clientReceivedMessages.clear()
 
         and: "an attempt is made to remove an attribute of the child asset of the gateway in the local manager"
-        localShipAsset.setName("Test Building 1 Room 5")
         localShipAsset.getAttributes().remove("removalTest");
         localShipAsset = assetStorageService.merge(localShipAsset)
 
@@ -1491,7 +1490,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "The meta item change should be discarded"
         conditions.eventually {
-            localShipAsset = assetStorageService.find(mapAssetId(gateway.id, shipAssetId, false)) as ShipAsset
+            localShipAsset = assetStorageService.find(mapAssetId(gateway.id, shipAssetId, false), true) as ShipAsset
             assert localShipAsset.getAttribute(ShipAsset.SPEED).get().getMetaItem(MetaItemType.ACCESS_PUBLIC_READ).isEmpty();
         }
 
@@ -1504,7 +1503,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         then: "The meta-item should have been inserted correctly"
         conditions.eventually {
-            localShipAsset = assetStorageService.find(mapAssetId(gateway.id, shipAssetId, false)) as ShipAsset
+            localShipAsset = assetStorageService.find(mapAssetId(gateway.id, shipAssetId, false), true) as ShipAsset
             assert localShipAsset.getAttribute(ShipAsset.SPEED).get().getMetaItem(MetaItemType.STORE_DATA_POINTS).get().getValue(Boolean.class).get()
         }
 

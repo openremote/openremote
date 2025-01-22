@@ -667,6 +667,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         throw new IllegalStateException("Cannot move an asset into a GatewayAsset");
                     }
 
+                    if(!existingAsset.getName().equals(asset.getName())){
+                        throw new IllegalStateException("Cannot change the name of a GatewayAsset's asset");
+                    }
+
                     if(asset.getAttributes().size() != existingAsset.getAttributes().size()){
                         throw new IllegalStateException("Attributes were created/deleted");
                     }
