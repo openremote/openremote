@@ -592,7 +592,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
                         <or-mwc-input 
                             type="${InputType.BUTTON}"
                             icon="plus"
-                            label="${i18next.t("add")}"
+                            label="${i18next.t("send new")}"
                             @or-mwc-input-changed="${() => this._showCreateDialog()}"
                         ></or-mwc-input>
                     ` : ``}
