@@ -95,7 +95,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
             .identifier(clientId)
-            .addConnectedListener(context -> onConnectionStatusChanged())
+            .addConnectedListener(context -> onConnectionStatusChanged(null))
             .addDisconnectedListener(context -> {
                 boolean userClosed = context.getSource() == MqttDisconnectSource.USER;
                 if (disconnected) {
@@ -119,7 +119,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 } else if (context.getCause() instanceof ConnectionFailedException) {
                     LOG.log(Level.INFO, "Connection failed '" + getClientUri() + "': initiator=" + context.getSource(), context.getCause());
                 }
-                onConnectionStatusChanged();
+                onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
             })
             .automaticReconnect()
             .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
@@ -399,8 +399,12 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         });
     }
 
-    protected void onConnectionStatusChanged() {
-        ConnectionStatus status = getConnectionStatus();
+    /**
+     * Allows an override to be provided as {@link #getConnectionStatus} doesn't always return the correct status when a
+     * server initiated disconnect occurs (some sort of timing issue).
+     */
+    protected void onConnectionStatusChanged(ConnectionStatus statusOverride) {
+        ConnectionStatus status = statusOverride != null ? statusOverride : getConnectionStatus();
         LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
 
         connectionStatusConsumers.forEach(
@@ -432,19 +436,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         client.disconnect().whenComplete((unused, throwable) -> {
             connected.set(false);
 
-            if (throwable instanceof MqttClientStateException) {
-                // Likely already disconnected
-                return;
-            }
             if (throwable != null) {
-                LOG.log(Level.WARNING, "Failed to disconnect: " + getClientUri(), throwable);
-                return;
+                LOG.log(Level.INFO, "Disconnect error '" + getClientUri() + "':" + throwable.getMessage());
             }
             if (this.cleanSession) {
                 removeAllMessageConsumers();
             }
 
-            onConnectionStatusChanged();
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
         });
     }
 
