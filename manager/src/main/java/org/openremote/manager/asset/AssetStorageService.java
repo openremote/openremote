@@ -36,6 +36,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.event.EventSubscriptionAuthorizer;
+import org.openremote.manager.gateway.GatewayConnector;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -44,11 +45,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.asset.impl.ThingAsset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.*;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.RespondableEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -592,14 +592,33 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             LOG.finest("Merging asset: " + asset);
         }
 
-        if (asset.getId() != null || asset.getParentId() != null) {
+
+        List<String> restrictedMetaItems;
+        Boolean isDisallowedModificationOfGatewayChildAsset;
+        String gatewayAssetId;
+        if (asset.getId() != null || asset.getParentId() != null || !skipGatewayCheck) {
             String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
 
-            if (!skipGatewayCheck && gatewayId != null) {
-                String msg = "Cannot directly add or modify a descendant asset on a gateway asset, do this on the gateway itself: Gateway ID=" + gatewayId;
+            if (gatewayId != null && !skipGatewayCheck) {
+                if(asset.getId() == null){
+                    String msg = "Creation of GatewayAsset descendant, create assets in the Gateway itself: Gateway ID=" + gatewayId;
+                    LOG.info(msg);
+                    throw new IllegalStateException();
+                }
+                String msg = "Update of GatewayAsset descendant, only allowing modification of non-restricted MetaItems: Gateway ID=" + gatewayId;
                 LOG.info(msg);
-                throw new IllegalStateException(msg);
+                restrictedMetaItems = Arrays.asList(find(gatewayId, GatewayAsset.class).getMetaItemRestrictions().orElse(GatewayConnector.META_ITEM_RESTRICTIONS_LIST));
+                isDisallowedModificationOfGatewayChildAsset = true;
+                gatewayAssetId = gatewayId;
+            } else {
+                gatewayAssetId = null;
+                restrictedMetaItems = new ArrayList<>();
+                isDisallowedModificationOfGatewayChildAsset = false;
             }
+        } else {
+            gatewayAssetId = null;
+            restrictedMetaItems = new ArrayList<>();
+            isDisallowedModificationOfGatewayChildAsset = false;
         }
 
         String assetId = asset.getId() != null ? asset.getId() : "";
@@ -641,6 +660,31 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     throw new IllegalStateException(msg);
                 }
 
+                if(isDisallowedModificationOfGatewayChildAsset){
+                    if(!existingAsset.getParentId().equals(gatewayAssetId)){
+                        throw new IllegalStateException("Cannot move an asset into a GatewayAsset");
+                    }
+
+                    if(asset.getAttributes().stream().count() != existingAsset.getAttributes().stream().count()){
+                        throw new IllegalStateException("Attributes were created/deleted");
+                    }
+
+                    List<Attribute<?>> changedAttrs = asset.getAttributes().stream().filter(it -> !it.deepEquals(
+                            existingAsset.getAttribute(it.getName()).orElse(null)
+                    )).toList();
+
+                    List<? extends Attribute<?>> allowedChanges = changedAttrs.stream().map(it -> {
+                        it.setMeta(
+                                new MetaMap(it.getMeta().stream().filter(meta -> !restrictedMetaItems.contains(meta.getName())).toList())
+                        );
+                        return it;
+                    }).toList();
+
+                    asset.addOrReplaceAttributes(allowedChanges.toArray(Attribute[]::new));
+                }
+
+
+
                 // Update timestamp on modified attributes this allows fast equality checking
                 asset.getAttributes().stream().forEach(attr ->
                     existingAsset.getAttribute(attr.getName()).ifPresent(existingAttr -> {
@@ -658,6 +702,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (overrideVersion) {
                     asset.setVersion(existingAsset.getVersion());
                 }
+            }
+
+            if(isDisallowedModificationOfGatewayChildAsset && existingAsset == null){
+                String msg = "Creation of GatewayAsset descendant with predefined Asset ID, create assets in the Gateway itself: Gateway ID=" + gatewayAssetId;
+                LOG.info(msg);
+                throw new IllegalStateException();
             }
 
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {

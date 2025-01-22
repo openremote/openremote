@@ -38,7 +38,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
     public static final AttributeDescriptor<ConnectionStatus> STATUS = new AttributeDescriptor<>("gatewayStatus", ValueType.CONNECTION_STATUS, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("disabled", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> TUNNELING_SUPPORTED = new AttributeDescriptor<>("tunnelingSupported", ValueType.BOOLEAN, new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<String[]> META_ITEM_RESTRICTIONS = new AttributeDescriptor<>("metaItemRestrictions", ValueType.TEXT.asArray());
+    public static final AttributeDescriptor<String[]> META_ITEM_RESTRICTIONS = new AttributeDescriptor<>("metaItemRestrictions", ValueType.TEXT.asArray()).withOptional(true);
     public static final AssetDescriptor<GatewayAsset> DESCRIPTOR = new AssetDescriptor<>("router-wireless", null, GatewayAsset.class);
 
     /**

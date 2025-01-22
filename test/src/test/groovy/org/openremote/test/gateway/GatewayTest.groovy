@@ -768,8 +768,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway is provisioned in this manager in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
-                .setRealm(managerTestSetup.realmBuildingName))
-                .setMetaItemRestrictions(META_ITEM_RESTRICTIONS_LIST)
+                .setRealm(managerTestSetup.realmBuildingName)
+                .setMetaItemRestrictions(META_ITEM_RESTRICTIONS_LIST))
 
         then: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
