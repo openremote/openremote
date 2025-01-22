@@ -81,6 +81,14 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
             this.deploymentInfo = deploymentInfo;
             this.requestHandler = requestHandler;
         }
+
+        public DeploymentInfo getDeploymentInfo() {
+            return deploymentInfo;
+        }
+
+        public WebService.RequestHandler getRequestHandler() {
+            return requestHandler;
+        }
     }
 
     /**
@@ -122,15 +130,6 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
         webService = container.getService(WebService.class);
 
-        if (defaultResteasyExceptionMapper == null) {
-            defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
-            forbiddenResteasyExceptionMapper = new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode);
-            undertowExceptionHandler = new WebServiceExceptions.ServletUndertowExceptionHandler(devMode);
-            jacksonConfig = new JacksonConfig();
-            alreadyGzippedWriterInterceptor = new AlreadyGzippedWriterInterceptor();
-            clientErrorExceptionHandler = new ClientErrorExceptionHandler();
-        }
-
         Application application = createApplication();
         ResteasyDeployment deployment = createDeployment(application);
         DeploymentInfo deploymentInfo = createDeploymentInfo(deployment);
@@ -144,7 +143,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     }
 
     protected Application createApplication() {
-        List<Object> providers = getStandardProviders();
+        List<Object> providers = getStandardProviders(this.devMode);
         providers = providers == null ? new ArrayList<>() : providers;
         providers.addAll(getApiSingletons());
         return new WebApplication(container, null, providers);
@@ -252,7 +251,15 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
     /**
      * Get standard JAX-RS providers that are used in the deployment.
      */
-    public static List<Object> getStandardProviders() {
+    public static List<Object> getStandardProviders(boolean devMode) {
+        if (defaultResteasyExceptionMapper == null) {
+            defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
+            forbiddenResteasyExceptionMapper = new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode);
+            undertowExceptionHandler = new WebServiceExceptions.ServletUndertowExceptionHandler(devMode);
+            jacksonConfig = new JacksonConfig();
+            alreadyGzippedWriterInterceptor = new AlreadyGzippedWriterInterceptor();
+            clientErrorExceptionHandler = new ClientErrorExceptionHandler();
+        }
         return Lists.newArrayList(
             defaultResteasyExceptionMapper,
             forbiddenResteasyExceptionMapper,

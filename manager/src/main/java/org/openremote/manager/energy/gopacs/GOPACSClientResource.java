@@ -7,8 +7,7 @@ import org.lfenergy.shapeshifter.core.model.OutgoingUftpMessage;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
 
 @Path("shapeshifter/api/v3")
-
-public interface GopacsClientResource {
+public interface GOPACSClientResource {
     @POST
     @Path("message")
     @Consumes(APPLICATION_XML)

@@ -2,16 +2,15 @@ package org.openremote.manager.energy.gopacs;
 
 import org.lfenergy.shapeshifter.api.PayloadMessageType;
 import org.lfenergy.shapeshifter.core.model.IncomingUftpMessage;
-import org.lfenergy.shapeshifter.core.model.OutgoingUftpMessage;
 
 import java.util.function.Consumer;
 
-public class GopacsServerResourceImpl implements GopacsServerResource {
+public class GOPACSServerResourceImpl implements GOPACSServerResource {
 
     protected Consumer<IncomingUftpMessage<? extends PayloadMessageType>> messageConsumer;
 
 
-    public GopacsServerResourceImpl(Consumer<IncomingUftpMessage<? extends PayloadMessageType>> messageConsumer) {
+    public GOPACSServerResourceImpl(Consumer<IncomingUftpMessage<? extends PayloadMessageType>> messageConsumer) {
         this.messageConsumer = messageConsumer;
     }
 

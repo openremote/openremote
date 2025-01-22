@@ -65,7 +65,7 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
             .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
 
-    public static final AttributeDescriptor<String> CONTRACT_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONTRACTED_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT);
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
@@ -148,12 +148,12 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
         return this;
     }
 
-    public Optional<String> getContractEan() {
-        return getAttribute(CONTRACT_EAN).flatMap(AbstractNameValueHolder::getValue);
+    public Optional<String> getContractedEan() {
+        return getAttribute(CONTRACTED_EAN).flatMap(AbstractNameValueHolder::getValue);
     }
 
-    public ElectricitySupplierAsset setContractEan(String contractedEan) {
-        getAttributes().getOrCreate(CONTRACT_EAN).setValue(contractedEan);
+    public ElectricitySupplierAsset setContractedEan(String contractedEan) {
+        getAttributes().getOrCreate(CONTRACTED_EAN).setValue(contractedEan);
         return this;
     }
 }
