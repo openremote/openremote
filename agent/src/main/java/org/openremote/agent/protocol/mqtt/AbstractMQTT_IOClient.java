@@ -400,11 +400,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void onConnectionStatusChanged() {
-        executorService.submit(() -> {
-            ConnectionStatus status = getConnectionStatus();
-            LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
+        ConnectionStatus status = getConnectionStatus();
+        LOG.info("Client '" + getClientUri() + "' connection status changed: " + status);
 
-            connectionStatusConsumers.forEach(
+        connectionStatusConsumers.forEach(
                 consumer -> {
                     try {
                         consumer.accept(status);
@@ -412,7 +411,6 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                         LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
                     }
                 });
-        });
     }
 
     @Override
