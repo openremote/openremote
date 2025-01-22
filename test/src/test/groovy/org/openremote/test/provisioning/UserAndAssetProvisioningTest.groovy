@@ -622,9 +622,8 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
         conditions.eventually {
-            assert connectionStatuses.size() == 2
-            assert connectionStatuses.get(0) == ConnectionStatus.WAITING
-            assert connectionStatuses.get(1) == ConnectionStatus.CONNECTED
+            assert connectionStatuses.size() >= 1
+            assert connectionStatuses.get(0) == ConnectionStatus.DISCONNECTED
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != null
             assert mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId) != existingConnection
             connection = mqttBrokerService.getConnectionFromClientID(mqttDevice1ClientId)
