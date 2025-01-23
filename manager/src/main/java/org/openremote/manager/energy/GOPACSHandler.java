@@ -15,17 +15,27 @@ import org.jboss.resteasy.core.ResteasyDeploymentImpl;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.lfenergy.shapeshifter.api.FlexRequest;
-import org.lfenergy.shapeshifter.api.FlexRequestISPType;
-import org.lfenergy.shapeshifter.api.FlexRequestResponse;
-import org.lfenergy.shapeshifter.api.USEFRoleType;
+import org.lfenergy.shapeshifter.api.*;
 import org.lfenergy.shapeshifter.api.model.UftpParticipantInformation;
+import org.lfenergy.shapeshifter.core.common.xml.XmlSerializer;
+import org.lfenergy.shapeshifter.core.common.xsd.XsdFactory;
+import org.lfenergy.shapeshifter.core.common.xsd.XsdSchemaFactoryPool;
+import org.lfenergy.shapeshifter.core.common.xsd.XsdSchemaProvider;
+import org.lfenergy.shapeshifter.core.common.xsd.XsdValidator;
+import org.lfenergy.shapeshifter.core.model.IncomingUftpMessage;
 import org.lfenergy.shapeshifter.core.model.OutgoingUftpMessage;
 import org.lfenergy.shapeshifter.core.model.UftpParticipant;
 import org.lfenergy.shapeshifter.core.service.UftpParticipantService;
+import org.lfenergy.shapeshifter.core.service.crypto.LazySodiumBase64Pool;
+import org.lfenergy.shapeshifter.core.service.crypto.LazySodiumFactory;
+import org.lfenergy.shapeshifter.core.service.crypto.UftpCryptoService;
 import org.lfenergy.shapeshifter.core.service.handler.UftpPayloadHandler;
+import org.lfenergy.shapeshifter.core.service.participant.ParticipantResolutionService;
 import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageService;
+import org.lfenergy.shapeshifter.core.service.serialization.UftpSerializer;
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
+import org.lfenergy.shapeshifter.core.tools.KeyPair;
+import org.lfenergy.shapeshifter.core.tools.UftpKeyPairTool;
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -55,30 +65,37 @@ import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 
-public class GOPACSHandler implements UftpParticipantService {
+public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService {
     private static final Logger LOG = SyslogCategory.getLogger(API, GOPACSHandler.class);
 
-    protected boolean devMode;
-    protected String contractedEan;
-    protected String electricitySupplierAssetId;
-    protected String realm;
-    protected double powerImportMax;
-    protected double powerExportMax;
-    protected AbstractHTTPServerProtocol.DeploymentInstance deployment;
-    protected ResteasyClient client;
-    protected GOPACSClientResource goPacsClientResource;
-    protected GOPACSAddressBookResource goPacsAddressBookResource;
-    protected UftpValidationService uftpValidationService;
-    protected UftpPayloadHandler uftpPayloadHandler;
-    protected UftpReceivedMessageService uftpReceivedMessageService;
-    protected GOPACSServerResource goPacsServer;
-    protected WebService webService;
-    protected AssetProcessingService assetProcessingService;
-    protected AssetPredictedDatapointService assetPredictedDatapointService;
-    protected ScheduledExecutorService scheduledExecutorService;
-    protected TimerService timerService;
+    protected static final UftpSerializer serializer = new UftpSerializer(new XmlSerializer(), new XsdValidator(new XsdSchemaProvider(new XsdFactory(new XsdSchemaFactoryPool()))));
 
-    Map<String, UftpParticipantInformation> participants = new HashMap<>();
+    protected final boolean devMode;
+    protected final String contractedEan;
+    protected final String electricitySupplierAssetId;
+    protected final String realm;
+    protected final double powerImportMax;
+    protected final double powerExportMax;
+    protected final Map<String, UftpParticipantInformation> participants;
+
+    protected final AssetProcessingService assetProcessingService;
+    protected final AssetPredictedDatapointService assetPredictedDatapointService;
+    protected final ScheduledExecutorService scheduledExecutorService;
+    protected final TimerService timerService;
+    protected final WebService webService;
+
+    protected final ResteasyClient client;
+    protected final GOPACSClientResource goPacsClientResource;
+    protected final GOPACSAddressBookResource goPacsAddressBookResource;
+    protected final GOPACSServerResource gopacsServerResource;
+
+    protected final UftpValidationService uftpValidationService;
+    protected final UftpReceivedMessageService uftpReceivedMessageService;
+    protected final UftpCryptoService cryptoService;
+    protected final KeyPair keyPair;
+
+    protected AbstractHTTPServerProtocol.DeploymentInstance deployment;
+
     List<ScheduledFuture<?>> scheduledFutureList = new ArrayList<>();
 
     public static class Factory {
@@ -93,59 +110,6 @@ public class GOPACSHandler implements UftpParticipantService {
         }
     }
 
-    public static class FlexRequestISPTypeHelper {
-        private static final long ISP_DURATION_IN_MINUTES = 15;
-
-        public static LocalTime getISPStart(long ispNumber, int year, int month, int day, String timeZone) {
-            ZoneId zoneId = ZoneId.of(timeZone);
-            ZonedDateTime date = ZonedDateTime.of(year, month, day, 0, 0, 0, 0, zoneId);
-
-            if (ispNumber == 9 && isLastSundayInMarch(year, month, day)) {
-                return date.plusHours(3).toLocalTime();
-            } else if (ispNumber == 13 && isLastSundayInOctober(year, month, day)) {
-                return date.plusHours(2).toLocalTime();
-            } else {
-                return date.plusMinutes((ispNumber - 1) * ISP_DURATION_IN_MINUTES).toLocalTime();
-            }
-        }
-
-        public static LocalTime getISPEnd(int ispNumber, int year, int month, int day, String timeZone) {
-            LocalTime end = getISPStart(ispNumber, year, month, day, timeZone).plusMinutes(ISP_DURATION_IN_MINUTES);
-            if (ispNumber == 8 && isLastSundayInMarch(year, month, day)) {
-                end = end.plusHours(1);
-            } else if (ispNumber == 12 && isLastSundayInOctober(year, month, day)) {
-                end = end.minusHours(1);
-            }
-            return end;
-        }
-
-        private static boolean isLastSundayInMarch(int year, int month, int day) {
-            if (month != 3) { // March is 3 in Java's month numbering
-                return false;
-            }
-            LocalDate date = LocalDate.of(year, month, day);
-            int lastDayInMarch = YearMonth.of(year, month).lengthOfMonth();
-            LocalDate lastSundayInMarch = LocalDate.of(year, month, lastDayInMarch);
-            while (lastSundayInMarch.getDayOfWeek() != DayOfWeek.SUNDAY) {
-                lastSundayInMarch = lastSundayInMarch.minusDays(1);
-            }
-            return date.equals(lastSundayInMarch);
-        }
-
-        private static boolean isLastSundayInOctober(int year, int month, int day) {
-            if (month != 10) { // October is 10 in Java's month numbering
-                return false;
-            }
-            LocalDate date = LocalDate.of(year, month, day);
-            int lastDayInOctober = YearMonth.of(year, month).lengthOfMonth();
-            LocalDate lastSundayInOctober = LocalDate.of(year, month, lastDayInOctober);
-            while (lastSundayInOctober.getDayOfWeek() != DayOfWeek.SUNDAY) {
-                lastSundayInOctober = lastSundayInOctober.minusDays(1);
-            }
-            return date.equals(lastSundayInOctober);
-        }
-    }
-
     protected GOPACSHandler(String contractedEan, String realm, String electricitySupplierAssetId, double powerImportMax, double powerExportMax, Container container) {
         this.devMode = container.isDevMode();
         this.contractedEan = contractedEan;
@@ -153,19 +117,26 @@ public class GOPACSHandler implements UftpParticipantService {
         this.powerImportMax = powerImportMax;
         this.powerExportMax = powerExportMax;
         this.electricitySupplierAssetId = electricitySupplierAssetId;
-        this.client = createClient(org.openremote.container.Container.EXECUTOR);
-        this.goPacsClientResource = client.target("https://clc-message-broker.acc.gopacs-services.eu/shapeshifter/api/v3/").proxy(GOPACSClientResource.class);
-        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu/v2/").proxy(GOPACSAddressBookResource.class);
-        this.uftpValidationService = new UftpValidationService(new ArrayList<>());
-        this.uftpPayloadHandler = new PayloadHandler(this::handleFlexMessage, this::sendFlexResponse);
-        this.uftpReceivedMessageService = new UftpReceivedMessageService(uftpValidationService, uftpPayloadHandler);
+        this.participants = new HashMap<>();
+
+        this.assetProcessingService = container.getService(AssetProcessingService.class);
+        this.assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         this.scheduledExecutorService = container.getScheduledExecutor();
         this.timerService = container.getService(TimerService.class);
-        this.goPacsServer = new GOPACSServerResourceImpl(this.uftpReceivedMessageService::process);
-
         this.webService = container.getService(WebService.class);
-        this.assetProcessingService = container.getService(AssetProcessingService.class);
-        this.assetPredictedDatapointService = container.getService( AssetPredictedDatapointService.class);
+
+        this.client = createClient(org.openremote.container.Container.EXECUTOR);
+
+        this.goPacsClientResource = client.target("https://clc-message-broker.acc.gopacs-services.eu/shapeshifter/api/v3/").proxy(GOPACSClientResource.class);
+        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu/v2/").proxy(GOPACSAddressBookResource.class);
+        this.gopacsServerResource = new GOPACSServerResourceImpl(this::processRawMessage);
+
+        this.cryptoService = new UftpCryptoService(new ParticipantResolutionService(this), new LazySodiumFactory(), new LazySodiumBase64Pool());
+        this.uftpValidationService = new UftpValidationService(new ArrayList<>());
+        this.uftpReceivedMessageService = new UftpReceivedMessageService(new UftpValidationService(new ArrayList<>()), this);
+        this.keyPair = UftpKeyPairTool.generateKeyPair();
+
+
         Application application = createApplication(container);
         ResteasyDeployment resteasyDeployment = createDeployment(application);
         DeploymentInfo deploymentInfo = createDeploymentInfo(resteasyDeployment);
@@ -198,24 +169,16 @@ public class GOPACSHandler implements UftpParticipantService {
 
     private DeploymentInfo createDeploymentInfo(ResteasyDeployment resteasyDeployment) {
         String deploymentName = "GoPacs=" + contractedEan;
-        String deploymentPath =  "/shapeshifter/api/v3/message";
+        String deploymentPath = "/gopacs/" + realm;
 
-        ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
-                .setAsyncSupported(true)
-                .setLoadOnStartup(1)
-                .addMapping("/*");
+        ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class).setAsyncSupported(true).setLoadOnStartup(1).addMapping("/*");
 
-        return new DeploymentInfo()
-                .setDeploymentName(deploymentName)
-                .setContextPath(deploymentPath)
-                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-                .addServlet(resteasyServlet)
-                .setClassLoader(org.openremote.model.Container.class.getClassLoader());
+        return new DeploymentInfo().setDeploymentName(deploymentName).setContextPath(deploymentPath).addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment).addServlet(resteasyServlet).setClassLoader(org.openremote.model.Container.class.getClassLoader());
     }
 
     protected Application createApplication(Container container) {
         List<Object> providers = getStandardProviders(this.devMode);
-        providers.add(goPacsServer);
+        providers.add(gopacsServerResource);
         return new WebApplication(container, null, providers);
     }
 
@@ -235,10 +198,7 @@ public class GOPACSHandler implements UftpParticipantService {
             };
             WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), handlerWrapper);
 
-            LOG.info("Registering GOPACS request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deploymentInfo.getContextPath());
+            LOG.info("Registering GOPACS request handler '" + this.getClass().getSimpleName() + "' for request path: " + deploymentInfo.getContextPath());
             // Add the handler before the greedy deployment handler
             webService.getRequestHandlers().add(0, requestHandler);
 
@@ -259,10 +219,7 @@ public class GOPACSHandler implements UftpParticipantService {
         }
 
         try {
-            LOG.info("Un-registering GOPACS request handler '"
-                    + this.getClass().getSimpleName()
-                    + "' for request path: "
-                    + deployment.getDeploymentInfo().getContextPath());
+            LOG.info("Un-registering GOPACS request handler '" + this.getClass().getSimpleName() + "' for request path: " + deployment.getDeploymentInfo().getContextPath());
             webService.getRequestHandlers().remove(deployment.getRequestHandler());
             DeploymentManager manager = Servlets.defaultContainer().getDeployment(deployment.getDeploymentInfo().getDeploymentName());
             if (manager != null) {
@@ -271,9 +228,7 @@ public class GOPACSHandler implements UftpParticipantService {
             }
             Servlets.defaultContainer().removeDeployment(deployment.getDeploymentInfo());
         } catch (Exception ex) {
-            LOG.log(Level.WARNING,
-                    "An exception occurred whilst un-deploying instance: " + this,
-                    ex);
+            LOG.log(Level.WARNING, "An exception occurred whilst un-deploying instance: " + this, ex);
             throw new RuntimeException(ex);
         }
     }
@@ -317,23 +272,55 @@ public class GOPACSHandler implements UftpParticipantService {
         assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerExportMaxGopacs", minPower), getClass().getSimpleName());
     }
 
-    protected void sendFlexResponse(UftpParticipant participant, FlexRequestResponse flexRequestResponse) {
-        OutgoingUftpMessage<FlexRequestResponse> outgoingUftpMessage = OutgoingUftpMessage.create(participant, flexRequestResponse);
-        goPacsClientResource.outMessage(outgoingUftpMessage);
+    protected void sendFlexResponse(String transportXml) {
+        goPacsClientResource.outMessage(transportXml);
     }
 
     protected void setPredictedDataPoints(String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
         assetPredictedDatapointService.updateValues(electricitySupplierAssetId, attributeName, valuesAndTimestamps);
     }
 
+    @Override
+    public void notifyNewIncomingMessage(IncomingUftpMessage<? extends PayloadMessageType> message) {
+        var messageType = message.payloadMessage().getClass();
+        if (!FlexRequest.class.isAssignableFrom(messageType)) {
+            return;
+        }
+
+        var flexRequest = (FlexRequest) message.payloadMessage();
+        this.handleFlexMessage(message.sender(), flexRequest);
+    }
 
     @Override
-    public Optional<UftpParticipantInformation> getParticipantInformation(USEFRoleType usefRoleType, String domain) {
+    public void notifyNewOutgoingMessage(OutgoingUftpMessage<? extends PayloadMessageType> message) {
+        var messageType = message.payloadMessage().getClass();
+        if (!FlexRequestResponse.class.isAssignableFrom(messageType)) {
+            return;
+        }
+
+        var flexRequestResponse = (FlexRequestResponse) message.payloadMessage();
+
+        String payloadXml = serializer.toXml(flexRequestResponse);
+        SignedMessage signedMessage = cryptoService.signMessage(payloadXml, message.sender(), this.keyPair.privateKey());
+        String transportXml = serializer.toXml(signedMessage);
+
+        goPacsClientResource.outMessage(transportXml);
+    }
+
+    protected void processRawMessage(String transportXml) {
+        SignedMessage signedMessage = serializer.fromSignedXml(transportXml);
+        String payloadXml = cryptoService.verifySignedMessage(signedMessage);
+        PayloadMessageType payloadMessage = serializer.fromPayloadXml(payloadXml);
+        var incomingUftpMessage = IncomingUftpMessage.create(new UftpParticipant(signedMessage), payloadMessage, transportXml, payloadXml);
+        uftpReceivedMessageService.process(incomingUftpMessage);
+    }
+
+    @Override
+    public Optional<UftpParticipantInformation> getParticipantInformation(USEFRoleType role, String domain) {
         if (participants.containsKey(domain)) {
             return Optional.of(participants.get(domain));
         } else {
-            try (Response response = goPacsAddressBookResource
-                    .fetchParticipants(contractedEan)) {
+            try (Response response = goPacsAddressBookResource.fetchParticipants(contractedEan)) {
                 if (response != null && response.getStatus() == 200) {
                     List<UftpParticipantInformation> participants = response.readEntity(new GenericType<List<UftpParticipantInformation>>() {
                     });

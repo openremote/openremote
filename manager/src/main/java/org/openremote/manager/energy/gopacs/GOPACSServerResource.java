@@ -1,19 +1,14 @@
 package org.openremote.manager.energy.gopacs;
 
 import jakarta.ws.rs.*;
-import org.lfenergy.shapeshifter.api.PayloadMessageType;
-import org.lfenergy.shapeshifter.core.model.IncomingUftpMessage;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
+import static jakarta.ws.rs.core.MediaType.TEXT_XML;
 
-@Path("shapeshifter/api/v3")
+@Path("message")
 public interface GOPACSServerResource {
 
     @POST
-    @Path("message")
-    @Consumes(APPLICATION_XML)
-    @Produces(APPLICATION_XML)
-    void inMessage(IncomingUftpMessage<? extends PayloadMessageType> message);
-
-
+    @Consumes({APPLICATION_XML, TEXT_XML})
+    void inMessage(String transportXml);
 }
