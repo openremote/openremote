@@ -169,23 +169,43 @@ export class MapSettings extends AssetWidgetSettings {
     protected async onAttributeNameSelect(ev: AttributeNamesSelectEvent) {
         const attrName = ev.detail as string;
         this.widgetConfig.attributeName = attrName;
-        await manager.rest.api.AssetResource.queryAssets({
-            realm: {
-                name: manager.displayRealm
-            },
-            select: {
-                attributes: [attrName, 'location']
-            },
-            types: [this.widgetConfig.assetType!],
-        }).then(response => {
-            this.widgetConfig.assetIds = response.data.map((a) => a.id!);
-            this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
-        }).catch((reason) => {
-            console.error(reason);
-            showSnackbar(undefined, "errorOccurred");
-        });
+        if (this.widgetConfig.allOfType) {
+            await manager.rest.api.AssetResource.queryAssets({
+                realm: {
+                    name: manager.displayRealm
+                },
+                select: {
+                    attributes: [attrName, 'location']
+                },
+                types: [this.widgetConfig.assetType!],
+            }).then(response => {
+                this.widgetConfig.assetIds = response.data.map((a) => a.id!);
+                this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
+            }).catch((reason) => {
+                console.error(reason);
+                showSnackbar(undefined, "errorOccurred");
+            });
 
-        this.notifyConfigUpdate()
+            this.notifyConfigUpdate()
+        } else {
+            await manager.rest.api.AssetResource.queryAssets({
+                realm: {
+                    name:manager.displayRealm
+                },
+                select: {
+                    attributes: [attrName, 'location']
+                },
+                types: [this.widgetConfig.assetType!],
+                ids: this.widgetConfig.assetIds!,
+
+                }).then(response => {
+                    this.widgetConfig.assetIds = response.data.map((a) => a.id!);
+                    this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
+                }).catch((reason) => {
+                    console.error(reason);
+                    showSnackbar(undefined, "errorOccurred");
+                });
+            }
     }
 
     protected onShowLabelsToggle(ev: OrInputChangedEvent) {
