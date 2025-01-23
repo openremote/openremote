@@ -233,11 +233,8 @@ export class PageNotifications extends Page<AppStateKeyed> {
             }
 
             .filter-section {
-                gap: 16px;
-                padding: 16px;
-                background: white;
+                padding: 0 10px 0 4px;
                 border-radius: 4px;
-                margin: 0 20px 20px 20px;
                 margin-left: auto;
                 order: 2;
             }
@@ -396,8 +393,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             });
             return null;
         }
-    
-        console.log("Form data validation passed:", formData);
         return formData;
     }
 
@@ -444,7 +439,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             };
 
             const response = await this.notificationService.sendNotification(notification);
-            console.log("Server response:", response);
 
             showSnackbar(undefined, i18next.t("Creating notification success."));
             dialog.close();
@@ -667,8 +661,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             return;
         }
         const notificationId = e.detail.notificationId;
-        console.log("EVENT RECEIVED BY NOTIFICATIONS:", e);
-        console.log("Clicked notification from notifications page with index:", notificationId);
 
         const notification = this._data.find(n=> n.id === notificationId);
         // if no notif. return
@@ -676,7 +668,6 @@ export class PageNotifications extends Page<AppStateKeyed> {
             console.warn(`No notification found with id ${notificationId}`);
             return;
         }
-        console.log("Clicked notification from notifications page:", notification);
         
         const dialog = showDialog(
             new OrMwcDialog()
