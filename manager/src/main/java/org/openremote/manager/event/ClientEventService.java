@@ -371,15 +371,15 @@ public class ClientEventService extends RouteBuilder implements ContainerService
             .routeId("ClientPublishToSubscribers")
             .routeConfigurationId(ATTRIBUTE_EVENT_ROUTE_CONFIG_ID)
             .threads().executorService(executorService)
-            .filter(body().isInstanceOf(SharedEvent.class))
+            .filter(body().isInstanceOf(Event.class))
             .process(exchange -> {
-                SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                Event event = exchange.getIn().getBody(Event.class);
                 sendToSubscribers(event);
             });
     }
 
     @SuppressWarnings("unchecked")
-    protected <T extends SharedEvent> void sendToSubscribers(T event) {
+    protected <T extends Event> void sendToSubscribers(T event) {
         eventSubscriptions.forEach(eventSubscriptionConsumerPair -> {
             EventSubscription<?> subscription = eventSubscriptionConsumerPair.getKey();
 
