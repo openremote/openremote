@@ -190,7 +190,9 @@ Value: 6000
         assetLink.parentAssetName == "Apartment 2"
 
         and: "the expected number e-mail notifications matches"
-        notificationMessages.size() == emailNotifications
+        conditions.eventually {
+            notificationMessages.size() == emailNotifications
+        }
 
         where:
         severity              | assigneeId                    | emailNotifications
