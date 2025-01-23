@@ -188,6 +188,9 @@ services:
       # Console applications can register for push notifications through FCM.
       OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
 
+      # Configure path to the gopacs private key
+      OR_GOPACS_PRIVATE_KEY_FILE: ${OR_GOPACS_PRIVATE_KEY_FILE:-/deployment/manager/gopacs-private.pem}
+
       # Configure the central instance for Gateway SSH tunnelling (if these are set then gateway tunnelling support is enabled on the central instance)
       OR_GATEWAY_TUNNEL_SSH_HOSTNAME:
       OR_GATEWAY_TUNNEL_SSH_PORT:

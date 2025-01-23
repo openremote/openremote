@@ -34,8 +34,6 @@ import org.lfenergy.shapeshifter.core.service.participant.ParticipantResolutionS
 import org.lfenergy.shapeshifter.core.service.receiving.UftpReceivedMessageService;
 import org.lfenergy.shapeshifter.core.service.serialization.UftpSerializer;
 import org.lfenergy.shapeshifter.core.service.validation.UftpValidationService;
-import org.lfenergy.shapeshifter.core.tools.KeyPair;
-import org.lfenergy.shapeshifter.core.tools.UftpKeyPairTool;
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -48,8 +46,11 @@ import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -66,7 +67,10 @@ import static org.openremote.model.syslog.SyslogCategory.API;
 
 
 public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService {
+
     private static final Logger LOG = SyslogCategory.getLogger(API, GOPACSHandler.class);
+    public static final String OR_GOPACS_PRIVATE_KEY_FILE = "OR_GOPACS_PRIVATE_KEY_FILE";
+
 
     protected static final UftpSerializer serializer = new UftpSerializer(new XmlSerializer(), new XsdValidator(new XsdSchemaProvider(new XsdFactory(new XsdSchemaFactoryPool()))));
 
@@ -92,7 +96,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
     protected final UftpValidationService uftpValidationService;
     protected final UftpReceivedMessageService uftpReceivedMessageService;
     protected final UftpCryptoService cryptoService;
-    protected final KeyPair keyPair;
+    protected final String privateKey;
 
     protected AbstractHTTPServerProtocol.DeploymentInstance deployment;
 
@@ -134,8 +138,21 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         this.cryptoService = new UftpCryptoService(new ParticipantResolutionService(this), new LazySodiumFactory(), new LazySodiumBase64Pool());
         this.uftpValidationService = new UftpValidationService(new ArrayList<>());
         this.uftpReceivedMessageService = new UftpReceivedMessageService(new UftpValidationService(new ArrayList<>()), this);
-        this.keyPair = UftpKeyPairTool.generateKeyPair();
 
+
+        String goPacsPrivateKeyFile = container.getConfig().get(OR_GOPACS_PRIVATE_KEY_FILE);
+        if (TextUtil.isNullOrEmpty(goPacsPrivateKeyFile)) {
+            throw new RuntimeException(OR_GOPACS_PRIVATE_KEY_FILE + " not defined, can not send use GOPACS.");
+        }
+        if (!Files.isReadable(Paths.get(goPacsPrivateKeyFile))) {
+            throw new RuntimeException(OR_GOPACS_PRIVATE_KEY_FILE + " invalid path or file not readable: " + goPacsPrivateKeyFile);
+        }
+        // Read the private key from file
+        try {
+            this.privateKey = Files.readString(Paths.get(goPacsPrivateKeyFile));
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to initialize GOPACSHandler for ean " + contractedEan + ".", ex);
+        }
 
         Application application = createApplication(container);
         ResteasyDeployment resteasyDeployment = createDeployment(application);
@@ -301,7 +318,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         var flexRequestResponse = (FlexRequestResponse) message.payloadMessage();
 
         String payloadXml = serializer.toXml(flexRequestResponse);
-        SignedMessage signedMessage = cryptoService.signMessage(payloadXml, message.sender(), this.keyPair.privateKey());
+        SignedMessage signedMessage = cryptoService.signMessage(payloadXml, message.sender(), this.privateKey);
         String transportXml = serializer.toXml(signedMessage);
 
         goPacsClientResource.outMessage(transportXml);
