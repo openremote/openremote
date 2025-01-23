@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.system;
 
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
@@ -74,7 +75,8 @@ public class StatusResourceImpl implements StatusResource {
         Map<String, Object> objectValue = new HashMap<>();
 
         healthStatusProviderList.forEach(healthStatusProvider -> {
-            Map<String, Object> providerValue = Map.of("data", healthStatusProvider.getHealthStatus());
+            Object healthStatus = healthStatusProvider.getHealthStatus();
+            Map<String, Object> providerValue = Map.of("data", healthStatus != null ? healthStatus : NullNode.getInstance());
                 objectValue.put(healthStatusProvider.getHealthStatusName(), providerValue);
             }
         );
