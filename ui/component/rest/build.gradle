@@ -1,7 +1,6 @@
 buildscript {
     repositories {
         mavenCentral()
-        jcenter()
     }
     dependencies {
         classpath "cz.habarta.typescript-generator:typescript-generator-gradle-plugin:$typescriptGeneratorVersion"
@@ -19,8 +18,8 @@ dependencies {
     if (customModel != null) {
         implementation customModel
     }
-    compileOnly resolveProject(":model-util")
-    implementation resolveProject(":model")
+    compileOnly project(":model-util")
+    implementation project(":model")
     implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
@@ -30,7 +29,7 @@ dependencies {
 //project.task(Collections.singletonMap(Task.TASK_TYPE, cz.habarta.typescript.generator.gradle.GenerateTask), "generateTypescriptModelInfo")
 //generateTypescriptModelInfo createTSGeneratorConfigForModel("$buildDir/model.ts")
 
-generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${resolveProject(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
+generateTypeScript createTSGeneratorConfigForClient("src/restclient.ts", new File("${project(":ui:component:model").projectDir}/src/typescript-generator-info.json"))
 generateTypeScript.dependsOn resolveTask(":ui:component:model:generateTypeScript")
 
 clean {

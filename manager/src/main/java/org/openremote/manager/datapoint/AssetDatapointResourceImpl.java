@@ -39,6 +39,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointPeriod;
+import org.openremote.model.datapoint.DatapointQueryTooLargeException;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.datapoint.query.AssetDatapointQuery;
 import org.openremote.model.http.RequestParams;
@@ -133,8 +134,10 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             return assetDatapointService.getDatapoints(new AttributeRef(assetId, attributeName)).toArray(ValueDatapoint[]::new);
-        } catch (IllegalStateException ex) {
+        } catch (IllegalStateException | IllegalArgumentException ex) {
             throw new BadRequestException(ex);
+        } catch (DatapointQueryTooLargeException dqex) {
+            throw new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE);
         } catch (UnsupportedOperationException ex) {
             throw new NotSupportedException(ex);
         }
@@ -237,6 +240,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
+        } catch (DatapointQueryTooLargeException dqex) {
+            asyncResponse.resume(new WebApplicationException(dqex, Response.Status.REQUEST_ENTITY_TOO_LARGE));
         }
     }
 }

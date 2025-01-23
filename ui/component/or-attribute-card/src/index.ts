@@ -765,8 +765,11 @@ export class OrAttributeCard extends LitElement {
             this._loading = false;
 
             if(isAxiosError(ex)) {
-                if(ex.message.includes("timeout of 10000ms exceeded")) {
+                if(ex.message.includes("timeout")) {
                     this._error = "noAttributeDataTimeout";
+                    return;
+                } else if(ex.response?.status === 413) {
+                    this._error = "datapointRequestTooLarge";
                     return;
                 }
             }
