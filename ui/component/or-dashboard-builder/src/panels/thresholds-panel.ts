@@ -133,7 +133,7 @@ export class ThresholdsPanel extends LitElement {
             <div id="thresholds-list" class="expanded-panel">
 
                 <!-- Thresholds by number -->
-                ${(this.valueType === 'number' || this.valueType === 'positiveInteger'
+                ${(this.valueType === 'number' || this.valueType === 'integer' || this.valueType === 'positiveInteger'
                         || this.valueType === 'positiveNumber' || this.valueType === 'negativeInteger'
                         || this.valueType === 'negativeNumber') ? html`
                     ${(this.thresholds as [number, string][]).sort((x, y) => (x[0] < y[0]) ? -1 : 1).map((threshold, index) => {

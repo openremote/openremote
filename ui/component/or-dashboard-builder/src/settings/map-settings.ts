@@ -32,7 +32,7 @@ export class MapSettings extends AssetWidgetSettings {
     }
 
     protected render(): TemplateResult {
-        const allowedValueTypes = ["boolean", "number", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
+        const allowedValueTypes = ["boolean", "number", "integer", "positiveInteger", "positiveNumber", "negativeInteger", "negativeNumber", "text"];
         const config = {
             assets: {
                 enabled: true,
@@ -169,44 +169,37 @@ export class MapSettings extends AssetWidgetSettings {
     protected async onAttributeNameSelect(ev: AttributeNamesSelectEvent) {
         const attrName = ev.detail as string;
         this.widgetConfig.attributeName = attrName;
-        if (this.widgetConfig.allOfType) {
-            await manager.rest.api.AssetResource.queryAssets({
-                realm: {
-                    name: manager.displayRealm
-                },
-                select: {
-                    attributes: [attrName, 'location']
-                },
-                types: [this.widgetConfig.assetType!],
-            }).then(response => {
-                this.widgetConfig.assetIds = response.data.map((a) => a.id!);
-                this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
-            }).catch((reason) => {
-                console.error(reason);
-                showSnackbar(undefined, "errorOccurred");
-            });
 
-            this.notifyConfigUpdate()
-        } else {
-            await manager.rest.api.AssetResource.queryAssets({
-                realm: {
-                    name:manager.displayRealm
-                },
-                select: {
-                    attributes: [attrName, 'location']
-                },
-                types: [this.widgetConfig.assetType!],
-                ids: this.widgetConfig.assetIds!,
-
-                }).then(response => {
-                    this.widgetConfig.assetIds = response.data.map((a) => a.id!);
-                    this.widgetConfig.valueType = (response.data.length > 0) ? response.data[0].attributes![attrName].type : "text"; // sometimes no asset exists of that assetType, so using 'text' as fallback.
-                }).catch((reason) => {
-                    console.error(reason);
-                    showSnackbar(undefined, "errorOccurred");
+        const queryAssets = async (ids?: string[]) => {
+            try {
+                const response = await manager.rest.api.AssetResource.queryAssets({
+                    realm: { name: manager.displayRealm },
+                    select: { attributes: [attrName, 'location'] },
+                    types: [this.widgetConfig.assetType!],
+                    ids: ids
                 });
+                this.widgetConfig.assetIds = response.data.map((a) => a.id!);
+                this.widgetConfig.valueType = response.data.length ? response.data[0].attributes![attrName].type : "text";
+                if (!response.data[0].attributes![attrName].type) {
+                    throw new TypeError("Data does not contain property 'attributes' or 'type'.")}
+            } catch (reason) {
+                console.error(reason);
+                if (reason instanceof TypeError) {
+                    showSnackbar(undefined, "noAttributesToShow");
+                } else {
+                    showSnackbar(undefined, "errorOccurred");
+                    }
             }
-    }
+        };
+
+        if (this.widgetConfig.allOfType) {
+            await queryAssets();
+        } else {
+            await queryAssets(this.widgetConfig.assetIds!);
+        }
+
+        this.notifyConfigUpdate();
+     }
 
     protected onShowLabelsToggle(ev: OrInputChangedEvent) {
         this.widgetConfig.showLabels = ev.detail.value;
