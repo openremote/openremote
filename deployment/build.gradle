@@ -1,7 +1,12 @@
 apply plugin: "java-library"
 
+configurations {
+    managerRuntime
+}
+
 dependencies {
     api project(":setup")
+    managerRuntime(project(path: ':manager', configuration: 'runtime'))
 }
 
 task license {
