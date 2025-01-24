@@ -21,8 +21,7 @@ public class SocketTypeMatcher {
             new MatchRule(NodeDataType.STRING, Arrays.asList(NodeDataType.STRING)),
             new MatchRule(NodeDataType.TRIGGER, Arrays.asList(NodeDataType.TRIGGER)),
             new MatchRule(NodeDataType.BOOLEAN, Arrays.asList(NodeDataType.BOOLEAN, NodeDataType.STRING)),
-            new MatchRule(NodeDataType.COLOR, Arrays.asList(NodeDataType.COLOR, NodeDataType.STRING)),
-            new MatchRule(NodeDataType.NUMBER_ARRAY, Arrays.asList(NodeDataType.NUMBER))
+            new MatchRule(NodeDataType.COLOR, Arrays.asList(NodeDataType.COLOR, NodeDataType.STRING))
     );
 
     public static boolean match(NodeDataType a, NodeDataType b) {

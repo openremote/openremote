@@ -31,7 +31,7 @@ import java.util.HashMap;
         @JsonSubTypes.Type(value = AssetDatapointAllQuery.class, name = "all"),
         @JsonSubTypes.Type(value = AssetDatapointLTTBQuery.class, name = "lttb"),
         @JsonSubTypes.Type(value = AssetDatapointIntervalQuery.class, name = "interval"),
-        @JsonSubTypes.Type(value = AssetDatapointTimestampQuery.class, name = "nearest")
+        @JsonSubTypes.Type(value = AssetDatapointNearestQuery.class, name = "nearest")
 
 })
 @JsonTypeInfo(

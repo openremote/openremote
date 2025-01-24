@@ -13,18 +13,6 @@ public class Node {
     private NodeSocket[] outputs;
     private String displayCharacter;
 
-    public Node(NodeType type, int priority, NodeInternal[] internals, NodeSocket[] inputs, NodeSocket[] outputs) {
-        this.id = "INVALID ID";
-        this.type = type;
-        this.priority = priority;
-        this.position = new NodePosition(0, 0);
-        this.size = new NodePosition(0, 0);
-        this.internals = internals;
-        this.inputs = inputs;
-        this.outputs = outputs;
-        this.displayCharacter = null;
-    }
-
     public Node(NodeType type, NodeInternal[] internals, NodeSocket[] inputs, NodeSocket[] outputs) {
         this.id = "INVALID ID";
         this.type = type;

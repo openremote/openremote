@@ -29,7 +29,7 @@ public class NodeExecutionRequestInfo {
     private Notifications notifications;
     private HistoricDatapoints historicDatapoints;
     private PredictedDatapoints predictedDatapoints;
-    private Logger LOG;
+    protected Logger LOG;
 
     public NodeExecutionRequestInfo() {
         collection = new NodeCollection();
@@ -227,8 +227,6 @@ public class NodeExecutionRequestInfo {
     public RulesFacts getFacts() {
         return facts;
     }
-
-    public Logger getLog(){return LOG;}
 
     public void setFacts(RulesFacts facts) {
         this.facts = facts;

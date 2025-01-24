@@ -9,28 +9,26 @@ import java.util.HashMap;
  * associated with a specific `AttributeRef` at a specified timestamp. It is designed to find the
  * closest datapoint that precedes the requested timestamp.
  */
-public class AssetDatapointTimestampQuery extends AssetDatapointQuery {
+public class AssetDatapointNearestQuery extends AssetDatapointQuery {
 
-    public AssetDatapointTimestampQuery() {
+    public AssetDatapointNearestQuery() {
     }
 
-    public AssetDatapointTimestampQuery(long timestamp) {
+    public AssetDatapointNearestQuery(long timestamp) {
         // Convert to seconds from millis
         this.fromTimestamp = timestamp/1000;
     }
 
     @Override
     public String getSQLQuery(String tableName, Class<?> attributeType) throws IllegalStateException {
-        return "WITH nearest_row AS ( " +
-                "    SELECT * " +
+        return "SELECT timestamp as X, cast(value as numeric) as Y " +
                 "    FROM " + tableName + " " +
                 "    WHERE entity_id = ? AND attribute_name = ? " +
                 "      AND timestamp <= to_timestamp(?) " +
                 "    ORDER BY timestamp DESC " +
-                "    LIMIT 1 " +
-                ") " +
-                "select timestamp as X, cast(value as numeric) as Y FROM nearest_row";
+                "    LIMIT 1";
     }
+
     @Override
     public HashMap<Integer, Object> getSQLParameters(AttributeRef attributeRef) {
         HashMap<Integer, Object> parameters = new HashMap<>();

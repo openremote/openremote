@@ -4,7 +4,7 @@ import org.openremote.manager.rules.RulesBuilder;
 import org.openremote.model.attribute.AttributeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.datapoint.query.AssetDatapointTimestampQuery;
+import org.openremote.model.datapoint.query.AssetDatapointNearestQuery;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
@@ -173,7 +173,7 @@ public enum NodeModel {
 
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
 
-                final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointTimestampQuery(pastInstant.toEpochMilli()));
+                final ValueDatapoint<?>[] valueDatapoints = info.getHistoricDatapoints().getValueDatapoints(ref, new AssetDatapointNearestQuery(pastInstant.toEpochMilli()));
                 return valueDatapoints.length > 0 ? valueDatapoints[0].getValue() : null;
             },
             params -> {
@@ -198,7 +198,7 @@ public enum NodeModel {
             info -> ((RulesBuilder.Action) facts -> {
                 info.setFacts(facts);
                 Object obj = info.getValueFromInput(0);
-                info.getLog().log(Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
+                info.LOG.log(Level.INFO, ValueUtil.asJSON(obj).orElseGet(() -> "Couldn't parse JSON"));
             })),
 
     WRITE_ATTRIBUTE(new Node(NodeType.OUTPUT, new NodeInternal[]{
