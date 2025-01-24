@@ -51,7 +51,6 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.gateway.GatewayConnector.META_ITEM_RESTRICTIONS_LIST
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId
 import static org.openremote.manager.gateway.GatewayService.getGatewayClientId
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
@@ -275,26 +274,26 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[0] }.getParentId() == gateway.getId()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[0] }.getLocation().get().x == 10
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[0] }.getLocation().get().y == 11
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[0] }.getAttribute(Asset.LOCATION).flatMap { it.getMetaItem(ACCESS_PUBLIC_READ) }.isEmpty()
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[0]}.getAttribute(Asset.LOCATION).flatMap{it.getMetaItem(ACCESS_PUBLIC_READ)}.isPresent()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getName() == "Test Building 1 Room 1"
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getType() == RoomAsset.DESCRIPTOR.getName()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getRealm() == managerTestSetup.realmBuildingName
             assert mapAssetId(gateway.getId(), syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getParentId(), true) == assetIds[0]
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getAttribute("temp").map { !it.hasMeta(AGENT_LINK) }.orElse(false)
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[1] }.getAttribute("tempSetpoint").map { !it.hasMeta(AGENT_LINK) }.orElse(false)
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[1]}.getAttribute("temp").map{it.hasMeta(AGENT_LINK)}.orElse(false)
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[1]}.getAttribute("tempSetpoint").map{it.hasMeta(AGENT_LINK)}.orElse(false)
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getName() == "Test Building 2"
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getType() == BuildingAsset.DESCRIPTOR.getName()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getRealm() == managerTestSetup.realmBuildingName
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getParentId() == gateway.getId()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getLocation().get().x == 10
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getLocation().get().y == 11
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[5] }.getAttribute(Asset.LOCATION).flatMap { it.getMetaItem(ACCESS_PUBLIC_READ) }.isEmpty()
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[5]}.getAttribute(Asset.LOCATION).flatMap{it.getMetaItem(ACCESS_PUBLIC_READ)}.isPresent()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getName() == "Test Building 2 Room 1"
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getType() == RoomAsset.DESCRIPTOR.getName()
             assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getRealm() == managerTestSetup.realmBuildingName
             assert mapAssetId(gateway.getId(), syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getParentId(), true) == assetIds[5]
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getAttribute("temp").map { !it.hasMeta(AGENT_LINK) }.orElse(false)
-            assert syncedAssets.find { mapAssetId(gateway.getId(), it.id, true) == assetIds[6] }.getAttribute("tempSetpoint").map { !it.hasMeta(AGENT_LINK) }.orElse(false)
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[6]}.getAttribute("temp").map{it.hasMeta(AGENT_LINK)}.orElse(false)
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[6]}.getAttribute("tempSetpoint").map{it.hasMeta(AGENT_LINK)}.orElse(false)
         }
 
         and: "the central manager should have requested the full loading of the second batch of assets"
@@ -766,20 +765,13 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "a gateway is provisioned in this manager in the building realm"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
-                .setRealm(managerTestSetup.realmBuildingName)
-                .setMetaItemRestrictions(META_ITEM_RESTRICTIONS_LIST))
+                .setRealm(managerTestSetup.realmBuildingName))
 
         then: "a set of credentials should have been created for this gateway and be stored against the gateway for easy reference"
         conditions.eventually {
             gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
             assert !isNullOrEmpty(gateway.getClientId().orElse(null))
             assert !isNullOrEmpty(gateway.getClientSecret().orElse(null))
-        }
-
-        and: "The meta item restrictions are populated"
-        conditions.eventually {
-            gateway = assetStorageService.find(gateway.getId(), true) as GatewayAsset
-            assert gateway.getMetaItemRestrictions().isPresent()
         }
 
         and: "a gateway connector should have been created for this gateway"

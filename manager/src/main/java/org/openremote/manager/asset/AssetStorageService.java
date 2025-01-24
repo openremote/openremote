@@ -63,7 +63,6 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
-import org.w3c.dom.Attr;
 
 import java.sql.*;
 import java.util.*;
@@ -564,7 +563,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, boolean overrideVersion) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, overrideVersion, false, null);
+        return merge(asset, overrideVersion, null, null);
     }
 
     /**
@@ -573,60 +572,43 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public <T extends Asset<?>> T merge(T asset, String userName) throws IllegalStateException, ConstraintViolationException {
-        return merge(asset, false, false, userName);
+        return merge(asset, false, null, userName);
     }
 
     /**
      * Merge the requested {@link Asset} checking that it meets all constraint requirements before doing so; the
      * timestamp of each {@link Attribute} will also be updated to the current system time if it has changed to assist
      * with {@link Attribute} equality (see {@link Attribute#equals}).
-     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
-     *                        version.
-     * @param skipGatewayCheck Don't check if asset is a gateway asset and merge asset into local persistence service.
-     * @param userName        the user which this asset needs to be assigned to.
+     *
+     * @param overrideVersion        If <code>true</code>, the merge will override the data in the database, independent of
+     *                               version.
+     * @param requestingGatewayAsset If set this is the {@link GatewayAsset} merging the asset so skip standard checks
+     * @param userName               the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, boolean skipGatewayCheck, String userName) throws IllegalStateException, ConstraintViolationException {
+    public <T extends Asset<?>> T merge(T asset, boolean overrideVersion, GatewayAsset requestingGatewayAsset, String userName) throws IllegalStateException, ConstraintViolationException {
 
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest("Merging asset: " + asset);
         }
 
-
-        List<String> restrictedMetaItems;
-        Boolean isDisallowedModificationOfGatewayChildAsset;
-        String gatewayAssetId;
-        if (asset.getId() != null || asset.getParentId() != null || !skipGatewayCheck) {
-            String gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
-
-            if (gatewayId != null && !skipGatewayCheck) {
-                if(asset.getId() == null){
-                    String msg = "Creation of GatewayAsset descendant, create assets in the Gateway itself: Gateway ID=" + gatewayId;
-                    LOG.info(msg);
-                    throw new IllegalStateException();
-                }
-                String msg = "Update of GatewayAsset descendant, only allowing modification of non-restricted MetaItems: Gateway ID=" + gatewayId;
-                LOG.info(msg);
-                restrictedMetaItems = Arrays.asList(find(gatewayId, GatewayAsset.class).getMetaItemRestrictions().orElse(GatewayConnector.META_ITEM_RESTRICTIONS_LIST));
-                isDisallowedModificationOfGatewayChildAsset = true;
-                gatewayAssetId = gatewayId;
-            } else {
-                gatewayAssetId = null;
-                restrictedMetaItems = new ArrayList<>();
-                isDisallowedModificationOfGatewayChildAsset = false;
-            }
-        } else {
-            gatewayAssetId = null;
-            restrictedMetaItems = new ArrayList<>();
-            isDisallowedModificationOfGatewayChildAsset = false;
-        }
-
+        String gatewayId = null;
+        long startTime = System.currentTimeMillis();
         String assetId = asset.getId() != null ? asset.getId() : "";
-        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
 
-            long startTime = System.currentTimeMillis();
+        // We skip all standard checks as asset is coming from a gateway and would be validated from there
+        if (requestingGatewayAsset != null) {
+
+            if (asset.getId() == null || asset.getParentId() == null || asset.getRealm() == null) {
+                String msg = "GatewayAsset descendant must have an ID, parent ID and realm defined: asset=" + asset;
+                LOG.warning(msg);
+                throw new IllegalStateException(msg);
+            }
+            gatewayId = requestingGatewayAsset.getId();
+
+        } else {
 
             // Validate realm
             if (asset.getRealm() == null) {
@@ -635,17 +617,37 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 throw new IllegalStateException(msg);
             }
 
-            // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
-            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
-
-            if (!validationFailures.isEmpty()) {
-                String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
-                ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
-                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
-                throw ex;
+            if (asset.getId() != null || asset.getParentId() != null) {
+                gatewayId = gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId());
             }
 
+            if (gatewayId == null) {
+                // Do standard JSR-380 validation on the asset (includes custom validation using descriptors and constraints)
+                // Only do validation on non gateway descendants as the asset types in the central instance may not
+                // match the edge gateway - we only allow meta items of descendant assets to be modified in the central
+                // instance (see below)
+                Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset);
+
+                if (!validationFailures.isEmpty()) {
+                    String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
+                    ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
+                    LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage());
+                    throw ex;
+                }
+            }
+        }
+
+        String finalGatewayId = gatewayId;
+        return withAssetLock(assetId, () -> persistenceService.doReturningTransaction(em -> {
+
             T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
+            boolean isGatewayDescendant = finalGatewayId != null;
+
+            if (requestingGatewayAsset == null && isGatewayDescendant && existingAsset == null) {
+                String msg = "Creation of GatewayAsset descendant, create assets in the Gateway itself: Gateway ID=" + finalGatewayId;
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
+            }
 
             if (existingAsset != null) {
 
@@ -662,33 +664,53 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     throw new IllegalStateException(msg);
                 }
 
-                if(isDisallowedModificationOfGatewayChildAsset){
-                    if(!existingAsset.getParentId().equals(gatewayAssetId)){
-                        throw new IllegalStateException("Cannot move an asset into a GatewayAsset");
+                if (isGatewayDescendant) {
+                    if (requestingGatewayAsset != null) {
+                        // Asset is being merged by the gateway connector so meta items from existing asset will
+                        // override any from the edge gateway
+                        // TODO: Allow configurable sync rules on the GatewayAsset to decide how meta items are merged
+                        asset.getAttributes().values().forEach(attribute ->
+                            existingAsset.getAttribute(attribute.getName()).ifPresent(existingAttribute ->
+                                    attribute.setMeta(existingAttribute.getMeta()))
+                        );
+                    } else {
+                        // User initiated asset merge of a gateway descendant asset they can only add/remove meta items
+                        GatewayConnector gatewayConnector = gatewayService.getGatewayConnectorById(finalGatewayId);
+                        if (gatewayConnector == null) {
+                            String msg = "Failed to find owning gateway connector for gateway descendant asset: asset = " + asset;
+                            LOG.warning(msg);
+                            throw new IllegalStateException(msg);
+                        }
+                        GatewayAsset gatewayAsset = gatewayConnector.getGatewayAsset();
+
+                        if (!existingAsset.getParentId().equals(asset.getParentId())) {
+                            throw new IllegalStateException("Modification of GatewayAsset descendant, move assets in the Gateway itself: Gateway ID=" + finalGatewayId);
+                        }
+
+                        if (!existingAsset.getName().equals(asset.getName())) {
+                            throw new IllegalStateException("Modification of GatewayAsset descendant, rename assets in the Gateway itself: Gateway ID=" + finalGatewayId);
+                        }
+
+                        if (asset.getAttributes().size() != existingAsset.getAttributes().size()) {
+                            throw new IllegalStateException("Modification of GatewayAsset descendant, change attribtutes in the Gateway itself: Gateway ID=" + finalGatewayId);
+                        }
+
+                        // Check attribute names and types all match and take values from existing attributes (in case attribute events have been received since merge initiated)
+                        boolean attributesOK = asset.getAttributes().values().stream().allMatch(attribute ->
+                            existingAsset.getAttribute(attribute.getName()).map(existingAttribute -> {
+                                if (!Objects.equals(existingAttribute.getType(), attribute.getType())) {
+                                    return false;
+                                }
+                                ((Attribute<Object>)attribute).setValue(existingAttribute.getValue().orElse(null), existingAttribute.getTimestamp().orElse(0L));
+                                return true;
+                            }).orElse(false)
+                        );
+
+                        if (!attributesOK) {
+                            throw new IllegalStateException("Modification of GatewayAsset descendant, change attribtutes in the Gateway itself: Gateway ID=" + finalGatewayId);
+                        }
                     }
-
-                    if(!existingAsset.getName().equals(asset.getName())){
-                        throw new IllegalStateException("Cannot change the name of a GatewayAsset's asset");
-                    }
-
-                    if(asset.getAttributes().size() != existingAsset.getAttributes().size()){
-                        throw new IllegalStateException("Attributes were created/deleted");
-                    }
-
-                    List<Attribute<?>> changedAttrs = asset.getAttributes().stream().filter(it -> !it.deepEquals(
-                            existingAsset.getAttribute(it.getName()).orElse(null)
-                    )).toList();
-
-                    List<? extends Attribute<?>> allowedChanges = changedAttrs.stream().map( it -> {
-                        return existingAsset.getAttribute(it.getName()).orElseThrow().setMeta(
-                                new MetaMap(it.getMeta().stream().filter(meta -> !restrictedMetaItems.contains(meta.getName())).toList())
-                        ).setTimestamp(it.getTimestamp().orElse(0L));
-                    }).toList();
-
-                    asset.addOrReplaceAttributes(allowedChanges.toArray(Attribute[]::new));
                 }
-
-
 
                 // Update timestamp on modified attributes this allows fast equality checking
                 asset.getAttributes().stream().forEach(attr ->
@@ -707,12 +729,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (overrideVersion) {
                     asset.setVersion(existingAsset.getVersion());
                 }
-            }
-
-            if(isDisallowedModificationOfGatewayChildAsset && existingAsset == null){
-                String msg = "Creation of GatewayAsset descendant with predefined Asset ID, create assets in the Gateway itself: Gateway ID=" + gatewayAssetId;
-                LOG.info(msg);
-                throw new IllegalStateException();
             }
 
             if (!identityService.getIdentityProvider().realmExists(asset.getRealm())) {
