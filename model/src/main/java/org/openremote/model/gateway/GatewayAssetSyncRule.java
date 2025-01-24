@@ -18,5 +18,5 @@ public class GatewayAssetSyncRule {
      * should be applied; to apply to all attributes use the * wildcard. The list of
      * {@link org.openremote.model.attribute.MetaItem} will then be stripped from these attributes before syncing.
      */
-    public Map<String, String> excludeAttributeMeta;
+    public Map<String, List<String>> excludeAttributeMeta;
 }
