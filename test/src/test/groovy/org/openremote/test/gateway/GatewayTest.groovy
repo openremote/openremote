@@ -84,7 +84,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "a gateway is provisioned in this manager"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
                 .setRealm(managerTestSetup.realmBuildingName))
-                .setMetaItemRestrictions(META_ITEM_RESTRICTIONS_LIST)
 
         then: "a keycloak client should have been created for this gateway"
         conditions.eventually {
@@ -790,6 +789,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 gateway.getClientSecret().orElse(""),
                 false,
                 null,
+                Map.of("test", new GatewayAssetSyncRule()),
                 false
         )
         gatewayClientResource.setConnection(null, managerTestSetup.realmCityName, gatewayConnection)
@@ -1117,7 +1117,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "a gateway is provisioned in this manager"
         GatewayAsset gateway = assetStorageService.merge(new GatewayAsset("Test gateway")
                 .setRealm(managerTestSetup.realmBuildingName))
-                .setMetaItemRestrictions(META_ITEM_RESTRICTIONS_LIST)
 
         then: "a keycloak client should have been created for this gateway"
         conditions.eventually {
