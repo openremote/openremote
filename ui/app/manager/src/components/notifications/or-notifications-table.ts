@@ -32,6 +32,7 @@ export class OrNotificationsTable extends OrMwcTable {
                 css`
                 .notification-container {
                     padding: 20px;
+                    margin: 0 20px;
                     overflow: auto;
                 }
     
@@ -54,17 +55,26 @@ export class OrNotificationsTable extends OrMwcTable {
                     font-weight: 500;
                     border-bottom: 2px solid #e0e0e0;
                     white-space: nowrap;
+                    width: auto;
                 }
     
                 td {
-                    padding: 12px 16px;
+                    padding: 4px 6px;
                     border-bottom: 1px solid #e0e0e0;
                     vertical-align: middle;
+                    width: auto;
                 }
     
                 tbody tr:hover {
                     background-color: var(--or-table-row-hover-color, rgba(0,0,0,0.04));
                 }
+
+                td:nth-child(1), th:nth-child(1) { width: 15%; } /* Title column */
+                td:nth-child(2), th:nth-child(2) { width: 25%; } /* Content column */
+                td:nth-child(3), th:nth-child(3) { width: 6%; } /* Status column */
+                td:nth-child(4), th:nth-child(4) { width: 15%; } /* Target column */
+                td:nth-child(5), th:nth-child(5) { width: 8%; } /* SentOn column */
+                td:nth-child(6), th:nth-child(6) { width: 8%; } /* DeliveredOn column */
     
                 .notification-status {
                     padding: 4px 8px;
@@ -82,6 +92,11 @@ export class OrNotificationsTable extends OrMwcTable {
     
                 .status-pending {
                     color: var(--or-notification-status-pending-color, #8F7EE7);
+                    background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
+                }
+
+                .status-error {
+                    color: var(--or-notification-status-pending-color,rgb(231, 126, 126));
                     background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
                 }
             `
@@ -107,9 +122,9 @@ export class OrNotificationsTable extends OrMwcTable {
         {title: i18next.t("Title"), isSortable: true},
         {title: i18next.t("Content")},
         {title: i18next.t("Status"), isSortable: true},
+        {title: i18next.t("Target")},
         {title: i18next.t("Sent on"), isSortable: true},
-        {title: i18next.t("Delivered on"), isSortable: true},
-        {title: i18next.t("Target")}
+        {title: i18next.t("Delivered on"), isSortable: true}
     ];
 
     protected config: TableConfig = {
@@ -120,7 +135,6 @@ export class OrNotificationsTable extends OrMwcTable {
         },
         multiSelect: false
     }
-
 
     protected sortIndex = 4; // sort by sent date by default
     protected sortDirection: "ASC" | "DESC" = "DESC";
@@ -147,9 +161,9 @@ export class OrNotificationsTable extends OrMwcTable {
                     pushMessage.title, 
                     pushMessage.body,
                     this.getStatusContent(notification),
+                    pushMessage.target,
                     this.getDateContent(notification.sentOn),
-                    this.getDateContent(notification.deliveredOn),
-                    pushMessage.target
+                    this.getDateContent(notification.deliveredOn)
                 ],
                 clickable: true,
                 // store the full notification object in the row data
@@ -204,7 +218,6 @@ export class OrNotificationsTable extends OrMwcTable {
             return 1; // if either value is undefined move it to the end
         }
     }
-
 
     protected getStatusContent(notification: SentNotification): TemplateResult {
         const isDelivered = !!notification.deliveredOn;
