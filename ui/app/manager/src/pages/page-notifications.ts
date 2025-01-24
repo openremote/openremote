@@ -83,16 +83,6 @@ export class NotificationService {
         }
     }
 
-    public getLastDayTimeRange(): {fromDate: number, toDate: number} {
-        const now = new Date();
-        const yesterday = new Date(now.getDate() - 1);
-
-        return {
-            fromDate: yesterday.getTime(),
-            toDate: now.getTime()
-        }
-    }
-
     public getDefaultTimeRange(): {fromDate: number, toDate: number} {
         const now = new Date();
         const toDate = new Date(now);
@@ -170,6 +160,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
                 --or-icon-width: 20px;
                 --or-icon-height: 20px;
             }
+
+            #table-container {
+                margin-left: 20px;
+                margin-right: 20px;
+            }
             
             // Dialog and form specific styles
             .dialog-content {
@@ -242,6 +237,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             .create-btn {
                 order: 3;
             }
+                
         `];
     }
 
@@ -289,17 +285,20 @@ export class PageNotifications extends Page<AppStateKeyed> {
     }
 
     @state()
-    protected _isFiltered: boolean = false;
+    protected _isFilteredDate: boolean = false;
+
+    @state()
+    protected _isFilteredSource: boolean = false;
 
     protected _loading: boolean = false;
     protected notificationService: NotificationService;
     protected _sourceOptions = [
         { value: " ", text: i18next.t("All sources") },
-        { value: "CLIENT", text: i18next.t("CLIENT") },
-        { value: "INTERNAL", text: i18next.t("INTERNAL") },
-        { value: "GLOBAL_RULESET", text: i18next.t("GLOBAL_RULESET") },
-        { value: "REALM_RULESET", text: i18next.t("REALM_RULESET") },
-        { value: "ASSET_RULESET", text: i18next.t("ASSET_RULESET") },
+        { value: "CLIENT", text: i18next.t("Client") },
+        { value: "INTERNAL", text: i18next.t("Internal") },
+        { value: "GLOBAL_RULESET", text: i18next.t("Global ruleset") },
+        { value: "REALM_RULESET", text: i18next.t("Realm ruleset") },
+        { value: "ASSET_RULESET", text: i18next.t("Asset ruleset") },
     ]
 
     constructor(store: Store<AppStateKeyed>) {
@@ -307,7 +306,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this.notificationService = new NotificationService();
 
         // set initial date range
-        const {fromDate, toDate} = this.notificationService.getLastDayTimeRange();
+        const {fromDate, toDate} = this.notificationService.getDefaultTimeRange();
         this._fromDate = fromDate;
         this._toDate = toDate;
     }
@@ -330,23 +329,25 @@ export class PageNotifications extends Page<AppStateKeyed> {
         this._loading = true;
 
         try {
-            // this is where that undefined comes from jfc 
-            const fromDate = this._isFiltered ? this._fromDate : undefined;
-            const toDate = this._isFiltered ? this._toDate : undefined;
+            const fromDate = this._isFilteredDate ? this._fromDate : undefined;
+            const toDate = this._isFilteredDate ? this._toDate : undefined;
 
             //if filtering is enabled, use selected dates
             // otherwise default to range (last 30 days)
-
-            const timeRange = this._isFiltered && this._fromDate && this._toDate ?
+            const timeRange = this._isFilteredDate && this._fromDate && this._toDate ?
             {
                 fromDate: this._fromDate,
                 toDate: this._toDate
             } :
             this.notificationService.getDefaultTimeRange();
 
-            if (!this._isFiltered) {
+            if (!this._isFilteredDate) {
                 this._fromDate = timeRange.fromDate;
                 this._toDate = timeRange.toDate;
+            }
+
+            if (!this._isFilteredSource) {
+                this._selectedSource = " "
             }
 
             console.log("getNotifications called for time range:", this._fromDate, this._toDate)
@@ -509,7 +510,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             return html`<or-translate value="notAuthenticated"/>`;
         }
 
-        const writeNotifications = manager.hasRole("write:admin")
+        const writeNotifications = manager.hasRole("write:admin");
 
         return html`
             <div id="wrapper">
@@ -527,33 +528,18 @@ export class PageNotifications extends Page<AppStateKeyed> {
                             .value="${this._selectedSource}"
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                 this._selectedSource = e.detail.value;
+                                this._isFilteredSource = true; //set filter changes
                                 this.requestUpdate();
                             }}"
                         ></or-mwc-input>
 
-                        <or-mwc-input
-                        type="${InputType.CHECKBOX}"
-                        label="${i18next.t('Enable time filtering')}"
-                        .checked="${this._isFiltered}"
-                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                            this._isFiltered = e.detail.value;
-                            if (!this._isFiltered) {
-                                // Clear date filters when disabling
-                                this._fromDate = undefined;
-                                this._toDate = undefined;
-                            }
-                            this._loadData();
-                        }}"
-                        ></or-mwc-input>
-
-
-                        ${when(this._isFiltered, () => html`
                             <or-mwc-input
                                 type="${InputType.DATETIME}"
                                 label="${i18next.t('From')}"
                                 .value="${this._fromDate}"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                     this._fromDate = e.detail.value;
+                                    this._isFilteredDate = true; //set flag when date changes
                                     this._loadData();
                                 }}"
                             ></or-mwc-input>
@@ -564,21 +550,10 @@ export class PageNotifications extends Page<AppStateKeyed> {
                                 .value="${this._toDate}"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                     this._toDate = e.detail.value;
+                                    this._isFilteredDate = true; //set flag when date changes
                                     this._loadData();
                                 }}"
                             ></or-mwc-input>
-    
-                            <or-mwc-input 
-                                type="${InputType.BUTTON}"
-                                label="${i18next.t('Last 24 hours')}"
-                                @or-mwc-input-changed="${() => {
-                                    const {fromDate, toDate} = this.notificationService.getLastDayTimeRange();
-                                    this._fromDate = fromDate;
-                                    this._toDate = toDate;
-                                    this._loadData();
-                                }}"
-                            ></or-mwc-input>
-                        `)}
                     </div>
                     
                     <div class="create-btn">
@@ -592,8 +567,9 @@ export class PageNotifications extends Page<AppStateKeyed> {
                     ` : ``}
                     </div>
                 </div>
-
-                ${this.getNotificationsTable()}
+                <div id="table-container">
+                    ${this.getNotificationsTable()}
+                </div>
             </div>
         `;
     }
