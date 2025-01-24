@@ -200,17 +200,17 @@ public class AssetQueryPredicate implements Predicate<AttributeInfo> {
             condition.getItems().stream()
                 .forEach(p -> {         
                     Predicate<AttributeInfo> wrappedPredicate = attributeInfo -> {
-                        Predicate<NameValueHolder<?>> basePredicates = asPredicate(currentMillisProducer, p);
-                        
-                        // Include older than timestamp check if timestampOlderThan is provided
+
+                        // Check timestamp not updated for condition
                         if (p.timestampOlderThan != null) {
                             long currentTime = currentMillisProducer.get();
                             long durationMillis = TimeUtil.parseTimeDuration(p.timestampOlderThan);
-                            if (!(attributeInfo.getTimestamp() < currentTime - durationMillis)) {
+                            if (attributeInfo.getTimestamp() > currentTime - durationMillis) {
                                 return false;
                             }
                         }
                         
+                        Predicate<NameValueHolder<?>> basePredicates = asPredicate(currentMillisProducer, p);
                         return basePredicates.test(attributeInfo);
                     };
                     attributePredicates.add(wrappedPredicate);

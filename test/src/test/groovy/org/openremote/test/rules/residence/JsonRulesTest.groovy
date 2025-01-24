@@ -703,6 +703,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine realmBuildingEngine
 
         and: "the pseudo clock is stopped"
@@ -755,9 +756,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the light asset is updated with onOff set to true and brightness set to 100"
         lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("onOff").get().setValue(true)
-        lightAsset.getAttribute("brightness").get().setValue(100)
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.ON_OFF, true))
 
         then: "the light asset should have its onOff attribute set to true and brightness set to 100"
         conditions.eventually {
@@ -813,9 +813,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "brightness is updated to 0 and notes is updated to empty"
         lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("brightness").get().setValue(0)
-        lightAsset.getAttribute("notes").get().setValue("")
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 0))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.NOTES, ""))
 
         then: "the light asset should have its brightness set to 0 and notes set to empty"
         conditions.eventually {
@@ -835,13 +834,18 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "brightness is updated to 100"
         lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("brightness").get().setValue(100)
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
 
         then: "the light asset should have its brightness set to 100"
         conditions.eventually {
             def light = assetStorageService.find(lightId)
             assert light.getAttribute("brightness").get().getValue().orElse(0) == 100
+        }
+
+        and: "notes should still be empty until the rule engine fires"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
         }
 
         when: "time advances for 6 seconds"
