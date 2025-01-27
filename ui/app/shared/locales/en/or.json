@@ -61,6 +61,7 @@
   "notEndsWith": "Does not end with",
   "containsKey": "Contains key",
   "notContainsKey": "Does not contain key",
+  "notUpdatedFor": "Not updated for",
   "true": "Is true",
   "false": "Is false",
   "radiusMin": "Radius (min. 100m)",
@@ -373,7 +374,8 @@
     "createNew": "Add new Gateway tunnel",
     "selectAsset": "Select gateway asset",
     "closeSuccessful": "Closed tunnel successfully",
-    "closesAt": "Closes at"
+    "closesAt": "Closes at",
+    "offline": "Offline"
   },
   "tunnels": "tunnels",
   "tunnel": "tunnel",
