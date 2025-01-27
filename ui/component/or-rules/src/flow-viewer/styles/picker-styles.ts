@@ -12,7 +12,7 @@ textarea {
 input[type=number] {
     padding: 11px 10px;
 }
-textarea, input[type=text], input[type=number], select{
+textarea, input[type=text], select{
     font-family: inherit;
     padding: 10px;
     border-radius: var(--roundness);    

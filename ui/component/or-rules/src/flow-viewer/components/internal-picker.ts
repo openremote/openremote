@@ -109,9 +109,9 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             case PickerType.MULTILINE:
                 return this.multilineInput;
             case PickerType.DATE:
-                return this.getNumberInput(0, 365);
+                return this.getNumberInput(0, undefined, 50);
             case PickerType.NUMBER:
-                return this.getNumberInput(undefined, undefined);
+                return this.getNumberInput(undefined, undefined, undefined);
             case PickerType.TEXT:
                 return this.textInput;
             default:
@@ -250,7 +250,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         }}" style="${sizeString}" @input="${(e: any) => this.setValue(e.target.value)}" placeholder="${this.internal.name!}">${this.internal.value || ""}</textarea>`;
     }
 
-    private getNumberInput(min?: number, max?: number): TemplateResult {
+    private getNumberInput(min?: number, max?: number, width?: number): TemplateResult {
         return html`<input
                 @wheel="${(e: any) => {
                     if (e.target === this.shadowRoot!.activeElement) {
@@ -259,6 +259,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 }}"
                 @input="${(e: any) => this.setValue(parseFloat(e.target.value))}"
                 value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"
+                style="max-width: ${ifDefined(width)}"
                 min="${ifDefined(min)}" max="${ifDefined(max)}"
         />`;
     }

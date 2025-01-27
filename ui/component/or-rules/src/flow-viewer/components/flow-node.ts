@@ -1,6 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {Node, NodeInternalBreakType} from "@openremote/model";
+import {Node, NodeInternal, NodeInternalBreakType} from "@openremote/model";
 import {IdentityDomLink} from "../node-structure";
 import {FlowNodeStyle} from "../styles/flow-node-style";
 import {i18next} from "@openremote/or-translate";
@@ -100,22 +100,31 @@ export class FlowNode extends SelectableElement {
         const inputSide = html`<div class="socket-side inputs">${this.node.inputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="input"></flow-node-socket>`)}</div>`;
         const outputSide = html`<div class="socket-side outputs">${this.node.outputs!.map((i) => html`<flow-node-socket ?renderlabel="${!this.minimal}" .socket="${i}" side="output"></flow-node-socket>`)}</div>`;
         const spacer = html`<div style="width: 10px"></div>`;
+        // Gather the elements between NEW_LINES in distinct groups, that can then be iterated per-group and per-element below. Should help with adding as many internals in any configuration we would like.
         return html`
         ${title}
         ${this.node.inputs!.length > 0 ? inputSide : spacer}
-        ${(this.minimal) ? null : html`<div class="internal-container" style="display: flex; flex-wrap: wrap; justify-content: flex-start; max-width: 190px; padding: 10px; gap: 8px; height: fit-content;">
-            ${this.node.internals!.map((i) => {
-                const isNewLine = i.breakType === NodeInternalBreakType.NEW_LINE;
-                const style = isNewLine ? "flex-basis: 100%;" : "";
-                return html`
-                    <div class="internal-item" style="${style};">
+        ${(this.minimal) ? null : html`
+            <div class="internal-container" style="padding-top: 8px">
+            ${this.node.internals!.reduce((acc, i, index, array) => {
+                acc[acc.length - 1].push(i);
+                if (i.breakType === NodeInternalBreakType.NEW_LINE && index < array.length - 1) {
+                    acc.push([]);
+                }
+                return acc;
+            }, [[]] as NodeInternal[][]).map((group) => html`
+            <div class="internal-group" style="max-width: fit-content; min-width: fit-content; padding-bottom: 8px;">
+                ${group.map((i) => html`
+                    <div class="internal-item" style="display: inline-block">
                         <internal-picker style="pointer-events: ${(this.frozen ? "none" : "normal")};" @picked="${async () => {
-                            this.forceUpdate();
-                            await this.updateComplete;
-                            await project.removeInvalidConnections();
-                        }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>
-                    </div>`;
-            })}
+                        this.forceUpdate();
+                        await this.updateComplete;
+                        await project.removeInvalidConnections();
+                    }}" .node="${this.node}" .internalIndex="${this.node.internals!.indexOf(i)}"></internal-picker>
+                    </div>
+                `)}
+            </div>
+        `)}
         </div>`}
         ${this.node.outputs!.length > 0 ? outputSide : spacer}
         ${(this.frozen ? html`<or-icon class="lock-icon ${this.node.type!.toLowerCase()}" icon="lock"></or-icon>` : ``)}
