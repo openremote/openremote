@@ -1,9 +1,26 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, GlobalRuleset} from "@openremote/model";
-import "@openremote/or-translate";
+import {translate} from "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
-import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
@@ -16,10 +33,8 @@ import {
     RulesConfig,
     RulesetNode, RuleViewInfoMap
 } from "./index";
-import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {translate} from "@openremote/or-translate";
 import i18next from "i18next";
 import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {GenericAxiosResponse} from "@openremote/rest";
@@ -376,8 +391,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (ruleset.enabled) {
 
             // Look at validity meta
-            if (ruleset.meta && ruleset.meta["validity"]) {
-                const calendarEvent = ruleset.meta["validity"] as CalendarEvent;
+            if (ruleset.meta && ruleset.meta.validity) {
+                const calendarEvent = ruleset.meta.validity as CalendarEvent;
                 const now = new Date().getTime();
 
                 if (calendarEvent.start) {
