@@ -41,9 +41,4 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
     public Node getNodeDefinition(RequestParams requestParams, String name) {
         return NodeModel.getDefinitionFor(name);
     }
-
-    @Override
-    public boolean getDoesMatch(RequestParams requestParams, NodeDataType fromType, NodeDataType toType) {
-        return SocketTypeMatcher.match(fromType, toType);
-    }
 }

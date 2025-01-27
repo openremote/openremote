@@ -26,10 +26,4 @@ public interface FlowResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getNodeDefinition", summary = "Retrieve a node definition by name")
     Node getNodeDefinition(@BeanParam RequestParams requestParams, @PathParam("name") String name);
-
-    @POST
-    @Path("socket/matcher/{from}/{to}")
-    @Produces(APPLICATION_JSON)
-    @Operation(operationId = "getDoesMatch", summary = "Check if socket types match")
-    boolean getDoesMatch(@BeanParam RequestParams requestParams, @PathParam("from") NodeDataType fromType, @PathParam("to") NodeDataType toType);
 }

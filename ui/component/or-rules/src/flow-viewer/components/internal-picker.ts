@@ -259,7 +259,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 }}"
                 @input="${(e: any) => this.setValue(parseFloat(e.target.value))}"
                 value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"
-                style="max-width: ${ifDefined(width)}"
+                style="max-width: ${ifDefined(width)}px"
                 min="${ifDefined(min)}" max="${ifDefined(max)}"
         />`;
     }

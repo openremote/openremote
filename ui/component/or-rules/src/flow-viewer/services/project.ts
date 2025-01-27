@@ -4,6 +4,7 @@ import {EditorWorkspace} from "../components/editor-workspace";
 import {input} from "../components/flow-editor";
 import manager from "@openremote/core";
 import {NodeUtilities} from "../node-structure";
+import {SocketTypeMatcher} from "../node-structure/socket.type.matcher";
 
 export class Project extends EventEmitter {
     public nodes: Node[] = [];
@@ -184,7 +185,7 @@ export class Project extends EventEmitter {
         });
     }
 
-    public async isValidConnection(connection: NodeConnection) {
+    public isValidConnection(connection: NodeConnection) {
         const fromSocket = NodeUtilities.getSocketFromID(connection.from!, this.nodes);
         const toSocket = NodeUtilities.getSocketFromID(connection.to!, this.nodes);
         if (!fromSocket ||
@@ -192,23 +193,18 @@ export class Project extends EventEmitter {
             return false;
         }
 
-        const doesMatch = manager.rest.api.FlowResource.getDoesMatch(fromSocket.type!, toSocket.type!);
-
-        return await doesMatch.then((matches) => {
-            if (!matches.data || fromSocket.id === toSocket.id || fromSocket.nodeId === toSocket.nodeId) {
-                return false;
-            }
-            return true;
-        });
+        return !(!SocketTypeMatcher.match(fromSocket.type!, toSocket.type!) ||
+            fromSocket.id === toSocket.id ||
+            fromSocket.nodeId === toSocket.nodeId);
     }
 
-    public async createConnection(fromSocket: string, toSocket: string): Promise<boolean> {
+    public createConnection(fromSocket: string, toSocket: string): boolean {
         const connection = {
             from: fromSocket,
             to: toSocket
         };
 
-        if (!(await this.isValidConnection(connection))) { return false; }
+        if (!(this.isValidConnection(connection))) { return false; }
 
 
         // If the type contains _ARRAY, then assume that we allow multiple nodes to connect to that socket.
@@ -224,8 +220,8 @@ export class Project extends EventEmitter {
         return true;
     }
 
-    public async removeInvalidConnections() {
-        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(async (j) => !(await this.isValidConnection(j)))) {
+    public removeInvalidConnections() {
+        for (const c of this.connections.map(c => this.enrichConnection(c)).filter(async (j) => !(this.isValidConnection(j)))) {
             this.removeConnection(c);
         }
     }
