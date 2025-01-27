@@ -108,8 +108,11 @@ public class NodeExecutionRequestInfo {
             new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
         );
     }
-    public Object[] getValuesFromInput(NodeSocket[] sockets) {
-        return IntStream.range(0, sockets.length).mapToObj(this::getValueFromInput).toArray();
+    public <T> T[] getValuesFromInput(NodeSocket[] sockets, Class<T> type) {
+        return IntStream.range(0, sockets.length)
+                .mapToObj(this::getValueFromInput)
+                .map(it -> (T) it)
+                .toArray(size -> (T[]) java.lang.reflect.Array.newInstance(type, size));
     }
 
     public NodeDataType getTypeFromInput(int index) {
