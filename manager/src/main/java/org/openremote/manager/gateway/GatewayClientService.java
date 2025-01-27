@@ -21,6 +21,7 @@ package org.openremote.manager.gateway;
 
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.container.message.MessageBrokerService;
@@ -38,8 +39,10 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.EventSubscription;
@@ -462,6 +465,9 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
                 AssetsEvent responseEvent = new AssetsEvent(assets);
+
+
+
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                     connection.getLocalRealm(),
@@ -543,5 +549,46 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
         GatewayIOClient client = clientRealmMap.get(realm);
         return client != null ? client.getConnectionStatus() : null;
+    }
+
+    /**
+     *
+     * If the assetSyncRules affect this AssetType:
+     * 1) Filter out the attributes that have been defined in GatewayAssetSyncRule.<assetType>.excludeAttributes
+     * 2) Find the metaItem exclusions, with the specific attibuteName having priority over the wildcard. If none are found, Use Optional.Empty
+     * 3) Put the attribute and the List of excluded metaItems in a Tuple (MutablePair)
+     * 4) Filter out any excluded metaItems by using Attribute.setMeta(Attribute.getMeta)
+     * 5)
+     *
+     * @param asset Asset to filter
+     * @param assetSyncRules Asset Sync Rules as found in GatewayConnection
+     * @return The asset as given, with attributes and metaItems stripped out as instructed by the assetSyncRules
+     */
+    protected Asset<?> applySyncRules(Asset<?> asset, Map<String, GatewayAssetSyncRule> assetSyncRules) {
+
+        if(!(assetSyncRules.containsKey(asset.getType()) || assetSyncRules.containsKey("*"))) return asset;
+
+
+        GatewayAssetSyncRule syncRule = assetSyncRules.get(asset.getType());
+        List<? extends Attribute<?>> attrs = asset.getAttributes().stream()
+                .filter(it -> !syncRule.excludeAttributes.contains(it.getName()))
+
+                .map(it -> {
+                    Optional<List<String>> restrictions = Optional.ofNullable(syncRule.excludeAttributeMeta.getOrDefault(it.getName(), syncRule.excludeAttributeMeta.get("*")));
+                    return new MutablePair<Attribute<?>, Optional<List<String>>>(it, restrictions);
+                })
+
+                .map(it -> {
+                    it.left = it.left.setMeta(
+                            new MetaMap(it.getLeft().getMeta().stream()
+                                    .filter(meta -> it.getRight().isPresent() && !it.getRight().get().contains(meta.getName()))
+                                    .toList()
+                            )
+                    );
+                    return it.left;
+                })
+                .toList();
+        asset.setAttributes(attrs.toArray(Attribute[]::new));
+        return asset;
     }
 }
