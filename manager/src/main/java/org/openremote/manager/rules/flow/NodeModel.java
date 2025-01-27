@@ -192,7 +192,7 @@ public enum NodeModel {
             }
     ),
 
-    DEBUG_TO_CONSOLE(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
+    LOG_OUTPUT(new Node(NodeType.OUTPUT, new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("value", NodeDataType.ANY)
     }, new NodeSocket[0]),
             info -> ((RulesBuilder.Action) facts -> {
@@ -353,7 +353,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sum();
+                return Arrays.stream(a).mapToDouble(Double.class::cast).sum();
             }
     ),
     MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
@@ -363,7 +363,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).max();
+                return Arrays.stream(a).mapToDouble(Double.class::cast).max();
             }
     ),
     MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
@@ -373,7 +373,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).min();
+                return Arrays.stream(a).mapToDouble(Double.class::cast).min();
             }
     ),
     AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
@@ -383,7 +383,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).average();
+                return Arrays.stream(a).mapToDouble(Double.class::cast).average();
             }
     ),
     MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
@@ -393,7 +393,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                final double[] sortedDoubles = Arrays.stream(a).map(Object::toString).mapToDouble(Double::parseDouble).sorted().toArray();
+                final double[] sortedDoubles = Arrays.stream(a).mapToDouble(Double.class::cast).sorted().toArray();
                 if (sortedDoubles.length == 0) {
                     return 0.0;
                 } else if (sortedDoubles.length % 2 == 0) {

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class NodeExecutionRequestInfo {
     private NodeCollection collection;
@@ -108,23 +109,7 @@ public class NodeExecutionRequestInfo {
         );
     }
     public Object[] getValuesFromInput(NodeSocket[] sockets) {
-        Node[] inputNodes = Arrays.stream(sockets).map(NodeSocket::getNodeId).map(n -> getCollection().getNodeById(n)).toArray(Node[]::new);
-
-        Map<NodeSocket, Node> dict = Arrays.stream(sockets)
-                .collect(Collectors.toMap(
-                        socket -> socket,
-                        socket -> getCollection().getNodeById(socket.getNodeId())
-                ));
-
-        return dict.entrySet().stream()
-                .map(entry -> {
-                    Node node = entry.getValue();
-                    final Object execute = NodeModel.getImplementationFor(node.getName()).execute(
-                            new NodeExecutionRequestInfo(getCollection(), entry.getValue(), entry.getKey(), getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
-                    );
-                    return execute;
-                })
-                .toArray();
+        return IntStream.range(0, sockets.length).mapToObj(this::getValueFromInput).toArray();
     }
 
     public NodeDataType getTypeFromInput(int index) {
