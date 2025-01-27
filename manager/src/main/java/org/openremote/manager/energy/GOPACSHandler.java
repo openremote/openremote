@@ -261,19 +261,20 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         for (int i = 0; i < flexRequest.getISPS().size(); i++) {
             FlexRequestISPType flexRequestISPType = flexRequest.getISPS().get(i);
             LocalTime start = FlexRequestISPTypeHelper.getISPStart(flexRequestISPType.getStart(), year, month, day, flexRequest.getTimeZone());
-            // Watts to Kilo watts
-            // Export is a positive value and min power will be negative if not zero
-            double importMax = flexRequestISPType.getMaxPower() == 0L ? this.powerImportMax : (double) flexRequestISPType.getMaxPower() / 1000;
-            double exportMax = flexRequestISPType.getMinPower() == 0L ? this.powerExportMax : (double) Math.abs(flexRequestISPType.getMinPower()) / 1000;
+            double importMax = flexRequestISPType.getMaxPower() == 0L ? this.powerImportMax : (double) flexRequestISPType.getMaxPower() / 1000.0F;
+            double exportMax = flexRequestISPType.getMinPower() == 0L ? this.powerExportMax : (double) Math.abs(flexRequestISPType.getMinPower()) / 1000.0F;
+            this.schedulePowerUpdates(start, importMax, exportMax);
 
-            schedulePowerUpdates(start, importMax, exportMax);
+            // Correct usage of ZoneId.of instead of ZoneOffset.of
+            ZoneId zoneId = ZoneId.of(flexRequest.getTimeZone());
+            long startEpochMilli = flexRequest.getPeriod().atTime(start).atZone(zoneId).toInstant().toEpochMilli();
 
-            powerImportMaxGopacsDatapoints.add(new ValueDatapoint<Double>(flexRequest.getPeriod().atTime(start).atOffset(ZoneOffset.of(flexRequest.getTimeZone())).toInstant().toEpochMilli(), importMax));
-            powerExportMaxGopacsDatapoints.add(new ValueDatapoint<Double>(flexRequest.getPeriod().atTime(start).atOffset(ZoneOffset.of(flexRequest.getTimeZone())).toInstant().toEpochMilli(), exportMax));
+            powerImportMaxGopacsDatapoints.add(new ValueDatapoint<>(startEpochMilli, importMax));
+            powerExportMaxGopacsDatapoints.add(new ValueDatapoint<>(startEpochMilli, exportMax));
         }
 
-        setPredictedDataPoints("powerImportMaxGopacs", powerImportMaxGopacsDatapoints);
-        setPredictedDataPoints("powerExportMaxGopacs", powerExportMaxGopacsDatapoints);
+        this.setPredictedDataPoints("powerImportMaxGopacs", powerImportMaxGopacsDatapoints);
+        this.setPredictedDataPoints("powerExportMaxGopacs", powerExportMaxGopacsDatapoints);
         LOG.fine("Finished processing Flex Request: " + flexRequest);
     }
 
@@ -329,6 +330,7 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         String payloadXml = cryptoService.verifySignedMessage(signedMessage);
         PayloadMessageType payloadMessage = serializer.fromPayloadXml(payloadXml);
         var incomingUftpMessage = IncomingUftpMessage.create(new UftpParticipant(signedMessage), payloadMessage, transportXml, payloadXml);
+        notifyNewIncomingMessage(incomingUftpMessage);
         uftpReceivedMessageService.process(incomingUftpMessage);
     }
 
