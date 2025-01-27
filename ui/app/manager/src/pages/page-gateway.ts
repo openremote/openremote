@@ -6,7 +6,7 @@ import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from "lit/directives/ref.js";
 import "@openremote/or-components/or-panel";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator} from "@openremote/model";
+import {AttributeDescriptor, AttributePredicate, ClientRole, ConnectionStatus, GatewayAttributeFilter, GatewayConnection, GatewayConnectionStatusEvent, LogicGroupOperator, GatewayAssetSyncRule} from "@openremote/model";
 import manager, {DefaultColor1, DefaultColor3} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
@@ -183,6 +183,11 @@ export class PageGateway extends Page<AppStateKeyed>  {
     protected _readonly = false;
     protected _eventSubscriptionId?: string;
     protected _intervalMin?: number;
+
+    @state()
+    protected _metaItemRestrictionsChecked: boolean = false;
+    @state()
+    protected _syncRules: { [index: string]: GatewayAssetSyncRule } = {};
 
     get name(): string {
         return "gatewayConnection";
@@ -373,6 +378,20 @@ export class PageGateway extends Page<AppStateKeyed>  {
                         <or-translate value="gateway.limit_sharing_rate_suffix"></or-translate>
                     </div>
                 </div>
+                <div class="gateway-sharing-control"  style="${controlStyling}">
+                    <or-mwc-input .label="${i18next.t("gateway.meta_item_restrictions")}" .type="${InputType.CHECKBOX}"
+                                  ?disabled="${controlsDisabled}" .value="${this._metaItemRestrictionsChecked}"
+                                  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(!!e.detail.value)}"
+                    ></or-mwc-input>
+                    <div class="gateway-sharing-control-child">
+                        <or-mwc-input .type="${InputType.JSON_OBJECT}" ?disabled="${!this._metaItemRestrictionsChecked}" 
+                                      .value="${controlsDisabled ? undefined : this._syncRules}" style="width: 500px;"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemRestrictionsUpdate(e.detail.value)}"
+                                      .label="${i18next.t('gateway.meta_item_restrictions_input')}"
+                        ></or-mwc-input>
+                        <or-translate value=""></or-translate>
+                    </div>
+                </div>
                 <div></div>
             </div>
         `;
@@ -461,6 +480,40 @@ export class PageGateway extends Page<AppStateKeyed>  {
     }
 
     /**
+     * HTML callback for when the "Configuration Item Restrictions" updates.
+     */
+    protected _onMetaItemRestrictionsUpdate(value?: { [index: string]: GatewayAssetSyncRule } | boolean) {
+        if(this._connection.assetSyncRules == undefined && value == undefined){
+            this._syncRules = this._getDefaultGatewayAssetSyncRule();
+        }
+        if(typeof value === "boolean"){
+            console.log("TOGGLE: "+value)
+            this._metaItemRestrictionsChecked = value;
+        }else {
+            console.log("EXCLUDEATTRIBUTEMETA: "+value)
+            this._syncRules = value;
+            this._updateSyncRules(this._syncRules);
+        }
+    }
+
+
+    protected  _getDefaultGatewayAssetSyncRule(): { [index: string]: GatewayAssetSyncRule }  {
+        return {
+            "*" : {
+                excludeAttributeMeta: {
+                    "*": [
+                        "attributeLinks",
+                        "accessPublicRead",
+                        "accessPublicWrite",
+                        "accessRestrictedRead",
+                        "accessRestrictedWrite"
+                    ]
+                }
+            }
+        }
+    }
+
+    /**
      * Internal function that returns a map of {@link AttributeDescriptor[]}, based on the {@link GatewayAttributeFilter}.
      * Mainly meant for the attribute-picker, as it uses AttributeDescriptors instead.
      */
@@ -490,6 +543,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
         this._setConnection(connectionResponse.data);
         this._connectionStatus = statusResponse.data;
+        this._syncRules = this._getDefaultGatewayAssetSyncRule();
         this._loading = false;
     }
 
@@ -497,6 +551,10 @@ export class PageGateway extends Page<AppStateKeyed>  {
         attributeFilters = attributeFilters?.filter(filter => Object.keys(filter).length > 0); // clear unset keys and empty objects
         console.debug("Updating attributeFilters to", attributeFilters);
         this._setConnectionProperty("attributeFilters", attributeFilters);
+    }
+    protected _updateSyncRules(syncRules: { [index: string]: GatewayAssetSyncRule }) {
+        console.debug("Updating syncRules to", syncRules);
+        this._setConnectionProperty("assetSyncRules", syncRules);
     }
 
     protected _setConnectionProperty(propName: string, value: any) {
