@@ -397,6 +397,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void onCentralManagerMessage(GatewayConnection connection, String message) {
+        LOG.severe("ONCENTRALMANAGERMESSAGE");
+
         SharedEvent event = messageFromString(message, SharedEvent.MESSAGE_PREFIX, SharedEvent.class);
 
         if (event != null) {
@@ -464,10 +466,10 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 // Force realm to be the one that this client is associated with
                 query.realm(new RealmPredicate(connection.getLocalRealm()));
                 List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
+                assets = assets.stream()
+                        .map(it -> this.applySyncRules(it, connection.getAssetSyncRules()))
+                        .collect(Collectors.toList());
                 AssetsEvent responseEvent = new AssetsEvent(assets);
-
-
-
                 responseEvent.setMessageID(event.getMessageID());
                 sendCentralManagerMessage(
                     connection.getLocalRealm(),
@@ -566,12 +568,14 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
      */
     protected Asset<?> applySyncRules(Asset<?> asset, Map<String, GatewayAssetSyncRule> assetSyncRules) {
 
+        if(asset == null || assetSyncRules == null) return asset;
+
         if(!(assetSyncRules.containsKey(asset.getType()) || assetSyncRules.containsKey("*"))) return asset;
 
 
-        GatewayAssetSyncRule syncRule = assetSyncRules.get(asset.getType());
+        GatewayAssetSyncRule syncRule = assetSyncRules.getOrDefault(asset.getType(), assetSyncRules.get("*"));
         List<? extends Attribute<?>> attrs = asset.getAttributes().stream()
-                .filter(it -> !syncRule.excludeAttributes.contains(it.getName()))
+                .filter(it -> syncRule.excludeAttributes == null || !syncRule.excludeAttributes.contains(it.getName()))
 
                 .map(it -> {
                     Optional<List<String>> restrictions = Optional.ofNullable(syncRule.excludeAttributeMeta.getOrDefault(it.getName(), syncRule.excludeAttributeMeta.get("*")));
