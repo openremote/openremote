@@ -57,27 +57,27 @@
                         "options": [
                             {
                                 "name": "seconds ago",
-                                "value": 1000
+                                "value": "SECONDS"
                             },
                             {
                                 "name": "minutes ago",
-                                "value": 60000
+                                "value": "MINUTES"
                             },
                             {
                                 "name": "hours ago",
-                                "value": 1440000
+                                "value": "HOURS"
                             },
                             {
                                 "name": "days ago",
-                                "value": 43200000
+                                "value": "DAYS"
                             },
                             {
                                 "name": "months ago",
-                                "value": 518400000
+                                "value": "MONTHS"
                             }
                         ]
                     },
-                    "value": "60000",
+                    "value": "MINUTES",
                     "breakType": "SPACER"
                 }
             ],

@@ -151,7 +151,7 @@ public enum NodeModel {
                     {
                         new NodeInternal("attribute", new Picker(PickerType.ASSET_ATTRIBUTE), NodeInternal.BreakType.NEW_LINE),
                         new NodeInternal("time_period", new Picker(PickerType.DATE),  NodeInternal.BreakType.SPACER),
-                        new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN, TimeUnit.getHistoricValueOptions()), NodeInternal.BreakType.SPACER)
+                        new NodeInternal("time_unit", new Picker(PickerType.DROPDOWN, Arrays.stream(TimePeriod.values()).map(it -> new Option(it.label, it.name())).toArray(Option[]::new)), NodeInternal.BreakType.SPACER)
                     },
                     new NodeSocket[0],
                     new NodeSocket[]{
@@ -163,12 +163,10 @@ public enum NodeModel {
                 AttributeRef ref = new AttributeRef(assetAttributePair.getAssetId(), assetAttributePair.getAttributeName());
                 Number timePeriod;
                 Number timeUnit;
-                try {
-                    timePeriod = NumberFormat.getInstance().parse(info.getInternals()[1].getValue().toString());
-                    timeUnit = Long.parseLong(info.getInternals()[2].getValue().toString());
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
+                timePeriod = TimePeriod.valueOf(info.getInternals()[2].getValue().toString()).getMillis();
+                timeUnit = Long.parseLong(info.getInternals()[1].getValue().toString());
+                if(timePeriod == null) return null;
+
                 long currentMillis = info.getFacts().getClock().getCurrentTimeMillis();
 
                 Instant pastInstant = Instant.ofEpochMilli(currentMillis-(timePeriod.longValue()*timeUnit.longValue()));
@@ -353,7 +351,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).mapToDouble(Double.class::cast).sum();
+                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::valueOf).sum();
             }
     ),
     MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
@@ -363,7 +361,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).mapToDouble(Double.class::cast).max();
+                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::valueOf).max();
             }
     ),
     MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
@@ -373,7 +371,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).mapToDouble(Double.class::cast).min();
+                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::valueOf).min();
             }
     ),
     AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
@@ -383,7 +381,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                return Arrays.stream(a).mapToDouble(Double.class::cast).average();
+                return Arrays.stream(a).map(Object::toString).mapToDouble(Double::valueOf).average();
             }
     ),
     MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
@@ -393,7 +391,7 @@ public enum NodeModel {
     }),
             info -> {
                 Object[] a = info.getValuesFromInput(info.getInputs());
-                final double[] sortedDoubles = Arrays.stream(a).mapToDouble(Double.class::cast).sorted().toArray();
+                final double[] sortedDoubles = Arrays.stream(a).map(Object::toString).mapToDouble(Double::valueOf).sorted().toArray();
                 if (sortedDoubles.length == 0) {
                     return 0.0;
                 } else if (sortedDoubles.length % 2 == 0) {
@@ -618,33 +616,27 @@ public enum NodeModel {
     }
 
 
-    private enum TimeUnit {
-        SECONDS("seconds ago"),
-        MINUTES("minutes ago"),
-        HOURS("hours ago"),
-        DAYS("days ago"),
-        MONTHS("months ago");
+    private enum TimePeriod {
+        SECONDS("seconds ago", 1000L),
+        MINUTES("minutes ago", SECONDS.millis * 60),
+        HOURS("hours ago", MINUTES.millis * 24),
+        DAYS("days ago", HOURS.millis * 30),
+        MONTHS("months ago", DAYS.millis * 12);
 
         private final String label;
+        private final Long millis;
 
-        TimeUnit(String label) {
+        TimePeriod(String label, Long millis) {
             this.label = label;
+            this.millis = millis;
         }
 
         public String getLabel() {
             return label;
         }
-        public static Option[] getHistoricValueOptions(){
-            Map<TimeUnit, Long> dict = new HashMap<>();
-            dict.put(TimeUnit.SECONDS, 1000L);
-            dict.put(TimeUnit.MINUTES, dict.get(TimeUnit.SECONDS)*60);
-            dict.put(TimeUnit.HOURS, dict.get(TimeUnit.MINUTES)*24);
-            dict.put(TimeUnit.DAYS, dict.get(TimeUnit.HOURS)*30);
-            dict.put(TimeUnit.MONTHS, dict.get(TimeUnit.DAYS)*12);
-            return dict.entrySet().stream()
-                    .sorted(Map.Entry.comparingByValue())
-                    .map(e -> new Option(e.getKey().getLabel(), e.getValue()))
-                    .toArray(Option[]::new);
+
+        public Long getMillis() {
+            return millis;
         }
     }
 
