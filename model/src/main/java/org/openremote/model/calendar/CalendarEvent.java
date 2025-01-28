@@ -78,28 +78,27 @@ import java.util.List;
 }
  * }</pre></blockquote>
  */
-// TODO: Update to ical4j 4 once released with DST bug fix https://github.com/ical4j/ical4j/issues/117
 public class CalendarEvent implements Serializable {
     protected Date start;
     protected Date end;
     @JsonSerialize(converter = RecurStringConverter.class)
-    protected Recur recurrence;
+    protected Recur<LocalDateTime> recurrence;
 
-    public static class RecurStringConverter extends StdConverter<Recur, String> {
+    public static class RecurStringConverter extends StdConverter<Recur<?>, String> {
 
         @Override
-        public String convert(Recur value) {
+        public String convert(Recur<?> value) {
             return value.toString();
         }
     }
 
     @JsonCreator
     public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
-        Recur recur = null;
+        Recur<LocalDateTime> recur = null;
 
         try {
-            recur = new Recur(recurrence);
-        } catch (Exception e) {}
+            recur = new Recur<>(recurrence);
+        } catch (Exception ignored) {}
 
         this.start = start;
         this.end = end;
@@ -107,10 +106,10 @@ public class CalendarEvent implements Serializable {
     }
 
     public CalendarEvent(Date start, Date end) {
-        this(start, end, (Recur)null);
+        this(start, end, (Recur<LocalDateTime>)null);
     }
 
-    public CalendarEvent(Date start, Date end, Recur recurrence) {
+    public CalendarEvent(Date start, Date end, Recur<LocalDateTime> recurrence) {
         this.start = start;
         this.end = end;
         this.recurrence = recurrence;
@@ -124,7 +123,7 @@ public class CalendarEvent implements Serializable {
         return end;
     }
 
-    public Recur getRecurrence() {
+    public Recur<LocalDateTime> getRecurrence() {
         return recurrence;
     }
 
@@ -138,7 +137,7 @@ public class CalendarEvent implements Serializable {
             return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
-        Recur recurrence = getRecurrence();
+        Recur<LocalDateTime> recurrence = getRecurrence();
 
         if (recurrence == null) {
             if (getEnd().before(when)) {

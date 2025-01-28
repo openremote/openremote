@@ -27,9 +27,15 @@ configurations.all {
         // This has been replaced with eclipse angus implementation
         exclude group: "com.sun.activation", module: "jakarta.activation"
 
+        // This has been replaced with org.bouncycastle bcprov-jdk18on
+        exclude group: "org.bouncycastle", module: "bcprov-jdk15on"
+
         eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.eclipse.angus' && details.requested.name == 'angus-activation' && details.requested.version == '1.0.0') {
                 details.useVersion '2.0.0'
+            }
+            if (details.requested.group == 'commons-io' && details.requested.name == 'commons-io') {
+                details.useVersion '2.14.0'
             }
         }
     }
@@ -146,6 +152,7 @@ subprojects {
 // Default repositories for dependency resolution
 repositories {
     mavenLocal()
+    // Needs to be above central due to org.geotools:gt-main issues
     maven {
         url = "https://repo.osgeo.org/repository/release/"
     }
@@ -156,6 +163,10 @@ repositories {
     maven {
         url "https://s01.oss.sonatype.org/content/repositories/snapshots"
     }
+    maven {
+        url "https://repo.jenkins-ci.org/releases/"
+    }
+    maven { url 'https://jitpack.io' }
 }
 
 // Eclipse needs help

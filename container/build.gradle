@@ -15,7 +15,7 @@ dependencies {
     // Log4J redirect to SLF4J
     api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    api "jakarta.servlet:jakarta.servlet-api:$undertowVersion"
+    api "io.undertow:undertow-core:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"
     api ("org.jboss.resteasy:resteasy-undertow:$resteasyVersion") {
         exclude group: "jakarta.servlet",  module: "undertow-servlet-jakarta"
@@ -26,7 +26,7 @@ dependencies {
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
+    api "org.keycloak:keycloak-adapter-core:$keycloakCoreVersion"
     api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
     api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
@@ -39,7 +39,6 @@ dependencies {
     api "com.zaxxer:HikariCP:$hikaricpVersion"
 
     api "jakarta.el:jakarta.el-api:$javaxELAPIVersion"
-    api "org.glassfish:jakarta.el:$javaxELVersion"
 
     api "org.apache.camel:camel-core:$camelVersion"
     api "org.apache.camel:camel-jackson:$camelVersion"
