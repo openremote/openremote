@@ -7,10 +7,8 @@ import org.openremote.model.rules.flow.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class NodeExecutionRequestInfo {
     private NodeCollection collection;
@@ -107,12 +105,6 @@ public class NodeExecutionRequestInfo {
         return NodeModel.getImplementationFor(aNode.getName()).execute(
             new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
         );
-    }
-    public <T> T[] getValuesFromInput(NodeSocket[] sockets, Class<T> type) {
-        return IntStream.range(0, sockets.length)
-                .mapToObj(this::getValueFromInput)
-                .map(it -> (T) it)
-                .toArray(size -> (T[]) java.lang.reflect.Array.newInstance(type, size));
     }
 
     public NodeDataType getTypeFromInput(int index) {

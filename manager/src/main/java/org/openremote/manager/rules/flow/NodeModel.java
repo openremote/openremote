@@ -10,11 +10,10 @@ import org.openremote.model.rules.flow.*;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueHolder;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.IntStream;
 
 public enum NodeModel {
     READ_ATTRIBUTE(
@@ -349,40 +348,32 @@ public enum NodeModel {
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> {
-                Double[] a = info.getValuesFromInput(info.getInputs(), Double.class);
-                return Arrays.stream(a).mapToDouble(Double::doubleValue).sum();
-            }
+            info -> IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sum()
     ),
     MAX_PROCESSOR(new Node(NodeType.PROCESSOR, "max", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> {
-                Double[] a = info.getValuesFromInput(info.getInputs(), Double.class);
-                return Arrays.stream(a).mapToDouble(Double::doubleValue).max();
-            }
+            info -> IntStream.range(0, info.getInputs().length)
+                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).max().orElseThrow()
     ),
     MIN_PROCESSOR(new Node(NodeType.PROCESSOR, "min", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> {
-                Double[] a = info.getValuesFromInput(info.getInputs(), Double.class);
-                return Arrays.stream(a).mapToDouble(Double::doubleValue).min();
-            }
+            info -> IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).min().orElseThrow()
     ),
     AVERAGE_PROCESSOR(new Node(NodeType.PROCESSOR, "avg", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
     }, new NodeSocket[]{
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
-            info -> {
-                Double[] a = info.getValuesFromInput(info.getInputs(), Double.class);
-                return Arrays.stream(a).mapToDouble(Double::doubleValue).average();
-            }
+            info -> IntStream.range(0, info.getInputs().length)
+                    .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).average().orElseThrow()
     ),
     MEDIAN_PROCESSOR(new Node(NodeType.PROCESSOR, "med", new NodeInternal[0], new NodeSocket[]{
             new NodeSocket("a", NodeDataType.NUMBER_ARRAY)
@@ -390,8 +381,8 @@ public enum NodeModel {
             new NodeSocket("b", NodeDataType.NUMBER),
     }),
             info -> {
-                Double[] a = info.getValuesFromInput(info.getInputs(), Double.class);
-                final double[] sortedDoubles = Arrays.stream(a).mapToDouble(Double::doubleValue).sorted().toArray();
+                final double[] sortedDoubles = IntStream.range(0, info.getInputs().length)
+                        .mapToObj(info::getValueFromInput).mapToDouble(value -> ((Number) value).doubleValue()).sorted().toArray();
                 if (sortedDoubles.length == 0) {
                     return 0.0;
                 } else if (sortedDoubles.length % 2 == 0) {
