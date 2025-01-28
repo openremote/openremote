@@ -1,3 +1,21 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {
     RankedTester,
     rankWith,
@@ -13,7 +31,6 @@ import { Agent } from "@openremote/model";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
-import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until.js";
 import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -90,7 +107,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
 
     const onAgentChanged = (agent: Agent | undefined) => {
         props.handleChange(props.path, agent ? agent.id : undefined);
-        return;
+        
     };
 
     const loadedTemplatePromise = loadAgents().then(agents => {

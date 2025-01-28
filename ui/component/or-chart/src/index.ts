@@ -1,3 +1,21 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
@@ -16,10 +34,9 @@ import {
     WellknownMetaItems
 } from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import "@openremote/or-asset-tree";
-import "@openremote/or-mwc-components/or-mwc-input";
+import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
-import "@openremote/or-translate";
 import {
     Chart,
     ChartConfiguration,
@@ -38,10 +55,8 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-indicator";
 import moment from "moment";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import ChartAnnotation, {AnnotationOptions} from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
@@ -79,7 +94,7 @@ export interface ChartViewConfig {
     attributeRefs?: AttributeRef[];
     fromTimestamp?: number;
     toTimestamp?: number;
-    /*compareOffset?: number;*/
+    /* compareOffset?: number; */
     period?: moment.unitOfTime.Base;
     deltaFormat?: "absolute" | "percentage";
     decimals?: number;
@@ -806,7 +821,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             manager.console.storeData("OrChartConfig", [allConfigs]);
         }
 
-        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+        const config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
         if (!config) {
             return;
@@ -891,7 +906,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             config.views[viewSelector][this.panelName] = {
                 attributeRefs: this.assetAttributes.map(([index, attr]) => {
                     const asset = this.assets[index];
-                    return !!asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
+                    return asset ? {id: asset.id, name: attr.name} as AttributeRef : undefined;
                 }).filter((attrRef) => !!attrRef) as AttributeRef[],
             };
         }
@@ -1097,7 +1112,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
         const now = moment().toDate().getTime();
-        let predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
+        const predictedFromTimestamp = now < this._startOfPeriod ? this._startOfPeriod : now;
 
         const data: ChartDataset<"line", ScatterDataPoint[]>[] = [];
         let promises;

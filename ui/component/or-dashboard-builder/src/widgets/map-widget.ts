@@ -1,3 +1,21 @@
+/*
+ * Copyright 2025, OpenRemote Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import {html, PropertyValues, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
 import {OrAssetWidget} from "../util/or-asset-widget";
@@ -16,7 +34,6 @@ import {
 import {when} from "lit/directives/when.js";
 import manager, {Util} from "@openremote/core";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
-import "@openremote/or-map";
 
 export interface MapWidgetConfig extends WidgetConfig {
     // General values
@@ -156,21 +173,21 @@ export class MapWidget extends OrAssetWidget {
                     (this.widgetConfig.boolColors as any).false = (this.widgetConfig.boolColors as any).false.replace("#", "");
                     this.markers[asset.type!].colours = this.widgetConfig.boolColors;
                 } else if (this.widgetConfig.valueType == 'text') {
-                    var colors: AttributeMarkerColours = {type: 'string',};
+                    const colors: AttributeMarkerColours = {type: 'string',};
                     (this.widgetConfig.textColors as [string, string][]).map((threshold) => {
                         colors[threshold[0] as string] = (threshold[1] as string).replace('#', '');
                     })
                     this.markers[asset.type!].colours = colors;
                 } else {
-                    var ranges: AttributeMarkerColoursRange[] = [];
+                    const ranges: AttributeMarkerColoursRange[] = [];
                     (this.widgetConfig.thresholds as [number, string][]).sort((x, y) => (x[0] > y[0]) ? -1 : 1).map((threshold, index) => {
-                        var range: AttributeMarkerColoursRange = {
+                        const range: AttributeMarkerColoursRange = {
                             min: threshold[0],
                             colour: threshold[1].replace('#', '')
                         }
                         ranges.push(range);
                     })
-                    var colorsNum: RangeAttributeMarkerColours = {
+                    const colorsNum: RangeAttributeMarkerColours = {
                         type: 'range',
                         ranges: ranges
                     };
