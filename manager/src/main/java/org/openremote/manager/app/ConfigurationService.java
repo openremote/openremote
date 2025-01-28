@@ -276,10 +276,10 @@ public class ConfigurationService implements ContainerService {
                     managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogo()));
                 }
                 if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getLogoMobile())) {
-                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getLogoMobile()));
+                    managerAppRealmConfig.setLogoMobile(fixImageRef(managerAppRealmConfig.getLogoMobile()));
                 }
                 if (!TextUtil.isNullOrEmpty(managerAppRealmConfig.getFavicon())) {
-                    managerAppRealmConfig.setLogo(fixImageRef(managerAppRealmConfig.getFavicon()));
+                    managerAppRealmConfig.setFavicon(fixImageRef(managerAppRealmConfig.getFavicon()));
                 }
             });
         }
@@ -287,6 +287,7 @@ public class ConfigurationService implements ContainerService {
     }
 
     protected String fixImageRef(String image) {
+        String originalString = image;
         if (!image.isBlank()) {
             image = image.replace("/api/master/configuration/manager/image/", "");
             image = image.replace("images/", "");
@@ -308,6 +309,8 @@ public class ConfigurationService implements ContainerService {
                 } else {
                     LOG.warning("manager_config.json image reference doesn't exist: " + imagePath);
                 }
+            }else{
+                return originalString;
             }
         }
         return image;
