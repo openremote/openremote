@@ -85,7 +85,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
 
     }
 
-    def "Test HISTORIC_VALUE and SUM blocks"() {
+    def "Test newly-added blocks"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
