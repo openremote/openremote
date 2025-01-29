@@ -102,9 +102,13 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         def asset = new ShipAsset("Flow ship")
                 .setRealm(Constants.MASTER_REALM)
                 .addOrReplaceAttributes(
-                        new Attribute<Object>(ShipAsset.SPEED, null, timerService.getNow().minus(10, ChronoUnit.HOURS).toEpochMilli()).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true)),
-                        new Attribute<Object>("historicOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true)),
-                        new Attribute<Object>("sumOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true)).addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true))
+                        new Attribute<Object>(ShipAsset.SPEED, null, timerService.getNow().minus(10, ChronoUnit.HOURS).toEpochMilli()).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("historicOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("sumOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("minOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("avgOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("medOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("maxOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true))
                 )
         asset = assetStorageService.merge(asset);
 
@@ -124,15 +128,18 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert dps.size() == 4
         }
 
-        when: "I make a HISTORIC_VALUE and SUM blocks"
-        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndSumTest.flow").text
+        when: "I add the test"
+        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndNewProcessorTest.flow").text
         json = json.replaceAll("%ASSETID%", asset.getId())
         json = json.replaceAll("%HISTORIC_ATTRIBUTE%", ShipAsset.SPEED.name)
         json = json.replaceAll("%HISTORIC_VALUE_OUTPUT%", "historicOutput")
-        json = json.replaceAll("%SUM_ATTRIBUTE_OUTPUT%", "sumOutput")
-        json = json.replaceAll("%SUM_READ_ATTRIBUTE%", ShipAsset.SPEED.name)
+        json = json.replaceAll("%SUM_OUTPUT%", "sumOutput")
+        json = json.replaceAll("%MIN_OUTPUT%", "minOutput")
+        json = json.replaceAll("%AVG_OUTPUT%", "avgOutput")
+        json = json.replaceAll("%MED_OUTPUT%", "medOutput")
+        json = json.replaceAll("%MAX_OUTPUT%", "maxOutput")
         def ruleset = (new GlobalRuleset(
-                "HistoricValueAndSum",
+                "HistoricValueAndProcessors",
                 Ruleset.Lang.FLOW,
                 json
         ))
@@ -142,15 +149,19 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert rulesService.globalEngine.get() != null
             assert rulesService.globalEngine.get().isRunning()
-            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "HistoricValueAndSum" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "HistoricValueAndProcessors" && it.status == DEPLOYED})
         }
 
         and: "After the rule runs, the value the attribute had at that timestamp is written to the output attribute"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), ShipAsset.class);
-            assert asset.getAttribute("historicOutput").get().getValue().get() == 20;
-            assert asset.getAttribute("sumOutput").get().getValue().get() ==
-                    asset.getAttribute(ShipAsset.SPEED).get().getValue().get() + 2 + 3 + 4
+            def currentValueSpeed = asset.getAttribute(ShipAsset.SPEED).get().getValue().get()
+            assert asset.getAttribute("historicOutput").get().getValue().get() == 20
+            assert asset.getAttribute("sumOutput").get().getValue().get() == 10
+            assert asset.getAttribute("minOutput").get().getValue().get() == 1
+            assert asset.getAttribute("avgOutput").get().getValue().get() == 2.5
+            assert asset.getAttribute("medOutput").get().getValue().get() == 2.5
+            assert asset.getAttribute("maxOutput").get().getValue().get() == 4
         }
     }
 }

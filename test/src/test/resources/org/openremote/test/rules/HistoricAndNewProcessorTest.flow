@@ -1,0 +1,681 @@
+{
+    "name": "Exported on Wed Jan 29 2025 12:21:20 GMT+0100 (Central European Standard Time)",
+    "description": "",
+    "connections": [
+        {
+            "from": "5c2gx04OoU",
+            "to": "guSOIZINZM"
+        },
+        {
+            "from": "AMk0ZbdIJ7",
+            "to": "guSOIZINZM"
+        },
+        {
+            "from": "FmQGiuVAhd",
+            "to": "guSOIZINZM"
+        },
+        {
+            "from": "5c2gx04OoU",
+            "to": "LULZz1K5rG"
+        },
+        {
+            "from": "AMk0ZbdIJ7",
+            "to": "LULZz1K5rG"
+        },
+        {
+            "from": "FmQGiuVAhd",
+            "to": "LULZz1K5rG"
+        },
+        {
+            "from": "5c2gx04OoU",
+            "to": "NTkio8zn0B"
+        },
+        {
+            "from": "AMk0ZbdIJ7",
+            "to": "NTkio8zn0B"
+        },
+        {
+            "from": "FmQGiuVAhd",
+            "to": "NTkio8zn0B"
+        },
+        {
+            "from": "5c2gx04OoU",
+            "to": "lp-oW2WtiZ"
+        },
+        {
+            "from": "AMk0ZbdIJ7",
+            "to": "lp-oW2WtiZ"
+        },
+        {
+            "from": "FmQGiuVAhd",
+            "to": "lp-oW2WtiZ"
+        },
+        {
+            "from": "5c2gx04OoU",
+            "to": "k0NYvUbT0_"
+        },
+        {
+            "from": "AMk0ZbdIJ7",
+            "to": "k0NYvUbT0_"
+        },
+        {
+            "from": "FmQGiuVAhd",
+            "to": "k0NYvUbT0_"
+        },
+        {
+            "from": "xKkFDLEKwa",
+            "to": "mgltXRsLEb"
+        },
+        {
+            "from": "MjnJHbUCg5",
+            "to": "jcJyTO65ZH"
+        },
+        {
+            "from": "OeJmN6ZtCI",
+            "to": "yPvrV598t0"
+        },
+        {
+            "from": "xE6wkemQf7",
+            "to": "xi8iTATZlE"
+        },
+        {
+            "from": "k_GJrYXbJm",
+            "to": "Mnu2nf5D4p"
+        },
+        {
+            "from": "7l5y3fvsYD",
+            "to": "UsONiFqhij"
+        },
+        {
+            "from": "QVFRLSwOZg",
+            "to": "guSOIZINZM"
+        },
+        {
+            "from": "QVFRLSwOZg",
+            "to": "LULZz1K5rG"
+        },
+        {
+            "from": "QVFRLSwOZg",
+            "to": "NTkio8zn0B"
+        },
+        {
+            "from": "QVFRLSwOZg",
+            "to": "lp-oW2WtiZ"
+        },
+        {
+            "from": "QVFRLSwOZg",
+            "to": "k0NYvUbT0_"
+        }
+    ],
+    "nodes": [
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "jWu-M687z",
+                    "id": "guSOIZINZM"
+                }
+            ],
+            "internals": [],
+            "name": "SUM_PROCESSOR",
+            "displayCharacter": "Σ",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "jWu-M687z",
+                    "id": "xKkFDLEKwa"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": 62.5,
+                "y": -414
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "jWu-M687z"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 2
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "co4Wcxnkl",
+                    "id": "5c2gx04OoU"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -400.390625,
+                "y": -323.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "co4Wcxnkl"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 3
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "Gi5o_i_ql",
+                    "id": "AMk0ZbdIJ7"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -412.390625,
+                "y": -225.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "Gi5o_i_ql"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "value",
+                    "picker": {
+                        "type": "NUMBER"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": 4
+                }
+            ],
+            "name": "NUMBER_INPUT",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "YjDs7EVEk",
+                    "id": "FmQGiuVAhd"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -412.390625,
+                "y": -137.25
+            },
+            "size": {
+                "x": 139,
+                "y": 17.5
+            },
+            "id": "YjDs7EVEk"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "zih4Do9iq",
+                    "id": "LULZz1K5rG"
+                }
+            ],
+            "internals": [],
+            "name": "MIN_PROCESSOR",
+            "displayCharacter": "min",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "zih4Do9iq",
+                    "id": "MjnJHbUCg5"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": 61.38671875,
+                "y": -337
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "zih4Do9iq"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "q0oz6m6k0",
+                    "id": "NTkio8zn0B"
+                }
+            ],
+            "internals": [],
+            "name": "AVERAGE_PROCESSOR",
+            "displayCharacter": "avg",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "q0oz6m6k0",
+                    "id": "OeJmN6ZtCI"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": 58.44140625,
+                "y": -263
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "q0oz6m6k0"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "-vBrS-g6O",
+                    "id": "lp-oW2WtiZ"
+                }
+            ],
+            "internals": [],
+            "name": "MEDIAN_PROCESSOR",
+            "displayCharacter": "med",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "-vBrS-g6O",
+                    "id": "xE6wkemQf7"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": 54.046875,
+                "y": -187
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "-vBrS-g6O"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "a",
+                    "type": "NUMBER_ARRAY",
+                    "nodeId": "2wK1iLYfv",
+                    "id": "k0NYvUbT0_"
+                }
+            ],
+            "internals": [],
+            "name": "MAX_PROCESSOR",
+            "displayCharacter": "max",
+            "outputs": [
+                {
+                    "name": "b",
+                    "type": "NUMBER",
+                    "nodeId": "2wK1iLYfv",
+                    "id": "k_GJrYXbJm"
+                }
+            ],
+            "type": "PROCESSOR",
+            "position": {
+                "x": 52.60546875,
+                "y": -104
+            },
+            "size": {
+                "x": 0,
+                "y": 0
+            },
+            "id": "2wK1iLYfv"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "9krG8tF0t",
+                    "id": "mgltXRsLEb"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%SUM_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 275.109375,
+                "y": -454
+            },
+            "size": {
+                "x": 140.75,
+                "y": 32
+            },
+            "id": "9krG8tF0t"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "1U3ZHIsHR",
+                    "id": "jcJyTO65ZH"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MIN_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 277.109375,
+                "y": -355
+            },
+            "size": {
+                "x": 153.211,
+                "y": 32
+            },
+            "id": "1U3ZHIsHR"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "-oR6O1Qgg",
+                    "id": "yPvrV598t0"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%AVG_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 277.109375,
+                "y": -258
+            },
+            "size": {
+                "x": 165.641,
+                "y": 32
+            },
+            "id": "-oR6O1Qgg"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "arFNgppCs",
+                    "id": "xi8iTATZlE"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MED_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 278.109375,
+                "y": -160
+            },
+            "size": {
+                "x": 173.43,
+                "y": 32
+            },
+            "id": "arFNgppCs"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "gjMLJ_EvU",
+                    "id": "Mnu2nf5D4p"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%MAX_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 280.109375,
+                "y": -62
+            },
+            "size": {
+                "x": 177.32,
+                "y": 32
+            },
+            "id": "gjMLJ_EvU"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "4DQmTyStu",
+                    "id": "UsONiFqhij"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_VALUE_OUTPUT%"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": 279.109375,
+                "y": 56
+            },
+            "size": {
+                "x": 136.602,
+                "y": 32
+            },
+            "id": "4DQmTyStu"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                }
+            ],
+            "name": "READ_ATTRIBUTE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "D8717D6K8",
+                    "id": "QVFRLSwOZg"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -403.890625,
+                "y": -429
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "D8717D6K8"
+        },
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "breakType": "NEW_LINE",
+                    "value": {
+                        "assetId": "%ASSETID%",
+                        "attributeName": "%HISTORIC_ATTRIBUTE%"
+                    }
+                },
+                {
+                    "name": "time_period",
+                    "picker": {
+                        "type": "DATE"
+                    },
+                    "breakType": "SPACER",
+                    "value": 15
+                },
+                {
+                    "name": "time_unit",
+                    "picker": {
+                        "type": "DROPDOWN",
+                        "options": [
+                            {
+                                "name": "seconds ago",
+                                "value": "SECONDS"
+                            },
+                            {
+                                "name": "minutes ago",
+                                "value": "MINUTES"
+                            },
+                            {
+                                "name": "hours ago",
+                                "value": "HOURS"
+                            },
+                            {
+                                "name": "days ago",
+                                "value": "DAYS"
+                            },
+                            {
+                                "name": "months ago",
+                                "value": "MONTHS"
+                            }
+                        ]
+                    },
+                    "value": "MINUTES",
+                    "breakType": "SPACER"
+                }
+            ],
+            "name": "HISTORIC_VALUE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "NUMBER",
+                    "nodeId": "GzGLBZLKZ",
+                    "id": "7l5y3fvsYD"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -443.8359375,
+                "y": 31.5
+            },
+            "size": {
+                "x": 137.516,
+                "y": 32
+            },
+            "id": "GzGLBZLKZ"
+        }
+    ]
+}
