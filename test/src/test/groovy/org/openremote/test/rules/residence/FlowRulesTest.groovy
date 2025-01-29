@@ -85,7 +85,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
 
     }
 
-    def "Test newly-added blocks"() {
+    def "Test multi-input processors and DERIVATIVE, INTEGRAL, HISTORIC_VALUE"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
@@ -108,7 +108,9 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
                         new Attribute<Object>("minOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
                         new Attribute<Object>("avgOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
                         new Attribute<Object>("medOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
-                        new Attribute<Object>("maxOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true))
+                        new Attribute<Object>("maxOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("derOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true)),
+                        new Attribute<Object>("intOutput", null).addMeta(new MetaItem<>(MetaItemType.STORE_DATA_POINTS, true),new MetaItem<>(MetaItemType.RULE_STATE, true))
                 )
         asset = assetStorageService.merge(asset);
 
@@ -117,9 +119,14 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         sleep(100)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 20D, timerService.getNow().minus(20, ChronoUnit.MINUTES).toEpochMilli()));
         sleep(100)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 10D, timerService.getNow().minus(10, ChronoUnit.MINUTES).toEpochMilli()));
+        def previousTime = timerService.getNow().minus(10, ChronoUnit.MINUTES);
+        def previousValue = 10D
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), previousValue, previousTime.toEpochMilli()));
         sleep(100)
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), 1D, timerService.getNow().toEpochMilli()));
+
+        def currentTime = timerService.getNow();
+        def currentValue = 1D;
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(new AttributeRef(asset.getId(), ShipAsset.SPEED.name), currentValue, currentTime.toEpochMilli()));
         sleep(100)
 
         then: "They are queryable"
@@ -128,8 +135,8 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert dps.size() == 4
         }
 
-        when: "I add the test"
-        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndNewProcessorTest.flow").text
+        when: "The flow rule is added"
+        String json = getClass().getResource("/org/openremote/test/rules/HistoricValueAndProcessorsTest.flow").text
         json = json.replaceAll("%ASSETID%", asset.getId())
         json = json.replaceAll("%HISTORIC_ATTRIBUTE%", ShipAsset.SPEED.name)
         json = json.replaceAll("%HISTORIC_VALUE_OUTPUT%", "historicOutput")
@@ -138,21 +145,28 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         json = json.replaceAll("%AVG_OUTPUT%", "avgOutput")
         json = json.replaceAll("%MED_OUTPUT%", "medOutput")
         json = json.replaceAll("%MAX_OUTPUT%", "maxOutput")
+        json = json.replaceAll("%DER_OUTPUT%", "derOutput")
+        json = json.replaceAll("%INT_OUTPUT%", "intOutput")
+
         def ruleset = (new GlobalRuleset(
-                "HistoricValueAndProcessors",
+                "HistoricValueAndProcessorsTest",
                 Ruleset.Lang.FLOW,
                 json
         ))
         rulesetStorageService.merge(ruleset)
 
+        and: "the integral and derivative values are calculated"
+        def derivative = (currentValue - previousValue) / (((currentTime.toEpochMilli() - previousTime.toEpochMilli())/1000.0))
+        def integral = ((currentValue + previousValue) * ((currentTime.toEpochMilli() - previousTime.toEpochMilli())/1000.0)) / 2
+
         then: "The rule compiles successfully"
         conditions.eventually {
             assert rulesService.globalEngine.get() != null
             assert rulesService.globalEngine.get().isRunning()
-            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "HistoricValueAndProcessors" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.get().deployments.values().any({ it.name == "HistoricValueAndProcessorsTest" && it.status == DEPLOYED})
         }
 
-        and: "After the rule runs, the value the attribute had at that timestamp is written to the output attribute"
+        and: "The rule runs and the various attributes are updated accordingly"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), ShipAsset.class);
             def currentValueSpeed = asset.getAttribute(ShipAsset.SPEED).get().getValue().get()
@@ -162,6 +176,8 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
             assert asset.getAttribute("avgOutput").get().getValue().get() == 2.5
             assert asset.getAttribute("medOutput").get().getValue().get() == 2.5
             assert asset.getAttribute("maxOutput").get().getValue().get() == 4
+            assert asset.getAttribute("derOutput").get().getValue().get() == derivative
+            assert asset.getAttribute("intOutput").get().getValue().get() == integral
         }
     }
 }
