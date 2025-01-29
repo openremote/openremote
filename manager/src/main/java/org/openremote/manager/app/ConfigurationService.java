@@ -309,7 +309,7 @@ public class ConfigurationService implements ContainerService {
                 } else {
                     LOG.warning("manager_config.json image reference doesn't exist: " + imagePath);
                 }
-            }else{
+            } else {
                 return originalString;
             }
         }
