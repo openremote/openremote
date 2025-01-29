@@ -136,7 +136,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "The flow rule is added"
-        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndNewProcessorTest.flow").text
+        String json = getClass().getResource("/org/openremote/test/rules/HistoricAndMultiInputProcessorTest.flow").text
         json = json.replaceAll("%ASSETID%", asset.getId())
         json = json.replaceAll("%HISTORIC_ATTRIBUTE%", ShipAsset.SPEED.name)
         json = json.replaceAll("%HISTORIC_VALUE_OUTPUT%", "historicOutput")
