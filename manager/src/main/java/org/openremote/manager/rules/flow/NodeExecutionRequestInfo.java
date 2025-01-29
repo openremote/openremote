@@ -7,6 +7,7 @@ import org.openremote.model.rules.flow.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class NodeExecutionRequestInfo {
@@ -27,6 +28,7 @@ public class NodeExecutionRequestInfo {
     private Notifications notifications;
     private HistoricDatapoints historicDatapoints;
     private PredictedDatapoints predictedDatapoints;
+    protected Logger LOG;
 
     public NodeExecutionRequestInfo() {
         collection = new NodeCollection();
@@ -65,7 +67,7 @@ public class NodeExecutionRequestInfo {
 
     public NodeExecutionRequestInfo(NodeCollection collection, Node node, NodeSocket socket, RulesFacts facts,
                                     Assets assets, Users users, Notifications notifications,
-                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints) {
+                                    HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints, Logger log) {
         if (socket != null && Arrays.stream(node.getOutputs()).noneMatch(c -> c.getNodeId().equals(node.getId())))
             throw new IllegalArgumentException("Given socket does not belong to given node");
 
@@ -94,13 +96,14 @@ public class NodeExecutionRequestInfo {
         this.notifications = notifications;
         this.historicDatapoints = historicDatapoints;
         this.predictedDatapoints = predictedDatapoints;
+        this.LOG = log;
     }
 
     public Object getValueFromInput(int index) {
         NodeSocket aSocket = getInputs()[index];
         Node aNode = getCollection().getNodeById(aSocket.getNodeId());
         return NodeModel.getImplementationFor(aNode.getName()).execute(
-            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints())
+            new NodeExecutionRequestInfo(getCollection(), aNode, aSocket, getFacts(), getAssets(), getUsers(), getNotifications(), getHistoricDatapoints(), getPredictedDatapoints(), LOG)
         );
     }
 
