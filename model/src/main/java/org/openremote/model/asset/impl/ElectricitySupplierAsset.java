@@ -65,7 +65,7 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
             .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
 
-    public static final AttributeDescriptor<String> CONTRACTED_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONTRACTED_EAN = new AttributeDescriptor<>("contractedEan", ValueType.TEXT).withOptional(true);
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
