@@ -9,6 +9,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.flow.*;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class FlowResourceImpl extends ManagerWebResource implements FlowResource {
@@ -23,7 +24,11 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
             LOG.finest("Node found: " + n.getName());
         });
 
-        nodes = Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
+        nodes = Arrays.stream(NodeModel.values()).
+                map(NodeModel::getDefinition)
+                // Filter out LOG_OUTPUT node
+                .filter(definition -> !Objects.equals(definition.getName(), "LOG_OUTPUT"))
+                .toArray(Node[]::new);
 
     }
 
