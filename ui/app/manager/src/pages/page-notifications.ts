@@ -40,7 +40,6 @@ export class NotificationService {
             // const response = await manager.rest.api.NotificationResource.getAllNotifications({
             //     from: timeRange.fromDate,
             //     to: timeRange.toDate
-                
             // });
             if (!response.data) {
                 console.warn("No data in response:", response);
@@ -686,13 +685,13 @@ export class PageNotifications extends Page<AppStateKeyed> {
             .setContent(this._getNotificationDetailsContent(notification))
             .setDismissAction({
                 actionName: "cancel",
-                action: () => {dialog.close()},
+                action: () => {dialog.close(); this._loadData();},
             })   
             .setActions([
             {
                 actionName: "close",
                 content: i18next.t("close"),
-                action: () => dialog.close()
+                action: () => {dialog.close(); this._loadData();}
             }
         ])
         );

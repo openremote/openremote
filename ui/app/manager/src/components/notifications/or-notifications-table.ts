@@ -100,6 +100,28 @@ export class OrNotificationsTable extends OrMwcTable {
                     color: var(--or-notification-status-pending-color,rgb(231, 126, 126));
                     background: var(--or-notification-status-pending-bg, rgba(143, 126, 231, 0.1));
                 }
+
+                .target-link {
+                    color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                    text-decoration: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .target-link:hover {
+                    text-decoration: none;
+                }
+
+                .target-icon {
+                    --or-icon-width: 16px;
+                    --or-icon-height: 16px;
+                }
+
+                .target-loading {
+                    color: var(--or-app-color3);
+                    font-style: italic;
+                }
             `
         ];
     } 
@@ -147,9 +169,16 @@ export class OrNotificationsTable extends OrMwcTable {
     protected sortIndex = 4; // sort by sent date by default
     protected sortDirection: "ASC" | "DESC" = "DESC";
 
-    protected willUpdate(changedProps: Map<string, any>): void {
+    protected async willUpdate(changedProps: Map<string, any>) {
         // update rows when notifications change
         if (changedProps.has("notifications")) {
+            if (this.notifications?.length) {
+                await Promise.all(
+                    this.notifications.map(notification => 
+                        this.resolveTargetDetails(notification)
+                    )
+                );
+            }
             this.rows = this.getTableRows(this.notifications || []);
         }
 
@@ -189,13 +218,36 @@ export class OrNotificationsTable extends OrMwcTable {
 
         if (!details) {
             // show ID while loading or if we couldn't load details
-            return html`${notification.targetId || '-'}`;
+            return html`
+                <span class="target-loading">
+                    ${notification.targetId ? 
+                        html`<or-translate value="loading"/>` : 
+                        '-'
+                    }
+                </span>
+            `;
         }
+
+        const iconMap = {
+            'asset': 'cube-outline',
+            'user': 'account',
+            'realm': 'domain'
+        };
  
+        // return html`
+        // <a href="${details.link}" class="target-link ${details.type}-link">
+        //     ${details.name}
+        // </a>
+        // `;
+
         return html`
-        <a href="${details.link}" class="target-link ${details.type}-link">
-            ${details.name}
-        </a>
+            <a href="${details.link}" class="target-link ${details.type}-link">
+                <or-icon 
+                    class="target-icon"
+                    icon="${iconMap[details.type] || 'help-circle-outline'}">
+                </or-icon>
+                ${details.name}
+            </a>
         `;
     }
 
