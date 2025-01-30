@@ -26,7 +26,7 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
 
         nodes = Arrays.stream(NodeModel.values()).
                 map(NodeModel::getDefinition)
-                // Filter out LOG_OUTPUT node`
+                // Filter out LOG_OUTPUT node
                 .filter(definition -> !Objects.equals(definition.getName(), "LOG_OUTPUT"))
                 .toArray(Node[]::new);
 
