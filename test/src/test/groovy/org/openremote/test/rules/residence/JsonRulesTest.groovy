@@ -1290,6 +1290,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine realmBuildingEngine
 
         and: "the pseudo clock is stopped"
@@ -1348,10 +1349,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the light asset brightness is updated to 100 and onOff is updated to true and time advances for 3 seconds"
-        lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("brightness").get().setValue(100)
-        lightAsset.getAttribute("onOff").get().setValue(true)
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.ON_OFF, true))
 
         // advance time to 3 seconds to ensure the rule engine has fired
         advancePseudoClock(3, TimeUnit.SECONDS, container)
@@ -1369,9 +1368,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "notes is updated to empty and time advances for 3 seconds"
-        lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("notes").get().setValue("")
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.NOTES, ""))
 
         // advance time to 3 seconds to ensure the rule engine has fired
         advancePseudoClock(3, TimeUnit.SECONDS, container)
@@ -1389,9 +1386,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "brightness is updated to 10, thus not satisfying the LHS conditions and time advances for 3 seconds"
-        lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("brightness").get().setValue(10)
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 10))
 
         // advance time to 3 seconds to ensure the rule engine has fired
         advancePseudoClock(3, TimeUnit.SECONDS, container)
@@ -1409,9 +1404,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "brightness is updated to 100, thus satisfying the LHS conditions and time advances for 3 seconds"
-        lightAsset = assetStorageService.find(lightId)
-        lightAsset.getAttribute("brightness").get().setValue(100)
-        assetStorageService.merge(lightAsset)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
 
         // advance time to 3 seconds to ensure the rule engine has fired
         advancePseudoClock(3, TimeUnit.SECONDS, container)
