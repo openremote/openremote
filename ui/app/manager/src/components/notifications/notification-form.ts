@@ -193,6 +193,8 @@ export class NotificationForm extends LitElement {
     @property({type: Object})
     public notification?: SentNotification;
 
+    
+
     updated(changedProps: Map<string, any>) {
         if (changedProps.has('notification') && this.notification) {
             this._populateFormFromNotification()
@@ -204,8 +206,8 @@ export class NotificationForm extends LitElement {
             const response = await manager.rest.api.UserResource.query({
                 realmPredicate: { name: manager.displayRealm }
             });
-            this._users = response.data.filter(user => user.enabled && !user.serviceAccount);
-            return this._users;
+            // filter out keycloak service account
+            return this._users = response.data.filter((u) => u.username !== 'manager-keycloak');
         } catch (error) {
             console.error("Failed to load users:", error);
             showSnackbar(undefined, i18next.t("Loading users failed"));
