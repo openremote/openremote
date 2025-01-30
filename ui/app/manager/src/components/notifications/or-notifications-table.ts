@@ -1,10 +1,11 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {OrMwcTable, OrMwcTableRowClickDetail, OrMwcTableRowClickEvent, TableColumn, TableConfig, TableContent, TableRow} from "@openremote/or-mwc-components/or-mwc-table";
-import {DefaultColor3} from "@openremote/core";
-import {Notification, SentNotification, PushNotificationMessage} from "@openremote/model";
+import manager, {DefaultColor3} from "@openremote/core";
+import {Notification, SentNotification, PushNotificationMessage, NotificationTargetType} from "@openremote/model";
 import i18next from "i18next";
 import {classMap} from "lit/directives/class-map.js";
+import { NotificationService } from "../../pages/page-notifications";
 
 export interface NotificationTableRow extends TableRow {
     data: {
@@ -118,6 +119,13 @@ export class OrNotificationsTable extends OrMwcTable {
     @property({type: Boolean})
     public readonly = true
 
+    @property({type: Object})
+    public notificationService!: NotificationService;
+
+    @state()
+    protected targetDetailsMap: Map<string, {name: string, type: string, link: string}> = new Map();
+
+
     public columns: TableColumn[] = [
         {title: i18next.t("Title"), isSortable: true},
         {title: i18next.t("Content")},
@@ -154,6 +162,10 @@ export class OrNotificationsTable extends OrMwcTable {
     }
 
     protected getTableRows(notifications: SentNotification[]): TableRow[] | undefined {
+        notifications.forEach(notification => {
+            this.resolveTargetDetails(notification);
+        })
+
         return notifications.map((notification, index) => {
             const pushMessage = notification.message as PushNotificationMessage;
             return {
@@ -161,7 +173,7 @@ export class OrNotificationsTable extends OrMwcTable {
                     pushMessage.title, 
                     pushMessage.body,
                     this.getStatusContent(notification),
-                    pushMessage.target,
+                    this.getTargetContent(notification),
                     this.getDateContent(notification.sentOn),
                     this.getDateContent(notification.deliveredOn)
                 ],
@@ -170,6 +182,50 @@ export class OrNotificationsTable extends OrMwcTable {
                 data: { notification },
             } as NotificationTableRow;
         });
+    }
+
+    protected getTargetContent(notification: SentNotification): TemplateResult {
+        const details = this.targetDetailsMap.get(notification.targetId);
+
+        if (!details) {
+            // show ID while loading or if we couldn't load details
+            return html`${notification.targetId || '-'}`;
+        }
+ 
+        return html`
+        <a href="${details.link}" class="target-link ${details.type}-link">
+            ${details.name}
+        </a>
+        `;
+    }
+
+    protected getStatusContent(notification: SentNotification): TemplateResult {
+        const isDelivered = !!notification.deliveredOn;
+
+        console.log('Notification status:', {
+            deliveredOn: notification.deliveredOn,
+            isDelivered: isDelivered
+        });
+
+        const classes = {
+            "notification-status": true, 
+            "status-delivered": isDelivered,
+            "status-pending": !isDelivered
+        };
+
+
+        const result = html`
+            <span class="${classMap(classes)}">
+                ${isDelivered ? i18next.t("delivered") : i18next.t("pending")}
+            </span> 
+        `;
+
+        console.log('Template result:', result);
+        return result;
+    }
+
+    protected getDateContent(date?: number): TemplateResult {
+        return html`${date ? new Date(date).toLocaleString() : '-'}`;
     }
 
     protected sortTemplateRows(cellA: any, cellB: any, cIndex: number, sortDirection: "ASC" | "DESC"): number {
@@ -219,33 +275,46 @@ export class OrNotificationsTable extends OrMwcTable {
         }
     }
 
-    protected getStatusContent(notification: SentNotification): TemplateResult {
-        const isDelivered = !!notification.deliveredOn;
+    protected async resolveTargetDetails(notification: SentNotification) {
+        if (!notification.target || !notification.targetId) return; 
 
-        console.log('Notification status:', {
-            deliveredOn: notification.deliveredOn,
-            isDelivered: isDelivered
-        });
+        if (this.targetDetailsMap.has(notification.targetId)) {
+            return;
+        }
 
-        const classes = {
-            "notification-status": true, 
-            "status-delivered": isDelivered,
-            "status-pending": !isDelivered
-        };
+        try {
+            let details;
+            switch(notification.target) {
+                case NotificationTargetType.ASSET:
+                    const asset = await this.notificationService.getAssetDetails(notification.targetId);
+                    if (asset) {
+                        details = {
+                            name: asset.name || asset.id,
+                            type: 'asset',
+                            link: `#/assets/false/${notification.targetId}`
+                        };
+                    }
+                    break;
 
+                case NotificationTargetType.USER:
+                    const user = await this.notificationService.getUserDetails(notification.targetId, manager.displayRealm);
+                    if (user) {
+                        details = {
+                            name: user.username,
+                            type: 'user',
+                            link: `#/users/${notification.targetId}`
+                        };
+                    }
+                    break;
+            }
 
-        const result = html`
-            <span class="${classMap(classes)}">
-                ${isDelivered ? i18next.t("delivered") : i18next.t("pending")}
-            </span> 
-        `;
-
-        console.log('Template result:', result);
-        return result;
-    }
-
-    protected getDateContent(date?: number): TemplateResult {
-        return html`${date ? new Date(date).toLocaleString() : '-'}`;
+            if (details) {
+                this.targetDetailsMap.set(notification.targetId, details);
+                this.requestUpdate();
+            }
+        } catch (err) {
+            console.error(`Failed to resolve target details for ${notification.target}`);
+        }
     }
 
     protected onRowClick(ev: MouseEvent, item: NotificationTableRow) {

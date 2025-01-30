@@ -33,14 +33,15 @@ export class NotificationService {
             {fromDate, toDate} :
             this.getDefaultTimeRange();
 
-            // const response = await manager.rest.api.NotificationResource.getNotifications({
-            //     from: timeRange.fromDate,
-            //     to: timeRange.toDate
-            // });
-            const response = await manager.rest.api.NotificationResource.getAllNotifications({
+            const response = await manager.rest.api.NotificationResource.getNotifications({
                 from: timeRange.fromDate,
                 to: timeRange.toDate
             });
+            // const response = await manager.rest.api.NotificationResource.getAllNotifications({
+            //     from: timeRange.fromDate,
+            //     to: timeRange.toDate
+                
+            // });
             if (!response.data) {
                 console.warn("No data in response:", response);
                 return [];
@@ -62,12 +63,12 @@ export class NotificationService {
 
     async sendNotification(notification: Notification): Promise<boolean> {
         try {    
-            // const response = await manager.rest.api.NotificationResource.sendNotification(
-            //     notification
-            // );
-            const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+            const response = await manager.rest.api.NotificationResource.sendNotification(
                 notification
             );
+            // const response = await manager.rest.api.NotificationResource.createNotificationInDB(
+            //     notification
+            // );
             console.log("Response received:", response);
             return response.status === 200;
         } catch (err: unknown) {
@@ -81,6 +82,38 @@ export class NotificationService {
             }
             throw error;
         }
+    }
+
+    async getAssetDetails(assetId: string): Promise<Asset | undefined> {
+        try {
+            const response = await manager.rest.api.AssetResource.get(assetId);
+            if (response.status === 200 && response.data) {
+                return response.data;
+            }
+            console.warn(`No asset found for ID ${assetId}`);
+            return undefined;
+        } catch (err) {
+            console.warn(`Failed to fetch asset details for ${assetId}:`, err);
+            return undefined
+        }
+    }
+
+    async getUserDetails(userId: string, realmId: string): Promise<User | undefined> {
+        try {
+            const response = await manager.rest.api.UserResource.get(realmId, userId);
+            if (response.status === 200 && response.data) {
+                return response.data;
+            }
+            console.warn(`No user found for ID ${userId}`);
+            return undefined;
+        } catch (err) {
+            console.warn(`Failed to fetch user details for ${userId}:`, err);
+            return undefined;
+        }
+    }
+
+    hasUserReadPermissions(): boolean {
+        return manager.hasRole("read:users") || manager.hasRole("read:admin");
     }
 
     public getDefaultTimeRange(): {fromDate: number, toDate: number} {
@@ -578,6 +611,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
         return html`
             <or-notifications-table 
                 .notifications=${this._getFilteredNotifications() || []}
+                .notificationService=${this.notificationService}
                 @or-notification-selected="${(e: NotificationTableClickEvent) => this._onRowClick(e)}"
             ></or-notifications-table>
         `;
@@ -612,6 +646,7 @@ export class PageNotifications extends Page<AppStateKeyed> {
             new OrMwcDialog()
             .setHeading(i18next.t("Create notification"))
             .setContent(this._getCreateDialogHTML())
+            // .setDismissAction(null)
                 .setActions([
                     {
                         actionName: "cancel",
@@ -648,7 +683,11 @@ export class PageNotifications extends Page<AppStateKeyed> {
         const dialog = showDialog(
             new OrMwcDialog()
             .setHeading(i18next.t("Notification details"))
-            .setContent(this._getNotificationDetailsContent(notification))   
+            .setContent(this._getNotificationDetailsContent(notification))
+            .setDismissAction({
+                actionName: "cancel",
+                action: () => {dialog.close()},
+            })   
             .setActions([
             {
                 actionName: "close",
