@@ -48,7 +48,7 @@ public class PersistenceEventInterceptor implements Interceptor {
     }
 
     @Override
-    public boolean onPersist(Object entity,
+    public boolean onSave(Object entity,
                           Object id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
@@ -78,7 +78,7 @@ public class PersistenceEventInterceptor implements Interceptor {
     }
 
     @Override
-    public void onRemove(Object entity,
+    public void onDelete(Object entity,
                          Object id,
                          Object[] state,
                          String[] propertyNames,

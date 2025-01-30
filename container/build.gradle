@@ -26,7 +26,9 @@ dependencies {
     api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
 
     api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    api "org.keycloak:keycloak-adapter-core:$keycloakCoreVersion"
+    // This is the generic keycloak adapter that isn't kept up to date - deprecated possibly?
+    // They now only develop keycloak-jboss-adapter-core which is wildfly specific and would need some work to integrate
+    api "org.keycloak:keycloak-adapter-core:$keycloakVersion"
     api "org.keycloak:keycloak-policy-enforcer:$keycloakVersion"
     api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
