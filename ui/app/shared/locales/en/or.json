@@ -196,7 +196,7 @@
     "GREATER_THAN": "Greater than",
     "LESS_THAN": "Less than",
     "READ_ATTRIBUTE": "Attribute value",
-    "WRITE_ATTRIBUTE": "Write attribute",
+    "WRITE_ATTRIBUTE": "Attribute value",
     "BOOLEAN_INPUT": "Boolean",
     "NUMBER_INPUT": "Number",
     "TEXT_INPUT": "Text",
