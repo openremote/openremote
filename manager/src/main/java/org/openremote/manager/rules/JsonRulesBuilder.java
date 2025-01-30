@@ -481,20 +481,23 @@ public class JsonRulesBuilder extends RulesBuilder {
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
                     
-                    boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
-                        .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
-                        .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
-
+             
                     // Prevent stale matches from blocking rule re-triggering for multi LHS condition groups
-                    if (!groupMatches && anyConditionHasNoPreviousMatches && ruleConditionGroup.getItems().size() > 1 ) {
+                    if (!groupMatches && ruleConditionGroup.getItems().size() > 1) {
+
+                        boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
+                            .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                            .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
 
                         // Clear previously matched asset states, so they can be re-matched and trigger the rule when the group matches again
-                        ruleConditionGroup.getItems().forEach(ruleCondition -> {
-                            RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
-                            if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
-                                conditionState.previouslyMatchedAssetStates.clear();
-                            }
-                        });      
+                        if (anyConditionHasNoPreviousMatches) {
+                            ruleConditionGroup.getItems().forEach(ruleCondition -> {
+                                RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
+                                if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
+                                    conditionState.previouslyMatchedAssetStates.clear();
+                                }
+                            });      
+                        }   
                     }
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
