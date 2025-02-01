@@ -475,8 +475,8 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         this._loading = false;
 
         if (response.status === 200) {
-            // Get page count
             this._data = response.data;
+             // Get page count
             this._pageCount = this._getPageCount(response);
         }
     }
