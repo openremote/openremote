@@ -1281,6 +1281,147 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
     }
 
+    def "Trigger actions based on multiple LHS conditions"() {
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
+        def container = startContainer(defaultConfig(), defaultServices())
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def timerService = container.getService(TimerService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        RulesEngine realmBuildingEngine
+
+        and: "the pseudo clock is stopped"
+        stopPseudoClock()
+
+        when: "a light asset is added to the building realm"
+        def lightId = UniqueIdentifierGenerator.generateId("Light")
+        def lightAsset = new LightAsset("Light")
+                .setId(lightId)
+                .setRealm(keycloakTestSetup.realmBuilding.name)
+                .setLocation(new GeoJSONPoint(0, 0))
+
+     
+        def ruleState = new MetaItem<>(MetaItemType.RULE_STATE)
+        lightAsset.getAttributes().get("brightness").get().addMeta(ruleState)
+        lightAsset.getAttributes().get("onOff").get().addMeta(ruleState)
+        assetStorageService.merge(lightAsset)
+
+        then: "the light asset should be present"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light != null
+        }
+
+        // RuleSet: WHEN:
+        // Any light asset has brightness greater than 50
+        // AND
+        // Any light asset has onOff set to true
+        // THEN:
+        // Set the notes of the light asset to "Matched"
+        when: "a ruleset with multiple LHS conditions has been added"
+        def rulesStr = getClass().getResource("/org/openremote/test/rules/JsonMultipleLHSConditionsRule.json").text
+        def rule = parse(rulesStr, JsonRulesetDefinition.class).orElseThrow()
+        Ruleset ruleset = new RealmRuleset(
+                keycloakTestSetup.realmBuilding.name,
+                "Multi LHS Rule",
+                Ruleset.Lang.JSON,
+                rulesStr)
+        ruleset = rulesetStorageService.merge(ruleset)
+        def lastFireTimestamp = 0
+
+        then: "the rule engines to become available and be running with asset states inserted"
+        conditions.eventually {
+            realmBuildingEngine = rulesService.realmEngines.get(keycloakTestSetup.realmBuilding.name)
+            assert realmBuildingEngine != null
+            assert realmBuildingEngine.isRunning()
+            assert realmBuildingEngine.facts.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING + 2 // 2 additional rule states
+            assert realmBuildingEngine.lastFireTimestamp == timerService.getNow().toEpochMilli()
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        and: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        when: "the light asset brightness is updated to 100 and onOff is updated to true and time advances for 3 seconds"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.ON_OFF, true))
+
+        // advance time to 3 seconds to ensure the rule engine has fired
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+
+        then: "the light asset should have its notes attribute be Matched because the LHS conditions were satisfied"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == "Matched"
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "notes is updated to empty and time advances for 3 seconds"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.NOTES, ""))
+
+        // advance time to 3 seconds to ensure the rule engine has fired
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+
+        then: "the light asset should have its notes attribute be empty"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "brightness is updated to 10, thus not satisfying the LHS conditions and time advances for 3 seconds"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 10))
+
+        // advance time to 3 seconds to ensure the rule engine has fired
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+
+        then: "the light asset should have its notes attribute be empty because the LHS conditions were not satisfied"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == ""
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+
+        when: "brightness is updated to 100, thus satisfying the LHS conditions and time advances for 3 seconds"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(lightId, LightAsset.BRIGHTNESS, 100))
+
+        // advance time to 3 seconds to ensure the rule engine has fired
+        advancePseudoClock(3, TimeUnit.SECONDS, container)
+
+        then: "the light asset should have its notes attribute be set to Matched because the LHS conditions were satisfied"
+        conditions.eventually {
+            def light = assetStorageService.find(lightId)
+            assert light.getAttribute("notes").get().getValue().orElse("") == "Matched"
+        }
+
+        and: "the rule engine should have fired"
+        conditions.eventually {
+            assert realmBuildingEngine.lastFireTimestamp > lastFireTimestamp
+            lastFireTimestamp = realmBuildingEngine.lastFireTimestamp
+        }
+    }
+
     def "Trigger actions based on the position of the sun"() {
 
         given: "the container environment is started"
