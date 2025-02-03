@@ -290,27 +290,30 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         assetProcessingService.sendAttributeEvent(new AttributeEvent(electricitySupplierAssetId, "powerExportMaxGopacs", minPower), getClass().getSimpleName());
     }
 
-    protected void sendFlexResponse(String transportXml) {
-        goPacsClientResource.outMessage(transportXml);
-    }
-
     protected void setPredictedDataPoints(String attributeName, List<ValueDatapoint<?>> valuesAndTimestamps) {
         assetPredictedDatapointService.updateValues(electricitySupplierAssetId, attributeName, valuesAndTimestamps);
     }
 
     @Override
     public void notifyNewIncomingMessage(IncomingUftpMessage<? extends PayloadMessageType> message) {
+        LOG.fine("Received message: " + message);
         var messageType = message.payloadMessage().getClass();
         if (!FlexRequest.class.isAssignableFrom(messageType)) {
             return;
         }
 
         var flexRequest = (FlexRequest) message.payloadMessage();
+
+        LOG.fine("Processing message: " + flexRequest);
+
         this.handleFlexMessage(message.sender(), flexRequest);
+
+        LOG.fine("Finished processing message: " + flexRequest);
     }
 
     @Override
     public void notifyNewOutgoingMessage(OutgoingUftpMessage<? extends PayloadMessageType> message) {
+        LOG.fine("Sending message: " + message);
         var messageType = message.payloadMessage().getClass();
         if (!FlexRequestResponse.class.isAssignableFrom(messageType)) {
             return;
@@ -322,7 +325,11 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
         SignedMessage signedMessage = cryptoService.signMessage(payloadXml, message.sender(), this.privateKey);
         String transportXml = serializer.toXml(signedMessage);
 
+        LOG.fine("Transporting message: " + transportXml);
+
         goPacsClientResource.outMessage(transportXml);
+
+        LOG.fine("Finished sending message: " + message);
     }
 
     protected void processRawMessage(String transportXml) {
