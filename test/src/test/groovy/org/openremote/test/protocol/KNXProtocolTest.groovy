@@ -19,7 +19,7 @@
  */
 package org.openremote.test.protocol
 
-import org.apache.commons.lang3.SystemUtils
+
 import org.openremote.agent.protocol.knx.KNXAgent
 import org.openremote.agent.protocol.knx.KNXAgentLink
 import org.openremote.agent.protocol.knx.KNXProtocol
@@ -37,10 +37,10 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 import tuwien.auto.calimero.server.Launcher
-import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 
-import static org.openremote.model.value.MetaItemType.*
-import static org.openremote.model.value.ValueType.*
+import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.MetaItemType.LABEL
+import static org.openremote.model.value.ValueType.BOOLEAN
 
 /**
  * This tests the KNX protocol and protocol implementation.
@@ -53,26 +53,26 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the KNX emulation server is started"
-        def configFile = SystemUtils.IS_OS_MAC ? "/org/openremote/test/protocol/knx/knx-server-config-mac.xml" : "/org/openremote/test/protocol/knx/knx-server-config.xml"
+        def configFile = "/org/openremote/test/protocol/knx/knx-server-config.xml"
         def configUri = getClass().getResource(configFile).toURI().toString()
         def knxEmulationServer = new Launcher(configUri)
-        def sc = knxEmulationServer.xml.svcContainers.remove(0)
-        def sc2 = new DefaultServiceContainer(
-            sc.getName(),
-            NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress()).name,
-            sc.getControlEndpoint(),
-            sc.getMediumSettings(),
-            sc.reuseControlEndpoint(),
-            sc.isNetworkMonitoringAllowed())
-        knxEmulationServer.xml.svcContainers.add(sc2)
-        def netIf = knxEmulationServer.xml.subnetNetIf.remove(sc)
-        knxEmulationServer.xml.subnetNetIf.put(sc2, netIf)
-        def linkClasses = knxEmulationServer.xml.subnetLinkClasses.remove(sc)
-        knxEmulationServer.xml.subnetLinkClasses.put(sc2, linkClasses)
-        def groupFilters = knxEmulationServer.xml.groupAddressFilters.remove(sc)
-        knxEmulationServer.xml.groupAddressFilters.put(sc2, groupFilters)
-        def addAddresses = knxEmulationServer.xml.additionalAddresses.remove(sc)
-        knxEmulationServer.xml.additionalAddresses.put(sc2, addAddresses)
+//        def sc = knxEmulationServer.xml.svcContainers.remove(0)
+//        def sc2 = new DefaultServiceContainer(
+//            sc.getName(),
+//            NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress()).name,
+//            sc.getControlEndpoint(),
+//            sc.getMediumSettings(),
+//            sc.reuseControlEndpoint(),
+//            sc.isNetworkMonitoringAllowed())
+//        knxEmulationServer.xml.svcContainers.add(sc2)
+//        def netIf = knxEmulationServer.xml.subnetNetIf.remove(sc)
+//        knxEmulationServer.xml.subnetNetIf.put(sc2, netIf)
+//        def linkClasses = knxEmulationServer.xml.subnetLinkClasses.remove(sc)
+//        knxEmulationServer.xml.subnetLinkClasses.put(sc2, linkClasses)
+//        def groupFilters = knxEmulationServer.xml.groupAddressFilters.remove(sc)
+//        knxEmulationServer.xml.groupAddressFilters.put(sc2, groupFilters)
+//        def addAddresses = knxEmulationServer.xml.additionalAddresses.remove(sc)
+//        knxEmulationServer.xml.additionalAddresses.put(sc2, addAddresses)
         def knxServerThread = new Thread(knxEmulationServer)
         knxServerThread.start()
         KNXTestingNetworkLink knxTestingNetwork
