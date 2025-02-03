@@ -480,6 +480,25 @@ public class JsonRulesBuilder extends RulesBuilder {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                         .allMatch(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches);
+                    
+             
+                    // Prevent stale matches from blocking rule re-triggering for multi LHS condition groups
+                    if (!groupMatches && ruleConditionGroup.getItems().size() > 1) {
+
+                        boolean anyConditionHasNoPreviousMatches = ruleConditionGroup.getItems().stream()
+                            .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
+                            .anyMatch(ruleConditionState -> ruleConditionState.previouslyMatchedAssetStates.isEmpty());
+
+                        // Clear previously matched asset states, so they can be re-matched and trigger the rule when the group matches again
+                        if (anyConditionHasNoPreviousMatches) {
+                            ruleConditionGroup.getItems().forEach(ruleCondition -> {
+                                RuleConditionState conditionState = conditionStateMap.get(ruleCondition.tag);
+                                if (conditionState != null && !conditionState.previouslyMatchedAssetStates.isEmpty()) {
+                                    conditionState.previouslyMatchedAssetStates.clear();
+                                }
+                            });      
+                        }   
+                    }
                 } else {
                     groupMatches = ruleConditionGroup.getItems().stream()
                         .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
