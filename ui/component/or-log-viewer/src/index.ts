@@ -475,9 +475,9 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         this._loading = false;
 
         if (response.status === 200) {
-            // Get page count
-            this._pageCount = this._getPageCount(response);
             this._data = response.data;
+             // Get page count
+            this._pageCount = this._getPageCount(response);
         }
     }
 
@@ -486,7 +486,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         if (linkHeaders) {
             const links = linkParser.parse(linkHeaders);
             const lastLink = links.rel("last");
-            if (lastLink) {
+            if (lastLink && lastLink.uri) {
                 const url = new URL(lastLink.uri);
                 return Util.getQueryParameters(url.search)['page'] as number;
             }
