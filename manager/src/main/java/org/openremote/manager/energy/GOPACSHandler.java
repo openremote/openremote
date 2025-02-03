@@ -131,8 +131,8 @@ public class GOPACSHandler implements UftpPayloadHandler, UftpParticipantService
 
         this.client = createClient(org.openremote.container.Container.EXECUTOR);
 
-        this.goPacsClientResource = client.target("https://clc-message-broker.acc.gopacs-services.eu/shapeshifter/api/v3/").proxy(GOPACSClientResource.class);
-        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu/v2/").proxy(GOPACSAddressBookResource.class);
+        this.goPacsClientResource = client.target("https://clc-message-broker.acc.gopacs-services.eu").proxy(GOPACSClientResource.class);
+        this.goPacsAddressBookResource = client.target("https://capacity-limit-contracts.acc.gopacs-services.eu").proxy(GOPACSAddressBookResource.class);
         this.gopacsServerResource = new GOPACSServerResourceImpl(this::processRawMessage);
 
         this.cryptoService = new UftpCryptoService(new ParticipantResolutionService(this), new LazySodiumFactory(), new LazySodiumBase64Pool());

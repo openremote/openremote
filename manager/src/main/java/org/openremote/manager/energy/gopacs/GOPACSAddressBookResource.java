@@ -8,7 +8,7 @@ import jakarta.ws.rs.core.Response;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_XML;
 
-@Path("participants/DSO")
+@Path("v2/participants/DSO")
 public interface GOPACSAddressBookResource {
     @GET
     @Consumes(APPLICATION_XML)
