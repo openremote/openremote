@@ -12,8 +12,6 @@ dependencies {
 
     // SLF4J JUL provider
     api "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    // Log4J redirect to SLF4J
-    api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     api "io.undertow:undertow-core:$undertowVersion"
     api "io.undertow:undertow-websockets-jsr:$undertowVersion"

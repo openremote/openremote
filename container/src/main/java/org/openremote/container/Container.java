@@ -28,7 +28,6 @@ import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreadFactory;
-import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -78,10 +77,6 @@ public class Container implements org.openremote.model.Container {
 
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
-
-    static {
-        LogUtil.initialiseJUL();
-    }
 
     /**
      * Discover {@link ContainerService}s using {@link ServiceLoader}; services are then ordered by
