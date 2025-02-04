@@ -14,6 +14,7 @@ import { Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {ifDefined} from "lit/directives/if-defined.js";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -107,8 +108,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 return this.dropdownInput;
             case PickerType.MULTILINE:
                 return this.multilineInput;
+            case PickerType.DATE:
+                return this.getNumberInput(0, undefined, 50);
             case PickerType.NUMBER:
-                return this.numberInput;
+                return this.getNumberInput(undefined, undefined, undefined);
             case PickerType.TEXT:
                 return this.textInput;
             default:
@@ -247,12 +250,18 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         }}" style="${sizeString}" @input="${(e: any) => this.setValue(e.target.value)}" placeholder="${this.internal.name!}">${this.internal.value || ""}</textarea>`;
     }
 
-    private get numberInput(): TemplateResult {
-        return html`<input @wheel="${(e: any) => {
-            if (e.target === this.shadowRoot!.activeElement) {
-                return e.stopPropagation();
-            }
-        }}" @input="${(e: any) => this.setValue(parseFloat(e.target.value))}" value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"/>`;
+    private getNumberInput(min?: number, max?: number, width?: number): TemplateResult {
+        return html`<input
+                @wheel="${(e: any) => {
+                    if (e.target === this.shadowRoot!.activeElement) {
+                        return e.stopPropagation();
+                    }
+                }}"
+                @input="${(e: any) => this.setValue(parseFloat(e.target.value))}"
+                value="${this.internal.value || 0}" type="number" placeholder="${this.internal.name!}"
+                style="max-width: ${ifDefined(width)}px"
+                min="${ifDefined(min)}" max="${ifDefined(max)}"
+        />`;
     }
 
     private get textInput(): TemplateResult {
