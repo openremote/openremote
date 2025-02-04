@@ -38,6 +38,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 import tuwien.auto.calimero.server.Launcher
 
+import java.nio.file.Path
+
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.MetaItemType.LABEL
 import static org.openremote.model.value.ValueType.BOOLEAN
@@ -54,8 +56,19 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
         and: "the KNX emulation server is started"
         def configFile = "/org/openremote/test/protocol/knx/knx-server-config.xml"
-        def configUri = getClass().getResource(configFile).toURI().toString()
-        def knxEmulationServer = new Launcher(configUri)
+        def configUri = getClass().getResource(configFile).toURI()
+        // Calimero server uses NetworkInterface.getByName for interface lookup which is un-reliable so we find it at runtime
+        def configStr = getClass().getResource(configFile).text
+        def ni = NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress())
+        configStr = configStr.replaceAll("LOOPBACK_ADDRESS", ni.getName())
+        def file = Path.of(configUri).toFile()
+        if (file.exists()) {
+            def w = file.newWriter()
+            file.newWriter().withWriter {
+                it << configStr
+            }
+        }
+        def knxEmulationServer = new Launcher(configUri.toString())
 //        def sc = knxEmulationServer.xml.svcContainers.remove(0)
 //        def sc2 = new DefaultServiceContainer(
 //            sc.getName(),
