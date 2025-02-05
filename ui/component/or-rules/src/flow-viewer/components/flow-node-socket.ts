@@ -38,7 +38,6 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
             display:inline-block;
             vertical-align: top;
             color: rgba(0,0,0,.5);
-            text-transform: lowercase;
         }
         .circle{
             box-sizing: border-box;
@@ -52,7 +51,10 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
     }
 
     public get socketTypeString() {
-        return this.socket.type!.toString().toLowerCase();
+        const socketType: string = this.socket.type!.toString().toLowerCase();
+        // If the socket type is NUMBER_ARRAY, remove the array part, since we only allow the input of NUMBER into that
+        // socket, just multiple ones. Also helps with displaying the correct color.
+        return socketType.replace("_array", "")
     }
     @property({ type: Object }) public socket!: NodeSocket;
     @property({ type: String }) public side!: "input" | "output";
@@ -119,7 +121,7 @@ export class FlowNodeSocket extends translate(i18next)(LitElement) {
             </div>`;
 
         if (!this.renderLabel) { return socket; }
-        const label = html`<div class="label">${i18next.t(this.socket.name!)}</div>`;
+        const label = html`<div class="label">${i18next.t(Utilities.humanLike(this.socket.name!))}</div>`;
         if (this.side === "input") {
             return html`${socket}${label}`;
         } else {
