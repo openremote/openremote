@@ -1,5 +1,7 @@
 package org.openremote.model.gateway;
 
+import org.openremote.model.attribute.MetaMap;
+
 import java.util.List;
 import java.util.Map;
 
@@ -19,4 +21,11 @@ public class GatewayAssetSyncRule {
      * {@link org.openremote.model.attribute.MetaItem} will then be stripped from these attributes before syncing.
      */
     public Map<String, List<String>> excludeAttributeMeta;
+
+    /**
+     * A map where keys should be the name of an {@link org.openremote.model.attribute.Attribute} to which the additions
+     * should be applied; to apply to all attributes use the * wildcard. The {@link MetaMap} will then be added to each
+     * matching attribute before syncing.
+     */
+    public Map<String, MetaMap> addAttributeMeta;
 }
